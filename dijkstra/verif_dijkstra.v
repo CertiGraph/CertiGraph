@@ -370,7 +370,7 @@ Proof.
     rewrite <- H6; trivial.
   - intros.
     assert (Hrem := H1).
-    red in H1. destruct H1 as [Ha [Hb [Hc Hd]]].
+    red in H1. destruct H1 as [Ha [Hb [Hc [Hd _]]]].
     rewrite (surjective_pairing a) in *.
     assert (fst a = s). {
       simpl in H2. destruct H2 as [? _].
@@ -913,7 +913,7 @@ Proof.
   forward_for_simple_bound
     SIZE
     (EX i : Z,
-     PROP (inrange_graph g)
+     PROP ()
      LOCAL (temp _dist (pointer_val_val dist);
             temp _prev (pointer_val_val prev);
             temp _src (Vint (Int.repr src));
@@ -964,7 +964,7 @@ Proof.
       replace (list_repeat (Z.to_nat 1) (Vint (Int.repr inf))) with
           ([Vint (Int.repr inf)]) by reflexivity. easy.
     }
-    rewrite H5. entailer!.
+    rewrite H3. entailer!.
   - (* At this point we are done with the
        first for loop. The arrays are all set to INF. *)
     replace (SIZE - SIZE) with 0 by lia; rewrite list_repeat_0,
@@ -1079,25 +1079,20 @@ Proof.
       (* Now we get into the proof of dijkstra_correct proper.
          This is not very challenging... *)
       unfold dijkstra_correct, inv_popped, inv_unpopped, inv_unseen; split3; intros.
-      * inversion H16.
+      * inversion H14.
       * assert (src = dst). {
           destruct (Z.eq_dec src dst); trivial. exfalso.
           assert (0 <= dst < SIZE) by
               (rewrite <- (vvalid_range g); trivial).
-          rewrite upd_Znth_diff in H17; try lia.
-          rewrite Znth_list_repeat_inrange in H17; lia.
-          apply vvalid_range in H15; trilia. 
+          rewrite upd_Znth_diff in H15; try lia.
+          rewrite Znth_list_repeat_inrange in H15; lia.
+          apply vvalid_range in H13; trilia. 
           ulia.
         }
         subst dst. left; trivial.
-      * inversion H19.
+      * inversion H17.
     + (* Now the body of the while loop begins. *)
       Intros prev_contents priq_contents dist_contents popped_verts.
-      rename H10 into H11.
-      rename H9 into H10.
-      rename H8 into H9.
-      rename H7 into H8.
-      assert (H7: 1 = 1) by trivial.
       assert_PROP (Zlength priq_contents = SIZE).
       { entailer!. now repeat rewrite Zlength_map in *. }
       assert_PROP (Zlength prev_contents = SIZE).
@@ -1109,10 +1104,10 @@ Proof.
       * (* No, don't break. *)
         assert (isEmpty priq_contents = Vzero). {
           destruct (isEmptyTwoCases priq_contents);
-            rewrite H16 in H15; simpl in H15;
-              now inversion H15.
+            rewrite H13 in H12; simpl in H12;
+              now inversion H12.
         }
-        clear H15.
+        clear H12.
         forward_call (v_pq, priq_contents). Intros u.
         (* u is the minimally chosen item from the
            "seen but not popped" category of vertices *)
@@ -1120,12 +1115,12 @@ Proof.
         (* We prove a few useful facts about u: *)
         assert (vvalid g u). {
           apply vvalid_range; trivial.
-          rewrite H15.
+          rewrite H12.
           replace SIZE with (Zlength priq_contents).
           apply find_range.
           apply min_in_list. apply incl_refl.
-          destruct priq_contents. rewrite Zlength_nil in H12.
-          inversion H12. simpl. left; trivial.
+          destruct priq_contents. rewrite Zlength_nil in H9.
+          inversion H9. simpl. left; trivial.
         }
         apply vvalid_range in H17; trivial. 
         rewrite Znth_0_hd, <- H15.
@@ -1216,8 +1211,6 @@ Proof.
                 unfold inv_unseen in H34.
                 rewrite H8 in H37; trivial.
                 specialize (H34 H18 H37).
-                assert (H38: 1 = 1) by trivial.
-                assert (H39: 1 = 1) by trivial.
                 split.
                 --
                   destruct (in_dec
@@ -1247,7 +1240,7 @@ Proof.
                   }
                   unfold V in *. rewrite H40.
                   rewrite careful_add_comm, careful_add_inf; trivial.
-                  apply inrange_graph_cost_pos; trivial.
+                  apply valid_edge_cost_pos; trivial.
                   apply vvalid2_evalid; trivial.
                 -- intros.
                    assert (0 <= m < SIZE). {
@@ -1277,7 +1270,7 @@ Proof.
                    intros. destruct (Z.eq_dec m u).
                    ++ unfold V in *; rewrite e, H19, careful_add_comm, careful_add_inf; [split; trivial|].
                       subst m.
-                      apply inrange_graph_cost_pos; trivial.
+                      apply valid_edge_cost_pos; trivial.
                       apply vvalid2_evalid; trivial.
                    ++ split.
                       ** apply H37; trivial.
@@ -1317,7 +1310,7 @@ Proof.
                    rewrite H19.
                    rewrite careful_add_comm, careful_add_inf; trivial.
                    lia.
-                   apply inrange_graph_cost_pos; trivial.
+                   apply valid_edge_cost_pos; trivial.
                    apply vvalid2_evalid; trivial.
                 -- apply H41; trivial.
                    simpl in H43; destruct H43; [lia|]; trivial.
@@ -1331,7 +1324,7 @@ Proof.
               destruct (Z.eq_dec m u).
               1: { unfold V in *; rewrite e, H19, careful_add_comm, careful_add_inf; trivial.
                    subst m.
-                   apply inrange_graph_cost_pos; trivial.
+                   apply valid_edge_cost_pos; trivial.
                    apply vvalid2_evalid; trivial.
               }
               apply H34; trivial.
@@ -1420,7 +1413,6 @@ Proof.
                  Znth src dist_contents' = 0;
                  Znth src prev_contents' = src;
                  (* Znth src priq_contents' <> inf; *)
-                 1 = 1;
                  
                  (* a useful fact about u *)
                  In u popped_verts';
@@ -1518,7 +1510,7 @@ Proof.
               destruct (popped_noninf_has_path H2 H4 Htemp H38) as [p2mom [? [? ?]]]; trivial.
               1: { 
                 assert (0 <= elabel g (mom, u)). {
-                  apply inrange_graph_cost_pos; trivial.
+                  apply valid_edge_cost_pos; trivial.
                   apply vvalid2_evalid; trivial.
                 }
                 ulia.
@@ -1939,7 +1931,7 @@ Proof.
             destruct (popped_noninf_has_path H2 H4 temp H36) as [p2mom [? [? ?]]]; trivial.
             1: {
               assert (0 <= elabel g (mom, dst)). {
-                apply inrange_graph_cost_pos; trivial.
+                apply valid_edge_cost_pos; trivial.
                 apply vvalid2_evalid; trivial.
               }
               unfold V in *. lia.
@@ -1999,12 +1991,6 @@ Proof.
           rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ u).
           2: admit.
           Intros.
-          rename H34 into H35.
-          rename H33 into H34.
-          rename H32 into H33.
-          rename H31 into H32.
-          rename H30 into H31.
-          assert (H30: 1 = 1) by trivial.
           
           freeze FR2 := (iter_sepcon _ _) (iter_sepcon _ _).
           unfold list_rep.
@@ -2316,11 +2302,9 @@ Proof.
                                  assert (evalid g (mom', i)). {
                                  apply vvalid2_evalid; trivial.
                                  }
-                                 apply inrange_graph_cost_pos; trivial.
+                                 apply valid_edge_cost_pos; trivial.
                             }
                             rename H66 into Hk.
-                            assert (H66: 1 = 1) by trivial.
-                            assert (H67: 1 = 1) by trivial.
 
                             destruct (H22 _ H62 H64); trivial.
                             1: unfold V in *; lia.
@@ -2373,7 +2357,7 @@ Proof.
                                 - unfold V in *;
                                     rewrite H73;
                                     apply path_cost_pos; trivial.
-                                - apply inrange_graph_cost_pos; trivial.
+                                - apply valid_edge_cost_pos; trivial.
                                   apply vvalid2_evalid; trivial.
                               }
                               
@@ -2539,7 +2523,7 @@ Proof.
                         assert (Ha: Znth mom dist_contents' < inf). {
                           
                           assert (0 <= elabel g (mom, dst)). {
-                            apply inrange_graph_cost_pos; trivial.
+                            apply valid_edge_cost_pos; trivial.
                             apply vvalid2_evalid; trivial.
                             apply vvalid_range; trivial.
                             lia.
@@ -2706,7 +2690,7 @@ Proof.
                         apply vvalid2_evalid; trivial.
                         apply vvalid_range; trivial.
                       }
-                      apply inrange_graph_cost_pos; trivial.
+                      apply valid_edge_cost_pos; trivial.
                     }
                     assert (Hb: vvalid g mom'). {
                       apply vvalid_range; trivial.
@@ -2811,7 +2795,7 @@ Proof.
                                               (elabel g (mom', i)) = Znth mom' dist_contents' + elabel g (mom', i)). {
                             rewrite careful_add_clean; trivial.
                             - unfold V in *; rewrite H75. apply path_cost_pos; trivial.
-                            - apply inrange_graph_cost_pos; trivial. apply vvalid2_evalid; trivial.
+                            - apply valid_edge_cost_pos; trivial. apply vvalid2_evalid; trivial.
                           }
                            
 (*
@@ -2888,7 +2872,7 @@ Proof.
                          apply vvalid2_evalid; trivial;
                            apply vvalid_range; trivial.
                          }
-                         apply inrange_graph_cost_pos; trivial.
+                         apply valid_edge_cost_pos; trivial.
                     }
 
                     destruct (zlt (elabel g (u, i)) inf).
@@ -2962,7 +2946,7 @@ Proof.
 
                    assert (Ha: Znth mom dist_contents' < inf). {
                      assert (0 <= elabel g (mom, i)). {
-                       apply inrange_graph_cost_pos; trivial.
+                       apply valid_edge_cost_pos; trivial.
                        apply vvalid2_evalid; trivial.
                        apply vvalid_range; trivial.
                      }
@@ -3001,7 +2985,7 @@ Proof.
                           apply vvalid2_evalid; trivial.
                           apply vvalid_range; trivial.
                         }                               
-                        apply inrange_graph_cost_pos; trivial.
+                        apply valid_edge_cost_pos; trivial.
                    }
                    unfold V in *.
                    
@@ -3027,7 +3011,7 @@ Proof.
                            simpl in H35. lia.
                            apply vvalid_range in H69; ulia.
                            apply Zle_not_lt.
-                           apply inrange_graph_cost_pos; trivial.
+                           apply valid_edge_cost_pos; trivial.
                            rewrite Z.eqb_neq. lia.
                      }
                      assert (vvalid g i). {
@@ -3040,7 +3024,7 @@ Proof.
                          - apply (Forall_Znth _ _ mom') in H35.
                            simpl in H35; ulia.
                            apply vvalid_range in H69; ulia.
-                         - apply inrange_graph_cost_pos; trivial.
+                         - apply valid_edge_cost_pos; trivial.
                            apply vvalid2_evalid; trivial.
                      }
                      destruct (Z.eq_dec mom' u).

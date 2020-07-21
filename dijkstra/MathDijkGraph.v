@@ -52,8 +52,17 @@ Definition src_edge (g : DijkstraGeneralGraph): Prop :=
 Definition dst_edge (g : DijkstraGeneralGraph): Prop :=
   forall e, dst g e = snd e.
 
+(* further develop this to comment on valid, evalid *)
+Definition edge_in_range (g: DijkstraGeneralGraph): Prop :=
+  forall e,
+    0 <= elabel g e <= Int.max_signed / SIZE \/
+    elabel g e = inf.
+
+Definition cost_to_self_0 (g: DijkstraGeneralGraph): Prop :=
+  forall v, vvalid g v -> (elabel g (v, v)) = 0.
+
 Definition sound_dijk_graph (g : DijkstraGeneralGraph): Prop :=
-  vertex_valid g /\ edge_valid g /\ src_edge g /\ dst_edge g.
+  vertex_valid g /\ edge_valid g /\ src_edge g /\ dst_edge g /\ edge_in_range g /\ cost_to_self_0 g.
 
 (* shouldn't this all go into soundness? *)
 
@@ -89,7 +98,7 @@ Proof.
   apply valid_path_app.
   split; [assumption|].
   assert (Hrem := H).
-  destruct H as [? [? [? ?]]].
+  destruct H as [? [? [? [? ?]]]].
   simpl; split.
   1: rewrite H4; simpl; assumption.
   unfold strong_evalid.
@@ -107,7 +116,7 @@ Proof.
   split.
   + destruct H0; apply H0.
   + rewrite pfoot_last.
-    destruct H as [_ [_ [_ ?]]].
+    destruct H as [_ [_ [_ [? _]]]].
     rewrite H; reflexivity.
 Qed.
 
@@ -137,7 +146,7 @@ Lemma step_in_range2: forall g x x0,
     0 <= snd x0 < SIZE.
 Proof.
   intros.
-  destruct H as [? [_ [_ ?]]].
+  destruct H as [? [_ [_ [? _]]]].
   unfold vertex_valid in H.
   unfold dst_edge in H2.
   assert (In_path g (snd x0) x). {
@@ -147,4 +156,15 @@ Proof.
   }
   pose proof (valid_path_valid _ _ _ H0 H3).
   rewrite H in H4. lia.
+Qed.
+
+Lemma valid_edge_cost_pos: forall g e,
+    sound_dijk_graph g ->
+    evalid g e ->
+    0 <= elabel g e.
+Proof.
+  intros.
+  destruct H as [_ [_ [_ [_ [? _]]]]].
+  destruct (H e); try lia.
+  unfold V, E in *. rewrite H1. compute; inversion 1. 
 Qed.

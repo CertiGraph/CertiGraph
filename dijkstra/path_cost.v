@@ -258,7 +258,6 @@ Lemma path_cost_pos:
   forall g p,
     sound_dijk_graph g ->
     valid_path g p ->
-    inrange_graph g ->
     0 <= path_cost g p.
 Proof.
   intros.
@@ -266,7 +265,7 @@ Proof.
   assert (forall e, In e links -> evalid g e). {
     intros. eapply valid_path_evalid; eauto. }
   assert (forall e, In e links -> 0 <= elabel g e). {
-    intros. apply inrange_graph_cost_pos; auto. }
+    intros. apply valid_edge_cost_pos; auto. }
   apply acc_pos; auto. easy.
 Qed.
 
@@ -274,7 +273,6 @@ Lemma path_cost_app_cons:
   forall g path i,
     sound_dijk_graph g ->
     valid_path g path ->
-    inrange_graph g ->
     elabel g i + path_cost g path < inf ->
     evalid g i ->
     path_cost g (fst path, snd path +:: i) =
@@ -283,9 +281,9 @@ Proof.
   intros.
   unfold path_cost in *. simpl.
   rewrite map_app, fold_left_app. simpl.
-  pose proof (path_cost_pos g path) H H0 H1.
+  pose proof (path_cost_pos g path H H0).
   assert (0 <= elabel g i) by
-      (apply inrange_graph_cost_pos; trivial).
+      (apply valid_edge_cost_pos; trivial).
   apply careful_add_clean; trivial; lia.
 Qed.
 
@@ -367,7 +365,6 @@ Lemma path_cost_path_glue_ge_inf:
     sound_dijk_graph g ->
     valid_path g p1 ->
     valid_path g p2 ->
-    inrange_graph g ->
     inf <= path_cost g p1 ->
     path_cost g (path_glue p1 p2) >= inf.
 Proof.
@@ -378,17 +375,17 @@ Proof.
   assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
     by now unfold path_cost.
   Set Printing All.
-  unfold DE in *. rewrite H4. 
+  unfold DE in *. rewrite H3. 
   Unset Printing All.
   rewrite <- (careful_add_id (path_cost g p1)).
   apply path_cost_init_inf; trivial.
   lia.
   rewrite Forall_forall. intros.
-  rewrite in_map_iff in H5. destruct H5 as [? [? ?]].
-  rewrite <- H5.
-  apply inrange_graph_cost_pos; trivial.
-  rewrite (surjective_pairing p2) in *. simpl in H6.
-  apply (valid_path_evalid g _ _ _ H1 H6).
+  rewrite in_map_iff in H4. destruct H4 as [? [? ?]].
+  rewrite <- H4.
+  apply valid_edge_cost_pos; trivial.
+  rewrite (surjective_pairing p2) in *. simpl in H5.
+  apply (valid_path_evalid g _ _ _ H1 H5).
 Qed.
 
 Lemma path_cost_path_glue_lt:
@@ -396,7 +393,6 @@ Lemma path_cost_path_glue_lt:
     sound_dijk_graph g ->
     valid_path g p1 ->
     valid_path g p2 ->
-    inrange_graph g ->
     path_cost g (path_glue p1 p2) < inf ->
     path_cost g p1 < inf /\ path_cost g p2 < inf.
 Proof.
@@ -404,18 +400,18 @@ Proof.
   destruct (path_cost g p1 <? inf) eqn:?.
   - rewrite Z.ltb_lt in Heqb.
     split; trivial.
-    rewrite path_cost_path_glue in H3; trivial.
+    rewrite path_cost_path_glue in H2; trivial.
     destruct (path_cost g p2 <? inf) eqn:?.
     1: rewrite Z.ltb_lt in Heqb0; trivial.
-    exfalso. unfold careful_add in H3.
+    exfalso. unfold careful_add in H2.
     destruct (path_cost g p1 =? 0).
     1: rewrite Z.ltb_nlt in Heqb0; lia.
     destruct (path_cost g p2 =? 0) eqn:?.
     + rewrite Z.ltb_nlt in Heqb0.
       rewrite Z.eqb_eq in Heqb1.
       apply Heqb0. rewrite Heqb1. compute. trivial.
-    + rewrite if_false_bool in H3.
-      rewrite if_true_bool in H3.
+    + rewrite if_false_bool in H2.
+      rewrite if_true_bool in H2.
       * lia.
       * rewrite Z.leb_le.
         rewrite Z.ltb_ge in Heqb0.
@@ -425,7 +421,7 @@ Proof.
           apply path_cost_pos; trivial.
   - rewrite Z.ltb_ge in Heqb.
     exfalso.
-    pose proof (path_cost_path_glue_ge_inf _ _ _ H H0 H1 H2 Heqb).
+    pose proof (path_cost_path_glue_ge_inf _ _ _ H H0 H1 Heqb).
     lia.
 Qed.
 
@@ -440,7 +436,7 @@ Proof.
   - left. unfold In_path. left; trivial.
   - destruct H1 as [? [? ?]].
     apply in_app_or in H1.
-    destruct H as [? [? [? ?]]].
+    destruct H as [? [? [? [? _]]]].
     unfold src_edge in H4. unfold dst_edge in H5.
     rewrite H4, H5 in H2.
     destruct H1.
