@@ -1134,21 +1134,19 @@ Proof.
           destruct priq_contents. rewrite Zlength_nil in H8.
           inversion H8. simpl. left; trivial.
         }
-Abort.
 
-(*
-        apply (vvalid_meaning g) in H17; trivial. 
-        rewrite Znth_0_hd, <- H15.
-        2: { ulia. }
+        apply (vvalid_meaning g) in H13; trivial. 
+        rewrite Znth_0_hd, <- H11.
+        2: ulia. 
         do 2 rewrite upd_Znth_map.
         assert (~ (In u popped_verts)). {
           intro.
-          rewrite (get_popped_meaning _ priq_contents _) in H18.
+          rewrite (get_popped_meaning _ priq_contents _) in H14.
           2: ulia.
-          rewrite <- isEmpty_in' in H16.
-          destruct H16 as [? [? ?]].
-          rewrite H15 in H18.
-          rewrite Znth_find in H18.
+          rewrite <- isEmpty_in' in H12.
+          destruct H12 as [? [? ?]].
+          rewrite H11 in H14.
+          rewrite Znth_find in H14.
           2: {
             rewrite <- Znth_0_hd by ulia.
             apply min_in_list;
@@ -3091,5 +3089,3 @@ Abort.
       forward. Exists prev_contents dist_contents popped_verts. entailer!. 
       Unshelve. trivial.
 Admitted.
-
-*)
