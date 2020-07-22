@@ -77,41 +77,66 @@ Section AdjMatGraph.
   Context {size : Z}. 
   Context {inf : Z}.
   
-  Class AdjMatSoundness (g: AdjMatLG) :=
+  Class SoundAdjMat (g: AdjMatLG) :=
     {
-    size_representable:
+    sr: (* size_representable *)
       0 <= size <= Int.max_signed;
-    inf_representable:
+    ir: (* inf_representable *)
       0 <= inf <= Int.max_signed; 
-    vert_representable:
-      forall v, vvalid g v ->
-                0 <= v < size;
-    edge_src_dst_valid:
-      forall e, evalid g e ->
-                vvalid g (src g e) /\ vvalid g (dst g e);
-    edge_weight_representable:
-      forall e, evalid g e ->
-                Int.min_signed <= elabel g e <= Int.max_signed;
-    edge_weight_not_inf:
-      forall e, evalid g e ->
+    vm: (* vvalid_meaning *)
+      forall v, vvalid g v <-> 0 <= v < size;
+    em: (* evalid_meaning *)
+      forall e, evalid g e <-> 
+                Int.min_signed <= elabel g e <= Int.max_signed /\
                 elabel g e <> inf;
-    edge_weight_invalid:
-      forall e, ~ evalid g e ->
-                elabel g e = inf;
-    edge_src_fst:
-      forall e, evalid g e -> src g = fst;
-    edge_dst_snd:
-      forall e, evalid g e -> dst g = snd;
+    iew: (* invalid_edge_weight *)
+      forall e, ~ evalid g e <-> elabel g e = inf;
+    esf: (* edge_src_fst *)
+      forall e, evalid g e -> src g e = fst e;
+    eds: (* edge_dst_snd *)
+      forall e, evalid g e -> dst g e = snd e;
+    cts: (* cost_to_self *)
+      forall v, vvalid g v -> elabel g (v, v) = 0;
     fin:
       FiniteGraph g
     }.
 
   (* example of how to instantiate *)
-  Definition AdjMatGG := (GeneralGraph V E DV DE DG (fun g => AdjMatSoundness g)).
-  (* Clients may want to further restrict the soundness condition and then 
-   use that restricted version. *)
+  Definition AdjMatGG := (GeneralGraph V E DV DE DG (fun g => SoundAdjMat g)).
+  (* Clients may want to further restrict the 
+     soundness condition and then use that restricted version. *)
+
+  (* Getters for the plugins *)
+
+  Definition size_representable (g: AdjMatGG) :=
+    @sr g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+  Definition inf_representable (g: AdjMatGG) :=
+    @ir g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+  Definition vvalid_meaning (g: AdjMatGG) :=
+    @vm g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+  Definition evalid_meaning (g: AdjMatGG) :=
+    @em g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+  Definition invalid_edge_weight (g: AdjMatGG) :=
+    @iew g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+  Definition edge_src_fst (g: AdjMatGG) :=
+    @esf g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+  Definition edge_dst_snd (g: AdjMatGG) :=
+    @eds g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+  Definition cost_to_self (g: AdjMatGG) :=
+    @cts g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+  Definition finGraph (g: AdjMatGG) :=
+    @fin g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
 
+  
   (* SPATIAL REPRESENTATION *)
 
   (* Assumption: (v,0), (v,1) ... (v, size-1) are edges.
@@ -163,18 +188,6 @@ Section AdjMatGraph.
     2, 3, 5: rewrite nat_inc_list_Zlength.
     all: rewrite Z2Nat.id; trivial.
   Qed.
-
-  Definition inrange_graph_gen g (f: E -> E) :=
-    let grph_contents := (graph_to_mat g f) in
-    forall i j,
-      0 <= i < Zlength grph_contents ->
-      0 <= j < Zlength grph_contents ->
-      0 <= Znth i (Znth j grph_contents) <= Int.max_signed \/
-      Znth i (Znth j grph_contents) = inf.
-  (* grr hate this, will massage away.
-     Even if it is needed, it is a LEMMA using Soundness
-     and not a definition from axioms
-   *)
   
   Definition graph_to_list (g: AdjMatLG) (f : E -> E) : list Z :=
     (concat (graph_to_mat g f)).
