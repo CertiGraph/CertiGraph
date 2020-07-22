@@ -1,4 +1,4 @@
-Require Import RamifyCoq.sample_mark.env_unionfind.
+Require Import RamifyCoq.unionfind.env_unionfind.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.

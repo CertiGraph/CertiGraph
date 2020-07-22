@@ -2,7 +2,7 @@ Require Import RamifyCoq.msl_ext.iter_sepcon.
 Require Import RamifyCoq.msl_application.Graph.
 Require Import RamifyCoq.msl_application.GList.
 Require Import VST.veric.SeparationLogic.
-Require Import RamifyCoq.sample_mark.env_unionfind.
+Require Import RamifyCoq.unionfind.env_unionfind.
 Require Import RamifyCoq.floyd_ext.share.
 
 Local Open Scope logic.

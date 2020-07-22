@@ -15,14 +15,14 @@ Require Import RamifyCoq.graph.reachable_computable.
 Require Import RamifyCoq.graph.UnionFind.
 Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.ArrayGraph.
-Require Import RamifyCoq.sample_mark.env_unionfind_arr.
+Require Import RamifyCoq.unionfind.env_unionfind_arr.
 (*edgelist*)
 Require Import RamifyCoq.graph.undirected_graph.
 Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
 Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
 Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.
 Require Import RamifyCoq.sample_mark.spatial_array_graph.
-Require Import RamifyCoq.kruskal.kruskal_uf_specs.
+Require Import RamifyCoq.kruskal.kruskal_specs.
 Require Import RamifyCoq.graph.undirected_uf_lemmas.
 
 Local Open Scope Z_scope.
