@@ -1152,7 +1152,7 @@ Proof.
             apply min_in_list;
               [ apply incl_refl | apply Znth_In; ulia].
           }
-          pose proof (fold_min _ _ H16).
+          pose proof (fold_min _ _ H12).
           lia.
         }
         (* but u could be either 
@@ -1161,6 +1161,8 @@ Proof.
            - seen, in which case there is a 
              whole lot of ground to cover   
          *)
+Abort.
+(*
         unfold V in *.
         
         forward.
@@ -3089,3 +3091,4 @@ Proof.
       forward. Exists prev_contents dist_contents popped_verts. entailer!. 
       Unshelve. trivial.
 Admitted.
+*)

@@ -1,4 +1,4 @@
-#include "../sample_mark/unionfind_arr.h"
+#include "../unionfind/unionfind_arr.h"
 
 static const int MAX_EDGES = 8;
 

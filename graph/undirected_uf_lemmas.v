@@ -5,7 +5,7 @@ Require Import RamifyCoq.graph.path_lemmas.
 (*for unionfind*)
 Require Import RamifyCoq.graph.UnionFind.
 Require Import RamifyCoq.msl_application.ArrayGraph.
-Require Import RamifyCoq.sample_mark.env_unionfind_arr.
+Require Import RamifyCoq.unionfind.env_unionfind_arr.
 (*edgelist*)
 Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
 (*spanning tree definition*)

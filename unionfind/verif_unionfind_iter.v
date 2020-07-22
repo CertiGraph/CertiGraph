@@ -1,4 +1,4 @@
-Require Import RamifyCoq.sample_mark.env_unionfind_iter.
+Require Import RamifyCoq.unionfind.env_unionfind_iter.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.subgraph2.
@@ -9,7 +9,7 @@ Require Import RamifyCoq.msl_application.UnionFindGraph.
 Require Import RamifyCoq.msl_application.GList.
 Require Import RamifyCoq.msl_application.GList_UnionFind.
 Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.sample_mark.spatial_graph_uf_iter.
+Require Import RamifyCoq.unionfind.spatial_graph_uf_iter.
 
 Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
