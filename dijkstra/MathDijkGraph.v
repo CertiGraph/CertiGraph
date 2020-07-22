@@ -14,10 +14,7 @@ Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.path_lemmas.
 Require Import RamifyCoq.graph.FiniteGraph.
-
-(* The V, E, Label types get set here *)
 Require Import RamifyCoq.graph.AdjMatGraph.
-
 
 Require Import Coq.Classes.EquivDec.
 
@@ -30,21 +27,59 @@ Local Open Scope logic.
 Local Open Scope Z_scope.
 
 (* Here is the LabeledGraph *)
-Definition DijkstraLabeledGraph := AdjMatLG.
+Definition DijkLG := AdjMatLG.
 
-(* The soundness condition (just one item for now) *)
-Class Fin (g: DijkstraLabeledGraph) :=
-  { fin: FiniteGraph g; }.
+(* The soundness condition *)
+Class SoundDijk (g: DijkLG) :=
+  {
+  basic: (* adj_mat_soundness *)
+    (* first, we can take AdjMat's soundness wholesale *)
+    (@SoundAdjMat SIZE inf g);
+  
+  veb:
+    (* from the AdjMat soundness above we already know e is representable, 
+       but for Dijkstra we need a further constraint. *)
+    forall e,
+      evalid g e ->
+      0 <= elabel g e <= Int.max_signed / SIZE;
+  }.
 
-(* And the GeneralGraph that we will use *)
-Definition DijkstraGeneralGraph := (GeneralGraph V E DV DE DG (fun g => Fin g)).
+(* And here is the GeneralGraph that we will use *)
+Definition DijkGG := (GeneralGraph V E DV DE DG (fun g => SoundDijk g)).
 
+(* Some handy coercions: *)
+Definition DijkGG_DijkLG (G: DijkGG): DijkLG := lg_gg G.
+Coercion DijkGG_DijkLG: DijkGG >-> DijkLG.
+Identity Coercion DijkLG_AdjMatLG: DijkLG >-> AdjMatLG.
+Identity Coercion AdjMatLG_LabeledGraph: AdjMatLG >-> LabeledGraph.
+
+(* We can always drag out SoundAdjMat *)
+Definition DijkGG_SoundAdjMat (g: DijkGG) :=
+  @basic g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+(* A DijkGG can be weakened into an AdjMatGG *)
+Definition DijkGG_AdjMatGG (G: DijkGG) : AdjMatGG :=
+  Build_GeneralGraph DV DE DG SoundAdjMat G (DijkGG_SoundAdjMat G).
+
+Coercion DijkGG_AdjMatGG: DijkGG >-> AdjMatGG.
+
+(* Great! So now when we want to access an AdjMat
+   plugin, we can simply use the AdjMat getter 
+   and pass it a DijkGG. The coercion will be seamless. 
+ *)
+
+(* For the new plugin, we create a getter: *)
+Definition valid_edge_bounds (g: DijkGG) :=
+  @veb g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+
+(*
 Definition vertex_valid (g : DijkstraGeneralGraph): Prop :=
-  forall v, vvalid g v <-> 0 <= v < SIZE.
+  forall v, vvalid g v -> 0 <= v < SIZE.
 
 Definition edge_valid (g : DijkstraGeneralGraph): Prop :=
-  forall a b, evalid g (a,b) <->
-            (vvalid g a /\ vvalid g b).
+  forall a b, evalid g (a,b) ->
+              (vvalid g a /\ vvalid g b).
 
 Definition src_edge (g : DijkstraGeneralGraph): Prop :=
   forall e, src g e = fst e.
@@ -65,106 +100,74 @@ Definition sound_dijk_graph (g : DijkstraGeneralGraph): Prop :=
   vertex_valid g /\ edge_valid g /\ src_edge g /\ dst_edge g /\ edge_in_range g /\ cost_to_self_0 g.
 
 (* shouldn't this all go into soundness? *)
+ *)
 
-(* lemmas that come from soundness plugins *)
+(* Lemmas that come from soundness plugins *)
+
+(* considering *)
 Lemma vvalid2_evalid:
-  forall g a b,
-    sound_dijk_graph g ->
+  forall (g: DijkGG) a b,
     vvalid g a ->
     vvalid g b ->
     evalid g (a,b).
-Proof.
-  intros. destruct H as [_ [? _]].
-  red in H; rewrite H; split; trivial.
-Qed.
-
-Lemma vvalid_range:
-  forall g a,
-    sound_dijk_graph g ->
-    vvalid g a <-> 0 <= a < SIZE.
-Proof.
-  intros. destruct H as [? _]. red in H. trivial.
-Qed.
+Proof. Admitted.
 
 Lemma valid_path_app_cons:
-  forall g src links2u u i,
-    sound_dijk_graph g ->
+  forall (g: DijkGG) src links2u u i,
     valid_path g (src, links2u) ->
     pfoot g (src, links2u) = u ->
-    evalid g (u,i) ->
+    strong_evalid g (u,i) ->
     valid_path g (src, links2u +:: (u,i)).
 Proof.
   intros.
   apply valid_path_app.
   split; [assumption|].
-  assert (Hrem := H).
-  destruct H as [? [? [? [? ?]]]].
-  simpl; split.
-  1: rewrite H4; simpl; assumption.
-  unfold strong_evalid.
-  rewrite H4, H5; simpl.
-  split; trivial.
-  red in H3; rewrite H3 in H2; trivial.
+  simpl; split; trivial.
+  destruct H1.
+  rewrite (edge_src_fst g); simpl; assumption.
 Qed.
 
 Lemma path_ends_app_cons:
-  forall g src links2u u i,
-    sound_dijk_graph g ->
+  forall (g: DijkGG) src links2u u i,
+    evalid g (u,i) ->
     path_ends g (src, links2u) src u ->
     path_ends g (src, links2u +:: (u, i)) src i.
 Proof.
-  split.
-  + destruct H0; apply H0.
-  + rewrite pfoot_last.
-    destruct H as [_ [_ [_ [? _]]]].
-    rewrite H; reflexivity.
+  split; trivial.
+  rewrite pfoot_last.
+  rewrite (edge_dst_snd g); trivial.
 Qed.
 
-Lemma step_in_range: forall g x x0,
-    sound_dijk_graph g ->
+Lemma step_in_range:
+  forall (g: DijkGG) x x0,
     valid_path g x ->
     In x0 (snd x) ->
     0 <= fst x0 < SIZE.
 Proof.
   intros.
-  destruct H as [? [_ [? _]]].
-  unfold vertex_valid in H.
-  unfold src_edge in H2.
-  assert (In_path g (fst x0) x). {
-    unfold In_path. right.
-    exists x0. rewrite H2.
-    split; [| left]; trivial.
-  }
-  pose proof (valid_path_valid _ _ _ H0 H3).
-  rewrite H in H4. lia.
+  rewrite (surjective_pairing x) in H.
+  pose proof (valid_path_strong_evalid g _ _ _ H H0).
+  destruct H1 as [? [? _]].
+  rewrite <- (vvalid_meaning g), <- (edge_src_fst g); trivial.
 Qed.
 
-Lemma step_in_range2: forall g x x0,
-    sound_dijk_graph g ->
+Lemma step_in_range2:
+  forall (g: DijkGG) x x0,
     valid_path g x ->
     In x0 (snd x) ->
     0 <= snd x0 < SIZE.
 Proof.
   intros.
-  destruct H as [? [_ [_ [? _]]]].
-  unfold vertex_valid in H.
-  unfold dst_edge in H2.
-  assert (In_path g (snd x0) x). {
-    unfold In_path. right.
-    exists x0. rewrite H2.
-    split; [| right]; trivial.
-  }
-  pose proof (valid_path_valid _ _ _ H0 H3).
-  rewrite H in H4. lia.
+  rewrite (surjective_pairing x) in H.
+  pose proof (valid_path_strong_evalid g _ _ _ H H0).
+  destruct H1 as [? [_ ?]].
+  rewrite <- (vvalid_meaning g), <- (edge_dst_snd g); trivial.
 Qed.
 
-Lemma valid_edge_cost_pos: forall g e,
-    sound_dijk_graph g ->
-    evalid g e ->
-    0 <= elabel g e.
+Lemma valid_edge_cost_pos:
+  forall (g: DijkGG) e,
+    evalid g e -> 0 <= elabel g e.
 Proof.
   intros.
-  destruct H as [_ [_ [_ [_ [? _]]]]].
-  destruct (H e); try lia.
-  unfold V, E in *. rewrite H1. compute; inversion 1. 
+  apply (valid_edge_bounds g); trivial.
 Qed.
