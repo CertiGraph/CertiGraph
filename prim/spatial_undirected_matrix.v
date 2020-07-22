@@ -22,7 +22,7 @@ Proof. unfold SIZE. set (i:=Int.max_signed); compute in i; subst i. lia. Qed.
 
 Definition inf := Int.max_signed - Int.max_signed / SIZE.
 
-Definition G := @MatrixUGraph inf.
+Definition G := @MatrixUGraph inf SIZE.
 
 Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
 
@@ -63,7 +63,7 @@ Lemma graph_to_mat_inf:
 Proof.
 unfold graph_to_symm_mat, vert_rep_symm; intros.
 repeat rewrite Znth_map. repeat rewrite nat_inc_list_i.
-rewrite eformat1. apply (@edge_weight_invalid inf g (sound_MatrixUGraph g)); auto. simpl; lia.
+rewrite eformat1. apply (@invalid_edge_weight inf SIZE g (sound_MatrixUGraph g)); auto. simpl; lia.
 all: try (rewrite Z2Nat.id; lia).
 all: try (rewrite nat_inc_list_Zlength, Z2Nat.id; lia).
 rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.

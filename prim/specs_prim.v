@@ -11,35 +11,37 @@ Local Open Scope Z_scope.
 
 Definition init_list_spec :=
   DECLARE _initialise_list
-  WITH sh: share, arr : pointer_val, old_list: list val
-  PRE [tptr tint]
+  WITH sh: share, arr : val, old_list: list val, a: Z
+  PRE [tptr tint, tint]
      PROP ( writable_share sh;
-            Zlength old_list = SIZE (*<--I'm not sure if this is derivable from SEP*)
+            Zlength old_list = SIZE; (*<--I'm not sure if this is derivable from SEP*)
+            repable_signed a
           )
-     PARAMS ( pointer_val_val arr )
+     PARAMS ( arr; Vint (Int.repr a) )
      GLOBALS ()
-     SEP (data_at sh (tarray tint SIZE) (old_list) (pointer_val_val arr))
+     SEP (data_at sh (tarray tint SIZE) (old_list) (arr))
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr inf))) (pointer_val_val arr)
+     SEP (data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) arr
          ).
 
 Definition init_matrix_spec :=
   DECLARE _initialise_matrix
-  WITH sh: share, arr : pointer_val, old_contents: list (list Z)
-  PRE [tptr (tarray tint SIZE)]
+  WITH sh: share, arr : val, old_contents: list (list Z), a: Z
+  PRE [tptr (tarray tint SIZE), tint]
      PROP ( writable_share sh;
             Zlength old_contents = SIZE;
-            forall row, In row old_contents -> Zlength row = SIZE
+            forall row, In row old_contents -> Zlength row = SIZE;
+            repable_signed a
           )
-     PARAMS ( pointer_val_val arr )
+     PARAMS ( arr ; Vint (Int.repr a) )
      GLOBALS ()
-     SEP (undirected_matrix sh (old_contents) (pointer_val_val arr))
+     SEP (undirected_matrix sh (old_contents) (arr))
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (undirected_matrix sh (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) inf)) (pointer_val_val arr)
+     SEP (undirected_matrix sh (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a)) arr
          ).
 
 Definition prim_spec :=
