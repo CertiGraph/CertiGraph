@@ -1,13 +1,13 @@
-Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
-Require Import RamifyCoq.dijkstra.MathDijkGraph.
-Require Import RamifyCoq.dijkstra.SpaceDijkGraph.
-Require Import RamifyCoq.dijkstra.dijkstra_spec.
-Require Import RamifyCoq.dijkstra.path_cost.
+Require Import CertiGraph.dijkstra.env_dijkstra_arr.
+Require Import CertiGraph.dijkstra.MathDijkGraph.
+Require Import CertiGraph.dijkstra.SpaceDijkGraph.
+Require Import CertiGraph.dijkstra.dijkstra_spec.
+Require Import CertiGraph.dijkstra.path_cost.
 
 Require Import VST.floyd.sublist.
 (* seems this has to be imported after the others *)
 
-Require Import RamifyCoq.priq.priq_arr_utils.
+Require Import CertiGraph.priq.priq_arr_utils.
 (* remove once a better PQ is in place *)
 
 Local Open Scope Z_scope.

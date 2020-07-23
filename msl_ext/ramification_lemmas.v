@@ -1,9 +1,9 @@
-Require Import RamifyCoq.msl_ext.log_normalize.
-Require Import RamifyCoq.msl_ext.iter_sepcon.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.EnumEnsembles.
-Require Import RamifyCoq.lib.List_ext.
+Require Import CertiGraph.msl_ext.log_normalize.
+Require Import CertiGraph.msl_ext.iter_sepcon.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.EnumEnsembles.
+Require Import CertiGraph.lib.List_ext.
 Require Import VST.msl.base.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.

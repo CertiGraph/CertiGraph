@@ -1,8 +1,8 @@
-Require Import RamifyCoq.lib.Ensembles_ext.
-Require Import RamifyCoq.lib.Relation_ext.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.veric_ext.SeparationLogic.
-Require Import RamifyCoq.floyd_ext.ramification.
+Require Import CertiGraph.lib.Ensembles_ext.
+Require Import CertiGraph.lib.Relation_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.veric_ext.SeparationLogic.
+Require Import CertiGraph.floyd_ext.ramification.
 Require Import VST.floyd.base.
 Require Import VST.floyd.canon.
 Require Import VST.floyd.assert_lemmas.

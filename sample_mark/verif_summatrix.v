@@ -1,5 +1,5 @@
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.sample_mark.summatrix.
+Require Import CertiGraph.sample_mark.summatrix.
 Require Import VST.msl.iter_sepcon.
 
 Local Open Scope logic.

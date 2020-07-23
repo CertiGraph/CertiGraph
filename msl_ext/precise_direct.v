@@ -1,6 +1,6 @@
 Require Import VST.msl.msl_direct.
-Require Import RamifyCoq.msl_ext.ramify_tactics.
-Require Import RamifyCoq.msl_ext.overlapping_direct.
+Require Import CertiGraph.msl_ext.ramify_tactics.
+Require Import CertiGraph.msl_ext.overlapping_direct.
 Require Import VST.msl.predicates_sa.
 
 Lemma precise_left_sepcon_andp_distr_d {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A}:

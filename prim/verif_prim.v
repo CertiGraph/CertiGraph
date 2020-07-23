@@ -1,13 +1,13 @@
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.undirected_graph.
-Require Import RamifyCoq.graph.AdjMatGraph.
-Require Import RamifyCoq.prim.MatrixUGraph.
-Require Import RamifyCoq.prim.prim.
-Require Import RamifyCoq.prim.spatial_undirected_matrix.
-Require Import RamifyCoq.prim.specs_prim.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.undirected_graph.
+Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.prim.MatrixUGraph.
+Require Import CertiGraph.prim.prim.
+Require Import CertiGraph.prim.spatial_undirected_matrix.
+Require Import CertiGraph.prim.specs_prim.
 
 Lemma inf_equiv':
 (Int.sub (Int.repr 2147483647) (Int.divs (Int.repr 2147483647) (Int.repr 8))) = (Int.repr inf).

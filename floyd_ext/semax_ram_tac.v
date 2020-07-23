@@ -9,13 +9,13 @@ Require Import VST.floyd.local2ptree_eval.
 Require Import VST.floyd.call_lemmas.
 Require Import VST.floyd.diagnosis.
 Require Import VST.floyd.forward.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.veric_ext.SeparationLogic.
-Require Import RamifyCoq.floyd_ext.ramification.
-Require Import RamifyCoq.floyd_ext.semax_ram_lemmas.
-Require Import RamifyCoq.floyd_ext.exists_trick.
-Require Import RamifyCoq.floyd_ext.closed_lemmas.
-(* Require Import RamifyCoq.floyd_ext.comparable. *)
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.veric_ext.SeparationLogic.
+Require Import CertiGraph.floyd_ext.ramification.
+Require Import CertiGraph.floyd_ext.semax_ram_lemmas.
+Require Import CertiGraph.floyd_ext.exists_trick.
+Require Import CertiGraph.floyd_ext.closed_lemmas.
+(* Require Import CertiGraph.floyd_ext.comparable. *)
 
 Local Open Scope logic.
 

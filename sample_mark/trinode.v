@@ -1,8 +1,8 @@
 Require Import VST.veric.SeparationLogic.
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
-Require Import RamifyCoq.msl_ext.alg_seplog.
-Require Import RamifyCoq.veric_ext.SeparationLogic.
+Require Import CertiGraph.msl_ext.abs_addr.
+Require Import CertiGraph.msl_ext.seplog.
+Require Import CertiGraph.msl_ext.alg_seplog.
+Require Import CertiGraph.veric_ext.SeparationLogic.
 
 (*
 Instance AV_trinode: AbsAddr.

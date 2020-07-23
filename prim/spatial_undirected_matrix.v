@@ -1,13 +1,13 @@
 Require Import VST.veric.SeparationLogic. (*hm interesting, they have a separate sublist definition*)
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.FiniteGraph.
-Require Import RamifyCoq.graph.undirected_graph.
-Require Import RamifyCoq.graph.AdjMatGraph.
-Require Import RamifyCoq.prim.MatrixUGraph.
-Require Import RamifyCoq.prim.prim.
-Require Import RamifyCoq.lib.List_ext.
+Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.FiniteGraph.
+Require Import CertiGraph.graph.undirected_graph.
+Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.prim.MatrixUGraph.
+Require Import CertiGraph.prim.prim.
+Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope logic.
 

@@ -1,9 +1,9 @@
 Require Import Coq.Logic.ProofIrrelevance.
-Require Import RamifyCoq.lib.Ensembles_ext.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.lib.relation_list.
-Require Import RamifyCoq.lib.Equivalence_ext.
+Require Import CertiGraph.lib.Ensembles_ext.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.lib.relation_list.
+Require Import CertiGraph.lib.Equivalence_ext.
 
 (******************************************
 

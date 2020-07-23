@@ -5,9 +5,9 @@ Require Import VST.msl.sepalg.
 Require Import VST.msl.age_sepalg.
 Require Import VST.msl.predicates_hered.
 Require Import VST.msl.alg_seplog.
-Require Import RamifyCoq.msl_ext.seplog.
-Require Import RamifyCoq.msl_ext.precise.
-Require Import RamifyCoq.msl_ext.overlapping.
+Require Import CertiGraph.msl_ext.seplog.
+Require Import CertiGraph.msl_ext.precise.
+Require Import CertiGraph.msl_ext.overlapping.
 Require Import VST.msl.predicates_sl.
 Require Import VST.msl.corable.
 Local Open Scope logic.

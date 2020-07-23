@@ -1,9 +1,9 @@
 Require Import RelationClasses.
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.sample_mark.binary_heap_model.
-Require Import RamifyCoq.sample_mark.binary_heap_Zmodel.
-Require Import RamifyCoq.sample_mark.binary_heap.
-Require Import RamifyCoq.sample_mark.env_binary_heap.
+Require Import CertiGraph.sample_mark.binary_heap_model.
+Require Import CertiGraph.sample_mark.binary_heap_Zmodel.
+Require Import CertiGraph.sample_mark.binary_heap.
+Require Import CertiGraph.sample_mark.env_binary_heap.
 
 Set Nested Proofs Allowed.
 

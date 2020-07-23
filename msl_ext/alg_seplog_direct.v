@@ -2,9 +2,9 @@ Require Import VST.msl.seplog.
 Require Import VST.msl.base.
 Require Import VST.msl.sepalg.
 Require Import VST.msl.alg_seplog_direct.
-Require Import RamifyCoq.msl_ext.seplog.
-Require Import RamifyCoq.msl_ext.precise_direct.
-Require Import RamifyCoq.msl_ext.overlapping_direct.
+Require Import CertiGraph.msl_ext.seplog.
+Require Import CertiGraph.msl_ext.precise_direct.
+Require Import CertiGraph.msl_ext.overlapping_direct.
 Require Import VST.msl.predicates_sa.
 Local Open Scope logic.
 

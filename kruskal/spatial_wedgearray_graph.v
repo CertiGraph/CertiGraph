@@ -1,11 +1,11 @@
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
-Require Import RamifyCoq.graph.FiniteGraph.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
+Require Import CertiGraph.graph.FiniteGraph.
 Require Import VST.veric.SeparationLogic.
-Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.graph.undirected_graph.
+Require Import CertiGraph.kruskal.env_kruskal_edgelist.
+Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.graph.undirected_graph.
 
 Local Open Scope logic.
 

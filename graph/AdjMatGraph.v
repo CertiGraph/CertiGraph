@@ -20,10 +20,10 @@ Require Import VST.floyd.coqlib3.
 Require Import VST.msl.iter_sepcon.
 Require Import VST.msl.seplog.
 
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.graph.FiniteGraph.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.graph.FiniteGraph.
 
 (*
   AdjMat wishlist
