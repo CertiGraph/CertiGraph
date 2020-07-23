@@ -262,7 +262,7 @@ Proof.
   assert (forall e, In e links -> evalid g e). {
     intros. eapply valid_path_evalid; eauto. }
   assert (forall e, In e links -> 0 <= elabel g e). {
-    intros. apply valid_edge_cost_pos; auto. }
+    intros. apply edge_cost_pos; auto. }
   apply acc_pos; auto. easy.
 Qed.
 
@@ -279,7 +279,7 @@ Proof.
   rewrite map_app, fold_left_app. simpl.
   pose proof (path_cost_pos g path H). 
   assert (0 <= elabel g e) by
-      (apply valid_edge_cost_pos; trivial).
+      (apply edge_cost_pos; trivial).
   apply careful_add_clean; trivial; lia.
 Qed.
 
@@ -378,9 +378,7 @@ Proof.
   rewrite Forall_forall. intros.
   rewrite in_map_iff in H3. destruct H3 as [? [? ?]].
   rewrite <- H3.
-  apply valid_edge_cost_pos; trivial.
-  rewrite (surjective_pairing p2) in *. simpl in H4.
-  apply (valid_path_evalid g _ _ _ H0 H4).
+  apply edge_cost_pos; trivial.
 Qed.
 
 Lemma path_cost_path_glue_lt:
