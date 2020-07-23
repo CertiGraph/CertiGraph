@@ -1,12 +1,12 @@
 Require Import Coq.Logic.ProofIrrelevance.
-Require Import RamifyCoq.lib.Ensembles_ext.
+Require Import CertiGraph.lib.Ensembles_ext.
 Require Import Coq.Lists.List.
 Require Import Coq.Classes.Morphisms.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.find_not_in.
-Require Import RamifyCoq.graph.path_lemmas.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.find_not_in.
+Require Import CertiGraph.graph.path_lemmas.
 
 Module ind.
 Section ind.

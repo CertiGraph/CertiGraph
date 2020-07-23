@@ -4,8 +4,8 @@ Require Export Coq.Sorting.Permutation.
 Require Import Coq.ZArith.ZArith_base.
 Require Import Coq.ZArith.Zcomplements.
 Require Import Coq.Logic.FunctionalExtensionality.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
 Require Import VST.floyd.sublist.
 
 Lemma In_tail: forall A (a : A) L, In a (tl L) -> In a L.

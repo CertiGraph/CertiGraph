@@ -8,8 +8,8 @@ Require Import VST.veric.tycontext.
 Require Import VST.veric.expr.
 Require Import VST.veric.res_predicates.
 
-Require Import RamifyCoq.msl_ext.precise.
-Require Import RamifyCoq.msl_ext.overlapping.
+Require Import CertiGraph.msl_ext.precise.
+Require Import CertiGraph.msl_ext.overlapping.
 
 Lemma disj_VALspec_range: forall rsh l1 n1 l2 n2, ~ range_overlap l1 n1 l2 n2 ->
   disjointed (VALspec_range n1 rsh l1) (VALspec_range n2 rsh l2).

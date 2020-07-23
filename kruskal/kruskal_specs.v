@@ -1,14 +1,14 @@
 (* UF's imports (already made minimal *)
-Require Import RamifyCoq.unionfind.env_unionfind_arr.
-Require Export RamifyCoq.unionfind.uf_arr_specs.
+Require Import CertiGraph.unionfind.env_unionfind_arr.
+Require Export CertiGraph.unionfind.uf_arr_specs.
 
 (* Kruskal's imports (already made minimal *)
-Require Import RamifyCoq.graph.undirected_graph.
-Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
-Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
-Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.floyd_ext.share.
+Require Import CertiGraph.graph.undirected_graph.
+Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
+Require Import CertiGraph.kruskal.env_kruskal_edgelist.
+Require Import CertiGraph.kruskal.spatial_wedgearray_graph.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.floyd_ext.share.
 
 Local Open Scope Z_scope.
 

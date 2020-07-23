@@ -1,15 +1,15 @@
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
 (*for ufgraph *)
-Require Import RamifyCoq.graph.path_lemmas.
+Require Import CertiGraph.graph.path_lemmas.
 (*for unionfind*)
-Require Import RamifyCoq.graph.UnionFind.
-Require Import RamifyCoq.msl_application.ArrayGraph.
-Require Import RamifyCoq.unionfind.env_unionfind_arr.
+Require Import CertiGraph.graph.UnionFind.
+Require Import CertiGraph.msl_application.ArrayGraph.
+Require Import CertiGraph.unionfind.env_unionfind_arr.
 (*edgelist*)
-Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
+Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
 (*spanning tree definition*)
-Require Import RamifyCoq.graph.undirected_graph.
+Require Import CertiGraph.graph.undirected_graph.
 
 Lemma reachable_uf_equiv_connected:
   forall (g1 g2: UFGraph) u v,

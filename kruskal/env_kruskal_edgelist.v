@@ -1,7 +1,7 @@
 Require Import VST.floyd.proofauto.
 Require Import Coq.ZArith.ZArith.
-Require Import RamifyCoq.floyd_ext.closed_lemmas.
-Require Export RamifyCoq.kruskal.kruskal_edgelist.
+Require Import CertiGraph.floyd_ext.closed_lemmas.
+Require Export CertiGraph.kruskal.kruskal_edgelist.
 
 Local Open Scope Z.
 

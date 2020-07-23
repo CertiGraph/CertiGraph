@@ -1,9 +1,9 @@
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Lists.List.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.lib.List_Func_ext.
-Require Export RamifyCoq.lib.Relation_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.lib.List_Func_ext.
+Require Export CertiGraph.lib.Relation_ext.
 
 (* TODO: define a general pointwise relation on list *)
 Inductive same_relation_list {A: Type}: list (relation A) -> list (relation A) -> Prop :=

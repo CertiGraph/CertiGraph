@@ -8,20 +8,20 @@ Require Import VST.msl.seplog.
 Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
 
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.FiniteGraph.
-Require Import RamifyCoq.graph.AdjMatGraph.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.FiniteGraph.
+Require Import CertiGraph.graph.AdjMatGraph.
 
 Require Import Coq.Classes.EquivDec.
 
 (* This file is just one line: "Require Export priq.priq_arr_utils." 
    It can be inlined. 
    It is currently a separate file in case we want more constants stashed away *)
-Require Export RamifyCoq.dijkstra.dijkstra_constants.
+Require Export CertiGraph.dijkstra.dijkstra_constants.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.

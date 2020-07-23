@@ -1,5 +1,5 @@
 Require Import VST.msl.msl_standard.
-Require Import RamifyCoq.msl_ext.ramify_tactics.
+Require Import CertiGraph.msl_ext.ramify_tactics.
 
 Lemma precise_left_sepcon_andp_distr_i {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A} {CA : Canc_alg A} {AG : ageable A} {AA: Age_alg A}:
   forall P P1 P2 Q R, precise P -> P1 |-- P -> P2 |-- P -> (P1 * Q) && (P2 * R) |-- (P1 && P2) * (Q && R).

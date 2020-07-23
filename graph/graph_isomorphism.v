@@ -1,8 +1,8 @@
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Basics.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.lib.EquivDec_ext.
 
 Generalizable All Variables.
 

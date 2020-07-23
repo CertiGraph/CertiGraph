@@ -1,5 +1,5 @@
-Require Import RamifyCoq.CertiGC.gc_spec.
-Require Import RamifyCoq.msl_ext.ramification_lemmas.
+Require Import CertiGraph.CertiGC.gc_spec.
+Require Import CertiGraph.msl_ext.ramification_lemmas.
 
 Local Open Scope logic.
 

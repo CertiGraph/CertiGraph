@@ -1,17 +1,17 @@
-Require Import RamifyCoq.sample_mark.env_dispose_bi.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.spanning_tree.
-Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.msl_application.Graph.
-Require Import RamifyCoq.msl_application.GraphBi.
-Require Import RamifyCoq.msl_application.GraphBi_Mark.
-Require Import RamifyCoq.data_structure.spatial_graph_dispose_bi.
-Require Import RamifyCoq.data_structure.spatial_graph_unaligned_bi_VST.
-Require Import RamifyCoq.floyd_ext.share.
-Require RamifyCoq.graph.weak_mark_lemmas.
-Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
+Require Import CertiGraph.sample_mark.env_dispose_bi.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.spanning_tree.
+Require Import CertiGraph.graph.reachable_computable.
+Require Import CertiGraph.msl_application.Graph.
+Require Import CertiGraph.msl_application.GraphBi.
+Require Import CertiGraph.msl_application.GraphBi_Mark.
+Require Import CertiGraph.data_structure.spatial_graph_dispose_bi.
+Require Import CertiGraph.data_structure.spatial_graph_unaligned_bi_VST.
+Require Import CertiGraph.floyd_ext.share.
+Require CertiGraph.graph.weak_mark_lemmas.
+Import CertiGraph.graph.weak_mark_lemmas.WeakMarkGraph.
 
 Require Import VST.msl.wand_frame.
 Require Import VST.floyd.reassoc_seq.

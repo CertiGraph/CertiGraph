@@ -1,25 +1,25 @@
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.Ensembles_ext.
-Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.Ensembles_ext.
+Require Import CertiGraph.lib.EquivDec_ext.
 Require Import Coq.Lists.List.
-Require Import RamifyCoq.msl_ext.ramification_lemmas.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.graph_relation.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.reachable_ind.
-Require Import RamifyCoq.graph.spanning_tree.
-Require Import RamifyCoq.graph.BiGraph.
-Require Import RamifyCoq.graph.MathGraph.
-Require Import RamifyCoq.graph.FiniteGraph.
-Require Import RamifyCoq.msl_application.Graph.
-Require Import RamifyCoq.msl_application.GraphBi.
-Require Import RamifyCoq.msl_application.GraphBi_Mark.
-Require RamifyCoq.graph.weak_mark_lemmas.
-Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
+Require Import CertiGraph.msl_ext.ramification_lemmas.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.graph_relation.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.reachable_ind.
+Require Import CertiGraph.graph.spanning_tree.
+Require Import CertiGraph.graph.BiGraph.
+Require Import CertiGraph.graph.MathGraph.
+Require Import CertiGraph.graph.FiniteGraph.
+Require Import CertiGraph.msl_application.Graph.
+Require Import CertiGraph.msl_application.GraphBi.
+Require Import CertiGraph.msl_application.GraphBi_Mark.
+Require CertiGraph.graph.weak_mark_lemmas.
+Import CertiGraph.graph.weak_mark_lemmas.WeakMarkGraph.
 
 (* TODO: Put some pure lemmas into some file like: graph/bi_spanning. *)
 

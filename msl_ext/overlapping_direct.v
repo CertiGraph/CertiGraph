@@ -1,7 +1,7 @@
-Require Import RamifyCoq.msl_ext.ramify_tactics.
-Require Import RamifyCoq.msl_ext.msl_ext.
+Require Import CertiGraph.msl_ext.ramify_tactics.
+Require Import CertiGraph.msl_ext.msl_ext.
 Require Import VST.msl.msl_direct.
-Require Import RamifyCoq.msl_ext.sepalg.
+Require Import CertiGraph.msl_ext.sepalg.
 
 Local Open Scope pred.
 

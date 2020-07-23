@@ -1,6 +1,6 @@
 Require Export VST.floyd.proofauto.
 Require Export VST.floyd.library.
-Require Export RamifyCoq.CertiGC.gc.
+Require Export CertiGraph.CertiGC.gc.
 
 Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.

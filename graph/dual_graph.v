@@ -1,10 +1,10 @@
 Require Import Coq.Classes.Equivalence.
 Require Import Coq.Classes.EquivDec.
 Require Import VST.msl.Coqlib2.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.reachable_ind.
-Require Import RamifyCoq.graph.subgraph2.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.reachable_ind.
+Require Import CertiGraph.graph.subgraph2.
 
 Section DualGraph.
 

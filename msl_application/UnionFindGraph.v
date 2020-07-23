@@ -1,16 +1,16 @@
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Lists.List.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.Ensembles_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.FiniteGraph.
-Require Import RamifyCoq.graph.MathGraph.
-Require Import RamifyCoq.graph.LstGraph.
-Require Import RamifyCoq.graph.UnionFind.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.Ensembles_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.reachable_computable.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.FiniteGraph.
+Require Import CertiGraph.graph.MathGraph.
+Require Import CertiGraph.graph.LstGraph.
+Require Import CertiGraph.graph.UnionFind.
 
 Section UnionFindGraph.
 

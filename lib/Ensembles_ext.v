@@ -3,8 +3,8 @@ Require Import Coq.Classes.Morphisms.
 Require Export Coq.Classes.Equivalence.
 Require Export Coq.Sets.Ensembles.
 Require Import Coq.Sets.Constructive_sets.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
 
 Lemma Full_set_spec: forall A (v: A), Full_set A v <-> True.
 Proof.

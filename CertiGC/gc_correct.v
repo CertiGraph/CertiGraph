@@ -12,17 +12,17 @@ Require Import VST.floyd.sublist.
 Require Import VST.floyd.coqlib3.
 Require Import VST.floyd.functional_base.
 Require Import VST.floyd.data_at_rec_lemmas.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.graph_relation.
-Require Import RamifyCoq.graph.graph_isomorphism.
-Require Import RamifyCoq.graph.reachable_ind.
-Require Import RamifyCoq.CertiGC.GCGraph.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.graph_relation.
+Require Import CertiGraph.graph.graph_isomorphism.
+Require Import CertiGraph.graph.reachable_ind.
+Require Import CertiGraph.CertiGC.GCGraph.
 Import ListNotations.
 
 Local Open Scope Z_scope.

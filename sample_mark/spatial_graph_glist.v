@@ -1,9 +1,9 @@
-Require Import RamifyCoq.msl_ext.iter_sepcon.
-Require Import RamifyCoq.msl_application.Graph.
-Require Import RamifyCoq.msl_application.GList.
+Require Import CertiGraph.msl_ext.iter_sepcon.
+Require Import CertiGraph.msl_application.Graph.
+Require Import CertiGraph.msl_application.GList.
 Require Import VST.veric.SeparationLogic.
-Require Import RamifyCoq.unionfind.env_unionfind.
-Require Import RamifyCoq.floyd_ext.share.
+Require Import CertiGraph.unionfind.env_unionfind.
+Require Import CertiGraph.floyd_ext.share.
 
 Local Open Scope logic.
 

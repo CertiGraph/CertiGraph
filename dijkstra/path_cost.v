@@ -1,9 +1,9 @@
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.AdjMatGraph.
-Require Import RamifyCoq.dijkstra.MathDijkGraph.
-Require Import RamifyCoq.dijkstra.SpaceDijkGraph.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.dijkstra.MathDijkGraph.
+Require Import CertiGraph.dijkstra.SpaceDijkGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.

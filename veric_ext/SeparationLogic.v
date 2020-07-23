@@ -1,9 +1,9 @@
-Require Export RamifyCoq.msl_ext.seplog.
-Require Export RamifyCoq.msl_ext.log_normalize.
-Require Export RamifyCoq.msl_ext.alg_seplog.
-Require Export RamifyCoq.msl_ext.iter_sepcon.
-Require Export RamifyCoq.msl_ext.ramification_lemmas.
-Require Export RamifyCoq.veric_ext.seplog.
+Require Export CertiGraph.msl_ext.seplog.
+Require Export CertiGraph.msl_ext.log_normalize.
+Require Export CertiGraph.msl_ext.alg_seplog.
+Require Export CertiGraph.msl_ext.iter_sepcon.
+Require Export CertiGraph.msl_ext.ramification_lemmas.
+Require Export CertiGraph.veric_ext.seplog.
 Require Export VST.veric.address_conflict.
 Require Import VST.veric.SeparationLogic.
 

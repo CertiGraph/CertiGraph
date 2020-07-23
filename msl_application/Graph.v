@@ -2,26 +2,26 @@ Require Import Coq.Logic.Classical.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import VST.msl.ramification_lemmas.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.EnumEnsembles.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.lib.Relation_ext.
-Require Import RamifyCoq.lib.Equivalence_ext.
-Require Import RamifyCoq.lib.Morphisms_ext.
-Require Import RamifyCoq.msl_ext.log_normalize.
-Require Import RamifyCoq.msl_ext.iter_sepcon.
-Require Import RamifyCoq.msl_ext.ramification_lemmas.
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.graph.reachable_ind.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.dag.
-Require Import RamifyCoq.graph.FiniteGraph.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.EnumEnsembles.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.lib.Relation_ext.
+Require Import CertiGraph.lib.Equivalence_ext.
+Require Import CertiGraph.lib.Morphisms_ext.
+Require Import CertiGraph.msl_ext.log_normalize.
+Require Import CertiGraph.msl_ext.iter_sepcon.
+Require Import CertiGraph.msl_ext.ramification_lemmas.
+Require Import CertiGraph.msl_ext.abs_addr.
+Require Import CertiGraph.msl_ext.seplog.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.reachable_computable.
+Require Import CertiGraph.graph.reachable_ind.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.dag.
+Require Import CertiGraph.graph.FiniteGraph.
 
 Local Open Scope logic.
 

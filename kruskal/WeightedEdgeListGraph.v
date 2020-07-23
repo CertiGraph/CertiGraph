@@ -5,16 +5,16 @@ Require Import VST.msl.seplog.
 Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
 Require Import Coq.Lists.List.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.graph_relation.
-(*Require Import RamifyCoq.msl_application.ArrayGraph.*) (*I probably need this to transform this graph to the ArrayGraph?*)
-Require Import RamifyCoq.graph.FiniteGraph.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.graph_relation.
+(*Require Import CertiGraph.msl_application.ArrayGraph.*) (*I probably need this to transform this graph to the ArrayGraph?*)
+Require Import CertiGraph.graph.FiniteGraph.
 Require Import compcert.lib.Coqlib.
-Require Import RamifyCoq.graph.undirected_graph.
+Require Import CertiGraph.graph.undirected_graph.
 
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 Coercion lg_gg: GeneralGraph >-> LabeledGraph. 

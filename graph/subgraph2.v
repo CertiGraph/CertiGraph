@@ -3,18 +3,18 @@ Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Equivalence.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.Ensembles_ext.
-Require Import RamifyCoq.lib.relation_list.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.lib.Equivalence_ext.
-Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.Ensembles_ext.
+Require Import CertiGraph.lib.relation_list.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.lib.Equivalence_ext.
+Require Import CertiGraph.lib.EquivDec_ext.
 Require Import VST.msl.Coqlib2.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.reachable_ind.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.graph_relation.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.reachable_ind.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.graph_relation.
 
 Section SubGraph.
 
