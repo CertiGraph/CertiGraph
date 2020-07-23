@@ -1,4 +1,4 @@
-Require Import RamifyCoq.sample_mark.env_unionfind_arr.
+Require Import RamifyCoq.unionfind.env_unionfind_arr.
 Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.UnionFind.
 Require Import RamifyCoq.msl_application.ArrayGraph.
