@@ -45,7 +45,7 @@ Defined.
 Context {inf: Z} {size: Z}.
 
 Class AdjMatUSoundness (g: LabeledGraph V E DV DE DG) := {
-  vert_representable: forall v, vvalid g v -> 0 <= v < size;
+  vert_representable: forall v, vvalid g v <-> 0 <= v < size;
   edge_strong_evalid: forall e, evalid g e -> vvalid g (src g e) /\ vvalid g (dst g e);
   edge_weight_representable: forall e, evalid g e -> Int.min_signed <= elabel g e <= Int.max_signed;
   edge_weight_not_inf: forall e, evalid g e -> elabel g e <> inf;

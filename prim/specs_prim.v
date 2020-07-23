@@ -1,15 +1,18 @@
 Require Import VST.floyd.proofauto.
+Require Import RamifyCoq.floyd_ext.share.
+Require Import RamifyCoq.priq.priq_arr_specs.
+Require Import RamifyCoq.graph.graph_model.
 Require Import RamifyCoq.graph.undirected_graph.
 Require Import RamifyCoq.graph.AdjMatGraph.
 Require Import RamifyCoq.prim.MatrixUGraph.
 Require Import RamifyCoq.prim.prim.
 Require Import RamifyCoq.prim.spatial_undirected_matrix.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.floyd_ext.share.
 
 Local Open Scope Z_scope.
 
-Definition init_list_spec :=
+Definition Vprog : varspecs. mk_varspecs prog. Defined.
+
+Definition initialise_list_spec :=
   DECLARE _initialise_list
   WITH sh: share, arr : val, old_list: list val, a: Z
   PRE [tptr tint, tint]
@@ -26,7 +29,7 @@ Definition init_list_spec :=
      SEP (data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) arr
          ).
 
-Definition init_matrix_spec :=
+Definition initialise_matrix_spec :=
   DECLARE _initialise_matrix
   WITH sh: share, arr : val, old_contents: list (list Z), a: Z
   PRE [tptr (tarray tint SIZE), tint]
@@ -66,9 +69,8 @@ Definition prim_spec :=
           undirected_matrix sh (graph_to_symm_mat mst) (pointer_val_val mstptr)
          ).
 
-Definition Vprog : varspecs. mk_varspecs prog. Defined.
-
 Definition Gprog : funspecs :=
   ltac:(with_library prog
-      [init_list_spec; init_matrix_spec; prim_spec
+      [ priq_arr_specs.push_spec; priq_arr_specs.pq_emp_spec; priq_arr_specs.popMin_spec;
+        initialise_list_spec; initialise_matrix_spec; prim_spec
   ]).

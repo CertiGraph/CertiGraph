@@ -2,6 +2,9 @@ Require Import VST.floyd.proofauto.
 Require Import RamifyCoq.lib.List_ext.
 Require Import RamifyCoq.floyd_ext.share.
 Require Import RamifyCoq.graph.graph_model.
+Require Import RamifyCoq.graph.graph_gen.
+Require Import RamifyCoq.graph.graph_relation.
+Require Import RamifyCoq.graph.FiniteGraph.
 Require Import RamifyCoq.graph.undirected_graph.
 Require Import RamifyCoq.graph.AdjMatGraph.
 Require Import RamifyCoq.prim.MatrixUGraph.
@@ -11,21 +14,7 @@ Require Import RamifyCoq.prim.specs_prim.
 
 Lemma inf_equiv':
 (Int.sub (Int.repr 2147483647) (Int.divs (Int.repr 2147483647) (Int.repr 8))) = (Int.repr inf).
-Proof.
-unfold inf. unfold SIZE.
-assert (Int.max_signed = 2147483647). set (j:=Int.max_signed); compute in j; lia. rewrite H.
-assert (Int.min_signed <= 2147483647 <= Int.max_signed). rewrite H. set (j:=Int.min_signed); compute in j; lia.
-assert (Int.min_signed <= 8 <= Int.max_signed). rewrite H. set (j:=Int.min_signed); compute in j; lia.
-rewrite Int.sub_signed. rewrite !Int.signed_repr by lia.
-unfold Int.divs. rewrite Zquot.Zquot_Zdiv_pos.
-rewrite !Int.signed_repr. auto.
-auto. auto.
-rewrite !Int.signed_repr. rewrite H. set (j:=Int.min_signed); compute in j; subst j.
-set (j:=2147483647 / 8); compute in j; subst j. lia.
-auto. auto.
-rewrite !Int.signed_repr; lia.
-rewrite !Int.signed_repr; lia.
-Qed.
+Proof. compute. trivial. Qed.
 
 Lemma inf_repable:
 repable_signed inf.
@@ -37,7 +26,7 @@ set (j:=2147483647 / 8); compute in j; subst j.
 lia.
 Qed.
 
-Lemma body_init_list: semax_body Vprog Gprog f_initialise_list init_list_spec.
+Lemma body_initialise_list: semax_body Vprog Gprog f_initialise_list initialise_list_spec.
 Proof.
 start_function.
 forward_for_simple_bound SIZE
@@ -48,7 +37,7 @@ forward_for_simple_bound SIZE
       data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat i) (Vint (Int.repr a))++(sublist i SIZE old_list)) arr
     ))%assert.
 unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
-entailer!. rewrite app_nil_l. rewrite sublist_same by lia. auto.
+entailer!. rewrite app_nil_l. rewrite sublist_same by lia. entailer!.
 (*loop*)
 forward. entailer!.
 rewrite (sublist_split i (i+1)) by lia.
@@ -59,10 +48,10 @@ rewrite <- app_assoc. simpl. auto.
 apply Zlength_list_repeat; lia.
 symmetry; apply sublist_one; lia.
 (*postcon*)
-entailer!. rewrite sublist_nil. rewrite app_nil_r. auto.
+entailer!. rewrite sublist_nil. rewrite app_nil_r. entailer!.
 Qed.
 
-Lemma body_init_matrix: semax_body Vprog Gprog f_initialise_matrix init_matrix_spec.
+Lemma body_initialise_matrix: semax_body Vprog Gprog f_initialise_matrix initialise_matrix_spec.
 Proof.
 start_function.
 assert (HZlength_nat_inc_list: SIZE = Zlength (nat_inc_list (Datatypes.length old_contents))).
@@ -81,7 +70,8 @@ unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
 rewrite (graph_unfold _ _ _ 0). rewrite H. entailer!.
 replace (list_rep sh SIZE arr old_contents 0) with (iter_sepcon.iter_sepcon (list_rep sh SIZE arr old_contents) [0]).
 2: { simpl. rewrite sepcon_emp. auto. }
-rewrite <- iter_sepcon.iter_sepcon_app. simpl. auto.
+rewrite <- iter_sepcon.iter_sepcon_app.
+(*ok this is not good, make a generic scalable lemma*) simpl. entailer!.
 rewrite H; unfold SIZE; lia.
 (*inner loop*)
 replace (sublist i SIZE (nat_inc_list (Z.to_nat (Zlength old_contents))))
@@ -101,8 +91,8 @@ forward_for_simple_bound SIZE
         (sublist (i+1) SIZE (nat_inc_list (Z.to_nat (Zlength old_contents))))
     ))%assert.
 unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
-entailer!. simpl. rewrite sepcon_emp. unfold list_rep. rewrite sublist_same; auto.
-rewrite Zlength_map. symmetry; apply H0. apply Znth_In; lia.
+entailer!. simpl. rewrite sepcon_emp. unfold list_rep. rewrite sublist_same. entailer!.
+auto. rewrite Zlength_map. symmetry; apply H0. apply Znth_In; lia.
 (*inner loop body*)
 rename i0 into j. unfold list_address.
 assert (Zlength (map (fun x => Vint (Int.repr x)) (Znth i old_contents)) = SIZE).
@@ -110,12 +100,12 @@ rewrite Zlength_map. apply H0. apply Znth_In; lia.
 assert_PROP (field_compatible (tarray tint SIZE) [ArraySubsc j] (offset_val (i * sizeof (tarray tint SIZE)) arr)). entailer!.
 assert_PROP(force_val (sem_add_ptr_int tint Signed (force_val (sem_add_ptr_int (tarray tint SIZE) Signed arr (Vint (Int.repr i))))
  (Vint (Int.repr j))) = (field_address (tarray tint SIZE) [ArraySubsc j] (offset_val (i * sizeof (tarray tint SIZE)) arr))). {
-entailer!. symmetry; rewrite field_address_offset. simpl. unfold offset_val.
-destruct arr; simpl; auto.
-rewrite Ptrofs.add_assoc. rewrite (Ptrofs.add_signed (Ptrofs.repr (i*32))).
-rewrite Ptrofs.signed_repr. rewrite Ptrofs.signed_repr. rewrite Z.add_0_l. rewrite Z.mul_comm. auto.
-all: set (k:=Ptrofs.min_signed); compute in k; subst k; set (k:=Ptrofs.max_signed); compute in k; subst k.
-rewrite Z.add_0_l. unfold SIZE in H3. lia. unfold SIZE in H2; lia. auto.
+  entailer!. symmetry; rewrite field_address_offset. simpl. unfold offset_val.
+  destruct arr; simpl; auto.
+  rewrite Ptrofs.add_assoc. rewrite (Ptrofs.add_signed (Ptrofs.repr (i*32))).
+  rewrite Ptrofs.signed_repr. rewrite Ptrofs.signed_repr. rewrite Z.add_0_l. rewrite Z.mul_comm. auto.
+  all: set (k:=Ptrofs.min_signed); compute in k; subst k; set (k:=Ptrofs.max_signed); compute in k; subst k.
+  rewrite Z.add_0_l. unfold SIZE in H3. lia. unfold SIZE in H2; lia. auto.
 }
 (*g[i][j] = a*)
 forward.
@@ -168,4 +158,151 @@ forward_call (Tsh, v_parent, (list_repeat (Z.to_nat 8) Vundef), inf).
 forward_call (Tsh, v_out, (list_repeat (Z.to_nat 8) Vundef), 0).
 assert (Hrbound: 0 <= r < SIZE). apply (@vert_representable inf SIZE g (sound_MatrixUGraph g)) in H0; auto.
 forward.
+assert (Hstarting_keys: forall i, 0 <= i < SIZE -> is_int I32 Signed (Znth i (upd_Znth r (list_repeat (Z.to_nat SIZE) (Vint (Int.repr inf))) (Vint (Int.repr 0))))). {
+  intros. unfold is_int. destruct (Z.eq_dec i r).
+  +subst i. rewrite upd_Znth_same. auto. rewrite Zlength_list_repeat; lia.
+  +rewrite Znth_upd_Znth_diff; auto. rewrite Znth_list_repeat_inrange by lia. auto.
+}
+replace (upd_Znth r (list_repeat (Z.to_nat SIZE) (Vint (Int.repr inf))) (Vint (Int.repr 0))) with
+  (map (fun x => Vint (Int.repr x)) (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0)) in *.
+2: rewrite (upd_Znth_map (fun x => Vint (Int.repr x)) r (list_repeat (Z.to_nat SIZE) inf)); auto.
+set (starting_keys:=map (fun x => Vint (Int.repr x)) (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0)) in *.
+assert (HZlength_starting_keys: Zlength starting_keys = SIZE). {
+  unfold starting_keys. rewrite Zlength_map. rewrite Zlength_upd_Znth. rewrite Zlength_list_repeat; lia.
+}
+assert (H_SIZE_pos: 0 <= SIZE < Int.max_signed). unfold SIZE. unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
+(*push all vertices into priq*)
+forward_for_simple_bound SIZE
+  (EX i : Z,
+    PROP ()
+    LOCAL (
+      lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
+      lvar _parent (tarray tint 8) v_parent; lvar _key (tarray tint 8) v_key;
+      temp _graph (pointer_val_val gptr); temp _r (Vint (Int.repr r));
+      temp _msf (pointer_val_val mstptr)
+    )
+    SEP (
+      data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr 0))) v_out;
+      data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr inf))) v_parent;
+      data_at Tsh (tarray tint SIZE) starting_keys v_key;
+      data_at Tsh (tarray tint 8) (sublist 0 i starting_keys ++ sublist i SIZE (list_repeat (Z.to_nat 8) Vundef)) v_pq;
+      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
+      undirected_matrix sh (graph_to_symm_mat (@edgeless_graph inf SIZE SIZE_rep)) (pointer_val_val mstptr))
+  )%assert.
+entailer!. (*precon taken care of*)
+(*loop*)
+forward.
+assert (Znth i starting_keys = Vint (Int.repr (Znth i (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0)))). {
+  unfold starting_keys. rewrite Znth_map; auto.
+  rewrite Zlength_upd_Znth. rewrite Zlength_list_repeat; lia.
+}
+forward_call (v_pq, i, Znth i (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0), sublist 0 i starting_keys ++ sublist i SIZE (list_repeat (Z.to_nat 8) Vundef)).
+entailer!. unfold priq_arr_utils.SIZE.
+rewrite upd_Znth_app2. rewrite Zlength_sublist, Z.sub_0_r, Z.sub_diag; try lia.
+rewrite (sublist_split i (i+1) SIZE). rewrite (sublist_one i (i+1)). rewrite upd_Znth_app1.
+rewrite upd_Znth0. rewrite app_assoc.
+rewrite (sublist_split 0 i (i+1)). rewrite (sublist_one i (i+1)). rewrite <- H2. entailer!.
+all: try lia.
+rewrite Zlength_cons, Zlength_nil; lia.
+rewrite Zlength_list_repeat. unfold SIZE in H1; lia. lia.
+unfold SIZE in *; rewrite Zlength_list_repeat; lia.
+rewrite Zlength_sublist. rewrite Zlength_sublist. lia. lia. rewrite Zlength_list_repeat; unfold SIZE; lia. lia. lia.
+rewrite sublist_nil, app_nil_r, sublist_same; try lia.
+(*one last thing for convenience*)
+rewrite <- (map_list_repeat (fun x => Vint (Int.repr x))).
+rewrite <- (map_list_repeat (fun x => Vint (Int.repr x))).
+pose proof (@fin inf SIZE g (sound_MatrixUGraph g)) as fg.
+(*whew! all setup done!*)
+(*now for the pq loop*)
+forward_loop (
+  EX mst':G,
+  EX parents: list V,
+  EX keys: list DE,
+  EX pq_state: list val,
+  EX popped_vertices: list V,
+    PROP (
+      is_partial_lgraph mst' g;
+      forall v, vvalid g v <-> vvalid mst' v;
+      uforest mst';
+      forall u v, In u popped_vertices -> In v popped_vertices -> connected mst' u v
+      (*something about popped vertices being popped...*)
+      (*something about keys*)
+      (*something about weight*)
+      (*forall v, evalid (v, Znth v parents) -> *)
+      (*something about when an edge is added, one of its vertices is in the old list, one isn't*)
+    )
+    LOCAL (
+      lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
+      lvar _parent (tarray tint 8) v_parent; lvar _key (tarray tint 8) v_key;
+      temp _graph (pointer_val_val gptr); temp _r (Vint (Int.repr r));
+      temp _msf (pointer_val_val mstptr)
+    )
+    SEP (
+      data_at Tsh (tarray tint SIZE) (map (fun x => if in_dec V_EqDec x popped_vertices
+        then (Vint (Int.repr 1)) else (Vint (Int.repr 0))) (nat_inc_list (Z.to_nat SIZE))) v_out;
+      data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) v_parent;
+      data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
+      data_at Tsh (tarray tint SIZE) pq_state v_pq;
+      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
+      undirected_matrix sh (graph_to_symm_mat mst') (pointer_val_val mstptr)
+    )
+  )
+break: (
+  EX mst:G,
+  EX parents: list V,
+  EX keys: list DE,
+    PROP (
+      is_partial_graph mst g;
+      forall v, vvalid g v <-> vvalid mst v;
+      uforest mst;
+      forall u v, connected mst u v
+      (*something about weight*)
+    )
+    LOCAL (
+      lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
+      lvar _parent (tarray tint 8) v_parent; lvar _key (tarray tint 8) v_key;
+      temp _graph (pointer_val_val gptr); temp _r (Vint (Int.repr r));
+      temp _msf (pointer_val_val mstptr)
+    )
+    SEP (
+      data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr 1))) v_out;
+      data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) v_parent;
+      data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
+      data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr (inf+1)))) v_pq;
+      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
+      undirected_matrix sh (graph_to_symm_mat mst) (pointer_val_val mstptr)
+    )
+  )
+%assert.
+(*PRECON*) {
+Exists (@edgeless_graph inf SIZE SIZE_rep).
+Exists (list_repeat (Z.to_nat SIZE) inf).
+Exists (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0).
+Exists (starting_keys).
+Exists (sublist 0 0 (VList g)). (*<--rubbish, is nil*) rewrite sublist_nil.
+entailer!.
+split3.
++split. split. intros. rewrite (@vert_representable _ _ _ (sound_MatrixUGraph _)) in H12.
+rewrite (@vert_representable _ _ _ (sound_MatrixUGraph _)). auto.
+split3; intros; pose proof (@edgeless_graph_evalid inf SIZE SIZE_rep e); contradiction.
+split. unfold preserve_vlabel; intros. simpl. destruct (vlabel g v). auto.
+unfold preserve_elabel; intros. pose proof (@edgeless_graph_evalid inf SIZE SIZE_rep e); contradiction.
++intros. rewrite (@vert_representable _ _ g (sound_MatrixUGraph _)).
+rewrite (@vert_representable _ _ _ (sound_MatrixUGraph _)). lia.
++apply uforest'_uforest. apply uforest'_edgeless_graph.
+(*other PROPs*)
+}
+(*MAIN LOOP*) {
+Intros mst' parents keys.
+(*forward_call.*)
+admit.
+}
+(*POST-LOOP*) {
+Intros mst parents keys.
+(*Do the minimum proof here*)
+(*Should we bother with filling a matrix for it? The original Prim doesn't bother
+Well I guess we need to return the graph somehow, but parents is a local array so we need to pass it out
+*)
+admit.
+}
 Abort.
