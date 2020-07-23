@@ -92,9 +92,9 @@ Section AdjMatGraph.
     iew: (* invalid_edge_weight *)
       forall e, ~ evalid g e <-> elabel g e = inf;
     esf: (* edge_src_fst *)
-      forall e, evalid g e -> src g e = fst e;
+      forall e, src g e = fst e;
     eds: (* edge_dst_snd *)
-      forall e, evalid g e -> dst g e = snd e;
+      forall e, dst g e = snd e;
     cts: (* cost_to_self *)
       forall v, vvalid g v -> elabel g (v, v) = 0;
     fin:
