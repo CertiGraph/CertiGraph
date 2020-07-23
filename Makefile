@@ -14,7 +14,8 @@ NORMAL_FLAG = $(INCLUDE_RAMIFYCOQ) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
 CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_RAMIFYCOQ)
 
 LIB_FILES = \
-  Coqlib.v Equivalence_ext.v List_Func_ext.v Ensembles_ext.v List_ext.v EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v Morphisms_ext.v
+  Coqlib.v Equivalence_ext.v List_Func_ext.v Ensembles_ext.v List_ext.v \
+  EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v Morphisms_ext.v
 
 MSL_EXT_FILES = \
   log_normalize.v iter_sepcon.v ramification_lemmas.v abs_addr.v seplog.v \
@@ -22,7 +23,8 @@ MSL_EXT_FILES = \
   overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
-  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v
+  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v \
+  GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v
 
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
@@ -34,20 +36,29 @@ HEAP_MODEL_DIRECT_FILES = \
   SeparationAlgebra.v mapsto.v SeparationLogic.v
 
 GRAPH_FILES = \
-  graph_model.v path_lemmas.v graph_gen.v graph_relation.v reachable_computable.v find_not_in.v reachable_ind.v subgraph2.v \
-  spanning_tree.v dag.v marked_graph.v weak_mark_lemmas.v dual_graph.v graph_morphism.v \
-  local_graph_copy.v tree_model.v list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v graph_isomorphism.v\
-  undirected_graph.v undirected_uf_lemmas.v AdjMatGraph.v
+  graph_model.v path_lemmas.v graph_gen.v graph_relation.v reachable_computable.v \
+  find_not_in.v reachable_ind.v subgraph2.v spanning_tree.v dag.v marked_graph.v \
+  weak_mark_lemmas.v dual_graph.v graph_morphism.v local_graph_copy.v tree_model.v \
+  list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
+  graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v AdjMatGraph.v
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
 SAMPLE_MARK_FILES = \
-  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v spatial_graph_bi_mark.v spatial_graph_bi_copy.v \
-  unionfind.v env_unionfind.v spatial_graph_glist.v uf_arr_specs.v verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v \
-  unionfind_iter.v env_unionfind_iter.v verif_summatrix.v spatial_graph_uf_iter.v verif_unionfind_iter.v verif_unionfind_iter_rank.v \
-  unionfind_arr.v env_unionfind_arr.v spatial_array_graph.v verif_unionfind_arr.v \
-  verif_copy_bi.v binary_heap_model.v binary_heap_Zmodel.v binary_heap.v env_binary_heap.v verif_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v
+  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v \
+  verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v spatial_graph_bi_mark.v \
+  spatial_graph_bi_copy.v spatial_graph_glist.v verif_summatrix.v \
+  spatial_array_graph.v verif_copy_bi.v binary_heap_model.v binary_heap_Zmodel.v \
+  binary_heap.v env_binary_heap.v verif_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v
+
+UNION_FIND_FILES = \
+  unionfind.v env_unionfind.v \
+  unionfind_iter.v env_unionfind_iter.v \
+  unionfind_arr.v env_unionfind_arr.v \
+  spatial_graph_uf_iter.v uf_arr_specs.v \
+  verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v \
+  verif_unionfind_iter.v verif_unionfind_iter_rank.v verif_unionfind_arr.v
 
 HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
@@ -61,7 +72,7 @@ CERTIGC_FILES = \
 
 KRUSKAL_FILES = \
   WeightedEdgeListGraph.v \
-  kruskal_edgelist.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_uf_specs.v \
+  kruskal_edgelist.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_specs.v \
   verif_kruskal_edgelist.v
 
 PRIM_FILES = \
@@ -77,9 +88,6 @@ DIJKSTRA_FILES = \
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
-
-# when a sequence of clightgen-ed files need to be used together, use, for example:
-# ../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c dijkstra/dijkstra.c
 
 CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v sample_mark/summatrix.v
 
@@ -99,7 +107,8 @@ NORMAL_FILES = \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
   $(PRIQ_FILES:%.v=priq/%.v) \
-  $(PRIM_FILES:%.v=prim/%.v)
+  $(PRIM_FILES:%.v=prim/%.v) \
+  $(UNION_FIND_FILES:%.v=unionfind/%.v) 
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
@@ -117,6 +126,11 @@ all: \
 # Please add to this as needed.
 VST_CRITICAL_FILES = \
   progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
+
+.PHONY: clightgen
+clightgen:
+	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c dijkstra/dijkstra.c
+	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c
 
 .PHONY: vstandme7
 vstandme7:

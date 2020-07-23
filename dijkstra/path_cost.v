@@ -220,23 +220,22 @@ Qed.
 
 (**** PATH COST w/ CAREFUL_ADD ****)
 
-Definition path_cost (g : DijkstraGeneralGraph) (path : @path V E) : DE :=
+Definition path_cost (g : DijkGG) (path : @path V E) : DE :=
   fold_left careful_add (map (elabel g) (snd path)) 0.
 
 Lemma one_step_path_Znth:
-  forall g a b,
-    sound_dijk_graph g ->
+  forall (g: DijkGG) a b,
     evalid g (a, b) ->
-    path_cost g (a, (a,b)::nil) =
+    path_cost g (a, (a,b) :: nil) =
     elabel g (a,b).
 Proof.
-  intros.
-  unfold path_cost; simpl.
+  intros. unfold path_cost; simpl.
   rewrite careful_add_comm, careful_add_id; trivial.
 Qed.
 
-Lemma acc_pos: forall (g : DijkstraGeneralGraph) l z,
-    (forall e : E, In e l -> 0 <= elabel g e) -> 0 <= z ->
+Lemma acc_pos: forall (g : DijkGG) l z,
+    (forall e : E, In e l -> 0 <= elabel g e) ->
+    0 <= z ->
     0 <= fold_left careful_add (map (elabel g) l) z.
 Proof.
   intro. induction l; intros; simpl; auto. apply IHl.
@@ -255,10 +254,8 @@ Proof.
 Qed.
 
 Lemma path_cost_pos:
-  forall g p,
-    sound_dijk_graph g ->
-    valid_path g p ->
-    0 <= path_cost g p.
+  forall (g: DijkGG) p,
+    valid_path g p -> 0 <= path_cost g p.
 Proof.
   intros.
   destruct p as [src links]. unfold path_cost. simpl.
@@ -270,19 +267,18 @@ Proof.
 Qed.
 
 Lemma path_cost_app_cons:
-  forall g path i,
-    sound_dijk_graph g ->
+  forall (g: DijkGG) path e,
     valid_path g path ->
-    elabel g i + path_cost g path < inf ->
-    evalid g i ->
-    path_cost g (fst path, snd path +:: i) =
-    path_cost g path + elabel g i.
+    elabel g e + path_cost g path < inf ->
+    evalid g e ->
+    path_cost g (fst path, snd path +:: e) =
+    path_cost g path + elabel g e.
 Proof.
   intros.
   unfold path_cost in *. simpl.
   rewrite map_app, fold_left_app. simpl.
-  pose proof (path_cost_pos g path H H0).
-  assert (0 <= elabel g i) by
+  pose proof (path_cost_pos g path H). 
+  assert (0 <= elabel g e) by
       (apply valid_edge_cost_pos; trivial).
   apply careful_add_clean; trivial; lia.
 Qed.
@@ -361,8 +357,7 @@ Proof.
 Qed.
 
 Lemma path_cost_path_glue_ge_inf:
-  forall g p1 p2,
-    sound_dijk_graph g ->
+  forall (g: DijkGG) p1 p2,
     valid_path g p1 ->
     valid_path g p2 ->
     inf <= path_cost g p1 ->
@@ -375,22 +370,21 @@ Proof.
   assert ((fold_left careful_add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
     by now unfold path_cost.
   Set Printing All.
-  unfold DE in *. rewrite H3. 
+  unfold DE in *. rewrite H2. 
   Unset Printing All.
   rewrite <- (careful_add_id (path_cost g p1)).
   apply path_cost_init_inf; trivial.
   lia.
   rewrite Forall_forall. intros.
-  rewrite in_map_iff in H4. destruct H4 as [? [? ?]].
-  rewrite <- H4.
+  rewrite in_map_iff in H3. destruct H3 as [? [? ?]].
+  rewrite <- H3.
   apply valid_edge_cost_pos; trivial.
-  rewrite (surjective_pairing p2) in *. simpl in H5.
-  apply (valid_path_evalid g _ _ _ H1 H5).
+  rewrite (surjective_pairing p2) in *. simpl in H4.
+  apply (valid_path_evalid g _ _ _ H0 H4).
 Qed.
 
 Lemma path_cost_path_glue_lt:
-  forall g p1 p2,
-    sound_dijk_graph g ->
+  forall (g: DijkGG) p1 p2,
     valid_path g p1 ->
     valid_path g p2 ->
     path_cost g (path_glue p1 p2) < inf ->
@@ -400,18 +394,18 @@ Proof.
   destruct (path_cost g p1 <? inf) eqn:?.
   - rewrite Z.ltb_lt in Heqb.
     split; trivial.
-    rewrite path_cost_path_glue in H2; trivial.
+    rewrite path_cost_path_glue in H1; trivial.
     destruct (path_cost g p2 <? inf) eqn:?.
     1: rewrite Z.ltb_lt in Heqb0; trivial.
-    exfalso. unfold careful_add in H2.
+    exfalso. unfold careful_add in H1.
     destruct (path_cost g p1 =? 0).
     1: rewrite Z.ltb_nlt in Heqb0; lia.
     destruct (path_cost g p2 =? 0) eqn:?.
     + rewrite Z.ltb_nlt in Heqb0.
       rewrite Z.eqb_eq in Heqb1.
       apply Heqb0. rewrite Heqb1. compute. trivial.
-    + rewrite if_false_bool in H2.
-      rewrite if_true_bool in H2.
+    + rewrite if_false_bool in H1.
+      rewrite if_true_bool in H1.
       * lia.
       * rewrite Z.leb_le.
         rewrite Z.ltb_ge in Heqb0.
@@ -421,33 +415,41 @@ Proof.
           apply path_cost_pos; trivial.
   - rewrite Z.ltb_ge in Heqb.
     exfalso.
-    pose proof (path_cost_path_glue_ge_inf _ _ _ H H0 H1 Heqb).
+    pose proof (path_cost_path_glue_ge_inf _ _ _ H H0 Heqb).
     lia.
 Qed.
 
+
+
 Lemma in_path_app_cons:
-  forall g step p2a src a b,
-    sound_dijk_graph g ->
+  forall (g: DijkGG) step p2a src a b,
+    valid_path g p2a ->
+    evalid g (a,b) ->
     path_ends g p2a src a ->
     In_path g step (fst p2a, snd p2a +:: (a, b)) ->
     In_path g step p2a \/ step = b.
 Proof.
-  intros. destruct H1; simpl in H1.
-  - left. unfold In_path. left; trivial.
-  - destruct H1 as [? [? ?]].
-    apply in_app_or in H1.
-    destruct H as [? [? [? [? _]]]].
-    unfold src_edge in H4. unfold dst_edge in H5.
-    rewrite H4, H5 in H2.
-    destruct H1.
-    + left. unfold In_path. right.
-      exists x. rewrite H4, H5. split; trivial.
-    + simpl in H1. destruct H1; [|lia].
-      rewrite (surjective_pairing x) in *.
-      inversion H1. simpl in H2.
-      destruct H2.
-      * left. destruct H0.
-        apply pfoot_in in H6. rewrite H7, <- H2 in H6.
-        trivial.
-      * right; trivial.
+  intros. destruct H2; simpl in H2.
+  1: left; unfold In_path; left; trivial.
+  destruct H2 as [? [? ?]].
+  assert (evalid g x). {
+    apply in_app_or in H2. simpl in H2.
+    destruct H2 as [? | [? | ?]]; [| | lia]; [|subst;trivial].
+    rewrite (surjective_pairing p2a) in H.
+    apply (valid_path_evalid _ _ _ _ H H2).
+  }
+  rewrite (edge_src_fst g) in H3; trivial.
+  apply in_app_or in H2; simpl in H2.
+  destruct H2 as [? | [? | ?]]; [| | lia]; destruct H3.
+  - left. unfold In_path. right.
+    exists x. rewrite (edge_src_fst g); trivial.
+    split; [|left]; trivial.
+  - left. unfold In_path. right.
+    exists x. rewrite (edge_src_fst g); trivial.
+    split; [|right]; trivial.
+  - left. apply pfoot_in.
+    destruct H1. rewrite H3, <- H2; simpl; trivial.
+  - unfold In_path. right.
+    rewrite H3, <- H2; simpl; trivial.
+    rewrite (edge_dst_snd g); trivial.
 Qed.

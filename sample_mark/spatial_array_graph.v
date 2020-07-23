@@ -1,6 +1,6 @@
 Require Import RamifyCoq.msl_application.ArrayGraph.
 Require Import VST.veric.SeparationLogic.
-Require Import RamifyCoq.sample_mark.env_unionfind_arr.
+Require Import RamifyCoq.unionfind.env_unionfind_arr.
 Require Import RamifyCoq.floyd_ext.share.
 
 (*I suppose this focuses SpatialArrayGraphAssum to specifically the mpred type? Have no idea what it means*)

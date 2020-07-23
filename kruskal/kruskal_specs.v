@@ -1,6 +1,6 @@
 (* UF's imports (already made minimal *)
-Require Import RamifyCoq.sample_mark.env_unionfind_arr.
-Require Export RamifyCoq.sample_mark.uf_arr_specs.
+Require Import RamifyCoq.unionfind.env_unionfind_arr.
+Require Export RamifyCoq.unionfind.uf_arr_specs.
 
 (* Kruskal's imports (already made minimal *)
 Require Import RamifyCoq.graph.undirected_graph.
