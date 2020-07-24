@@ -12,6 +12,8 @@ Require Import RamifyCoq.prim.prim.
 Require Import RamifyCoq.prim.spatial_undirected_matrix.
 Require Import RamifyCoq.prim.specs_prim.
 
+Local Open Scope Z.
+
 Lemma inf_equiv':
 (Int.sub (Int.repr 2147483647) (Int.divs (Int.repr 2147483647) (Int.repr 8))) = (Int.repr inf).
 Proof. compute. trivial. Qed.
@@ -24,6 +26,12 @@ set (j:=Int.min_signed); compute in j; subst j.
 set (j:=Int.max_signed); compute in j; subst j.
 set (j:=2147483647 / 8); compute in j; subst j.
 lia.
+Qed.
+
+Lemma inf_priq:
+inf = priq_arr_utils.inf.
+Proof.
+compute; trivial.
 Qed.
 
 Lemma body_initialise_list: semax_body Vprog Gprog f_initialise_list initialise_list_spec.
@@ -218,17 +226,22 @@ forward_loop (
   EX mst':G,
   EX parents: list V,
   EX keys: list DE,
-  EX pq_state: list val,
+  EX pq_state: list Z,
   EX popped_vertices: list V,
     PROP (
+      (*graph stuff*)
       is_partial_lgraph mst' g;
       forall v, vvalid g v <-> vvalid mst' v;
-      uforest mst';
-      forall u v, In u popped_vertices -> In v popped_vertices -> connected mst' u v
-      (*something about popped vertices being popped...*)
-      (*something about keys*)
-      (*something about weight*)
-      (*forall v, evalid (v, Znth v parents) -> *)
+      uforest' mst';
+      (*about the lists*)
+      forall v, In v popped_vertices -> vvalid g v;
+      forall u v, In u popped_vertices -> In v popped_vertices -> connected mst' u v;
+      Zlength keys = SIZE;
+      forall v, 0 <= v < SIZE -> 0 <= Znth v keys <= inf;
+      Zlength pq_state = SIZE;
+      forall v, 0 <= v < SIZE -> ~ In v popped_vertices -> Znth v pq_state = Znth v keys;
+      forall v, In v popped_vertices -> Znth v pq_state = Z.add inf 1
+      (*something about weight of edges already added to mst*)
       (*something about when an edge is added, one of its vertices is in the old list, one isn't*)
     )
     LOCAL (
@@ -242,7 +255,7 @@ forward_loop (
         then (Vint (Int.repr 1)) else (Vint (Int.repr 0))) (nat_inc_list (Z.to_nat SIZE))) v_out;
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) v_parent;
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
-      data_at Tsh (tarray tint SIZE) pq_state v_pq;
+      data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) pq_state) v_pq;
       undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
       undirected_matrix sh (graph_to_symm_mat mst') (pointer_val_val mstptr)
     )
@@ -254,7 +267,7 @@ break: (
     PROP (
       is_partial_graph mst g;
       forall v, vvalid g v <-> vvalid mst v;
-      uforest mst;
+      uforest' mst;
       forall u v, connected mst u v
       (*something about weight*)
     )
@@ -278,10 +291,10 @@ break: (
 Exists (@edgeless_graph inf SIZE SIZE_rep).
 Exists (list_repeat (Z.to_nat SIZE) inf).
 Exists (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0).
-Exists (starting_keys).
+Exists (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0).
 Exists (sublist 0 0 (VList g)). (*<--rubbish, is nil*) rewrite sublist_nil.
 entailer!.
-split3.
+split3. 3: split3. 5: split.
 +split. split. intros. rewrite (@vert_representable _ _ _ (sound_MatrixUGraph _)) in H12.
 rewrite (@vert_representable _ _ _ (sound_MatrixUGraph _)). auto.
 split3; intros; pose proof (@edgeless_graph_evalid inf SIZE SIZE_rep e); contradiction.
@@ -289,19 +302,54 @@ split. unfold preserve_vlabel; intros. simpl. destruct (vlabel g v). auto.
 unfold preserve_elabel; intros. pose proof (@edgeless_graph_evalid inf SIZE SIZE_rep e); contradiction.
 +intros. rewrite (@vert_representable _ _ g (sound_MatrixUGraph _)).
 rewrite (@vert_representable _ _ _ (sound_MatrixUGraph _)). lia.
-+apply uforest'_uforest. apply uforest'_edgeless_graph.
++apply uforest'_edgeless_graph.
++rewrite Zlength_upd_Znth, Zlength_list_repeat; lia.
++intros. destruct (Z.eq_dec v r). subst v. rewrite upd_Znth_same.
+set (k:=inf); compute in k; lia. rewrite Zlength_list_repeat; lia.
+rewrite upd_Znth_diff. rewrite Znth_list_repeat_inrange.
+set (k:=inf); compute in k; lia. lia.
+rewrite Zlength_list_repeat; lia.
+rewrite Zlength_list_repeat; lia. auto.
++rewrite Zlength_upd_Znth, Zlength_list_repeat; lia.
 (*other PROPs*)
+
 }
 (*MAIN LOOP*) {
-Intros mst' parents keys.
-(*forward_call.*)
+clear Hstarting_keys HZlength_starting_keys starting_keys.
+Intros mst' parents keys pq_state popped_vertices.
+assert (priq_arr_utils.inrange_priq pq_state). {
+  unfold priq_arr_utils.inrange_priq. rewrite Forall_forall. intros x Hx.
+  rewrite In_Znth_iff in Hx. destruct Hx as [i [? ?]]. rewrite H8 in H11.
+  destruct (in_dec V_EqDec i popped_vertices).
+  rewrite H10 in H12; auto. subst x. rewrite <- inf_priq. set (j:=inf); compute in j; subst j; lia.
+  rewrite H9 in H12; auto. subst x. assert (0 <= Znth i keys <= inf). apply H7; auto. rewrite <- inf_priq. lia.
+}
+forward_call (v_pq, pq_state).
+unfold priq_arr_utils.SIZE, SIZE. rewrite list_map_compose. entailer!.
+forward_if.
+(*PROCEED WITH LOOP*) {
+assert (priq_arr_utils.isEmpty pq_state = Vzero). {
+  destruct (priq_arr_utils.isEmptyTwoCases pq_state);
+  rewrite H13 in H12; simpl in H12; now inversion H12.
+}
+forward_call (v_pq, pq_state). Intros u.
+(* u is the minimally chosen item from the
+   "seen but not popped" category of vertices *)
+assert (vvalid g u). {
+  admit.
+}
+forward. rewrite (@vert_representable _ _ _ (sound_MatrixUGraph g)) in H9. entailer!.
+(*for loop to update un-popped vertices' min weight*)
+}
+(*BREAK CONDITION*) {
+}
 admit.
 }
 (*POST-LOOP*) {
 Intros mst parents keys.
 (*Do the minimum proof here*)
 (*Should we bother with filling a matrix for it? The original Prim doesn't bother
-Well I guess we need to return the graph somehow, but parents is a local array so we need to pass it out
+Well I guess we need to return the graph somehow, as parents is a local array so we need to pass it out
 *)
 admit.
 }
