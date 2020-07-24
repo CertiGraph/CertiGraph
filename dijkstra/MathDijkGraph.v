@@ -173,10 +173,11 @@ Proof.
 Qed.
 
 Lemma path_ends_app_cons:
-  forall (g: DijkGG) src links2u u i,
-    evalid g (u,i) ->
-    path_ends g (src, links2u) src u ->
-    path_ends g (src, links2u +:: (u, i)) src i.
+  forall (g: DijkGG) a b c a' a'' a2b,
+    a = a' ->
+    a = a'' ->
+    path_ends g (a, a2b) a' b ->
+    path_ends g (a, a2b +:: (b, c)) a'' c.
 Proof.
   split; trivial.
   rewrite pfoot_last.
