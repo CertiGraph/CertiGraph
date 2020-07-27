@@ -1500,19 +1500,26 @@ Proof.
             rewrite graph_to_mat_Zlength; trivial. lia.
           }            
           forward_if.
-          ++ assert (0 <= cost <= Int.max_signed / SIZE). {
+          ++ rename H36 into Htemp.
+             assert (0 <= cost <= Int.max_signed / SIZE). {
                pose proof (edge_representable g (u, i)).
                rewrite Heqcost in *.
                apply (valid_edge_bounds g).
                rewrite (evalid_meaning g). split; trivial.
                intro.
-               rewrite inf_eq2 in H36.
-               do 2 rewrite Int.signed_repr in H36; trivial.
-               rewrite <- H38 in H36.
-               apply Zlt_not_le in H36.
-               apply H36; reflexivity. (* lemma-fy *)
+               rewrite inf_eq2 in Htemp.
+               do 2 rewrite Int.signed_repr in Htemp; trivial.
+               rewrite <- H37 in Htemp.
+               apply Zlt_not_le in Htemp.
+               apply Htemp; reflexivity. (* lemma-fy *)
              }
-             (* clear H36 *)
+             clear Htemp.
+             assert (evalid g (u,i)). { (* lemma-fy *)
+               rewrite (evalid_meaning g); split.
+               - apply edge_representable.
+               - admit.
+             }
+             
              assert (0 <= Znth u dist_contents' <= inf). {
                assert (0 <= u < Zlength dist_contents') by lia.
                apply (Forall_Znth _ _ _ H38) in H30.
@@ -1564,8 +1571,7 @@ Proof.
                     specialize (H51 (fst p2u, snd p2u +:: (u,i))).
 
                     rewrite path_cost_app_cons in H51; trivial.
-                    3: admit.
-                    2: admit.
+                    2: ulia.
                     rewrite Heqcost.
                     apply H51.
                     + apply valid_path_app_cons.
@@ -1573,8 +1579,7 @@ Proof.
                       * rewrite (surjective_pairing p2u) in H46.
                         destruct H46; simpl in H46.
                         ulia.
-                      * apply strong_evalid_dijk; trivial.
-                        admit.
+                      * apply strong_evalid_dijk; trivial. ulia.
                     + apply path_ends_app_cons with (a' := src); trivial.
                       3: rewrite <- surjective_pairing; trivial.
                       all: rewrite (surjective_pairing p2u) in *;
@@ -1776,7 +1781,7 @@ Proof.
                                     rewrite Z.eqb_neq. lia.
                               }
                               assert (vvalid g i). {
-                                admit.
+                                trivial.
                               }
 
                               assert (careful_add (Znth mom' dist_contents') (elabel g (mom', i))
@@ -2056,7 +2061,10 @@ Proof.
                         apply H27; trivial.
                         rewrite (vvalid_meaning g); trivial.
                 --- split3; apply Forall_upd_Znth; trivial; try lia.
-                --- unfold DijkGraph. admit.
+                --- unfold DijkGraph.
+                    admit. (* something small is wrong *)
+                    
+                    
              ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
                 rename H41 into improvement.
@@ -2065,7 +2073,15 @@ Proof.
                 Exists prev_contents' priq_contents' dist_contents' popped_verts'.
                 entailer!.
                 remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
-                clear H52.
+                clear H51 H52.
+                assert (elabel g (u, i) < inf). {
+                  apply Z.le_lt_trans with (m := Int.max_signed / SIZE);
+                    trivial.
+                  apply H36.
+                  rewrite <- inf_eq.
+                  compute; trivial.
+                }
+                  
                 split3; [| |split].
                 --- intros.
                     (* Show that moving one more step
@@ -2149,17 +2165,6 @@ Proof.
                                    
                               ++++ rewrite careful_add_dirty; trivial.
                                    lia.
-                                   rewrite inf_eq2 in H36.
-                                   rewrite Int.signed_repr in H36.
-                                   2: rep_lia.
-                                   rewrite Int.signed_repr in H36.
-                                   2: { rewrite <- inf_eq.
-                                        unfold V in *.
-                                        unfold Int.min_signed, Int.max_signed.
-                                        unfold Int.half_modulus.
-                                        simpl. lia.
-                                   }
-                                   ulia.
                         ----
                           destruct Hrem as [? [? [? [? ?]]]].
                           
@@ -2262,8 +2267,6 @@ Proof.
                     destruct (zlt (elabel g (u, i)) inf).
                     1: apply careful_add_dirty; trivial; lia.
                     rewrite careful_add_dirty; trivial.
-                    (* this is so stupid *)
-                    admit.
                 --- intros.
                     assert (i <= dst < SIZE) by lia.
                     apply H23; trivial.
@@ -2337,8 +2340,11 @@ assert (elabel g (u, i) = inf). {
                    
                    destruct (zlt (Znth mom' dist_contents' + elabel g (mom', i)) inf).
                    2: {
+                     rewrite careful_add_dirty; trivial.
+                     lia.
                      admit.
-                     (* so stupid *)
+                     (* careful_add_dirty should not ask
+                        that individual components be < inf *)
                    }
                    assert (careful_add (Znth mom' dist_contents') (elabel g (mom', i)) = Znth mom' dist_contents' + elabel g (mom', i)). {
                      rewrite careful_add_clean; trivial.
@@ -2349,7 +2355,12 @@ assert (elabel g (u, i) = inf). {
                    }
                    destruct (Z.eq_dec mom' u).
                    1: { subst mom'.
+                        unfold V, E in *.
                         replace (careful_add (Znth u dist_contents') (elabel g (u, i))) with inf by admit.
+                        (* see H36 *)
+                        (* careful_add_inf should allow 
+                           the inf to be >= inf *)
+                           
                         lia.
                    }
                    apply H59; trivial.
@@ -2366,6 +2377,10 @@ assert (elabel g (u, i) = inf). {
                2: apply H23; trivial.
                subst m. unfold V, E in *.
                admit.
+            (* see H36 *)
+            (* careful_add_inf should allow 
+               the inf to be >= inf *)
+
                
             ** apply H23; lia.
         -- (* From the for loop's invariant, 
