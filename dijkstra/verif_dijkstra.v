@@ -1460,7 +1460,7 @@ Proof.
           freeze FR := (data_at _ _ _ _) (data_at _ _ _ _) (data_at _ _ _ _).
           unfold DijkGraph.
           rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ u).
-          2: admit.
+          2: ulia.
           Intros.
           
           freeze FR2 := (iter_sepcon _ _) (iter_sepcon _ _).
@@ -1485,8 +1485,9 @@ Proof.
             apply (vvalid_meaning g); trivial.
           }
           assert (H_u_valid: vvalid g u). {
-            apply (vvalid_meaning g); trivial.
+            trivial.
           }
+          (* todo: definitely refactor out *)
           rewrite <- elabel_Znth_graph_to_mat in Heqcost; trivial.
           
           assert_PROP (Zlength priq_contents' = SIZE). {
@@ -1507,12 +1508,11 @@ Proof.
                intro.
                rewrite inf_eq2 in H36.
                do 2 rewrite Int.signed_repr in H36; trivial.
-
-               2: split; rewrite <- inf_eq; compute; inversion 1.
                rewrite <- H38 in H36.
                apply Zlt_not_le in H36.
                apply H36; reflexivity. (* lemma-fy *)
              }
+             (* clear H36 *)
              assert (0 <= Znth u dist_contents' <= inf). {
                assert (0 <= u < Zlength dist_contents') by lia.
                apply (Forall_Znth _ _ _ H38) in H30.
@@ -1534,8 +1534,6 @@ Proof.
              
              forward. forward. forward_if.
              ** rename H41 into improvement.
-                rewrite Int.signed_repr in improvement
-                 by (rewrite <- inf_eq in *; rep_lia).
                 (* We know that we are definitely
                    going to make edits in the arrays:
                    we have found a better path to i, via u *)
@@ -1604,7 +1602,8 @@ Proof.
    We will provide the arrays as they stand now:
    with the i'th cell updated in all three arrays,
    to log a new improved path via u 
-*)
+ *)
+                clear H42. 
                 Exists (upd_Znth i prev_contents' u).
                 Exists (upd_Znth i priq_contents' (Znth u dist_contents' + cost)).
                 Exists (upd_Znth i dist_contents' (Znth u dist_contents' + cost)).
@@ -2058,9 +2057,7 @@ Proof.
                         rewrite (vvalid_meaning g); trivial.
                 --- split3; apply Forall_upd_Znth; trivial; try lia.
                 --- unfold DijkGraph. admit.
-             ** rewrite Int.signed_repr in H41
-                 by (rewrite <- inf_eq in *; rep_lia).
-                (* This is the branch where we didn't
+             ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
                 rename H41 into improvement.
                 forward. 
@@ -2068,6 +2065,7 @@ Proof.
                 Exists prev_contents' priq_contents' dist_contents' popped_verts'.
                 entailer!.
                 remember (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0) as u.
+                clear H52.
                 split3; [| |split].
                 --- intros.
                     (* Show that moving one more step
@@ -2297,7 +2295,8 @@ assert (elabel g (u, i) = inf). {
              *)
             do 2 rewrite Int.signed_repr in H36.
             3,4: apply edge_representable.
-            2: admit.
+            2: lia.
+            clear H48.
 
             
             split3; [| |split]; intros.
@@ -2388,7 +2387,7 @@ assert (elabel g (u, i) = inf). {
         forward. Exists prev_contents priq_contents dist_contents popped_verts.
         entailer!. apply (isEmptyMeansInf _ H12).
     + (* from the break's postcon, prove the overall postcon *)
-      Intros prev_contents priq_contents dist_contents popped_verts.
+      Intros prev_contents priq_contents dist_contents popped_verts. 
       forward. Exists prev_contents dist_contents popped_verts. entailer!. 
 Admitted.
 
