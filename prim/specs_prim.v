@@ -57,7 +57,7 @@ Definition prim_spec :=
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val mstptr)
      GLOBALS ()
      SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
-          undirected_matrix sh (graph_to_symm_mat (@edgeless_graph inf SIZE SIZE_rep)) (pointer_val_val mstptr)
+          undirected_matrix sh (graph_to_symm_mat edgeless_graph_SIZE) (pointer_val_val mstptr)
          )
   POST [ tvoid ]
      EX mst: MatrixUGraph,

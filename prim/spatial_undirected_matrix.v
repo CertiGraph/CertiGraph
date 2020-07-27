@@ -23,6 +23,7 @@ Proof. unfold SIZE. set (i:=Int.max_signed); compute in i; subst i. lia. Qed.
 Definition inf := Int.max_signed - Int.max_signed / SIZE.
 
 Definition G := @MatrixUGraph inf SIZE.
+Definition edgeless_graph_SIZE := @edgeless_graph inf SIZE SIZE_rep.
 
 Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
 
