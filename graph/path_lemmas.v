@@ -1,11 +1,11 @@
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.micromega.Lia.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EnumEnsembles.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.find_not_in.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EnumEnsembles.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.find_not_in.
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListDec.
 

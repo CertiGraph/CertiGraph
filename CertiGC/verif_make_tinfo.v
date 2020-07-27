@@ -1,4 +1,4 @@
-Require Import RamifyCoq.CertiGC.gc_spec.
+Require Import CertiGraph.CertiGC.gc_spec.
 
 Lemma body_make_tinfo: semax_body Vprog Gprog f_make_tinfo make_tinfo_spec.
 Proof.

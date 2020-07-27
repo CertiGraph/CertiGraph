@@ -1,4 +1,4 @@
-Require Import RamifyCoq.CertiGC.gc_spec.
+Require Import CertiGraph.CertiGC.gc_spec.
 
 Lemma body_resume: semax_body Vprog Gprog f_resume resume_spec.
 Proof.

@@ -1,4 +1,4 @@
-Require Import RamifyCoq.CertiGC.gc_spec.
+Require Import CertiGraph.CertiGC.gc_spec.
 
 Lemma body_forward_roots: semax_body Vprog Gprog f_forward_roots forward_roots_spec.
 Proof.

@@ -1,7 +1,7 @@
-Require Import RamifyCoq.msl_application.ArrayGraph.
+Require Import CertiGraph.msl_application.ArrayGraph.
 Require Import VST.veric.SeparationLogic.
-Require Import RamifyCoq.unionfind.env_unionfind_arr.
-Require Import RamifyCoq.floyd_ext.share.
+Require Import CertiGraph.unionfind.env_unionfind_arr.
+Require Import CertiGraph.floyd_ext.share.
 
 (*I suppose this focuses SpatialArrayGraphAssum to specifically the mpred type? Have no idea what it means*)
 Instance SAGA_VST: SpatialArrayGraphAssum mpred. Proof. refine (Build_SpatialArrayGraphAssum _ _ _ _ _). Defined.

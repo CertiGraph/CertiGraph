@@ -7,22 +7,22 @@ Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.Ensembles_ext.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.Relation_ext.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.weak_mark_lemmas.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.graph_relation.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.reachable_computable.
-Require Export RamifyCoq.graph.FiniteGraph.
-Require Export RamifyCoq.graph.MathGraph.
-Require Export RamifyCoq.graph.LstGraph.
-Require Import RamifyCoq.msl_application.UnionFindGraph.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.Ensembles_ext.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Relation_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.weak_mark_lemmas.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.graph_relation.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.reachable_computable.
+Require Export CertiGraph.graph.FiniteGraph.
+Require Export CertiGraph.graph.MathGraph.
+Require Export CertiGraph.graph.LstGraph.
+Require Import CertiGraph.msl_application.UnionFindGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.

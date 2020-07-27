@@ -1,19 +1,19 @@
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Classes.Morphisms.
 Require Import VST.msl.Coqlib2.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.Relation_ext.
-Require Import RamifyCoq.lib.relation_list.
-Require Import RamifyCoq.lib.EnumEnsembles.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
-Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.graph.reachable_ind.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.dual_graph.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Relation_ext.
+Require Import CertiGraph.lib.relation_list.
+Require Import CertiGraph.lib.EnumEnsembles.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas. Import CertiGraph.graph.path_lemmas.PathNotation.
+Require Import CertiGraph.graph.reachable_computable.
+Require Import CertiGraph.graph.reachable_ind.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.dual_graph.
 
 (*
 Definition DFS_acc {V E} {EV: EqDec V eq} {EE: EqDec E eq} (g: PreGraph V E) (P: V -> Prop) (x y: V) :=

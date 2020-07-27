@@ -6,9 +6,9 @@ Require Import VST.floyd.nested_pred_lemmas.
 Require Import VST.floyd.nested_field_lemmas.
 Require Import VST.floyd.reptype_lemmas.
 Require Import VST.floyd.field_at.
-Require Import RamifyCoq.veric_ext.seplog.
-Require Import RamifyCoq.veric_ext.SeparationLogic.
-Require Import RamifyCoq.floyd_ext.MapstoSL.
+Require Import CertiGraph.veric_ext.seplog.
+Require Import CertiGraph.veric_ext.SeparationLogic.
+Require Import CertiGraph.floyd_ext.MapstoSL.
 
 Local Open Scope logic.
 

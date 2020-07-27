@@ -1,15 +1,15 @@
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.micromega.Lia.
 Require Import Coq.Logic.FunctionalExtensionality.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.EnumEnsembles.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.MathGraph.
-Require Import RamifyCoq.graph.FiniteGraph.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.EnumEnsembles.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.MathGraph.
+Require Import CertiGraph.graph.FiniteGraph.
 
 Section LstGraph.
 

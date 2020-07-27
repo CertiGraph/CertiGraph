@@ -1,10 +1,10 @@
 Require Export VST.veric.rmaps.
-Require Export RamifyCoq.lib.List_ext.
-Require Export RamifyCoq.graph.graph_model.
-Require Export RamifyCoq.CertiGC.GCGraph.
-Require Export RamifyCoq.CertiGC.spatial_gcgraph.
-Require Export RamifyCoq.CertiGC.env_graph_gc.
-Require Export RamifyCoq.msl_ext.iter_sepcon.
+Require Export CertiGraph.lib.List_ext.
+Require Export CertiGraph.graph.graph_model.
+Require Export CertiGraph.CertiGC.GCGraph.
+Require Export CertiGraph.CertiGC.spatial_gcgraph.
+Require Export CertiGraph.CertiGC.env_graph_gc.
+Require Export CertiGraph.msl_ext.iter_sepcon.
 
 Local Open Scope logic.
 

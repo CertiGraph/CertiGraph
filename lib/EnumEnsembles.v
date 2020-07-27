@@ -1,8 +1,8 @@
 Require Import Coq.Sorting.Permutation.
 Require Import Coq.Classes.EquivDec.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.List_ext.
-Require Export RamifyCoq.lib.Ensembles_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.List_ext.
+Require Export CertiGraph.lib.Ensembles_ext.
 Require Import Coq.Lists.List.
 
 Definition Enumerable U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, In x l <-> A x}.

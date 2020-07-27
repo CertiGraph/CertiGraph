@@ -9,9 +9,9 @@ COQDEP=$(COQBIN)coqdep
 DIRS = lib msl_ext msl_application graph heap_model_direct
 INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert
 INCLUDE_VST = -Q $(VST_DIR) VST
-INCLUDE_RAMIFYCOQ = $(foreach d, $(DIRS), -Q $(d) RamifyCoq.$(d)) -Q "." RamifyCoq
-NORMAL_FLAG = $(INCLUDE_RAMIFYCOQ) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
-CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_RAMIFYCOQ)
+INCLUDE_CERTIGRAPH = $(foreach d, $(DIRS), -Q $(d) CertiGraph.$(d)) -Q "." CertiGraph
+NORMAL_FLAG = $(INCLUDE_CERTIGRAPH) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
+CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_CERTIGRAPH)
 
 LIB_FILES = \
   Coqlib.v Equivalence_ext.v List_Func_ext.v Ensembles_ext.v List_ext.v \

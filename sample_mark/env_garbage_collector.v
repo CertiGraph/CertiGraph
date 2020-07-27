@@ -1,6 +1,6 @@
 Require Export VST.floyd.proofauto.
-Require Export RamifyCoq.floyd_ext.closed_lemmas.
-Require Export RamifyCoq.sample_mark.garbage_collector.
+Require Export CertiGraph.floyd_ext.closed_lemmas.
+Require Export CertiGraph.sample_mark.garbage_collector.
 
 Local Open Scope logic.
 

@@ -4,9 +4,9 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Lists.List.
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Logic.FunctionalExtensionality.
-Require Import RamifyCoq.Coqlib.
-Require Import RamifyCoq.graph.graph.
-Require Import RamifyCoq.graph.graph_reachable.
+Require Import CertiGraph.Coqlib.
+Require Import CertiGraph.graph.graph.
+Require Import CertiGraph.graph.graph_reachable.
 
 Definition GraphPredicate {N D DEC} (g : @PreGraph N D DEC) :=
   {p : Ensemble D & forall x, {Ensembles.In D p x} + {~ Ensembles.In D p x}}.

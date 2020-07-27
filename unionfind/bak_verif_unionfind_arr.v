@@ -1,15 +1,15 @@
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.sample_mark.env_unionfind_arr.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.graph_relation.
-Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.graph.UnionFind.
-Require Import RamifyCoq.msl_application.UnionFindGraph.
-Require Import RamifyCoq.msl_application.ArrayGraph.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.sample_mark.spatial_array_graph.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.sample_mark.env_unionfind_arr.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.graph_relation.
+Require Import CertiGraph.graph.reachable_computable.
+Require Import CertiGraph.graph.UnionFind.
+Require Import CertiGraph.msl_application.UnionFindGraph.
+Require Import CertiGraph.msl_application.ArrayGraph.
+Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.sample_mark.spatial_array_graph.
 Require Import Coq.Lists.List.
 
 Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.

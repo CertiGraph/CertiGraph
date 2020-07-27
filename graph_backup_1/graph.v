@@ -5,7 +5,7 @@ Require Import Coq.Lists.List.
 Require Import Coq.omega.Omega.
 Require Import Coq.Setoids.Setoid.
 Require Import Coq.Logic.ProofIrrelevance.
-Require Import RamifyCoq.Coqlib.
+Require Import CertiGraph.Coqlib.
 
 Class PreGraph (Vertex: Type) Data {EV: EqDec Vertex} :=
   {

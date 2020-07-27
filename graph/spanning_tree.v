@@ -1,18 +1,18 @@
 Require Import Coq.Classes.Morphisms.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.EnumEnsembles.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.lib.relation_list.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.graph_relation.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.reachable_ind.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.EnumEnsembles.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.lib.relation_list.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.graph_relation.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.reachable_ind.
 Require Import Coq.Logic.Classical.
-Require RamifyCoq.graph.weak_mark_lemmas.
-Import RamifyCoq.graph.weak_mark_lemmas.WeakMarkGraph.
+Require CertiGraph.graph.weak_mark_lemmas.
+Import CertiGraph.graph.weak_mark_lemmas.WeakMarkGraph.
 
 Module SIMPLE_SPANNING_TREE.
 

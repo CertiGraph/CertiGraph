@@ -1,16 +1,17 @@
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.graph_relation.
-Require Import RamifyCoq.graph.FiniteGraph.
-Require Import RamifyCoq.graph.undirected_graph.
-Require Import RamifyCoq.graph.AdjMatGraph.
-Require Import RamifyCoq.prim.MatrixUGraph.
-Require Import RamifyCoq.prim.prim.
-Require Import RamifyCoq.prim.spatial_undirected_matrix.
-Require Import RamifyCoq.prim.specs_prim.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.graph_relation.
+Require Import CertiGraph.graph.FiniteGraph.
+Require Import CertiGraph.graph.undirected_graph.
+Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.prim.MatrixUGraph.
+Require Import CertiGraph.priq.priq_arr_specs.
+Require Import CertiGraph.priq.priq_arr_utils.
+Require Import CertiGraph.prim.prim.
+Require Import CertiGraph.prim.spatial_undirected_matrix.
+Require Import CertiGraph.prim.specs_prim.
 
 Local Open Scope Z.
 
@@ -236,10 +237,13 @@ forward_loop (
       (*about the lists*)
       forall v, In v popped_vertices -> vvalid g v;
       forall u v, In u popped_vertices -> In v popped_vertices -> connected mst' u v;
+      Zlength parents = SIZE;
+      (*if a vertex has been popped, then its "parent" a.k.a. edge has been decided*)
+      forall v, In v popped_vertices -> vvalid g (Znth v parents) -> evalid mst' (eformat (v, Znth v parents)) /\ Znth v keys = elabel mst' (eformat (v, Znth v parents));
       Zlength keys = SIZE;
       forall v, 0 <= v < SIZE -> 0 <= Znth v keys <= inf;
       Zlength pq_state = SIZE;
-      forall v, 0 <= v < SIZE -> ~ In v popped_vertices -> Znth v pq_state = Znth v keys;
+      forall v, 0 <= v < SIZE -> ~ In v popped_vertices -> Znth v pq_state = Znth v keys; (*<--describing pq_state instead of forming a function, because it seems hard to prove list eq...*)
       forall v, In v popped_vertices -> Znth v pq_state = Z.add inf 1
       (*something about weight of edges already added to mst*)
       (*something about when an edge is added, one of its vertices is in the old list, one isn't*)
@@ -319,10 +323,10 @@ clear Hstarting_keys HZlength_starting_keys starting_keys.
 Intros mst' parents keys pq_state popped_vertices.
 assert (priq_arr_utils.inrange_priq pq_state). {
   unfold priq_arr_utils.inrange_priq. rewrite Forall_forall. intros x Hx.
-  rewrite In_Znth_iff in Hx. destruct Hx as [i [? ?]]. rewrite H8 in H11.
+  rewrite In_Znth_iff in Hx. destruct Hx as [i [? ?]]. rewrite <- inf_priq. rewrite H10 in H13.
   destruct (in_dec V_EqDec i popped_vertices).
-  rewrite H10 in H12; auto. subst x. rewrite <- inf_priq. set (j:=inf); compute in j; subst j; lia.
-  rewrite H9 in H12; auto. subst x. assert (0 <= Znth i keys <= inf). apply H7; auto. rewrite <- inf_priq. lia.
+  rewrite H12 in H14; auto. subst x. set (j:=inf); compute in j; subst j; lia.
+  rewrite H11 in H14; auto. subst x. assert (0 <= Znth i keys <= inf). apply H9; auto. lia.
 }
 forward_call (v_pq, pq_state).
 unfold priq_arr_utils.SIZE, SIZE. rewrite list_map_compose. entailer!.
@@ -330,16 +334,41 @@ forward_if.
 (*PROCEED WITH LOOP*) {
 assert (priq_arr_utils.isEmpty pq_state = Vzero). {
   destruct (priq_arr_utils.isEmptyTwoCases pq_state);
-  rewrite H13 in H12; simpl in H12; now inversion H12.
+  rewrite H15 in H14; simpl in H14; now inversion H14.
 }
 forward_call (v_pq, pq_state). Intros u.
 (* u is the minimally chosen item from the
    "seen but not popped" category of vertices *)
 assert (vvalid g u). {
-  admit.
+  rewrite (@vert_representable _ _ _ (sound_MatrixUGraph g)).
+  rewrite H16. rewrite <- H10.
+  apply find_range.
+  apply min_in_list. apply incl_refl.
+  destruct pq_state. rewrite Zlength_nil in H10.
+  inversion H10. simpl. left; trivial.
 }
-forward. rewrite (@vert_representable _ _ _ (sound_MatrixUGraph g)) in H9. entailer!.
-(*for loop to update un-popped vertices' min weight*)
+forward. rewrite (@vert_representable _ _ _ (sound_MatrixUGraph g)) in H17. entailer!.
+(*for loop to update un-popped vertices' min weight.
+The result is every vertex who's NOT in popped_vertices and connected, as their weight maintained or lowered*)
+forward_for_simple_bound SIZE (
+  EX i: Z,
+  EX parents': list Z,
+  EX keys': list Z,
+  EX pq_state': list Z,
+    PROP (
+      forall v, 0<=v<i -> adjacent g u v -> ~ In v (u::popped_vertices) -> (*parent belongs to *)
+      (*else, remains the same*)
+    )
+    LOCAL (
+      temp _u (Vint (Int.repr u)); temp _t'1 (isEmpty pq_state); lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
+      lvar _parent (tarray tint 8) v_parent; lvar _key (tarray tint 8) v_key; temp _graph (pointer_val_val gptr);
+      temp _r (Vint (Int.repr r)); temp _msf (pointer_val_val mstptr)
+    )
+    SEP (
+    )
+  )
+%assert.
+).
 }
 (*BREAK CONDITION*) {
 }

@@ -1,10 +1,10 @@
 Require Import Coq.Relations.Relation_Definitions.
 Require Export Coq.Classes.Morphisms.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.Ensembles_ext.
-Require Import RamifyCoq.lib.Relation_ext.
-Require Import RamifyCoq.lib.Equivalence_ext.
-Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.Ensembles_ext.
+Require Import CertiGraph.lib.Relation_ext.
+Require Import CertiGraph.lib.Equivalence_ext.
+Require Import CertiGraph.lib.EquivDec_ext.
 
 Definition app_sig {A B: Type} (P: A -> Prop) (f: A -> B): sig P -> B := fun a => f (proj1_sig a).
 

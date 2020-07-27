@@ -5,8 +5,8 @@ Require Import Coq.Lists.List.
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Sorting.Permutation.
-Require Import RamifyCoq.Coqlib.
-Require Import RamifyCoq.graph.graph.
+Require Import CertiGraph.Coqlib.
+Require Import CertiGraph.graph.graph.
 
 Section GraphReachable.
 

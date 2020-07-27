@@ -1,6 +1,6 @@
 Require Import VST.msl.Extensionality.
 Require Import VST.msl.seplog.
-Require Import RamifyCoq.msl_ext.abs_addr.
+Require Import CertiGraph.msl_ext.abs_addr.
 
 Local Open Scope logic.
 

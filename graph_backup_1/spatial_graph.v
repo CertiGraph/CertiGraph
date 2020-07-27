@@ -2,15 +2,15 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require Import RamifyCoq.Coqlib.
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
-Require Import RamifyCoq.msl_ext.log_normalize.
-Require Import RamifyCoq.msl_ext.iter_sepcon.
-Require Import RamifyCoq.graph.graph.
-Require Import RamifyCoq.graph.graph_reachable.
+Require Import CertiGraph.Coqlib.
+Require Import CertiGraph.msl_ext.abs_addr.
+Require Import CertiGraph.msl_ext.seplog.
+Require Import CertiGraph.msl_ext.log_normalize.
+Require Import CertiGraph.msl_ext.iter_sepcon.
+Require Import CertiGraph.graph.graph.
+Require Import CertiGraph.graph.graph_reachable.
 Require Import Coq.Logic.Classical.
-Import RamifyCoq.msl_ext.seplog.OconNotation.
+Import CertiGraph.msl_ext.seplog.OconNotation.
 
 Definition gamma {Vertex Data} {EV: EqDec Vertex} {PG : PreGraph Vertex Data} (BG: BiGraph PG) (v: Vertex) : Data * Vertex * Vertex := let (v1, v2) := biEdge BG v in (node_label v, v1, v2).
 

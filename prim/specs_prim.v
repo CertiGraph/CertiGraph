@@ -1,12 +1,12 @@
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.priq.priq_arr_specs.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.undirected_graph.
-Require Import RamifyCoq.graph.AdjMatGraph.
-Require Import RamifyCoq.prim.MatrixUGraph.
-Require Import RamifyCoq.prim.prim.
-Require Import RamifyCoq.prim.spatial_undirected_matrix.
+Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.priq.priq_arr_specs.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.undirected_graph.
+Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.prim.MatrixUGraph.
+Require Import CertiGraph.prim.prim.
+Require Import CertiGraph.prim.spatial_undirected_matrix.
 
 Local Open Scope Z_scope.
 

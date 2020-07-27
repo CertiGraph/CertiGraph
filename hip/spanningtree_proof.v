@@ -3,26 +3,26 @@ Require Import Coq.Lists.List.
 Require Import Coq.Sets.Ensembles.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.Ensembles_ext.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.Relation_ext.
-Require Import RamifyCoq.hip.spanningtree.
-Require Import RamifyCoq.msl_ext.seplog.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.weak_mark_lemmas.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.graph_gen.
-Require Import RamifyCoq.graph.graph_relation.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.graph.spanning_tree.
-Require Import RamifyCoq.msl_application.Graph.
-Require Import RamifyCoq.msl_application.GraphBi.
-Require Import RamifyCoq.msl_application.Graph_Mark.
-Require Import RamifyCoq.msl_application.GraphBi_Mark.
-Require Import RamifyCoq.data_structure.spatial_graph_dispose_bi.
-Import RamifyCoq.msl_ext.seplog.OconNotation.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.Ensembles_ext.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Relation_ext.
+Require Import CertiGraph.hip.spanningtree.
+Require Import CertiGraph.msl_ext.seplog.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.weak_mark_lemmas.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.graph_relation.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.reachable_computable.
+Require Import CertiGraph.graph.spanning_tree.
+Require Import CertiGraph.msl_application.Graph.
+Require Import CertiGraph.msl_application.GraphBi.
+Require Import CertiGraph.msl_application.Graph_Mark.
+Require Import CertiGraph.msl_application.GraphBi_Mark.
+Require Import CertiGraph.data_structure.spatial_graph_dispose_bi.
+Import CertiGraph.msl_ext.seplog.OconNotation.
 
 Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
 Context {sSGG_Bi: sPointwiseGraph_Graph_Bi bool unit}.

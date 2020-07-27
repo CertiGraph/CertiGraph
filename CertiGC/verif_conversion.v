@@ -1,4 +1,4 @@
-Require Import RamifyCoq.CertiGC.gc_spec.
+Require Import CertiGraph.CertiGC.gc_spec.
 
 Lemma body_int_to_int_or_ptr:
   semax_body Vprog Gprog f_int_to_int_or_ptr int_to_int_or_ptr_spec.

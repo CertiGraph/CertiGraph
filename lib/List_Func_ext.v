@@ -1,6 +1,6 @@
 Require Import Coq.Classes.Morphisms.
-Require Import RamifyCoq.lib.Relation_ext.
-Require Import RamifyCoq.lib.Equivalence_ext.
+Require Import CertiGraph.lib.Relation_ext.
+Require Import CertiGraph.lib.Equivalence_ext.
 Require Export Coq.Lists.List.
 
 Local Open Scope equiv_scope.
