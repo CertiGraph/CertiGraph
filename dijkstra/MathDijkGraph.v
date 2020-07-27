@@ -8,20 +8,20 @@ Require Import VST.msl.seplog.
 Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
 
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.FiniteGraph.
-Require Import RamifyCoq.graph.AdjMatGraph.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.FiniteGraph.
+Require Import CertiGraph.graph.AdjMatGraph.
 
 Require Import Coq.Classes.EquivDec.
 
 (* This file is just one line: "Require Export priq.priq_arr_utils." 
    It can be inlined. 
    It is currently a separate file in case we want more constants stashed away *)
-Require Export RamifyCoq.dijkstra.dijkstra_constants.
+Require Export CertiGraph.dijkstra.dijkstra_constants.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
@@ -104,13 +104,58 @@ Definition sound_dijk_graph (g : DijkstraGeneralGraph): Prop :=
 
 (* Lemmas that come from soundness plugins *)
 
-(* considering *)
-Lemma vvalid2_evalid:
+Lemma edge_cost_pos:
+  forall (g: DijkGG) e,
+    0 <= elabel g e.
+Proof.
+  intros.
+  pose proof (valid_edge_bounds g e).
+  pose proof (invalid_edge_weight g e).
+  destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
+  - apply H; trivial.
+  - rewrite H0 in n.
+    replace (elabel g e) with inf by trivial.
+    compute; inversion 1.
+Qed.
+
+Lemma edge_representable:
+  forall (g: DijkGG) e,
+    Int.min_signed <= elabel g e <= Int.max_signed.
+Proof.
+  intros.
+  pose proof (valid_edge_bounds g e).
+  pose proof (invalid_edge_weight g e).
+  pose proof (edge_cost_pos g e).
+  destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
+  - specialize (H e0).
+    split; trivial.
+    1: apply Z.le_trans with (m := 0); trivial; rep_lia.
+    apply Z.le_trans with (m := (Int.max_signed/SIZE)); trivial.
+    apply H.
+    compute; inversion 1.
+  - rewrite H0 in n.
+    replace (elabel g e) with inf by trivial.
+    split; compute; inversion 1.
+Qed.
+
+Lemma strong_evalid_dijk:
   forall (g: DijkGG) a b,
     vvalid g a ->
     vvalid g b ->
-    evalid g (a,b).
-Proof. Admitted.
+    elabel g (a, b) < inf ->
+    strong_evalid g (a,b).
+Proof.
+  intros.
+  split3;
+    [rewrite (evalid_meaning g) |
+     rewrite (edge_src_fst g) |
+     rewrite (edge_dst_snd g)]; trivial.
+  split.
+  - apply edge_representable.
+  - intro. apply Zlt_not_le in H1.
+    apply H1. rewrite <- H2.
+    reflexivity.
+Qed.
 
 Lemma valid_path_app_cons:
   forall (g: DijkGG) src links2u u i,
@@ -162,12 +207,4 @@ Proof.
   pose proof (valid_path_strong_evalid g _ _ _ H H0).
   destruct H1 as [? [_ ?]].
   rewrite <- (vvalid_meaning g), <- (edge_dst_snd g); trivial.
-Qed.
-
-Lemma valid_edge_cost_pos:
-  forall (g: DijkGG) e,
-    evalid g e -> 0 <= elabel g e.
-Proof.
-  intros.
-  apply (valid_edge_bounds g); trivial.
 Qed.

@@ -1,7 +1,7 @@
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require Import RamifyCoq.msl_ext.seplog.
-Require Import RamifyCoq.msl_ext.log_normalize.
+Require Import CertiGraph.msl_ext.seplog.
+Require Import CertiGraph.msl_ext.log_normalize.
 
 Require Export VST.veric.base.
 Require Import VST.veric.rmaps.
@@ -17,8 +17,8 @@ Require Import VST.veric.mapsto_memory_block.
 
 Require Import VST.msl.msl_standard.
 Require Import VST.msl.alg_seplog.
-Require Import RamifyCoq.msl_ext.alg_seplog.
-Require Import RamifyCoq.veric_ext.res_predicates.
+Require Import CertiGraph.msl_ext.alg_seplog.
+Require Import CertiGraph.veric_ext.res_predicates.
 
 Local Open Scope pred.
 

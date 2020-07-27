@@ -1,15 +1,15 @@
-Require Import RamifyCoq.unionfind.env_unionfind.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.graph_relation.
-Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.msl_application.Graph.
-Require Import RamifyCoq.msl_application.UnionFindGraph.
-Require Import RamifyCoq.msl_application.GList.
-Require Import RamifyCoq.msl_application.GList_UnionFind.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.sample_mark.spatial_graph_glist.
+Require Import CertiGraph.unionfind.env_unionfind.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.graph_relation.
+Require Import CertiGraph.graph.reachable_computable.
+Require Import CertiGraph.msl_application.Graph.
+Require Import CertiGraph.msl_application.UnionFindGraph.
+Require Import CertiGraph.msl_application.GList.
+Require Import CertiGraph.msl_application.GList_UnionFind.
+Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.sample_mark.spatial_graph_glist.
 
 Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.

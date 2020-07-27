@@ -1,4 +1,4 @@
-Require Import RamifyCoq.CertiGC.gc_spec.
+Require Import CertiGraph.CertiGC.gc_spec.
 
 Ltac hif_tac H :=
   match type of H with context [if ?a then _ else _] => destruct a eqn: ?H end.

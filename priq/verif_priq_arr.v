@@ -1,6 +1,6 @@
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.priq.priq_arr_specs.
-Require Import RamifyCoq.priq.priq_arr_utils.
+Require Import CertiGraph.priq.priq_arr_specs.
+Require Import CertiGraph.priq.priq_arr_utils.
 Require Import VST.floyd.sublist.
 
 (* We must use the CompSpecs and Vprog that were

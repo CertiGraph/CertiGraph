@@ -1,7 +1,7 @@
 Require Export VST.floyd.proofauto.
-Require Export RamifyCoq.floyd_ext.closed_lemmas.
-Require Export RamifyCoq.floyd_ext.share.
-Require Export RamifyCoq.sample_mark.copy_bi.
+Require Export CertiGraph.floyd_ext.closed_lemmas.
+Require Export CertiGraph.floyd_ext.share.
+Require Export CertiGraph.sample_mark.copy_bi.
 
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.

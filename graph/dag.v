@@ -3,15 +3,15 @@ Require Import Coq.Sets.Ensembles.
 Require Import Coq.Sets.Finite_sets.
 Require Import Coq.Lists.List.
 Require Import Coq.Classes.Morphisms.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.lib.EquivDec_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.lib.EquivDec_ext.
 Require Import VST.msl.Coqlib2.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas. Import RamifyCoq.graph.path_lemmas.PathNotation.
-Require Import RamifyCoq.graph.reachable_computable.
-Require Import RamifyCoq.graph.reachable_ind.
-Require Import RamifyCoq.graph.subgraph2.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas. Import CertiGraph.graph.path_lemmas.PathNotation.
+Require Import CertiGraph.graph.reachable_computable.
+Require Import CertiGraph.graph.reachable_ind.
+Require Import CertiGraph.graph.subgraph2.
 
 Section Dag.
 

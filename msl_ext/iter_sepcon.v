@@ -1,6 +1,6 @@
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.Ensembles_ext.
-Require Import RamifyCoq.lib.List_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.Ensembles_ext.
+Require Import CertiGraph.lib.List_ext.
 Require Import VST.msl.Extensionality.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
@@ -8,8 +8,8 @@ Require Import VST.msl.log_normalize.
 Require Import Coq.Lists.List.
 Require Import Coq.Sorting.Permutation.
 Require Export Coq.Classes.Morphisms.
-Require Import RamifyCoq.msl_ext.seplog.
-Require Import RamifyCoq.msl_ext.log_normalize.
+Require Import CertiGraph.msl_ext.seplog.
+Require Import CertiGraph.msl_ext.log_normalize.
 
 Import OconNotation.
 

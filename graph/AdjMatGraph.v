@@ -20,10 +20,10 @@ Require Import VST.floyd.coqlib3.
 Require Import VST.msl.iter_sepcon.
 Require Import VST.msl.seplog.
 
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.graph.FiniteGraph.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.graph.FiniteGraph.
 
 (*
   AdjMat wishlist
@@ -92,9 +92,9 @@ Section AdjMatGraph.
     iew: (* invalid_edge_weight *)
       forall e, ~ evalid g e <-> elabel g e = inf;
     esf: (* edge_src_fst *)
-      forall e, evalid g e -> src g e = fst e;
+      forall e, src g e = fst e;
     eds: (* edge_dst_snd *)
-      forall e, evalid g e -> dst g e = snd e;
+      forall e, dst g e = snd e;
     cts: (* cost_to_self *)
       forall v, vvalid g v -> elabel g (v, v) = 0;
     fin:

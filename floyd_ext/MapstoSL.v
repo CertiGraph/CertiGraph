@@ -4,10 +4,10 @@ Require Import VST.floyd.client_lemmas.
 Require Import VST.floyd.nested_pred_lemmas.
 Require Import VST.floyd.mapsto_memory_block.
 
-Require Import RamifyCoq.msl_ext.abs_addr.
-Require Import RamifyCoq.msl_ext.seplog.
-Require Import RamifyCoq.msl_ext.log_normalize.
-Require Import RamifyCoq.veric_ext.SeparationLogic.
+Require Import CertiGraph.msl_ext.abs_addr.
+Require Import CertiGraph.msl_ext.seplog.
+Require Import CertiGraph.msl_ext.log_normalize.
+Require Import CertiGraph.veric_ext.SeparationLogic.
 
 Local Open Scope logic.
 

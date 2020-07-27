@@ -2,28 +2,28 @@ Require Import VST.floyd.proofauto.
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Lists.List.
 Require Import Coq.ZArith.ZArith.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.graph_gen.
+Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.graph_gen.
 (*for ufgraph *)
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.graph_relation.
-Require Import RamifyCoq.graph.reachable_computable.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.graph_relation.
+Require Import CertiGraph.graph.reachable_computable.
 (*for unionfind*)
-Require Import RamifyCoq.graph.UnionFind.
-Require Import RamifyCoq.msl_application.UnionFindGraph.
-Require Import RamifyCoq.msl_application.ArrayGraph.
-Require Import RamifyCoq.unionfind.env_unionfind_arr.
+Require Import CertiGraph.graph.UnionFind.
+Require Import CertiGraph.msl_application.UnionFindGraph.
+Require Import CertiGraph.msl_application.ArrayGraph.
+Require Import CertiGraph.unionfind.env_unionfind_arr.
 (*edgelist*)
-Require Import RamifyCoq.graph.undirected_graph.
-Require Import RamifyCoq.kruskal.WeightedEdgeListGraph.
-Require Import RamifyCoq.kruskal.env_kruskal_edgelist.
-Require Import RamifyCoq.kruskal.spatial_wedgearray_graph.
-Require Import RamifyCoq.sample_mark.spatial_array_graph.
-Require Import RamifyCoq.kruskal.kruskal_specs.
-Require Import RamifyCoq.graph.undirected_uf_lemmas.
+Require Import CertiGraph.graph.undirected_graph.
+Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
+Require Import CertiGraph.kruskal.env_kruskal_edgelist.
+Require Import CertiGraph.kruskal.spatial_wedgearray_graph.
+Require Import CertiGraph.sample_mark.spatial_array_graph.
+Require Import CertiGraph.kruskal.kruskal_specs.
+Require Import CertiGraph.graph.undirected_uf_lemmas.
 
 Local Open Scope Z_scope.
 

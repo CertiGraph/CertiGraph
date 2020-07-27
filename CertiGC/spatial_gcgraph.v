@@ -2,13 +2,13 @@ Require Import VST.veric.compcert_rmaps.
 Require Export VST.progs.conclib.
 Require Import VST.msl.shares.
 Require Export VST.msl.wand_frame.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.msl_ext.log_normalize.
-Require Import RamifyCoq.msl_ext.ramification_lemmas.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.CertiGC.GCGraph.
-Require Export RamifyCoq.CertiGC.env_graph_gc.
-Require Import RamifyCoq.msl_ext.iter_sepcon.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.msl_ext.log_normalize.
+Require Import CertiGraph.msl_ext.ramification_lemmas.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.CertiGC.GCGraph.
+Require Export CertiGraph.CertiGC.env_graph_gc.
+Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import Coq.Lists.List.
 
 Local Open Scope logic.

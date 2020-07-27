@@ -14,10 +14,10 @@ Require Import VST.floyd.coqlib3.
 Require Import VST.floyd.functional_base.
 Require Import VST.floyd.data_at_rec_lemmas.
 Require Import VST.floyd.list_solver.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Export RamifyCoq.graph.graph_gen.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Export CertiGraph.graph.graph_gen.
 Import ListNotations.
 
 Local Open Scope Z_scope.

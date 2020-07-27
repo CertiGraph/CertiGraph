@@ -1,12 +1,12 @@
 (** SPECS **)
 Require Import VST.floyd.proofauto.
-Require Import RamifyCoq.sample_mark.priorityqueue.
-Require Import RamifyCoq.sample_mark.dijkstra.
+Require Import CertiGraph.sample_mark.priorityqueue.
+Require Import CertiGraph.sample_mark.dijkstra.
 
-Require Import RamifyCoq.sample_mark.priq_utils.
-Require Import RamifyCoq.sample_mark.dijk_pq_arr_macros.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.msl_application.DijkstraArrayGraph.
+Require Import CertiGraph.sample_mark.priq_utils.
+Require Import CertiGraph.sample_mark.dijk_pq_arr_macros.
+Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.msl_application.DijkstraArrayGraph.
 
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.

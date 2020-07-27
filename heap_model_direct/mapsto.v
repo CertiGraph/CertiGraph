@@ -1,8 +1,8 @@
 Require Import VST.msl.msl_direct.
 Require Import FunctionalExtensionality.
-Require Import RamifyCoq.msl_ext.ramify_tactics.
-Require Import RamifyCoq.msl_ext.overlapping_direct.
-Require Import RamifyCoq.heap_model_direct.SeparationAlgebra.
+Require Import CertiGraph.msl_ext.ramify_tactics.
+Require Import CertiGraph.msl_ext.overlapping_direct.
+Require Import CertiGraph.heap_model_direct.SeparationAlgebra.
 Require Import Peano_dec.
 
 

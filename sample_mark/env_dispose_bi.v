@@ -1,7 +1,7 @@
-Require Export RamifyCoq.msl_ext.log_normalize.
+Require Export CertiGraph.msl_ext.log_normalize.
 Require Export VST.floyd.proofauto.
-Require Export RamifyCoq.floyd_ext.closed_lemmas.
-Require Export RamifyCoq.sample_mark.dispose_bi.
+Require Export CertiGraph.floyd_ext.closed_lemmas.
+Require Export CertiGraph.sample_mark.dispose_bi.
 
 Local Open Scope logic.
 

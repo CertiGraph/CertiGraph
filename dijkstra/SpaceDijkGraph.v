@@ -1,8 +1,8 @@
 Require Import VST.veric.SeparationLogic.
-Require Import RamifyCoq.floyd_ext.share.
-Require Import RamifyCoq.dijkstra.env_dijkstra_arr.
-Require Import RamifyCoq.dijkstra.MathDijkGraph.
-Require Import RamifyCoq.graph.AdjMatGraph.
+Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.dijkstra.env_dijkstra_arr.
+Require Import CertiGraph.dijkstra.MathDijkGraph.
+Require Import CertiGraph.graph.AdjMatGraph.
 
 Local Open Scope logic.
 

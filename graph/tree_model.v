@@ -1,14 +1,14 @@
 Require Import Coq.Arith.Arith.
-Require Import RamifyCoq.lib.Coqlib.
-Require Import RamifyCoq.lib.EnumEnsembles.
-Require Import RamifyCoq.lib.EquivDec_ext.
-Require Import RamifyCoq.lib.List_ext.
-Require Import RamifyCoq.graph.graph_model.
-Require Import RamifyCoq.graph.path_lemmas.
-Require Import RamifyCoq.graph.subgraph2.
-Require Import RamifyCoq.graph.MathGraph.
-Require Import RamifyCoq.graph.FiniteGraph.
-Require Import RamifyCoq.graph.reachable_computable.
+Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.lib.EnumEnsembles.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.graph.subgraph2.
+Require Import CertiGraph.graph.MathGraph.
+Require Import CertiGraph.graph.FiniteGraph.
+Require Import CertiGraph.graph.reachable_computable.
 Require Import Coq.Lists.List.
 
 Section TREE_DEF.
