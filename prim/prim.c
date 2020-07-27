@@ -57,7 +57,7 @@ void prim(int graph[SIZE][SIZE], int r, int msf[SIZE][SIZE]) {
         int u = popMin(pq);
         out[u] = 1;
         for (int v = 0; v < SIZE; ++v) {
-            if ((!out[v]) && graph[u][v] < key[v]) {
+            if (out[v]==0 && graph[u][v] < key[v]) {
                 parent[v] = u;
                 key[v] = graph[u][v];
                 adjustWeight(v, key[v], pq);
