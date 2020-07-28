@@ -60,8 +60,8 @@ Definition inv_unpopped (g : DijkGG) src (popped prev dist: list V) (dst: V) :=
    vvalid g mom /\
    In mom popped /\
    elabel g (mom, dst) < inf /\
-   (Znth mom dist) + (elabel g (mom, dst)) < inf /\
-   Znth dst dist = (Znth mom dist) + (elabel g (mom, dst)) /\
+   Znth mom dist + elabel g (mom, dst) < inf /\
+   Znth dst dist = Znth mom dist + elabel g (mom, dst) /\
    forall mom',
      vvalid g mom' ->
      In mom' popped ->
@@ -77,14 +77,13 @@ Definition inv_unpopped_weak (g : DijkGG) (src: V) (popped prev dist : list V) (
    vvalid g mom /\
    In mom popped /\
    (elabel g (mom, dst)) < inf /\
-   Znth mom dist + (elabel g (mom, dst)) < inf /\
+   Znth mom dist + elabel g (mom, dst) < inf /\
    Znth dst dist = Znth mom dist + (elabel g (mom, dst))) /\
   forall mom',
     mom' <> u ->
     vvalid g mom' ->
     In mom' popped ->
-    Znth dst dist <=
-    Znth mom' dist + elabel g (mom', dst).
+    Znth dst dist <= Znth mom' dist + elabel g (mom', dst).
   
 Definition inv_unseen (g : DijkGG) (popped dist: list V) (dst : V) :=
   ~ In dst popped ->
