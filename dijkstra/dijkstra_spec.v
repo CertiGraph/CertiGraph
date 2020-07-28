@@ -7,6 +7,10 @@ Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.SpaceDijkGraph.
 Require Import CertiGraph.dijkstra.path_cost.
 
+Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
+Definition Vprog : varspecs. mk_varspecs prog. Defined.
+Global Existing Instance CompSpecs.
+
 Local Open Scope Z_scope.
 
 (*
@@ -33,12 +37,13 @@ Definition path_in_popped (g : DijkGG) popped dist path :=
 
 Definition inv_popped (g : DijkGG) src (popped prev dist : list V) dst :=
   In dst popped ->
-  (Znth dst dist = inf /\
+  ((* the first unreachable vertex has been popped.
+      the invariant is unaware of this, but this 
+      means that we will break *)   
+    Znth dst dist = inf /\     
    (forall m,
      vvalid g m -> 
-     (careful_add
-        (Znth m dist)
-        (elabel g (m, dst)) = inf) /\
+     (Znth m dist + elabel g (m, dst) >= inf) /\
      (~ In m popped -> Znth m dist = inf)))
   \/
   (exists path,
@@ -60,8 +65,7 @@ Definition inv_unpopped (g : DijkGG) src (popped prev dist: list V) (dst: V) :=
    forall mom',
      vvalid g mom' ->
      In mom' popped ->
-     Znth dst dist <= careful_add (Znth mom' dist)
-                                  (elabel g (mom', dst))).
+     Znth dst dist <= Znth mom' dist + elabel g (mom', dst)).
 
 Definition inv_unpopped_weak (g : DijkGG) (src: V) (popped prev dist : list V) (dst u : V) :=
   ~ In dst popped ->
@@ -80,17 +84,14 @@ Definition inv_unpopped_weak (g : DijkGG) (src: V) (popped prev dist : list V) (
     vvalid g mom' ->
     In mom' popped ->
     Znth dst dist <=
-    careful_add (Znth mom' dist)
-                (elabel g (mom', dst)).
+    Znth mom' dist + elabel g (mom', dst).
   
 Definition inv_unseen (g : DijkGG) (popped dist: list V) (dst : V) :=
   ~ In dst popped ->
   Znth dst dist = inf ->
   forall m, vvalid g m ->
             In m popped ->
-            careful_add 
-              (Znth m dist)
-              (elabel g (m, dst)) = inf.
+            Znth m dist + elabel g (m, dst) >= inf.
 
 Definition inv_unseen_weak (g : DijkGG) (popped dist: list V) (dst u : V) :=
   ~ In dst popped ->
@@ -98,9 +99,7 @@ Definition inv_unseen_weak (g : DijkGG) (popped dist: list V) (dst u : V) :=
   forall m, vvalid g m ->
             In m popped ->
             m <> u ->
-            careful_add
-              (Znth m dist)
-              (elabel g (m, dst)) = inf.
+            Znth m dist + elabel g (m, dst) >= inf.
                                                            
 Definition dijkstra_correct (g : DijkGG) src popped prev dist : Prop :=
   forall dst,
@@ -121,7 +120,7 @@ Definition dijkstra_spec :=
          pointer_val_val dist;
          pointer_val_val prev)
   GLOBALS ()
-  SEP (DijkGraph sh g (pointer_val_val arr);
+  SEP (DijkGraph sh CompSpecs g (pointer_val_val arr);
       data_at_ Tsh (tarray tint SIZE) (pointer_val_val dist);
       data_at_ Tsh (tarray tint SIZE) (pointer_val_val prev))
   POST [tvoid]
@@ -130,7 +129,7 @@ Definition dijkstra_spec :=
    EX popped_verts: list V,                             
    PROP (dijkstra_correct g src popped_verts prev_contents dist_contents)
    LOCAL ()
-   SEP (DijkGraph sh g (pointer_val_val arr);
+   SEP (DijkGraph sh CompSpecs g (pointer_val_val arr);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist)).
 
