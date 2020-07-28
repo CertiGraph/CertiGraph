@@ -1202,7 +1202,7 @@ Proof.
     forward. forward. 
     forward_call (v_pq, src, 0, (list_repeat (Z.to_nat SIZE) (inf: V))).
     do 2 rewrite map_list_repeat.
-    assert (H_valid_src: vvalid g src). {
+    assert (H_src_valid: vvalid g src). {
       rewrite (vvalid_meaning g); trivial.
     }
 
@@ -1347,7 +1347,7 @@ Proof.
            "seen but not popped" category of vertices *)
 
         (* We prove a few useful facts about u: *)
-        assert (H_valid_u: vvalid g u). {
+        assert (H_u_valid: vvalid g u). {
           apply (vvalid_meaning g); trivial.
           subst u.
           replace SIZE with (Zlength priq_contents).
@@ -1358,7 +1358,7 @@ Proof.
         }
         
         assert (0 <= u < SIZE). {
-          apply (vvalid_meaning g) in H_valid_u; trivial.
+          apply (vvalid_meaning g) in H_u_valid; trivial.
         }
         
         assert (~ (In u popped_verts)). {
@@ -1786,11 +1786,16 @@ Proof.
              ulia. rewrite <- inf_eq; rep_lia.
           ++ do 2 rewrite upd_Znth_map. cancel.
 
-             
         -- (* We now begin with the for loop's body *)
-          assert (0 <= u < Zlength (@graph_to_mat SIZE g id)). {
-            rewrite graph_to_mat_Zlength; lia.
+          assert (Zlength (@graph_to_mat SIZE g id) = SIZE). {
+            rewrite graph_to_mat_Zlength; trivial. lia.
           }
+          
+          (* assert (0 <= u < Zlength (@graph_to_mat SIZE g id)). { *)
+            (* rewrite graph_to_mat_Zlength; lia. *)
+          (* } *)
+          assert (1 = 1) by trivial.
+
           assert (Zlength (Znth u (@graph_to_mat SIZE g id)) = SIZE). {
             rewrite Forall_forall in H0. apply H0. apply Znth_In.
             ulia.
@@ -1811,32 +1816,30 @@ Proof.
             unfold list_address. simpl.
             rewrite field_address_offset.
             1: rewrite offset_offset_val; simpl; f_equal; rep_lia.
-            destruct H34 as [? [? [? [? ?]]]].
+            destruct H35 as [? [? [? [? ?]]]].
             unfold field_compatible; split3; [| | split3]; simpl; auto.
           } 
           forward. thaw FR2.
           gather_SEP (iter_sepcon _ _) (data_at _ _ _ _) (iter_sepcon _ _).
           rewrite sepcon_assoc.
           rewrite <- (@SpaceAdjMatGraph_unfold SIZE); trivial. thaw FR.
+          clear H32.
+          assert (1 = 1) by trivial.
           remember (Znth i (Znth u (@graph_to_mat SIZE g id))) as cost.
+
           assert (H_i_valid: vvalid g i). {
             apply (vvalid_meaning g); trivial.
           }
-          assert (H_u_valid: vvalid g u). {
-            trivial.
-          }
-          (* todo: definitely refactor out *)
+
           rewrite <- elabel_Znth_graph_to_mat in Heqcost; trivial.
-          
+
           assert_PROP (Zlength priq_contents' = SIZE). {
             entailer!. repeat rewrite Zlength_map in *. trivial. }
           assert_PROP (Zlength prev_contents' = SIZE). {
             entailer!. repeat rewrite Zlength_map in *. trivial. }
           assert_PROP (Zlength dist_contents' = SIZE). {
             entailer!. repeat rewrite Zlength_map in *. trivial. }
-          assert (Zlength (@graph_to_mat SIZE g id) = SIZE). {
-            rewrite graph_to_mat_Zlength; trivial. lia.
-          }            
+          
           forward_if.
           ++ rename H36 into Htemp.
              assert (0 <= cost <= Int.max_signed / SIZE). {
@@ -1859,12 +1862,12 @@ Proof.
              
              assert (0 <= Znth u dist_contents' <= inf). {
                assert (0 <= u < Zlength dist_contents') by lia.
-               apply (Forall_Znth _ _ _ H38) in H30.
+               apply (Forall_Znth _ _ _ H38) in H31.
                assumption.
              }
              assert (0 <= Znth i dist_contents' <= inf). {
                assert (0 <= i < Zlength dist_contents') by lia.
-               apply (Forall_Znth _ _ _ H39) in H30.
+               apply (Forall_Znth _ _ _ H39) in H31.
                assumption.
              }
              assert (0 <= Znth u dist_contents' + cost <= Int.max_signed). {
@@ -1889,14 +1892,14 @@ Proof.
                      This is impossible for popped items.
                    *)
                   intro.
-                  destruct (H18 _ H_i_valid H41).
+                  destruct (H19 _ H_i_valid H41).
                   - destruct H42.
                     destruct (H43 u H_u_valid).
                     unfold V, DE in *.
                     ulia.
                   - apply Zlt_not_le in improvement.
                     apply improvement.
-                    destruct (H18 _ H_u_valid H26) as [[? ?] | [p2u [? [? ?]]]].
+                    destruct (H19 _ H_u_valid H27) as [[? ?] | [p2u [? [? ?]]]].
                     1: ulia.
                     destruct H43 as [? [? [? [? ?]]]].
                     destruct H42 as [p2i [? [? ?]]].
@@ -1922,10 +1925,10 @@ Proof.
                 }
                  
                 assert (Htemp : 0 <= i < Zlength dist_contents') by lia.
-                pose proof (Znth_dist_cases i dist_contents' Htemp H30).
+                pose proof (Znth_dist_cases i dist_contents' Htemp H31).
                 clear Htemp.
                 rename H42 into icases.
-                rewrite <- H27 in icases; trivial.
+                rewrite <- H28 in icases; trivial.
 
                 assert (0 <= i < Zlength (map Vint (map Int.repr dist_contents'))) by
                     (repeat rewrite Zlength_map; lia).
@@ -1953,7 +1956,7 @@ Proof.
                 assert (u <> i) by (intro; subst; lia).
                 split3; [| | split3; [| | split3; [| | split3; [| | split]]]]; intros.
                 --- unfold inv_popped; intros.
-                    pose proof (H18 dst H55 H56).
+                    pose proof (H19 dst H55 H56).
                     assert (n: dst <> i). {
                       intro contra.
                       rewrite contra in *.
@@ -1965,7 +1968,7 @@ Proof.
                     repeat rewrite upd_Znth_diff; try lia.
                     destruct H57; [exfalso | right].
                     +++ destruct H57.
-                        specialize (H19 _ H55 H56).
+                        specialize (H20 _ H55 H56).
                         unfold V in *. lia.
                     +++ destruct H57 as [p2dst [? [? ?]]].
                         exists p2dst. split3; trivial.
@@ -2019,7 +2022,7 @@ Proof.
                   destruct (Z.eq_dec dst i).
                     1: subst dst; rewrite upd_Znth_same; trivial; lia.
                     rewrite upd_Znth_diff.
-                    apply H19; trivial.
+                    apply H20; trivial.
                     all: trivial; try lia.
                     apply (vvalid_meaning g) in H55; ulia.
                 --- intros.
@@ -2042,7 +2045,7 @@ Proof.
                           apply (vvalid_meaning g); ulia.
                         }
                         
-                        destruct (H18 _ Hu H26).
+                        destruct (H19 _ Hu H27).
                         1: unfold V in *; lia.
                         clear H57.
                         unfold V in *.
@@ -2073,7 +2076,7 @@ Proof.
                             }
                             rename H61 into Hk.
                             
-                            destruct (H18 _ H57 H59); trivial.
+                            destruct (H19 _ H57 H59); trivial.
                             1: unfold V in *; lia.
 
                             
@@ -2165,9 +2168,9 @@ Proof.
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
-                                rewrite H27 in H72; trivial.
-                                specialize (H23 _ H73 H56 H72).
-                                pose proof (H23 mom' H57 H59 n0).
+                                rewrite H28 in H72; trivial.
+                                specialize (H24 _ H73 H56 H72).
+                                pose proof (H24 mom' H57 H59 n0).
                                 ulia.
                               }
                               
@@ -2187,8 +2190,8 @@ Proof.
                                 assert (0 <= mom' < SIZE). {
                                   apply (vvalid_meaning g) in H57; ulia.
                                 }
-                                rewrite H27 in H72; trivial.
-                                destruct (H21 _ H73 H56 H72).
+                                rewrite H28 in H72; trivial.
+                                destruct (H22 _ H73 H56 H72).
                                 - lia.
                                 - destruct H75 as [? [[? [? [? [? [? ?]]]]] ?]].
                                   apply H82; trivial.
@@ -2219,13 +2222,13 @@ Proof.
                               1: {
                                 (* i was unseen *)
                                 assert (i <= i < SIZE) by lia.
-                                rewrite H27 in H73; trivial.
-                                pose proof (H23 _ H74 H56 H73 mom' H57 H59 H72).
+                                rewrite H28 in H73; trivial.
+                                pose proof (H24 _ H74 H56 H73 mom' H57 H59 H72).
                                 ulia.
                               }
                               assert (i <= i < SIZE) by lia.
-                              rewrite H27 in H73; trivial.
-                              destruct (H21 i H74 H56 H73).
+                              rewrite H28 in H73; trivial.
+                              destruct (H22 i H74 H56 H73).
                               1: subst i; exfalso; lia.
                                 destruct H75 as [? [[? [? [? [? [? ?]]]]] ?]].
                               apply Z.lt_le_incl.
@@ -2240,9 +2243,9 @@ Proof.
                         intros.
                         unfold V in *;
                           rewrite upd_Znth_diff in * by lia.
-                        specialize (H20 _ H56 H57). destruct H20; trivial.
+                        specialize (H21 _ H56 H57). destruct H21; trivial.
                         1: left; trivial.
-                        destruct H20 as [? [? [? [? [? [? ?]]]]]].
+                        destruct H21 as [? [? [? [? [? [? ?]]]]]].
                         unfold V in *.
                         remember (Znth dst prev_contents') as mom. right.
                         split; trivial.
@@ -2284,7 +2287,7 @@ Proof.
                     1: subst dst; lia.
                     unfold V in *.
                     rewrite upd_Znth_diff in H57 by lia.
-                    destruct (H21 _ H58 H56 H57); [left | right]; trivial.
+                    destruct (H22 _ H58 H56 H57); [left | right]; trivial.
                     destruct H59 as [? [[? [Ha [? [? [? ?]]]]] ?]].
                     unfold V in *.
                     rewrite upd_Znth_diff by lia.
@@ -2321,7 +2324,7 @@ Proof.
                     assert (0 <= dst < i) by lia.
                     rewrite upd_Znth_diff in H57; try lia.
                     rewrite upd_Znth_diff; try lia.
-                    apply H22; trivial.
+                    apply H23; trivial.
                     +++ apply (vvalid_meaning g) in H58; ulia.
                     +++ ulia.
                     +++ intro contra. subst m.
@@ -2347,7 +2350,7 @@ Proof.
                          rewrite upd_Znth_Zlength; lia.
                     }
                     rewrite upd_Znth_diff; trivial.
-                    apply H23; trivial.
+                    apply H24; trivial.
                     1: apply (vvalid_meaning g) in H58; ulia.
                     all: lia.
                 --- rewrite upd_Znth_diff; try lia.
@@ -2359,7 +2362,7 @@ Proof.
                         repeat rewrite upd_Znth_same; trivial; lia.
                     +++ rewrite (vvalid_meaning g) in H55; trivial.
                         repeat rewrite upd_Znth_diff; trivial; try lia.
-                        apply H27; trivial.
+                        apply H28; trivial.
                         rewrite (vvalid_meaning g); trivial.
                 --- split3; apply Forall_upd_Znth; trivial; try lia.    
              ** (* This is the branch where we didn't
@@ -2385,7 +2388,7 @@ Proof.
                        still preserves the for loop invariant *)
                     destruct (Z.eq_dec dst i).
                     (* when dst <> i, all is well *)
-                    2: apply H20; lia.
+                    2: apply H21; lia.
                     (* things get interesting when dst = i
                        We must show that i is better off
                        NOT going via u *)
@@ -2397,7 +2400,7 @@ Proof.
                      *)
                     unfold inv_unpopped; intros.
                     assert (i <= i < SIZE) by lia.
-                    destruct (H21 i H55 H53 H54).
+                    destruct (H22 i H55 H53 H54).
                     1: left; trivial.
                     destruct H56 as [? [[? [? [? [? [? ?]]]]] ?]].
                     unfold V in *.
@@ -2414,7 +2417,7 @@ Proof.
                       pose proof (edge_cost_pos g (mom', i)).
                       ulia.
                     }
-                    destruct (H18 _ H64 H65); [unfold V in *; ulia|].
+                    destruct (H19 _ H64 H65); [unfold V in *; ulia|].
                     
                     destruct H66 as [p2mom' [? [? ?]]].
                     assert (Hrem := H66).
@@ -2494,7 +2497,7 @@ Proof.
                           }
                           red in H21.
 
-                          destruct (H21 _ H55 H53 H54).
+                          destruct (H22 _ H55 H53 H54).
                           1: lia.
                           destruct H81 as [? [[? [? [? [? [? ?]]]]]]].
                           apply H88; trivial.
@@ -2511,14 +2514,14 @@ Proof.
                       apply pfoot_in in H74. rewrite H69 in *. trivial.           
                 --- intros. destruct (Z.eq_dec dst i).
                     +++ subst dst. lia.
-                    +++ apply H21; lia.
+                    +++ apply H22; lia.
                 --- unfold inv_unseen; intros.
                     destruct (Z.eq_dec dst i).
-                    2: apply H22; ulia.                     
+                    2: apply H23; ulia.                     
                     subst dst.
                     assert (i <= i < SIZE) by lia.
                     destruct (Z.eq_dec m u).
-                    2: apply H23; trivial.
+                    2: apply H24; trivial.
                     subst m.
                     unfold V in *.
                     rewrite H54 in improvement.
@@ -2527,7 +2530,7 @@ Proof.
                     lia.
                 --- intros.
                     assert (i <= dst < SIZE) by lia.
-                    apply H23; trivial.
+                    apply H24; trivial.
           ++  (* i was not a neighbor of u.
                  We must prove the for loop's invariant holds *)
             rewrite inf_eq2 in H36.
@@ -2550,7 +2553,7 @@ Proof.
  *)
                    unfold inv_unpopped; intros.
                    assert (i <= i < SIZE) by lia.
-                   destruct (H21 i H51 H49 H50).
+                   destruct (H22 i H51 H49 H50).
                    1: left; trivial.
                    destruct H52 as [? [[? [? [? [? [? ?]]]]]?]].
                    unfold V in *.
@@ -2581,32 +2584,32 @@ Proof.
                    destruct (Z.eq_dec mom' u).
                    1: { subst mom'.
                         assert (0 <= Znth u dist_contents'). {
-                          apply (Forall_Znth _ _ u) in H30.
-                          simpl in H30. apply H30.
+                          apply (Forall_Znth _ _ u) in H31.
+                          simpl in H31. apply H31.
                           lia.
                         }
                         ulia.
                    }
                    apply H59; trivial.
-               --- apply H20; lia.
-            ** destruct (Z.eq_dec dst i).
-               --- lia. 
                --- apply H21; lia.
             ** destruct (Z.eq_dec dst i).
-               2: apply H22; lia.
+               --- lia. 
+               --- apply H22; lia.
+            ** destruct (Z.eq_dec dst i).
+               2: apply H23; lia.
                subst dst.
                assert (i <= i < SIZE) by lia.
                unfold inv_unseen; intros.
                destruct (Z.eq_dec m u).
-               2: apply H23; trivial.
+               2: apply H24; trivial.
                subst m.
                assert (0 <= Znth u dist_contents'). {
-                 apply (Forall_Znth _ _ u) in H30.
-                 simpl in H30. apply H30.
+                 apply (Forall_Znth _ _ u) in H31.
+                 simpl in H31. apply H31.
                  ulia.
                }
                ulia.
-            ** apply H23; lia.
+            ** apply H24; lia.
         -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
           Intros prev_contents' priq_contents' dist_contents' popped_verts'.
@@ -2616,7 +2619,7 @@ Proof.
           unfold dijkstra_correct.
           split3; [auto | apply H17 | apply H19];
             try rewrite <- (vvalid_meaning g); trivial.
-      * (* After breaking, the while loop,
+      * (* After breaking from the while loop,
            prove break's postcondition *)
         assert (isEmpty priq_contents = Vone). {
           destruct (isEmptyTwoCases priq_contents); trivial.
