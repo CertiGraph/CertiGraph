@@ -594,6 +594,332 @@ Proof.
   rewrite <- inf_eq. compute; trivial.
 Qed.
 
+Lemma inv_popped_add_u_dst_neq_u:
+  forall (g: DijkGG) src dst u popped prev dist,
+    dijkstra_correct g src popped prev dist ->
+    vvalid g dst ->
+    dst <> u ->
+    inv_popped g src (u :: popped) prev dist dst.
+Proof.
+  intros. intro. simpl in H2; destruct H2; [lia|].
+  destruct (H _ H0) as [? _].
+  specialize (H3 H2); destruct H3 as [[? ?]|[? [? [? ?]]]];
+         [left | right]; trivial.
+  - split; trivial.
+    intros. destruct (H4 _ H5).
+    destruct (Z.eq_dec m u); [subst m|];
+      split; trivial; intro;
+        apply not_in_cons in H8; destruct H8 as [_ ?];
+          apply H7; trivial.
+  - exists x; split3; trivial.
+    unfold path_in_popped. intros.
+    destruct (H4 _ H6); split; [simpl; right|]; trivial.
+Qed.
+
+Lemma inv_popped_add_src:
+  forall (g: DijkGG) src popped prev dist,
+    dijkstra_correct g src popped prev dist ->
+    vvalid g src ->
+    Znth src dist = 0 ->
+    inv_popped g src (src :: popped) prev dist src.
+Proof.
+  intros. right.
+  exists (src, []); split3; trivial.
+  - split3; [| | split3]; trivial.
+    + split; trivial.
+    + split; trivial.
+    + rewrite Forall_forall; intros; simpl in H3; lia.
+  - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
+    + simpl in H3. unfold V, E in *.
+      rewrite H3, H1; split; trivial.
+      rewrite <- inf_eq; compute; trivial.
+    + simpl in H3; lia.
+  - unfold path_globally_optimal; intros.
+    unfold path_cost at 1; simpl.
+    apply path_cost_pos; trivial.
+Qed.  
+
+Lemma path_correct_app_cons:
+  forall (g: DijkGG) src u mom p2mom prev dist,
+  path_correct g prev dist src mom p2mom ->
+  Znth u dist = Znth mom dist + elabel g (mom, u) ->
+  Znth mom dist + elabel g (mom, u) < inf ->
+  strong_evalid g (mom, u) ->
+  Znth u prev = mom ->
+  path_correct g prev dist src u (fst p2mom, snd p2mom +:: (mom, u)).
+Proof.
+  intros.
+  destruct H as [? [[? ?] [? [? ?]]]].
+  assert (path_cost g p2mom + elabel g (mom, u) < inf) by
+      ulia. 
+  split3; [| | split3]; trivial.
+  - apply valid_path_app_cons; trivial; try rewrite <- surjective_pairing; trivial.
+  - apply path_ends_app_cons with (a' := src); trivial.
+    split; trivial.
+    rewrite <- (surjective_pairing p2mom); trivial.
+  - destruct H2; rewrite path_cost_app_cons; trivial; ulia.
+  - destruct H2; rewrite path_cost_app_cons; trivial; try ulia.
+  - rewrite Forall_forall. intros.
+    rewrite Forall_forall in H8.
+    apply in_app_or in H10. destruct H10.
+    + apply H8; trivial.
+    + simpl in H10. destruct H10; [| lia].
+      rewrite (surjective_pairing x) in *.
+      inversion H10.
+      simpl. rewrite <- H12, <- H13. ulia.
+Qed.
+
+
+Lemma inv_popped_add_u:
+  forall (g: DijkGG) src dst popped prev priq dist,
+ let u :=
+      find priq (fold_right Z.min (hd 0 priq) priq) 0 in
+    dijkstra_correct g src popped prev dist ->
+    Znth src dist = 0 ->
+    (forall dst : Z,
+        vvalid g dst ->
+        ~ In dst popped -> Znth dst priq = Znth dst dist) ->
+    inrange_dist dist ->
+    Zlength priq = SIZE ->
+    Zlength dist = SIZE ->
+    ~ In u popped ->
+    vvalid g u ->
+    Znth u dist < inf ->
+    vvalid g dst ->
+    inv_popped g src (u :: popped) prev dist dst.
+Proof.
+  intros.
+  destruct (Z.eq_dec dst u).
+  (* the easy case where dst is old, and not the new u *)
+  2: apply inv_popped_add_u_dst_neq_u; trivial.
+
+  (* now we must show that u is a valid entrant *)
+  subst dst. clear H8.
+  destruct (H _ H6) as [_ [? _]].
+  specialize (H8 H5 H7).
+  destruct H8 as [? | [_ [? [? [? [? [? ?]]]]]]].
+
+  (* the easy case where src itself is being poppped *)
+  1: subst src; apply inv_popped_add_src; trivial.
+
+  (* now we are in the main proof: 
+     u <> src, and u is the exact new entrant.
+     Main point: there is some mom in popped.
+     the best path to u is:
+     (the optimal path to mom) + (mom, u)
+   *)
+
+  remember (Znth u prev) as mom.
+  destruct (popped_noninf_has_path H H9) as [p2mom [? [? ?]]]; trivial.
+  1: pose proof (edge_cost_pos g (mom, u)); ulia.
+
+  right. clear H17.
+  exists (fst p2mom, snd p2mom +:: (mom, u)).              
+  assert (Hg: evalid g (mom, u)). {
+    rewrite (evalid_meaning g); split.
+    apply edge_representable.
+    apply not_eq_sym, Zaux.Zgt_not_eq; trivial.
+  }
+  assert (strong_evalid g (mom, u)). {
+    split3; trivial.
+    rewrite (edge_src_fst g); simpl; trivial.
+    rewrite (edge_dst_snd g); simpl; trivial.
+  }
+    
+  split3.
+  - apply path_correct_app_cons; trivial. lia.
+  - unfold path_in_popped. intros.
+    destruct H14 as [? [? _]].
+    apply (in_path_app_cons _ _ _ src) in H18; trivial.
+    destruct H18.
+    + destruct (H15 _ H18).
+      split; trivial.
+      simpl. right; trivial.
+    + subst step. split; simpl; [left|]; trivial.
+
+  - (* Heart of the proof:
+       we must show that the locally optimal path via mom
+       is actually the globally optimal path to u *)
+    unfold path_globally_optimal in H16.
+    destruct H14 as [? [? [? [? ?]]]].
+    unfold path_globally_optimal; intros.
+    rewrite path_cost_app_cons; trivial; [|ulia].
+    destruct (Z_le_gt_dec
+                (path_cost g p2mom + elabel g (mom, u))
+                (path_cost g p')); auto.
+    apply Z.gt_lt in g0.
+    destruct (zlt (path_cost g p') inf); [|ulia].
+
+    (* p' claims to be a strictly better path
+       from src to u (see g0).
+       We will show that this is impossible. *)
+    exfalso. apply Zlt_not_le in g0. apply g0.
+    
+    rewrite (surjective_pairing p') in *.
+    remember (snd p') as links.
+    replace (fst p') with src in *.
+    2: destruct H23; simpl in H23; lia.
+
+    assert (Htemp: In src popped). {
+      destruct H23. apply H15; trivial.
+      left. rewrite (surjective_pairing p2mom) in *.
+      simpl. destruct H18. simpl in H18. lia.
+    } 
+
+    (* we can split p' into three segments:
+       the part inside popped, 
+       the hop from popped to unpopped,
+       and the part outside popped 
+     *)
+    destruct (path_leaving_popped_stronger g links src u popped)
+      as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]; trivial.
+    clear Htemp.
+
+    (* We will clean up the goal later *)
+    replace (path_cost g (src, links)) with
+        (path_cost g p1 +
+         elabel g (mom', child') +
+         path_cost g p2).
+    2: shelve.
+    
+    assert (vvalid g mom'). {
+      destruct H31 as [_ [? _]].
+      rewrite (edge_src_fst g) in H31.
+      simpl in H31; trivial.
+    }
+
+    assert (vvalid g child'). {
+      destruct H31 as [_ [_ ?]].
+      rewrite (edge_dst_snd g) in H31;
+        simpl in H31; trivial.
+    }
+
+    (* mom' is optimal, and so we know that there exists a 
+       path optp2mom', the global minimum from src to mom' *)
+    destruct (H mom' H35) as [? _].
+    destruct (H37 H29) as [[? ?] | [optp2mom' [? [? ?]]]].
+    1: {
+      destruct (H39 u); trivial.
+      specialize (H41 H5). ulia.
+    }
+    (* and path_cost of optp2mom' will be <= that of p1 *)
+    pose proof (H40 p1 H25 H27).
+
+    (* so now we can prove something quite a bit stronger *)
+    apply Z.le_trans with
+        (m := path_cost g optp2mom' + elabel g (mom', child')).
+    2: pose proof (path_cost_pos _ _ H26); lia.
+
+    (* Intuitionally this is clear: 
+       u was chosen for being the cheapest 
+       of the unpopped vertices. child' cannot beat it.
+       However, for the purposes of the proof, 
+       we must take cases on the status of child'
+     *)
+    assert (Znth mom' dist + elabel g (mom', child') < inf). {
+      destruct H38 as [_ [_ [_ [? _]]]].
+      rewrite H38.
+      apply Z.le_lt_trans
+        with (m := path_cost g p1 + elabel g (mom', child')); [lia|].
+      rewrite <- H24 in l.
+      replace (path_glue p1 (path_glue (mom', [(mom', child')]) p2))
+        with
+          (path_glue (path_glue p1 (mom', [(mom', child')])) p2) in l.
+      2: { apply (path_glue_assoc g).
+           apply (path_ends_meet _ _ _ src mom' child');
+             trivial.
+           apply path_ends_one_step.
+           apply (path_ends_meet _ _ _ mom' child' u);
+             trivial.
+           apply path_ends_one_step.
+      }
+      apply path_cost_path_glue_lt in l; trivial.
+      2: { apply valid_path_merge; trivial.
+           apply (path_ends_meet _ _ _ src mom' child');
+             trivial.
+           apply path_ends_one_step.
+           simpl; split; trivial.
+           rewrite (edge_src_fst g); trivial.
+      }
+      destruct l as [l _].
+      rewrite path_cost_path_glue in l; trivial.
+      apply careful_add_inf_clean.
+      apply path_cost_pos; trivial.
+      apply edge_cost_pos.
+      rewrite one_step_path_Znth in l. lia.
+      apply H31.
+    }
+    
+    assert (0 <= Znth mom' dist). {
+      rewrite (vvalid_meaning g) in H35.
+      apply (Forall_Znth _ _ mom') in H2; [|ulia].
+      apply H2. }
+
+    assert (Htemp: 0 <= child' < Zlength dist). {
+      apply (vvalid_meaning g) in H36; trivial; lia.
+    }
+    
+    destruct (Znth_dist_cases child' dist); trivial; clear Htemp.
+    + (* dist[child'] = inf. This is impossible *)
+      exfalso.
+      destruct (H _ H36) as [_ [_ ?]].
+      specialize (H45 H30 H44 mom' H35 H29).
+      rewrite careful_add_clean in H45; trivial. ulia.
+      apply edge_cost_pos.
+
+    + (* dist[child'] < inf. We use inv_unpopped *)
+      destruct (H _ H36) as [_ [? _]].
+      red in H45.
+      specialize (H45 H30 H44).
+      destruct H45 as [? | [_ [? [? [? [? [? ?]]]]]]].
+      * (* child' = src. Again, impossible *)
+        exfalso.
+        subst child'.
+        apply H30, H39.
+        destruct H38 as [_ [[? _] _]]. left.
+        rewrite (surjective_pairing optp2mom') in *; simpl.
+        simpl in H38; lia.
+      * specialize (H50 mom' H35 H29).
+        rewrite careful_add_clean in H50; trivial; try lia.
+        2: apply edge_cost_pos.
+
+        apply Z.le_trans with (m := Znth child' dist); trivial.
+        2: destruct H38 as [_ [_ [_ [? _]]]]; ulia.
+        unfold V, E in *.
+        rewrite <- H20, <- H12.
+        repeat rewrite <- H1; trivial.
+        subst u.
+        rewrite Znth_find.
+        1: { apply fold_min_general.
+             apply Znth_In.
+             apply (vvalid_meaning g) in H36; trivial; lia.
+        }
+        apply min_in_list.
+        1: apply incl_refl.
+        rewrite <- Znth_0_hd; [apply Znth_In|];
+          rewrite H3; unfold SIZE; lia.
+
+        Unshelve.
+
+        assert (valid_path g (mom', [(mom', child')])).
+        admit.
+        
+        assert (valid_path g (path_glue (mom', [(mom', child')]) p2)).
+        admit.
+
+        rewrite <- H24.
+        rewrite path_cost_path_glue, careful_add_clean,
+        path_cost_path_glue, careful_add_clean; trivial.
+        rewrite one_step_path_Znth; [lia|].
+        apply H31.
+        
+        3: rewrite <- H24 in l; apply careful_add_inf_clean; trivial.
+        5: rewrite path_cost_path_glue in l; trivial.
+        all: try apply path_cost_pos; trivial.
+        2: rewrite one_step_path_Znth; [ulia | apply H31]. 
+        2: { admit. }
+        admit.
+Admitted.
 
 (*
 Lemma get_popped_empty:
@@ -1378,354 +1704,9 @@ Proof.
           split3; [| | split3; [| |split3]]; trivial.
           ++ (* We must show inv_popped for all
                 dst that are in range. *)
-            
-Set Nested Proofs Allowed.
-            
-Lemma inv_popped_add_u_dst_neq_u:
-  forall (g: DijkGG) src dst u popped prev dist,
-    dijkstra_correct g src popped prev dist ->
-    vvalid g dst ->
-    dst <> u ->
-    inv_popped g src (u :: popped) prev dist dst.
-Proof.
-  intros. intro. simpl in H2; destruct H2; [lia|].
-  destruct (H _ H0) as [? _].
-  specialize (H3 H2); destruct H3 as [[? ?]|[? [? [? ?]]]];
-         [left | right]; trivial.
-  - split; trivial.
-    intros. destruct (H4 _ H5).
-    destruct (Z.eq_dec m u); [subst m|];
-      split; trivial; intro;
-        apply not_in_cons in H8; destruct H8 as [_ ?];
-          apply H7; trivial.
-  - exists x; split3; trivial.
-    unfold path_in_popped. intros.
-    destruct (H4 _ H6); split; [simpl; right|]; trivial.
-Qed.
-
-Lemma inv_popped_add_src:
-  forall (g: DijkGG) src popped prev dist,
-    dijkstra_correct g src popped prev dist ->
-    vvalid g src ->
-    Znth src dist = 0 ->
-    inv_popped g src (src :: popped) prev dist src.
-Proof.
-  intros. right.
-  exists (src, []); split3; trivial.
-  - split3; [| | split3]; trivial.
-    + split; trivial.
-    + split; trivial.
-    + rewrite Forall_forall; intros; simpl in H3; lia.
-  - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
-    + simpl in H3. unfold V, E in *.
-      rewrite H3, H1; split; trivial.
-      rewrite <- inf_eq; compute; trivial.
-    + simpl in H3; lia.
-  - unfold path_globally_optimal; intros.
-    unfold path_cost at 1; simpl.
-    apply path_cost_pos; trivial.
-Qed.  
-
-Lemma path_correct_app_cons:
-  forall (g: DijkGG) src u mom p2mom prev dist,
-  path_correct g prev dist src mom p2mom ->
-  Znth u dist = Znth mom dist + elabel g (mom, u) ->
-  Znth mom dist + elabel g (mom, u) < inf ->
-  strong_evalid g (mom, u) ->
-  Znth u prev = mom ->
-  path_correct g prev dist src u (fst p2mom, snd p2mom +:: (mom, u)).
-Proof.
-  intros.
-  destruct H as [? [[? ?] [? [? ?]]]].
-  assert (path_cost g p2mom + elabel g (mom, u) < inf) by
-      ulia. 
-  split3; [| | split3]; trivial.
-  - apply valid_path_app_cons; trivial; try rewrite <- surjective_pairing; trivial.
-  - apply path_ends_app_cons with (a' := src); trivial.
-    split; trivial.
-    rewrite <- (surjective_pairing p2mom); trivial.
-  - destruct H2; rewrite path_cost_app_cons; trivial; ulia.
-  - destruct H2; rewrite path_cost_app_cons; trivial; try ulia.
-  - rewrite Forall_forall. intros.
-    rewrite Forall_forall in H8.
-    apply in_app_or in H10. destruct H10.
-    + apply H8; trivial.
-    + simpl in H10. destruct H10; [| lia].
-      rewrite (surjective_pairing x) in *.
-      inversion H10.
-      simpl. rewrite <- H12, <- H13. ulia.
-Qed.
-
-Lemma inv_popped_add_u:
-  forall (g: DijkGG) src dst popped prev priq dist,
- let u :=
-      find priq (fold_right Z.min (hd 0 priq) priq) 0 in
-    dijkstra_correct g src popped prev dist ->
-    Znth src dist = 0 ->
-    (forall dst : Z,
-        vvalid g dst ->
-        ~ In dst popped -> Znth dst priq = Znth dst dist) ->
-    inrange_dist dist ->
-    Zlength priq = SIZE ->
-    Zlength dist = SIZE ->
-    ~ In u popped ->
-    vvalid g u ->
-    Znth u dist < inf ->
-    vvalid g dst ->
-    inv_popped g src (u :: popped) prev dist dst.
-Proof.
-  intros.
-  destruct (Z.eq_dec dst u).
-  (* the easy case where dst is old, and not the new u *)
-  2: apply inv_popped_add_u_dst_neq_u; trivial.
-
-  (* now we must show that u is a valid entrant *)
-  subst dst. clear H8.
-  destruct (H _ H6) as [_ [? _]].
-  specialize (H8 H5 H7).
-  destruct H8 as [? | [_ [? [? [? [? [? ?]]]]]]].
-
-  (* the easy case where src itself is being poppped *)
-  1: subst src; apply inv_popped_add_src; trivial.
-
-  (* now we are in the main proof: 
-     u <> src, and u is the exact new entrant.
-     Main point: there is some mom in popped.
-     the best path to u is:
-     (the optimal path to mom) + (mom, u)
-   *)
-
-  remember (Znth u prev) as mom.
-  destruct (popped_noninf_has_path H H9) as [p2mom [? [? ?]]]; trivial.
-  1: pose proof (edge_cost_pos g (mom, u)); ulia.
-
-  right. clear H17.
-  exists (fst p2mom, snd p2mom +:: (mom, u)).              
-  assert (Hg: evalid g (mom, u)). {
-    rewrite (evalid_meaning g); split.
-    apply edge_representable.
-    apply not_eq_sym, Zaux.Zgt_not_eq; trivial.
-  }
-  assert (strong_evalid g (mom, u)). {
-    split3; trivial.
-    rewrite (edge_src_fst g); simpl; trivial.
-    rewrite (edge_dst_snd g); simpl; trivial.
-  }
-    
-  split3.
-  - apply path_correct_app_cons; trivial. lia.
-  - unfold path_in_popped. intros.
-    destruct H14 as [? [? _]].
-    apply (in_path_app_cons _ _ _ src) in H18; trivial.
-    destruct H18.
-    + destruct (H15 _ H18).
-      split; trivial.
-      simpl. right; trivial.
-    + subst step. split; simpl; [left|]; trivial.
-
-  - (* Heart of the proof:
-       we must show that the locally optimal path via mom
-       is actually the globally optimal path to u *)
-    unfold path_globally_optimal in H16.
-    destruct H14 as [? [? [? [? ?]]]].
-    unfold path_globally_optimal; intros.
-    rewrite path_cost_app_cons; trivial; [|ulia].
-    destruct (Z_le_gt_dec
-                (path_cost g p2mom + elabel g (mom, u))
-                (path_cost g p')); auto.
-    apply Z.gt_lt in g0.
-    destruct (zlt (path_cost g p') inf); [|ulia].
-
-    (* p' claims to be a strictly better path
-       from src to u (see g0).
-       We will show that this is impossible. *)
-    exfalso. apply Zlt_not_le in g0. apply g0.
-    
-    rewrite (surjective_pairing p') in *.
-    remember (snd p') as links.
-    replace (fst p') with src in *.
-    2: destruct H23; simpl in H23; lia.
-
-    assert (Htemp: In src popped). {
-      destruct H23. apply H15; trivial.
-      left. rewrite (surjective_pairing p2mom) in *.
-      simpl. destruct H18. simpl in H18. lia.
-    } 
-
-    (* we can split p' into three segments:
-       the part inside popped, 
-       the hop from popped to unpopped,
-       and the part outside popped 
-     *)
-    destruct (path_leaving_popped_stronger g links src u popped)
-      as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]; trivial.
-    clear Htemp.
-
-    (* We will clean up the goal later *)
-    replace (path_cost g (src, links)) with
-        (path_cost g p1 +
-         elabel g (mom', child') +
-         path_cost g p2).
-    2: shelve.
-    
-    assert (vvalid g mom'). {
-      destruct H31 as [_ [? _]].
-      rewrite (edge_src_fst g) in H31.
-      simpl in H31; trivial.
-    }
-
-    assert (vvalid g child'). {
-      destruct H31 as [_ [_ ?]].
-      rewrite (edge_dst_snd g) in H31;
-        simpl in H31; trivial.
-    }
-
-    (* mom' is optimal, and so we know that there exists a 
-       path optp2mom', the global minimum from src to mom' *)
-    destruct (H mom' H35) as [? _].
-    destruct (H37 H29) as [[? ?] | [optp2mom' [? [? ?]]]].
-    1: {
-      destruct (H39 u); trivial.
-      specialize (H41 H5). ulia.
-    }
-    (* and path_cost of optp2mom' will be <= that of p1 *)
-    pose proof (H40 p1 H25 H27).
-
-    (* so now we can prove something quite a bit stronger *)
-    apply Z.le_trans with
-        (m := path_cost g optp2mom' + elabel g (mom', child')).
-    2: pose proof (path_cost_pos _ _ H26); lia.
-
-    (* Intuitionally this is clear: 
-       u was chosen for being the cheapest 
-       of the unpopped vertices. child' cannot beat it.
-       However, for the purposes of the proof, 
-       we must take cases on the status of child'
-     *)
-    assert (Znth mom' dist + elabel g (mom', child') < inf). {
-      destruct H38 as [_ [_ [_ [? _]]]].
-      rewrite H38.
-      apply Z.le_lt_trans
-        with (m := path_cost g p1 + elabel g (mom', child')); [lia|].
-      rewrite <- H24 in l.
-      replace (path_glue p1 (path_glue (mom', [(mom', child')]) p2))
-        with
-          (path_glue (path_glue p1 (mom', [(mom', child')])) p2) in l.
-      2: { apply (path_glue_assoc g).
-           apply (path_ends_meet _ _ _ src mom' child');
-             trivial.
-           apply path_ends_one_step.
-           apply (path_ends_meet _ _ _ mom' child' u);
-             trivial.
-           apply path_ends_one_step.
-      }
-      apply path_cost_path_glue_lt in l; trivial.
-      2: { apply valid_path_merge; trivial.
-           apply (path_ends_meet _ _ _ src mom' child');
-             trivial.
-           apply path_ends_one_step.
-           simpl; split; trivial.
-           rewrite (edge_src_fst g); trivial.
-      }
-      destruct l as [l _].
-      rewrite path_cost_path_glue in l; trivial.
-      apply careful_add_inf_clean.
-      apply path_cost_pos; trivial.
-      apply edge_cost_pos.
-      rewrite one_step_path_Znth in l. lia.
-      apply H31.
-    }
-    
-    assert (0 <= Znth mom' dist). {
-      rewrite (vvalid_meaning g) in H35.
-      apply (Forall_Znth _ _ mom') in H2; [|ulia].
-      apply H2. }
-
-    assert (Htemp: 0 <= child' < Zlength dist). {
-      apply (vvalid_meaning g) in H36; trivial; lia.
-    }
-    
-    destruct (Znth_dist_cases child' dist); trivial; clear Htemp.
-    + (* dist[child'] = inf. This is impossible *)
-      exfalso.
-      destruct (H _ H36) as [_ [_ ?]].
-      specialize (H45 H30 H44 mom' H35 H29).
-      rewrite careful_add_clean in H45; trivial. ulia.
-      apply edge_cost_pos.
-
-    + (* dist[child'] < inf. We use inv_unpopped *)
-      destruct (H _ H36) as [_ [? _]].
-      red in H45.
-      specialize (H45 H30 H44).
-      destruct H45 as [? | [_ [? [? [? [? [? ?]]]]]]].
-      * (* child' = src. Again, impossible *)
-        exfalso.
-        subst child'.
-        apply H30, H39.
-        destruct H38 as [_ [[? _] _]]. left.
-        rewrite (surjective_pairing optp2mom') in *; simpl.
-        simpl in H38; lia.
-      * specialize (H50 mom' H35 H29).
-        rewrite careful_add_clean in H50; trivial; try lia.
-        2: apply edge_cost_pos.
-
-        apply Z.le_trans with (m := Znth child' dist); trivial.
-        2: destruct H38 as [_ [_ [_ [? _]]]]; ulia.
-        unfold V, E in *.
-        rewrite <- H20, <- H12.
-        repeat rewrite <- H1; trivial.
-        subst u.
-        rewrite Znth_find.
-        1: { apply fold_min_general.
-             apply Znth_In.
-             apply (vvalid_meaning g) in H36; trivial; lia.
-        }
-        apply min_in_list.
-        1: apply incl_refl.
-        rewrite <- Znth_0_hd; [apply Znth_In|];
-          rewrite H3; unfold SIZE; lia.
-
-        Unshelve.
-
-        assert (valid_path g (mom', [(mom', child')])).
-        admit.
-        
-        assert (valid_path g (path_glue (mom', [(mom', child')]) p2)).
-        admit.
-
-        rewrite <- H24.
-        rewrite path_cost_path_glue, careful_add_clean,
-        path_cost_path_glue, careful_add_clean; trivial.
-        rewrite one_step_path_Znth; [lia|].
-        apply H31.
-        
-        3: rewrite <- H24 in l; apply careful_add_inf_clean; trivial.
-        5: rewrite path_cost_path_glue in l; trivial.
-        all: try apply path_cost_pos; trivial.
-        2: rewrite one_step_path_Znth; [ulia | apply H31]. 
-        2: { admit. }
-        admit.
-Admitted.
-
-trivial.
-
-apply inv_popped_add_u.
-
-      
-
-    
-
-
-  
-     
-
-                
-
-       
-
-
-  (*
-           
+            intros. subst u.
+            apply (inv_popped_add_u g src dst popped_verts prev_contents
+                  priq_contents dist_contents); trivial.
           ++ intros.
              destruct (Z.eq_dec dst u).
              1: subst dst; ulia.
