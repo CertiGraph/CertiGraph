@@ -45,6 +45,8 @@ Defined.
 Context {inf: Z} {size: Z}.
 
 Class AdjMatUSoundness (g: LabeledGraph V E DV DE DG) := {
+  size_rep: 0 <= size <= Int.max_signed;
+  inf_rep: 0 <= inf <= Int.max_signed; 
   vert_representable: forall v, vvalid g v <-> 0 <= v < size;
   edge_strong_evalid: forall e, evalid g e -> vvalid g (src g e) /\ vvalid g (dst g e);
   edge_weight_representable: forall e, evalid g e -> Int.min_signed <= elabel g e <= Int.max_signed;
@@ -64,11 +66,36 @@ Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g)
 Instance Finite_MatrixUPGraph (g: MatrixUGraph): FiniteGraph g.
 Proof. apply (@fin g (sound_MatrixUGraph g)). Qed.
 
+Lemma evalid_strong_evalid:
+forall (g: MatrixUGraph) e, evalid g e -> strong_evalid g e.
+Proof.
+intros; split. auto. apply (@edge_strong_evalid _ (sound_MatrixUGraph g) e); auto.
+Qed.
+
+Lemma evalid_inf_iff:
+forall (g: MatrixUGraph) e, evalid g e <-> elabel g e <> inf.
+Proof.
+intros; split; intros. apply (@edge_weight_not_inf _ (sound_MatrixUGraph g)); auto.
+destruct (evalid_dec g e). auto. apply (@invalid_edge_weight _ (sound_MatrixUGraph g)) in n. lia.
+Qed.
+
+Lemma weight_representable:
+forall (g: MatrixUGraph) e, Int.min_signed <= elabel g e <= Int.max_signed.
+Proof.
+intros. destruct (evalid_dec g e).
+apply (@edge_weight_representable g (sound_MatrixUGraph g) e). auto.
+apply (@invalid_edge_weight g (sound_MatrixUGraph g) e) in n. rewrite n.
+pose proof (@inf_rep g (sound_MatrixUGraph g)). split.
+set (i:=Int.min_signed); compute in i; subst i. lia.
+apply H.
+Qed.
+
 (****************Edgeless graph again*****************)
 
 Section EDGELESS_MUGRAPH.
 
-Context {size_bound: 0 <= size < Int.max_signed}.
+Context {inf_bound: 0 <= size < Int.max_signed}.
+Context {size_bound: 0 <= inf < Int.max_signed}.
 
 Definition edgeless_lgraph: LabeledGraph V E DV DE DG :=
 @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
@@ -80,6 +107,8 @@ Instance AdjMatUSound_edgeless:
 Proof.
 constructor.
 all: simpl; intros; try contradiction.
++lia.
++lia.
 +lia.
 +auto.
 +constructor; unfold EnumEnsembles.Enumerable.

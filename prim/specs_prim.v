@@ -52,12 +52,13 @@ Definition prim_spec :=
   WITH sh: wshare, g: G, gptr : pointer_val, r: Z, mstptr : pointer_val
   PRE [tptr (tarray tint SIZE), tint, tptr (tarray tint SIZE)]
      PROP ( connected_graph g; (*prim's can only work on a connected graph with no disjoint components*)
-            vvalid g r
+            vvalid g r;
+            forall u v, 0 <= (Znth u (Znth v (graph_to_symm_mat g))) <= inf (*forced constraint due to the pq range*)
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val mstptr)
      GLOBALS ()
      SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
-          undirected_matrix sh (graph_to_symm_mat edgeless_graph_SIZE) (pointer_val_val mstptr)
+          undirected_matrix sh (graph_to_symm_mat edgeless_graph') (pointer_val_val mstptr)
          )
   POST [ tvoid ]
      EX mst: MatrixUGraph,
@@ -71,6 +72,6 @@ Definition prim_spec :=
 
 Definition Gprog : funspecs :=
   ltac:(with_library prog
-      [ priq_arr_specs.push_spec; priq_arr_specs.pq_emp_spec; priq_arr_specs.popMin_spec;
+      [ priq_arr_specs.push_spec; priq_arr_specs.pq_emp_spec; priq_arr_specs.popMin_spec; priq_arr_specs.adjustWeight_spec;
         initialise_list_spec; initialise_matrix_spec; prim_spec
   ]).
