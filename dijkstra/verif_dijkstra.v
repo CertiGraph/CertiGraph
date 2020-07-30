@@ -18,14 +18,6 @@ Local Open Scope Z_scope.
 Ltac trilia := trivial; lia.
 Ltac ulia := unfold V, E, DE in *; trilia.
 
-Lemma inf_eq: 1879048192 = inf.
-Proof. compute; trivial. Qed.
-
-Lemma inf_eq2: Int.sub (Int.repr 2147483647)
-                       (Int.divs (Int.repr 2147483647)
-                                 (Int.repr 8)) = Int.repr inf.
-Proof. compute; trivial. Qed.
-
 Opaque inf.
 
 Definition inrange_prev prev :=
@@ -557,7 +549,7 @@ Proof.
       assert (elabel g (mom', child') < inf). {
         apply Z.le_lt_trans with (m := Int.max_signed / SIZE).
         apply valid_edge_bounds; trivial.
-        rewrite <- inf_eq. compute; trivial.
+        rewrite inf_eq. compute; trivial.
       }
       
       split3; [| |split3; [| |split3; [| |split3; [| |split3]]]]; trivial.
@@ -589,7 +581,7 @@ Proof.
   apply Z.le_lt_trans with (m := Int.max_signed / SIZE);
     trivial.
   rewrite H in H1; trivial.
-  rewrite <- inf_eq. compute; trivial.
+  rewrite inf_eq. compute; trivial.
 Qed.
 
 Lemma inv_popped_add_u_dst_neq_u:
@@ -630,7 +622,7 @@ Proof.
   - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
     + simpl in H3. unfold V, E in *.
       rewrite H3, H1; split; trivial.
-      rewrite <- inf_eq; compute; trivial.
+      rewrite inf_eq; compute; trivial.
     + simpl in H3; lia.
   - unfold path_globally_optimal; intros.
     unfold path_cost at 1; simpl.
@@ -1286,7 +1278,7 @@ Proof.
                                (Vint (Int.repr inf)) ++
                                list_repeat (Z.to_nat (SIZE - i)) Vundef)).
     1: split; trivial;
-      rewrite <- inf_eq; compute; split; inversion 1.
+      rewrite inf_eq; compute; split; inversion 1.
     rewrite inf_eq2, upd_Znth_list_repeat; [|lia].
     entailer!.
   - (* At this point we are done with the
@@ -1330,7 +1322,7 @@ Proof.
         1,2: rewrite upd_Znth_same; trivial.
         all: red; apply Forall_upd_Znth;
           try apply Forall_list_repeat;
-          try rewrite <- inf_eq; trilia.
+          try rewrite inf_eq; trilia.
         
     + (* Now the body of the while loop begins. *)
       unfold dijk_forloop_inv.
@@ -1396,7 +1388,7 @@ Proof.
             [ apply incl_refl | apply Znth_In; ulia].
         }
         assert (H_inf_reppable: Int.min_signed <= inf <= Int.max_signed). {
-          split; rewrite <- inf_eq; compute; inversion 1.
+          split; rewrite inf_eq; compute; inversion 1.
         }
 
         rewrite Znth_0_hd.
@@ -1417,7 +1409,7 @@ Proof.
         1: {  (* todo: lemma-fy *)
           (* dist[u] = inf. We will break. *)
           assert (Ha: 0 <= inf < Int.modulus). {
-            rewrite <- inf_eq; compute; split; [inversion 1 | trivial].
+            rewrite inf_eq; compute; split; [inversion 1 | trivial].
           }
           rewrite inf_eq2 in H14.
           apply Int_repr_eq_small in H14; trivial.
@@ -1800,7 +1792,7 @@ Proof.
              apply not_in_cons in H16; destruct H16 as [_ ?].
              trivial. ulia.
           ++ apply Forall_upd_Znth; trivial.
-             ulia. rewrite <- inf_eq; rep_lia.
+             ulia. rewrite inf_eq; rep_lia.
 
         -- (* We now begin with the for loop's body *)
           assert (Zlength (@graph_to_mat SIZE g id) = SIZE). {
@@ -1889,7 +1881,7 @@ Proof.
              assert (0 <= Znth u dist' + cost <= Int.max_signed). {
                split; [lia|].
                assert (inf <= Int.max_signed - (Int.max_signed / SIZE)). {
-                 rewrite <- inf_eq. compute; inversion 1.
+                 rewrite inf_eq. compute; inversion 1.
                }
                rep_lia.
              }
@@ -2395,7 +2387,7 @@ Proof.
                   apply Z.le_lt_trans with (m := Int.max_signed / SIZE);
                     trivial.
                   apply H36.
-                  rewrite <- inf_eq.
+                  rewrite inf_eq.
                   compute; trivial.
                 }
                   

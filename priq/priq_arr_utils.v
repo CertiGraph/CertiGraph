@@ -3,6 +3,15 @@ Require Import VST.floyd.proofauto.
 Definition SIZE := 8.
 Definition inf := Int.max_signed - Int.max_signed / SIZE.
 
+Lemma inf_eq: inf = 1879048192.
+Proof. compute; trivial. Qed.
+
+Lemma inf_eq2: Int.sub (Int.repr 2147483647)
+                       (Int.divs (Int.repr 2147483647)
+                                 (Int.repr 8)) = Int.repr inf.
+Proof. compute. trivial. Qed.
+
+Global Opaque inf.
 
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
 
@@ -11,11 +20,11 @@ Definition weight_inrange_priq item :=
   Int.min_signed <= item <= inf.
 
 (* over time, the overall PQ can range from MIN to inf + 1 *)
-Definition inrange_priq (priq_contents : list Z) :=
-  Forall (fun x => Int.min_signed <= x <= inf + 1) priq_contents.
+Definition inrange_priq (priq : list Z) :=
+  Forall (fun x => Int.min_signed <= x <= inf + 1) priq.
 
-Definition isEmpty (pq_contents : list Z) : val :=
-  fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then Vzero else acc) Vone pq_contents.
+Definition isEmpty (priq : list Z) : val :=
+  fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then Vzero else acc) Vone priq.
 
 Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
   match l with
@@ -27,21 +36,6 @@ Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
 
 
 (** LEMMAS ABOUT THESE UTILITIES **)
-
-(* Would like to massage this away... *)
-Definition isEmpty_Prop (pq_contents : list Z) :=
-  fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then False else acc) True pq_contents.
-
-Lemma isEmpty_prop_val: forall l,
-    isEmpty_Prop l <-> isEmpty l = Vone.
-Proof.
-  intros.
-  Opaque inf.
-  induction l.
-  - simpl. split; intro; trivial.
-  - split; simpl in *; destruct (Z_lt_dec a (inf+1));
-      try inversion 1; apply IHl; trivial.
-Qed.
 
 Lemma isEmpty_in: forall l target,
     In target l -> target < inf + 1 -> isEmpty l = Vzero.
@@ -65,13 +59,12 @@ Proof.
     unfold isEmpty. rewrite fold_right_cons.
     destruct (Z_lt_dec a (inf+1)); trivial.
     simpl in H; simpl; destruct H.
-    1: rewrite H in n; exfalso. lia.
+    1: rewrite H in n; exfalso; lia.
     clear n a. specialize (IHl H).
     unfold isEmpty in IHl. trivial.
   - induction l.
     1: inversion H.
-    simpl in H.
-    destruct (Z_lt_dec a (inf+1)).
+    simpl in H. destruct (Z_lt_dec a (inf+1)).
     + exists a. split; simpl; [left|]; trivial.
     + destruct (IHl H) as [? [? ?]].
       exists x. split; [apply in_cons|]; assumption.
