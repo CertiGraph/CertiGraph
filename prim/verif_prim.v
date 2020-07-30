@@ -594,9 +594,17 @@ rewrite Zlength_list_repeat; lia. auto.
   admit.
   }
   { (*break*) forward. (*no more vertices in queue*)
+    assert (Hempty: priq_arr_utils.isEmpty pq_state = Vone). {
+      destruct (priq_arr_utils.isEmptyTwoCases pq_state);
+      rewrite H3 in H2; simpl in H2; now inversion H2.
+    } clear H2.
+    pose proof (priq_arr_utils.isEmptyMeansInf pq_state Hempty). clear Hempty. rewrite Forall_forall in H2.
     assert (Permutation popped_vertices (VList g)). admit.
     Exists mst'. Exists fmst'. Exists popped_vertices. Exists parents. Exists keys. entailer!.
     split. auto.
+
+
+
     admit.
   }
 }
