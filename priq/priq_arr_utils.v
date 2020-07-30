@@ -15,7 +15,7 @@ Definition inrange_priq (priq_contents : list Z) :=
   Forall (fun x => Int.min_signed <= x <= inf + 1) priq_contents.
 
 Definition isEmpty (pq_contents : list Z) : val :=
-  fold_right (fun h acc => if (Z_lt_dec h (inf+1)) then Vzero else acc) Vone pq_contents.
+  fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then Vzero else acc) Vone pq_contents.
 
 Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
   match l with
@@ -30,7 +30,7 @@ Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
 
 (* Would like to massage this away... *)
 Definition isEmpty_Prop (pq_contents : list Z) :=
-  fold_right (fun h acc => if (Z_lt_dec h (inf+1)) then False else acc) True pq_contents.
+  fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then False else acc) True pq_contents.
 
 Lemma isEmpty_prop_val: forall l,
     isEmpty_Prop l <-> isEmpty l = Vone.
@@ -57,7 +57,7 @@ Proof.
 Qed.
 
 Lemma isEmpty_in': forall l,
-    (exists i, In i l /\ i < (inf+1)) <-> isEmpty l = Vzero.
+    (exists i, In i l /\ i < (inf + 1)) <-> isEmpty l = Vzero.
 Proof.
   split; intros.
   - destruct H as [? [? ?]]. induction l.
