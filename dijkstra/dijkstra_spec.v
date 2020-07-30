@@ -109,28 +109,32 @@ Definition dijkstra_correct (g : DijkGG) src popped prev dist : Prop :=
 
 Definition dijkstra_spec :=
   DECLARE _dijkstra
-  WITH sh: wshare, g: DijkGG, arr : pointer_val,
-                                    dist : pointer_val, prev : pointer_val, src : V
+  WITH sh: wshare,
+       g: DijkGG,
+       graph_ptr : pointer_val,
+       dist_ptr : pointer_val,
+       prev_ptr : pointer_val,
+       src : V
   PRE [tptr (tarray tint SIZE), tint, tptr tint, tptr tint]
   PROP (0 <= src < SIZE;
        Forall (fun list => Zlength list = SIZE) (@graph_to_mat SIZE g id))
-  PARAMS (pointer_val_val arr;
+  PARAMS (pointer_val_val graph_ptr;
          Vint (Int.repr src);
-         pointer_val_val dist;
-         pointer_val_val prev)
+         pointer_val_val dist_ptr;
+         pointer_val_val prev_ptr)
   GLOBALS ()
-  SEP (DijkGraph sh CompSpecs g (pointer_val_val arr);
-      data_at_ Tsh (tarray tint SIZE) (pointer_val_val dist);
-      data_at_ Tsh (tarray tint SIZE) (pointer_val_val prev))
+  SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr);
+      data_at_ Tsh (tarray tint SIZE) (pointer_val_val dist_ptr);
+      data_at_ Tsh (tarray tint SIZE) (pointer_val_val prev_ptr))
   POST [tvoid]
-   EX prev_contents : list V,
-   EX dist_contents : list V,
-   EX popped_verts: list V,                             
-   PROP (dijkstra_correct g src popped_verts prev_contents dist_contents)
+   EX prev: list V,
+   EX dist : list V,
+   EX popped : list V,                             
+   PROP (dijkstra_correct g src popped prev dist)
    LOCAL ()
-   SEP (DijkGraph sh CompSpecs g (pointer_val_val arr);
-       data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev_contents)) (pointer_val_val prev);
-       data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist_contents)) (pointer_val_val dist)).
+   SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr);
+       data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev)) (pointer_val_val prev_ptr);
+       data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr dist)) (pointer_val_val dist_ptr)).
 
 Definition Gprog : funspecs :=
   ltac:(with_library prog
