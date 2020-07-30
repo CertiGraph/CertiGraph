@@ -135,7 +135,7 @@ Proof.
     compute; inversion 1.
   - rewrite H0 in n.
     replace (elabel g e) with inf by trivial.
-    split; compute; inversion 1.
+    rewrite inf_eq. split; compute; inversion 1.
 Qed.
 
 Lemma strong_evalid_dijk:
