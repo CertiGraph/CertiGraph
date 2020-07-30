@@ -12,7 +12,8 @@ Definition push_spec :=
   DECLARE _push
   WITH pq: val, vertex : Z, weight : Z, priq_contents_val: list val
   PRE [tint, tint, tptr tint]
-  PROP (0 <= vertex < SIZE)
+  PROP (0 <= vertex < SIZE;
+       weight_inrange_priq weight)
   PARAMS (Vint (Int.repr vertex);
           Vint (Int.repr weight);
           pq)
@@ -42,7 +43,8 @@ Definition adjustWeight_spec :=
   DECLARE _adjustWeight
   WITH pq: val, vertex : Z, newWeight : Z, priq_contents: list Z
   PRE [tint, tint, tptr tint]
-  PROP (0 <= vertex < SIZE)
+  PROP (0 <= vertex < SIZE;
+       weight_inrange_priq newWeight)
   PARAMS (Vint (Int.repr vertex);
           Vint (Int.repr newWeight);
           pq)

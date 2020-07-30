@@ -6,8 +6,13 @@ Definition inf := Int.max_signed - Int.max_signed / SIZE.
 
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
 
-Definition inrange_priq priq_contents :=
-  Forall (fun x => 0 <= x <= inf + 1) priq_contents.
+(* a weight to be added cannot be inf + 1 *)
+Definition weight_inrange_priq item :=
+  Int.min_signed <= item <= inf.
+
+(* over time, the overall PQ can range from MIN to inf + 1 *)
+Definition inrange_priq (priq_contents : list Z) :=
+  Forall (fun x => Int.min_signed <= x <= inf + 1) priq_contents.
 
 Definition isEmpty (pq_contents : list Z) : val :=
   fold_right (fun h acc => if (Z_lt_dec h (inf+1)) then Vzero else acc) Vone pq_contents.
@@ -81,7 +86,7 @@ Proof.
 Qed.
 
 Lemma isEmptyMeansInf: forall l,
-    isEmpty l = Vone -> Forall (fun x => x >= inf) l.
+    isEmpty l = Vone -> Forall (fun x => x > inf) l.
 Proof.
   intros. induction l; trivial. simpl in H.
   destruct (Z_lt_dec a (inf+1)); [inversion H|].
