@@ -51,9 +51,8 @@ Definition prim_spec :=
   DECLARE _prim
   WITH sh: wshare, g: G, gptr : pointer_val, r: Z, mstptr : pointer_val
   PRE [tptr (tarray tint SIZE), tint, tptr (tarray tint SIZE)]
-     PROP ( connected_graph g; (*prim's can only work on a connected graph with no disjoint components*)
-            vvalid g r;
-            forall u v, 0 <= (Znth u (Znth v (graph_to_symm_mat g))) <= inf (*forced constraint due to the pq range*)
+     PROP ( (*connected_graph g;*)
+            vvalid g r
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val mstptr)
      GLOBALS ()
@@ -62,8 +61,8 @@ Definition prim_spec :=
          )
   POST [ tvoid ]
      EX mst: MatrixUGraph,
-     PROP ( minimum_spanning_forest mst g;
-            connected_graph mst
+     PROP ( (*connected_graph mst;*)
+            minimum_spanning_forest mst g
           )
      LOCAL ()
      SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
