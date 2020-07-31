@@ -52,7 +52,7 @@ rewrite eformat1. rewrite eformat2. simpl; auto. simpl; lia. simpl; lia.
 rewrite eformat2'. rewrite eformat1. simpl; auto. simpl; lia. simpl; lia.
 Qed.
 
-Lemma eformat_adj: forall (g: G) u v, adjacent g u v <-> elabel g (eformat (u,v)) <> inf.
+Lemma eformat_adj: forall (g: G) u v, adjacent g u v <-> elabel g (eformat (u,v)) < inf.
 Proof.
 intros. pose proof (@edge_weight_not_inf _ _ _ (sound_MatrixUGraph g)).
 split; intros.

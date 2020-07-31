@@ -50,7 +50,7 @@ Class AdjMatUSoundness (g: LabeledGraph V E DV DE DG) := {
   vert_representable: forall v, vvalid g v <-> 0 <= v < size;
   edge_strong_evalid: forall e, evalid g e -> vvalid g (src g e) /\ vvalid g (dst g e);
   edge_weight_representable: forall e, evalid g e -> Int.min_signed <= elabel g e <= Int.max_signed;
-  edge_weight_not_inf: forall e, evalid g e -> elabel g e <> inf;
+  edge_weight_not_inf: forall e, evalid g e -> elabel g e < inf; (*no reason to have <>*)
   invalid_edge_weight: forall e, ~ evalid g e -> elabel g e = inf;
   src_fst: forall e, evalid g e -> src g e = fst e;
   dst_snd: forall e, evalid g e -> dst g e = snd e;
@@ -66,6 +66,12 @@ Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g)
 Instance Finite_MatrixUPGraph (g: MatrixUGraph): FiniteGraph g.
 Proof. apply (@fin g (sound_MatrixUGraph g)). Qed.
 
+Lemma vert_bound:
+forall (g: MatrixUGraph) v, vvalid g v <-> 0 <= v < size.
+Proof.
+intros. apply (@vert_representable g (sound_MatrixUGraph g)).
+Qed.
+
 Lemma evalid_strong_evalid:
 forall (g: MatrixUGraph) e, evalid g e -> strong_evalid g e.
 Proof.
@@ -73,7 +79,7 @@ intros; split. auto. apply (@edge_strong_evalid _ (sound_MatrixUGraph g) e); aut
 Qed.
 
 Lemma evalid_inf_iff:
-forall (g: MatrixUGraph) e, evalid g e <-> elabel g e <> inf.
+forall (g: MatrixUGraph) e, evalid g e <-> elabel g e < inf.
 Proof.
 intros; split; intros. apply (@edge_weight_not_inf _ (sound_MatrixUGraph g)); auto.
 destruct (evalid_dec g e). auto. apply (@invalid_edge_weight _ (sound_MatrixUGraph g)) in n. lia.
@@ -88,6 +94,14 @@ apply (@invalid_edge_weight g (sound_MatrixUGraph g) e) in n. rewrite n.
 pose proof (@inf_rep g (sound_MatrixUGraph g)). split.
 set (i:=Int.min_signed); compute in i; subst i. lia.
 apply H.
+Qed.
+
+Lemma weight_inf_bound:
+forall (g: MatrixUGraph) e, elabel g e <= inf.
+Proof.
+intros. destruct (evalid_dec g e).
+apply Z.lt_le_incl. apply (@edge_weight_not_inf g (sound_MatrixUGraph g) e). auto.
+apply (@invalid_edge_weight g (sound_MatrixUGraph g)) in n. lia.
 Qed.
 
 (****************Edgeless graph again*****************)
