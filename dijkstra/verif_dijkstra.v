@@ -1499,6 +1499,266 @@ Proof.
     destruct H9. apply (valid_path_valid _ p2dst); trivial.
 Qed.
 
+Lemma inv_unpopped_newcost_dst_neq_i:
+  forall (g: DijkGG) src dst u i newcost prev dist popped,
+    (forall dst : Z,
+        0 <= dst < i ->
+        inv_unpopped g src popped prev dist dst) ->
+    vvalid g i ->
+    Zlength prev = SIZE ->
+    Zlength dist = SIZE ->
+    ~ In i popped ->
+    0 <= dst < i + 1 ->
+    dst <> i ->
+    inv_unpopped g src popped (upd_Znth i prev u) (upd_Znth i dist newcost) dst.
+Proof.
+  intros. 
+  assert (0 <= dst < i) by lia.
+  (* We will proceed using the old best-known path for dst *)
+  assert (0 <= i < SIZE) by now apply (vvalid_meaning g).
+  unfold inv_unpopped. intros.
+  rewrite upd_Znth_diff in * by ulia.
+  destruct (H _ H6 H8) as
+      [? | [? [? [? [? [? [? ?]]]]]]]; trivial;
+    [left | right]; trivial.
+  unfold V in *.
+  remember (Znth dst prev) as mom. 
+  split; trivial.
+  assert (Znth mom dist < inf). {
+    pose proof (edge_cost_pos g (mom, dst)); ulia.
+  }
+  assert (vvalid g dst). {
+    apply (vvalid_meaning g); ulia.
+  }
+  assert (mom <> i). {
+    intro. subst i. apply H3; trivial.
+  }
+  assert (0 <= mom < Zlength dist). {
+    apply (vvalid_meaning g) in H11; ulia.
+  }
+  split3; [| |split3; [| |split]]; trivial.
+  - rewrite upd_Znth_diff; lia.
+  - repeat rewrite upd_Znth_diff; trivial; ulia.
+  - intros.
+    assert (mom' <> i). {
+      intro contra. subst mom'. apply H3; trivial.
+    }
+    repeat rewrite upd_Znth_diff; trivial.
+    apply H16; trivial.
+    1: apply (vvalid_meaning g) in H21; ulia.
+    all: lia.
+Qed. 
+
+Lemma inv_unpopped_newcost:
+  forall (g: DijkGG) src dst u i
+         dist prev priq popped newcost,
+    (forall dst : Z,
+        vvalid g dst ->
+        inv_popped g src popped prev dist dst) ->
+    (forall dst : Z,
+        0 <= dst < i ->
+        inv_unpopped g src popped prev dist dst) ->
+    (forall dst : Z,
+        i <= dst < SIZE ->
+        inv_unpopped_weak g src popped prev dist dst u) ->
+    (forall dst : Z,
+        i <= dst < SIZE ->
+        inv_unseen_weak g popped dist dst u) ->
+    (forall dst : Z,
+        vvalid g dst ->
+        ~ In dst popped ->
+        Znth dst priq = Znth dst dist) ->
+    newcost = Znth u dist + elabel g (u, i) ->
+    vvalid g u ->
+    vvalid g i ->
+    u <> i ->
+    In u popped ->
+    inrange_dist dist ->
+    Zlength prev = SIZE ->
+    Zlength dist = SIZE ->
+    0 <= Znth u dist <= inf ->
+    0 <= elabel g (u, i) <= Int.max_signed / SIZE ->
+    0 <= Znth i dist <= inf ->
+    newcost < Znth i dist ->
+    ~ In i popped ->
+    Znth i priq = inf \/ Znth i priq < inf ->
+    0 <= dst < i + 1 ->
+    inv_unpopped g src popped (upd_Znth i prev u) (upd_Znth i dist newcost) dst.
+Proof.
+  intros ? ? ? ? ? ? ? ? ? ?
+         H_inv_popped H_inv_unpopped H_inv_unpopped_weak
+         H_inv_unseen_weak H_priq_dist_link Heqnewcost.
+  intros. destruct (Z.eq_dec dst i).
+  2: apply inv_unpopped_newcost_dst_neq_i; trivial.
+  
+  subst dst; clear H12.
+  (* This is a key change --
+     i will now be locally optimal,
+     _thanks to the new path via u_.
+     In other words, it is moving from
+     the weaker inv_unpopped clause
+     to the stronger
+   *)
+  unfold inv_unpopped; intros.
+  destruct (Z.eq_dec i src); [left | right; split]; trivial.
+  destruct (H_inv_popped _ H H2) as [[? ?] | ?].
+  1: ulia.
+  unfold V in *.
+  assert (0 <= i < SIZE) by now apply (vvalid_meaning g).
+  assert (0 <= u < SIZE) by now apply (vvalid_meaning g).
+  rewrite upd_Znth_same by lia.
+  
+  split3; [| |split3; [| |split]]; trivial.
+  1: ulia.
+  1: rewrite upd_Znth_diff; ulia.
+  1: rewrite upd_Znth_same; [rewrite upd_Znth_diff|]; ulia.
+  intros. rewrite upd_Znth_same; [|ulia].
+  
+  (* This is another key point in the proof:
+     we must show that the path via u is
+     better than all other paths via
+     other popped verices 
+   *)
+  assert (mom' <> i). {
+    intro. subst mom'.
+    apply H10; trivial.
+  }
+  rewrite upd_Znth_diff; trivial.
+  2: apply (vvalid_meaning g) in H17; ulia.
+  2: lia. 
+  destruct (Znth_dist_cases mom' dist); trivial.
+  1: apply (vvalid_meaning g) in H17; ulia. 
+  1: { rewrite H20. pose proof (edge_cost_pos g (mom', i)). ulia.
+  }
+
+  destruct (H_inv_popped _ H17 H18) as
+      [? | [p2mom' [[? [? [? [? ?]]]] [? ?]]]]; [ulia|].
+  pose proof (path_ends_In_path_dst _ _ _ _ H22).
+  destruct (zlt ((Znth mom' dist) + elabel g (mom', i)) inf).
+  2: {
+    unfold V in *.
+    destruct (zlt (elabel g (mom', i)) inf); lia.
+  }
+  
+  (* 
+     The known conditions are:
+     - dist[u] + graph[u][i] < dist[i]
+     - i is an unpopped vertex.
+     
+     Now we prove for any other path p' which is from s to i
+     and composed by popped vertices (INCLUDING u),
+     dist[u] + graph[u][i] <= path_cost p'.
+ 
+     There are two cases about p': In u p' \/ ~ In u p'
+   *)
+
+  destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
+  - (* Yes, the path p2mom' goes via u *) 
+    (*
+      1. In u p': p' is the path from s to i.
+      Consider the vertex mom' which is
+      just before i. Again, there are two cases:
+      mom' = u \/ ~ mom' = u.
+     *)
+
+    apply in_path_eq_epath_to_vpath in i0.
+    2: trivial.
+  
+    destruct (Z.eq_dec mom' u).
+    1: {
+      (*
+        1.1 mom' = u: path_cost p' = path_cost [s to u] + graph[u][i].
+        As we know, u is just popped, dist[u] is the
+        global optimal, so dist[u] <= path_cost [s to u],
+        so dist[u] + graph[u][i] <= path_cost p'.
+       *)
+      unfold V in *. subst mom'.
+      unfold path_globally_optimal in H13. ulia.
+    }
+          
+
+    (*
+      1.2 ~ mom' = u: 
+      p' can conceptually be split up as:
+      path s to u ++ path u to mom' + edge (mom', i).
+     *)
+    (*
+      Since p' is composed by popped vertex
+      (including u) only, mom' must be a popped
+      vertex. Then it satisfies inv_popped, which means
+      dist[mom'] <= path_cost [s to u] + path_cost [u to mom']
+      and the global optimal path from s to mom' is
+      composed by popped vertices only. 
+     *)
+    
+ (* Digression: a brief check to see if i was popped, 
+    unseen, or just unpopped. 
+  *)
+  destruct H11.
+    1: {
+      (* i was unseen *)
+      assert (i <= i < SIZE) by lia.
+      rewrite H_priq_dist_link in H11; trivial.
+      pose proof (H_inv_unseen_weak _ H29 H10 H11 mom' H17 H18 n0).
+      ulia.
+    }
+    
+    (* Now we know that i was seen but unpopped. 
+       Great, now we can employ inv_unpopped_weak. *)
+    (* Because i is "seen", we know that 
+       The best-known path to i via popped vertices is 
+       already logged in dist[i]. 
+       So dist[i] <= dist[mom'] + (mom', i).
+     *)
+  
+    assert (Znth i dist <= Znth mom' dist + elabel g (mom', i)). {
+      assert (i <= i < SIZE) by lia.
+      assert (0 <= mom' < SIZE). {
+        apply (vvalid_meaning g); ulia.
+      }
+      rewrite H_priq_dist_link in H11; trivial.
+      destruct (H_inv_unpopped_weak _ H29 H10 H11).
+      1: lia.
+      destruct H31 as [_ [_ ?]]. apply H31; trivial.
+    }
+  
+    (*
+      So we have 
+      dist[u] + graph[u][i] <= dist[i]
+                            <= dist[mom'] + (mom', i) 
+                            <= path_cost p'.
+     *)
+    ulia.
+  -
+    (* Since u is not in the path, 
+       we can just tango with
+       the step <> u condition from 
+       inv_unpopped_weak. 
+       This case is okay.
+     *)
+    assert (mom' <> u). {
+      intro. subst mom'. apply n0.
+      apply in_path_eq_epath_to_vpath; trivial.
+    }
+    destruct H11.
+    1: {
+      (* i was unseen *)
+      assert (i <= i < SIZE) by lia.
+      rewrite H_priq_dist_link in H11; trivial.
+      pose proof (H_inv_unseen_weak _ H30 H10 H11 mom' H17 H18 H29).
+      ulia.
+    }
+    assert (i <= i < SIZE) by lia.
+    rewrite H_priq_dist_link in H11; trivial.
+    destruct (H_inv_unpopped_weak i H30 H10 H11).
+    1: subst i; exfalso; lia.
+    apply Z.lt_le_incl.
+    apply Z.lt_le_trans with (m:=Znth i dist).
+    1: lia.
+    destruct H31 as [_ [_ ?]]. apply H31; trivial.
+Qed.
+
+
 (** PROOF BEGINS **)
 
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
@@ -2101,268 +2361,18 @@ Proof.
                     apply H16; trivial.
                     apply (vvalid_meaning g) in H32.
                     all: ulia.
-                --- intros.
-                    destruct (Z.eq_dec dst i).
-                    +++ subst dst.
-               (* This is a key change --
-                i will now be locally optimal,
-                _thanks to the new path via u_.
+                --- apply inv_unpopped_newcost with (priq := priq'); trivial.
 
-                In other words, it is moving from
-                the weaker inv_unpopped clause
-                to the stronger
-                *)
-                        unfold inv_unpopped; intros.
-                        destruct (Z.eq_dec i src).
-                        1: left; trivial.
-                        right; split; trivial.
+                ---
+(* done till here *)
+                  
 
-                        assert (Hu: vvalid g u). {
-                          apply (vvalid_meaning g); ulia.
-                        }
-                        
-                        destruct (H_inv_popped _ Hu H27).
-                        1: unfold V in *; lia.
-                        clear H57.
-                        unfold V in *.
-                        rewrite upd_Znth_same by lia.
-                        split3; [| |split3; [| |split]]; trivial.
-                        *** ulia.
-                        *** rewrite upd_Znth_diff; trivial; ulia.
-                        *** rewrite upd_Znth_same; trivial; [|ulia].
-                            rewrite upd_Znth_diff; trivial; ulia.
-                        *** intros. rewrite upd_Znth_same; trivial; [|ulia].
-                            
- (* This is another key point in the proof:
-    we must show that the path via u is
-    better than all other paths via
-    other popped verices *)
-                            assert (mom' <> i). {
-                              intro. subst mom'.
-                              apply H41; trivial.
-                            }
-                            rewrite upd_Znth_diff; trivial.
-                            2: apply (vvalid_meaning g) in H57; ulia.
-                            2: lia.
-                            destruct (Znth_dist_cases mom' dist'); trivial.
-                            1: apply (vvalid_meaning g) in H57; ulia. 
-                            1: { rewrite H61.
-                                 pose proof (edge_cost_pos g (mom', i)).
-                                 ulia.
-                            }
-                            rename H61 into Hk.
-                            
-                            destruct (H_inv_popped _ H57 H59); trivial.
-                            1: unfold V in *; lia.
-
-                            
-                            destruct H61 as [p2mom' [? [? ?]]].
-                            destruct H61 as [? [? [? [? ?]]]].
-
-                            assert (In_path g mom' p2mom'). {
-                              destruct H64.
-                              apply pfoot_in in H68.
-                              trivial.
-                            }
-
-                            
-                            destruct (zlt ((Znth mom' dist') + elabel g (mom', i)) inf).
-                              2: {
-                                unfold V in *.
-                                destruct (zlt (elabel g (mom', i)) inf); lia.
-                              }
-                              assert (vvalid g i). {
-                                trivial.
-                              }
-                              assert (vvalid g i). {
-                                trivial.
-                              }
-                              assert (vvalid g i). {
-                                trivial.
-                              }
-
-
-(* 
-   The known conditions are:
-   - dist[u] + graph[u][i] < dist[i]
-   - i is an unpopped vertex.
-
-   Now we prove for any other path p' which is from s to i
-   and composed by popped vertices (INCLUDING u),
-   dist[u] + graph[u][i] <= path_cost p'.
- 
-   There are two cases about p': In u p' \/ ~ In u p'
- *)
-
-
-                            destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
-                            ++++ (* Yes, the path p2mom' goes via u *) 
-(*
-  1. In u p': p' is the path from s to i.
-  Consider the vertex mom' which is
-  just before i. Again, there are two cases:
-  mom' = u \/ ~ mom' = u.
- *)
-
-                              apply in_path_eq_epath_to_vpath in i0.
-                              2: trivial.
-
-                              destruct (Z.eq_dec mom' u).
-                              1: {
-(*
-  1.1 mom' = u: path_cost p' = path_cost [s to u] + graph[u][i].
-  As we know, u is just popped, dist[u] is the
-  global optimal, so dist[u] <= path_cost [s to u],
-  so dist[u] + graph[u][i] <= path_cost p'.
- *)
-                                unfold V in *.
-                                subst mom'.
-                                unfold path_globally_optimal in H64.
-                                ulia.
-                              }
-
-
-(*
-  1.2 ~ mom' = u: 
-  p' can conceptually be split up as:
-  path s to u ++ path u to mom' + edge (mom', i).
- *) 
-                                                                    
-(*
-  Since p' is composed by popped vertex
-  (including u) only, mom' must be a popped
-  vertex. Then it satisfies inv_popped, which means
-  dist[mom'] <= path_cost [s to u] + path_cost [u to mom']
-  and the global optimal path from s to mom' is
-  composed by popped vertices only. 
- *)
-
- (* Digression: a brief check to see if i was popped, 
-    unseen, or just unpopped. 
-  *)
-                              destruct icases.
-                              1: {
-                                (* i was unseen *)
-                                assert (i <= i < SIZE) by lia.
-                                rewrite H28 in H72; trivial.
-                                specialize (H24 _ H73 H56 H72).
-                                pose proof (H24 mom' H57 H59 n0).
-                                ulia.
-                              }
-                              
-(* Now we know that i was seen but unpopped. 
-   Great, now we can employ inv_unpopped_weak. *)
-                              
-                              
-
-(* Because i is "seen", we know that 
-   The best-known path to i via popped vertices is 
-   already logged in dist[i]. 
-   So dist[i] <= dist[mom'] + (mom', i).
- *)
-
-                              assert (Znth i dist' <= Znth mom' dist' + elabel g (mom', i)). {
-                                assert (i <= i < SIZE) by lia.
-                                assert (0 <= mom' < SIZE). {
-                                  apply (vvalid_meaning g) in H57; ulia.
-                                }
-                                rewrite H28 in H72; trivial.
-                                destruct (H22 _ H73 H56 H72).
-                                - lia.
-                                - destruct H75 as [? [[? [? [? [? [? ?]]]]] ?]].
-                                  apply H82; trivial.
-                              }
-                              
-(*
-  So we have 
-  dist[u] + graph[u][i] <= dist[i]
-                        <= dist[mom'] + (mom', i) 
-                        <= path_cost p'.
- *)
-                              unfold V in *.
-                              lia.
-                            ++++
-(* Since u is not in the path, 
-   we can just tango with
-   the step <> u condition from 
-   inv_unpopped_weak. 
-   This case is okay.
- *)
-                              assert (mom' <> u). {
-                                intro. rewrite <- H72 in n0.
-                                apply n0.
-                                apply in_path_eq_epath_to_vpath; trivial.
-                              }
-
-                              destruct icases.
-                              1: {
-                                (* i was unseen *)
-                                assert (i <= i < SIZE) by lia.
-                                rewrite H28 in H73; trivial.
-                                pose proof (H24 _ H74 H56 H73 mom' H57 H59 H72).
-                                ulia.
-                              }
-                              assert (i <= i < SIZE) by lia.
-                              rewrite H28 in H73; trivial.
-                              destruct (H22 i H74 H56 H73).
-                              1: subst i; exfalso; lia.
-                                destruct H75 as [? [[? [? [? [? [? ?]]]]] ?]].
-                              apply Z.lt_le_incl.
-                              apply Z.lt_le_trans with (m:=Znth i dist').
-                              1: lia.
-                              apply H82; trivial.
-
-
-                    +++ assert (0 <= dst < i) by lia.
-(* We will proceed using the old best-known path for dst *)
-                        unfold inv_unpopped in *.
-                        intros.
-                        unfold V in *;
-                          rewrite upd_Znth_diff in * by lia.
-                        specialize (H21 _ H56 H57). destruct H21; trivial.
-                        1: left; trivial.
-                        destruct H21 as [? [? [? [? [? [? ?]]]]]].
-                        unfold V in *.
-                        remember (Znth dst prev') as mom. right.
-                        split; trivial.
-
-                        assert (Ha: Znth mom dist' < inf). {
-                          assert (0 <= elabel g (mom, dst)). {
-                            apply edge_cost_pos; trivial.
-                          }
-                          ulia.
-                        }
-                        assert (vvalid g dst). {
-                          apply (vvalid_meaning g); ulia.
-                        }
-                        assert (mom <> i). {
-                          intro. subst i. 
-                          apply H41; trivial.
-                        }
-                        assert (0 <= mom < Zlength priq'). {
-                          apply (vvalid_meaning g) in H59; ulia.
-                        }
-                        split3; [| |split3; [| |split]]; trivial.
-                        *** rewrite upd_Znth_diff; lia.
-                        *** repeat rewrite upd_Znth_diff; trivial; ulia.
-                        *** intros.
-                            assert (mom' <> i). {
-                              intro contra. rewrite contra in H69.
-                              rewrite (get_popped_meaning _ (upd_Znth i priq'
-                                                                      (Znth u dist' + elabel g (u, i)))) in H69.
-                              rewrite upd_Znth_same in H69; trivial.
-                              ulia. lia. rewrite upd_Znth_Zlength; lia.
-                            }
-                            repeat rewrite upd_Znth_diff; trivial.
-                            apply H64; trivial.
-                            1: apply (vvalid_meaning g) in H68; ulia.
-                            all: lia.
-                --- unfold inv_unpopped_weak. intros.
+                  unfold inv_unpopped_weak. intros.
                     assert (i <= dst < SIZE) by lia.
                     destruct (Z.eq_dec dst i).
                     1: subst dst; lia.
                     unfold V in *.
-                    rewrite upd_Znth_diff in H57 by lia.
+                    rewrite upd_Znth_diff in H by lia.
                     destruct (H22 _ H58 H56 H57); [left | right]; trivial.
                     destruct H59 as [? [[? [Ha [? [? [? ?]]]]] ?]].
                     unfold V in *.
@@ -2426,7 +2436,7 @@ Proof.
                          rewrite upd_Znth_Zlength; lia.
                     }
                     rewrite upd_Znth_diff; trivial.
-                    apply H24; trivial.
+                    apply H_inv_unseen_weak; trivial.
                     1: apply (vvalid_meaning g) in H58; ulia.
                     all: lia.
                 --- rewrite upd_Znth_diff; try lia.
@@ -2597,7 +2607,7 @@ Proof.
                     subst dst.
                     assert (i <= i < SIZE) by lia.
                     destruct (Z.eq_dec m u).
-                    2: apply H24; trivial.
+                    2: apply H_inv_unseen_weak; trivial.
                     subst m.
                     unfold V in *.
                     rewrite H54 in improvement.
@@ -2606,7 +2616,7 @@ Proof.
                     lia.
                 --- intros.
                     assert (i <= dst < SIZE) by lia.
-                    apply H24; trivial.
+                    apply H_inv_unseen_weak; trivial.
           ++  (* i was not a neighbor of u.
                  We must prove the for loop's invariant holds *)
             rewrite inf_eq2 in H36.
@@ -2677,7 +2687,7 @@ Proof.
                assert (i <= i < SIZE) by lia.
                unfold inv_unseen; intros.
                destruct (Z.eq_dec m u).
-               2: apply H24; trivial.
+               2: apply H_inv_unseen_weak; trivial.
                subst m.
                assert (0 <= Znth u dist'). {
                  apply (Forall_Znth _ _ u) in H31.
@@ -2685,7 +2695,7 @@ Proof.
                  ulia.
                }
                ulia.
-            ** apply H24; lia.
+            ** apply H_inv_unseen_weak; lia.
         -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
           Intros prev' priq' dist' popped'.
