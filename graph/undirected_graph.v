@@ -978,7 +978,7 @@ Qed.
 
 Definition uforest g:= forall p l, ~ simple_ucycle g p l.
 
-Corollary uforest'_uforest:
+Corollary uforest'_no_simple_ucycle:
 forall g p l, uforest' g -> ~ simple_ucycle g p l.
 Proof.
 unfold uforest, not; intros. destruct H0.
@@ -987,6 +987,12 @@ destruct p. contradiction.
 destruct H1 as [? [? ?]]. destruct l. contradiction.
 apply (uforest'_no_simple_ucycles g H (v::v0::p) (e::l)).
 apply H1. auto. split. auto. split. auto. split. auto. auto.
+Qed.
+
+Corollary uforest'_uforest:
+forall g, uforest' g -> uforest g.
+Proof.
+unfold uforest; intros. apply uforest'_no_simple_ucycle. auto.
 Qed.
 
 (******************LABELED GRAPHS******************)

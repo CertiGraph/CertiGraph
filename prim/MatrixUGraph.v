@@ -42,18 +42,20 @@ Proof.
   - right; intro; apply c; inversion H; reflexivity.
 Defined.
 
-Context {inf: Z}.
+Context {inf: Z} {size: Z}.
 
 Class AdjMatUSoundness (g: LabeledGraph V E DV DE DG) := {
-  vert_representable: forall v, vvalid g v -> 0 <= v < Int.max_signed;
+  size_rep: 0 <= size <= Int.max_signed;
+  inf_rep: 0 <= inf <= Int.max_signed; 
+  vert_representable: forall v, vvalid g v <-> 0 <= v < size;
   edge_strong_evalid: forall e, evalid g e -> vvalid g (src g e) /\ vvalid g (dst g e);
   edge_weight_representable: forall e, evalid g e -> Int.min_signed <= elabel g e <= Int.max_signed;
-  edge_weight_not_inf: forall e, evalid g e -> elabel g e <> inf;
-  edge_weight_invalid: forall e, ~ evalid g e -> elabel g e = inf;
+  edge_weight_not_inf: forall e, evalid g e -> elabel g e < inf; (*no reason to have <>*)
+  invalid_edge_weight: forall e, ~ evalid g e -> elabel g e = inf;
   src_fst: forall e, evalid g e -> src g e = fst e;
   dst_snd: forall e, evalid g e -> dst g e = snd e;
-  undirected_edge_rep: forall e, evalid g e -> src g e <= dst g e;
   fin: FiniteGraph g;
+  undirected_edge_rep: forall e, evalid g e -> src g e <= dst g e;
 }.
 
 (*Hm, was wondering if I could incorporate "soundness" in*)
@@ -64,16 +66,54 @@ Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g)
 Instance Finite_MatrixUPGraph (g: MatrixUGraph): FiniteGraph g.
 Proof. apply (@fin g (sound_MatrixUGraph g)). Qed.
 
+Lemma vert_bound:
+forall (g: MatrixUGraph) v, vvalid g v <-> 0 <= v < size.
+Proof.
+intros. apply (@vert_representable g (sound_MatrixUGraph g)).
+Qed.
+
+Lemma evalid_strong_evalid:
+forall (g: MatrixUGraph) e, evalid g e -> strong_evalid g e.
+Proof.
+intros; split. auto. apply (@edge_strong_evalid _ (sound_MatrixUGraph g) e); auto.
+Qed.
+
+Lemma evalid_inf_iff:
+forall (g: MatrixUGraph) e, evalid g e <-> elabel g e < inf.
+Proof.
+intros; split; intros. apply (@edge_weight_not_inf _ (sound_MatrixUGraph g)); auto.
+destruct (evalid_dec g e). auto. apply (@invalid_edge_weight _ (sound_MatrixUGraph g)) in n. lia.
+Qed.
+
+Lemma weight_representable:
+forall (g: MatrixUGraph) e, Int.min_signed <= elabel g e <= Int.max_signed.
+Proof.
+intros. destruct (evalid_dec g e).
+apply (@edge_weight_representable g (sound_MatrixUGraph g) e). auto.
+apply (@invalid_edge_weight g (sound_MatrixUGraph g) e) in n. rewrite n.
+pose proof (@inf_rep g (sound_MatrixUGraph g)). split.
+set (i:=Int.min_signed); compute in i; subst i. lia.
+apply H.
+Qed.
+
+Lemma weight_inf_bound:
+forall (g: MatrixUGraph) e, elabel g e <= inf.
+Proof.
+intros. destruct (evalid_dec g e).
+apply Z.lt_le_incl. apply (@edge_weight_not_inf g (sound_MatrixUGraph g) e). auto.
+apply (@invalid_edge_weight g (sound_MatrixUGraph g)) in n. lia.
+Qed.
+
 (****************Edgeless graph again*****************)
 
 Section EDGELESS_MUGRAPH.
 
-Context {z: Z}.
-Context {z_bound: 0 <= z < Int.max_signed}.
+Context {inf_bound: 0 <= size < Int.max_signed}.
+Context {size_bound: 0 <= inf < Int.max_signed}.
 
 Definition edgeless_lgraph: LabeledGraph V E DV DE DG :=
 @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
-  (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < z) (fun e => False) fst snd)
+  (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
   (fun v => tt) (fun e => inf) tt. (*<--- different from edgeless_WEdgeGraph because of the default value*)
 
 Instance AdjMatUSound_edgeless:
@@ -82,13 +122,15 @@ Proof.
 constructor.
 all: simpl; intros; try contradiction.
 +lia.
++lia.
++lia.
 +auto.
 +constructor; unfold EnumEnsembles.Enumerable.
 (*vertices*)
-exists (nat_inc_list (Z.to_nat z)); split. apply nat_inc_list_NoDup.
+exists (nat_inc_list (Z.to_nat size)); split. apply nat_inc_list_NoDup.
 simpl. intros. rewrite nat_inc_list_in_iff. rewrite Z_to_nat_max.
-destruct (Z.lt_trichotomy z 0). rewrite Z.max_r by lia. split; intros; lia.
-destruct H. subst z. unfold Z.max; simpl. split; lia.
+destruct (Z.lt_trichotomy size 0). rewrite Z.max_r by lia. split; intros; lia.
+destruct H. rewrite H. unfold Z.max; simpl. split; lia.
 rewrite Z.max_l by lia. split; auto.
 (*edges*)
 exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
@@ -102,16 +144,16 @@ Instance Fin_edgeless_lgraph: FiniteGraph edgeless_graph.
 Proof. apply (@fin edgeless_graph (AdjMatUSound_edgeless)). Qed.
 
 Lemma edgeless_graph_vvalid:
-  forall k, vvalid edgeless_graph k <-> 0 <= k < z.
+  forall k, vvalid edgeless_graph k <-> 0 <= k < size.
 Proof. simpl. intros; split; intros; auto. Qed.
 
 Lemma edgeless_graph_Permutation:
-  Permutation (VList edgeless_graph) (nat_inc_list (Z.to_nat z)).
+  Permutation (VList edgeless_graph) (nat_inc_list (Z.to_nat size)).
 Proof.
 intros. apply NoDup_Permutation. apply NoDup_VList. apply nat_inc_list_NoDup.
 intros. rewrite VList_vvalid. rewrite edgeless_graph_vvalid.
 rewrite nat_inc_list_in_iff. rewrite Z_to_nat_max.
-destruct (Z.lt_trichotomy z 0). rewrite Z.max_r by lia. split; intros; lia.
+destruct (Z.lt_trichotomy size 0). rewrite Z.max_r by lia. split; intros; lia.
 destruct H. rewrite H. unfold Z.max; simpl. split; lia.
 rewrite Z.max_l by lia. split; auto.
 Qed.
