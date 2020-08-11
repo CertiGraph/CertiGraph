@@ -43,7 +43,7 @@ void prim(int graph[SIZE][SIZE], int r, int msf[SIZE][SIZE]) {
     int key[SIZE];
     initialise_list(key, IFTY);
     int parent[SIZE]; //NIL in textbook. However, 0 is a valid vertex, so we substitute it with an invalid value
-    initialise_list(parent, IFTY);
+    initialise_list(parent, SIZE);
     int out[SIZE]; //as a marker to check if v is in pq. 1 for NOT in pq (already checked)
     initialise_list(out, 0);
     key[r] = 0; //first in pq
@@ -57,8 +57,8 @@ void prim(int graph[SIZE][SIZE], int r, int msf[SIZE][SIZE]) {
         int u = popMin(pq);
         out[u] = 1;
         for (int v = 0; v < SIZE; ++v) {
-            if (out[v]==0) {
-		if (graph[u][v] < key[v]) {
+            if (out[v]==0) {				//(*this is why out array is kept, to not require extra O(logn) search of pq*)
+		if (graph[u][v] < key[v]) { //(*this is why key array is kept, to not require extra O(logn) search of pq*)
 	                parent[v] = u;
 	                key[v] = graph[u][v];
 	                adjustWeight(v, key[v], pq);
