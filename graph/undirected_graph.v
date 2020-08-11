@@ -1179,6 +1179,377 @@ right. split. rewrite add_edge_src; auto. rewrite add_edge_dst; auto.
 split. apply hd_error_app; auto. apply last_err_app; auto.
 Qed.
 
+Lemma cross_bridge_implies_endpoints:
+forall (g: PGraph) e u v p l a b,
+~ connected g u v ->
+simple_upath (pregraph_add_edge g e u v) p ->
+connected_by_path (pregraph_add_edge g e u v) p a b ->
+fits_upath (pregraph_add_edge g e u v) l p -> In e l ->
+((connected g a u /\ connected g v b) \/ (connected g a v /\ connected g u b)).
+Proof.
+induction p; intros. destruct H1. destruct H4. inversion H4.
+assert (a = a0). destruct H1. destruct H4. inversion H4. auto. subst a0. (*that was weird*)
+destruct l. contradiction.
+destruct p. contradiction.
+(*so we show that v0 is connected to one of them. By trans, a0 is connected to one*)
+(*case where (u,v) is first in list. Then we show a = u or a = v*)
+destruct H3. subst e0.
+destruct H2. destruct H2. destruct H2.
+rewrite add_edge_src in H5, H4. rewrite add_edge_dst in H5, H4.
+destruct H5. simpl in H5, H6.
+assert (~ In e l). unfold not; intros.
+  destruct H4; destruct H4; subst a; subst v0; destruct H0.
+  assert (In u (v::p)). replace u with (src (pregraph_add_edge g e u v) e).
+  apply (fits_upath_vertex_src_In _ (v::p) l e); auto.
+  rewrite add_edge_src. auto. apply NoDup_cons_2 in H4. contradiction.
+  assert (In v (u::p)). replace v with (dst (pregraph_add_edge g e u v) e).
+  apply (fits_upath_vertex_dst_In _ (u::p) l e); auto.
+  rewrite add_edge_dst. auto. apply NoDup_cons_2 in H4. contradiction.
+destruct H4; destruct H4; subst a; subst v0.
+left. split. apply connected_refl. auto. exists (v::p).
+split. apply valid_upath_exists_list_edges'. exists l. apply (add_edge_fits_upath_rev g e u v). auto. auto.
+split. simpl; auto. destruct H1. destruct H4. rewrite last_error_cons in H8; auto.
+unfold not; intros; inversion H9.
+right. split. apply connected_refl. auto. exists (u::p).
+split. apply valid_upath_exists_list_edges'. exists l. apply (add_edge_fits_upath_rev g e u v). auto. auto.
+split. simpl; auto. destruct H1. destruct H4. rewrite last_error_cons in H8; auto.
+unfold not; intros; inversion H9.
+(*Case where (u-v) is somewhere in the middle*)
+assert (Hav0: connected g a v0). {
+  apply adjacent_connected. destruct H2. destruct H2.
+  assert (e <> e0). unfold not; intros. subst e0.
+    rewrite add_edge_src in H5; rewrite add_edge_dst in H5.
+    destruct H5; destruct H5; subst a; subst v0.
+    assert (In u (v::p)). replace u with (src (pregraph_add_edge g e u v) e).
+    apply (fits_upath_vertex_src_In _ (v::p) l e); auto.
+    rewrite add_edge_src. auto.
+    destruct H0. apply NoDup_cons_2 in H6. contradiction.
+    assert (In v (u::p)). replace v with (dst (pregraph_add_edge g e u v) e).
+    apply (fits_upath_vertex_dst_In _ (u::p) l e); auto.
+    rewrite add_edge_dst. auto.
+    destruct H0. apply NoDup_cons_2 in H6. contradiction.
+  exists e0. destruct H2. repeat rewrite <- adde_vvalid in H7.
+  rewrite add_edge_preserves_src in H5, H7; auto. rewrite add_edge_preserves_dst in H5, H7; auto.
+  apply add_edge_preserves_evalid' in H2; auto.
+  split; auto. split; auto.
+}
+(*IHp on v0*)
+assert (connected g v0 u /\ connected g v b \/ connected g v0 v /\ connected g u b).
+apply (IHp l v0 b). auto. split. apply H0.
+destruct H0. apply NoDup_cons_1 in H4. auto.
+destruct H1. destruct H4. split. apply H0.
+split. simpl; auto. rewrite last_error_cons in H5; auto. unfold not; intros; inversion H6.
+apply H2. apply H3.
+destruct H4; destruct H4. left. split.
+apply (connected_trans g a v0 u); auto. auto.
+right. split.
+apply (connected_trans g a v0 v); auto. auto.
+Qed.
+
+Lemma add_edge_bridge_split1:
+forall (g: PGraph) e' u v p a b,
+connected g u a ->
+connected g v b ->
+~ connected g u v ->
+simple_upath (pregraph_add_edge g e' u v) p ->
+(exists l, fits_upath (pregraph_add_edge g e' u v) l p /\ In e' l) ->
+connected_by_path (pregraph_add_edge g e' u v) p a b
+-> (exists p1 p2, p = p1++p2 /\
+    connected_by_path g p1 a u /\
+    connected_by_path g p2 v b).
+Proof.
+induction p; intros.
+destruct H4. destruct H5. inversion H6.
+destruct H3 as [l [? ?]].
+destruct l. simpl in H5. contradiction.
+destruct p. simpl in H3. contradiction.
+assert (Hvvalid_g_u: vvalid g u). apply (connected_vvalid g u a0). auto.
+assert (Hvvalid_g_v: vvalid g v). apply (connected_vvalid g v b). auto.
+assert (a0 = a). destruct H4. destruct H6. simpl in H6. inversion H6. auto. subst a0.
+destruct H5.
+(*case where u-v is directly at the front*)
+subst e. destruct H3. destruct H3.
+rewrite add_edge_src in H6. rewrite add_edge_dst in H6.
+destruct H6; destruct H6. subst a; subst v0. exists (u::nil); exists (v::p).
+split. auto. split. split; simpl; auto.
+assert (~ In e' l). unfold not; intros.
+assert (In (src (pregraph_add_edge g e' u v) e') (v :: p)).
+apply (fits_upath_vertex_src_In (pregraph_add_edge g e' u v) (v::p) l e'); auto.
+rewrite add_edge_src in H7.
+destruct H2. apply NoDup_cons_2 in H8. simpl in H8. contradiction.
+split. apply valid_upath_exists_list_edges'. exists l. apply add_edge_fits_upath_rev in H5; auto.
+split. simpl; auto. destruct H4. destruct H7. rewrite last_error_cons in H8. rewrite <- H8. auto.
+unfold not; intros. simpl in H9. inversion H9.
+subst a. contradiction.
+(*otherwise*)
+assert (e <> e'). unfold not; intros. subst e. destruct H3. destruct H3.
+  rewrite add_edge_src in H7; rewrite add_edge_dst in H7.
+  destruct H7; destruct H7; subst a; subst v0.
+  assert (In (src (pregraph_add_edge g e' u v) e') (v :: p)).
+  apply (fits_upath_vertex_src_In (pregraph_add_edge g e' u v) (v::p) l e'); auto.
+  rewrite add_edge_src in H7. simpl in H7.
+  destruct H2. apply NoDup_cons_2 in H8. simpl in H8. contradiction.
+  assert (In (dst (pregraph_add_edge g e' u v) e') (u :: p)).
+  apply (fits_upath_vertex_dst_In (pregraph_add_edge g e' u v) (u::p) l e'); auto.
+  rewrite add_edge_dst in H7. simpl in H7.
+  destruct H2. apply NoDup_cons_2 in H8. simpl in H8. contradiction.
+assert (Hav0: adjacent g a v0). exists e. destruct H3. destruct H3.
+  split. apply (add_edge_preserves_strong_evalid g e' u v e). auto. auto.
+  rewrite add_edge_preserves_src in H8; auto. rewrite add_edge_preserves_dst in H8; auto.
+assert (exists p1 p2,
+        v0 :: p = p1++ p2 /\
+        connected_by_path g p1 v0 u /\
+        connected_by_path g p2 v b). apply (IHp v0 b); auto. (*<-------- WOW. If I use "apply IHp" instead of "apply (IHp v0 b)", universe inconsistency*)
+apply (connected_trans g u a v0). auto.
+apply adjacent_connected. auto.
+destruct H2. split. apply H2. apply NoDup_cons_1 in H7. auto.
+exists l. split. destruct H3. apply H7. apply H5.
+destruct H4. destruct H4. split. apply H8.
+destruct H7. rewrite last_error_cons in H9. auto. unfold not; intros. inversion H10.
+(*WHEW*)
+destruct H7 as [p1 [p2 [? [? ?]]]].
+exists (a::p1). exists p2. split. rewrite H7. simpl; auto. split.
+destruct H8. split. apply valid_upath_cons. apply H8.
+destruct H10. rewrite H10. simpl. auto.
+split. simpl; auto.
+rewrite last_error_cons. apply H10.
+destruct H10. unfold not; intros. subst p1. inversion H10.
+auto.
+Qed.
+
+Lemma add_edge_bridge_split2:
+forall (g: PGraph) e' u v p a b ,
+connected g v a ->
+connected g u b ->
+~ connected g u v ->
+simple_upath (pregraph_add_edge g e' u v) p ->
+(exists l, fits_upath (pregraph_add_edge g e' u v) l p /\ In e' l) ->
+connected_by_path (pregraph_add_edge g e' u v) p a b
+-> (exists p1 p2, p = p1++p2 /\
+    connected_by_path g p1 a v /\
+    connected_by_path g p2 u b).
+Proof.
+induction p; intros.
+destruct H4. destruct H5. inversion H6.
+destruct H3 as [l ?]. destruct H3.
+destruct l. simpl in *. contradiction.
+destruct p. simpl in H3. contradiction.
+assert (Hvvalid_g_v: vvalid g v). apply (connected_vvalid g v a0). auto.
+assert (Hvvalid_g_u: vvalid g u). apply (connected_vvalid g u b). auto.
+assert (a0 = a). destruct H4. destruct H6. inversion H6. auto. subst a0.
+destruct H5.
+(*case where u-v is directly at the front*)
+subst e. destruct H3. destruct H3.
+rewrite add_edge_src in H6. rewrite add_edge_dst in H6.
+destruct H6; destruct H6; subst a; subst v0. apply connected_symm in H. contradiction.
+exists (v::nil); exists (u::p).
+split. auto. split. split; simpl; auto.
+assert (~ In e' l). unfold not; intros.
+assert (In v (u::p)). replace v with (dst (pregraph_add_edge g e' u v) e').
+apply (fits_upath_vertex_dst_In (pregraph_add_edge g e' u v) (u::p) l e').
+auto. auto. rewrite add_edge_dst. auto.
+destruct H2. apply NoDup_cons_2 in H8. contradiction.
+split. apply valid_upath_exists_list_edges'. exists l. apply (add_edge_fits_upath_rev g e' u v); auto.
+split. simpl; auto. destruct H4. destruct H7. rewrite last_error_cons in H8. auto.
+unfold not; intros. inversion H9.
+(*otherwise*)
+assert (e <> e'). unfold not; intros. subst e. destruct H3. destruct H3.
+  rewrite add_edge_src in H7; rewrite add_edge_dst in H7.
+  destruct H7; destruct H7; subst a; subst v0.
+  assert (In u (v::p)). replace u with (src (pregraph_add_edge g e' u v) e').
+  apply (fits_upath_vertex_src_In (pregraph_add_edge g e' u v) (v::p) l e'). auto. auto.
+  rewrite add_edge_src. auto.
+  destruct H2. apply NoDup_cons_2 in H8. contradiction.
+  assert (In v (u::p)). replace v with (dst (pregraph_add_edge g e' u v) e').
+  apply (fits_upath_vertex_dst_In (pregraph_add_edge g e' u v) (u::p) l e'). auto. auto.
+  rewrite add_edge_dst. auto.
+  destruct H2. apply NoDup_cons_2 in H8. contradiction.
+assert (Hav0: adjacent g a v0). exists e. destruct H3. destruct H3.
+  split. apply (add_edge_preserves_strong_evalid g e' u v e). auto. auto.
+  rewrite add_edge_preserves_src in H8; auto. rewrite add_edge_preserves_dst in H8; auto.
+assert (exists p1 p2,
+        v0 :: p = p1++ p2 /\
+        connected_by_path g p1 v0 v /\
+        connected_by_path g p2 u b). apply (IHp v0 b); auto.
+apply (connected_trans g v a v0). auto. apply adjacent_connected. auto.
+destruct H2. split. apply H2. apply NoDup_cons_1 in H7. auto.
+exists l. split. destruct H3. apply H7. apply H5.
+destruct H4. destruct H4. split. apply H8.
+split. auto.
+destruct H7. rewrite last_error_cons in H9. auto. unfold not; intros. inversion H10.
+(*WHEW*)
+destruct H7 as [p1 [p2 ?]]. destruct H7. destruct H8.
+exists (a::p1). exists p2. split. rewrite H7. simpl. auto. split.
+destruct H8. split. apply valid_upath_cons. apply H8.
+destruct H10. rewrite H10. simpl. auto.
+split. simpl; auto.
+rewrite last_error_cons. apply H10.
+destruct H10. unfold not; intros. subst p1. inversion H10.
+auto.
+Qed.
+
+Lemma add_edge_unique_simple_upath:
+forall (g: PGraph) e' u v, unique_simple_upath g -> ~ connected g u v ->
+  unique_simple_upath (pregraph_add_edge g e' u v).
+Proof.
+(*the forest definition*)
+unfold unique_simple_upath; intros. rename u0 into a; rename v0 into b.
+assert (exists l : list E, fits_upath (pregraph_add_edge g e' u v) l p1).
+apply connected_exists_list_edges in H2; auto.
+assert (exists l : list E, fits_upath (pregraph_add_edge g e' u v) l p2).
+apply connected_exists_list_edges in H4; auto.
+destruct H5 as [l1 ?]. destruct H6 as [l2 ?].
+destruct (in_dec EE e' l1); destruct (in_dec EE e' l2).
+
++ assert ((connected g a u /\ connected g v b) \/ (connected g a v /\ connected g u b)).
+apply (cross_bridge_implies_endpoints g e' u v p1 l1 a b); auto.
+destruct H7; destruct H7.
+(*case a-u and v-b*)
+  apply connected_symm in H7.
+  assert (exists p1_a p1_b, (p1 = p1_a++p1_b /\
+      connected_by_path g p1_a a u /\
+      connected_by_path g p1_b v b)).
+  apply (add_edge_bridge_split1 g e' u v p1 a b); auto. exists l1; split; auto.
+  destruct H9 as [p1_a [p1_b ?]]. destruct H9. destruct H10.
+  assert (exists p2_a p2_b, (p2 = p2_a++p2_b /\
+      connected_by_path g p2_a a u /\
+      connected_by_path g p2_b v b)).
+  apply (add_edge_bridge_split1 g e' u v p2 a b); auto. exists l2; split; auto.
+  destruct H12 as [p2_a [p2_b ?]]. destruct H12. destruct H13.
+  rewrite H9 in H1; rewrite H12 in H3. destruct H1. destruct H3.
+  assert (p1_a = p2_a). apply (H a u p1_a p2_a).
+  split. apply H10. apply (NoDup_app_l _ _ _ H15). auto.
+  split. apply H13. apply (NoDup_app_l _ _ _ H16). auto.
+  assert (p1_b = p2_b). apply (H v b p1_b p2_b).
+  split. apply H11. apply (NoDup_app_r _ _ _ H15). auto.
+  split. apply H14. apply (NoDup_app_r _ _ _ H16). auto.
+  rewrite H9; rewrite H12; rewrite H17; rewrite H18. auto.
+(*case a-v and u-b...*)
+apply connected_symm in H7.
+  assert (exists p1_a p1_b, (p1 = p1_a++p1_b /\
+      connected_by_path g p1_a a v /\
+      connected_by_path g p1_b u b)).
+  apply (add_edge_bridge_split2 g e' u v p1 a b); auto. exists l1; split; auto.
+  destruct H9 as [p1_a [p1_b ?]]. destruct H9. destruct H10.
+  assert (exists p2_a p2_b, (p2 = p2_a++p2_b /\
+      connected_by_path g p2_a a v /\
+      connected_by_path g p2_b u b)).
+  apply (add_edge_bridge_split2 g e' u v p2 a b); auto. exists l2; split; auto.
+  destruct H12 as [p2_a [p2_b ?]]. destruct H12. destruct H13.
+  rewrite H9 in H1; rewrite H12 in H3. destruct H1. destruct H3.
+  (*by H, we have p1_a = p2_a*)
+  assert (p1_a = p2_a). apply (H a v p1_a p2_a).         (*<--------- same issue here, I used "H a v" and let it infer the paths: universe inconsistency*)
+  split. apply H10. apply (NoDup_app_l _ _ _ H15). auto.
+  split. apply H13. apply (NoDup_app_l _ _ _ H16). auto.
+  assert (p1_b = p2_b). apply (H u b p1_b p2_b).
+  split. apply H11. apply (NoDup_app_r _ _ _ H15). auto.
+  split. apply H14. apply (NoDup_app_r _ _ _ H16). auto.
+  (*thus, rewrite*)
+  rewrite H9; rewrite H12; rewrite H17; rewrite H18. auto.
+
++ (*In e' l1, ~In e' l2*)
+(* Then p1 = p1_a++p1_b. p1_a connects a-u, p1_b connects v-b
+Whereas p2 is valid in g, connected a b
+p1_a does not contain u-v by simpleness, so it is unaffected and valid in g
+Ditto p1_b
+Thus, connected g u a, connected g v b, connected g a b. Thus, connected g u v. Contra
+Repeat for a-v,b-u...
+*)
+destruct H4. apply (add_edge_unaffected g e' u v p2 l2) in H4; auto.
+assert (connected g a b). exists p2. split; auto.
+assert ((connected g a u /\ connected g v b) \/ (connected g a v /\ connected g u b)).
+apply (cross_bridge_implies_endpoints g e' u v p1 l1 a b); auto.
+assert (connected g u v).
+destruct H9; destruct H9.
+  apply (connected_trans g u a v). apply connected_symm; auto.
+  apply (connected_trans g a b v). auto. apply connected_symm; auto.
+  apply (connected_trans g u b v). auto.
+  apply (connected_trans g b a v). apply connected_symm; auto. auto.
+contradiction.
+
++ (*~In e' l1, In e' l2*)
+destruct H2. apply (add_edge_unaffected g e' u v p1 l1) in H2; auto.
+assert (connected g a b). exists p1. split; auto.
+assert ((connected g a u /\ connected g v b) \/ (connected g a v /\ connected g u b)).
+apply (cross_bridge_implies_endpoints g e' u v p2 l2); auto.
+assert (connected g u v).
+destruct H9; destruct H9.
+  apply (connected_trans g u a v). apply connected_symm; auto.
+  apply (connected_trans g a b v). auto. apply connected_symm; auto.
+  apply (connected_trans g u b v). auto.
+  apply (connected_trans g b a v). apply connected_symm; auto. auto.
+contradiction.
+
++ (*~In e' l1, ~In e' l2*)
+(*then both p1 and p2 are valid in g*)
+destruct H2. apply (add_edge_unaffected g e' u v p1 l1) in H2; auto.
+destruct H4. apply (add_edge_unaffected g e' u v p2 l2) in H4; auto.
+apply (H a b).
+split. apply H2. apply H1. split; auto.
+split. apply H4. apply H3. split; auto.
+Qed.
+
+Instance prod_EV: EqDec (V*V) eq.
+Proof.
+  hnf. intros [x] [y].
+  destruct (equiv_dec x y).
+  - hnf in e. destruct (EV v v0). hnf in e0. subst.
+    + left; reflexivity.
+    + right. intro. apply c. inversion H. reflexivity.
+  - right; intro; apply c; inversion H; reflexivity.
+Defined.
+
+Lemma add_edge_unique_adj_edge:
+forall (g: PGraph) e u v e', ~ connected g u v ->
+  adj_edge (pregraph_add_edge g e u v) e' u v -> e' = e.
+Proof.
+intros. destruct H0. destruct H0.
+destruct (EE e e'). auto. unfold complement, equiv in c.
+exfalso. apply H. apply add_edge_preserves_evalid' in H0; auto.
+rewrite add_edge_preserves_src, add_edge_preserves_dst in H2, H1; auto. simpl in H2.
+apply adjacent_connected. exists e'. split. split; auto. auto.
+Qed.
+
+Lemma add_edge_uforest':
+forall (g: PGraph) e' u v, uforest' g -> vvalid g u -> vvalid g v -> ~ connected g u v ->
+  uforest' (pregraph_add_edge g e' u v).
+Proof.
+intros.
+(*first assert u <> v, as they're not connected*)
+assert (Huv: u<>v). unfold not; intros; subst u. pose proof (connected_refl g v H1). auto.
+split.
+(*no self loop*)
+intros.
+destruct (EE e e').
+unfold Equivalence.equiv in e0. subst e.
+rewrite add_edge_src, add_edge_dst; simpl; auto.
+unfold RelationClasses.complement, Equivalence.equiv in c.
+apply add_edge_preserves_evalid' in H3. 2: auto.
+rewrite add_edge_preserves_src by auto. rewrite add_edge_preserves_dst by auto. apply H; auto.
+(*not multigraph*)
+split. intros. destruct H3.
+(*destruct by cases: whether (u0,v0) = (u,v) or (v,u)*)
+destruct (prod_EV (u0,v0) (u,v)). hnf in e; inversion e. subst u0; subst v0. clear e.
+rewrite (add_edge_unique_adj_edge g e' u v e1); auto. rewrite (add_edge_unique_adj_edge g e' u v e2); auto.
+destruct (prod_EV (u0,v0) (v,u)). hnf in e; inversion e. subst u0 v0. clear e c.
+apply adj_edge_sym in H3. apply adj_edge_sym in H4.
+rewrite (add_edge_unique_adj_edge g e' u v e1); auto. rewrite (add_edge_unique_adj_edge g e' u v e2); auto.
+unfold complement, equiv in c, c0.
+apply add_edge_adj_edge2 in H3. apply add_edge_adj_edge2 in H4. destruct H. destruct H5. apply (H5 u0 v0). split; auto.
+unfold not; intros; subst e2. destruct H4. rewrite add_edge_src, add_edge_dst in H6. destruct H6; destruct H6; subst u0; subst v0; contradiction.
+unfold not; intros; subst e1. destruct H3. rewrite add_edge_src, add_edge_dst in H6. destruct H6; destruct H6; subst u0; subst v0; contradiction.
+(*evalid -> strong_evalid*)
+split. intros.
+destruct (EE e e').
+unfold Equivalence.equiv in e0. subst e.
+apply add_edge_strong_evalid; simpl; auto.
+unfold RelationClasses.complement, Equivalence.equiv in c.
+apply add_edge_preserves_strong_evalid. auto.
+apply add_edge_preserves_evalid' in H3; auto. apply H. auto.
+(*forest*)
+apply add_edge_unique_simple_upath; auto. apply H.
+Qed.
+
 Lemma remove_edge_valid_upath:
 forall (g: PGraph) e p l, valid_upath g p -> fits_upath g l p -> ~ In e l
   -> valid_upath (pregraph_remove_edge g e) p.

@@ -72,6 +72,17 @@ Proof.
 intros. apply (@vert_representable g (sound_MatrixUGraph g)).
 Qed.
 
+Lemma MatrixUGraph_VList:
+forall (g: MatrixUGraph), Permutation (VList g) (nat_inc_list (Z.to_nat size)).
+Proof.
+intros. apply NoDup_Permutation. apply NoDup_VList. apply nat_inc_list_NoDup.
+intros. rewrite VList_vvalid. rewrite vert_bound.
+rewrite nat_inc_list_in_iff. rewrite Z_to_nat_max.
+destruct (Z.lt_trichotomy size 0). rewrite Z.max_r by lia. split; intros; lia.
+destruct H. rewrite H. unfold Z.max; simpl. split; lia.
+rewrite Z.max_l by lia. split; auto.
+Qed.
+
 Lemma evalid_strong_evalid:
 forall (g: MatrixUGraph) e, evalid g e -> strong_evalid g e.
 Proof.
@@ -104,12 +115,22 @@ apply Z.lt_le_incl. apply (@edge_weight_not_inf g (sound_MatrixUGraph g) e). aut
 apply (@invalid_edge_weight g (sound_MatrixUGraph g)) in n. lia.
 Qed.
 
+Lemma adj_edge_form:
+forall (g: MatrixUGraph) u v a b, adj_edge g (u,v) a b -> a <= b -> (u = a /\ v = b).
+Proof.
+intros. destruct H. assert (src g (u,v) <= dst g (u,v)).
+apply (@undirected_edge_rep g (sound_MatrixUGraph g)). apply H.
+rewrite (@src_fst g (sound_MatrixUGraph g)), (@dst_snd g (sound_MatrixUGraph g)) in *.
+simpl in *. destruct H1. auto. destruct H1; subst u; subst v. lia.
+all: apply H.
+Qed.
+
 (****************Edgeless graph again*****************)
 
 Section EDGELESS_MUGRAPH.
 
-Context {inf_bound: 0 <= size < Int.max_signed}.
-Context {size_bound: 0 <= inf < Int.max_signed}.
+Context {inf_bound: 0 <= inf <= Int.max_signed}.
+Context {size_bound: 0 <= size < Int.max_signed}.
 
 Definition edgeless_lgraph: LabeledGraph V E DV DE DG :=
 @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
@@ -140,23 +161,9 @@ Definition edgeless_graph: MatrixUGraph :=
   @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG AdjMatUSoundness
     edgeless_lgraph (AdjMatUSound_edgeless).
 
-Instance Fin_edgeless_lgraph: FiniteGraph edgeless_graph.
-Proof. apply (@fin edgeless_graph (AdjMatUSound_edgeless)). Qed.
-
 Lemma edgeless_graph_vvalid:
   forall k, vvalid edgeless_graph k <-> 0 <= k < size.
 Proof. simpl. intros; split; intros; auto. Qed.
-
-Lemma edgeless_graph_Permutation:
-  Permutation (VList edgeless_graph) (nat_inc_list (Z.to_nat size)).
-Proof.
-intros. apply NoDup_Permutation. apply NoDup_VList. apply nat_inc_list_NoDup.
-intros. rewrite VList_vvalid. rewrite edgeless_graph_vvalid.
-rewrite nat_inc_list_in_iff. rewrite Z_to_nat_max.
-destruct (Z.lt_trichotomy size 0). rewrite Z.max_r by lia. split; intros; lia.
-destruct H. rewrite H. unfold Z.max; simpl. split; lia.
-rewrite Z.max_l by lia. split; auto.
-Qed.
 
 Lemma edgeless_graph_evalid:
   forall e, ~ evalid edgeless_graph e.
@@ -200,7 +207,265 @@ Qed.
 
 End EDGELESS_MUGRAPH.
 
-(**************MST******************)
+(**************ADDING AN EDGE****************)
+
+Section ADD_EDGE_MUGRAPH.
+
+Context {g: MatrixUGraph}.
+Context {u v: V} {vvalid_u: vvalid g u} {vvalid_v: vvalid g v} {uv_smaller: u <= v}.
+Context {w: DE} {w_rep: Int.min_signed <= w < inf}.
+
+Definition MatrixUGraph_adde':=
+  labeledgraph_add_edge g (u,v) u v w.
+
+Instance Fin_MatrixUGraph_adde':
+  FiniteGraph (MatrixUGraph_adde').
+Proof.
+constructor; unfold EnumEnsembles.Enumerable; simpl.
+(*vertices*)exists (VList g). split. apply NoDup_VList. apply VList_vvalid.
+(*edge*)
+unfold addValidFunc. destruct (in_dec E_EqDec (u,v) (EList g)).
+(*case e already inside*)
+exists (EList g). split. apply NoDup_EList. intros; split; intros. left. apply EList_evalid in H; auto.
+destruct H. apply EList_evalid; auto. rewrite H; auto.
+(*case e not inside*)
+exists ((u,v)::(EList g)). split. apply NoDup_cons. auto. apply NoDup_EList.
+intros; split; intros.
+destruct H. right; rewrite H; auto. left; rewrite <- EList_evalid; apply H.
+destruct H. rewrite <- EList_evalid in H. apply in_cons. apply H.
+rewrite H. simpl. left; auto.
+Qed.
+
+Instance AdjMatUSound_adde':
+  AdjMatUSoundness MatrixUGraph_adde'.
+Proof.
+constructor; simpl.
++apply (@size_rep g (sound_MatrixUGraph g)).
++apply (@inf_rep g (sound_MatrixUGraph g)).
++apply (@vert_representable g (sound_MatrixUGraph g)).
++unfold addValidFunc, updateEdgeFunc; intros. unfold equiv_dec. destruct (E_EqDec (u,v) e).
+  split; auto.
+  unfold complement, equiv in c. destruct H. apply (@edge_strong_evalid g (sound_MatrixUGraph g) e H).
+  symmetry in H; contradiction.
++unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  pose proof (@inf_rep g (sound_MatrixUGraph g)). lia.
+  unfold complement, equiv in c. destruct H. apply (@edge_weight_representable g (sound_MatrixUGraph g) e H).
+  symmetry in H; contradiction.
++unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  unfold equiv in e0; subst e. lia.
+  destruct H. apply (@edge_weight_not_inf g (sound_MatrixUGraph g) e H).
+  unfold complement, equiv in c. symmetry in H; contradiction.
++unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  unfold equiv in e0. exfalso; apply H; auto.
+  destruct (evalid_dec g e). exfalso; apply H; auto. apply (@invalid_edge_weight g (sound_MatrixUGraph g) e n).
++unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  unfold equiv in e0; subst e. simpl; auto.
+  destruct H. apply (@src_fst g (sound_MatrixUGraph g) e H).
+  unfold complement, equiv in c; symmetry in H; contradiction.
++unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  unfold equiv in e0; subst e. simpl; auto.
+  destruct H. apply (@dst_snd g (sound_MatrixUGraph g) e H).
+  unfold complement, equiv in c; symmetry in H; contradiction.
++apply Fin_MatrixUGraph_adde'.
++unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  lia. destruct H. apply (@undirected_edge_rep g (sound_MatrixUGraph g) e H).
+  unfold complement, equiv in c. symmetry in H; contradiction.
+Qed.
+
+Definition MatrixUGraph_adde: MatrixUGraph :=
+  @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG AdjMatUSoundness
+    MatrixUGraph_adde' (AdjMatUSound_adde').
+
+Lemma adde_vvalid:
+  vvalid g v <-> vvalid MatrixUGraph_adde v.
+Proof.
+intros. simpl. split; auto.
+Qed.
+
+Lemma adde_elabel_new:
+  elabel MatrixUGraph_adde (u,v) = w.
+Proof.
+intros. simpl. unfold update_elabel, equiv_dec. destruct E_EqDec. auto.
+unfold complement, equiv in c. contradiction.
+Qed.
+
+Lemma adde_evalid_new:
+  evalid MatrixUGraph_adde (u,v).
+Proof. intros. apply add_edge_evalid. Qed.
+
+Lemma adde_evalid_old:
+  forall e, evalid g e -> evalid MatrixUGraph_adde e.
+Proof. intros. apply add_edge_preserves_evalid; auto. Qed.
+
+Lemma adde_evalid_rev:
+  forall e, e <> (u,v) -> evalid MatrixUGraph_adde e -> evalid g e.
+Proof. intros. apply add_edge_preserves_evalid' in H0; auto. Qed.
+
+Lemma adde_evalid_or:
+  forall e, evalid MatrixUGraph_adde e <-> (evalid g e \/ e = (u,v)).
+Proof. unfold MatrixUGraph_adde; simpl; unfold addValidFunc. intros; split; auto. Qed.
+
+Lemma adde_EList_new:
+  ~ evalid g (u,v) -> Permutation ((u,v)::(EList g)) (EList MatrixUGraph_adde).
+Proof.
+intros. apply NoDup_Permutation. apply NoDup_cons. rewrite EList_evalid; auto. apply NoDup_EList. apply NoDup_EList.
+intros; split; intros. rewrite EList_evalid, adde_evalid_or. destruct H0.
+right; symmetry; auto. left; rewrite EList_evalid in H0; auto.
+rewrite EList_evalid, adde_evalid_or in H0. destruct H0. right; rewrite EList_evalid; auto. left; symmetry; auto.
+Qed.
+
+Lemma adde_EList_old:
+  forall e, In e (EList g) -> In e (EList MatrixUGraph_adde).
+Proof.
+intros. unfold EList. destruct finiteE. simpl. destruct a.
+apply H1. rewrite adde_evalid_or. left; rewrite <- EList_evalid; apply H.
+Qed.
+
+Lemma adde_EList_rev:
+  forall l, ~ evalid g (u,v) ->
+    Permutation ((u,v)::l) (EList MatrixUGraph_adde) ->
+    Permutation l (EList g).
+Proof.
+intros. apply NoDup_Permutation.
+apply NoDup_Perm_EList in H0. apply NoDup_cons_1 in H0; auto.
+apply NoDup_EList.
+intros; split; intros. assert (In x (EList MatrixUGraph_adde)).
+apply (Permutation_in (l:=(u,v)::l)). auto. right; auto.
+apply EList_evalid in H2. apply adde_evalid_or in H2. destruct H2.
+rewrite EList_evalid; auto.
+subst x. assert (NoDup ((u,v)::l)). apply NoDup_Perm_EList in H0; auto.
+apply NoDup_cons_2 in H2. contradiction.
+destruct (E_EqDec x (u,v)). unfold equiv in e. subst x. apply EList_evalid in H1; contradiction.
+unfold complement, equiv in c.
+apply adde_EList_old in H1.
+apply (Permutation_in (l':=(u,v)::l)) in H1. destruct H1. symmetry in H1; contradiction. auto.
+apply Permutation_sym; auto.
+Qed.
+
+Lemma adde_src_new:
+  src MatrixUGraph_adde (u,v) = u.
+Proof.
+apply (@src_fst _ (sound_MatrixUGraph _)). apply adde_evalid_new.
+Qed.
+
+Lemma adde_dst_new:
+  dst MatrixUGraph_adde (u,v) = v.
+Proof.
+apply (@dst_snd _ (sound_MatrixUGraph _)). apply adde_evalid_new.
+Qed.
+
+Lemma adde_src_old:
+  forall e', (u,v) <> e' -> src MatrixUGraph_adde e' = src g e'.
+Proof.
+unfold MatrixUGraph_adde; simpl; unfold addValidFunc, updateEdgeFunc; intros.
+unfold equiv_dec. destruct E_EqDec. unfold equiv in e; contradiction. auto.
+Qed.
+
+Lemma adde_dst_old:
+  forall e', (u,v) <> e' -> dst MatrixUGraph_adde e' = dst g e'.
+Proof.
+unfold MatrixUGraph_adde; simpl; unfold addValidFunc, updateEdgeFunc; intros.
+unfold equiv_dec. destruct E_EqDec. unfold equiv in e; contradiction. auto.
+Qed.
+
+Corollary adde_strong_evalid_new:
+  strong_evalid MatrixUGraph_adde (u,v).
+Proof.
+split. apply adde_evalid_new. rewrite adde_src_new, adde_dst_new. simpl; auto.
+Qed.
+
+Lemma adde_strong_evalid_old:
+  forall e', (u,v) <> e' ->
+  evalid g e' ->
+  strong_evalid MatrixUGraph_adde e'.
+Proof.
+intros. split. apply adde_evalid_old. apply H0.
+apply (@edge_strong_evalid _ (sound_MatrixUGraph _)). apply adde_evalid_old. apply H0.
+Qed.
+
+Lemma adde_strong_evalid_rev:
+  forall e', (u,v) <> e' ->
+  strong_evalid MatrixUGraph_adde e' -> strong_evalid g e'.
+Proof.
+intros. destruct H0. destruct H1.
+split. apply adde_evalid_rev in H0; auto.
+split. rewrite adde_src_old in H1; auto.
+rewrite adde_dst_old in H2; auto.
+Qed.
+
+(****connectedness****)
+
+Lemma adde_adj_edge_new:
+  adj_edge MatrixUGraph_adde (u,v) u v.
+Proof.
+unfold adj_edge; intros. split. apply adde_strong_evalid_new; auto.
+left. rewrite adde_src_new, adde_dst_new. auto.
+Qed.
+
+Lemma adde_adj_edge_old:
+  forall e a b, adj_edge g e a b -> adj_edge MatrixUGraph_adde e a b.
+Proof.
+unfold adj_edge; intros. destruct H.
+rewrite (@src_fst g (sound_MatrixUGraph g)) in H0. 2: apply H.
+rewrite (@dst_snd g (sound_MatrixUGraph g)) in H0. 2: apply H.
+destruct (E_EqDec (u,v) e).
++(*(u,v) = e*) unfold equiv in e0. subst e.
+split. apply adde_strong_evalid_new. rewrite adde_src_new, adde_dst_new. apply H0.
++unfold complement, equiv in c. split. apply adde_strong_evalid_old. auto. apply H.
+rewrite adde_src_old, adde_dst_old; auto.
+rewrite (@src_fst g (sound_MatrixUGraph g)), (@dst_snd g (sound_MatrixUGraph g)). apply H0.
+all: apply H.
+Qed.
+
+Lemma adde_adj_edge_rev:
+forall e a b, (u,v) <> e -> adj_edge MatrixUGraph_adde e a b -> adj_edge g e a b.
+Proof.
+unfold adj_edge; intros. destruct H0.
+split.
+apply adde_strong_evalid_rev in H0; auto.
+rewrite adde_src_old, adde_dst_old in H1; auto.
+Qed.
+
+Lemma adde_valid_upath:
+  forall p, valid_upath g p -> valid_upath MatrixUGraph_adde p.
+Proof.
+induction p; intros. auto.
+destruct p. auto.
+split. destruct H. destruct H. exists x.
+apply adde_adj_edge_old; auto.
+apply IHp. auto. apply H.
+Qed.
+
+Lemma adde_connected_by_path:
+  forall p a b, connected_by_path g p a b -> connected_by_path MatrixUGraph_adde p a b.
+Proof.
+unfold connected_by_path; intros. split. apply adde_valid_upath. apply H. apply H.
+Qed.
+
+Corollary adde_connected:
+  forall a b, connected g a b -> connected MatrixUGraph_adde a b.
+Proof.
+intros. destruct H as [p ?]. exists p. apply adde_connected_by_path; auto.
+Qed.
+
+Lemma adde_fits_upath:
+  forall p l, fits_upath g l p -> fits_upath MatrixUGraph_adde l p.
+Proof.
+induction p; intros. destruct l; auto.
+destruct l. auto. destruct p. auto.
+split. destruct H. apply adde_adj_edge_old; auto.
+apply IHp. apply H.
+Qed.
+
+Lemma adde_fits_upath_rev:
+  forall p l, fits_upath MatrixUGraph_adde l p -> ~ In (u,v) l -> fits_upath g l p.
+Proof.
+intros. apply add_edge_fits_upath_rev in H; auto.
+Qed.
+
+End ADD_EDGE_MUGRAPH.
+
+(**************MST****************)
 (*copy...*)
 Definition sum_LE (g: MatrixUGraph) : DE :=
   fold_left Z.add (DEList g) 0.
