@@ -1758,6 +1758,103 @@ Proof.
     destruct H31 as [_ [_ ?]]. apply H31; trivial.
 Qed.
 
+Lemma inv_unpopped_weak_newcost:
+  forall (g: DijkGG) src dst u i prev dist popped newcost,
+    (forall dst : Z,
+        i <= dst < SIZE ->
+        inv_unpopped_weak g src popped prev dist dst u) ->
+    vvalid g i ->
+    Zlength prev = SIZE ->
+    Zlength dist = SIZE ->
+    ~ In i popped ->
+    i + 1 <= dst < SIZE ->
+    inv_unpopped_weak g src popped
+                      (upd_Znth i prev u)
+                      (upd_Znth i dist newcost)
+                      dst u.
+Proof.
+  intros ? ? ? ? ? ? ? ? ? H_inv_unpopped_weak. intros.
+  assert (0 <= i < SIZE) by now apply (vvalid_meaning g).
+  unfold inv_unpopped_weak. intros.
+  assert (i <= dst < SIZE) by lia.
+  destruct (Z.eq_dec dst i).
+  1: subst dst; lia.
+  unfold V in *.
+  rewrite upd_Znth_diff in H6 by lia.
+  destruct (H_inv_unpopped_weak _ H7 H5 H6)
+    as [? | [? [[? [? [? [? [? ?]]]]] ?]]];
+    [left | right]; trivial.
+  unfold V in *.
+  rewrite upd_Znth_diff by ulia.
+  remember (Znth dst prev) as mom. 
+  assert (mom <> i). {
+    intro. subst i. apply H2; trivial.
+  }
+  assert (0 <= mom < SIZE) by now apply (vvalid_meaning g).
+  split3; [| split3; [| | split3; [| |split]]|]; trivial.
+  1,2: repeat rewrite upd_Znth_diff; ulia.
+  intros.
+  assert (mom' <> i). {
+    intro contra. subst mom'. apply H2; trivial.
+  }
+  repeat rewrite upd_Znth_diff; trivial.
+  apply H15; ulia. 
+  apply (vvalid_meaning g) in H19; ulia.
+  all: ulia.
+Qed.
+
+Lemma inv_unseen_newcost:
+  forall (g: DijkGG) dst i dist popped newcost,
+    (forall dst : Z,
+        0 <= dst < i ->
+        inv_unseen g popped dist dst) ->
+    vvalid g i ->
+    Zlength dist = SIZE ->
+    ~ In i popped ->
+    0 <= dst < i + 1->
+    newcost < inf ->
+    inv_unseen g popped (upd_Znth i dist newcost) dst.
+Proof.
+  intros ? ? ? ? ? ? H_inv_unseen. intros.
+  rewrite (vvalid_meaning g i) in H.
+  unfold inv_unseen; intros.
+  assert (dst <> i). {
+    intro. subst dst. rewrite upd_Znth_same in H5; lia.
+  }
+  assert (0 <= dst < i) by lia.
+  rewrite upd_Znth_diff in H5 |- *; try ulia.
+  1: apply H_inv_unseen; ulia.
+  1: apply (vvalid_meaning g) in H6; ulia.
+  intro contra. subst m.
+  apply H1; trivial.
+Qed.
+
+Lemma inv_unseen_weak_newcost:
+  forall (g: DijkGG) dst u i dist popped newcost,
+    (forall dst : Z,
+        i <= dst < SIZE ->
+        inv_unseen_weak g popped dist dst u) ->
+    vvalid g i ->
+    Zlength dist = SIZE ->
+    ~ In i popped ->
+    i + 1 <= dst < SIZE ->
+    dst <> i ->
+    inv_unseen_weak g popped (upd_Znth i dist newcost) dst u.
+Proof.
+  intros.
+  unfold inv_unseen_weak; intros.
+  unfold V in *.
+  apply (vvalid_meaning g) in H0.
+  rewrite upd_Znth_diff in H6 by ulia.
+  repeat rewrite upd_Znth_diff by lia.
+  assert (i <= dst < SIZE) by lia.
+  destruct (Z.eq_dec m i).
+  1: exfalso; subst m; apply H2; trivial. 
+  rewrite upd_Znth_diff; trivial.
+  - apply H; trivial.
+  - apply (vvalid_meaning g) in H7; ulia.
+  - lia.
+Qed.
 
 (** PROOF BEGINS **)
 
@@ -1844,7 +1941,6 @@ Proof.
       forward_if. (* checking if it's time to break *)
       * (* No, don't break. *)
         rename H11 into Htemp.
-        
         assert (isEmpty priq = Vzero). {
           destruct (isEmptyTwoCases priq);
             rewrite H11 in Htemp; simpl in Htemp;
@@ -1870,10 +1966,11 @@ Proof.
         
         assert (0 <= u < SIZE). {
           apply (vvalid_meaning g) in H_u_valid; trivial.
-        }
-        
+        } 
+
+        (* todo: prove without get_popped_meaning *)
         assert (~ (In u popped)). {
-          intro. (* lemma-fy *)
+          intro.
           rewrite (get_popped_meaning _ priq _) in H13.
           2: ulia.
           rewrite <- isEmpty_in' in H11.
@@ -1885,6 +1982,7 @@ Proof.
           apply min_in_list;
             [ apply incl_refl | apply Znth_In; ulia].
         }
+        
         assert (H_inf_reppable: Int.min_signed <= inf <= Int.max_signed). {
           split; rewrite inf_eq; compute; inversion 1.
         }
@@ -2354,103 +2452,30 @@ Proof.
                 split3; [| | split3; [| | split3; [| | split3; [| | split]]]]; intros.
                 (* 10 goals, where the 10th is 
                    3 range-based goals together *)
-                --- apply inv_popped_newcost; trivial.
+                --- now apply inv_popped_newcost.
                 --- destruct (Z.eq_dec dst i).
                     1: subst dst; rewrite upd_Znth_same; trivial; lia.
                     rewrite upd_Znth_diff.
                     apply H16; trivial.
                     apply (vvalid_meaning g) in H32.
                     all: ulia.
-                --- apply inv_unpopped_newcost with (priq := priq'); trivial.
-
-                ---
-(* done till here *)
-                  
-
-                  unfold inv_unpopped_weak. intros.
-                    assert (i <= dst < SIZE) by lia.
-                    destruct (Z.eq_dec dst i).
-                    1: subst dst; lia.
-                    unfold V in *.
-                    rewrite upd_Znth_diff in H by lia.
-                    destruct (H22 _ H58 H56 H57); [left | right]; trivial.
-                    destruct H59 as [? [[? [Ha [? [? [? ?]]]]] ?]].
-                    unfold V in *.
-                    rewrite upd_Znth_diff by lia.
-                    remember (Znth dst prev') as mom. 
-                    (* rename H67 into Hrem. *)
-
-                    assert (mom <> i). {
-                      intro. subst i.
-                      apply H41; trivial.
-                    }
-                    assert (0 <= mom < Zlength priq'). {
-                      apply (vvalid_meaning g) in Ha; ulia.
-                    }
-                    
-                    split3; [| split3; [| | split3; [| |split]]|]; trivial.
-                    +++ repeat rewrite upd_Znth_diff; trivial; lia.
-                    +++ repeat rewrite upd_Znth_diff; trivial; try lia.
-                    +++ intros.
-                        assert (mom' <> i). intro contra.
-                        rewrite contra in H70.
-                        rewrite (get_popped_meaning _ (upd_Znth i priq'
-                                                                (Znth u dist' + elabel g (u, i)))),
-                        upd_Znth_same in H70; trivial.
-                        ulia. ulia. rewrite upd_Znth_Zlength; lia.
-                        repeat rewrite upd_Znth_diff; trivial.
-                        apply H65; trivial; try lia.
-                        apply (vvalid_meaning g) in H69; ulia.
-                        all: lia.
-                --- unfold inv_unseen; intros.
-                    assert (dst <> i). {
-                      intro. subst dst.
-                      unfold V in *; rewrite upd_Znth_same in H57; lia.
-                    }
-                    assert (0 <= dst < i) by lia.
-                    rewrite upd_Znth_diff in H57; try lia.
-                    rewrite upd_Znth_diff; try lia.
-                    apply H23; trivial.
-                    +++ apply (vvalid_meaning g) in H58; ulia.
-                    +++ ulia.
-                    +++ intro contra. subst m.
-                        rewrite (get_popped_meaning _ (upd_Znth i priq'
-                                                                (Znth u dist' + elabel g (u, i)))) in H59.
-                        rewrite upd_Znth_same in H59.
-                         ulia. lia.
-                         rewrite upd_Znth_Zlength; lia.
-                    +++ ulia.
-                    +++ ulia.
-                --- unfold inv_unseen_weak; intros.
-                    assert (dst <> i) by lia.
-                    unfold V in *.
-                    rewrite upd_Znth_diff in H57 by lia.
-                    repeat rewrite upd_Znth_diff by lia.
-                    assert (i <= dst < SIZE) by lia.
-                    destruct (Z.eq_dec m i).
-                    1: { exfalso. subst m.
-                         rewrite (get_popped_meaning _ (upd_Znth i priq'
-                                                                 (Znth u dist' + elabel g (u, i)))) in H59.
-                         rewrite upd_Znth_same in H59.
-                         ulia. lia.
-                         rewrite upd_Znth_Zlength; lia.
-                    }
-                    rewrite upd_Znth_diff; trivial.
-                    apply H_inv_unseen_weak; trivial.
-                    1: apply (vvalid_meaning g) in H58; ulia.
-                    all: lia.
-                --- rewrite upd_Znth_diff; try lia.
-                    intro. subst src; lia.
-                --- rewrite upd_Znth_diff; try lia.
-                    intro. subst src; lia.
+                --- now apply inv_unpopped_newcost with (priq := priq').
+                --- now apply inv_unpopped_weak_newcost.
+                --- apply inv_unseen_newcost; ulia.
+                --- apply inv_unseen_weak_newcost; ulia.
+                --- rewrite upd_Znth_diff; try lia;
+                      intro; subst src; lia.
+                --- rewrite upd_Znth_diff; try lia;
+                      intro; subst src; lia.
                 --- destruct (Z.eq_dec dst i).
-                    +++ rewrite e.
-                        repeat rewrite upd_Znth_same; trivial; lia.
-                    +++ rewrite (vvalid_meaning g) in H55; trivial.
-                        repeat rewrite upd_Znth_diff; trivial; try lia.
-                        apply H28; trivial.
-                        rewrite (vvalid_meaning g); trivial.
-                --- split3; apply Forall_upd_Znth; trivial; try lia.    
+                    1: subst dst; repeat rewrite upd_Znth_same; ulia.
+                    repeat rewrite upd_Znth_diff; trivial; try lia.
+                    apply H_priq_dist_link; trivial.
+                    all: rewrite (vvalid_meaning g) in H32; ulia.
+                --- split3; apply Forall_upd_Znth; ulia.
+
+             (* done until here *)
+                    
              ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
                 rename H41 into improvement.
@@ -2486,7 +2511,7 @@ Proof.
                      *)
                     unfold inv_unpopped; intros.
                     assert (i <= i < SIZE) by lia.
-                    destruct (H22 i H55 H53 H54).
+                    destruct (H_inv_unpopped_weak i H55 H53 H54).
                     1: left; trivial.
                     destruct H56 as [? [[? [? [? [? [? ?]]]]] ?]].
                     unfold V in *.
@@ -2583,7 +2608,7 @@ Proof.
                           }
                           red in H21.
 
-                          destruct (H22 _ H55 H53 H54).
+                          destruct (H_inv_unpopped_weak _ H55 H53 H54).
                           1: lia.
                           destruct H81 as [? [[? [? [? [? [? ?]]]]]]].
                           apply H88; trivial.
@@ -2600,10 +2625,10 @@ Proof.
                       apply pfoot_in in H74. rewrite H69 in *. trivial.           
                 --- intros. destruct (Z.eq_dec dst i).
                     +++ subst dst. lia.
-                    +++ apply H22; lia.
+                    +++ apply H_inv_unpopped_weak; lia.
                 --- unfold inv_unseen; intros.
                     destruct (Z.eq_dec dst i).
-                    2: apply H23; ulia.                     
+                    2: apply H_inv_unseen; ulia.                     
                     subst dst.
                     assert (i <= i < SIZE) by lia.
                     destruct (Z.eq_dec m u).
@@ -2639,7 +2664,7 @@ Proof.
  *)
                    unfold inv_unpopped; intros.
                    assert (i <= i < SIZE) by lia.
-                   destruct (H22 i H51 H49 H50).
+                   destruct (H_inv_unpopped_weak i H51 H49 H50).
                    1: left; trivial.
                    destruct H52 as [? [[? [? [? [? [? ?]]]]]?]].
                    unfold V in *.
@@ -2680,9 +2705,9 @@ Proof.
                --- apply H21; lia.
             ** destruct (Z.eq_dec dst i).
                --- lia. 
-               --- apply H22; lia.
+               --- apply H_inv_unpopped_weak; lia.
             ** destruct (Z.eq_dec dst i).
-               2: apply H23; lia.
+               2: apply H_inv_unseen; lia.
                subst dst.
                assert (i <= i < SIZE) by lia.
                unfold inv_unseen; intros.
