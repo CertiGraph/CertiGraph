@@ -60,7 +60,7 @@ Definition prim_spec :=
           undirected_matrix sh (graph_to_symm_mat edgeless_graph') (pointer_val_val mstptr)
          )
   POST [ tvoid ]
-     EX mst: MatrixUGraph,
+     EX mst: G,
      PROP ( (*connected_graph mst;*)
             minimum_spanning_forest mst g
           )

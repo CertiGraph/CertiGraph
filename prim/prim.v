@@ -248,10 +248,8 @@ Definition f_prim := {|
     (Scall None
       (Evar _initialise_list (Tfunction (Tcons (tptr tint) (Tcons tint Tnil))
                                tvoid cc_default))
-      ((Evar _parent (tarray tint 8)) ::
-       (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-         (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-           (Econst_int (Int.repr 8) tint) tint) tint) :: nil))
+      ((Evar _parent (tarray tint 8)) :: (Econst_int (Int.repr 8) tint) ::
+       nil))
     (Ssequence
       (Scall None
         (Evar _initialise_list (Tfunction

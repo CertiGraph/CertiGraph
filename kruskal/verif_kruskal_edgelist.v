@@ -310,13 +310,11 @@ auto.
 (*uforest'*) {
   assert (uforest' (FiniteWEdgeListGraph_eremove t2 b) /\ ~ connected (FiniteWEdgeListGraph_eremove t2 b) (src t2 b) (dst t2 b)).
   apply (eremove_uforest' t2 b). auto. apply H1. apply EList_evalid in H9. auto. destruct H13.
-  apply uforest'_adde. auto. apply eremove_sound. auto. auto.
+  apply add_edge_uforest'. auto.
   apply eremove_vvalid. apply (spanning_preserves_vertices g t2). apply H1. apply (spanning_preserves_vertices g t1). apply H0.
   apply sound_strong_evalid in Ha; auto. destruct Ha. rewrite <- sound_src in H16; auto. rewrite <- sound_dst in H16; auto. apply H16.
   apply eremove_vvalid. apply (spanning_preserves_vertices g t2). apply H1. apply (spanning_preserves_vertices g t1). apply H0.
   apply sound_strong_evalid in Ha; auto. destruct Ha. rewrite <- sound_src in H16; auto. rewrite <- sound_dst in H16; auto. apply H16.
-  apply Ht1_sound.
-  auto.
   (*need an eremove_bridge*)
   unfold not, connected; intros. destruct H15 as [p ?].
   pose proof (connected_exists_list_edges (FiniteWEdgeListGraph_eremove t2 b) p u1 v1 H15). destruct H16 as [l ?].
@@ -448,9 +446,7 @@ auto.
   assert (evalid swap e). apply (fits_upath_evalid swap p l) in H16; auto.
   simpl in H17. unfold addValidFunc, removeValidFunc in H17. destruct H17.
   auto. subst e. contradiction. auto.
-  apply (eremove_unaffected t2 (u2,v2)).
-  apply (adde_unaffected _ (u1,v1) (elabel t1 (u1,v1))). apply H13.
-  exists l; auto.
+  apply (eremove_unaffected t2 (u2,v2)). apply valid_upath_exists_list_edges'. exists l; auto.
   apply H13.
 }
 split.
@@ -1104,7 +1100,7 @@ Proof.
         unfold EquivDec.equiv_dec. destruct E_EqDec. unfold Equivalence.equiv in e0; rewrite <- e0. auto.
         destruct H23. apply H11. auto. unfold RelationClasses.complement, Equivalence.equiv in c. symmetry in H23. contradiction.
     +++
-    apply uforest'_adde; auto. apply H8; auto. apply H8; auto.
+    apply add_edge_uforest'; auto. apply H8; auto. apply H8; auto.
     +++
     apply NoDup_Permutation. apply NoDup_app_inv.
     apply (Permutation_NoDup (l:=graph_to_wedgelist msf')). apply Permutation_sym; auto. apply NoDup_g2wedgelist.
@@ -1310,7 +1306,7 @@ Proof.
     apply connected_exists_list_edges in H23; auto. destruct H24 as [l ?].
     destruct (in_dec E_EqDec (u,v) l).
     (*Yes*) assert (connected msf' a u /\ connected msf' v b \/ connected msf' a v /\ connected msf' u b).
-      apply (cross_bridge_implies_endpoints msf' u v (elabel g (u,v)) p l); auto.
+      apply (cross_bridge_implies_endpoints msf' (u,v) u v p l); auto.
       destruct H25; destruct H25;
         rewrite <- H16 in H25, H26;
         rewrite (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv)
