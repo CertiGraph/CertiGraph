@@ -89,6 +89,13 @@ Proof.
 intros; split. auto. apply (@edge_strong_evalid _ (sound_MatrixUGraph g) e); auto.
 Qed.
 
+(*derp, remove if possible*)
+Lemma evalid_fstsnd:
+forall (g: MatrixUGraph) e, evalid g e -> evalid g (fst e, snd e).
+Proof.
+intros. destruct e; simpl; auto.
+Qed.
+
 Lemma evalid_inf_iff:
 forall (g: MatrixUGraph) e, evalid g e <-> elabel g e < inf.
 Proof.
