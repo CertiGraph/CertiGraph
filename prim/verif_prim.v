@@ -15,6 +15,10 @@ Require Import CertiGraph.prim.specs_prim.
 
 Local Open Scope Z.
 
+Lemma find_min: forall (l: list Z) i, 0<=i<Zlength l -> Znth (find l (fold_right Z.min (hd 0 l) l) 0) l <= Znth i l.
+Proof.
+Abort.
+
 Lemma adjacent_dec:
 forall (g: G) u v, adjacent g u v \/ ~ adjacent g u v.
 Proof.
@@ -174,13 +178,7 @@ SIZE = priq_arr_utils.SIZE.
 Proof.
 compute; trivial.
 Qed.
-(*
-Lemma min_find:
-forall (l: list Z) i, 0<=i<SIZE -> Znth (find l (fold_right Z.min (hd 0 l) l) 0) l <= Znth i l.
-Proof.
-induction l; intros. simpl. do 2 rewrite Znth_nil. lia.
-simpl. destruct (initial_world.EqDec_Z a (Z.min a (fold_right Z.min a l))).
-*)
+
 (***********************VERIFICATION***********************)
 
 (**Initialisation functions**)
