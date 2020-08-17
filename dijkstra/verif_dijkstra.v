@@ -1993,6 +1993,51 @@ Proof.
     destruct H21.
     apply pfoot_in in H25. rewrite H20 in *. trivial.       Qed.
 
+Lemma not_in_popped:
+  forall (g: DijkGG) src u i cost prev dist popped,
+    vvalid g u ->
+    vvalid g i ->
+    (forall dst : Z,
+        vvalid g dst ->
+        inv_popped g src popped prev dist dst) ->
+    In u popped ->
+    cost = elabel g (u, i) ->
+    0 <= Znth i dist <= inf ->
+    0 <= Znth u dist + cost <= Int.max_signed ->
+    Znth u dist + cost < Znth i dist ->
+    0 <= Znth u dist < inf ->
+    ~ In i popped.
+Proof.
+  intros ? ? ? ? ? ? ? ? H_u_valid H_i_valid
+         H_inv_popped ? ? ? ? H_improvement ?.
+  (* This useful fact is true because
+     the cost to i was just improved.
+     This is impossible for popped items.
+   *)
+  intro.                  
+  destruct (H_inv_popped _ H_i_valid H4) as [[? ?] | ?].
+  1: destruct (H6 u H_u_valid) as [? _]; ulia.
+  
+  apply Zlt_not_le in H_improvement; apply H_improvement.
+  destruct (H_inv_popped _ H_u_valid H) as [[? _] | [p2u [? _]]].
+  1: ulia.
+  destruct H5 as [p2i [[_ [_ [_ [? _]]]] [_ ?]]].
+  destruct H6 as [? [? [_ [? _]]]].
+  unfold V, E in *. rewrite H9, H5.
+  specialize (H7 (fst p2u, snd p2u +:: (u,i))).  
+  rewrite path_cost_app_cons in H7; trivial.
+  rewrite H0. apply H7.
+  - apply valid_path_app_cons.
+    + rewrite <- surjective_pairing; trivial.
+    + rewrite (surjective_pairing p2u) in H8.
+      destruct H8; simpl in H8; ulia.
+    + apply strong_evalid_dijk; ulia.
+  - apply path_ends_app_cons with (a' := src); trivial.
+    3: rewrite <- surjective_pairing; trivial.
+    all: rewrite (surjective_pairing p2u) in *;
+      destruct H8; simpl in H8; trivial.
+Qed.
+
 (** PROOF BEGINS **)
 
 Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
@@ -2139,7 +2184,7 @@ Proof.
         
         forward.
         forward_if. 
-        1: {  (* todo: lemma-fy *)
+        1: {  (* todo: lemma-fy? *)
           (* dist[u] = inf. We will break. *)
           assert (Ha: 0 <= inf < Int.modulus). {
             rewrite inf_eq; compute; split; [inversion 1 | trivial].
@@ -2439,6 +2484,7 @@ Proof.
           
           forward.
           clear Htemp1 Htemp2 H22.
+
           thaw FR2.
           gather_SEP (iter_sepcon _ _) (data_at _ _ _ _) (iter_sepcon _ _).
           rewrite sepcon_assoc.
@@ -2502,49 +2548,20 @@ Proof.
                 (* We know that we are definitely
                    going to make edits in the arrays:
                    we have found a better path to i, via u *)
-                
-                assert (~ In i (popped')).
-                { (* todo: lemma-fy *)
-                  (* This useful fact is true because
-                     the cost to i was just improved.
-                     This is impossible for popped items.
-                   *)
-                  intro.
-                  destruct (H_inv_popped _ H_i_valid H30) as [[? ?] | ?].
-                  1: destruct (H32 u H_u_valid); ulia.
-                  apply Zlt_not_le in H_improvement.
-                  apply H_improvement.
-                  destruct (H_inv_popped _ H_u_valid H24) as [[? ?] | [p2u [? [? ?]]]].
-                  1: ulia.
-                  destruct H32 as [? [? [? [? ?]]]].
-                  destruct H31 as [p2i [? [? ?]]].
-                  destruct H31 as [? [? [? [? ?]]]].
-                  unfold V, E in *. rewrite H37, H43.
-                  
-                  unfold path_globally_optimal in H40.
-                  specialize (H40 (fst p2u, snd p2u +:: (u,i))).
 
-                  rewrite path_cost_app_cons in H40; trivial.
-                  rewrite Heqcost.
-                  apply H40.
-                  - apply valid_path_app_cons.
-                    + rewrite <- surjective_pairing; trivial.
-                    + rewrite (surjective_pairing p2u) in H35.
-                      destruct H35; simpl in H35.
-                      ulia.
-                    + apply strong_evalid_dijk; trivial. ulia.
-                  - apply path_ends_app_cons with (a' := src); trivial.
-                      3: rewrite <- surjective_pairing; trivial.
-                      all: rewrite (surjective_pairing p2u) in *;
-                        destruct H35; simpl in H35; trivial.
+                rename H27 into Htemp.
+                assert (H27: 0 <= Znth u dist' < inf) by lia.
+                clear Htemp.
+
+                assert (~ In i (popped')). { 
+                  apply (not_in_popped g src u i cost prev' dist'); trivial.
                 }
-                 
                 assert (Htemp : 0 <= i < Zlength dist') by lia.
                 pose proof (Znth_dist_cases i dist' Htemp H21).
                 clear Htemp.
                 rename H31 into icases.
                 rewrite <- H_priq_dist_link in icases; trivial.
-
+  
                 (* assert (0 <= i < Zlength (map Vint (map Int.repr dist'))) by *)
                     (* (repeat rewrite Zlength_map; lia). *)
                 forward. forward. forward.
@@ -2596,7 +2613,7 @@ Proof.
                     apply H16; trivial.
                     apply (vvalid_meaning g) in H32.
                     all: ulia.
-                --- now apply inv_unpopped_newcost with (priq := priq').
+                --- apply inv_unpopped_newcost with (priq := priq'); ulia.
                 --- now apply inv_unpopped_weak_newcost.
                 --- apply inv_unseen_newcost; ulia.
                 --- apply inv_unseen_weak_newcost; ulia.
@@ -2613,21 +2630,20 @@ Proof.
                     
              ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
-                rename H30 into improvement.
+                rename H30 into H_non_improvement.
                 forward. 
                 (* The old arrays are just fine. *)
                 Exists prev' priq' dist' popped'.
                 entailer!.
                 remember (find priq (fold_right Z.min (hd 0 priq) priq) 0) as u.
-                clear H40 H41.
+                clear H30 H31 H32 H33 H34 H35 H36 H37 H38 H39 H40 H41
+                      Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
                 assert (elabel g (u, i) < inf). {
                   apply Z.le_lt_trans with (m := Int.max_signed / SIZE);
                     trivial.
-                  apply H26.
-                  rewrite inf_eq.
-                  compute; trivial.
+                  apply H26. rewrite inf_eq. compute; trivial.
                 }
-                  
+                
                 split3; [| |split].
                 --- intros. apply inv_unpopped_new_dst with (u:= u) (i := i); trivial.
                 --- intros. destruct (Z.eq_dec dst i).
@@ -2642,10 +2658,9 @@ Proof.
                     2: apply H_inv_unseen_weak; trivial.
                     subst m.
                     unfold V in *.
-                    rewrite H43 in improvement.
+                    rewrite H33 in H_non_improvement.
                     assert (0 <= u < SIZE) by lia.
-                    destruct (Znth_dist_cases u dist'); trivial.
-                    lia.
+                    destruct (Znth_dist_cases u dist'); ulia.
                 --- intros.
                     assert (i <= dst < SIZE) by lia.
                     apply H_inv_unseen_weak; trivial.
@@ -2659,7 +2674,8 @@ Proof.
             do 2 rewrite Int.signed_repr in H26.
             3,4: apply edge_representable.
             2: lia.
-            clear H38.
+            clear H27 H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H38
+                  Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
             split3; [| |split]; intros.
             ** destruct (Z.eq_dec dst i).
                --- subst dst. 
@@ -2671,16 +2687,14 @@ Proof.
  *)
                    unfold inv_unpopped; intros.
                    assert (i <= i < SIZE) by lia.
-                   destruct (H_inv_unpopped_weak i H41 H39 H40).
+                   destruct (H_inv_unpopped_weak i H30 H28 H29).
                    1: left; trivial.
-                   destruct H42 as [? [[? [? [? [? [? ?]]]]]?]].
+                   destruct H31 as [? [[? [? [? [? [? ?]]]]]?]].
                    unfold V in *.
                    remember (Znth i prev') as mom.
 
                    assert (Ha: Znth mom dist' < inf). {
-                     assert (0 <= elabel g (mom, i)). {
-                       apply edge_cost_pos; trivial.
-                     }
+                     pose proof (edge_cost_pos g (mom, i)).
                      ulia.
                    }
                    
@@ -2688,7 +2702,7 @@ Proof.
                    
                    intros.
                    destruct (Znth_dist_cases mom' dist') as [e | e]; trivial.
-                   1: apply (vvalid_meaning g) in H50; ulia.
+                   1: apply (vvalid_meaning g) in H39; ulia.
                    1: { rewrite e.
                         pose proof (edge_cost_pos g (mom', i)).
                         ulia.
@@ -2708,7 +2722,7 @@ Proof.
                         }
                         ulia.
                    }
-                   apply H49; trivial.
+                   apply H38; trivial.
                --- apply H_inv_unpopped; lia.
             ** destruct (Z.eq_dec dst i).
                --- lia. 
@@ -2734,6 +2748,8 @@ Proof.
           Exists prev' priq' dist' popped'.
           entailer!.
           remember (find priq (fold_right Z.min (hd 0 priq) priq) 0) as u.
+          clear H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H38 H39
+                Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
           unfold dijkstra_correct.
           split3; [auto | apply H17 | apply H19];
             try rewrite <- (vvalid_meaning g); trivial.
