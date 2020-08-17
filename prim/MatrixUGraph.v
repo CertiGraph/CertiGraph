@@ -89,6 +89,13 @@ Proof.
 intros; split. auto. apply (@edge_strong_evalid _ (sound_MatrixUGraph g) e); auto.
 Qed.
 
+(*derp, remove if possible*)
+Lemma evalid_fstsnd:
+forall (g: MatrixUGraph) e, evalid g e -> evalid g (fst e, snd e).
+Proof.
+intros. destruct e; simpl; auto.
+Qed.
+
 Lemma evalid_inf_iff:
 forall (g: MatrixUGraph) e, evalid g e <-> elabel g e < inf.
 Proof.
@@ -182,6 +189,18 @@ Proof.
   apply (H0 e). apply H1.
 Qed.
 
+Lemma edgeless_partial_lgraph:
+  forall (g: MatrixUGraph), is_partial_lgraph edgeless_graph g.
+Proof.
+intros. split. unfold is_partial_graph.
+split. intros. simpl. simpl in H. rewrite vert_bound. auto.
+split. intros. pose proof (edgeless_graph_evalid e). contradiction.
+split. intros. pose proof (edgeless_graph_evalid e). contradiction.
+intros. pose proof (edgeless_graph_evalid e). contradiction.
+split. unfold preserve_vlabel; intros. destruct vlabel; destruct vlabel. auto.
+unfold preserve_elabel; intros. pose proof (edgeless_graph_evalid e). contradiction.
+Qed.
+
 Lemma uforest'_edgeless_graph:
   uforest' edgeless_graph.
 Proof.
@@ -203,6 +222,17 @@ destruct H2 as [? [? ?]]. destruct p2. inversion H5.
 destruct p2. inversion H5. subst v. auto.
 destruct H2. destruct H2. destruct H2. destruct H2. simpl in H2. contradiction.
 destruct H0. destruct H0. destruct H0. destruct H0. simpl in H0. contradiction.
+Qed.
+
+Lemma edgeless_graph_disconnected:
+forall u v, u <> v -> ~ connected edgeless_graph u v.
+Proof.
+unfold not; intros.
+destruct H0 as [p [? [? ?]]].
+destruct p. inversion H1.
+destruct p. inversion H1; inversion H2. subst u; subst v. contradiction.
+destruct H0. destruct H0. destruct H0. destruct H0.
+pose proof (edgeless_graph_evalid x). contradiction.
 Qed.
 
 End EDGELESS_MUGRAPH.
@@ -282,13 +312,6 @@ Proof.
 intros. simpl. split; auto.
 Qed.
 
-Lemma adde_elabel_new:
-  elabel MatrixUGraph_adde (u,v) = w.
-Proof.
-intros. simpl. unfold update_elabel, equiv_dec. destruct E_EqDec. auto.
-unfold complement, equiv in c. contradiction.
-Qed.
-
 Lemma adde_evalid_new:
   evalid MatrixUGraph_adde (u,v).
 Proof. intros. apply add_edge_evalid. Qed.
@@ -305,6 +328,7 @@ Lemma adde_evalid_or:
   forall e, evalid MatrixUGraph_adde e <-> (evalid g e \/ e = (u,v)).
 Proof. unfold MatrixUGraph_adde; simpl; unfold addValidFunc. intros; split; auto. Qed.
 
+(*all the Elist stuff are useless by themselves, because (@fin .. sound_matrx) clashes with Fin for some reason*)
 Lemma adde_EList_new:
   ~ evalid g (u,v) -> Permutation ((u,v)::(EList g)) (EList MatrixUGraph_adde).
 Proof.
@@ -361,11 +385,25 @@ unfold MatrixUGraph_adde; simpl; unfold addValidFunc, updateEdgeFunc; intros.
 unfold equiv_dec. destruct E_EqDec. unfold equiv in e; contradiction. auto.
 Qed.
 
+Lemma adde_src:
+  forall e', evalid g e' -> src MatrixUGraph_adde e' = src g e'.
+Proof.
+intros. rewrite (@src_fst _ (sound_MatrixUGraph _)). rewrite (@src_fst _ (sound_MatrixUGraph _)). auto.
+auto. apply adde_evalid_old; auto.
+Qed.
+
 Lemma adde_dst_old:
   forall e', (u,v) <> e' -> dst MatrixUGraph_adde e' = dst g e'.
 Proof.
 unfold MatrixUGraph_adde; simpl; unfold addValidFunc, updateEdgeFunc; intros.
 unfold equiv_dec. destruct E_EqDec. unfold equiv in e; contradiction. auto.
+Qed.
+
+Lemma adde_dst:
+  forall e', evalid g e' -> dst MatrixUGraph_adde e' = dst g e'.
+Proof.
+intros. rewrite (@dst_snd _ (sound_MatrixUGraph _)). rewrite (@dst_snd _ (sound_MatrixUGraph _)). auto.
+auto. apply adde_evalid_old; auto.
 Qed.
 
 Corollary adde_strong_evalid_new:
@@ -391,6 +429,54 @@ intros. destruct H0. destruct H1.
 split. apply adde_evalid_rev in H0; auto.
 split. rewrite adde_src_old in H1; auto.
 rewrite adde_dst_old in H2; auto.
+Qed.
+
+Lemma adde_elabel_new:
+  elabel MatrixUGraph_adde (u,v) = w.
+Proof.
+intros. simpl. unfold update_elabel, equiv_dec. destruct E_EqDec. auto.
+unfold complement, equiv in c. contradiction.
+Qed.
+
+Lemma adde_elabel_old:
+  forall e, e <> (u,v) -> elabel MatrixUGraph_adde e = elabel g e.
+Proof.
+intros. simpl. unfold update_elabel, equiv_dec. destruct E_EqDec.
+unfold equiv in e0. symmetry in e0; contradiction.
+auto.
+Qed.
+
+Lemma adde_partial_graph:
+  forall (g': MatrixUGraph), is_partial_graph g g' -> evalid g' (u,v) -> is_partial_graph MatrixUGraph_adde g'.
+Proof.
+intros. destruct H as [? [? [? ?]]].
+split. intros. simpl. apply H. auto.
+split. intros. rewrite adde_evalid_or in H4. destruct H4.
+apply H1; auto. subst e; auto.
+split. intros. rewrite adde_evalid_or in H4. destruct H4.
+rewrite <- H2. apply adde_src. auto. auto. rewrite adde_src in H5 by auto. simpl in H5; auto.
+subst e. rewrite (@src_fst _ (sound_MatrixUGraph g')).
+rewrite (@src_fst _ (sound_MatrixUGraph MatrixUGraph_adde)). auto.
+apply adde_evalid_new. auto.
+intros. rewrite adde_evalid_or in H4. destruct H4.
+rewrite <- H3. apply adde_dst. auto. auto. rewrite adde_dst in H5 by auto. simpl in H5; auto.
+subst e. rewrite (@dst_snd _ (sound_MatrixUGraph g')).
+rewrite (@dst_snd _ (sound_MatrixUGraph MatrixUGraph_adde)). auto.
+apply adde_evalid_new. auto.
+Qed.
+
+Lemma adde_partial_lgraph:
+  forall (g': MatrixUGraph), is_partial_lgraph g g' -> evalid g' (u,v) -> w = elabel g' (u,v) -> is_partial_lgraph MatrixUGraph_adde g'.
+Proof.
+intros. split. apply adde_partial_graph. apply H. auto.
+split. unfold preserve_vlabel; intros.
+destruct vlabel. destruct vlabel. auto.
+unfold preserve_elabel; intros.
+destruct H. destruct H3. unfold preserve_elabel in H4.
+destruct (E_EqDec e (u,v)).
+unfold equiv in e0. subst e. rewrite adde_elabel_new. rewrite H1. auto.
+unfold complement, equiv in c. apply adde_evalid_rev in H2. rewrite adde_elabel_old.
+rewrite <- H4. all: auto.
 Qed.
 
 (****connectedness****)
