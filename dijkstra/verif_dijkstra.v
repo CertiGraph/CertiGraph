@@ -47,7 +47,7 @@ Lemma Znth_dist_cases:
     0 <= i < Zlength dist ->
     inrange_dist dist ->
     Znth i dist = inf \/
-    Znth i dist < inf.
+    0 <= Znth i dist < inf.
 Proof.
   intros.
   apply (Forall_Znth _ _ _ H) in H0.
@@ -878,7 +878,7 @@ Proof.
       apply (vvalid_meaning g) in H36; trivial; lia.
     }
     
-    destruct (Znth_dist_cases child' dist); trivial; clear Htemp.
+    destruct (Znth_dist_cases child' dist) as [? | [_ ?]]; trivial; clear Htemp.
     + (* dist[child'] = inf. This is impossible *)
       exfalso.
       destruct (H _ H36) as [_ [_ ?]].
@@ -2180,7 +2180,8 @@ Proof.
              whole lot of ground to cover   
          *)
         unfold V in *.
-        
+
+        (*
         forward.
         forward_if. 
         1: {  (* todo: lemma-fy? *)
@@ -2351,18 +2352,15 @@ Proof.
               apply H17; trivial.
               simpl in H21; destruct H21; [lia | trivial].
         }
-        
+        *)
         (* Now we're in the main proof. We will run through
            the for loop and relax u's neighbors when possible.
          *)
-        rename H14 into Htemp.
-        assert (H14: Znth u dist < inf). {
-          rewrite inf_eq2 in Htemp.
-          apply repr_neq_e in Htemp.
-          pose proof (Znth_dist_cases u dist).
-          destruct H14; trilia.
-        }
-        clear Htemp. 
+
+        assert (Htemp: 0 <= u < Zlength dist) by lia.
+        pose proof (Znth_dist_cases _ _ Htemp H6).
+        clear Htemp.
+        
         (* This is the priq array with which
            we will enter the for loop.
            The dist and prev arrays are the same.
@@ -2396,23 +2394,27 @@ Proof.
           split3; [| | split3; [| |split3]]; trivial.
           ++ (* We must show inv_popped for all
                 dst that are in range. *)
-            intros. subst u.
+            intros.
+            destruct H14; [admit|].
+            rewrite Hequ in *.
             apply (inv_popped_add_u g src dst popped prev
-                  priq dist); trivial.
-
-          ++ intros.
-             destruct (Z.eq_dec dst u).
-             1: subst dst; ulia.
-             simpl in H16; destruct H16; [lia | intro].
-             destruct (H1 dst) as [? _]; trivial.
-             destruct (H18 H16) as [[? ?] | [src2dst [? [? ?]]]].
-             2: destruct H19 as [? [? [? [? ?]]]]; lia.
-             assert (vvalid g u). {
-               apply (vvalid_meaning g); trivial; lia.
-             }
-             destruct (H20 u H21).
-             specialize (H23 H13). ulia.
-          
+                                    priq dist); ulia.
+          ++ (* perhaps untrue altogether? *)
+             intros.
+             destruct (Z.eq_dec dst u); [subst dst|]; destruct H14.
+             ** admit.
+             ** ulia.
+             ** admit.
+             ** simpl in H16; destruct H16; [lia | intro].
+                destruct (H1 dst) as [? _]; trivial.
+                destruct (H18 H16) as [[? ?] | [src2dst [? [? ?]]]].
+                2: destruct H19 as [? [? [? [? ?]]]]; lia.
+                assert (vvalid g u). {
+                  apply (vvalid_meaning g); trivial; lia.
+                }
+                destruct (H20 u H21).
+                specialize (H23 H13). ulia.
+                
           ++ intros.
              apply (vvalid_meaning g) in H15.
              apply inv_unpopped_weak_add_unpopped; trivial.

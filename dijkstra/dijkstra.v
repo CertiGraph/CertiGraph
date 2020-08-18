@@ -125,7 +125,6 @@ Definition _t'3 : ident := 107%positive.
 Definition _t'4 : ident := 108%positive.
 Definition _t'5 : ident := 109%positive.
 Definition _t'6 : ident := 110%positive.
-Definition _t'7 : ident := 111%positive.
 
 Definition v___stringlit_4 := {|
   gvar_info := (tarray tschar 13);
@@ -440,9 +439,8 @@ Definition f_dijkstra := {|
                 (_dist, (tptr tint)) :: (_prev, (tptr tint)) :: nil);
   fn_vars := ((_pq, (tarray tint 8)) :: nil);
   fn_temps := ((_i, tint) :: (_j, tint) :: (_u, tint) :: (_cost, tint) ::
-               (_t'2, tint) :: (_t'1, tint) :: (_t'7, tint) ::
-               (_t'6, tint) :: (_t'5, tint) :: (_t'4, tint) ::
-               (_t'3, tint) :: nil);
+               (_t'2, tint) :: (_t'1, tint) :: (_t'6, tint) ::
+               (_t'5, tint) :: (_t'4, tint) :: (_t'3, tint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
@@ -518,107 +516,92 @@ Definition f_dijkstra := {|
                     ((Evar _pq (tarray tint 8)) :: nil))
                   (Sset _u (Etempvar _t'2 tint)))
                 (Ssequence
-                  (Ssequence
-                    (Sset _t'7
-                      (Ederef
-                        (Ebinop Oadd (Etempvar _dist (tptr tint))
-                          (Etempvar _u tint) (tptr tint)) tint))
-                    (Sifthenelse (Ebinop Oeq (Etempvar _t'7 tint)
-                                   (Ebinop Osub
-                                     (Econst_int (Int.repr 2147483647) tint)
-                                     (Ebinop Odiv
-                                       (Econst_int (Int.repr 2147483647) tint)
-                                       (Econst_int (Int.repr 8) tint) tint)
-                                     tint) tint)
-                      Sbreak
-                      Sskip))
-                  (Ssequence
-                    (Sset _i (Econst_int (Int.repr 0) tint))
-                    (Sloop
+                  (Sset _i (Econst_int (Int.repr 0) tint))
+                  (Sloop
+                    (Ssequence
+                      (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                                     (Econst_int (Int.repr 8) tint) tint)
+                        Sskip
+                        Sbreak)
                       (Ssequence
-                        (Sifthenelse (Ebinop Olt (Etempvar _i tint)
-                                       (Econst_int (Int.repr 8) tint) tint)
-                          Sskip
-                          Sbreak)
-                        (Ssequence
-                          (Sset _cost
-                            (Ederef
-                              (Ebinop Oadd
-                                (Ederef
-                                  (Ebinop Oadd
-                                    (Etempvar _graph (tptr (tarray tint 8)))
-                                    (Etempvar _u tint)
-                                    (tptr (tarray tint 8))) (tarray tint 8))
-                                (Etempvar _i tint) (tptr tint)) tint))
-                          (Sifthenelse (Ebinop Olt (Etempvar _cost tint)
-                                         (Ebinop Osub
+                        (Sset _cost
+                          (Ederef
+                            (Ebinop Oadd
+                              (Ederef
+                                (Ebinop Oadd
+                                  (Etempvar _graph (tptr (tarray tint 8)))
+                                  (Etempvar _u tint) (tptr (tarray tint 8)))
+                                (tarray tint 8)) (Etempvar _i tint)
+                              (tptr tint)) tint))
+                        (Sifthenelse (Ebinop Olt (Etempvar _cost tint)
+                                       (Ebinop Osub
+                                         (Econst_int (Int.repr 2147483647) tint)
+                                         (Ebinop Odiv
                                            (Econst_int (Int.repr 2147483647) tint)
-                                           (Ebinop Odiv
-                                             (Econst_int (Int.repr 2147483647) tint)
-                                             (Econst_int (Int.repr 8) tint)
-                                             tint) tint) tint)
+                                           (Econst_int (Int.repr 8) tint)
+                                           tint) tint) tint)
+                          (Ssequence
+                            (Sset _t'3
+                              (Ederef
+                                (Ebinop Oadd (Etempvar _dist (tptr tint))
+                                  (Etempvar _i tint) (tptr tint)) tint))
                             (Ssequence
-                              (Sset _t'3
+                              (Sset _t'4
                                 (Ederef
                                   (Ebinop Oadd (Etempvar _dist (tptr tint))
-                                    (Etempvar _i tint) (tptr tint)) tint))
-                              (Ssequence
-                                (Sset _t'4
-                                  (Ederef
-                                    (Ebinop Oadd (Etempvar _dist (tptr tint))
-                                      (Etempvar _u tint) (tptr tint)) tint))
-                                (Sifthenelse (Ebinop Ogt (Etempvar _t'3 tint)
-                                               (Ebinop Oadd
-                                                 (Etempvar _t'4 tint)
-                                                 (Etempvar _cost tint) tint)
-                                               tint)
+                                    (Etempvar _u tint) (tptr tint)) tint))
+                              (Sifthenelse (Ebinop Ogt (Etempvar _t'3 tint)
+                                             (Ebinop Oadd
+                                               (Etempvar _t'4 tint)
+                                               (Etempvar _cost tint) tint)
+                                             tint)
+                                (Ssequence
                                   (Ssequence
+                                    (Sset _t'6
+                                      (Ederef
+                                        (Ebinop Oadd
+                                          (Etempvar _dist (tptr tint))
+                                          (Etempvar _u tint) (tptr tint))
+                                        tint))
+                                    (Sassign
+                                      (Ederef
+                                        (Ebinop Oadd
+                                          (Etempvar _dist (tptr tint))
+                                          (Etempvar _i tint) (tptr tint))
+                                        tint)
+                                      (Ebinop Oadd (Etempvar _t'6 tint)
+                                        (Etempvar _cost tint) tint)))
+                                  (Ssequence
+                                    (Sassign
+                                      (Ederef
+                                        (Ebinop Oadd
+                                          (Etempvar _prev (tptr tint))
+                                          (Etempvar _i tint) (tptr tint))
+                                        tint) (Etempvar _u tint))
                                     (Ssequence
-                                      (Sset _t'6
+                                      (Sset _t'5
                                         (Ederef
                                           (Ebinop Oadd
                                             (Etempvar _dist (tptr tint))
-                                            (Etempvar _u tint) (tptr tint))
+                                            (Etempvar _i tint) (tptr tint))
                                           tint))
-                                      (Sassign
-                                        (Ederef
-                                          (Ebinop Oadd
-                                            (Etempvar _dist (tptr tint))
-                                            (Etempvar _i tint) (tptr tint))
-                                          tint)
-                                        (Ebinop Oadd (Etempvar _t'6 tint)
-                                          (Etempvar _cost tint) tint)))
-                                    (Ssequence
-                                      (Sassign
-                                        (Ederef
-                                          (Ebinop Oadd
-                                            (Etempvar _prev (tptr tint))
-                                            (Etempvar _i tint) (tptr tint))
-                                          tint) (Etempvar _u tint))
-                                      (Ssequence
-                                        (Sset _t'5
-                                          (Ederef
-                                            (Ebinop Oadd
-                                              (Etempvar _dist (tptr tint))
-                                              (Etempvar _i tint) (tptr tint))
-                                            tint))
-                                        (Scall None
-                                          (Evar _adjustWeight (Tfunction
+                                      (Scall None
+                                        (Evar _adjustWeight (Tfunction
+                                                              (Tcons tint
                                                                 (Tcons tint
-                                                                  (Tcons tint
-                                                                    (Tcons
+                                                                  (Tcons
                                                                     (tptr tint)
                                                                     Tnil)))
-                                                                tvoid
-                                                                cc_default))
-                                          ((Etempvar _i tint) ::
-                                           (Etempvar _t'5 tint) ::
-                                           (Evar _pq (tarray tint 8)) :: nil)))))
-                                  Sskip)))
-                            Sskip)))
-                      (Sset _i
-                        (Ebinop Oadd (Etempvar _i tint)
-                          (Econst_int (Int.repr 1) tint) tint)))))))
+                                                              tvoid
+                                                              cc_default))
+                                        ((Etempvar _i tint) ::
+                                         (Etempvar _t'5 tint) ::
+                                         (Evar _pq (tarray tint 8)) :: nil)))))
+                                Sskip)))
+                          Sskip)))
+                    (Sset _i
+                      (Ebinop Oadd (Etempvar _i tint)
+                        (Econst_int (Int.repr 1) tint) tint))))))
             Sskip)
           (Sreturn None))))))
 |}.
