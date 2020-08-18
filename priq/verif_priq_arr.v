@@ -3,7 +3,13 @@ Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.priq.priq_arr_utils.
 Require Import VST.floyd.sublist.
 
-Lemma body_push: semax_body Vprog Gprog f_push push_spec.
+Require Import CertiGraph.priq.priq_arr.
+
+Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
+Definition Vprog : varspecs. mk_varspecs prog. Defined.
+Local Open Scope Z_scope.
+
+Lemma body_push: semax_body Vprog Gprog f_push push_spec. 
 Proof. start_function. forward. entailer!. Qed.
 
 Lemma body_pq_emp: semax_body Vprog Gprog f_pq_emp pq_emp_spec.
