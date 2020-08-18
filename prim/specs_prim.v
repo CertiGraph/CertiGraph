@@ -71,6 +71,11 @@ Definition prim_spec :=
 
 Definition Gprog : funspecs :=
   ltac:(with_library prog
-      [ priq_arr_specs.push_spec; priq_arr_specs.pq_emp_spec; priq_arr_specs.popMin_spec; priq_arr_specs.adjustWeight_spec;
-        initialise_list_spec; initialise_matrix_spec; prim_spec
-  ]).
+                     [push_spec;
+                     pq_emp_spec;
+                     popMin_spec;
+                     adjustWeight_spec;
+                     initialise_list_spec;
+                     initialise_matrix_spec;
+                     prim_spec
+       ]).
