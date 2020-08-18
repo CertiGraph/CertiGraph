@@ -2056,7 +2056,7 @@ Proof.
     1: split; trivial;
       rewrite inf_eq; compute; split; inversion 1.
     rewrite inf_eq2, upd_Znth_list_repeat; [|lia].
-    entailer!.    
+    entailer!.     
   - (* At this point we are done with the
        first for loop. The arrays are all set to INF. *)
     replace (SIZE - SIZE) with 0 by lia;
