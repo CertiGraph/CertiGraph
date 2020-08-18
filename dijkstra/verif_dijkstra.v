@@ -10,7 +10,6 @@ Require Import CertiGraph.dijkstra.path_cost.
 Require Import VST.floyd.sublist.
 (* seems this has to be imported after the others *)
 
-
 Local Open Scope Z_scope.
 
 (** CONSTANTS AND RANGES **)
@@ -2057,7 +2056,7 @@ Proof.
     1: split; trivial;
       rewrite inf_eq; compute; split; inversion 1.
     rewrite inf_eq2, upd_Znth_list_repeat; [|lia].
-    entailer!.
+    entailer!.    
   - (* At this point we are done with the
        first for loop. The arrays are all set to INF. *)
     replace (SIZE - SIZE) with 0 by lia;
@@ -2769,5 +2768,5 @@ Proof.
       unfold dijk_forloop_break_inv.
       Intros prev priq dist popped. 
       forward. Exists prev dist popped. entailer!.
-Admitted.
+Qed.
 
