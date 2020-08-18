@@ -8,18 +8,8 @@ Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Local Open Scope Z_scope.
 
-(* 
- * These specs are parameterized by the ID of the _function.
-   Con: Nonstandard 
-   Neutral: I claim it is mathematically irrelevant
-   Pro: Lets me feed in PQ's _function now, 
-        and later feed in Dijk's _function
-        while reusing the same actual spec, as one
-        would want to.
-*)
-
-Definition push_spec push :=
-  DECLARE push
+Definition push_spec :=
+  DECLARE _push
   WITH pq: val, vertex : Z, weight : Z, priq_contents_val: list val
   PRE [tint, tint, tptr tint]
   PROP (0 <= vertex < SIZE;
@@ -36,8 +26,8 @@ Definition push_spec push :=
                (upd_Znth vertex
                          priq_contents_val (Vint (Int.repr weight))) pq).
     
-Definition pq_emp_spec pq_emp := 
-  DECLARE pq_emp
+Definition pq_emp_spec := 
+  DECLARE _pq_emp
   WITH pq: val, priq_contents: list Z
   PRE [tptr tint]
    PROP (inrange_priq priq_contents)
@@ -49,8 +39,8 @@ Definition pq_emp_spec pq_emp :=
    LOCAL (temp ret_temp (isEmpty priq_contents))
    SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq).
 
-Definition adjustWeight_spec adjustWeight :=
-  DECLARE adjustWeight
+Definition adjustWeight_spec :=
+  DECLARE _adjustWeight
   WITH pq: val, vertex : Z, newWeight : Z, priq_contents: list Z
   PRE [tint, tint, tptr tint]
   PROP (0 <= vertex < SIZE;
@@ -67,8 +57,8 @@ Definition adjustWeight_spec adjustWeight :=
                (upd_Znth vertex
                   (map Vint (map Int.repr priq_contents)) (Vint (Int.repr newWeight))) pq).
 
-Definition popMin_spec popMin :=
-  DECLARE popMin
+Definition popMin_spec :=
+  DECLARE _popMin
   WITH pq: val, priq_contents: list Z
   PRE [tptr tint]
    PROP (inrange_priq priq_contents;
@@ -86,7 +76,7 @@ Definition popMin_spec popMin :=
 
 Definition Gprog : funspecs :=
   ltac:(with_library prog
-                     [push_spec _push;
-                     pq_emp_spec _pq_emp;
-                     adjustWeight_spec _adjustWeight;
-                     popMin_spec _popMin]).
+                     [push_spec;
+                     pq_emp_spec;
+                     adjustWeight_spec;
+                     popMin_spec]).
