@@ -3,10 +3,10 @@ Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.priq.priq_arr_utils.
 Require Import VST.floyd.sublist.
 
-Lemma body_push: semax_body Vprog Gprog f_push push_spec.
+Lemma body_push: semax_body Vprog Gprog f_push (push_spec _push).
 Proof. start_function. forward. entailer!. Qed.
 
-Lemma body_pq_emp: semax_body Vprog Gprog f_pq_emp pq_emp_spec.
+Lemma body_pq_emp: semax_body Vprog Gprog f_pq_emp (pq_emp_spec _pq_emp).
 Proof.
   start_function.
   forward_for_simple_bound
@@ -62,10 +62,11 @@ Proof.
     symmetry; trivial.
 Qed.
 
-Lemma body_adjustWeight: semax_body Vprog Gprog f_adjustWeight adjustWeight_spec.
+Lemma body_adjustWeight: semax_body Vprog Gprog f_adjustWeight
+                                    (adjustWeight_spec _adjustWeight).
 Proof. start_function. forward. entailer!. Qed.
 
-Lemma body_popMin: semax_body Vprog Gprog f_popMin popMin_spec.
+Lemma body_popMin: semax_body Vprog Gprog f_popMin (popMin_spec _popMin).
 Proof.
   start_function.
   assert_PROP (Zlength priq_contents = SIZE). {
