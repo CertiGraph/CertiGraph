@@ -1152,7 +1152,7 @@ Definition dijk_setup_loop_inv g sh src dist prev v_pq arr :=
                  ++ (list_repeat (Z.to_nat (SIZE-i))
                                  Vundef)) (pointer_val_val dist);
       DijkGraph sh CompSpecs g (pointer_val_val arr)).
-
+ 
 Definition dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr :=
   EX prev : list V,
   EX priq : list V,
@@ -1165,13 +1165,10 @@ Definition dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr :=
       (* Some special facts about src *)
       Znth src dist = 0;
       Znth src prev = src;
-    
-      (* A fact about the relationship b/w 
-         dist and priq arrays *)
-      forall dst, vvalid g dst ->
-                  ~ In dst popped ->
-                  Znth dst priq = Znth dst dist;
-    
+
+    (* A fact about the minimum from the fringe *)
+    ~ In (find priq (fold_right Z.min (hd 0 priq) priq) 0) popped;
+         
       (* Information about the ranges of the three arrays *)
       inrange_prev prev;
       inrange_dist dist;
@@ -1232,7 +1229,7 @@ Definition dijk_inner_forloop_inv (g: DijkGG) sh src priq dist_ptr prev_ptr priq
       forall dst,
         vvalid g dst ->
         inv_popped g src popped' prev' dist' dst;
-    
+(*    
     (* and, because we broke out when dist[u] = inf,
        we know that none of the popped items have dist inf.
        Essentially, the first disjunct of inv_popped
@@ -1242,6 +1239,7 @@ Definition dijk_inner_forloop_inv (g: DijkGG) sh src priq dist_ptr prev_ptr priq
       vvalid g dst ->
       In dst popped' ->
       Znth dst dist' <> inf;
+ *)
     
     (* inv_unpopped is restored for those vertices
        that the for loop has scanned and repaired *)
@@ -1277,13 +1275,15 @@ Definition dijk_inner_forloop_inv (g: DijkGG) sh src priq dist_ptr prev_ptr priq
     
     (* a useful fact about u *)
     In u popped';
-    
+
+    (*
     (* A fact about the relationship b/w 
        dist and priq arrays *)
     forall dst,
       vvalid g dst ->
       ~ In dst popped' ->
       Znth dst priq' = Znth dst dist';
+     *)
     
     (* and ranges of the three arrays *)
     inrange_prev prev';
@@ -2078,7 +2078,7 @@ Proof.
        VST will first ask us to first show the
        invariant at the start of the loop
      *)
-  
+   
     forward_loop
     (dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr)
     break: (dijk_forloop_break_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr).
@@ -2131,6 +2131,7 @@ Proof.
         forward_call (priq_ptr, priq).
         Intros u.
         rename H12 into Hequ.
+        rewrite <- Hequ in *.
         (* u is the minimally chosen item from the
            "seen but not popped" category of vertices *)
 
@@ -2150,7 +2151,7 @@ Proof.
         } 
 
         (* todo: prove without get_popped_meaning *)
-        assert (~ (In u popped)). {
+        assert (~ (In u popped)). { 
           intro.
           rewrite (get_popped_meaning _ priq _) in H13.
           2: ulia.
@@ -2163,6 +2164,8 @@ Proof.
           apply min_in_list;
             [ apply incl_refl | apply Znth_In; ulia].
         }
+        clear H13.
+        assert (H13: 1=1) by trivial.
         
         assert (H_inf_reppable: Int.min_signed <= inf <= Int.max_signed). {
           split; rewrite inf_eq; compute; inversion 1.
@@ -2391,51 +2394,25 @@ Proof.
           clear H15 H16 H17 H18 H19 H20 H21 H22
                 H23 H24 H25 H26 H27 Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
           
-          split3; [| | split3; [| |split3]]; trivial.
+          split3; [| | split3]; trivial.
           ++ (* We must show inv_popped for all
                 dst that are in range. *)
             intros.
             destruct H14; [admit|].
             rewrite Hequ in *.
             apply (inv_popped_add_u g src dst popped prev
-                                    priq dist); ulia.
-          ++ (* perhaps untrue altogether? *)
-             intros.
-             destruct (Z.eq_dec dst u); [subst dst|]; destruct H14.
-             ** admit.
-             ** ulia.
-             ** admit.
-             ** simpl in H16; destruct H16; [lia | intro].
-                destruct (H1 dst) as [? _]; trivial.
-                destruct (H18 H16) as [[? ?] | [src2dst [? [? ?]]]].
-                2: destruct H19 as [? [? [? [? ?]]]]; lia.
-                assert (vvalid g u). {
-                  apply (vvalid_meaning g); trivial; lia.
-                }
-                destruct (H20 u H21).
-                specialize (H23 H13). ulia.
-                
+                                    priq dist); try ulia.
+             admit. (* tweak the lemma *)
+
           ++ intros.
              apply (vvalid_meaning g) in H15.
              apply inv_unpopped_weak_add_unpopped; trivial.
-     
+
           ++ intros.
              apply (vvalid_meaning g) in H15.
              apply (inv_unseen_weak_add_unpopped g prev _ _ src); trivial.
 
           ++ apply in_eq.
-
-          ++ intros.
-             assert (dst <> u). {
-               intro. subst dst. apply H16, in_eq.
-             }
-             assert (0 <= dst < Zlength priq). {
-               rewrite (vvalid_meaning g) in H15; lia.
-             }
-             rewrite upd_Znth_diff; trivial.
-             apply H4; trivial.
-             apply not_in_cons in H16; destruct H16 as [_ ?].
-             trivial. ulia.
 
           ++ apply Forall_upd_Znth; trivial.
              ulia. rewrite inf_eq; rep_lia.
@@ -2448,18 +2425,18 @@ Proof.
           2: ulia.
           Intros.
           rename H16 into H_inv_popped.
-          rename H17 into H16.
-          rename H18 into H_inv_unpopped.
-          rename H19 into H_inv_unpopped_weak.
-          rename H20 into H_inv_unseen.
-          rename H21 into H_inv_unseen_weak.
-          rename H22 into H17.
-          rename H23 into H18.
-          rename H25 into H_priq_dist_link.
-          rename H26 into H19.
-          rename H27 into H20.
-          rename H28 into H21. 
-
+          rename H17 into H_inv_unpopped.
+          rename H18 into H_inv_unpopped_weak.
+          rename H19 into H_inv_unseen.
+          rename H20 into H_inv_unseen_weak.
+          assert (H16 : 1 = 1) by trivial.
+          rename H21 into H17.
+          rename H22 into H18.
+          (* rename H24 into H_priq_dist_link. *)
+          rename H24 into H19.
+          rename H25 into H20.
+          rename H26 into H21. 
+          
           freeze FR2 := (iter_sepcon _ _) (iter_sepcon _ _).
           unfold list_rep.
           assert_PROP (force_val
@@ -2561,7 +2538,7 @@ Proof.
                 pose proof (Znth_dist_cases i dist' Htemp H21).
                 clear Htemp.
                 rename H31 into icases.
-                rewrite <- H_priq_dist_link in icases; trivial.
+                (* rewrite <- H_priq_dist_link in icases; trivial. *)
   
                 (* assert (0 <= i < Zlength (map Vint (map Int.repr dist'))) by *)
                     (* (repeat rewrite Zlength_map; lia). *)
@@ -2604,17 +2581,12 @@ Proof.
 
                 assert (u <> i) by (intro; subst; lia).
                 
-                split3; [| | split3; [| | split3; [| | split3; [| | split]]]]; intros.
-                (* 10 goals, where the 10th is 
+                split3; [| | split3; [| | split3; [| | split]]]; intros.
+                (* 8 goals, where the 10th is 
                    3 range-based goals together *)
-                --- now apply inv_popped_newcost.
-                --- destruct (Z.eq_dec dst i).
-                    1: subst dst; rewrite upd_Znth_same; trivial; lia.
-                    rewrite upd_Znth_diff.
-                    apply H16; trivial.
-                    apply (vvalid_meaning g) in H32.
-                    all: ulia.
-                --- apply inv_unpopped_newcost with (priq := priq'); ulia.
+                --- apply inv_popped_newcost; trivial.
+                    admit. (* tweak lemma? *)
+                --- apply inv_unpopped_newcost with (priq := priq'); try ulia. admit. admit.
                 --- now apply inv_unpopped_weak_newcost.
                 --- apply inv_unseen_newcost; ulia.
                 --- apply inv_unseen_weak_newcost; ulia.
@@ -2622,11 +2594,6 @@ Proof.
                       intro; subst src; lia.
                 --- rewrite upd_Znth_diff; try lia;
                       intro; subst src; lia.
-                --- destruct (Z.eq_dec dst i).
-                    1: subst dst; repeat rewrite upd_Znth_same; ulia.
-                    repeat rewrite upd_Znth_diff; trivial; try lia.
-                    apply H_priq_dist_link; trivial.
-                    all: rewrite (vvalid_meaning g) in H32; ulia.
                 --- split3; apply Forall_upd_Znth; ulia.
                     
              ** (* This is the branch where we didn't
@@ -2749,11 +2716,15 @@ Proof.
           Exists prev' priq' dist' popped'.
           entailer!.
           remember (find priq (fold_right Z.min (hd 0 priq) priq) 0) as u.
-          clear H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H38 H39
+          clear H26 H27 H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H37
                 Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
-          unfold dijkstra_correct.
-          split3; [auto | apply H17 | apply H19];
-            try rewrite <- (vvalid_meaning g); trivial.
+          assert (H26: 1 = 1) by trivial.
+          assert (H27: 1 = 1) by trivial.
+          split.
+          ++ unfold dijkstra_correct.
+             split3; [auto | apply H16 | apply H18];
+               try rewrite <- (vvalid_meaning g); trivial.
+          ++ admit. (* add to for loop's inv? *)
       * (* After breaking from the while loop,
            prove break's postcondition *)
         assert (isEmpty priq = Vone). {
@@ -2770,5 +2741,4 @@ Proof.
       unfold dijk_forloop_break_inv.
       Intros prev priq dist popped. 
       forward. Exists prev dist popped. entailer!.
-Qed.
-
+Admitted.
