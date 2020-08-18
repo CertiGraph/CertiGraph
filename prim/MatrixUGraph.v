@@ -549,6 +549,43 @@ Proof.
 intros. apply add_edge_fits_upath_rev in H; auto.
 Qed.
 
+(*putting this here instead of undirected_graph, so I don't have to deal with strong evalid
+*)
+Lemma adde_valid_edge_fits_upath:
+  forall p l (g': MatrixUGraph), is_partial_graph g g' -> evalid g' (u,v) ->
+    fits_upath MatrixUGraph_adde l p -> fits_upath g' l p.
+Proof.
+induction p; intros. destruct l. auto. simpl in H1. contradiction.
+destruct p. destruct l. simpl. simpl in H1. auto. simpl in H1. apply H. auto. contradiction.
+destruct l. simpl in H1; contradiction.
+destruct H1. destruct (E_EqDec e (u,v)).
++hnf in e0. subst e. split. destruct H1. destruct H1. destruct H4.
+rewrite (@src_fst _ (sound_MatrixUGraph _)) in H3, H4 by auto.
+rewrite (@dst_snd _ (sound_MatrixUGraph _)) in H3, H5 by auto.
+split. apply evalid_strong_evalid; auto.
+rewrite (@src_fst _ (sound_MatrixUGraph _)) by auto.
+rewrite (@dst_snd _ (sound_MatrixUGraph _)) by auto.
+apply H3.
+apply IHp; auto.
++unfold complement, equiv in c. split.
+apply adde_adj_edge_rev in H1; auto.
+apply (is_partial_graph_adj_edge g); auto.
+apply IHp; auto.
+Qed.
+
+Corollary adde_valid_edge_still_connected:
+  forall (g': MatrixUGraph) a b, is_partial_graph g g' -> evalid g' (u,v) ->
+    connected MatrixUGraph_adde a b -> connected g' a b.
+Proof.
+intros. destruct H1 as [p ?]. exists p.
+assert (exists l : list E, fits_upath MatrixUGraph_adde l p).
+apply connected_exists_list_edges in H1; auto. destruct H2 as [l ?].
+apply connected_exists_list_edges'.
+intros. apply (valid_upath_vvalid MatrixUGraph_adde) in H3. rewrite vert_bound. rewrite vert_bound in H3. lia. apply H1.
+exists l. apply adde_valid_edge_fits_upath; auto.
+apply H1. apply H1.
+Qed.
+
 End ADD_EDGE_MUGRAPH.
 
 (**************MST****************)

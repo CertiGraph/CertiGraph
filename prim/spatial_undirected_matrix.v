@@ -43,6 +43,11 @@ Proof.
 intros. apply Z.le_lteq in H. destruct H. rewrite eformat2'; auto. rewrite eformat1, H. rewrite <- H at 2. destruct e; auto. lia.
 Qed.
 
+Lemma eformat_eq: forall (e: E), (fst (eformat e), snd (eformat e)) = eformat e.
+Proof.
+intros. destruct (eformat e). simpl. auto.
+Qed.
+
 Lemma eformat_evalid_vvalid:
 forall (g: G) u v, evalid g (eformat (u,v)) -> vvalid g u /\ vvalid g v.
 Proof.
