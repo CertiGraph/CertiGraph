@@ -1003,14 +1003,26 @@ Local Coercion lg_gg: GeneralGraph >-> LabeledGraph.
 Context {DV DE DG: Type}.
 Local Notation LGraph := (LabeledGraph V E DV DE DG).
 
-Lemma is_partial_lgraph_adjacent:
+Lemma is_partial_graph_adj_edge:
+  forall (g1 g2: PGraph) e u v, is_partial_graph g1 g2 -> adj_edge g1 e u v -> adj_edge g2 e u v.
+Proof.
+intros. destruct H0. destruct H0. destruct H2.
+destruct H. destruct H4. destruct H5.
+split. split. apply H4; auto.
+rewrite <- H5; auto. rewrite <- H6; auto.
+rewrite <- H5; auto. rewrite <- H6; auto.
+Qed.
+
+Corollary is_partial_graph_adjacent:
+  forall (g1 g2: PGraph) u v, is_partial_graph g1 g2 -> adjacent g1 u v -> adjacent g2 u v.
+Proof.
+intros. destruct H0 as [e ?]. exists e. apply (is_partial_graph_adj_edge g1); auto.
+Qed.
+
+Corollary is_partial_lgraph_adjacent:
   forall (g1 g2: LGraph) u v, is_partial_lgraph g1 g2 -> adjacent g1 u v -> adjacent g2 u v.
 Proof.
-intros. destruct H0. destruct H0. destruct H0. destruct H2.
-destruct H. destruct H4. destruct H. destruct H6. destruct H7.
-exists x. split. split. apply H6; auto.
-rewrite <- H7; auto. rewrite <- H8; auto.
-rewrite <- H7; auto. rewrite <- H8; auto.
+intros. apply (is_partial_graph_adjacent g1). apply H. auto.
 Qed.
 
 Lemma is_partial_lgraph_valid_upath:
@@ -1145,6 +1157,7 @@ intros. apply valid_upath_exists_list_edges'.
 exists l. apply (add_edge_fits_upath_rev) in H0; auto.
 Qed.
 
+(*the following large lemmas are for proving uforest'*)
 Lemma add_edge_connected_through_bridge1:
 forall (g: PGraph) e u v a b, ~ evalid g e -> connected g a u -> connected g v b
   -> connected (pregraph_add_edge g e u v) a b.
