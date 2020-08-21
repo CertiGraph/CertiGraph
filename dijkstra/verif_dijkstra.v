@@ -1827,35 +1827,51 @@ Proof.
   apply (vvalid_meaning g) in H0.
   rewrite upd_Znth_diff in H6; lia.  
 Qed.
-  
+
 Lemma inv_unseen_newcost:
-  forall (g: DijkGG) dst src i dist prev popped newcost,
+  forall (g: DijkGG) dst src i u dist prev popped newcost,
     (forall dst : Z,
-        0 <= dst < i ->
-        inv_unseen g src popped prev dist dst) ->
+        vvalid g dst -> inv_popped g src popped prev dist dst) ->
+    (forall dst : Z,
+        0 <= dst < i -> inv_unseen g src popped prev dist dst) ->
     vvalid g i ->
     Zlength dist = SIZE ->
-    ~ In i popped ->
     0 <= dst < i + 1->
     newcost < inf ->
-    inv_unseen g src popped prev (upd_Znth i dist newcost) dst.
+    inv_unseen g src popped (upd_Znth i prev u) (upd_Znth i dist newcost) dst.
 Proof.
-  intros ? ? ? ? ? ? ? ? H_inv_unseen. intros.
-  (* rewrite (vvalid_meaning g i) in H. *)
-  unfold inv_unseen; intros.
-  assert (dst <> i). {
-    intro. subst dst.
-    rewrite (vvalid_meaning g i) in H.
-    rewrite upd_Znth_same in H5; lia.
-  }
-  assert (0 <= dst < i) by lia.
-  rewrite upd_Znth_diff in H5; try ulia.
-  2,3: rewrite (vvalid_meaning g i) in H; lia.
-  apply (H_inv_unseen _ H10) with (m:=m); trivial.
-  assert (m <> i). {
-    intro. subst m. apply H1; trivial.
-  }
-  apply (path_correct_upd_dist _ _ i _ _ _ newcost); trivial.
+  intros ? ? ? ? ? ? ? ? ?
+         H_inv_popped H_inv_unseen H_i_valid.
+  intros. unfold inv_unseen; intros.
+ (* m is popped but we know nothing more about it. 
+    We take cases to find out more:
+*)
+ destruct (H_inv_popped _ H4 H5) as [[? ?] | [optp2m [? [? ?]]]].
+ - (* m was popped @ inf *)
+   destruct H6 as [? [? _]].
+   specialize (H8 p2m H6 H9).
+   pose proof (edge_cost_pos g (m, dst)).
+   rewrite path_cost_path_glue, one_step_path_Znth.
+   ulia.
+ - (* m was popped @ < inf *)
+   (* Since optp2m is optimal, it cannot be worse than p2m.
+      We will strengthen the goal and then prove it. *)
+   destruct H6 as [? [? _]].
+   specialize (H9 p2m H6 H10).
+   cut (path_cost g (path_glue optp2m (m, [(m, dst)])) >= inf).
+   1: repeat rewrite path_cost_path_glue, one_step_path_Znth;
+     ulia.
+   assert (0 <= dst < i). {
+     assert (dst <> i). {
+       intro. subst dst.
+       rewrite (vvalid_meaning g i) in H_i_valid.
+       rewrite upd_Znth_same in H3; ulia.
+     }
+     lia.
+   }
+   rewrite upd_Znth_diff in H3; try ulia.
+   apply (H_inv_unseen _ H11) with (m:=m); trivial.
+   all: rewrite (vvalid_meaning g) in H_i_valid; ulia.
 Qed.
 
 Lemma inv_unseen_weak_newcost:
@@ -2700,7 +2716,7 @@ destruct H14.
                 --- apply inv_popped_newcost; try ulia.
                 --- apply inv_unpopped_newcost with (priq := priq'); ulia.
                 --- now apply inv_unpopped_weak_newcost.
-                --- apply inv_unseen_newcost; try ulia. admit. (* need to tweak lemma *)
+                --- apply inv_unseen_newcost; ulia.
                 --- apply inv_unseen_weak_newcost; try ulia. admit. (* need to tweak lemma *)
                 --- rewrite upd_Znth_diff; try lia;
                       intro; subst src; lia.
