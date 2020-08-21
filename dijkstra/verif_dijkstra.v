@@ -546,7 +546,7 @@ Lemma path_leaving_popped_stronger:
 Proof.
   intros.
   destruct (path_leaving_popped g links s u popped H H0 H1 H2)
-        as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? Ha]]]]]]]]]]]].
+    as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? Ha]]]]]]]]]]]].
       exists p1, mom', child', p2.
       assert (valid_path g (path_glue (mom', [(mom', child')]) p2)). {
         apply valid_path_merge; trivial.
@@ -875,7 +875,8 @@ Proof.
     assert (0 <= Znth mom' dist). {
       rewrite (vvalid_meaning g) in H35.
       apply (Forall_Znth _ _ mom') in H2; [|ulia].
-      apply H2. }
+      apply H2.
+    }
 
     assert (Htemp: 0 <= child' < Zlength dist). {
       apply (vvalid_meaning g) in H36; trivial; lia.
@@ -2535,8 +2536,57 @@ destruct H14.
   specialize (H15 H13 H14).
   intro. clear H16. left; split; trivial.
   intros.
-  admit. (* bleeding edge *)
-             }
+
+  (* we split p into its three chunks *)
+  destruct p as [s links].
+  replace s with src in *.
+  2: destruct H17 as [? _]; simpl in H17; lia.
+
+  assert (In src popped) by admit.
+    
+  destruct (path_leaving_popped _ _ _ _ popped H16 H17 H18 H13) as [p1 [mom' [child' [p2 [? [? [? [? [? [? [? [? ?]]]]]]]]]]]].
+  rewrite <- H19.
+  assert (vvalid g mom'). {
+    apply (path_ends_valid_dst _ src _ p1); trivial.
+  }
+
+  (* we don't know enough about mom'. 
+     let's destruct dijkstra_correct to take cases *)
+  destruct (H1 _ H28) as [? _].
+  destruct (H29 H24) as [[? ?] | [optp2mom' [? [? ?]]]].
+
+  + (* mom' was popped @ inf *)
+    repeat rewrite path_cost_path_glue.
+    rewrite one_step_path_Znth.
+    specialize (H31 p1 H20 H22).
+    pose proof (edge_cost_pos g (mom', child')).
+    pose proof (path_cost_pos _ _ H21).
+    ulia.
+
+  + (* mom' was popped @ < inf *)
+
+    (* we can prove something stronger *)
+    specialize (H32 p1 H20 H22).
+    cut (path_cost g (path_glue optp2mom' (path_glue (mom', [(mom', child')]) p2)) >= inf).
+    1: repeat rewrite path_cost_path_glue; lia.
+
+    specialize (H15 _ _ H28 H24 H30).
+    rewrite path_cost_path_glue in H15.
+    repeat rewrite path_cost_path_glue.
+    rewrite Z.add_assoc.
+    pose proof (path_cost_pos _ _ H21).
+    apply Z.le_ge.
+    apply Z.ge_le in H15.
+    apply Z.le_trans with (m := path_cost g optp2mom' + path_cost g (mom', [(mom', u)])); trivial.
+    apply Z.le_trans with (m := path_cost g optp2mom' + path_cost g (mom', [(mom', child')])).
+    2: ulia.
+    repeat rewrite one_step_path_Znth.
+    (* 
+       intuitionally obvious.
+       but must strengthen invariants?
+     *)
+    admit. (* bleeding edge *)
+            }
   
             
 
