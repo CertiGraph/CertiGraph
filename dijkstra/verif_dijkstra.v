@@ -925,7 +925,73 @@ Proof.
     left. destruct (H _ H6) as [_ [_ ?]].
     specialize (H8 H5 H7).
     split; trivial.
-    intros. admit.
+    intros.
+
+    destruct p as [s links].
+    replace s with src in *.
+    2: destruct H10 as [? _]; simpl in H10; lia.
+    assert (In src popped) by admit.
+    destruct (path_leaving_popped _ _ _ _ popped H9 H10 H11 H5) as [p1 [mom [child [p2 [? [? [? [? [? [? [? [? ?]]]]]]]]]]]].
+    rewrite <- H12.
+
+    assert (vvalid g mom). {
+    apply (path_ends_valid_dst _ src _ p1); trivial.
+    }
+    
+    (* we don't know enough about mom. 
+       let's destruct dijkstra_correct to take cases *)
+    destruct (H _ H21) as [? _].
+    destruct (H22 H17) as [[? ?] | [optp2mom [? [? ?]]]].
+
+    + (* mom was popped @ inf *)
+      repeat rewrite path_cost_path_glue.
+      rewrite one_step_path_Znth.
+      specialize (H24 p1 H13 H15).
+      pose proof (edge_cost_pos g (mom, child)).
+      pose proof (path_cost_pos _ _ H14).
+      ulia.
+
+    + (* mom was popped @ < inf *)
+      (* it turns out we can prove something stronger *)
+      specialize (H25 p1 H13 H15).
+      cut (path_cost g (path_glue optp2mom (path_glue (mom, [(mom, child)]) p2)) >= inf).
+      1: repeat rewrite path_cost_path_glue; lia.
+
+      (* 
+         child was ~In popped, but we don't know any more. 
+         We take cases on child to learn more
+       *)
+      assert (vvalid g child). {
+        apply (path_ends_valid_src _ _ u p2); trivial.
+      }
+      assert (0 <= child < Zlength dist). {
+        rewrite (vvalid_meaning g) in H26; lia.
+      }
+      destruct (Znth_dist_cases _ _ H27 H2) as [? | [_ ?]].
+      * (* child is unseen *)
+        destruct (H _ H26) as [_ [_ ?]].
+        specialize (H29 H18 H28 mom optp2mom H21 H17 H23).
+        rewrite path_cost_path_glue in H29.
+        repeat rewrite path_cost_path_glue.
+        pose proof (path_cost_pos _ _ H14).
+        ulia.
+      * (* child is seen but unpopped *)
+        (* this is impossible: 
+           dist[u] = inf and u was chosen minimally!
+         *)
+        exfalso.
+        apply Zlt_not_le in H28.
+        apply H28. rewrite <- H7.
+        repeat rewrite <- H1; trivial.
+        subst u.
+        rewrite Znth_find.
+        1: { apply fold_min_general.
+             apply Znth_In.
+             apply (vvalid_meaning g) in H26; ulia.
+        }
+        apply min_in_list.
+        1: apply incl_refl.
+        rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
 Admitted.
 
 (*
@@ -2508,110 +2574,9 @@ Proof.
                 H23 H24 H25 H26 H27 Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
           
           split3; [| | split3; [| |split]]; trivial.
-          ++ (* We must show inv_popped for all
-                dst that are in range. *)
-            intros.
-            rename H14 into Htemp.
-            assert (H14: Znth u dist <= inf). {
-              destruct Htemp; [|lia..].
-              rewrite H14. rewrite inf_eq; lia.
-            }
-            clear Htemp.
-            {
-
-              
-              
-(* let's try this piece with full info *)
-destruct (Z.eq_dec dst u). 
-
-(* the easy case where dst is old, and not the new u *)
-2: admit.
- 
-(* now we must show that u is a valid entrant *)
-subst dst. clear H15.
-
-apply Zle_lt_or_eq in H14.
-destruct H14.
-- (* u was seen and is now being popped *) admit.
-- (* u was unseen and is now being popped *)
-  destruct (H1 _ H_u_valid) as [_ [_ ?]].
-  specialize (H15 H13 H14).
-  intro. clear H16. left; split; trivial.
-  intros.
- 
-  (* we split p into its three chunks *)
-  destruct p as [s links].
-  replace s with src in *.
-  2: destruct H17 as [? _]; simpl in H17; lia.
-  assert (In src popped) by admit.
-  destruct (path_leaving_popped _ _ _ _ popped H16 H17 H18 H13) as [p1 [mom [child [p2 [? [? [? [? [? [? [? [? ?]]]]]]]]]]]].
-  rewrite <- H19.
-  
-  assert (vvalid g mom). {
-    apply (path_ends_valid_dst _ src _ p1); trivial.
-  }
-
-  (* we don't know enough about mom. 
-     let's destruct dijkstra_correct to take cases *)
-  destruct (H1 _ H28) as [? _].
-  destruct (H29 H24) as [[? ?] | [optp2mom [? [? ?]]]].
-
-  + (* mom was popped @ inf *)
-    repeat rewrite path_cost_path_glue.
-    rewrite one_step_path_Znth.
-    specialize (H31 p1 H20 H22).
-    pose proof (edge_cost_pos g (mom, child)).
-    pose proof (path_cost_pos _ _ H21).
-    ulia.
-
-  + (* mom was popped @ < inf *)
-    (* it turns out we can prove something stronger *)
-    specialize (H32 p1 H20 H22).
-    cut (path_cost g (path_glue optp2mom (path_glue (mom, [(mom, child)]) p2)) >= inf).
-    1: repeat rewrite path_cost_path_glue; lia.
-      
-    (* 
-       child was ~In popped, but we don't know any more. 
-       We take cases on child to learn more
-     *)
-    assert (vvalid g child) by admit.
-    assert (0 <= child < Zlength dist). {
-      rewrite (vvalid_meaning g) in H33; lia.
-    }
-    destruct (Znth_dist_cases _ _ H34 H6) as [? | [_ ?]].
-    * (* child is unseen *)
-      destruct (H1 _ H33) as [_ [_ ?]].
-      red in H36.
-      specialize (H36 H25 H35 mom optp2mom H28 H24 H30).
-      rewrite path_cost_path_glue in H36.
-      repeat rewrite path_cost_path_glue.
-      pose proof (path_cost_pos _ _ H21).
-      ulia.
-    * (* child is seen but unpopped *)
-      (* this is impossible: 
-         dist[u] = inf and u was chosen minimally!
-       *)
-      exfalso.
-      apply Zlt_not_le in H35.
-      apply H35. rewrite <- H14.
-      repeat rewrite <- H4; trivial.
-      subst u.
-      rewrite Znth_find.
-      1: { apply fold_min_general.
-           apply Znth_In.
-           apply (vvalid_meaning g) in H33; trivial; lia.
-      }
-      apply min_in_list.
-      1: apply incl_refl.
-      rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
-            }
-            
-
-
-            
-            (* subst u. *)
-            (* apply (inv_popped_add_u g src dst popped prev *)
-                                       (* priq dist); ulia. *)
+          ++ intros. subst u. 
+             apply (inv_popped_add_u g src dst popped prev
+                                    priq dist); ulia.
           ++ intros.
              apply (vvalid_meaning g) in H15.
              apply inv_unpopped_weak_add_unpopped; trivial.
@@ -2971,4 +2936,4 @@ destruct H14.
       unfold dijk_forloop_break_inv.
       Intros prev priq dist popped. 
       forward. Exists prev dist popped. entailer!.
-Admitted.
+Qed.
