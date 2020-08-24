@@ -73,6 +73,16 @@ rewrite eformat1. rewrite eformat2. simpl; auto. simpl; lia. simpl; lia.
 rewrite eformat2'. rewrite eformat1. simpl; auto. simpl; lia. simpl; lia.
 Qed.
 
+Lemma eformat_adj': forall (g: G) u v, evalid g (eformat (u,v)) -> adj_edge g (eformat (u,v)) u v.
+Proof.
+intros. split. apply evalid_strong_evalid; auto.
+destruct (Z.le_ge_cases u v).
+rewrite eformat1 in *. left. rewrite (@src_fst _ _ _ (sound_MatrixUGraph _)); auto.
+rewrite (@dst_snd _ _ _ (sound_MatrixUGraph _)); auto. simpl; auto. simpl; auto.
+rewrite eformat2 in *. right. rewrite (@src_fst _ _ _ (sound_MatrixUGraph _)); auto.
+rewrite (@dst_snd _ _ _ (sound_MatrixUGraph _)); auto. simpl; auto. simpl; auto.
+Qed.
+
 Lemma eformat_adj: forall (g: G) u v, adjacent g u v <-> evalid g (eformat (u,v)).
 Proof.
 intros. split. intros.
