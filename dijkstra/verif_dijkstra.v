@@ -2584,8 +2584,37 @@ Proof.
                 prove inv_popped for [u].
                 if popped <> [], then we're set
               *)
-             assert (In src popped) by admit.
-             apply (inv_popped_add_u _ _ _ _ _ _ priq); ulia.
+             destruct popped eqn:?.
+             2: {
+               assert (In src (z::l)). {
+                 apply Hb; inversion 1.
+               }
+               apply (inv_popped_add_u _ _ _ _ _ _ priq); try ulia.
+             }
+             replace u with src in *.
+             2: admit.
+             intro.
+             simpl in H16; destruct H16; [|lia].
+             subst dst; clear H15.
+             destruct H14; [left | right].
+             ** exfalso. rewrite H14 in H2. inversion H2.
+             ** exists (src, []). split3.
+                --- split3; [| |split3]; trivial.
+                    +++ split; trivial.
+                    +++ unfold path_cost.
+                        simpl. ulia.
+                    +++ apply Forall_forall.
+                        inversion 1.
+                --- unfold path_in_popped.
+                    intros. 
+                    inversion H15.
+                    +++ simpl in H16. 
+                        subst step. simpl; left; trivial.
+                    +++ destruct H16 as [? [? _]].
+                        inversion H16.
+                --- red. intros.
+                    unfold path_cost at 1; simpl.
+                    apply path_cost_pos; trivial.
           ++ intros.
              apply (vvalid_meaning g) in H15.
              apply inv_unpopped_weak_add_unpopped; trivial.
@@ -2594,8 +2623,12 @@ Proof.
              apply (vvalid_meaning g) in H15.
              apply (inv_unseen_weak_add_unpopped g prev _ _ src); trivial.
 
-          ++ admit.
-            
+          ++ intros. clear H15.
+             destruct popped eqn:?.
+             2: right; apply Hb; inversion 1.
+             simpl. left.
+             admit.
+             
           ++ apply in_eq.
 
           ++ intros.
