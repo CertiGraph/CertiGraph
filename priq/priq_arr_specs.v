@@ -4,11 +4,7 @@ Require Export VST.floyd.proofauto.
 
 (* Specs for Anshuman's simple array-based PQ *)
 
-Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
-Definition Vprog : varspecs. mk_varspecs prog. Defined.
-Local Open Scope Z_scope.
-
-Definition push_spec :=
+Definition push_spec {CS: compspecs} :=
   DECLARE _push
   WITH pq: val, vertex : Z, weight : Z, priq_contents_val: list val
   PRE [tint, tint, tptr tint]
@@ -26,7 +22,7 @@ Definition push_spec :=
                (upd_Znth vertex
                          priq_contents_val (Vint (Int.repr weight))) pq).
     
-Definition pq_emp_spec := 
+Definition pq_emp_spec {CS: compspecs} := 
   DECLARE _pq_emp
   WITH pq: val, priq_contents: list Z
   PRE [tptr tint]
@@ -39,7 +35,7 @@ Definition pq_emp_spec :=
    LOCAL (temp ret_temp (isEmpty priq_contents))
    SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq).
 
-Definition adjustWeight_spec :=
+Definition adjustWeight_spec {CS: compspecs} :=
   DECLARE _adjustWeight
   WITH pq: val, vertex : Z, newWeight : Z, priq_contents: list Z
   PRE [tint, tint, tptr tint]
@@ -57,7 +53,7 @@ Definition adjustWeight_spec :=
                (upd_Znth vertex
                   (map Vint (map Int.repr priq_contents)) (Vint (Int.repr newWeight))) pq).
 
-Definition popMin_spec :=
+Definition popMin_spec {CS: compspecs} :=
   DECLARE _popMin
   WITH pq: val, priq_contents: list Z
   PRE [tptr tint]
@@ -74,7 +70,7 @@ Definition popMin_spec :=
                                             (priq_arr_utils.find priq_contents (fold_right Z.min (Znth 0 priq_contents) priq_contents) 0)
                                             (map Vint (map Int.repr priq_contents)) (Vint (Int.repr (inf+1)))) pq).
 
-Definition Gprog : funspecs :=
+Definition Gprog {CS: compspecs}: funspecs :=
   ltac:(with_library prog
                      [push_spec;
                      pq_emp_spec;
