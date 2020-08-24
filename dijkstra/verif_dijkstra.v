@@ -1246,6 +1246,7 @@ Definition dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr :=
     Znth src dist = 0;
     Znth src prev = src;
     popped <> [] -> In src popped;
+    popped = [] -> src = find priq (fold_right Z.min (hd 0 priq) priq) 0;
     
     (* A fact about the relationship b/w 
        dist and priq arrays *)
@@ -1357,6 +1358,7 @@ Definition dijk_inner_forloop_inv (g: DijkGG) sh src priq dist_ptr prev_ptr priq
     Znth src dist' = 0;
     Znth src prev' = src;
     popped' <> [] -> In src popped';
+    popped' = [] -> src = find priq' (fold_right Z.min (hd 0 priq') priq') 0;
     
     (* a useful fact about u *)
     In u popped';
@@ -2276,20 +2278,22 @@ Proof.
       split.
       (* dijkstra_correct for the initial arrays *)
       1: apply (dijkstra_correct_nothing_popped g src); trivial.
-      split3; [| |split3].
-        1,2: rewrite upd_Znth_same; trivial.
-        all: red; apply Forall_upd_Znth;
-          try apply Forall_list_repeat;
-          try rewrite inf_eq; trilia.
-        
+      split3; [| |split3; [| |split]].
+      1,2: rewrite upd_Znth_same; trivial.
+      1: intros; rewrite find_src; trivial. 
+      all: red; apply Forall_upd_Znth;
+        try apply Forall_list_repeat;
+        try rewrite inf_eq; trilia.
+
     + (* Now the body of the while loop begins. *)
       unfold dijk_forloop_inv.
       Intros prev priq dist popped.
       rename H4 into Hb.
-      rename H5 into H4.
-      rename H6 into H5.
-      rename H7 into H6.
-      rename H8 into H7.
+      rename H5 into Hc.
+      rename H6 into H4.
+      rename H7 into H5.
+      rename H8 into H6.
+      rename H9 into H7.
       assert_PROP (Zlength priq = SIZE).
       { entailer!. now repeat rewrite Zlength_map in *. }
       assert_PROP (Zlength prev = SIZE).
@@ -2578,7 +2582,7 @@ Proof.
           clear H15 H16 H17 H18 H19 H20 H21 H22
                 H23 H24 H25 H26 H27 Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
           
-          split3; [| | split3; [| |split3]]; trivial.
+          split3; [| | split3; [| |split3; [| |split]]]; trivial.
           ++ intros.
              (* if popped = [], then 
                 prove inv_popped for [u].
@@ -2590,7 +2594,8 @@ Proof.
                apply Hb; inversion 1.
              }
              replace u with src in *.
-             2: admit.
+             2: apply Hc; trivial.
+
              intro.
              simpl in H16; destruct H16; [|lia].
              subst dst; clear H15.
@@ -2625,8 +2630,10 @@ Proof.
              destruct popped eqn:?.
              2: right; apply Hb; inversion 1.
              simpl. left. symmetry.
-             admit.
-             
+             apply Hc; trivial.
+
+          ++ intros. inversion H15.
+            
           ++ apply in_eq.
 
           ++ intros.
@@ -2659,10 +2666,11 @@ Proof.
           rename H21 into H16.
           rename H22 into H17.
           rename H23 into H18.
-          rename H25 into H_priq_dist_link.
-          rename H26 into H19.
-          rename H27 into H20.
-          rename H28 into H21. 
+          rename H24 into Hd.
+          rename H26 into H_priq_dist_link.
+          rename H27 into H19.
+          rename H28 into H20.
+          rename H29 into H21.
 
           freeze FR2 := (iter_sepcon _ _) (iter_sepcon _ _).
           unfold list_rep.
@@ -2978,4 +2986,4 @@ Proof.
       unfold dijk_forloop_break_inv.
       Intros prev priq dist popped. 
       forward. Exists prev dist popped. entailer!.
-Admitted.
+Qed.
