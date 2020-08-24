@@ -2586,10 +2586,8 @@ Proof.
               *)
              destruct popped eqn:?.
              2: {
-               assert (In src (z::l)). {
-                 apply Hb; inversion 1.
-               }
                apply (inv_popped_add_u _ _ _ _ _ _ priq); try ulia.
+               apply Hb; inversion 1.
              }
              replace u with src in *.
              2: admit.
@@ -2626,7 +2624,7 @@ Proof.
           ++ intros. clear H15.
              destruct popped eqn:?.
              2: right; apply Hb; inversion 1.
-             simpl. left.
+             simpl. left. symmetry.
              admit.
              
           ++ apply in_eq.
