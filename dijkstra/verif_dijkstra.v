@@ -1239,23 +1239,24 @@ Definition dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr :=
   EX dist : list V,
   EX popped : list V,
   PROP (
-      (* The overall correctness condition *)
-      dijkstra_correct g src popped prev dist;
+    (* The overall correctness condition *)
+    dijkstra_correct g src popped prev dist;
     
-      (* Some special facts about src *)
-      Znth src dist = 0;
-      Znth src prev = src;
+    (* Some special facts about src *)
+    Znth src dist = 0;
+    Znth src prev = src;
+    popped <> [] -> In src popped;
     
-      (* A fact about the relationship b/w 
-         dist and priq arrays *)
-      forall dst, vvalid g dst ->
-                  ~ In dst popped ->
-                  Znth dst priq = Znth dst dist;
+    (* A fact about the relationship b/w 
+       dist and priq arrays *)
+    forall dst, vvalid g dst ->
+                ~ In dst popped ->
+                Znth dst priq = Znth dst dist;
     
-      (* Information about the ranges of the three arrays *)
-      inrange_prev prev;
-      inrange_dist dist;
-      inrange_priq priq)
+    (* Information about the ranges of the three arrays *)
+    inrange_prev prev;
+    inrange_dist dist;
+    inrange_priq priq)
        
   LOCAL (temp _dist (pointer_val_val dist_ptr);
         temp _prev (pointer_val_val prev_ptr);
@@ -1355,7 +1356,7 @@ Definition dijk_inner_forloop_inv (g: DijkGG) sh src priq dist_ptr prev_ptr priq
     (* further, some useful facts about src... *)
     Znth src dist' = 0;
     Znth src prev' = src;
-    (* Znth src priq' <> inf; *)
+    popped' <> [] -> In src popped';
     
     (* a useful fact about u *)
     In u popped';
@@ -2284,6 +2285,11 @@ Proof.
     + (* Now the body of the while loop begins. *)
       unfold dijk_forloop_inv.
       Intros prev priq dist popped.
+      rename H4 into Hb.
+      rename H5 into H4.
+      rename H6 into H5.
+      rename H7 into H6.
+      rename H8 into H7.
       assert_PROP (Zlength priq = SIZE).
       { entailer!. now repeat rewrite Zlength_map in *. }
       assert_PROP (Zlength prev = SIZE).
@@ -2572,8 +2578,12 @@ Proof.
           clear H15 H16 H17 H18 H19 H20 H21 H22
                 H23 H24 H25 H26 H27 Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
           
-          split3; [| | split3; [| |split]]; trivial.
+          split3; [| | split3; [| |split3]]; trivial.
           ++ intros.
+             (* if popped = [], then 
+                prove inv_popped for [u].
+                if popped <> [], then we're set
+              *)
              assert (In src popped) by admit.
              apply (inv_popped_add_u _ _ _ _ _ _ priq); ulia.
           ++ intros.
@@ -2584,6 +2594,8 @@ Proof.
              apply (vvalid_meaning g) in H15.
              apply (inv_unseen_weak_add_unpopped g prev _ _ src); trivial.
 
+          ++ admit.
+            
           ++ apply in_eq.
 
           ++ intros.
@@ -2609,17 +2621,17 @@ Proof.
           2: ulia.
           Intros.
           rename H16 into H_inv_popped.
-          assert (H16: 1 = 1) by trivial.
           rename H17 into H_inv_unpopped.
           rename H18 into H_inv_unpopped_weak.
           rename H19 into H_inv_unseen.
           rename H20 into H_inv_unseen_weak.
-          rename H21 into H17.
-          rename H22 into H18.
-          rename H24 into H_priq_dist_link.
-          rename H25 into H19.
-          rename H26 into H20.
-          rename H27 into H21. 
+          rename H21 into H16.
+          rename H22 into H17.
+          rename H23 into H18.
+          rename H25 into H_priq_dist_link.
+          rename H26 into H19.
+          rename H27 into H20.
+          rename H28 into H21. 
 
           freeze FR2 := (iter_sepcon _ _) (iter_sepcon _ _).
           unfold list_rep.
@@ -2915,10 +2927,10 @@ Proof.
           remember (find priq (fold_right Z.min (hd 0 priq) priq) 0) as u.
           clear H27 H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H38 H38
                 Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
-          assert (H27: 1 = 1) by trivial.
           unfold dijkstra_correct.
-          split3; [auto | apply H16 | apply H18];
-            try rewrite <- (vvalid_meaning g); trivial.
+              split3; [auto | apply H16 | apply H18];
+                try rewrite <- (vvalid_meaning g); trivial.
+              
       * (* After breaking from the while loop,
            prove break's postcondition *)
         assert (isEmpty priq = Vone). {
