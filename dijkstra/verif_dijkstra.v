@@ -684,9 +684,7 @@ Proof.
 Qed.
 
 Lemma inv_popped_add_u:
-  forall (g: DijkGG) src dst popped prev priq dist,
- let u :=
-     find priq (fold_right Z.min (hd 0 priq) priq) 0 in
+  forall (g: DijkGG) src dst u popped prev priq dist,
     dijkstra_correct g src popped prev dist ->
     Znth src dist = 0 ->
     (forall dst : Z,
@@ -699,10 +697,12 @@ Lemma inv_popped_add_u:
     vvalid g u ->
     Znth u dist <= inf ->
     vvalid g dst ->
+    u = find priq (fold_right Z.min (hd 0 priq) priq) 0 ->
+    In src popped ->
     inv_popped g src (u :: popped) prev dist dst.
 Proof.
-  intros.  
-  destruct (Z.eq_dec dst u). 
+  intros. rename H9 into Hequ. rename H10 into Hb.
+  destruct (Z.eq_dec dst u).
 
   (* the easy case where dst is old, and not the new u *)
   2: {
@@ -718,7 +718,6 @@ Proof.
 
   (* now we must show that u is a valid entrant *)
   subst dst. clear H8.
-
   apply Zle_lt_or_eq in H7.
   destruct H7.
   - (* u was seen and is being popped *) {
@@ -930,8 +929,8 @@ Proof.
     destruct p as [s links].
     replace s with src in *.
     2: destruct H10 as [? _]; simpl in H10; lia.
-    assert (In src popped) by admit.
-    destruct (path_leaving_popped _ _ _ _ popped H9 H10 H11 H5) as [p1 [mom [child [p2 [? [? [? [? [? [? [? [? ?]]]]]]]]]]]].
+    assert (H11: 1 = 1) by trivial.
+    destruct (path_leaving_popped _ _ _ _ popped H9 H10 Hb H5) as [p1 [mom [child [p2 [? [? [? [? [? [? [? [? ?]]]]]]]]]]]].
     rewrite <- H12.
 
     assert (vvalid g mom). {
@@ -991,8 +990,8 @@ Proof.
         }
         apply min_in_list.
         1: apply incl_refl.
-        rewrite <- Znth_0_hd; [apply Znth_In|]; lia.
-Admitted.
+        rewrite <- Znth_0_hd; [apply Znth_In|]; ulia.
+Qed.
 
 (*
 Lemma get_popped_empty:
@@ -2574,9 +2573,9 @@ Proof.
                 H23 H24 H25 H26 H27 Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
           
           split3; [| | split3; [| |split]]; trivial.
-          ++ intros. subst u. 
-             apply (inv_popped_add_u g src dst popped prev
-                                    priq dist); ulia.
+          ++ intros.
+             assert (In src popped) by admit.
+             apply (inv_popped_add_u _ _ _ _ _ _ priq); ulia.
           ++ intros.
              apply (vvalid_meaning g) in H15.
              apply inv_unpopped_weak_add_unpopped; trivial.
@@ -2936,4 +2935,4 @@ Proof.
       unfold dijk_forloop_break_inv.
       Intros prev priq dist popped. 
       forward. Exists prev dist popped. entailer!.
-Qed.
+Admitted.
