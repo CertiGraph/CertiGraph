@@ -7,17 +7,11 @@ Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.SpaceDijkGraph.
 Require Import CertiGraph.dijkstra.path_cost.
 
+Local Open Scope Z_scope.
+
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Global Existing Instance CompSpecs.
-
-Local Open Scope Z_scope.
-
-(*
-Definition get_popped pq : list VType :=
-  map snd (filter (fun x => (fst x) =? (inf + 1))
-                  (combine pq (nat_inc_list (Z.to_nat (Zlength pq))))).
- *)
 
 Definition path_correct (g : DijkGG) (prev dist: list V) src dst p : Prop  :=
   valid_path g p /\
@@ -31,25 +25,22 @@ Definition path_globally_optimal (g : DijkGG) src dst p : Prop :=
              path_ends g p' src dst ->
              path_cost g p <= path_cost g p'.
 
-Definition path_in_popped (g : DijkGG) popped dist path :=
-  forall step, In_path g step path ->
-               In step popped /\ Znth step dist < inf.
+Definition path_in_popped (g : DijkGG) popped p :=
+  forall step, In_path g step p ->
+               In step popped.
 
 Definition inv_popped (g : DijkGG) src (popped prev dist : list V) dst :=
   In dst popped ->
-  ((* the first unreachable vertex has been popped.
-      the invariant is unaware of this, but this 
-      means that we will break *)   
-    Znth dst dist = inf /\     
-   (forall m,
-     vvalid g m -> 
-     (Znth m dist + elabel g (m, dst) >= inf) /\
-     (~ In m popped -> Znth m dist = inf)))
+  (Znth dst dist = inf /\ (* if I'm unreachable *)
+   (forall p, (* I'm unreachable via all paths *)
+       valid_path g p ->
+       path_ends g p src dst ->
+       path_cost g p >= inf))
   \/
-  (exists path,
-      path_correct g prev dist src dst path /\
-      path_in_popped g popped dist path /\
-      path_globally_optimal g src dst path).
+  (exists p, (* else, I'm optimal *)
+      path_correct g prev dist src dst p /\
+      path_in_popped g popped p /\
+      path_globally_optimal g src dst p).
 
 Definition inv_unpopped (g : DijkGG) src (popped prev dist: list V) (dst: V) :=
   ~ In dst popped ->
@@ -85,27 +76,31 @@ Definition inv_unpopped_weak (g : DijkGG) (src: V) (popped prev dist : list V) (
     In mom' popped ->
     Znth dst dist <= Znth mom' dist + elabel g (mom', dst).
   
-Definition inv_unseen (g : DijkGG) (popped dist: list V) (dst : V) :=
+Definition inv_unseen (g : DijkGG) (src: V) (popped prev dist: list V) (dst : V) :=
   ~ In dst popped ->
   Znth dst dist = inf ->
-  forall m, vvalid g m ->
-            In m popped ->
-            Znth m dist + elabel g (m, dst) >= inf.
+  forall m p2m,
+    vvalid g m ->
+    In m popped ->
+    path_correct g prev dist src m p2m ->
+    path_cost g (path_glue p2m (m, [(m, dst)])) >= inf.
 
-Definition inv_unseen_weak (g : DijkGG) (popped dist: list V) (dst u : V) :=
+Definition inv_unseen_weak (g : DijkGG) (src: V) (popped prev dist: list V) (dst u : V) :=
   ~ In dst popped ->
   Znth dst dist = inf ->
-  forall m, vvalid g m ->
-            In m popped ->
-            m <> u ->
-            Znth m dist + elabel g (m, dst) >= inf.
+  forall m p2m,
+    vvalid g m ->
+    In m popped ->
+    m <> u ->
+    path_correct g prev dist src m p2m ->
+    path_cost g (path_glue p2m (m, [(m, dst)])) >= inf.
                                                            
 Definition dijkstra_correct (g : DijkGG) src popped prev dist : Prop :=
   forall dst,
     vvalid g dst ->
     inv_popped g src popped prev dist dst /\
     inv_unpopped g src popped prev dist dst /\
-    inv_unseen g popped dist dst.
+    inv_unseen g src popped prev dist dst.
 
 Definition dijkstra_spec :=
   DECLARE _dijkstra
