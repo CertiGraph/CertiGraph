@@ -337,18 +337,18 @@ Lemma path_leaving_popped:
     path_ends g (s, links) s u ->
     In s popped ->
     ~ In u popped ->
-    exists (p1 : path) (mom' child' : Z) (p2 : path),
-      path_glue p1 (path_glue (mom', [(mom', child')]) p2) = (s, links) /\
+    exists (p1 : path) (mom child : Z) (p2 : path),
+      path_glue p1 (path_glue (mom, [(mom, child)]) p2) = (s, links) /\
       valid_path g p1 /\
       valid_path g p2 /\
-      path_ends g p1 s mom' /\
-      path_ends g p2 child' u /\
-      In mom' popped /\
-      ~ In child' popped /\
-      evalid g (mom', child') /\
+      path_ends g p1 s mom /\
+      path_ends g p2 child u /\
+      In mom popped /\
+      ~ In child popped /\
+      evalid g (mom, child) /\
       path_in_popped g popped p1.
 Proof.
-  intros.
+  intros. 
   generalize dependent s.
   induction links.
   - intros. destruct H0. simpl in H0, H3.
@@ -530,18 +530,18 @@ Lemma path_leaving_popped_stronger:
     In s popped ->
     ~ In u popped ->
     path_cost g (s, links) < inf ->
-    exists (p1 : path) (mom' child' : Z) (p2 : path),
-      path_glue p1 (path_glue (mom', [(mom', child')]) p2) = (s, links) /\
+    exists (p1 : path) (mom child : Z) (p2 : path),
+      path_glue p1 (path_glue (mom, [(mom, child)]) p2) = (s, links) /\
       valid_path g p1 /\
       valid_path g p2 /\
-      path_ends g p1 s mom' /\
-      path_ends g p2 child' u /\
-      In mom' popped /\
-      ~ In child' popped /\
-      strong_evalid g (mom', child') /\
+      path_ends g p1 s mom /\
+      path_ends g p2 child u /\
+      In mom popped /\
+      ~ In child popped /\
+      strong_evalid g (mom, child) /\
       path_cost g p1 < inf /\
-      0 <= elabel g (mom', child') < inf /\
-      path_cost g p2 + elabel g (mom', child') < inf /\
+      0 <= elabel g (mom, child) < inf /\
+      path_cost g p2 + elabel g (mom, child) < inf /\
       path_in_popped g popped p1.
 Proof.
   intros.
@@ -686,7 +686,7 @@ Qed.
 Lemma inv_popped_add_u:
   forall (g: DijkGG) src dst popped prev priq dist,
  let u :=
-      find priq (fold_right Z.min (hd 0 priq) priq) 0 in
+     find priq (fold_right Z.min (hd 0 priq) priq) 0 in
     dijkstra_correct g src popped prev dist ->
     Znth src dist = 0 ->
     (forall dst : Z,
