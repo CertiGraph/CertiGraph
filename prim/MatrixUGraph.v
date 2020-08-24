@@ -89,6 +89,22 @@ Proof.
 intros; split. auto. apply (@edge_strong_evalid _ (sound_MatrixUGraph g) e); auto.
 Qed.
 
+Lemma evalid_vvalid:
+forall (g: MatrixUGraph) u v, evalid g (u,v) -> vvalid g u /\ vvalid g v.
+Proof.
+intros. apply evalid_strong_evalid in H. destruct H.
+rewrite (@src_fst _ (sound_MatrixUGraph _)), (@dst_snd _ (sound_MatrixUGraph _)) in H0 by auto.
+simpl in H0; auto.
+Qed.
+
+Lemma evalid_adjacent:
+forall (g: MatrixUGraph) u v, evalid g (u,v) -> adjacent g u v.
+Proof.
+intros. exists (u,v); split. apply evalid_strong_evalid; auto.
+rewrite (@src_fst _ (sound_MatrixUGraph _)), (@dst_snd _ (sound_MatrixUGraph _)) by auto.
+left; simpl; auto.
+Qed.
+
 (*derp, remove if possible*)
 Lemma evalid_fstsnd:
 forall (g: MatrixUGraph) e, evalid g e -> evalid g (fst e, snd e).
@@ -587,6 +603,60 @@ apply H1. apply H1.
 Qed.
 
 End ADD_EDGE_MUGRAPH.
+
+Section REMOVE_EDGE_MUGRAPH.
+
+Context {g: MatrixUGraph}.
+Context {e: E} {evalid_e: evalid g e}.
+
+Definition MatrixUGraph_eremove':=
+  @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG (pregraph_remove_edge g e)
+  (vlabel g)
+  (fun e0 => if E_EqDec e0 e then inf else elabel g e0 )
+  (glabel g).
+
+Instance Fin_MatrixUGraph_eremove':
+  FiniteGraph (MatrixUGraph_eremove').
+Proof.
+constructor; unfold EnumEnsembles.Enumerable; simpl.
+(*vertices*)exists (VList g). split. apply NoDup_VList. apply VList_vvalid.
+(*edge*)
+unfold removeValidFunc.
+(*case e already inside*)
+exists (remove E_EqDec e (EList g)). split. apply nodup_remove_nodup. apply NoDup_EList.
+intros. rewrite remove_In_iff, EList_evalid; auto. split; auto.
+Qed.
+
+Instance AdjMatUSound_eremove':
+  AdjMatUSoundness MatrixUGraph_eremove'.
+Proof.
+constructor; simpl.
+++apply (@size_rep g (sound_MatrixUGraph g)).
+++apply (@inf_rep g (sound_MatrixUGraph g)).
+++apply (@vert_representable g (sound_MatrixUGraph g)).
+++unfold removeValidFunc; intros. destruct H. apply evalid_strong_evalid in H. apply H.
+++unfold removeValidFunc; intros. destruct (E_EqDec e0 e). auto.
+  pose proof (@inf_rep _ (sound_MatrixUGraph g)). split. apply (Z.le_trans _ 0).
+  pose proof Int.min_signed_neg. lia. lia. lia.
+  apply (@edge_weight_representable g (sound_MatrixUGraph g) e0). apply H.
+++unfold removeValidFunc; intros. destruct (E_EqDec e0 e). destruct H. hnf in e1. contradiction.
+  apply (@edge_weight_not_inf g (sound_MatrixUGraph g) e0). apply H.
+++unfold removeValidFunc; intros. destruct (E_EqDec e0 e). auto.
+  apply (@invalid_edge_weight g (sound_MatrixUGraph g) e0). unfold not; intros; apply H. split; auto.
+++unfold removeValidFunc; intros. destruct H.
+  apply (@src_fst g (sound_MatrixUGraph g) e0 H).
+++unfold removeValidFunc; intros. destruct H.
+  apply (@dst_snd g (sound_MatrixUGraph g) e0 H).
+++apply Fin_MatrixUGraph_eremove'.
+++unfold removeValidFunc; intros. destruct H.
+  apply (@undirected_edge_rep g (sound_MatrixUGraph g) e0 H).
+Qed.
+
+Definition MatrixUGraph_eremove: MatrixUGraph :=
+  @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG AdjMatUSoundness
+    MatrixUGraph_eremove' (AdjMatUSound_eremove').
+
+End REMOVE_EDGE_MUGRAPH.
 
 (**************MST****************)
 (*copy...*)
