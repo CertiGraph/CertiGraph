@@ -46,7 +46,6 @@ DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
 SAMPLE_MARK_FILES = \
-  spatial_graph_glist.v \
   spatial_array_graph.v binary_heap_model.v binary_heap_Zmodel.v \
   binary_heap.v env_binary_heap.v verif_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v
 
@@ -66,7 +65,7 @@ UNION_FIND_FILES = \
   unionfind.v env_unionfind.v \
   unionfind_iter.v env_unionfind_iter.v \
   unionfind_arr.v env_unionfind_arr.v \
-  spatial_graph_uf_iter.v uf_arr_specs.v \
+  spatial_graph_uf_iter.v spatial_graph_glist.v uf_arr_specs.v \
   verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v \
   verif_unionfind_iter.v verif_unionfind_iter_rank.v verif_unionfind_arr.v
 
