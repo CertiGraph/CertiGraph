@@ -1,4 +1,4 @@
-Require Import CertiGraph.sample_mark.env_dispose_bi.
+Require Import CertiGraph.dispose.env_dispose_bi.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
 Require Import CertiGraph.graph.subgraph2.
