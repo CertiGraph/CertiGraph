@@ -21,7 +21,7 @@ Require Import CertiGraph.graph.undirected_graph.
 Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
 Require Import CertiGraph.kruskal.env_kruskal_edgelist.
 Require Import CertiGraph.kruskal.spatial_wedgearray_graph.
-Require Import CertiGraph.sample_mark.spatial_array_graph.
+Require Import CertiGraph.unionfind.spatial_array_graph.
 Require Import CertiGraph.kruskal.kruskal_specs.
 Require Import CertiGraph.graph.undirected_uf_lemmas.
 

@@ -3,7 +3,7 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.UnionFind.
 Require Import CertiGraph.msl_application.ArrayGraph.
 Require Import CertiGraph.floyd_ext.share.
-Require Import CertiGraph.sample_mark.spatial_array_graph.
+Require Import CertiGraph.unionfind.spatial_array_graph.
 
 Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
