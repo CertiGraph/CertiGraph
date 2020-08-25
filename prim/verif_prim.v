@@ -1375,7 +1375,8 @@ intros. rewrite EList_evalid. split; intros. pose proof (@edgeless_graph_evalid 
       rewrite H1 in H0; simpl in H0; now inversion H0.
     } clear H0.
     pose proof (priq_arr_utils.isEmptyMeansInf pq_state Hempty). clear Hempty. rewrite Forall_forall in H0.
-    assert (Permutation popped_vertices (VList mst')). { apply NoDup_Permutation.
+    assert (Permutation popped_vertices (VList mst')). {
+      apply NoDup_Permutation.
       apply Permutation_sym, Permutation_NoDup, NoDup_app_l in Hinv_3. auto. apply NoDup_VList.
       apply NoDup_VList. intros; split; intros.
       apply VList_vvalid. rewrite vert_bound. rewrite <- (vert_bound g). apply Hpopped_vvalid; auto.
@@ -1389,7 +1390,9 @@ intros. rewrite EList_evalid. split; intros. pose proof (@edgeless_graph_evalid 
       (*how now brown cow, I can't lia*)
       apply Zgt_not_le in H3. contradiction.
     }
-    Exists mst'. Exists fmst'. Exists popped_vertices. Exists parents. Exists keys. entailer!.
+    
+    Exists mst'. Exists fmst'. Exists popped_vertices. Exists parents. Exists keys.
+    entailer!. admit. admit.
   }
 }
 (*POST-LOOP*) {
