@@ -47,10 +47,13 @@ DATA_STRUCTURE_FILES = \
 
 SAMPLE_MARK_FILES = \
   env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v \
-  verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v spatial_graph_bi_mark.v \
-  spatial_graph_bi_copy.v spatial_graph_glist.v verif_summatrix.v \
-  spatial_array_graph.v verif_copy_bi.v binary_heap_model.v binary_heap_Zmodel.v \
+  verif_dispose_bi.v verif_mark_bi_dag.v spatial_graph_bi_mark.v \
+  spatial_graph_glist.v verif_summatrix.v \
+  spatial_array_graph.v binary_heap_model.v binary_heap_Zmodel.v \
   binary_heap.v env_binary_heap.v verif_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v
+
+COPY_FILES = \
+  env_copy_bi.v spatial_graph_bi_copy.v verif_copy_bi.v  
 
 UNION_FIND_FILES = \
   unionfind.v env_unionfind.v \
@@ -89,7 +92,7 @@ DIJKSTRA_FILES = \
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
 
-CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v sample_mark/summatrix.v
+CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v copy/copy_bi.v sample_mark/summatrix.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
 
@@ -108,7 +111,9 @@ NORMAL_FILES = \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
   $(PRIQ_FILES:%.v=priq/%.v) \
   $(PRIM_FILES:%.v=prim/%.v) \
-  $(UNION_FIND_FILES:%.v=unionfind/%.v) 
+  $(UNION_FIND_FILES:%.v=unionfind/%.v) \
+  $(COPY_FILES:%.v=copy/%.v) 
+
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
