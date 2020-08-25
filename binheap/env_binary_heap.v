@@ -1,7 +1,7 @@
 Require Import VST.floyd.proofauto.
-Require Import CertiGraph.sample_mark.binary_heap.
-Require Import CertiGraph.sample_mark.binary_heap_model.
-Require Import CertiGraph.sample_mark.binary_heap_Zmodel.
+Require Import CertiGraph.binheap.binary_heap.
+Require Import CertiGraph.binheap.binary_heap_model.
+Require Import CertiGraph.binheap.binary_heap_Zmodel.
 Require Import RelationClasses.
 (* Require Import VST.floyd.sublist. *)
 

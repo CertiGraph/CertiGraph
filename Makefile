@@ -45,7 +45,7 @@ GRAPH_FILES = \
 DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
-SAMPLE_MARK_FILES = \
+BINARY_HEAP_FILES = \
   binary_heap_model.v binary_heap_Zmodel.v \
   binary_heap.v env_binary_heap.v verif_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v
 
@@ -107,7 +107,7 @@ NORMAL_FILES = \
   $(MSL_APPLICATION_FILES:%.v=msl_application/%.v) \
   $(FLOYD_EXT_FILES:%.v=floyd_ext/%.v) \
   $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
-  $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
+  $(BINARY_HEAP_FILES:%.v=binheap/%.v) \
   $(SAMPLE_EDGE_WEIGHT_FILES:%.v=sample_edge_weight/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v) \
