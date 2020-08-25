@@ -1,5 +1,5 @@
 Require Import CertiGraph.lib.Coqlib.
-Require Import CertiGraph.sample_mark.env_mark_bi.
+Require Import CertiGraph.mark.env_mark_bi.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.weak_mark_lemmas.
 Require Import CertiGraph.graph.path_lemmas.
@@ -10,7 +10,7 @@ Require Import CertiGraph.msl_application.Graph_Mark.
 Require Import CertiGraph.msl_application.GraphBi.
 Require Import CertiGraph.msl_application.GraphBi_Mark.
 Require Import CertiGraph.floyd_ext.share.
-Require Import CertiGraph.sample_mark.spatial_graph_bi_mark.
+Require Import CertiGraph.mark.spatial_graph_bi_mark.
 Require Import VST.msl.wand_frame.
 Require Import VST.floyd.reassoc_seq.
 Require Import VST.floyd.field_at_wand.
