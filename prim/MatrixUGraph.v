@@ -83,6 +83,14 @@ destruct H. rewrite H. unfold Z.max; simpl. split; lia.
 rewrite Z.max_l by lia. split; auto.
 Qed.
 
+Lemma evalid_form: (*useful for a = (u,v) etc*)
+forall (g: MatrixUGraph) e, evalid g e -> e = (src g e, dst g e).
+Proof.
+intros. rewrite (@src_fst _ (sound_MatrixUGraph g) e) by auto.
+rewrite (@dst_snd _ (sound_MatrixUGraph g) e) by auto.
+destruct e; simpl; auto.
+Qed.
+
 Lemma evalid_strong_evalid:
 forall (g: MatrixUGraph) e, evalid g e -> strong_evalid g e.
 Proof.
@@ -153,7 +161,7 @@ Qed.
 Section EDGELESS_MUGRAPH.
 
 Context {inf_bound: 0 <= inf <= Int.max_signed}.
-Context {size_bound: 0 <= size < Int.max_signed}.
+Context {size_bound: 0 <= size <= Int.max_signed}.
 
 Definition edgeless_lgraph: LabeledGraph V E DV DE DG :=
 @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
@@ -656,25 +664,269 @@ Definition MatrixUGraph_eremove: MatrixUGraph :=
   @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG AdjMatUSoundness
     MatrixUGraph_eremove' (AdjMatUSound_eremove').
 
+Lemma eremove_EList:
+  forall l, Permutation (e::l) (EList g) -> Permutation l (EList MatrixUGraph_eremove).
+Proof.
+intros. assert (Hel: NoDup (e::l)). apply NoDup_Perm_EList in H; auto.
+apply NoDup_Permutation.
+apply NoDup_cons_1 in Hel; auto.
+apply NoDup_EList.
+intros. rewrite EList_evalid. simpl. unfold removeValidFunc. rewrite <- EList_evalid. split; intros.
+split. apply (Permutation_in (l:=(e::l))). apply H. right; auto.
+unfold not; intros. subst e. apply NoDup_cons_2 in Hel. contradiction.
+destruct H0. apply Permutation_sym in H. apply (Permutation_in (l':=(e::l))) in H0. 2: auto.
+destruct H0. symmetry in H0; contradiction. auto.
+Qed.
+
+Lemma eremove_EList_rev:
+  forall l, evalid g e -> Permutation l (EList (MatrixUGraph_eremove)) -> Permutation (e::l) (EList g).
+Proof.
+intros. assert (~ In e (EList MatrixUGraph_eremove)).
+rewrite EList_evalid. simpl. unfold removeValidFunc, not; intros. destruct H1. contradiction.
+assert (~ In e l). unfold not; intros.
+apply (Permutation_in (l':= (EList MatrixUGraph_eremove))) in H2. contradiction. auto.
+apply NoDup_Permutation. apply NoDup_cons; auto. apply NoDup_Perm_EList in H0; auto.
+apply NoDup_EList.
+intros; split; intros. apply EList_evalid. destruct H3. subst x. auto.
+apply (Permutation_in (l':= (EList MatrixUGraph_eremove))) in H3; auto.
+rewrite EList_evalid in H3. simpl in H3. unfold removeValidFunc in H3. apply H3.
+destruct (E_EqDec x e). unfold equiv in e0. subst x. left; auto.
+unfold complement, equiv in c. right.
+assert (evalid MatrixUGraph_eremove x).
+simpl. unfold removeValidFunc. rewrite EList_evalid in H3. split; auto.
+rewrite <- EList_evalid in H4.
+apply (Permutation_in (l:= (EList MatrixUGraph_eremove))). apply Permutation_sym; auto. apply H4.
+Qed.
+
 End REMOVE_EDGE_MUGRAPH.
 
 (**************MST****************)
-(*copy...*)
-Definition sum_LE (g: MatrixUGraph) : DE :=
-  fold_left Z.add (DEList g) 0.
 
 Definition minimum_spanning_forest (t g: MatrixUGraph) :=
  labeled_spanning_uforest t g /\
   forall (t': MatrixUGraph), labeled_spanning_uforest t' g ->
     Z.le (sum_DE Z.add t 0) (sum_DE Z.add t' 0).
 
+Lemma partial_lgraph_spanning_equiv:
+forall (t1 t2 g: MatrixUGraph), is_partial_lgraph t1 t2 -> labeled_spanning_uforest t1 g
+  -> labeled_spanning_uforest t2 g -> Permutation (EList t1) (EList t2).
+Proof.
+intros. apply NoDup_Permutation.
+apply NoDup_EList. apply NoDup_EList.
+intros. repeat rewrite EList_evalid. split; intros.
+apply H. auto.
+destruct (evalid_dec t1 x). auto. exfalso.
+pose proof (trivial_path1 t2 x (evalid_strong_evalid t2 x H2)). destruct H3.
+assert (connected t1 (src t2 x) (dst t2 x)).
+apply H0. apply H1. exists (src t2 x :: dst t2 x :: nil); auto.
+destruct H5 as [p ?].
+apply connected_by_upath_exists_simple_upath in H5. clear p.
+destruct H5 as [p [? ?]].
+assert (exists l, fits_upath t1 l p). apply connected_exists_list_edges in H5; auto.
+destruct H7 as [l ?].
+assert (~ In x l). unfold not; intros. apply (fits_upath_evalid t1 p l) in H8; auto.
+assert (fits_upath t2 l p).
+apply (fits_upath_transfer' p l t1 t2) in H7; auto.
+  intros; split; intros. apply H. auto. rewrite vert_bound in *; auto.
+  intros. apply H. apply (fits_upath_evalid t1 p l); auto.
+  intros. apply H. auto. apply evalid_strong_evalid; auto.
+  intros. apply H. auto. apply evalid_strong_evalid; auto.
+assert (p = (src t2 x :: dst t2 x :: nil)). assert (unique_simple_upath t2). apply H1.
+unfold unique_simple_upath in H10. apply (H10 (src t2 x) (dst t2 x)).
+split. apply valid_upath_exists_list_edges'. exists l; auto. apply H6.
+apply connected_exists_list_edges'. intros. rewrite vert_bound. apply (valid_upath_vvalid t1) in H11.
+rewrite vert_bound in H11; auto. apply H6.
+exists l. auto.
+apply H5. apply H5.
+split. apply H3. apply NoDup_cons.
+unfold not; intros. destruct H11. 2: contradiction.
+symmetry in H11. assert (src t2 x <> dst t2 x). apply H1. auto. contradiction.
+apply NoDup_cons. unfold not; intros; contradiction. apply NoDup_nil.
+apply H3.
+assert (x :: nil = l). apply (uforest'_unique_lpath p (x::nil) l t2).
+apply H1. split. apply valid_upath_exists_list_edges'. exists l; auto. apply H6.
+rewrite H10; auto. auto.
+rewrite <- H11 in H8. apply H8. left; auto.
+Qed.
+
+Corollary partial_lgraph_spanning_sum_LE:
+forall (t1 t2 g: MatrixUGraph), is_partial_lgraph t1 t2 -> labeled_spanning_uforest t1 g
+  -> labeled_spanning_uforest t2 g -> sum_DE Z.add t1 0 = sum_DE Z.add t2 0.
+Proof.
+intros. assert (Permutation (EList t1) (EList t2)).
+apply (partial_lgraph_spanning_equiv t1 t2 g); auto.
+unfold sum_DE. apply fold_left_comm.
+intros. lia.
+unfold DEList.
+replace (map (elabel t1) (EList t1)) with (map (elabel g) (EList t1)).
+replace (map (elabel t2) (EList t2)) with (map (elabel g) (EList t2)).
+apply Permutation_map; auto.
+apply map_ext_in. intros. symmetry; apply H1. rewrite EList_evalid in H3; auto.
+apply map_ext_in. intros. symmetry; apply H0. rewrite EList_evalid in H3; auto.
+Qed.
+
+Corollary partial_lgraph_spanning_mst:
+forall (t1 t2 g: MatrixUGraph), is_partial_lgraph t1 t2 -> labeled_spanning_uforest t1 g
+  -> minimum_spanning_forest t2 g -> minimum_spanning_forest t1 g.
+Proof.
+intros. split. auto.
+intros. apply (Z.le_trans _ (sum_DE Z.add t2 0) _ ).
+apply Z.eq_le_incl. apply (partial_lgraph_spanning_sum_LE t1 t2 g); auto. apply H1.
+apply H1; auto.
+Qed.
+
 (*The following are to let us reason about lists instead of graphs*)
-Lemma sum_LE_equiv:
+Lemma sum_DE_equiv:
   forall (g: MatrixUGraph) (l: list E),
   Permutation (EList g) l -> sum_DE Z.add g 0 = fold_left Z.add (map (elabel g) l) 0.
 Proof.
-unfold sum_LE, DEList; intros. apply fold_left_comm. intros; lia.
+unfold DEList; intros. apply fold_left_comm. intros; lia.
 apply Permutation_map. auto.
+Qed.
+
+(*
+Lemma msf_swap_edges:
+forall (t g: MatrixUGraph) (a b: E), minimum_spanning_forest t g -> evalid g a -> ~evalid t a ->
+  evalid t b -> elabel g a <= elabel g b
+  -> minimum_spanning_uforest MatrixUGraph_adde (MatrixUGraph_eremove b) a) g.
+*)
+
+Lemma connected_dec:
+forall (g: MatrixUGraph) u v, connected g u v \/ ~ connected g u v.
+Proof.
+intros. tauto.
+Qed.
+
+Lemma exists_labeled_spanning_uforest_pre:
+forall (l: list E) (g: MatrixUGraph), Permutation l (EList g) -> exists (t: MatrixUGraph), labeled_spanning_uforest t g.
+Proof.
+induction l; intros.
+(*nil case*)
+exists (@edgeless_graph (@inf_rep g (sound_MatrixUGraph g)) (@size_rep g (sound_MatrixUGraph g))).
+split. split. apply edgeless_partial_lgraph. split. apply uforest'_edgeless_graph.
+unfold spanning; intros. destruct (V_EqDec u v).
+hnf in e. subst v. split; intros; apply connected_refl.
+apply connected_vvalid in H0. rewrite vert_bound in *. apply H0.
+apply connected_vvalid in H0. rewrite vert_bound in *. apply H0.
+unfold complement, equiv in c. split; intros. exfalso. destruct H0.
+unfold connected_by_path in H0. destruct H0. destruct H1. destruct x. inversion H1.
+destruct x. inversion H1. inversion H2. subst v0. contradiction.
+destruct H0. destruct H0. destruct H0. destruct H0.
+rewrite <- EList_evalid in H0. rewrite <- H in H0. contradiction.
+pose proof (@edgeless_graph_disconnected (@inf_rep g (sound_MatrixUGraph g)) (@size_rep g (sound_MatrixUGraph g)) u v c).
+contradiction.
+unfold preserve_vlabel, preserve_elabel; split; intros.
+destruct vlabel. destruct vlabel. auto.
+pose proof (@edgeless_graph_evalid (@inf_rep g (sound_MatrixUGraph g)) (@size_rep g (sound_MatrixUGraph g)) e).
+contradiction.
+(*inductive step*)
+set (u:=src g a). set (v:=dst g a).
+assert (connected g u v). apply adjacent_connected. exists a.
+unfold u; unfold v; apply strong_evalid_adj_edge.
+apply evalid_strong_evalid. rewrite <- EList_evalid, <- H. left; auto.
+set (remove_a:=(@MatrixUGraph_eremove g a)).
+assert (Ha_evalid: evalid g a). { rewrite <- EList_evalid. apply (Permutation_in (l:=(a::l))).
+  apply H. left; auto. }
+specialize IHl with remove_a.
+destruct IHl as [t ?]. {
+unfold remove_a. pose proof (@eremove_EList g a Ha_evalid l H).
+apply NoDup_Permutation. assert (NoDup (a::l)). apply (Permutation_NoDup (l:=EList g)).
+apply Permutation_sym; auto. apply NoDup_EList. apply NoDup_cons_1 in H2; auto.
+apply NoDup_EList.
+intros. rewrite EList_evalid. split; intros.
+pose proof (Permutation_in (l:=l) (l':=_) x H1 H2). rewrite EList_evalid in H3; auto.
+apply Permutation_sym in H1.
+apply (Permutation_in (l:=_) (l':=l) x H1). rewrite EList_evalid; auto.
+}
+assert (Htg: is_partial_lgraph t g). {
+  destruct H1. destruct H2. destruct H1. destruct H4. split.
+  split. intros. apply H1 in H6. auto.
+  split. intros. destruct H1. destruct H7. apply H7. auto.
+  split. intros. apply H1 in H7. simpl in H7. auto. auto.
+  intros. apply H1 in H7. simpl in H7. auto. auto.
+  unfold preserve_vlabel, preserve_elabel; split; intros.
+  destruct vlabel. destruct vlabel. auto.
+  rewrite H3 by auto. simpl. destruct (E_EqDec e a). unfold equiv in e0.
+  subst e. assert (evalid remove_a a). apply H1; auto.
+  simpl in H7. unfold removeValidFunc in H7. destruct H7; contradiction.
+  auto.
+}
+destruct (connected_dec remove_a u v).
+(*already connected*)
+++
+exists t. destruct H1.  destruct H3. destruct H1. destruct H5.
+split. split.
+(*partial_graph*)
+apply Htg.
+(*uforest*)
+split. auto.
+(*spanning*)
+unfold spanning in *. intros. rewrite <- H6. (*
+destruct (V_EqDec u u0). hnf in e. subst u0.
+destruct (V_EqDec v v0). hnf in e. subst v0.
+split; intros; auto.*)
+admit.
+(*labels*)
+apply Htg.
+++
+assert (vvalid g u /\ vvalid g v). apply connected_vvalid in H0; auto. destruct H3.
+assert (u <= v). apply (@undirected_edge_rep g (sound_MatrixUGraph g)). auto.
+set (w:= elabel g a).
+assert (Int.min_signed <= w < inf). split.
+unfold w; apply (@edge_weight_representable g (sound_MatrixUGraph g)). auto.
+unfold w; apply (@edge_weight_not_inf g (sound_MatrixUGraph g)). auto.
+rewrite vert_bound in H3, H4. rewrite <- (vert_bound t) in H3, H4.
+assert (Ha: a = (u,v)). unfold u, v; apply evalid_form; auto. rewrite Ha in *.
+set (adde_a:=@MatrixUGraph_adde t u v H3 H4 H5 w H6).
+exists adde_a. split. split.
+apply adde_partial_lgraph; auto. unfold w. rewrite Ha; auto.
+split.
+(*uforest*)
+apply add_edge_uforest'; auto. apply H1.
+unfold not; intros.
+apply (is_partial_lgraph_connected t remove_a) in H7. contradiction.
+split. apply H1. apply H1.
+(*spanning*)
+admit.
+(*labels*)
+unfold preserve_vlabel, preserve_elabel; split; intros.
+destruct vlabel; destruct vlabel; auto.
+simpl. unfold update_elabel, equiv_dec.
+destruct (E_EqDec (u,v) e). hnf in e0. subst e. unfold w; rewrite Ha; auto.
+apply Htg. simpl in H7. unfold addValidFunc in H7. destruct H7. apply H7.
+unfold complement, equiv in c. symmetry in H7; contradiction.
+Abort.
+
+(*Either:
+-Prove a pure MST algorithm
+-If I can solve the above (not impossible, but very tedious), and if we can show that
+    "for any finite graph (with strong evalid edges?), the set of partial graphs is finite",
+  then we can say "the set of spanning trees, which is a subset, is also finite"
+  and "it is also nonempty, therefore it can be sorted by sum_DE and then take the first in the sorted list"
+*)
+Lemma exists_msf:
+forall (g: MatrixUGraph), exists (t: MatrixUGraph), minimum_spanning_forest t g.
+Proof. admit. Admitted.
+
+Lemma msf_if_le_msf:
+forall (t g: MatrixUGraph), labeled_spanning_uforest t g ->
+  (forall t', minimum_spanning_forest t' g -> sum_DE Z.add t 0 <= sum_DE Z.add t' 0) ->
+  minimum_spanning_forest t g.
+Proof.
+intros. unfold minimum_spanning_forest. split. auto.
+intros. destruct (exists_msf g) as [msf ?].
+apply (Z.le_trans _ (sum_DE Z.add msf 0)). auto.
+apply H2. auto.
+Qed.
+
+Corollary msf_if_le_msf':
+forall (t t' g: MatrixUGraph), labeled_spanning_uforest t g ->
+  minimum_spanning_forest t' g -> sum_DE Z.add t 0 <= sum_DE Z.add t' 0 ->
+  minimum_spanning_forest t g.
+Proof.
+intros. apply msf_if_le_msf; auto.
+intros. apply (Z.le_trans _ (sum_DE Z.add t' 0)). auto.
+apply H0. apply H2.
 Qed.
 
 End MATRIXUGRAPH.
