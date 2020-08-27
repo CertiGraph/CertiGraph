@@ -309,8 +309,8 @@ auto.
 } split.
 (*uforest'*) {
   assert (uforest' (FiniteWEdgeListGraph_eremove t2 b) /\ ~ connected (FiniteWEdgeListGraph_eremove t2 b) (src t2 b) (dst t2 b)).
-  apply (eremove_uforest' t2 b). auto. apply H1. apply EList_evalid in H9. auto. destruct H13.
-  apply add_edge_uforest'. auto.
+  apply (remove_edge_uforest' t2 b). auto. apply H1. apply EList_evalid in H9. auto.
+  destruct H13. apply add_edge_uforest'. auto.
   apply eremove_vvalid. apply (spanning_preserves_vertices g t2). apply H1. apply (spanning_preserves_vertices g t1). apply H0.
   apply sound_strong_evalid in Ha; auto. destruct Ha. rewrite <- sound_src in H16; auto. rewrite <- sound_dst in H16; auto. apply H16.
   apply eremove_vvalid. apply (spanning_preserves_vertices g t2). apply H1. apply (spanning_preserves_vertices g t1). apply H0.
@@ -827,50 +827,70 @@ Proof.
         rewrite edgeless_WEdgeGraph_numV by lia.
         rewrite edgeless_WEdgeGraph_numE. rewrite Z.sub_0_r.
         rewrite graph_to_wedgelist_edgeless_WEdgeGraph. rewrite app_nil_l.
-      entailer!. (*LAAAAAAAAG*)
-      split3; [| | split3].
-      * apply edgeless_WEdgeGraph_sound.
+      assert (Hsound: sound_weighted_edge_graph (edgeless_WEdgeGraph (numV g))). {
+        apply edgeless_WEdgeGraph_sound.
           split. lia. assert ((Int.max_signed/8) < Int.max_signed). apply Z.div_lt.
           set (k:=Int.max_signed); compute in k; subst k. lia. lia. lia.
-      * repeat split; intros.
-        rewrite <- edgeless_WEdgeGraph_vvalid in H25; apply H0; auto.
-        apply edgeless_WEdgeGraph_evalid in H25; contradiction.
-        apply edgeless_WEdgeGraph_evalid in H25; contradiction.
-        apply edgeless_WEdgeGraph_evalid in H25; contradiction.
+      }
+      assert (Hpartial: is_partial_lgraph (edgeless_WEdgeGraph (numV g)) g). {
+        repeat split; intros.
+        rewrite <- edgeless_WEdgeGraph_vvalid in H7; apply H0; auto.
+        apply edgeless_WEdgeGraph_evalid in H7; contradiction.
+        apply edgeless_WEdgeGraph_evalid in H7; contradiction.
+        apply edgeless_WEdgeGraph_evalid in H7; contradiction.
         unfold preserve_vlabel; intros. simpl. destruct vlabel. auto.
-        unfold preserve_elabel; intros. apply edgeless_WEdgeGraph_evalid in H25; contradiction.
-      * apply uforest'_edgeless_WEdgeGraph.
-      * intros; split; intros. apply H0 in H25. apply makeSet_vvalid. rewrite Z2Nat.id by lia. lia.
-          apply H0. apply makeSet_vvalid in H25. rewrite Z2Nat.id in H25 by lia. lia.
-      * unfold connected; unfold connected_by_path.
+        unfold preserve_elabel; intros. apply edgeless_WEdgeGraph_evalid in H7; contradiction.
+      }
+      assert (Huforest': uforest' (edgeless_WEdgeGraph (numV g))). { apply uforest'_edgeless_WEdgeGraph. }
+      repeat rewrite map_nil. repeat rewrite sublist_nil.
+      assert (HmakeSet_vvalid: forall v : VType, vvalid g v <-> vvalid (makeSet_discrete_Graph (Z.to_nat (numV g))) v). {
+        intros; split; intros. apply H0 in H7. apply makeSet_vvalid. rewrite Z2Nat.id by lia. lia.
+          apply H0. apply makeSet_vvalid in H7. rewrite Z2Nat.id in H7 by lia. lia.
+      }
+      assert (Hconnected: forall u v : Z, ufroot_same (makeSet_discrete_Graph (Z.to_nat (numV g))) u v <->
+        connected (edgeless_WEdgeGraph (numV g)) u v). {
+        unfold connected; unfold connected_by_path.
           (*will like to prove this without connectedness, but will have to create a lemma on makeSet's roots, which seems annoying*)
           intros. rewrite <- connected_ufroot_same_iff. split; intros.
-        { destruct H25 as [p [? [? ?]]].
-          destruct p eqn:Hp; simpl in H25; simpl in H26; inversion H26.
+        { destruct H7 as [p [? [? ?]]].
+          destruct p eqn:Hp; simpl in H7; simpl in H8; inversion H8.
           subst z. destruct u0.
           (*single vertex in upath. Thus u=v, trivially connected*)
-          simpl in H27; inversion H27. exists p. rewrite Hp; unfold connected_by_path. simpl; split; auto.
-          simpl. apply makeSet_vvalid in H25. rewrite Z2Nat.id in H25 by lia. apply H25.
+          simpl in H9; inversion H9. exists p. rewrite Hp; unfold connected_by_path. simpl; split; auto.
+          simpl. apply makeSet_vvalid in H7. rewrite Z2Nat.id in H7 by lia. apply H7.
           (*case p = u::z0::u0.
             Thus exists e,. dst subsetsGraph e = z0. But by makeSet_dst...*)
-          destruct H25. destruct H25. unfold adj_edge in H25. destruct H25. destruct H25. destruct H30.
-          rewrite makeSet_vvalid in H31. rewrite Z2Nat.id in H31 by lia.
-          destruct H29; destruct H29;
-            rewrite H32 in H31; rewrite makeSet_dst in H32; rewrite <- H32 in H31; lia.
+          destruct H7. destruct H7. unfold adj_edge in H7. destruct H7. destruct H7. destruct H12.
+          rewrite makeSet_vvalid, Z2Nat.id in H13 by lia.
+          destruct H11; destruct H11;
+            rewrite H14 in H13; rewrite makeSet_dst in H14; rewrite <- H14 in H13; lia.
         }
         { (*more or less same deal...*)
-          destruct H25 as [p [? [? ?]]].
-          destruct p eqn:Hp; simpl in H26; inversion H26.
+          destruct H7 as [p [? [? ?]]].
+          destruct p eqn:Hp; simpl in H8; inversion H8.
           subst v0. destruct u0.
           (*single vertex in upath. Thus u=v, trivially connected*)
-          simpl in H27; inversion H27. subst u. subst p. destruct H25.
-          apply connected_refl. apply makeSet_vvalid. rewrite Z2Nat.id; lia.
+          simpl in H9; inversion H9. subst u. subst p. destruct H9.
+          simpl in H7. apply connected_refl. apply makeSet_vvalid. rewrite Z2Nat.id; lia.
           (*case p = u::z0::u0.
             then u z0 is adjacent in edgeless, contradiction...
           *)
-          destruct H25. destruct H25. unfold adj_edge in H25. destruct H25. destruct H25.
-          apply edgeless_WEdgeGraph_evalid in H25; contradiction.
+          destruct H7. destruct H7. unfold adj_edge in H7. destruct H7. destruct H7.
+          apply edgeless_WEdgeGraph_evalid in H7; contradiction.
         }
+      }
+    assert (forall e u v, adj_edge g e u v ->
+      In (wedge_to_cdata (edge_to_wedge g e)) [] ->
+      ufroot_same (makeSet_discrete_Graph (Z.to_nat (numV g))) u v). {
+      intros. contradiction.
+    }
+    assert (forall x : reptype t_struct_edge, In x (map wedge_to_cdata []) -> exists j : Z, 0 <= j < 0 /\ x = Znth j sorted). {
+      intros; contradiction.
+    }
+    assert (forall v : VType, vvalid (edgeless_WEdgeGraph (numV g)) v <-> vvalid g v). {
+      intros. rewrite <- H0. simpl; split; auto.
+    }
+    time entailer!. (*187 seconds without PROP*)
   + (******LOOP BODY******)
   Intros.
   assert (HnumV_msf': numV msf' = numV g). {
@@ -1082,26 +1102,29 @@ Proof.
   replace (Int.add (Int.repr (numE msf')) (Int.repr 1)) with (Int.repr (numE msf' + 1)).
   2: { symmetry; apply add_repr. }
   (*ok!*)
-  entailer!. (*lalalalalag*)
-  clear H23 H24 H25 H26 H27 H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H38 H39 H40 H41 H42 H43 H44.
-  split3. 3: split3. 5: split3. 7: split. (*my invariant sure grew unwieldy*)
-    +++
+  subst w. set (w:=elabel g (u,v)).
+  assert (Hinv_1: forall v0 : VType, vvalid (FiniteWEdgeListGraph_adde msf' (u, v) w) v0 <-> vvalid g v0). {
+    intros. apply H8.
+  }
+  assert (Hinv_3: is_partial_lgraph (FiniteWEdgeListGraph_adde msf' (u, v) w) g). {
     split3. split3.
-      intros. apply H8. apply adde_vvalid in H23. apply H23.
-      intros. apply adde_evalid_or in H23. destruct H23. apply H11; auto. subst e; auto.
-      split. intros. apply adde_evalid_or in H23. destruct H23.
-        rewrite <- sound_src; auto. rewrite <- sound_src; auto. apply H11; auto. apply adde_evalid2. auto.
-        subst e. rewrite <- sound_src; auto. rewrite <- sound_src; auto. apply adde_evalid1. auto.
-      intros. apply adde_evalid_or in H23. destruct H23.
-        rewrite <- sound_dst; auto. rewrite <- sound_dst; auto. apply H11; auto. apply adde_evalid2. auto.
-        subst e. rewrite <- sound_dst; auto. rewrite <- sound_dst; auto. apply adde_evalid1. auto.
-      unfold preserve_vlabel; intros. simpl. destruct vlabel. destruct vlabel. auto.
-      unfold preserve_elabel; intros. simpl. unfold graph_gen.update_elabel. simpl in H23. unfold graph_gen.addValidFunc in H23.
-        unfold EquivDec.equiv_dec. destruct E_EqDec. unfold Equivalence.equiv in e0; rewrite <- e0. auto.
-        destruct H23. apply H11. auto. unfold RelationClasses.complement, Equivalence.equiv in c. symmetry in H23. contradiction.
-    +++
+    intros. apply H8. apply adde_vvalid in H23. apply H23.
+    intros. apply adde_evalid_or in H23. destruct H23. apply H11; auto. subst e; auto.
+    split. intros. apply adde_evalid_or in H23. destruct H23.
+      rewrite <- sound_src; auto. rewrite <- sound_src; auto. apply H11; auto. apply adde_evalid2. auto.
+      subst e. rewrite <- sound_src; auto. rewrite <- sound_src; auto. apply adde_evalid1. auto.
+    intros. apply adde_evalid_or in H23. destruct H23.
+      rewrite <- sound_dst; auto. rewrite <- sound_dst; auto. apply H11; auto. apply adde_evalid2. auto.
+      subst e. rewrite <- sound_dst; auto. rewrite <- sound_dst; auto. apply adde_evalid1. auto.
+    unfold preserve_vlabel; intros. simpl. destruct vlabel. destruct vlabel. auto.
+    unfold preserve_elabel; intros. simpl. unfold graph_gen.update_elabel. simpl in H23. unfold graph_gen.addValidFunc in H23.
+      unfold EquivDec.equiv_dec. destruct E_EqDec. unfold Equivalence.equiv in e0; rewrite <- e0. auto.
+      destruct H23. apply H11. auto. unfold RelationClasses.complement, Equivalence.equiv in c. symmetry in H23. contradiction.
+  }
+  assert (Hinv_4: uforest' (FiniteWEdgeListGraph_adde msf' (u, v) w)). {
     apply add_edge_uforest'; auto. apply H8; auto. apply H8; auto.
-    +++
+  }
+  assert (Hinv_5: Permutation (msflist +:: (w, (u, v))) (graph_to_wedgelist (FiniteWEdgeListGraph_adde msf' (u, v) w))). {
     apply NoDup_Permutation. apply NoDup_app_inv.
     apply (Permutation_NoDup (l:=graph_to_wedgelist msf')). apply Permutation_sym; auto. apply NoDup_g2wedgelist.
     apply NoDup_cons. auto. apply NoDup_nil.
@@ -1116,7 +1139,7 @@ Proof.
     unfold not; intros; rewrite <- H25 in H24; contradiction. apply H24.
     simpl in H23. destruct H23. rewrite <- H23.
     apply adde_g2wedgelist_1. contradiction.
-    destruct x as [w e].
+    destruct x as [w1 e].
     unfold graph_to_wedgelist in H23. apply list_in_map_inv in H23.
     destruct H23; destruct H23.
     apply EList_evalid in H24.
@@ -1126,17 +1149,19 @@ Proof.
     apply adde_evalid_or in H24. destruct H24.
     apply in_or_app. left. apply (Permutation_in (l:=graph_to_wedgelist msf')).
     apply Permutation_sym; auto.
-    replace (w,e) with (edge_to_wedge msf' e). apply in_map. apply EList_evalid. inversion H23. apply H24.
+    replace (w1,e) with (edge_to_wedge msf' e). apply in_map. apply EList_evalid. inversion H23. apply H24.
     unfold edge_to_wedge; simpl. inversion H23. auto.
     unfold RelationClasses.complement, Equivalence.equiv in c. rewrite H24 in c; contradiction.
-    +++
+  }
+  assert (Hinv_6: forall v0 : VType, vvalid g v0 <-> vvalid uv_union v0). {
     intros. rewrite <- (uf_union_vvalid subsetsGraph_uv uv_union
                         (liGraph subsetsGraph_uv) (liGraph uv_union)
                         (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
                         (maGraph subsetsGraph_uv) (maGraph uv_union)
                         u v); auto.
     destruct Hequiv_trans. rewrite <- H23. apply H14.
-    +++
+  }
+  assert (Hinv_7: forall (e : EType) (u0 v0 : VType), adj_edge g e u0 v0 -> In (wedge_to_cdata (edge_to_wedge g e)) (sublist 0 (i + 1) sorted) -> ufroot_same uv_union u0 v0). {
     intros. rewrite (sublist_split 0 i (i+1)) in H24 by lia. apply in_app_or in H24.
     destruct H24.
     (*case of every edge that was before*)
@@ -1160,8 +1185,7 @@ Proof.
     assert (u = fst e /\ v = snd e). {
       apply Hvertex_valid in Hvvalid_g_u.
       apply Hvertex_valid in Hvvalid_g_v.
-      apply Hvertex_valid in H23.
-      apply Hvertex_valid in H26.
+      apply Hvertex_valid in H23; apply Hvertex_valid in H26.
       set (q:=Int.max_signed) in *; compute in q; subst q.
       set (q:=Int.modulus) in *; compute in q; subst q.
       do 2 rewrite Z.mod_small in H28 by lia.
@@ -1175,7 +1199,9 @@ Proof.
                   (liGraph subsetsGraph_uv) (liGraph uv_union)
                   (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
                   (maGraph subsetsGraph_uv) (maGraph uv_union)); auto.
-    +++
+  }
+  assert (Hinv_8: forall u0 v0 : Z, ufroot_same uv_union u0 v0 <-> connected (FiniteWEdgeListGraph_adde msf' (u, v) w) u0 v0). {
+    subst a.
     intros a b; split; intros.
     ***
     (*----------->*)
@@ -1347,12 +1373,24 @@ Proof.
              (UnionFindGraph.finGraph subsetsGraph_uv) (UnionFindGraph.finGraph uv_union)
              (maGraph subsetsGraph_uv) (maGraph uv_union)
              u v)  in H25; auto.
-    +++
+
+  }
+  assert (Hinv_9: forall x : reptype t_struct_edge, In x (map wedge_to_cdata (msflist +:: (w, (u, v)))) -> exists j : Z, 0 <= j < i + 1 /\ x = Znth j sorted). {
     intros. rewrite map_app in H23. apply in_app_or in H23; destruct H23.
     apply H17 in H23. destruct H23; destruct H23. exists x0; split; [lia | auto].
     simpl in H23. destruct H23. exists i; split. lia. rewrite <- H23. symmetry; apply Heq_i.
     contradiction.
-    +++
+  }
+  assert (Hinv_10: forall j : Z,
+    0 <= j < i + 1 ->
+    ~ In (Znth j sorted) (map wedge_to_cdata (msflist +:: (w, (u, v)))) ->
+    exists p : upath,
+      c_connected_by_path (FiniteWEdgeListGraph_adde msf' (u, v) w) p 
+        (fst (snd (Znth j sorted))) (snd (snd (Znth j sorted))) /\
+      (exists l : list EType,
+         fits_upath (FiniteWEdgeListGraph_adde msf' (u, v) w) l p /\
+         (forall w0 : EType,
+          In w0 l -> In (wedge_to_cdata (edge_to_wedge g w0)) (sublist 0 j sorted)))). {
     intros.
     destruct (Z.lt_trichotomy j i).
     (*j<i*) 1: {
@@ -1381,46 +1419,55 @@ Proof.
     assert (In (Znth i sorted) (map wedge_to_cdata (msflist +:: (elabel g (u, v), (u, v))))).
       rewrite Heq_i. apply in_map. apply in_or_app. right. left; auto. contradiction.
     lia.
+  }
+  time "if-branch postcon (originally 331.069 secs):" entailer!.
  --- (* no, don't add this edge *)
   forward.
   Exists msf' msflist subsetsGraph_uv.
-  entailer!.
-  clear H21 H22 H23 H24 H25 H26 H27 H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H38 H39 H40.
-  split3; [| |split3].
-  +++
-  intros. rewrite H14. symmetry. destruct Hequiv_trans. rewrite H20. split; auto.
-  +++
-  intros. rewrite (sublist_split 0 i (i+1) sorted) in H21 by lia. apply in_app_or in H21. destruct H21.
-  apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv); auto.
-  apply (H15 e u0 v0 H20 H21).
-  rewrite sublist_one in H21 by lia. destruct H21. 2: contradiction.
-  apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv). auto.
-  rewrite Heq_i in H21.
-    destruct H as [Hvertex_valid [Hedge_valid [Hweight_valid [Hsrc_edge Hdst_edge]]]].
-    destruct H20. destruct H. destruct H22.
-    rewrite (Hsrc_edge e) in H22, H20; auto. rewrite Hdst_edge in H23, H20; auto.
-    assert (u = fst e /\ v = snd e). {
-      unfold edge_to_wedge in H21. inversion H21.
-      do 2 rewrite Int.Z_mod_modulus_eq in H26. do 2 rewrite Int.Z_mod_modulus_eq in H27.
-      apply Hvertex_valid in Hvvalid_g_u.
-      apply Hvertex_valid in Hvvalid_g_v.
-      apply Hvertex_valid in H22.
-      apply Hvertex_valid in H23.
-      set (q:=Int.max_signed) in *; compute in q; subst q.
-      set (q:=Int.modulus) in *; compute in q; subst q.
-      do 2 rewrite Z.mod_small in H26 by lia.
-      do 2 rewrite Z.mod_small in H27 by lia. split; auto.
-    } destruct H24.
-  destruct H20; destruct H20; subst u0; subst v0; rewrite <- H24; rewrite <- H25.
-  exists v_root; split; auto. exists v_root; split; auto.
-  +++ intros.
-  rewrite <- H16.
-  apply uf_equiv_ufroot_same. apply uf_equiv_sym. trivial.
-  +++ intros.
-  destruct (H17 _ H20) as [y [? ?]].
-  exists y.
-  split; trivial; lia.
-  +++ intros.
+  subst u_root.
+  assert (Ha1: forall v0 : VType, vvalid g v0 <-> vvalid subsetsGraph_uv v0). {
+    intros. rewrite H14. symmetry. destruct Hequiv_trans. rewrite H20. split; auto.
+  }
+  assert (Ha2: forall (e : EType) (u0 v0 : VType), adj_edge g e u0 v0 ->
+    In (wedge_to_cdata (edge_to_wedge g e)) (sublist 0 (i + 1) sorted) ->
+    ufroot_same subsetsGraph_uv u0 v0). {
+    intros. rewrite (sublist_split 0 i (i+1) sorted) in H21 by lia. apply in_app_or in H21. destruct H21.
+    apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv); auto.
+    apply (H15 e u0 v0 H20 H21).
+    rewrite sublist_one in H21 by lia. destruct H21. 2: contradiction.
+    apply (uf_equiv_ufroot_same subsetsGraph' subsetsGraph_uv). auto.
+    rewrite Heq_i in H21.
+      destruct H as [Hvertex_valid [Hedge_valid [Hweight_valid [Hsrc_edge Hdst_edge]]]].
+      destruct H20. destruct H. destruct H22.
+      rewrite (Hsrc_edge e) in H22, H20; auto. rewrite Hdst_edge in H23, H20; auto.
+      assert (u = fst e /\ v = snd e). {
+        unfold edge_to_wedge in H21. inversion H21.
+        do 2 rewrite Int.Z_mod_modulus_eq in H26. do 2 rewrite Int.Z_mod_modulus_eq in H27.
+        apply Hvertex_valid in Hvvalid_g_u.
+        apply Hvertex_valid in Hvvalid_g_v.
+        apply Hvertex_valid in H22.
+        apply Hvertex_valid in H23.
+        set (q:=Int.max_signed) in *; compute in q; subst q.
+        set (q:=Int.modulus) in *; compute in q; subst q.
+        do 2 rewrite Z.mod_small in H26 by lia.
+        do 2 rewrite Z.mod_small in H27 by lia. split; auto.
+      } destruct H24.
+    destruct H20; destruct H20; subst u0; subst v0; rewrite <- H24; rewrite <- H25.
+    exists v_root; split; auto. exists v_root; split; auto.
+  }
+  assert (Ha3: forall u0 v0 : Z, ufroot_same subsetsGraph_uv u0 v0 <-> connected msf' u0 v0). {
+    intros. rewrite <- H16. apply uf_equiv_ufroot_same. apply uf_equiv_sym. trivial.
+  }
+  assert (Ha4: forall x : reptype t_struct_edge,
+    In x (map wedge_to_cdata msflist) -> exists j : Z, 0 <= j < i + 1 /\ x = Znth j sorted). {
+    intros.
+    destruct (H17 _ H20) as [y [? ?]].
+    exists y.
+    split; trivial; lia.
+  }
+  time "else-branch postcon (originally 192 secs): " entailer!.
+  clear H20 H21 H22 H23 H24 H25 H26 H27 H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H38 H39.
+  intros.
   destruct (Z.eq_dec j i).
   2: apply H18; trivial; lia.
   subst j. (* hrmm *)

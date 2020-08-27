@@ -21,28 +21,133 @@ Proof.
 intros. tauto.
 Qed.
 
+(*ideally generalise in_dec to any decidable function, and don't need NoDup*)
+Lemma filter_list_Permutation:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l1 l2: list A),
+  NoDup l2 ->
+  Permutation
+    ((filter (fun x => in_dec EA x l1) l2) ++ (filter (fun x => negb (in_dec EA x l1)) l2))
+    l2.
+Proof.
+intros. apply NoDup_Permutation.
+apply NoDup_app_inv. apply NoDup_filter. auto. apply NoDup_filter. auto.
+intros. rewrite filter_In in H0. rewrite filter_In. destruct H0.
+unfold not; intros. destruct H2. destruct (in_dec EA x l1).
+inversion H3. inversion H1. auto.
+intros; split; intros.
+apply in_app_or in H0; destruct H0; rewrite filter_In in H0; destruct H0; auto.
+apply in_or_app. repeat rewrite filter_In.
+destruct (in_dec EA x l1). left; split; auto. right; split; auto.
+Qed.
+
+Lemma fold_left_Zadd_diff_accum:
+forall (l: list Z) (x y: Z), x <= y -> fold_left Z.add l x <= fold_left Z.add l y.
+Proof.
+induction l; intros. simpl; auto.
+apply IHl. lia.
+Qed.
+
+Lemma fold_left_accum_Zadd:
+forall (l: list Z) (x y: Z), fold_left Z.add l (x+y) = (fold_left Z.add l x) + y.
+Proof.
+induction l; intros. simpl; auto.
+simpl. replace (x + y + a) with ((x+a) + y) by lia. apply (IHl (x+a) y).
+Qed.
+
+Lemma fold_left_Zadd_comp:
+forall (l1 l2: list Z), Zlength l1 = Zlength l2 -> (forall i, 0<=i<Zlength l1 -> Znth i l1 <= Znth i l2)
+  -> (forall s, fold_left Z.add l1 s <= fold_left Z.add l2 s).
+Proof.
+induction l1; intros.
+rewrite Zlength_nil in H. symmetry in H. apply Zlength_nil_inv in H. subst l2. lia.
+destruct l2. rewrite Zlength_cons in H. rewrite Zlength_nil in H. pose proof (Zlength_nonneg l1). lia.
+simpl. assert (a <= z). replace a with (Znth 0 (a::l1)). replace z with (Znth 0 (z::l2)).
+apply H0. split. lia. rewrite Zlength_cons. pose proof (Zlength_nonneg l1). lia.
+auto. auto.
+apply (Z.le_trans _ (fold_left Z.add l1 (s + z)) _).
+apply fold_left_Zadd_diff_accum. lia.
+apply IHl1. do 2 rewrite Zlength_cons in H. lia.
+intros. replace (Znth i l1) with (Znth (i+1) (a::l1)).
+ replace (Znth i l2) with (Znth (i+1) (z::l2)). apply H0. rewrite Zlength_cons. lia.
+all: rewrite (Znth_pos_cons (i+1)) by lia; rewrite Z.add_simpl_r; auto.
+Qed.
+
+Lemma fold_left_Zadd_map_remove:
+forall {A: Type} {EA: EquivDec.EqDec A eq} l f b,
+  In b l -> NoDup l ->
+  fold_left Z.add (map f (remove EA b l)) 0 = (fold_left Z.add (map f l) 0) - f b.
+Proof.
+induction l; intros. contradiction.
+simpl. rewrite fold_left_accum_Zadd.
+replace (fold_left Z.add (map f l) 0 + f a - f b) with
+  (fold_left Z.add (map f l) 0 - f b + f a) by lia.
+destruct H; destruct (EA b a). 
+++hnf in e. subst a. assert (~ In b l). apply NoDup_cons_2 in H0; auto.
+rewrite remove_not_in by auto. rewrite Z.sub_add. auto.
+++unfold RelationClasses.complement, Equivalence.equiv in c. subst a. contradiction.
+++hnf in e; subst a. apply NoDup_cons_2 in H0. contradiction.
+++simpl. rewrite fold_left_accum_Zadd. apply NoDup_cons_1 in H0. rewrite IHl; auto.
+Qed.
+
+Lemma path_partition_checkpoint':
+forall (g: G) {fg: FiniteGraph g} (l1 l2: list V) p l a b, Permutation (l1++l2) (VList g) ->
+  In a l1 -> In b l2 -> connected_by_path g p a b -> fits_upath g l p ->
+  exists v1 v2, In v1 p /\ In v2 p /\
+    In v1 l1 /\ In v2 l2 /\ (exists e, adj_edge g e v1 v2 /\ In e l).
+Proof.
+  induction p; intros. destruct H2. destruct H4. inversion H4.
+  destruct p. destruct H2. destruct H4. inversion H4; inversion H5; subst a. subst a0.
+  assert (~ In b l2).
+  apply (NoDup_app_not_in V l1). apply (Permutation_NoDup (l:=VList g)).
+  apply Permutation_sym; auto. apply NoDup_VList. auto. contradiction.
+  destruct l. simpl in H3; contradiction.
+  destruct H2. destruct H4. destruct H2. inversion H4. subst a0.
+  assert (In v (l1 ++ l2)). apply (Permutation_in (l:=VList g)). apply Permutation_sym; auto.
+  rewrite VList_vvalid. apply adjacent_requires_vvalid in H2; apply H2.
+  apply in_app_or in H7; destruct H7.
+  assert (exists v1 v2 : V, In v1 (v :: p) /\ In v2 (v :: p) /\
+    In v1 l1 /\ In v2 l2 /\ (exists e, adj_edge g e v1 v2 /\ In e l)). apply (IHp l v b); auto.
+  split. auto. split. simpl; auto. rewrite last_error_cons in H5. auto.
+    unfold not; intros. assert (In v (v::p)). left; auto. rewrite H8 in H9. contradiction. auto. apply H3.
+  destruct H8 as [v1 [v2 [? [? [? [? ?]]]]]]. exists v1; exists v2. split. right; auto. split. right; auto.
+  split3; auto. destruct H12 as [e0 [? ?]]. exists e0. split. auto. right; auto.
+  exists a; exists v. split3. left; auto. right; left; auto. split3; auto.
+  destruct H3. exists e. split; auto. left; auto.
+Qed.
+
 Lemma path_partition_checkpoint:
 forall (g: G) {fg: FiniteGraph g} (l1 l2: list V) p a b, Permutation (l1++l2) (VList g) ->
   In a l1 -> In b l2 -> connected_by_path g p a b ->
   exists v1 v2, In v1 p /\ In v2 p /\
     In v1 l1 /\ In v2 l2 /\ adjacent g v1 v2.
 Proof.
-  induction p; intros. destruct H2. destruct H3. inversion H3.
-  destruct p. destruct H2. destruct H3. inversion H3; inversion H4; subst a. subst a0.
-  assert (~ In b l2).
-  apply (NoDup_app_not_in V l1). apply (Permutation_NoDup (l:=VList g)).
-  apply Permutation_sym; auto. apply NoDup_VList. auto. contradiction.
-  destruct H2. destruct H3. destruct H2. inversion H3. subst a0.
-  assert (In v (l1 ++ l2)). apply (Permutation_in (l:=VList g)). apply Permutation_sym; auto.
-  rewrite VList_vvalid. apply adjacent_requires_vvalid in H2; apply H2.
-  apply in_app_or in H6; destruct H6.
-  assert (exists v1 v2 : V, In v1 (v :: p) /\ In v2 (v :: p) /\
-    In v1 l1 /\ In v2 l2 /\ adjacent g v1 v2). apply (IHp v b); auto.
-  split. auto. split. simpl; auto. rewrite last_error_cons in H4. auto.
-    unfold not; intros. assert (In v (v::p)). left; auto. rewrite H7 in H8. contradiction.
-  destruct H7 as [v1 [v2 [? [? [? [? ?]]]]]]. exists v1; exists v2. split. right; auto. split. right; auto.
-  split3; auto.
-  exists a; exists v. split3. left; auto. right; left; auto. split3; auto.
+intros. assert (exists l, fits_upath g l p). apply connected_exists_list_edges in H2; auto. destruct H3 as [l ?].
+pose proof (path_partition_checkpoint' g l1 l2 p l a b H H0 H1 H2 H3). destruct H4 as [v1 [v2 [? [? [? [? ?]]]]]].
+exists v1; exists v2. repeat split; auto. destruct H8 as [e [? ?]]. exists e; auto.
+Qed.
+
+Corollary path_partition_checkpoint2:
+forall (g: G) {fg: FiniteGraph g} (l: list V) p l' a b, In a l -> ~ In b l ->
+  connected_by_path g p a b -> fits_upath g l' p ->
+  exists v1 v2, In v1 p /\ In v2 p /\
+    In v1 l /\ ~ In v2 l /\ (exists e, adj_edge g e v1 v2 /\ In e l').
+Proof.
+intros.
+apply (path_partition_checkpoint' g
+  (filter (fun x => (in_dec V_EqDec x l)) (VList g))
+  (filter (fun x => negb (in_dec V_EqDec x l)) (VList g)) p l' a b
+) in H2.
+2: { apply filter_list_Permutation. apply NoDup_VList. }
+2: { rewrite filter_In. split. rewrite VList_vvalid. apply connected_by_path_vvalid in H1; apply H1.
+      destruct (in_dec V_EqDec a l). auto. contradiction. }
+2: { rewrite filter_In. split. rewrite VList_vvalid. apply connected_by_path_vvalid in H1; apply H1.
+      destruct (In_dec V_EqDec b l). contradiction. auto. }
+2: auto.
+destruct H2 as [v1 [v2 [? [? [? [? ?]]]]]].
+exists v1; exists v2. split. auto. split. auto.
+split. rewrite filter_In in H4. destruct H4. destruct (in_dec V_EqDec v1 l). auto. inversion H7.
+split. rewrite filter_In in H5. destruct H5. destruct (in_dec V_EqDec v2 l). inversion H7. auto.
+auto.
 Qed.
 
 Lemma list_eq_Znth:
@@ -460,7 +565,9 @@ forward_loop (
         vvalid g u2 ->
         In u1 (sublist 0 (find popped_vertices v 0) popped_vertices) ->
         ~ In u2 (sublist 0 (find popped_vertices v 0) popped_vertices) ->
-        elabel g (eformat (v, Znth v parents)) <= elabel g (eformat (u1,u2))
+        elabel g (eformat (v, Znth v parents)) <= elabel g (eformat (u1,u2));
+      (*minimality...*)
+      exists M, minimum_spanning_forest M g /\ is_partial_lgraph mst' M
     )
     LOCAL (
       lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
@@ -506,7 +613,9 @@ break: (
         In u1 (sublist 0 (find popped_vertices v 0) popped_vertices) ->
         ~ In u2 (sublist 0 (find popped_vertices v 0) popped_vertices) ->
         elabel g (eformat (v, Znth v parents)) <= elabel g (eformat (u1,u2));
-      forall v, 0 <= v < SIZE -> 0 <= Znth v parents <= SIZE
+      forall v, 0 <= v < SIZE -> 0 <= Znth v parents <= SIZE;
+      (*minimality...*)
+      exists M, minimum_spanning_forest M g /\ is_partial_lgraph mst M
     )
     LOCAL (
       lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
@@ -526,29 +635,100 @@ break: (
 %assert.
 (****PRECON****) {
   Exists edgeless_graph'.
-  Exists (@fin _ _ _ (sound_MatrixUGraph edgeless_graph')).
+  pose proof (@fin _ _ _ (sound_MatrixUGraph edgeless_graph')) as fe. Exists fe.
   Exists (list_repeat (Z.to_nat SIZE) SIZE).
   Exists (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0).
   Exists (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0).
   Exists (nil (A:=V)).
   Exists (VList g). rewrite app_nil_l.
-  entailer!.
-  split3. 3: split3. 5: split3. 7: split.
-  +apply edgeless_partial_lgraph.
-  +apply uforest'_edgeless_graph.
-  +intros. rewrite Znth_list_repeat_inrange; lia.
-  +intros. destruct (V_EqDec v r).
-  hnf in e; subst v. rewrite upd_Znth_same. auto. rewrite Zlength_list_repeat; lia.
-  unfold RelationClasses.complement, Equivalence.equiv in c. rewrite upd_Znth_diff.
-  repeat rewrite Znth_list_repeat_inrange by lia. rewrite (@invalid_edge_weight _ _ _ (sound_MatrixUGraph g)); auto.
-  unfold not; intros. rewrite <- eformat_adj in H11. apply adjacent_requires_vvalid in H11. destruct H11.
-  rewrite vert_bound in H12. lia.
-  rewrite Zlength_list_repeat; lia. rewrite Zlength_list_repeat; lia. auto.
-  +intros. rewrite Znth_list_repeat_inrange in H11; lia.
-  +(*because I've trouble using edgeless_graph_EList*) apply NoDup_Permutation. apply NoDup_EList. apply NoDup_nil.
-  intros. rewrite EList_evalid. split; intros. pose proof (@edgeless_graph_evalid inf SIZE inf_rep SIZE_rep x); contradiction. contradiction.
-  +intros. replace SIZE with priq_arr_utils.SIZE. rewrite find_src. auto. unfold priq_arr_utils.SIZE; auto. unfold priq_arr_utils.SIZE, SIZE; split.
-  +unfold not; intros. destruct H11. destruct H11. destruct H11. pose proof (@edgeless_graph_evalid inf SIZE inf_rep SIZE_rep x); contradiction.
+  assert (Hinv_1: is_partial_lgraph edgeless_graph' g). apply edgeless_partial_lgraph.
+  assert (Hinv_2: uforest' edgeless_graph'). apply uforest'_edgeless_graph.
+  assert (Hinv_3: Permutation (VList g) (VList g)). apply Permutation_refl; auto.
+  assert (Hinv_4: forall v : Z, 0 <= v < SIZE -> 0 <= Znth v (list_repeat (Z.to_nat SIZE) SIZE) <= SIZE). {
+    intros. rewrite Znth_list_repeat_inrange; lia.
+  }
+  assert (Hinv_5: forall v : Z, 0 <= v < SIZE -> Znth v (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0) =
+    (if V_EqDec v r then 0 else elabel g (eformat (v, Znth v (list_repeat (Z.to_nat SIZE) SIZE))))). {
+    intros. destruct (V_EqDec v r).
+    hnf in e; subst v. rewrite upd_Znth_same. auto. rewrite Zlength_list_repeat; lia.
+    unfold RelationClasses.complement, Equivalence.equiv in c. rewrite upd_Znth_diff.
+    repeat rewrite Znth_list_repeat_inrange by lia. rewrite (@invalid_edge_weight _ _ _ (sound_MatrixUGraph g)); auto.
+    unfold not; intros. rewrite <- eformat_adj in H0. apply adjacent_requires_vvalid in H0. destruct H0.
+    rewrite vert_bound in H1. lia.
+    rewrite Zlength_list_repeat; lia. rewrite Zlength_list_repeat; lia. auto.
+  }
+  assert (Hinv_6: forall v : Z,
+    0 <= v < SIZE ->
+    Znth v (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0) =
+    (if in_dec V_EqDec v (nil (A:=V))
+     then (inf + 1)%Z
+     else Znth v (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0))). {
+    intros. destruct (in_dec V_EqDec v []); [contradiction | auto].
+  }
+  assert (Hinv_7: forall v : Z, 0 <= v < SIZE ->
+    0 <= Znth v (list_repeat (Z.to_nat SIZE) SIZE) < SIZE ->
+    evalid g (eformat (v, Znth v (list_repeat (Z.to_nat SIZE) SIZE))) /\
+    (exists i : Z, 0 <= i < Zlength (nil (A:=V)) /\
+       Znth i (nil (A:=V)) = Znth v (list_repeat (Z.to_nat SIZE) SIZE) /\ i < find (nil (A:=V)) v 0) /\
+    (forall u : V,
+     In u (sublist 0 (find (nil (A:=V)) v 0) (nil (A:=V))) ->
+     elabel g (eformat (v, Znth v (list_repeat (Z.to_nat SIZE) SIZE))) <=
+     elabel g (eformat (u, v)))). {
+    intros. rewrite Znth_list_repeat_inrange in H0; lia. }
+  assert (Hinv_8: forall v : Z, 0 <= v < SIZE ->
+    Znth v (list_repeat (Z.to_nat SIZE) SIZE ) = SIZE ->
+    forall u : V, In u (sublist 0 (find [] v 0) []) -> ~ adjacent g u v). {
+    intros. rewrite sublist_nil in H1. contradiction. }
+  assert (Hinv_9: Permutation (EList edgeless_graph')
+      (map (fun v : Z => eformat (v, Znth v (list_repeat (Z.to_nat SIZE) SIZE)))
+         (filter (fun v : Z => Znth v (list_repeat (Z.to_nat SIZE) SIZE) <? SIZE) []))). {
+    simpl.
+    (*because I've trouble using edgeless_graph_EList*) apply NoDup_Permutation. apply NoDup_EList. apply NoDup_nil.
+    intros. rewrite EList_evalid. split; intros. pose proof (@edgeless_graph_evalid inf SIZE inf_rep SIZE_rep x); contradiction. contradiction.
+  }
+  assert (Hinv_10: forall u v : V, In u (nil (A:=V)) -> In v (nil (A:=V)) -> connected g u v <-> connected edgeless_graph' u v). {
+    intros. contradiction.
+  }
+  assert (Hinv_11: (nil (A:=V)) = (nil (A:=V)) ->
+    r = find (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0)
+      (fold_right Z.min (hd 0 (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0))
+         (upd_Znth r (list_repeat (Z.to_nat SIZE) inf) 0)) 0). {
+    intros. rewrite find_src. auto. simpl; auto.
+  }
+  (*Hinv_12 (nil <> nil) seems to be missing, autoresolved?*)
+  assert (Hinv_13: forall u v : V, In u (VList g) -> ~ adjacent edgeless_graph' u v). {
+    unfold not; intros. destruct H0 as [e [? ?]]. destruct H0.
+    pose proof (@edgeless_graph_evalid inf SIZE inf_rep SIZE_rep e); contradiction.
+  }
+  assert (Hinv_14: forall v u1 u2 : V,
+    In v (nil (A:=V)) ->
+    0 <= Znth v (list_repeat (Z.to_nat SIZE) SIZE) < SIZE ->
+    vvalid g u2 ->
+    In u1 (sublist 0 (find (nil (A:=V)) v 0) (nil (A:=V))) ->
+    ~ In u2 (sublist 0 (find (nil (A:=V)) v 0) (nil (A:=V))) ->
+    elabel g (eformat (v, Znth v (list_repeat (Z.to_nat SIZE) SIZE))) <=
+    elabel g (eformat (u1, u2))). {
+    intros. contradiction.
+  }
+  assert (Hinv_15: exists M, minimum_spanning_forest M g /\ is_partial_lgraph edgeless_graph' M). {
+    destruct (exists_msf g) as [M ?]. exists M; split. auto.
+    apply edgeless_partial_lgraph.
+  }
+
+  (*fix up the SEP*)
+  replace (map (fun x : V => if in_dec V_EqDec x [] then Vint (Int.repr 1) else Vint (Int.repr 0)) (nat_inc_list (Z.to_nat SIZE)))
+    with (map (fun x : Z => Vint (Int.repr x)) (list_repeat (Z.to_nat SIZE) 0)). 2: {
+    apply list_eq_Znth. repeat rewrite Zlength_map. rewrite Zlength_list_repeat by lia. rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
+    intros. rewrite Zlength_map, Zlength_list_repeat in H by lia.
+    rewrite Znth_map. 2: rewrite Zlength_list_repeat; lia.
+    rewrite Znth_list_repeat_inrange by lia.
+    rewrite Znth_map. 2: rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
+    rewrite nat_inc_list_i. 2: rewrite Z2Nat.id; lia.
+    destruct (in_dec V_EqDec i []); [contradiction | auto].
+  }
+  unfold starting_keys.
+  time "main loop precon (originally 446.87s):" entailer!.
+  (*without Hinv_10 and Hinv_12, took 120-200 seconds. I guess entailer doesn't try contradiction early?*)
 }
 (****MAIN LOOP****) {
   clear Hstarting_keys HZlength_starting_keys starting_keys.
@@ -560,7 +740,9 @@ break: (
   rename H5 into Hinv_7; rename H6 into Hinv_8;
   rename H7 into Hinv_9; rename H8 into Hinv_10;
   rename H9 into Hinv_11; rename H10 into Hinv_12;
-  rename H11 into Hinv_13; rename H12 into Hinv_14.
+  rename H11 into Hinv_13; rename H12 into Hinv_14;
+  rename H13 into Hinv_15.
+  (*15 invariants... I think, that if we go with this "exists M" approach, we can eliminate some of the weight lemmas*)
   assert_PROP (Zlength (map (fun x : Z => Vint (Int.repr x)) parents) = SIZE /\
               Zlength (map (fun x : Z => Vint (Int.repr x)) keys) = SIZE /\
               Zlength (map (fun x : Z => Vint (Int.repr x)) pq_state) = SIZE
@@ -695,9 +877,10 @@ break: (
     )
   %assert.
   (*precon*) {
-  Exists parents. Exists keys. Exists upd_pq_state. entailer!.
-  intros. rewrite Hinv_5 by lia. destruct (V_EqDec v r). auto. split.
-  apply weight_representable. apply weight_inf_bound.
+    Exists parents. Exists keys. Exists upd_pq_state. entailer!.
+    (*in this case, proving the PROPs beforehand did not improve the timing*)
+    intros. rewrite Hinv_5 by lia. destruct (V_EqDec v r). auto. split.
+    apply weight_representable. apply weight_inf_bound.
   }
   (*loop*)
   assert (is_int I32 Signed (if in_dec V_EqDec (Znth i (nat_inc_list (Z.to_nat 8))) (popped_vertices+::u)
@@ -765,44 +948,44 @@ break: (
     Exists (upd_Znth i pq_state' (Znth i (Znth u (graph_to_symm_mat g)))).
     rewrite (graph_unfold _ (graph_to_symm_mat g) _ u). unfold list_rep.
     rewrite list_map_compose. repeat rewrite (upd_Znth_map (fun x => Vint (Int.repr x))). unfold SIZE.
+    2: { unfold graph_to_symm_mat. rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia. }
     entailer!.
     { clear H0 H5 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 H23 H24 H25 H26 H27 H28.
       clear Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_parent HPv_parent Pv_parent0 Pv_key HPv_key Pv_key0.
-    split3. 3: split.
-    *intros. destruct (Z.lt_trichotomy v i). repeat rewrite upd_Znth_diff; try lia. apply Hinv2_1. lia. apply H5.
-    destruct H13. subst v. destruct H5; contradiction. lia.
-    *intros. destruct (Z.lt_trichotomy v i).
-      (*v<i*) repeat rewrite upd_Znth_diff; try lia. apply Hinv2_2. lia. auto. auto.
-      destruct H14.
-      (*v=i*) subst v. repeat rewrite upd_Znth_same; try lia.
-      (*i not in popped, so must be in unpopped, which means upd_pq_state = pq_state = keys*)
-      assert (Znth i upd_pq_state = Znth i keys').
-        unfold upd_pq_state. rewrite upd_Znth_diff. 2: replace (Zlength pq_state) with SIZE; lia. 2: replace (Zlength pq_state) with SIZE; lia.
-        replace (Znth i keys') with (Znth i keys). rewrite Hinv_6.
-        destruct (in_dec V_EqDec i popped_vertices). exfalso; apply H13. apply in_or_app; left; auto. auto. lia.
-        symmetry. apply Hinv2_3. lia. unfold not; intros. apply H13. apply in_or_app; right; subst i; left; auto.
-      rewrite H14. split3.
-      rewrite <- graph_to_mat_eq; try lia. destruct (Znth u (Znth i (graph_to_symm_mat g)) <? Znth i keys') eqn:bool.
-      auto. rewrite graph_to_mat_eq in bool; try lia. rewrite Z.ltb_nlt in bool. contradiction.
-      rewrite graph_to_mat_eq; try lia. rewrite eformat_symm. rewrite Zlt_Zmin; auto.
-      rewrite graph_to_mat_eq; try lia. rewrite eformat_symm. rewrite Zlt_Zmin; auto.
-      (*v>i*) lia.
-    *intros. repeat rewrite upd_Znth_diff; try lia. apply Hinv2_3. unfold SIZE; lia.
-      rewrite HZlength_pq_state'. unfold SIZE; lia.
-      rewrite HZlength_keys'. unfold SIZE; lia.
-      rewrite HZlength_parents'. unfold SIZE; lia.
-    *intros. destruct (Z.eq_dec v i). subst i. rewrite upd_Znth_same. rewrite graph_to_mat_eq.
-      split. apply (weight_representable g (eformat (v,u))). apply weight_inf_bound. lia. lia. rewrite HZlength_keys'; lia.
-      rewrite upd_Znth_diff. apply Hinv2_4. unfold SIZE; auto. rewrite HZlength_keys'; unfold SIZE; lia.
-      rewrite HZlength_keys'; lia. auto.
+      split3. 3: split.
+      *intros. destruct (Z.lt_trichotomy v i). repeat rewrite upd_Znth_diff; try lia. apply Hinv2_1. lia. apply H5.
+      destruct H13. subst v. destruct H5; contradiction. lia.
+      *intros. destruct (Z.lt_trichotomy v i).
+        (*v<i*) repeat rewrite upd_Znth_diff; try lia. apply Hinv2_2. lia. auto. auto.
+        destruct H14.
+        (*v=i*) subst v. repeat rewrite upd_Znth_same; try lia.
+        (*i not in popped, so must be in unpopped, which means upd_pq_state = pq_state = keys*)
+        assert (Znth i upd_pq_state = Znth i keys').
+          unfold upd_pq_state. rewrite upd_Znth_diff. 2: replace (Zlength pq_state) with SIZE; lia. 2: replace (Zlength pq_state) with SIZE; lia.
+          replace (Znth i keys') with (Znth i keys). rewrite Hinv_6.
+          destruct (in_dec V_EqDec i popped_vertices). exfalso; apply H13. apply in_or_app; left; auto. auto. lia.
+          symmetry. apply Hinv2_3. lia. unfold not; intros. apply H13. apply in_or_app; right; subst i; left; auto.
+        rewrite H14. split3.
+        rewrite <- graph_to_mat_eq; try lia. destruct (Znth u (Znth i (graph_to_symm_mat g)) <? Znth i keys') eqn:bool.
+        auto. rewrite graph_to_mat_eq in bool; try lia. rewrite Z.ltb_nlt in bool. contradiction.
+        rewrite graph_to_mat_eq; try lia. rewrite eformat_symm. rewrite Zlt_Zmin; auto.
+        rewrite graph_to_mat_eq; try lia. rewrite eformat_symm. rewrite Zlt_Zmin; auto.
+        (*v>i*) lia.
+      *intros. repeat rewrite upd_Znth_diff; try lia. apply Hinv2_3. unfold SIZE; lia.
+        rewrite HZlength_pq_state'. unfold SIZE; lia.
+        rewrite HZlength_keys'. unfold SIZE; lia.
+        rewrite HZlength_parents'. unfold SIZE; lia.
+      *intros. destruct (Z.eq_dec v i). subst i. rewrite upd_Znth_same. rewrite graph_to_mat_eq.
+        split. apply (weight_representable g (eformat (v,u))). apply weight_inf_bound. lia. lia. rewrite HZlength_keys'; lia.
+        rewrite upd_Znth_diff. apply Hinv2_4. unfold SIZE; auto. rewrite HZlength_keys'; unfold SIZE; lia.
+        rewrite HZlength_keys'; lia. auto.
     }
     entailer!.
-    unfold graph_to_symm_mat. rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
     -forward. (*nothing changed*)
     Exists parents'. Exists keys'. Exists pq_state'.
     rewrite (graph_unfold _ (graph_to_symm_mat g) _ u). unfold list_rep.
     2: unfold graph_to_symm_mat; rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
-    entailer!.
+    time entailer!.
     clear H0 H5 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 H23 H24 H25 H26 H27 H28.
     clear Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_parent HPv_parent Pv_parent0 Pv_key HPv_key Pv_key0.
     split3.
@@ -836,16 +1019,31 @@ break: (
   Exists parents'. Exists keys'. Exists pq_state'.
   rewrite (graph_unfold _ (graph_to_symm_mat g) _ u). unfold list_rep.
   2: unfold graph_to_symm_mat; rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
-  entailer!.
-  clear H0 H5 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 H23 H24.
-  clear Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_parent HPv_parent Pv_parent0 Pv_key HPv_key Pv_key0.
-  split3.
-  *intros. destruct (Z.lt_trichotomy v i). apply Hinv2_1; auto. lia. destruct H13. subst v. apply Hinv2_3. lia. lia.
-  *intros. destruct (Z.lt_trichotomy v i).
-  (*v < i*) apply Hinv2_2. lia. auto. auto. destruct H14.
-  subst v. contradiction. (*i is popped*)
-  lia.
-  *intros. apply Hinv2_3. lia.
+  assert (forall v : Z,
+          0 <= v < i + 1 ->
+          ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
+          Znth v parents' = Znth v parents /\
+          Znth v keys' = Znth v keys /\ Znth v pq_state' = Znth v upd_pq_state). {
+    intros. destruct (Z.lt_trichotomy v i). apply Hinv2_1; auto. lia. destruct H9. subst v. apply Hinv2_3. lia. lia.
+  }
+  assert (forall v : Z,
+    0 <= v < i + 1 ->
+    adjacent g u v ->
+    ~ In v (popped_vertices +:: u) ->
+    Znth v parents' =
+    (if elabel g (eformat (u, v)) <? Znth v upd_pq_state then u else Znth v parents) /\
+    Znth v keys' = Z.min (elabel g (eformat (u, v))) (Znth v upd_pq_state) /\
+    Znth v pq_state' = Z.min (elabel g (eformat (u, v))) (Znth v upd_pq_state)). {
+    intros. destruct (Z.lt_trichotomy v i). apply Hinv2_2. lia. auto. auto.
+    destruct H11. subst v. contradiction. (*i is popped*) lia.
+  }
+  assert (forall v : Z,
+    i + 1 <= v < SIZE ->
+    Znth v parents' = Znth v parents /\
+    Znth v keys' = Znth v keys /\ Znth v pq_state' = Znth v upd_pq_state). {
+    intros. apply Hinv2_3. lia.
+  }
+  time "(originally 92 seconds):" entailer!.
   +(*inner loop done, postcon leading to next outer loop iter*)
   Intros parents' keys' pq_state'.
   assert (Htmp: Znth u parents' = Znth u parents /\ Znth u keys' = Znth u keys /\ Znth u pq_state' = Znth u upd_pq_state). {
@@ -1216,11 +1414,9 @@ break: (
     auto. rewrite eformat_adj. auto.
   }
   assert (Huparents_popped: In (Znth u parents) popped_vertices). {
-    assert (exists i : Z,
-            0 <= i < Zlength (popped_vertices) /\
-            Znth i (popped_vertices) = Znth u parents /\ i < find popped_vertices u 0
-            ). apply Hinv_7; lia.
-    destruct H9 as [i [? [? ?]]]. rewrite <- H10. apply Znth_In. lia.
+    assert (exists i : Z, 0 <= i < Zlength (popped_vertices) /\
+      Znth i (popped_vertices) = Znth u parents /\ i < find popped_vertices u 0).
+    apply Hinv_7; lia. destruct H9 as [i [? [? ?]]]. rewrite <- H10. apply Znth_In. lia.
   }
   assert (Huparents_unpopped: ~ In (Znth u parents) unpopped_vertices). {
     apply (NoDup_app_not_in V popped_vertices). apply (Permutation_NoDup (l:=VList g)).
@@ -1230,28 +1426,286 @@ break: (
   Exists (adde_u).
   Exists (@fin _ _ _ (sound_MatrixUGraph adde_u)).
   Exists parents' keys' pq_state' (popped_vertices+::u) (remove V_EqDec u unpopped_vertices).
-  entailer!.
-  clear H9 H10 H11 H12 H14 H15 H16 H17 H19 H20 H22 Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_parent HPv_parent Pv_parent0 Pv_key HPv_key Pv_key0.
-  rewrite Zlength_map in H13, H18, H21.
-  rename H13 into HZlength_pq_state'.
-  rename H18 into HZlength_parents'.
-  rename H21 into HZlength_keys'.
-  (*assert ((fst (eformat (u, Znth u parents)), snd (eformat (u, Znth u parents))) = eformat (u,Znth u parents)). {
-    destruct (eformat (u,Znth u parents)); simpl; auto.
-  }*)
-  assert (Hu_new: evalid adde_u (eformat (u, Znth u parents))). {
-    unfold adde_u, adde. rewrite <- eformat_eq. apply adde_evalid_new. }
-  assert (Hsrc: src adde_u (eformat (u, Znth u parents)) = fst (eformat (u, Znth u parents))). {
-    apply (@src_fst _ _ adde_u (sound_MatrixUGraph _)). apply Hu_new.
-  }
-  assert (Hdst: dst adde_u (eformat (u, Znth u parents)) = snd (eformat (u, Znth u parents))). {
-    apply (@dst_snd _ _ adde_u (sound_MatrixUGraph _)). apply Hu_new.
+  assert (HM: exists M : MatrixUGraph, minimum_spanning_forest M g /\ is_partial_lgraph adde_u M). {
+    destruct Hinv_15 as [M [Hmsf_M Hpartial_M]]. pose proof (@fin _ _ _ (sound_MatrixUGraph M)).
+    destruct (evalid_dec M (eformat (u, Znth u parents))).
+    ****
+      exists M. split. auto. apply adde_partial_lgraph; auto. rewrite <- surjective_pairing; auto.
+      rewrite <- surjective_pairing. symmetry. apply Hmsf_M; auto.
+    ****
+      set (a:=eformat (u, Znth u parents)) in *.
+      (*find a corresponding edge b in M, show that elabel g a <= elabel g b
+        Then do a swap
+      *)
+      assert (connected M (Znth u parents) u). apply Hmsf_M. apply adjacent_connected. exists a.
+        split. apply evalid_strong_evalid; auto.
+        rewrite (@src_fst _ _ _ (sound_MatrixUGraph g)) by auto.
+        rewrite (@dst_snd _ _ _ (sound_MatrixUGraph g)) by auto.
+        unfold a; destruct (Z.le_ge_cases u (Znth u parents)). rewrite eformat1 by (simpl; auto).
+        simpl. right. auto.
+        rewrite eformat2 by (simpl; auto). simpl. left; auto.
+      destruct H9 as [p ?].
+      (*for convenience's sake, simplify*)
+      apply (connected_by_upath_exists_simple_upath) in H9. clear p. destruct H9 as [p [? ?]].
+      (*since Znth u parents is in popped and u isn't, use the partition to find a v1 v2*)
+      pose proof (@fin _ _ _ (sound_MatrixUGraph M)) as fM.
+      assert (exists l, fits_upath M l p). apply connected_exists_list_edges in H9; auto. destruct H11 as [l Hl].
+      assert (exists v1 v2, In v1 p /\ In v2 p /\ In v1 popped_vertices /\ ~ In v2 popped_vertices /\ (exists e, adj_edge M e v1 v2 /\ In e l)).
+        apply (path_partition_checkpoint2 M popped_vertices p l (Znth u parents) u); auto.
+      destruct H11 as [v1 [v2 [? [? [? [? ?]]]]]].
+      destruct H15 as [b [Hb Hbl]]. assert (b = eformat (v1, v2)). {
+        destruct Hmsf_M. destruct H15. destruct H15. destruct H18. destruct H18. destruct H20. apply (H20 v1 v2 b (eformat (v1,v2))).
+        split. auto. apply eformat_adj'. rewrite <- eformat_adj. exists b; auto.
+      } subst b. assert (evalid M (eformat (v1,v2))). apply Hb.
+      assert (In v2 unpopped_vertices).
+        destruct (Hpopped_or_unpopped v2). rewrite vert_bound, <- (vert_bound M).
+        apply eformat_evalid_vvalid in H15; apply H15. contradiction. auto.
+      set (b:= eformat (v1,v2)) in *. clear Hb. assert (Hbl': In b l) by auto.
+      apply (fits_upath_split2 M p l b (Znth u parents) u) in Hbl'; auto.
+      destruct Hbl' as [p1 [p2 [l1 [l2 [Hp [Hp1p2 [Hl1 [Hl2 Hl']]]]]]]].
+      assert ((sublist 0 (find (popped_vertices +:: u) u 0) (popped_vertices +:: u)) = popped_vertices). {
+        rewrite find_app_notIn1, find_cons, Z.add_0_r by auto.
+        rewrite sublist_app1, sublist_same. auto. auto. auto.
+        pose proof (Zlength_nonneg popped_vertices). split. lia. auto.
+        apply Z.le_refl.
+      }
+      assert (elabel g a <= elabel g b). {
+        unfold b; unfold a. rewrite <- Hu_parents. apply Hweight; auto.
+        apply in_or_app; right; left; auto. rewrite Hu_parents; lia.
+        all: rewrite H17; auto.
+      } clear H17.
+      assert (~ evalid mst' b). {
+        unfold not; intros. rewrite <- EList_evalid in H17.
+        apply (Permutation_in (l':=(map (fun v : Z => eformat (v, Znth v parents))
+              (filter (fun v : Z => Znth v parents <? SIZE) popped_vertices)))) in H17.
+        apply list_in_map_inv in H17. destruct H17 as [x [? ?]]. rewrite filter_In in H19. destruct H19.
+        assert (In (Znth x parents) popped_vertices). {
+          rewrite H17 in H15. apply eformat_evalid_vvalid in H15. do 2 rewrite vert_bound in H15.
+          assert ((exists i : Z,
+            0 <= i < Zlength popped_vertices /\
+            Znth i popped_vertices = Znth x parents /\ i < find popped_vertices x 0) /\
+           (forall u : V,
+            In u (sublist 0 (find popped_vertices x 0) popped_vertices) ->
+            elabel g (eformat (x, Znth x parents)) <= elabel g (eformat (u, x)))). apply Hinv_7.
+          apply H15. apply H15. destruct H21. clear H22. destruct H21 as [i [? [? ?]]].
+          rewrite <- H22; apply Znth_In. lia.
+        }
+        (*now compare v1, v2, x, Znth x parents*)
+        unfold b in H17. apply eformat_eq in H17. destruct H17; destruct H17; subst v1; subst v2; contradiction.
+        apply Hinv_9.
+      }
+      clear Hinv_1 Hinv_2 Hinv_3 Hinv_4 Hinv_5 Hinv_6 Hinv_7 Hinv_8 Hinv_9 Hinv_10 Hinv_11 Hinv_12 Hinv_13 Hinv_14.
+      clear Hinv2_1 Hinv2_2 Hinv2_3 Hparents_bound Hkeys' Hpq_state' Hheavy Hheavy2 Hweight Hpopped_nil Hpopped_unnil.
+      clear Hpopped_or_unpopped Hpopped_vvalid Hunpopped_vvalid Hu_not_popped Hu_unpopped Hur Hu_min HZlength_parents HZlength_keys HZlength_pq_state Hu_parents Hu_keys Hu_pq_state Huparents_popped Huparents_unpopped.
+      set (remove_b:= eremove M b). (*huh, how come I don't need to provide evalid b?*)
+      assert (Ha_fst_vvalid: vvalid remove_b (fst a)). {
+        unfold a; simpl. destruct (Z.le_ge_cases u (Znth u parents)).
+        rewrite eformat1 by auto; simpl. rewrite vert_bound; lia.
+        rewrite eformat2 by auto; simpl. rewrite vert_bound; lia.
+      }
+      assert (Ha_snd_vvalid: vvalid remove_b (snd a)). {
+        unfold a; simpl. destruct (Z.le_ge_cases u (Znth u parents)).
+        rewrite eformat1 by auto; simpl. rewrite vert_bound; lia.
+        rewrite eformat2 by auto; simpl. rewrite vert_bound; lia.
+      }
+      assert (Ha_fst_le_snd: fst a <= snd a). {
+        unfold a; destruct (Z.le_ge_cases u (Znth u parents)).
+        rewrite eformat1; simpl; auto.
+        rewrite eformat2; simpl; auto.
+      }
+      set (w:=elabel g a).
+      assert (Ha_weight_bound: Int.min_signed <= w < inf). {
+        split. apply weight_representable. apply evalid_inf_iff; auto.
+      }
+      set (swap:=adde remove_b (fst a) (snd a) Ha_fst_vvalid Ha_snd_vvalid Ha_fst_le_snd w Ha_weight_bound).
+      assert (Hadde_partial_swap: is_partial_lgraph adde_u swap). {
+        unfold is_partial_lgraph; split. split. 2: split3.
+        intros. rewrite vert_bound; rewrite vert_bound in H19. lia.
+        intros. simpl. simpl in H19. simpl. unfold graph_gen.addValidFunc, graph_gen.removeValidFunc in *.
+        destruct H19. left. split. apply Hpartial_M. auto. unfold not; intros; subst e. contradiction. right; auto.
+        intros. rewrite (@src_fst _ _ _ (sound_MatrixUGraph adde_u)) by auto. rewrite (@src_fst _ _ _ (sound_MatrixUGraph swap)). auto.
+        simpl. simpl in H19. unfold graph_gen.addValidFunc, graph_gen.removeValidFunc in *.
+        destruct H19. left. split. apply Hpartial_M. auto. unfold not; intros; subst e. contradiction. right; auto.
+        intros. rewrite (@dst_snd _ _ _ (sound_MatrixUGraph adde_u)) by auto. rewrite (@dst_snd _ _ _ (sound_MatrixUGraph swap)). auto.
+        simpl. simpl in H19. unfold graph_gen.addValidFunc, graph_gen.removeValidFunc in *.
+        destruct H19. left. split. apply Hpartial_M. auto. unfold not; intros; subst e. contradiction. right; auto.
+        unfold preserve_vlabel, preserve_elabel; split; intros.
+        destruct vlabel. destruct vlabel. auto.
+        simpl. simpl in H19. unfold graph_gen.addValidFunc in H19. unfold graph_gen.update_elabel.
+        rewrite <- surjective_pairing.
+        unfold EquivDec.equiv_dec. destruct (E_EqDec a e). unfold w. auto.
+        unfold RelationClasses.complement, Equivalence.equiv in c. destruct H19.
+        destruct (E_EqDec e b). hnf in e0; subst e. contradiction.
+        apply Hpartial_M; auto.
+        rewrite <- surjective_pairing in H19; symmetry in H19; contradiction.
+      }
+      assert (NoDup l). apply (simple_upath_list_edges_NoDup M p l); auto.
+      assert (~ In b l1). { rewrite Hl' in H19.
+        assert (forall y, In y l1 -> ~ In y ([b] ++l2)). apply NoDup_app_not_in; auto.
+        unfold not; intros. apply H20 in H21. apply H21. apply in_or_app; left; left; auto.
+      }
+      assert (~ In b l2). { rewrite Hl' in H19. apply NoDup_app_r in H19.
+        unfold not; intros. apply (NoDup_app_not_in E [b] l2) in H21; auto. left; auto.
+      }
+      assert (Hp1l1_remove: fits_upath remove_b l1 p1). { apply (fits_upath_transfer' p1 l1 M).
+        intros. do 2 rewrite vert_bound; split; auto.
+        intros. simpl. unfold graph_gen.removeValidFunc.
+        split. apply (fits_upath_evalid M p1 l1); auto. unfold not; intros; subst e; contradiction.
+        intros. simpl. auto.
+        intros. simpl. auto.
+        auto.
+      }
+      assert (Hp2l2_remove: fits_upath remove_b l2 p2). { apply (fits_upath_transfer' p2 l2 M).
+        intros. do 2 rewrite vert_bound; split; auto.
+        intros. simpl. unfold graph_gen.addValidFunc, graph_gen.removeValidFunc.
+        split. apply (fits_upath_evalid M p2 l2); auto. unfold not; intros; subst e; contradiction.
+        intros. simpl. auto.
+        intros. simpl. auto.
+        auto.
+      }
+      assert (Hp1p2': (connected_by_path remove_b p1 (Znth u parents) (fst b) /\ connected_by_path remove_b p2 (snd b) u) \/
+        (connected_by_path remove_b p1 (Znth u parents) (snd b) /\ connected_by_path remove_b p2 (fst b) u)). {
+        rewrite (@src_fst _ _ _ (sound_MatrixUGraph M)) in Hp1p2 by auto.
+        rewrite (@dst_snd _ _ _ (sound_MatrixUGraph M)) in Hp1p2 by auto.
+        destruct Hp1p2; [left | right].
+        destruct H22. split. split. apply (fits_upath_valid_upath remove_b p1 l1); auto. apply H22.
+        split. apply (fits_upath_valid_upath remove_b p2 l2); auto. apply H23.
+        destruct H22. split. split. apply (fits_upath_valid_upath remove_b p1 l1); auto. apply H22.
+        split. apply (fits_upath_valid_upath remove_b p2 l2); auto. apply H23.
+      }
+      assert (labeled_spanning_uforest swap g). {
+        assert (is_partial_lgraph swap g). {
+          assert (Hedge_valid: forall e, evalid swap e -> evalid g e).
+          intros. simpl in H22. unfold graph_gen.addValidFunc, graph_gen.removeValidFunc in H22. destruct H22.
+          destruct H22. apply Hmsf_M. auto. rewrite <- surjective_pairing in H22. subst e. auto.
+          split. split. 2: split3.
+          intros. rewrite vert_bound; rewrite vert_bound in H22. lia. auto.
+          intros. rewrite (@src_fst _ _ _ (sound_MatrixUGraph swap)) by auto. rewrite (@src_fst _ _ _ (sound_MatrixUGraph g)). auto.
+          apply Hedge_valid; auto.
+          intros. rewrite (@dst_snd _ _ _ (sound_MatrixUGraph swap)) by auto. rewrite (@dst_snd _ _ _ (sound_MatrixUGraph g)). auto.
+          apply Hedge_valid; auto.
+          unfold preserve_vlabel, preserve_elabel; split; intros. destruct vlabel; destruct vlabel; auto.
+          simpl. unfold graph_gen.update_elabel, EquivDec.equiv_dec. rewrite <- surjective_pairing.
+          simpl in H22. unfold graph_gen.addValidFunc, graph_gen.removeValidFunc in H22.
+          destruct (E_EqDec a e). hnf in e0; subst e. unfold w; auto.
+          unfold RelationClasses.complement, Equivalence.equiv in c. destruct H22.
+          destruct H22. destruct (E_EqDec e b). hnf in e0; subst e. contradiction.
+          apply Hmsf_M; auto.
+          symmetry in H22; rewrite <- surjective_pairing in H22; contradiction.
+        }
+        assert (uforest' swap). {
+          assert (uforest' remove_b /\ ~ connected remove_b (src M b) (dst M b)). {
+            apply remove_edge_uforest'. apply Hmsf_M. auto. }
+          destruct H23. rewrite (@src_fst _ _ _ (sound_MatrixUGraph M)) in H24 by auto.
+          rewrite (@dst_snd _ _ _ (sound_MatrixUGraph M)) in H24 by auto.
+          apply add_edge_uforest'; auto.
+          unfold not; intros; destruct H25 as [pa ?]. apply H24. clear H24.
+          destruct Hp1p2'.
+          ++destruct H24. apply (connected_trans _ _ (Znth u parents)). apply connected_symm; exists p1; auto.
+            apply (connected_trans _ _ u). unfold a in H25. destruct (Z.le_ge_cases u (Znth u parents)).
+            rewrite eformat1 in H25 by auto. apply connected_symm; exists pa; apply H25.
+            rewrite eformat2 in H25 by auto. exists pa; apply H25.
+            apply connected_symm; exists p2; apply H26.
+          ++destruct H24. apply (connected_trans _ _ u). exists p2; auto.
+            apply (connected_trans _ _ (Znth u parents)). unfold a in H25. destruct (Z.le_ge_cases u (Znth u parents)).
+            rewrite eformat1 in H25 by auto. exists pa; apply H25.
+            rewrite eformat2 in H25 by auto. apply connected_symm; exists pa; apply H25.
+            exists p1; auto.
+        }
+        assert (Hremove_a: ~ evalid remove_b a). { unfold not; intros. apply n.
+          simpl in H24. unfold graph_gen.removeValidFunc in H24. apply H24. }
+        assert (Hswap_a: evalid swap a). { simpl. rewrite <- surjective_pairing.
+          unfold graph_gen.addValidFunc. right; auto. }
+        assert (Hconnected_b: connected swap (fst b) (snd b)). {
+          destruct Hp1p2'; destruct H24.
+          ++apply (connected_trans _ _ (Znth u parents)).
+          apply connected_symm; exists p1. split. 2: apply H24.
+          apply add_edge_valid_upath. rewrite <- surjective_pairing; auto. apply H24.
+          apply (connected_trans _ _ u). apply adjacent_connected. rewrite eformat_adj, eformat_symm. auto.
+          apply connected_symm; exists p2. split. 2: apply H25.
+          apply add_edge_valid_upath. rewrite <- surjective_pairing; auto. apply H25.
+          ++apply (connected_trans _ _ u).
+          exists p2. split. 2: apply H25.
+          apply add_edge_valid_upath. rewrite <- surjective_pairing; auto. apply H25.
+          apply (connected_trans _ _ (Znth u parents)). apply adjacent_connected. rewrite eformat_adj; auto.
+          exists p1. split. 2: apply H24.
+          apply add_edge_valid_upath. rewrite <- surjective_pairing; auto. apply H24.
+        } clear Hp1p2' Hp1p2.
+        split. split. apply H22. split. auto.
+        (*spanning*) { unfold spanning; intros x y.
+          split; intros. 2: apply (is_partial_lgraph_connected swap); auto.
+          apply Hmsf_M in H24.
+          destruct H24 as [p' ?]. apply (connected_by_upath_exists_simple_upath) in H24.
+          clear p'. destruct H24 as [p' [? ?]].
+          assert (exists l', fits_upath M l' p'). apply valid_upath_exists_list_edges. apply H24.
+          destruct H26 as [l' ?]. assert (NoDup l'). apply (simple_upath_list_edges_NoDup M p'); auto.
+          clear H H0 H1.
+          destruct (in_dec E_EqDec b l').
+          ++ (*b is in l', must take detour*)
+          assert (In b l'); auto. apply (fits_upath_split2 M p' l' b x y) in H; auto.
+          destruct H as [p1x [p2y [l1x [l2y [? [? [? [? ?]]]]]]]]. subst l'; subst p'.
+          rewrite (@src_fst _ _ _ (sound_MatrixUGraph M)) in H0 by auto.
+          rewrite (@dst_snd _ _ _ (sound_MatrixUGraph M)) in H0 by auto.
+          assert (~ In b l1x). { unfold not; intros. apply (NoDup_app_not_in _ l1x ([b]++l2y) H27 b) in H. apply H. apply in_or_app; left; left; auto. }
+          assert (~ In b l2y). { apply NoDup_app_r in H27. apply (NoDup_app_not_in _ [b] l2y H27 b). left; auto. }
+          destruct H0; destruct H0.
+          ++++
+          apply (connected_trans _ _ (fst b)). exists p1x. split. 2: apply H0. apply add_edge_valid_upath.
+            rewrite <- surjective_pairing; auto. apply (remove_edge_valid_upath _ _ _ l1x); auto. apply H0.
+          apply (connected_trans _ _ (snd b)); auto.
+          exists p2y. split. 2: apply H30. apply add_edge_valid_upath. rewrite <- surjective_pairing; auto.
+          apply (remove_edge_valid_upath _ _ _ l2y); auto. apply H30.
+          ++++
+          apply (connected_trans _ _ (snd b)). exists p1x. split. 2: apply H0. apply add_edge_valid_upath.
+            rewrite <- surjective_pairing; auto. apply (remove_edge_valid_upath _ _ _ l1x); auto. apply H0.
+          apply (connected_trans _ _ (fst b)); apply connected_symm; auto.
+          apply connected_symm. exists p2y. split. 2: apply H30. apply add_edge_valid_upath. rewrite <- surjective_pairing; auto.
+          apply (remove_edge_valid_upath _ _ _ l2y); auto. apply H30.
+          ++ (*b isn't in l', transfer path*)
+          exists p'. split. 2: apply H24. apply add_edge_valid_upath. rewrite <- surjective_pairing; auto.
+          apply (remove_edge_valid_upath _ _ _ l'); auto. apply H24.
+        }
+        (*preserve labels*) unfold preserve_vlabel, preserve_elabel; split; intros.
+        destruct vlabel; destruct vlabel; auto.
+        simpl; simpl in H24. unfold graph_gen.addValidFunc, graph_gen.removeValidFunc in H24.
+        unfold graph_gen.update_elabel, EquivDec.equiv_dec.
+        rewrite <- surjective_pairing. rewrite <- surjective_pairing in H24.
+        destruct (E_EqDec a e). hnf in e0. subst e. unfold w; auto.
+        unfold RelationClasses.complement, Equivalence.equiv in c. destruct H24. 2: symmetry in H24; contradiction.
+        destruct H24. destruct (E_EqDec e b). hnf in e0; contradiction. apply Hmsf_M; auto.
+      }
+      exists swap. split; auto. apply (msf_if_le_msf' swap M g); auto.
+      unfold sum_DE, DEList. pose proof (@fin _ _ _ (sound_MatrixUGraph swap)) as fswap.
+      rewrite (map_ext_in (elabel swap) (elabel g)).
+      rewrite (map_ext_in (elabel M) (elabel g)).
+      rewrite (fold_left_comm _ (map (elabel g) (EList swap)) (map (elabel g) (a::(remove E_EqDec b (EList M))))).
+      simpl.
+      (**) {
+        set (k:=EList M).
+        rewrite fold_left_accum_Zadd.
+        rewrite fold_left_Zadd_map_remove. 2: unfold k; rewrite EList_evalid; auto. 2: unfold k; apply NoDup_EList.
+        apply (Z.le_trans _ (fold_left Z.add (map (elabel g) k) 0 - elabel g b + elabel g b)).
+        apply Zplus_le_compat_l. auto.
+        rewrite Z.sub_add. apply Z.eq_le_incl. (*and... I can't reflexivity!*)
+        apply fold_left_comm. intros; lia.
+        apply Permutation_map. unfold k. apply NoDup_Permutation. apply NoDup_EList. apply NoDup_EList.
+        intros. do 2 rewrite EList_evalid. split; intros; auto.
+      }
+      intros; lia.
+      apply Permutation_map. { apply NoDup_Permutation. apply NoDup_EList.
+        apply NoDup_cons. unfold not; intros. rewrite remove_In_iff in H23. destruct H23.
+        rewrite EList_evalid in H23. contradiction.
+        apply nodup_remove_nodup. apply NoDup_EList.
+        intros. rewrite EList_evalid; simpl; unfold graph_gen.addValidFunc, graph_gen.removeValidFunc.
+        rewrite remove_In_iff, EList_evalid, <- surjective_pairing. split; intros; destruct H23; auto.
+      }
+      { intros. rewrite EList_evalid in H23. apply Hmsf_M; auto. }
+      {  intros. rewrite EList_evalid in H23. apply H22; auto. }
   }
   assert (Hpartial: is_partial_lgraph adde_u g). {
-    apply adde_partial_lgraph. auto. rewrite eformat_eq; auto. rewrite eformat_eq; auto. }
-  split3. 3: split3.
-  **auto.
-  **apply add_edge_uforest'; auto.
+    apply adde_partial_lgraph. auto. rewrite <- surjective_pairing; auto. rewrite <- surjective_pairing; auto. }
+  assert (Huforest_adde: uforest' adde_u). {
+    apply add_edge_uforest'; auto.
     unfold not; intros. destruct (Z.le_ge_cases u (Znth u parents)).
       ****
       rewrite eformat1 in *; try (simpl; lia).
@@ -1268,49 +1722,40 @@ break: (
       rewrite H15 in Hu_unpopped; contradiction.
       destruct H9. inversion H11. subst v.
       apply (Hinv_13 u v0). auto. apply H9.
-  **(*permutation of EList*)
-  apply (Permutation_trans (l':=(eformat (u,Znth u parents))::(EList mst'))).
-  apply Permutation_sym.
-  { apply NoDup_Permutation. apply NoDup_cons. rewrite EList_evalid; auto. apply NoDup_EList. apply NoDup_EList.
-    intros; split; intros. rewrite EList_evalid. simpl. unfold graph_gen.addValidFunc. destruct H9.
-    rewrite eformat_eq. right; symmetry; auto. left; rewrite EList_evalid in H9; auto.
-    rewrite EList_evalid in H9; simpl in H9. unfold graph_gen.addValidFunc in H9; destruct H9.
-    right; rewrite EList_evalid; auto. left; symmetry; auto. rewrite eformat_eq in H9; auto.
   }
-  apply (Permutation_trans (l':=(eformat (u, Znth u parents)) :: (map (fun v : Z => eformat (v, Znth v parents))
-     (filter (fun v : Z => Znth v parents <? SIZE) (popped_vertices))))).
-  { apply Permutation_cons. auto. apply Hinv_9. }
-  apply (Permutation_trans (l':=(map (fun v : Z => eformat (v, Znth v parents))
-     (filter (fun v : Z => Znth v parents <? SIZE) (popped_vertices)))+::(eformat (u, Znth u parents)))).
-  { apply Permutation_cons_append. }
-  replace (map (fun v : Z => eformat (v, Znth v parents))
-     (filter (fun v : Z => Znth v parents <? SIZE) popped_vertices) +:: 
-   (eformat (u, Znth u parents))) with (map (fun v : Z => eformat (v, Znth v parents'))
-     (filter (fun v : Z => Znth v parents' <? SIZE) (popped_vertices +:: u))). apply Permutation_refl.
-  replace [eformat (u,Znth u parents)] with (map (fun v : Z => eformat (v, Znth v parents)) [u]). 2: { simpl; auto. }
-  rewrite <- list_append_map.
-  replace (filter (fun v : Z => Znth v parents' <? SIZE) (popped_vertices +:: u)) with (filter (fun v : Z => Znth v parents <? SIZE) (popped_vertices +:: u)).
-  2: {
-    apply filter_ext_in. intros. replace (Znth a parents) with (Znth a parents'). auto.
-    apply Hinv2_1. 2: right; auto. apply in_app_or in H9; destruct H9.
-    rewrite <- (vert_bound g). apply Hpopped_vvalid; auto.
-    destruct H9. 2: contradiction. subst a; lia.
+  assert (Hu_new: evalid adde_u (eformat (u, Znth u parents))). {
+    simpl. unfold graph_gen.addValidFunc. right; rewrite <- surjective_pairing. auto. }
+  assert (Hsrc: src adde_u (eformat (u, Znth u parents)) = fst (eformat (u, Znth u parents))). {
+    apply (@src_fst _ _ adde_u (sound_MatrixUGraph _)). apply Hu_new.
   }
-  replace (filter (fun v : Z => Znth v parents <? SIZE) popped_vertices +:: u) with (filter (fun v : Z => Znth v parents <? SIZE) (popped_vertices +:: u)).
-  2: { rewrite filter_app. simpl. destruct (Znth u parents <? SIZE) eqn: bool. auto.
-    rewrite Z.ltb_ge in bool; lia. }
-  apply map_ext_in; intros. rewrite filter_In in H9. destruct H9.
-  replace (Znth a parents) with (Znth a parents'). auto.
-  apply Hinv2_1.
-  rewrite <- (vert_bound g). apply in_app_or in H9. destruct H9.
-  apply Hpopped_vvalid; auto.
-  destruct H9. 2: contradiction. subst a. apply Hunpopped_vvalid; auto.
-  right; auto.
-  **intros. apply in_app_or in H9; apply in_app_or in H10. destruct H9; destruct H10.
+  assert (Hdst: dst adde_u (eformat (u, Znth u parents)) = snd (eformat (u, Znth u parents))). {
+    apply (@dst_snd _ _ adde_u (sound_MatrixUGraph _)). apply Hu_new.
+  }
+  assert (Hnot_adj: forall u0 v : V, In u0 (remove V_EqDec u unpopped_vertices) -> ~ adjacent adde_u u0 v). {
+    intros. rewrite remove_In_iff in H9; destruct H9.
+    assert (~ adjacent mst' u0 v). apply Hinv_13. auto.
+    unfold not; intros. destruct H12 as [e ?]. destruct (E_EqDec (eformat (u,Znth u parents)) e).
+    hnf in e0. subst e.
+    destruct H12. rewrite Hsrc, Hdst in H13.
+    destruct (Z.le_ge_cases u (Znth u parents)).
+      rewrite eformat1 in H13 by (simpl; lia). simpl in H13.
+      destruct H13; destruct H13. symmetry in H13; contradiction.
+      subst u0. contradiction.
+      rewrite eformat2 in H13 by (simpl; lia). simpl in H13.
+      destruct H13; destruct H13. subst u0; contradiction.
+      symmetry in H15; contradiction.
+    unfold RelationClasses.complement, Equivalence.equiv in c. apply H11.
+    exists e. apply adde_adj_edge_rev in H12; auto.
+    rewrite <- surjective_pairing. auto.
+  }
+  assert (Hconnnected: (forall u0 v : V,
+    In u0 (popped_vertices +:: u) ->
+    In v (popped_vertices +:: u) -> connected g u0 v <-> connected adde_u u0 v)). {
+    intros. apply in_app_or in H9; apply in_app_or in H10. destruct H9; destruct H10.
     ****(*both in popped vertices, reuse invariant*)
         split; intros.
         apply Hinv_10 in H11; auto. apply add_edge_connected; auto.
-        rewrite eformat_eq; auto.
+        rewrite <- surjective_pairing; auto.
         apply (is_partial_lgraph_connected adde_u); auto.
     ****(*v=u*) destruct H10. 2: contradiction. subst v.
         split; intros.
@@ -1333,30 +1778,53 @@ break: (
         apply (is_partial_lgraph_connected adde_u); auto.
     ****destruct H9. 2: contradiction. destruct H10. 2: contradiction. subst u0. subst v.
         split; intros; apply connected_refl; rewrite vert_bound; lia.
-  **intros. rewrite remove_In_iff in H9; destruct H9.
-    assert (~ adjacent mst' u0 v). apply Hinv_13. auto.
-    unfold not; intros. destruct H12 as [e ?]. destruct (E_EqDec (eformat (u,Znth u parents)) e).
-    hnf in e0. subst e.
-    destruct H12. rewrite Hsrc, Hdst in H13.
-    destruct (Z.le_ge_cases u (Znth u parents)).
-      rewrite eformat1 in H13 by (simpl; lia). simpl in H13.
-      destruct H13; destruct H13. symmetry in H13; contradiction.
-      subst u0. contradiction.
-      rewrite eformat2 in H13 by (simpl; lia). simpl in H13.
-      destruct H13; destruct H13. subst u0; contradiction.
-      symmetry in H15; contradiction.
-    unfold RelationClasses.complement, Equivalence.equiv in c. apply H11.
-    exists e. apply adde_adj_edge_rev in H12; auto.
-    rewrite eformat_eq. auto.
+  }
+  time "end of pop loop (adde_u) (did not record original):" entailer!.
+  clear H9 H10 H11 H12 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_parent HPv_parent Pv_parent0 Pv_key HPv_key Pv_key0.
+
+  (*permutation of EList*)
+    apply (Permutation_trans (l':=(eformat (u,Znth u parents))::(EList mst'))).
+    apply Permutation_sym.
+    { apply NoDup_Permutation. apply NoDup_cons. rewrite EList_evalid; auto. apply NoDup_EList. apply NoDup_EList.
+      intros; split; intros. rewrite EList_evalid. simpl. unfold graph_gen.addValidFunc. destruct H9.
+      rewrite <- surjective_pairing. right; symmetry; auto. left; rewrite EList_evalid in H9; auto.
+      rewrite EList_evalid in H9; simpl in H9. unfold graph_gen.addValidFunc in H9; destruct H9.
+      right; rewrite EList_evalid; auto. left; symmetry; auto. rewrite <- surjective_pairing in H9; auto.
+    }
+    apply (Permutation_trans (l':=(eformat (u, Znth u parents)) :: (map (fun v : Z => eformat (v, Znth v parents))
+       (filter (fun v : Z => Znth v parents <? SIZE) (popped_vertices))))).
+    { apply Permutation_cons. auto. apply Hinv_9. }
+    apply (Permutation_trans (l':=(map (fun v : Z => eformat (v, Znth v parents))
+       (filter (fun v : Z => Znth v parents <? SIZE) (popped_vertices)))+::(eformat (u, Znth u parents)))).
+    { apply Permutation_cons_append. }
+    replace (map (fun v : Z => eformat (v, Znth v parents))
+       (filter (fun v : Z => Znth v parents <? SIZE) popped_vertices) +:: 
+     (eformat (u, Znth u parents))) with (map (fun v : Z => eformat (v, Znth v parents'))
+       (filter (fun v : Z => Znth v parents' <? SIZE) (popped_vertices +:: u))). apply Permutation_refl.
+    replace [eformat (u,Znth u parents)] with (map (fun v : Z => eformat (v, Znth v parents)) [u]). 2: { simpl; auto. }
+    rewrite <- list_append_map.
+    replace (filter (fun v : Z => Znth v parents' <? SIZE) (popped_vertices +:: u)) with (filter (fun v : Z => Znth v parents <? SIZE) (popped_vertices +:: u)).
+    2: {
+      apply filter_ext_in. intros. replace (Znth a parents) with (Znth a parents'). auto.
+      apply Hinv2_1. 2: right; auto. apply in_app_or in H9; destruct H9.
+      rewrite <- (vert_bound g). apply Hpopped_vvalid; auto.
+      destruct H9. 2: contradiction. subst a; lia.
+    }
+    replace (filter (fun v : Z => Znth v parents <? SIZE) popped_vertices +:: u) with (filter (fun v : Z => Znth v parents <? SIZE) (popped_vertices +:: u)).
+    2: { rewrite filter_app. simpl. destruct (Znth u parents <? SIZE) eqn: bool. auto.
+      rewrite Z.ltb_ge in bool; lia. }
+    apply map_ext_in; intros. rewrite filter_In in H9. destruct H9.
+    replace (Znth a parents) with (Znth a parents'). auto.
+    apply Hinv2_1.
+    rewrite <- (vert_bound g). apply in_app_or in H9. destruct H9.
+    apply Hpopped_vvalid; auto.
+    destruct H9. 2: contradiction. subst a. apply Hunpopped_vvalid; auto.
+    right; auto.
   ++ (*Znth u keys = inf. Implies u has no other vertices from the mst that can connect to it. Thus, no change to graph*)
   Exists mst' fmst' parents' keys' pq_state' (popped_vertices+::u) (remove V_EqDec u unpopped_vertices).
-  entailer!.
-  clear H6 H7 H8 H10 H11 H12 H13 H15 H16 H18 Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_parent HPv_parent Pv_parent0 Pv_key HPv_key Pv_key0.
-  rewrite Zlength_map in H9. rename H9 into HZlength_pq_state'.
-  rewrite Zlength_map in H14. rename H14 into HZlength_parents'.
-  rewrite Zlength_map in H17. rename H17 into HZlength_keys'.
-  split3.
-  **(*permutation of EList mst*)
+  assert (Permutation (EList mst')
+      (map (fun v : Z => eformat (v, Znth v parents'))
+         (filter (fun v : Z => Znth v parents' <? SIZE) (popped_vertices +:: u)))). {
     replace (filter (fun v : Z => Znth v parents' <? SIZE) (popped_vertices +:: u)) with
       (filter (fun v : Z => Znth v parents' <? SIZE) (popped_vertices)).
     2: { rewrite filter_app. simpl. destruct (Znth u parents' <? SIZE) eqn: bool.
@@ -1372,11 +1840,15 @@ break: (
      (filter (fun v : Z => Znth v parents <? SIZE) popped_vertices)) with
       (map (fun v : Z => eformat (v, Znth v parents))
      (filter (fun v : Z => Znth v parents <? SIZE) popped_vertices)). apply Hinv_9.
-    apply map_ext_in. intros. rewrite filter_In in H6. destruct H6.
+    apply map_ext_in. intros. rewrite filter_In in H5. destruct H5.
       replace (Znth a parents) with (Znth a parents'). auto.
       apply Hinv2_1. rewrite <- (vert_bound g). apply Hpopped_vvalid; auto.
       right; apply in_or_app; left; auto.
-  **intros. apply in_app_or in H6; apply in_app_or in H7.
+  }
+  assert (Hconnected: forall u0 v : V,
+    In u0 (popped_vertices +:: u) ->
+    In v (popped_vertices +:: u) -> connected g u0 v <-> connected mst' u0 v). {
+    intros. apply in_app_or in H6; apply in_app_or in H7.
     destruct H6; destruct H7.
     ****(*both in popped_vertices*)apply Hinv_10; auto.
     ****(*v=u*) destruct H7. 2: contradiction. subst v.
@@ -1438,7 +1910,7 @@ break: (
       apply connected_symm in H7. destruct H7 as [p ?].
       apply (path_partition_checkpoint g popped_vertices unpopped_vertices p v u) in H7; auto.
       destruct H7 as [v1 [v2 [? [? [? [? ?]]]]]].
-(*
+      (*
         Znth v2 pq_state = keys, because it is unpopped
         Znth v2 keys >= Znth u keys = inf, because u is popped first
         Then Znth v2 parents =SIZE using Hinv_7 and stuff
@@ -1483,7 +1955,11 @@ break: (
       subst v0. destruct H7. exfalso. apply (Hinv_13 u v1); auto.
     ****(*both=u*)destruct H6. 2: contradiction. destruct H7. 2: contradiction. subst u0; subst v.
     split; intros; apply connected_refl; rewrite vert_bound; lia.
-    **intros. apply Hinv_13. rewrite remove_In_iff in H6; apply H6.
+  }
+  assert (Hnot_adj: forall u0 v : V, In u0 (remove V_EqDec u unpopped_vertices) -> ~ adjacent mst' u0 v). {
+    intros. apply Hinv_13. rewrite remove_In_iff in H6; apply H6.
+  }
+  time "End of pop loop (same msf) (originally 150s):" entailer!.
   }
   { (*break*) forward. (*no more vertices in queue*)
     assert (Hempty: priq_arr_utils.isEmpty pq_state = Vone). {
@@ -1527,25 +2003,27 @@ break: (
       exfalso; apply n. apply (Permutation_in (l:=VList mst')). apply Permutation_sym; auto.
       rewrite VList_vvalid, vert_bound; auto.
     }
-    entailer!.
-    clear H3 H4 H5 H6 H7 H8 H9 H10 H11 H12 H13 H14 Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_parent HPv_parent Pv_parent0 Pv_key HPv_key Pv_key0.
-    split.
-    ++unfold spanning; intros.
-      split; intros. assert (vvalid g u /\ vvalid g v). apply connected_vvalid; auto. destruct H4.
-      rewrite vert_bound, <- (vert_bound mst'), <- VList_vvalid in H4, H5.
+    assert (spanning mst' g). {
+      unfold spanning; intros.
+      split; intros. assert (vvalid g u /\ vvalid g v). apply connected_vvalid; auto. destruct H3.
+      rewrite vert_bound, <- (vert_bound mst'), <- VList_vvalid in H3, H4.
       apply Hinv_10; auto.
+      apply (Permutation_in (l:=VList mst')). apply Permutation_sym; auto. apply H3.
       apply (Permutation_in (l:=VList mst')). apply Permutation_sym; auto. apply H4.
-      apply (Permutation_in (l:=VList mst')). apply Permutation_sym; auto. apply H5.
-      assert (vvalid mst' u /\ vvalid mst' v). apply connected_vvalid; auto. destruct H4.
-      rewrite <- VList_vvalid in H4, H5.
+      assert (vvalid mst' u /\ vvalid mst' v). apply connected_vvalid; auto. destruct H3.
+      rewrite <- VList_vvalid in H3, H4.
       apply Hinv_10; auto.
+      apply (Permutation_in (l:=VList mst')). apply Permutation_sym; auto. apply H3.
       apply (Permutation_in (l:=VList mst')). apply Permutation_sym; auto. apply H4.
-      apply (Permutation_in (l:=VList mst')). apply Permutation_sym; auto. apply H5.
-    ++destruct popped_vertices. assert (vvalid mst' 0). rewrite vert_bound; lia.
+    }
+    assert (hd_error popped_vertices = Some r). {
+      destruct popped_vertices. assert (vvalid mst' 0). rewrite vert_bound; lia.
       rewrite <- VList_vvalid in H3. apply (Permutation_in (l':=[])) in H3. contradiction.
       apply Permutation_sym; apply H1.
       apply Hinv_12. unfold not; intros. assert (In v (v::popped_vertices)) by (left; auto).
       rewrite H3 in H4; contradiction.
+    }
+    time entailer!. (*was 55 seconds without PROP*)
   }
 }
 (*POST-LOOP*) {
@@ -1555,45 +2033,33 @@ rename H into Hinv_1; rename H0 into Hinv_2;
 rename H1 into Hinv_3; rename H2 into Hinv_4;
 rename H3 into Hinv_5; rename H4 into Hinv_6;
 rename H5 into Hinv_7; rename H6 into Hinv_8;
-rename H7 into Hinv_9.
+rename H7 into Hinv_9; rename H8 into Hinv_10;
+rename H9 into Hinv_11.
 (*Do the minimum proof here*)
-assert (minimum_spanning_forest mst g). {
-split. split. split. apply Hinv_1. split. apply Hinv_2. apply Hinv_7.
-split. unfold preserve_vlabel; intros. destruct vlabel. destruct vlabel. auto.
-unfold preserve_elabel; intros. apply Hinv_1. auto.
-(*minimality proof*)
-intros.
-pose proof (@fin _ _ _ (@sound_MatrixUGraph inf SIZE t')) as ft'.
-set (mst_list:=(map (fun v : Z => eformat (v, Znth v parents))
-              (filter (fun v : Z => Znth v parents <? SIZE) popped_vertices))).
-set (lsame := filter (fun e => in_dec E_EqDec e (EList t')) mst_list).
-assert (incl lsame mst_list). { unfold lsame. apply filter_incl. }
-assert (incl lsame (EList t')). { unfold lsame, incl. intros.
-  rewrite filter_In in H1. destruct H1. Search in_dec true.
+assert (labeled_spanning_uforest mst g). {
+  split. split. apply Hinv_1. split. apply Hinv_2. apply Hinv_7.
+  split. unfold preserve_vlabel; intros. destruct vlabel. destruct vlabel. auto.
+  unfold preserve_elabel; intros. apply Hinv_1. auto.
 }
-
-set (lmst := ).
-(*
-with this, lmst should be sorted based on popped_vertices
-then we induct on lmst: (to get an lt where elabel g (Znth i lmst) <= elabel g (Znth i lt))
-  nil case something something
-  induct case: a::l => a is the earliest edge that was added,
-    so map (fun u => (u, Znth u parents)) (sublist 0 (find popped_vertices a) popped_vertices) is in t'
-    this means
-do the same as kruskal: (sum (lsame++lmst) <= sum (ldiff))
-*)
-admit.
+assert (minimum_spanning_forest mst g). {
+  destruct Hinv_11 as [M [? ?]].
+  apply (partial_lgraph_spanning_mst mst M g); auto.
 }
 (*Should we bother with filling a matrix for it? The original Prim doesn't bother
   Well I guess we need to return the graph somehow, as parents is a local array so we need to pass it out
+  Plus returning in the array form makes no sense, we'll have to create a new spatial representation for it
 *)
-(*
+clear Hinv_1 Hinv_2 Hinv_4 Hinv_5 Hinv_7 Hinv_8 Hinv_9 Hinv_11.
+rename Hinv_3 into Hpopped. rename Hinv_6 into Hmst_perm. rename Hinv_10 into Hparents_bound.
+clear Hprecon_1 Hrbound.
 forward_for_simple_bound SIZE (
   EX i : Z,
   EX t : G,
   EX ft: FiniteGraph t,
-  PROP (is_partial_lgraph t mst';
-        forall j, 0 <= j < i -> In 
+  PROP (is_partial_lgraph t mst;
+        Permutation (EList t)
+           (map (fun v : Z => eformat (v, Znth v parents))
+              (filter (fun v : Z => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat i))))
        )
   LOCAL (
     lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
@@ -1609,8 +2075,34 @@ forward_for_simple_bound SIZE (
     undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
     undirected_matrix sh (graph_to_symm_mat t) (pointer_val_val mstptr)
   )
-)%assert.
-*)
+)%assert. {
+  Exists (edgeless_graph').
+  pose proof (@fin _ _ _ (sound_MatrixUGraph edgeless_graph')) as fe. Exists fe.
+  assert (is_partial_lgraph edgeless_graph' mst). { apply edgeless_partial_lgraph. }
+  assert (Permutation (EList edgeless_graph')
+      (map (fun v : Z => eformat (v, Znth v parents))
+         (filter (fun v : Z => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat 0))))). {
+    apply NoDup_Permutation. apply NoDup_EList. simpl. apply NoDup_nil.
+    intros; rewrite EList_evalid; simpl. split; auto.
+  }
+  time entailer!. (*49 seconds without PROP*)
+}
+(*loop*) {
+  Intros. rename H1 into Hi. rename H2 into Hinv_1. rename H3 into Hinv_2.
+  assert_PROP(Zlength (map (fun x : Z => Vint (Int.repr x)) parents) = SIZE). entailer!.
+  assert_PROP(Zlength (map (fun x : Z => Vint (Int.repr x)) keys) = SIZE). entailer!.
+  rewrite Zlength_map in H1. rename H1 into HZlength_parents.
+  rewrite Zlength_map in H2. rename H2 into HZlength_keys.
+  forward.
+  forward.
+  forward_if. {
+    admit.
+  }
+  (*no add*) {
+    admit.
+  }
+}
+(*postcon*) {
 admit.
 }
 Abort.

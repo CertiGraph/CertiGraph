@@ -30,6 +30,12 @@ Definition adj_edge (g: PGraph) (e: E) (u v: V) :=
   strong_evalid g e /\ (*just evalid?*)
   ((src g e = u /\ dst g e = v) \/ (src g e = v /\ dst g e = u)).
 
+Lemma strong_evalid_adj_edge:
+forall g e, strong_evalid g e -> adj_edge g e (src g e) (dst g e).
+Proof.
+intros. split. auto. left; auto.
+Qed.
+
 Lemma adj_edge_sym:
 forall g e u v, adj_edge g e u v -> adj_edge g e v u.
 Proof.
@@ -232,6 +238,8 @@ rewrite <- rev_hd_last. destruct p. apply H.
 simpl. destruct H. apply adjacent_symm. apply H.
 Qed.
 
+(**********************CONNECTED*************)
+
 Definition connected_by_path (g: PGraph) (p: upath) (n : V) :=
   fun n' => valid_upath g p /\ hd_error p = Some n /\ last_error p = Some n'.
 
@@ -343,6 +351,12 @@ split. exists e; apply H. apply IHp.
 exists l. apply H0.
 Qed.
 
+Corollary fits_upath_valid_upath:
+  forall g p l, fits_upath g l p -> valid_upath g p.
+Proof.
+intros. apply valid_upath_exists_list_edges'. exists l; auto.
+Qed.
+
 Corollary connected_exists_list_edges:
   forall g p u v, connected_by_path g p u v -> exists l, fits_upath g l p.
 Proof.
@@ -409,6 +423,19 @@ left; symmetry; apply H1.
 right. apply (IHp l). apply H. auto.
 Qed.
 
+Lemma fits_upath_In_adj:
+forall l g p e, fits_upath g l p -> In e l -> exists u v, In u p /\ In v p /\ adj_edge g e u v.
+Proof.
+induction l; intros.
+contradiction.
+destruct p. simpl in H. contradiction.
+destruct p. simpl in H. contradiction.
+destruct H0. subst e.
+destruct H. exists v. exists v0. split. left; auto. split. right; left; auto. auto.
+destruct H. destruct (IHl g (v0::p) e) as [x [y [? [? ?]]]]; auto.
+exists x; exists y. split. right; auto. split. right; auto. auto.
+Qed.
+
 Lemma fits_upath_concat:
 forall g p l e u, fits_upath g l p -> (exists v, last_error p = Some v /\ adj_edge g e u v) -> fits_upath g (l+::e) (p+::u).
 Proof.
@@ -450,6 +477,28 @@ destruct p1. destruct H3; destruct H3; inversion H3.
 assert (v = v0). inversion H2; auto. subst v0. split; auto.
 split. auto.
 simpl. simpl in H6. rewrite H6; auto.
+Qed.
+
+Lemma fits_upath_split2:
+forall g p l e u v, connected_by_path g p u v -> fits_upath g l p -> In e l ->
+  exists p1 p2 l1 l2, p = p1++p2 /\
+    ((connected_by_path g p1 u (src g e) /\ connected_by_path g p2 (dst g e) v) \/ (connected_by_path g p1 u (dst g e) /\ connected_by_path g p2 (src g e) v))
+    /\ fits_upath g l1 p1 /\ fits_upath g l2 p2 /\ l = l1++(e::nil)++l2.
+Proof.
+intros. destruct (fits_upath_split' g p l e) as [p1 ?]; auto.
+destruct H2 as [p2 [l1 [l2 [? [? [? [? ?]]]]]]]. exists p1. exists p2. exists l1. exists l2.
+repeat split; auto.
+destruct H. destruct H7. subst p; subst l. destruct H3.
+++
+destruct H2. left. split. split. apply (fits_upath_valid_upath g p1 l1); auto.
+split. destruct p1. inversion H2. simpl; auto. auto.
+split. apply (fits_upath_valid_upath g p2 l2); auto. split.
+auto. destruct p2. inversion H3. rewrite last_err_split2 in H8. auto.
+++
+destruct H2. right. split. split. apply (fits_upath_valid_upath g p1 l1); auto.
+split. destruct p1. inversion H2. simpl; auto. auto.
+split. apply (fits_upath_valid_upath g p2 l2); auto. split.
+auto. destruct p2. inversion H3. rewrite last_err_split2 in H8. auto.
 Qed.
 
 Lemma fits_upath_split:
@@ -508,11 +557,12 @@ split; right; auto.
 Qed.
 
 Lemma fits_upath_transfer'':
-forall p l g1 g2, (forall v, In v p -> vvalid g2 v)
--> (forall e, In e l -> evalid g2 e)
--> (forall e, In e l -> src g1 e = src g2 e)
--> (forall e, In e l -> dst g1 e = dst g2 e)
--> fits_upath g1 l p -> fits_upath g2 l p.
+forall p l g1 g2,
+  (forall v, In v p -> vvalid g2 v) ->
+  (forall e, In e l -> evalid g2 e) ->
+  (forall e, In e l -> src g1 e = src g2 e) ->
+  (forall e, In e l -> dst g1 e = dst g2 e) ->
+  fits_upath g1 l p -> fits_upath g2 l p.
 Proof.
 induction p; intros. destruct l. auto. apply H3.
 destruct l. destruct p. simpl. apply H; left; auto. simpl in H3. contradiction.
@@ -533,10 +583,12 @@ assert (In e (e::l)). left; auto.
 Qed.
 
 Lemma fits_upath_transfer':
-forall p l g1 g2, (forall v, vvalid g1 v <-> vvalid g2 v) ->
-(forall e, In e l -> evalid g2 e) -> (forall e, evalid g1 e -> evalid g2 e -> src g1 e = src g2 e) ->
-(forall e, evalid g1 e -> evalid g2 e -> dst g1 e = dst g2 e) ->
-fits_upath g1 l p -> fits_upath g2 l p.
+forall p l g1 g2,
+  (forall v, vvalid g1 v <-> vvalid g2 v) ->
+  (forall e, In e l -> evalid g2 e) ->
+  (forall e, evalid g1 e -> evalid g2 e -> src g1 e = src g2 e) ->
+  (forall e, evalid g1 e -> evalid g2 e -> dst g1 e = dst g2 e) ->
+  fits_upath g1 l p -> fits_upath g2 l p.
 Proof.
 induction p; intros. destruct l. auto. apply H3.
 destruct l. destruct p. simpl. simpl in H3. apply H; auto. simpl in H3. contradiction.
@@ -1085,6 +1137,64 @@ Proof.
 unfold uforest; intros. apply uforest'_no_simple_ucycle. auto.
 Qed.
 
+(*The proof of the converse may be finicky, because it requires reasoning about "do this"
+But I don't think the converse is unnecessary;
+At most, we redefine unique_simple_upath in the no-cycle way and show that kruskal creates a tree that satisfies previous_def, thus is a unique_simple_upath
+*)
+
+Lemma uforest_no_self_loops:
+forall g e, (forall e, evalid g e -> strong_evalid g e) -> uforest g
+  -> evalid g e -> src g e <> dst g e.
+Proof.
+unfold not; intros. apply (H0 (src g e :: dst g e :: nil) (e::nil)).
+rewrite H2. split. simpl. apply NoDup_cons. unfold not; intros; auto. apply NoDup_nil.
+unfold ucycle. assert (adj_edge g e (dst g e) (dst g e)).
+  rewrite <- H2 at 1. apply strong_evalid_adj_edge. apply H. apply H1.
+split. unfold connected_by_path; simpl. split. split. exists e.
+auto. apply H. apply H1. auto.
+split. simpl. split. auto. apply H. apply H1. auto.
+apply NoDup_cons. unfold not; intros; auto. apply NoDup_nil.
+Qed.
+
+Lemma uforest_no_multigraph:
+forall g (u v : V) (e1 e2 : E), (forall e, evalid g e -> strong_evalid g e) ->
+  uforest g ->
+  adj_edge g e1 u v /\ adj_edge g e2 u v -> e1 = e2.
+Proof.
+intros. destruct H1. destruct (EE e1 e2). hnf in e; auto.
+unfold complement, equiv in c. exfalso.
+apply (H0 (u::v::u::nil) (e1::e2::nil)). split.
+simpl. apply NoDup_cons. unfold not; intros. destruct H3. 2: contradiction.
+subst v. destruct H2. apply (uforest_no_self_loops g e2); auto. apply H2.
+destruct H3; destruct H3; subst u; auto.
+apply NoDup_cons. unfold not; intros; auto. apply NoDup_nil.
+unfold ucycle. split. unfold connected_by_path. simpl. split; auto.
+split. exists e1; auto. split. apply adjacent_symm. exists e1; auto.
+apply adj_edge_vvalid in H1. apply H1.
+split. simpl. split. auto. split. apply adj_edge_sym; auto. apply adj_edge_vvalid in H2; apply H2.
+apply NoDup_cons. unfold not; intros. destruct H3. symmetry in H3; contradiction. contradiction.
+apply NoDup_cons. unfold not; intros; auto. apply NoDup_nil.
+Qed.
+
+Lemma uforest_uforest':
+forall g, (forall e, evalid g e -> strong_evalid g e) -> uforest g -> uforest' g.
+Proof.
+unfold uforest, uforest'; intros.
+(*no self-loops*)
+split. intros. apply uforest_no_self_loops; auto.
+(*no multi-edges*)
+split. intros. apply (uforest_no_multigraph g u v e1 e2); auto.
+(*strong evalid*)
+split. auto.
+(*unique_simple_upath*)
+unfold unique_simple_upath; intros.
+(*This is the tricky one. Need a lemma that finds the first "point" of divergence v1 and then the
+first point of convergence v2 after that, so that the sublists p1' p2' connect v1 and v2, but
+internal variables are all different.
+Then the edges that fits_upath p1' and p2' cannot be identical as well
+Then p1' ++ tl (rev p2') is a simple ucycle*)
+Abort.
+
 (******************LABELED GRAPHS******************)
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
@@ -1135,11 +1245,6 @@ Definition labeled_spanning_uforest (t g: LGraph) :=
   spanning_uforest t g /\
   preserve_vlabel t g /\ preserve_elabel t g.
 
-(*The proof of the converse will be finicky, because it requires reasoning about "do this"
-But I don't think the converse is unnecessary;
-At most, we redefine unique_simple_upath in the no-cycle way and show that kruskal creates a tree that satisfies previous_def, thus is a unique_simple_upath
-*)
-
 (****************FINITE GRAPHS*****************)
 
 Definition DEList (g: LGraph) {fg: FiniteGraph g}: list DE :=
@@ -1147,14 +1252,6 @@ Definition DEList (g: LGraph) {fg: FiniteGraph g}: list DE :=
 
 Definition sum_DE (DEadd: DE -> DE -> DE) (g: LGraph) {fg: FiniteGraph g} DEbase : DE :=
   fold_left DEadd (DEList g) DEbase.
-
-(*Hm problem. kruskal operates on a FiniteWEdgeListGraph, and it can coerce t into LGraph,
-but not t' into a FiniteWEdgeListGraph, which invalidates some of the lemmas*)
-Definition minimum_spanning_forest' (DEcomp: DE -> DE -> Prop) (DEadd: DE -> DE -> DE) DEbase
-  (t g: LGraph) {ft: FiniteGraph t} {fg: FiniteGraph g}:=
- labeled_spanning_uforest t g /\
-  forall (t': LGraph) {ft': FiniteGraph t'}, labeled_spanning_uforest t' g ->
-    DEcomp (sum_DE DEadd t DEbase) (sum_DE DEadd t' DEbase).
 
 (****************GRAPH ADD/REMOVE EDGES**************)
 
@@ -1675,6 +1772,62 @@ intros. split; auto.
 intros. apply (fits_upath_evalid (pregraph_remove_edge g e) p l) in H1.
 simpl in H1. unfold removeValidFunc in H1. apply H1. auto.
 auto. auto.
+Qed.
+
+Lemma remove_edge_uforest':
+  forall (g: PGraph) e, uforest' g -> evalid g e ->
+    uforest' (pregraph_remove_edge g e) /\
+    ~ connected (pregraph_remove_edge g e) (src g e) (dst g e).
+Proof.
+intros.
+pose proof (remove_edge_evalid g e).
+assert (Hvvalid: forall v1, vvalid (pregraph_remove_edge g e) v1 <-> vvalid g v1).
+  intros. simpl. split; auto.
+split.
+{ split. intros. simpl. apply H. rewrite remove_edge_evalid in H2; apply H2.
+split. intros. unfold adj_edge, strong_evalid in H2; simpl in H2. unfold removeValidFunc in H2. destruct H2. destruct H2. destruct H3.
+  destruct H. destruct H6. apply (H6 u v e1 e2).
+  split; split.
+  split. apply H2. apply H2. apply H4.
+  split. apply H3. apply H3. apply H5.
+split. intros. rewrite remove_edge_evalid in H2; destruct H2.
+destruct H. destruct H4. destruct H5.
+apply remove_edge_preserves_strong_evalid; auto.
+unfold unique_simple_upath; intros.
+assert (exists l, fits_upath (pregraph_remove_edge g e) l p1). apply valid_upath_exists_list_edges. apply H2.
+destruct H6 as [l1 ?].
+assert (exists l, fits_upath (pregraph_remove_edge g e) l p2). apply valid_upath_exists_list_edges. apply H4.
+destruct H7 as [l2 ?].
+destruct (in_dec EE e l1).
+apply (fits_upath_evalid (pregraph_remove_edge g e) p1) in i; auto.
+rewrite remove_edge_evalid in i. destruct i. contradiction.
+destruct (in_dec EE e l2).
+apply (fits_upath_evalid (pregraph_remove_edge g e) p2) in i; auto.
+rewrite remove_edge_evalid in i. destruct i. contradiction.
+apply (fits_upath_transfer' p1 l1 _ g) in H6; auto.
+apply (fits_upath_transfer' p2 l2 _ g) in H7; auto.
+assert (valid_upath g p1). apply valid_upath_exists_list_edges'. exists l1. auto.
+assert (valid_upath g p2). apply valid_upath_exists_list_edges'. exists l2. auto.
+assert (unique_simple_upath g). apply H. unfold unique_simple_upath in H10.
+destruct H2. destruct H4. destruct H3. destruct H5.
+apply (H10 u v p1 p2). split; auto. split; auto. split; auto. split; auto.
+intros. apply (fits_upath_evalid _ _ _ _ H7) in H8. apply H8.
+intros. apply (fits_upath_evalid _ _ _ _ H6) in H8. apply H8.
+}
+{
+unfold not, connected; intros.
+destruct H2 as [p ?].
+assert (exists l, fits_upath (pregraph_remove_edge g e) l p). apply valid_upath_exists_list_edges. apply H2.
+destruct H3 as [l ?].
+assert (fits_upath g l p). apply (fits_upath_transfer' p l (pregraph_remove_edge g e) g); auto.
+intros. apply (fits_upath_evalid _ _ _ _ H3) in H4. apply H4.
+assert (connected_by_path g p (src g e) (dst g e)). split.
+apply valid_upath_exists_list_edges'. exists l; auto. destruct H2. auto.
+assert (bridge g e (src g e) (dst g e)). apply (forest_adj_bridge g e (src g e) (dst g e) H).
+apply strong_evalid_adj_edge. apply H. auto.
+assert (In e l). unfold bridge in H6. apply (H6 p l); auto.
+apply (fits_upath_evalid _ _ _ _ H3) in H7. rewrite remove_edge_evalid in H7. destruct H7. contradiction.
+}
 Qed.
 
 End UNDIRECTED.

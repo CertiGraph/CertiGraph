@@ -17,7 +17,7 @@ Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 
 Definition SIZE := 8.
 
-Lemma SIZE_rep: 0 <= SIZE < Int.max_signed.
+Lemma SIZE_rep: 0 <= SIZE <= Int.max_signed.
 Proof. unfold SIZE. set (i:=Int.max_signed); compute in i; subst i. lia. Qed.
 
 Definition inf := Int.max_signed - Int.max_signed / SIZE.
@@ -29,6 +29,7 @@ set (j:=2147483647 / 8); compute in j; subst j. lia. Qed.
 Definition G := @MatrixUGraph inf SIZE.
 Definition edgeless_graph' := @edgeless_graph inf SIZE inf_rep SIZE_rep.
 Definition adde := @MatrixUGraph_adde inf SIZE.
+Definition eremove := @MatrixUGraph_eremove inf SIZE.
 
 Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
 
@@ -43,9 +44,20 @@ Proof.
 intros. apply Z.le_lteq in H. destruct H. rewrite eformat2'; auto. rewrite eformat1, H. rewrite <- H at 2. destruct e; auto. lia.
 Qed.
 
-Lemma eformat_eq: forall (e: E), (fst (eformat e), snd (eformat e)) = eformat e.
+(*rather dumb lemma*)
+Lemma eformat_fstsnd: forall (e: E), (fst (eformat e), snd (eformat e)) = eformat e.
 Proof.
 intros. destruct (eformat e). simpl. auto.
+Qed.
+
+Lemma eformat_eq:
+  forall u v a b, eformat (u,v) = eformat (a,b) -> ((u=a /\ v=b) \/ (u=b /\ v=a)).
+Proof.
+intros. destruct (Z.le_ge_cases u v); destruct (Z.le_ge_cases a b).
+rewrite eformat1, eformat1 in H. apply pair_equal_spec in H. left; auto. simpl; auto. simpl; auto. simpl; auto.
+rewrite eformat1, eformat2 in H. simpl in H. apply pair_equal_spec in H. right; auto. simpl; auto. simpl; auto.
+rewrite eformat2, eformat1 in H. simpl in H. apply pair_equal_spec in H. right; split; apply H. simpl; auto. simpl; auto.
+rewrite eformat2, eformat2 in H. simpl in H. apply pair_equal_spec in H. left; split; apply H. simpl; auto. simpl; auto.
 Qed.
 
 Lemma eformat_evalid_vvalid:

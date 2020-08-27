@@ -552,10 +552,21 @@ set (mst_list:=(map (fun v : Z => eformat (v, Znth v parents))
 assert (HNoDup_mst_list: NoDup mst_list). {
   apply (Permutation_NoDup (l:=EList mst)). unfold mst_list; apply Hinv_6. apply NoDup_EList.
 }
+
+
+
+
+
+
+
+
+
+
+
 assert (prim_induct: forall lmst lsame (t: G) {ft: FiniteGraph t},
   labeled_spanning_uforest t g ->
-  lmst = filter (fun e => negb (in_dec E_EqDec e (EList t))) mst_list ->
-  lsame = filter (fun e => in_dec E_EqDec e (EList t)) mst_list ->
+  Permutation lmst (filter (fun e => negb (in_dec E_EqDec e (EList t))) mst_list) ->
+  Permutation lsame (filter (fun e => in_dec E_EqDec e (EList t)) mst_list) ->
   (exists lt, Permutation (lt ++ lsame) (EList t) /\ Zlength lt = Zlength lmst /\
   forall i, 0 <= i < Zlength lmst -> elabel g (Znth i lmst) <= elabel g (Znth i lt))). {
 induction lmst; intros.
@@ -619,7 +630,7 @@ assert (In a mst_list /\ ~ In a (EList t)). {
 } destruct H2.
 assert (evalid mst a). rewrite <- EList_evalid. apply (Permutation_in (l:=mst_list)).
 apply Permutation_sym; unfold mst_list. apply Hinv_6. auto.
-assert (exists v i, a = eformat (v, Znth v parents) /\ evalid g (eformat (v, Znth v parents)) /\
+assert (exists (v: V) i, a = eformat (v, Znth v parents) /\ evalid g (eformat (v, Znth v parents)) /\
             0 <= i < Zlength popped_vertices /\
             Znth i popped_vertices = Znth v parents /\ i < find popped_vertices v 0). {
   unfold mst_list in H2. apply list_in_map_inv in H2. destruct H2 as [v [? ?]].
@@ -652,9 +663,7 @@ assert (exists l, fits_upath t l p). apply connected_exists_list_edges in H12; a
 destruct H14 as [l ?].
 assert (~ In a l). unfold not; intros. apply (fits_upath_evalid t p l a) in H15; auto. rewrite EList_evalid in H3; auto.
 (*get the new form of path_partition out and use it to find an edge in l such that
-one vertex is in popped, one isn't
-NOTE: My invariant declares ~ In v (sublist 0 i popped_vertices) instead of (i+1).
-For simplicity, show it holds for (i+1) too here, to not further complicate the invariant*)
+one vertex is in popped, one isn't*)
 set (partition:=sublist 0 (find popped_vertices v 0) popped_vertices).
 assert (~ In v partition). unfold partition. apply find_sublist_NoDup_notIn.
   apply (Permutation_NoDup (l:=VList mst)). apply Permutation_sym; apply Hinv_3. apply NoDup_VList.
@@ -671,13 +680,54 @@ assert (v1 <> v2). unfold not; intros; subst v2; contradiction.
 assert (In b l). apply (bridge_must_be_crossed t b v1 v2 p l); auto.
   apply forest_adj_bridge. apply H. apply eformat_adj'; auto.
 (*now assert elabel b < elabel a*)
-assert (evalid t b). apply (fits_upath_evalid t p l); auto.
+fold b in H22.
 assert (elabel g a <= elabel g b). {
   unfold b. rewrite H5. apply Hinv_9; auto.
   apply (Permutation_in (l:=VList mst)). apply Permutation_sym. apply Hinv_3. rewrite VList_vvalid, vert_bound; auto.
   apply eformat_evalid_vvalid in H22. rewrite vert_bound; repeat rewrite vert_bound in H22. apply H22. }
-(*to handle spanning, we split l into l1++b++l2, p into p1++p2, and replace b with a*)
-(*set (swap:=adde(eremove...)). Use*).
+
+(*set (swap:=adde(eremove...)). Use*)
+rewrite H5 in *. clear H5 a. set (a:=eformat (v, Znth v parents)) in *.
+set (remove_b:= eremove t b). (*huh, how come I don't need to provide evalid b?*)
+assert (Ha_fst_vvalid: vvalid remove_b (fst a)). {
+  unfold a; simpl. destruct (Z.le_ge_cases v (Znth v parents)).
+  rewrite eformat1 by auto; simpl. rewrite vert_bound; lia.
+  rewrite eformat2 by auto; simpl. rewrite vert_bound; lia.
+}
+assert (Ha_snd_vvalid: vvalid remove_b (snd a)). {
+  unfold a; simpl. destruct (Z.le_ge_cases v (Znth v parents)).
+  rewrite eformat1 by auto; simpl. rewrite vert_bound; lia.
+  rewrite eformat2 by auto; simpl. rewrite vert_bound; lia.
+}
+assert (Ha_fst_le_snd: fst a <= snd a). {
+  unfold a; destruct (Z.le_ge_cases v (Znth v parents)).
+  rewrite eformat1; simpl; auto.
+  rewrite eformat2; simpl; auto.
+}
+set (w:=elabel g a).
+assert (Ha_weight_bound: Int.min_signed <= w < inf). {
+  split. apply weight_representable. apply evalid_inf_iff; auto.
+}
+set (swap:=adde remove_b (fst a) (snd a) Ha_fst_vvalid Ha_snd_vvalid Ha_fst_le_snd w Ha_weight_bound).
+assert (labeled_spanning_uforest swap g). {
+admit.
+}
+
+(*problem here: b may be in mst as well
+So swapping a and b doesn't bring the tree closer to mst: unable to use inductive step*)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
 intros.
