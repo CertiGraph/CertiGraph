@@ -1238,6 +1238,7 @@ Definition dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr :=
   EX priq : list V,
   EX dist : list V,
   EX popped : list V,
+  let u := find priq (fold_right Z.min (hd 0 priq) priq) 0 in
   PROP (
     (* The overall correctness condition *)
     dijkstra_correct g src popped prev dist;
@@ -1246,7 +1247,10 @@ Definition dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr :=
     Znth src dist = 0;
     Znth src prev = src;
     popped <> [] -> In src popped;
-    popped = [] -> src = find priq (fold_right Z.min (hd 0 priq) priq) 0;
+    popped = [] -> src = u;
+
+    (* A fact about the minimum from the fringe *)
+    ~ In u popped;
     
     (* A fact about the relationship b/w 
        dist and priq arrays *)
@@ -1309,6 +1313,8 @@ Definition dijk_inner_forloop_inv (g: DijkGG) sh src priq dist_ptr prev_ptr priq
   EX popped' : list V,
   let u :=
       find priq (fold_right Z.min (hd 0 priq) priq) 0 in
+  let u' :=
+      find priq' (fold_right Z.min (hd 0 priq') priq') 0 in
   PROP (
       (* inv_popped is not affected *)
       forall dst,
@@ -1358,7 +1364,10 @@ Definition dijk_inner_forloop_inv (g: DijkGG) sh src priq dist_ptr prev_ptr priq
     Znth src dist' = 0;
     Znth src prev' = src;
     popped' <> [] -> In src popped';
-    popped' = [] -> src = find priq' (fold_right Z.min (hd 0 priq') priq') 0;
+    popped' = [] -> src = u';
+
+    (* a useful fact about u' *)
+    ~ In u' popped';
     
     (* a useful fact about u *)
     In u popped';
@@ -2290,10 +2299,11 @@ Proof.
       Intros prev priq dist popped.
       rename H4 into Hb.
       rename H5 into Hc.
-      rename H6 into H4.
-      rename H7 into H5.
-      rename H8 into H6.
-      rename H9 into H7.
+      rename H6 into H13.
+      rename H7 into H4.
+      rename H8 into H5.
+      rename H9 into H6.
+      rename H10 into H7.
       assert_PROP (Zlength priq = SIZE).
       { entailer!. now repeat rewrite Zlength_map in *. }
       assert_PROP (Zlength prev = SIZE).
@@ -2322,6 +2332,7 @@ Proof.
         forward_call (priq_ptr, priq).
         Intros u.
         rename H12 into Hequ.
+        rewrite <- Hequ in *.
         (* u is the minimally chosen item from the
            "seen but not popped" category of vertices *)
 
@@ -2340,7 +2351,7 @@ Proof.
           apply (vvalid_meaning g) in H_u_valid; trivial.
         } 
 
-        (* todo: prove without get_popped_meaning *)
+(*        (* todo: prove without get_popped_meaning *)
         assert (~ (In u popped)). {
           intro.
           rewrite (get_popped_meaning _ priq _) in H13.
@@ -2354,6 +2365,7 @@ Proof.
           apply min_in_list;
             [ apply incl_refl | apply Znth_In; ulia].
         }
+*)
         
         assert (H_inf_reppable: Int.min_signed <= inf <= Int.max_signed). {
           split; rewrite inf_eq; compute; inversion 1.
@@ -2582,7 +2594,7 @@ Proof.
           clear H15 H16 H17 H18 H19 H20 H21 H22
                 H23 H24 H25 H26 H27 Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
           
-          split3; [| | split3; [| |split3; [| |split]]]; trivial.
+          split3; [| | split3; [| |split3; [| |split3]]]; trivial. (* 9 goals *)
           ++ intros.
              (* if popped = [], then 
                 prove inv_popped for [u].
@@ -2634,6 +2646,10 @@ Proof.
 
           ++ intros. inversion H15.
             
+          ++ remember (upd_Znth u priq (inf + 1)) as priq'.
+             remember (find priq' (fold_right Z.min (hd 0 priq') priq') 0) as u'.
+             admit.
+
           ++ apply in_eq.
 
           ++ intros.
@@ -2667,10 +2683,13 @@ Proof.
           rename H22 into H17.
           rename H23 into H18.
           rename H24 into Hd.
-          rename H26 into H_priq_dist_link.
-          rename H27 into H19.
-          rename H28 into H20.
-          rename H29 into H21.
+          rename H25 into He.
+          rename H26 into Hu.
+          rename H27 into H_priq_dist_link.
+          rename H28 into H19.
+          rename H29 into H20.
+          rename H30 into H21.
+          assert (H22: 1 = 1) by trivial.
 
           freeze FR2 := (iter_sepcon _ _) (iter_sepcon _ _).
           unfold list_rep.
@@ -2696,7 +2715,7 @@ Proof.
           }
           
           forward.
-          clear Htemp1 Htemp2 H22.
+          clear Htemp1 Htemp2 H23.
 
           thaw FR2.
           gather_SEP (iter_sepcon _ _) (data_at _ _ _ _) (iter_sepcon _ _).
@@ -2816,8 +2835,8 @@ Proof.
 
                 assert (u <> i) by (intro; subst; lia).
                 
-                split3; [| | split3; [| | split3; [| | split3]]]; intros.
-                (* 9 goals, where the 9th is 
+                split3; [| | split3; [| | split3; [| | split3; [| |split]]]]; intros.
+                (* 10 goals, where the 10th is 
                    3 range-based goals together *)
                 --- apply inv_popped_newcost; try ulia.
                 --- apply inv_unpopped_newcost with (priq := priq'); ulia.
@@ -2828,6 +2847,10 @@ Proof.
                       intro; subst src; lia.
                 --- rewrite upd_Znth_diff; try lia;
                       intro; subst src; lia.
+                --- remember (find priq' (fold_right Z.min (hd 0 priq') priq') 0) as u'.
+                    remember (upd_Znth i priq' newcost) as priq''.
+                    remember (find priq'' (fold_right Z.min (hd 0 priq'') priq'') 0) as u''.
+                    admit.
                 --- destruct (Z.eq_dec dst i).
                     1: subst dst; repeat rewrite upd_Znth_same; ulia.
                     repeat rewrite upd_Znth_diff; trivial; try lia.
@@ -2964,12 +2987,12 @@ Proof.
           Exists prev' priq' dist' popped'.
           entailer!.
           remember (find priq (fold_right Z.min (hd 0 priq) priq) 0) as u.
-          clear H27 H28 H29 H30 H31 H32 H33 H34 H35 H36 H37 H38 H38
+          clear H29 H30 H31 H32 H33 H34 H35 H36 H37 H38 H38 H39 H40
                 Ppriq_ptr HPpriq_ptr Ppriq_ptr0.
           unfold dijkstra_correct.
-              split3; [auto | apply H16 | apply H18];
-                try rewrite <- (vvalid_meaning g); trivial.
-              
+          split3; [auto | apply H16 | apply H18];
+            try rewrite <- (vvalid_meaning g); trivial.
+          
       * (* After breaking from the while loop,
            prove break's postcondition *)
         assert (isEmpty priq = Vone). {
@@ -2980,11 +3003,11 @@ Proof.
         forward. Exists prev priq dist popped.
         entailer!.
         pose proof (isEmptyMeansInf _ H12).
-        rewrite Forall_forall in H25 |- *.
-        intros. specialize (H25 _ H26). lia.
+        rewrite Forall_forall in H26 |- *.
+        intros. specialize (H26 _ H27). lia.
     + (* from the break's postcon, prove the overall postcon *)
       unfold dijk_forloop_break_inv.
       Intros prev priq dist popped. 
       forward. Exists prev dist popped. entailer!.
       intros. destruct (H2 _ H12) as [? _]; trivial.
-Qed.
+Admitted.
