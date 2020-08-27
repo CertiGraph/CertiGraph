@@ -7,6 +7,7 @@ Require Import Coq.Logic.FunctionalExtensionality.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import VST.floyd.sublist.
+Require Import VST.floyd.list_solver.
 
 Lemma In_tail: forall A (a : A) L, In a (tl L) -> In a L.
 Proof. induction L; simpl; auto. Qed.
@@ -1705,3 +1706,82 @@ Proof.
     rewrite Znth_0_cons; trivial.
 Qed.
 
+Lemma nat_inc_list_app:
+  forall n m p i,
+    0 <= i < m ->
+    0 <= n ->
+    n + m <= p ->
+    Znth i (nat_inc_list (Z.to_nat m)) =
+    Znth i (sublist n (n + m)
+                    (nat_inc_list (Z.to_nat p))) - n.
+Proof.
+  symmetry. rewrite Znth_sublist by lia.
+  repeat rewrite nat_inc_list_i by lia. lia.
+Qed.
+
+Lemma nat_inc_list_sublist:
+  forall n m,
+    0 <= n ->
+    n <= m ->
+    sublist 0 n (nat_inc_list (Z.to_nat m)) =
+    nat_inc_list (Z.to_nat n).
+Proof.
+  intros.
+  apply Zle_lt_or_eq in H0. destruct H0.
+  2: { subst. rewrite sublist_same; trivial.
+       rewrite nat_inc_list_Zlength; lia.
+  }
+  apply Znth_eq_ext.
+  1: { rewrite Zlength_sublist;
+       try rewrite nat_inc_list_Zlength; lia.
+  }
+  intros. rewrite nat_inc_list_i.
+  2: { rewrite Zlength_sublist in H1; 
+       try rewrite nat_inc_list_Zlength; lia.
+  }
+  rewrite <- Z.sub_0_r at 1.
+  replace n with (0 + n) by lia.
+  rewrite Zlength_sublist in H1.
+  rewrite <- nat_inc_list_app.
+  rewrite nat_inc_list_i.
+  all: try rewrite nat_inc_list_Zlength; lia.
+Qed.
+
+Lemma nat_inc_list_hd:
+  forall n,
+    0 < n ->
+    Znth 0 (nat_inc_list (Z.to_nat n)) = 0.
+Proof.
+  intros. induction (Z.to_nat n); trivial.
+  simpl. destruct n0; trivial.
+  rewrite app_Znth1; [lia|].
+  rewrite nat_inc_list_Zlength.
+  rewrite <- Nat2Z.inj_0.
+  apply inj_lt; lia.
+Qed.
+
+Lemma tl_app:
+  forall (l1 l2: list Z),
+    0 < Zlength l1 ->
+    tl (l1 ++ l2) = tl l1 ++ l2.
+Proof.
+  intros. destruct l1; trivial. inversion H.
+Qed.
+
+Lemma in_tl_nat_inc_list:
+  forall i n,
+    In i (tl (nat_inc_list n)) -> 1 <= i.
+Proof.
+  destruct n. inversion 1.
+  induction n. inversion 1.
+  intros. simpl in H.
+  rewrite Zpos_P_of_succ_nat in H.
+  rewrite tl_app in H.
+  2: { rewrite Zlength_app.
+       replace (Zlength (Z.of_nat n :: nil)) with 1 by reflexivity.
+       pose proof (Zlength_nonneg (nat_inc_list n)). lia.
+  }
+  apply in_app_or in H; destruct H.
+  - apply IHn. simpl. assumption.
+  - simpl in H. destruct H; lia.
+Qed.
