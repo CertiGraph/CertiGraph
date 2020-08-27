@@ -2986,4 +2986,5 @@ Proof.
       unfold dijk_forloop_break_inv.
       Intros prev priq dist popped. 
       forward. Exists prev dist popped. entailer!.
+      intros. destruct (H2 _ H12) as [? _]; trivial.
 Qed.
