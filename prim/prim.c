@@ -40,11 +40,13 @@ IMPORTANT: The soundness of the graph depends on declaring evalid g (u,v) -> u <
 It's not even clear in a conventional adjacency matrix anyway, because an undirected adjmatrix is symmetrical ("nice" graphs)
 */
 void prim(int graph[SIZE][SIZE], int r, int msf[SIZE][SIZE]) {
+    //This should ideally be replaced by a pq-specific "find_item_in_queue"
     int key[SIZE];
     initialise_list(key, IFTY);
     int parent[SIZE]; //NIL in textbook. However, 0 is a valid vertex, so we substitute it with an invalid value
     initialise_list(parent, SIZE);
-    int out[SIZE]; //as a marker to check if v is in pq. 1 for NOT in pq (already checked)
+    //as a marker to check if v is in pq. 1 for NOT in pq (already checked). This should ideally be replaced by a pq-specific "in_queue"
+    int out[SIZE];
     initialise_list(out, 0);
     key[r] = 0; //first in pq
     
@@ -68,12 +70,10 @@ void prim(int graph[SIZE][SIZE], int r, int msf[SIZE][SIZE]) {
     }
     //algorithm implicitly maintains the mst A:={(v,parent[v])}
     //but it would be weird to return a different C format and call it the same graph
-    //so we explicitly populate a new matrix
-    //actually, a funny thing to do is to return a wedgelistgraph, then we don't have to generalize/repeat any lemmas
     for (int v = 0; v < SIZE; ++v) {
         int u = parent[v];
         int w = key[v];
-        if (u != IFTY) {
+        if (u <= SIZE) {
             msf[u][v] = w;
             msf[v][u] = w;
         }
