@@ -462,7 +462,9 @@ set (i:=Int.max_signed); compute in i; subst i. lia.
 repeat rewrite data_at__tarray.
 set (k:=default_val tint); compute in k; subst k.
 forward_call (Tsh, v_key, (list_repeat (Z.to_nat 8) Vundef), inf).
-forward_call (Tsh, v_parent, (list_repeat (Z.to_nat 8) Vundef), SIZE).
+assert_PROP (Zlength (map (fun x : Z => Vint (Int.repr x)) garbage) = SIZE). entailer!.
+forward_call (sh, (pointer_val_val parent_ptr), (map (fun x : Z => Vint (Int.repr x)) garbage), SIZE).
+clear H garbage.
 forward_call (Tsh, v_out, (list_repeat (Z.to_nat 8) Vundef), 0).
 assert (Hrbound: 0 <= r < SIZE). apply vert_bound in Hprecon_1; auto.
 forward.
@@ -485,18 +487,22 @@ forward_for_simple_bound SIZE
     PROP ()
     LOCAL (
       lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
-      lvar _parent (tarray tint 8) v_parent; lvar _key (tarray tint 8) v_key;
-      temp _graph (pointer_val_val gptr); temp _r (Vint (Int.repr r));
-      temp _msf (pointer_val_val mstptr)
+      lvar _key (tarray tint 8) v_key; temp _graph (pointer_val_val gptr);
+      temp _r (Vint (Int.repr r)); temp _parent (pointer_val_val parent_ptr)
     )
     SEP (
       data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr 0))) v_out;
-      data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr SIZE))) v_parent;
+      data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr SIZE))) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) starting_keys v_key;
       data_at Tsh (tarray tint 8) (sublist 0 i starting_keys ++ sublist i SIZE (list_repeat (Z.to_nat 8) Vundef)) v_pq;
-      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
-      undirected_matrix sh (graph_to_symm_mat edgeless_graph') (pointer_val_val mstptr))
+      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
+    )
   )%assert.
+
+(*Sudden issue here*)
+
+
+
 entailer!. (*precon taken care of*)
 (*loop*)
 forward.

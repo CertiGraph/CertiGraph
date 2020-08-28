@@ -1,12 +1,13 @@
 Require Import VST.floyd.proofauto.
-Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.undirected_graph.
 Require Import CertiGraph.graph.AdjMatGraph.
 Require Import CertiGraph.prim.MatrixUGraph.
 Require Import CertiGraph.prim.prim.
 Require Import CertiGraph.prim.spatial_undirected_matrix.
+Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope Z_scope.
 
@@ -49,24 +50,28 @@ Definition initialise_matrix_spec :=
 
 Definition prim_spec :=
   DECLARE _prim
-  WITH sh: wshare, g: G, gptr : pointer_val, r: Z, mstptr : pointer_val
-  PRE [tptr (tarray tint SIZE), tint, tptr (tarray tint SIZE)]
-     PROP ( (*connected_graph g;*)
+  WITH sh: share, g: G, garbage: list V, gptr : pointer_val, r: Z, parent_ptr : pointer_val
+  PRE [tptr (tarray tint SIZE), tint, tptr tint]
+     PROP ( writable_share sh;
             vvalid g r
           )
-     PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val mstptr)
+     PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()
      SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
-          undirected_matrix sh (graph_to_symm_mat edgeless_graph') (pointer_val_val mstptr)
+          data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
          )
   POST [ tvoid ]
      EX mst: G,
+     EX fmst: FiniteGraph mst,
+     EX parents: list V,
      PROP ( (*connected_graph mst;*)
-            minimum_spanning_forest mst g
+            minimum_spanning_forest mst g;
+            Permutation (EList mst) (map (fun v => eformat (v, Znth v parents))
+              (filter (fun v => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat SIZE))))
           )
      LOCAL ()
      SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
-          undirected_matrix sh (graph_to_symm_mat mst) (pointer_val_val mstptr)
+          data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
          ).
 
 Definition Gprog : funspecs :=
