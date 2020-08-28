@@ -1967,7 +1967,8 @@ break: (
       rewrite H1 in H0; simpl in H0; now inversion H0.
     } clear H0.
     pose proof (priq_arr_utils.isEmptyMeansInf pq_state Hempty). clear Hempty. rewrite Forall_forall in H0.
-    assert (Permutation popped_vertices (VList mst')). { apply NoDup_Permutation.
+    assert (Permutation popped_vertices (VList mst')). {
+      apply NoDup_Permutation.
       apply Permutation_sym, Permutation_NoDup, NoDup_app_l in Hinv_3. auto. apply NoDup_VList.
       apply NoDup_VList. intros; split; intros.
       apply VList_vvalid. rewrite vert_bound. rewrite <- (vert_bound g). apply Hpopped_vvalid; auto.
@@ -2096,7 +2097,7 @@ forward_for_simple_bound SIZE (
   forward.
   forward.
   forward_if. {
-    admit.
+    forward.
   }
   (*no add*) {
     admit.

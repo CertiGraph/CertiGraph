@@ -9,7 +9,7 @@ Require Import CertiGraph.msl_application.UnionFindGraph.
 Require Import CertiGraph.msl_application.GList.
 Require Import CertiGraph.msl_application.GList_UnionFind.
 Require Import CertiGraph.floyd_ext.share.
-Require Import CertiGraph.sample_mark.spatial_graph_glist.
+Require Import CertiGraph.unionfind.spatial_graph_glist.
 
 Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.

@@ -125,7 +125,9 @@ Definition dijkstra_spec :=
    EX prev: list V,
    EX dist : list V,
    EX popped : list V,                             
-   PROP (dijkstra_correct g src popped prev dist)
+   PROP (forall dst,
+            vvalid g dst ->
+            inv_popped g src popped prev dist dst)
    LOCAL ()
    SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr);
        data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr prev)) (pointer_val_val prev_ptr);
