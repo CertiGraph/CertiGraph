@@ -39,11 +39,10 @@ IMPORTANT: The soundness of the graph depends on declaring evalid g (u,v) -> u <
     otherwise algorithm doesn't preserve whether (u,v) or (v,u) is in graph
 It's not even clear in a conventional adjacency matrix anyway, because an undirected adjmatrix is symmetrical ("nice" graphs)
 */
-void prim(int graph[SIZE][SIZE], int r, int msf[SIZE][SIZE]) {
+void prim(int graph[SIZE][SIZE], int r, int parent[SIZE]) {
     //This should ideally be replaced by a pq-specific "find_item_in_queue"
     int key[SIZE];
     initialise_list(key, IFTY);
-    int parent[SIZE]; //NIL in textbook. However, 0 is a valid vertex, so we substitute it with an invalid value
     initialise_list(parent, SIZE);
     //as a marker to check if v is in pq. 1 for NOT in pq (already checked). This should ideally be replaced by a pq-specific "in_queue"
     int out[SIZE];
@@ -66,16 +65,6 @@ void prim(int graph[SIZE][SIZE], int r, int msf[SIZE][SIZE]) {
 	                adjustWeight(v, key[v], pq);
 		}
             }
-        }
-    }
-    //algorithm implicitly maintains the mst A:={(v,parent[v])}
-    //but it would be weird to return a different C format and call it the same graph
-    for (int v = 0; v < SIZE; ++v) {
-        int u = parent[v];
-        int w = key[v];
-        if (u <= SIZE) {
-            msf[u][v] = w;
-            msf[v][u] = w;
         }
     }
 }
