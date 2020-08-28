@@ -45,18 +45,27 @@ GRAPH_FILES = \
 DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
 
-SAMPLE_MARK_FILES = \
-  env_mark_bi.v verif_mark_bi.v env_garbage_collector.v env_dispose_bi.v \
-  verif_dispose_bi.v verif_mark_bi_dag.v env_copy_bi.v spatial_graph_bi_mark.v \
-  spatial_graph_bi_copy.v spatial_graph_glist.v verif_summatrix.v \
-  spatial_array_graph.v verif_copy_bi.v binary_heap_model.v binary_heap_Zmodel.v \
+BINARY_HEAP_FILES = \
+  binary_heap_model.v binary_heap_Zmodel.v \
   binary_heap.v env_binary_heap.v verif_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v
+
+MARK_FILES = \
+  env_mark_bi.v spatial_graph_bi_mark.v verif_mark_bi.v verif_mark_bi_dag.v 
+
+SUMMATRIX_FILES = \
+  verif_summatrix.v 
+
+COPY_FILES = \
+  env_copy_bi.v spatial_graph_bi_copy.v verif_copy_bi.v  
+
+DISPOSE_FILES = \
+  env_dispose_bi.v verif_dispose_bi.v
 
 UNION_FIND_FILES = \
   unionfind.v env_unionfind.v \
   unionfind_iter.v env_unionfind_iter.v \
-  unionfind_arr.v env_unionfind_arr.v \
-  spatial_graph_uf_iter.v uf_arr_specs.v \
+  unionfind_arr.v env_unionfind_arr.v uf_arr_specs.v \
+  spatial_graph_uf_iter.v spatial_graph_glist.v spatial_array_graph.v \
   verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v \
   verif_unionfind_iter.v verif_unionfind_iter_rank.v verif_unionfind_arr.v
 
@@ -89,7 +98,7 @@ DIJKSTRA_FILES = \
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
 
-CLIGHT_FILES = sample_mark/mark_bi.v sample_mark/garbage_collector.v sample_mark/dispose_bi.v sample_mark/copy_bi.v sample_mark/summatrix.v
+CLIGHT_FILES = mark/mark_bi.v dispose/dispose_bi.v copy/copy_bi.v summatrix/summatrix.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
 
@@ -98,7 +107,7 @@ NORMAL_FILES = \
   $(MSL_APPLICATION_FILES:%.v=msl_application/%.v) \
   $(FLOYD_EXT_FILES:%.v=floyd_ext/%.v) \
   $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
-  $(SAMPLE_MARK_FILES:%.v=sample_mark/%.v) \
+  $(BINARY_HEAP_FILES:%.v=binheap/%.v) \
   $(SAMPLE_EDGE_WEIGHT_FILES:%.v=sample_edge_weight/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v) \
@@ -108,7 +117,12 @@ NORMAL_FILES = \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
   $(PRIQ_FILES:%.v=priq/%.v) \
   $(PRIM_FILES:%.v=prim/%.v) \
-  $(UNION_FIND_FILES:%.v=unionfind/%.v) 
+  $(UNION_FIND_FILES:%.v=unionfind/%.v) \
+  $(COPY_FILES:%.v=copy/%.v) \
+  $(MARK_FILES:%.v=mark/%.v) \
+  $(DISPOSE_FILES:%.v=dispose/%.v) \
+  $(SUMMATRIX_FILES:%.v=summatrix/%.v)
+
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v

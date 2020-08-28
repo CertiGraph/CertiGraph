@@ -2,7 +2,7 @@ Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.msl_application.Graph.
 Require Import CertiGraph.msl_application.GraphBi.
 Require Import VST.veric.SeparationLogic.
-Require Import CertiGraph.sample_mark.env_mark_bi.
+Require Import CertiGraph.mark.env_mark_bi.
 Require Import CertiGraph.floyd_ext.share.
 
 Local Open Scope logic.
