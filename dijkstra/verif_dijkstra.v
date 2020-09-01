@@ -398,8 +398,8 @@ Proof.
   assert (path_cost g p2mom + elabel g (mom, u) < inf) by
       ulia. 
   split3; [| | split3]; trivial.
-  - apply valid_path_app_cons; trivial; try rewrite <- surjective_pairing; trivial.
-  - apply path_ends_app_cons with (a' := src); trivial.
+  - apply (valid_path_app_cons g); trivial; try rewrite <- surjective_pairing; trivial.
+  - apply (path_ends_app_cons g); trivial.
     split; trivial.
     rewrite <- (surjective_pairing p2mom); trivial.
   - destruct H2; rewrite path_cost_app_cons; trivial; ulia.
@@ -1721,8 +1721,8 @@ Proof.
     1: lia.
     assert (path_ends g (path_glue p2u (u, [(u,i)])) src i). {
       destruct H7 as [_ [? _]].
-      apply (path_ends_app_cons _ _ _ _ src); trivial.
-      3: rewrite <- surjective_pairing; trivial.
+      apply (path_ends_app_cons g _ _ _ src); trivial.
+      2: rewrite <- surjective_pairing; split.
       all: destruct H7; trivial.
     }
     assert (valid_path g (path_glue p2u (u, [(u,i)]))). {
@@ -1749,13 +1749,13 @@ Proof.
   specialize (H7 (fst p2u, snd p2u +:: (u,i))).  
   rewrite path_cost_app_cons in H7; trivial.
   rewrite H0. apply H7.
-  - apply valid_path_app_cons.
+  - apply (valid_path_app_cons g).
     + rewrite <- surjective_pairing; trivial.
     + rewrite (surjective_pairing p2u) in H8.
       destruct H8; simpl in H8; ulia.
     + apply strong_evalid_dijk; ulia.
-  - apply path_ends_app_cons with (a' := src); trivial.
-    3: rewrite <- surjective_pairing; trivial.
+  - apply (path_ends_app_cons g) with (a' := src); trivial.
+    2: rewrite <- surjective_pairing; split.
     all: rewrite (surjective_pairing p2u) in *;
       destruct H8; simpl in H8; trivial.
 Qed.

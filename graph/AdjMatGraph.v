@@ -24,6 +24,8 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.graph.FiniteGraph.
+Require Import CertiGraph.graph.path_lemmas.
+
 
 (*
   AdjMat wishlist
@@ -129,6 +131,60 @@ Section AdjMatGraph.
 
   Definition finGraph (g: AdjMatGG) :=
     @fin g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+  (* Some lemmas from the above soundness plugins *)
+  
+  Lemma valid_path_app_cons:
+    forall (g: AdjMatGG) src links2u u i,
+      valid_path g (src, links2u) ->
+      pfoot g (src, links2u) = u ->
+      strong_evalid g (u,i) ->
+      valid_path g (src, links2u +:: (u,i)).
+  Proof.
+    intros.
+    apply valid_path_app.
+    split; [assumption|].
+    simpl; split; trivial.
+    destruct H1.
+    rewrite (edge_src_fst g); simpl; assumption.
+  Qed.
+  
+  Lemma path_ends_app_cons:
+    forall (g: AdjMatGG) a b c a' a2b,
+      a = a' ->
+      path_ends g (a, a2b) a b ->
+      path_ends g (a, a2b +:: (b, c)) a' c.
+  Proof.
+    split; trivial.
+    rewrite pfoot_last.
+    rewrite (edge_dst_snd g); trivial.
+  Qed.
+  
+  Lemma step_in_range:
+    forall (g: AdjMatGG) x x0,
+      valid_path g x ->
+      In x0 (snd x) ->
+      vvalid g (fst x0).
+  Proof.
+    intros.
+    rewrite (surjective_pairing x) in H.
+    pose proof (valid_path_strong_evalid g _ _ _ H H0).
+    destruct H1 as [? [? _]].
+    rewrite <- (edge_src_fst g); trivial.
+  Qed.
+  
+  Lemma step_in_range2:
+    forall (g: AdjMatGG) x x0,
+      valid_path g x ->
+      In x0 (snd x) ->
+      vvalid g (snd x0).
+  Proof.
+    intros.
+    rewrite (surjective_pairing x) in H.
+    pose proof (valid_path_strong_evalid g _ _ _ H H0).
+    destruct H1 as [? [_ ?]].
+    rewrite <- (edge_dst_snd g); trivial.
+  Qed.
 
 
   
