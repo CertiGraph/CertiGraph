@@ -84,9 +84,7 @@ Definition cost_to_self (g: DijkGG) :=
   @cts g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
 
-(* And now some lemmas that come from soundness plugins. 
-   Some of these can be moved to AdjMat
- *)
+(* And now some lemmas that come from soundness plugins. *)
 
 Lemma edge_cost_pos:
   forall (g: DijkGG) e,
@@ -141,55 +139,3 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma valid_path_app_cons:
-  forall (g: DijkGG) src links2u u i,
-    valid_path g (src, links2u) ->
-    pfoot g (src, links2u) = u ->
-    strong_evalid g (u,i) ->
-    valid_path g (src, links2u +:: (u,i)).
-Proof.
-  intros.
-  apply valid_path_app.
-  split; [assumption|].
-  simpl; split; trivial.
-  destruct H1.
-  rewrite (edge_src_fst g); simpl; assumption.
-Qed.
-
-Lemma path_ends_app_cons:
-  forall (g: DijkGG) a b c a' a'' a2b,
-    a = a' ->
-    a = a'' ->
-    path_ends g (a, a2b) a' b ->
-    path_ends g (a, a2b +:: (b, c)) a'' c.
-Proof.
-  split; trivial.
-  rewrite pfoot_last.
-  rewrite (edge_dst_snd g); trivial.
-Qed.
-
-Lemma step_in_range:
-  forall (g: DijkGG) x x0,
-    valid_path g x ->
-    In x0 (snd x) ->
-    0 <= fst x0 < SIZE.
-Proof.
-  intros.
-  rewrite (surjective_pairing x) in H.
-  pose proof (valid_path_strong_evalid g _ _ _ H H0).
-  destruct H1 as [? [? _]].
-  rewrite <- (vvalid_meaning g), <- (edge_src_fst g); trivial.
-Qed.
-
-Lemma step_in_range2:
-  forall (g: DijkGG) x x0,
-    valid_path g x ->
-    In x0 (snd x) ->
-    0 <= snd x0 < SIZE.
-Proof.
-  intros.
-  rewrite (surjective_pairing x) in H.
-  pose proof (valid_path_strong_evalid g _ _ _ H H0).
-  destruct H1 as [? [_ ?]].
-  rewrite <- (vvalid_meaning g), <- (edge_dst_snd g); trivial.
-Qed.
