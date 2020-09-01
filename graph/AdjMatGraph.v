@@ -95,8 +95,6 @@ Section AdjMatGraph.
       forall e, src g e = fst e;
     eds: (* edge_dst_snd *)
       forall e, dst g e = snd e;
-    cts: (* cost_to_self *)
-      forall v, vvalid g v -> elabel g (v, v) = 0;
     fin:
       FiniteGraph g
     }.
@@ -128,9 +126,6 @@ Section AdjMatGraph.
 
   Definition edge_dst_snd (g: AdjMatGG) :=
     @eds g ((@sound_gg _ _ _ _ _ _ _ _ g)).
-
-  Definition cost_to_self (g: AdjMatGG) :=
-    @cts g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
   Definition finGraph (g: AdjMatGG) :=
     @fin g ((@sound_gg _ _ _ _ _ _ _ _ g)).

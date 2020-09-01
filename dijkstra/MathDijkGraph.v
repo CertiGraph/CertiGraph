@@ -42,6 +42,9 @@ Class SoundDijk (g: DijkLG) :=
     forall e,
       evalid g e ->
       0 <= elabel g e <= Int.max_signed / SIZE;
+
+  cts: (* cost_to_self *)
+    forall v, vvalid g v -> elabel g (v, v) = 0;
   }.
 
 (* And here is the GeneralGraph that we will use *)
@@ -72,6 +75,8 @@ Coercion DijkGG_AdjMatGG: DijkGG >-> AdjMatGG.
 Definition valid_edge_bounds (g: DijkGG) :=
   @veb g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
+Definition cost_to_self (g: DijkGG) :=
+  @cts g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
 (*
 Definition vertex_valid (g : DijkstraGeneralGraph): Prop :=
