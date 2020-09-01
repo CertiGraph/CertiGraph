@@ -20,7 +20,8 @@ Require Import Coq.Classes.EquivDec.
 
 (* This file is just one line: "Require Export priq.priq_arr_utils." 
    It can be inlined. 
-   It is currently a separate file in case we want more constants stashed away *)
+   It is currently a separate file in case we want more constants stashed away 
+ *)
 Require Export CertiGraph.dijkstra.dijkstra_constants.
 
 Local Open Scope logic.
@@ -32,13 +33,15 @@ Definition DijkLG := AdjMatLG.
 (* The soundness condition *)
 Class SoundDijk (g: DijkLG) :=
   {
-  basic: (* adj_mat_soundness *)
+  basic:
     (* first, we can take AdjMat's soundness wholesale *)
     (@SoundAdjMat SIZE inf g);
   
   veb:
-    (* from the AdjMat soundness above we already know e is representable, 
-       but for Dijkstra we need a further constraint. *)
+    (* from the AdjMat soundness above we already know 
+       e is representable, 
+       but for Dijkstra we need a further constraint. 
+     *)
     forall e,
       evalid g e ->
       0 <= elabel g e <= Int.max_signed / SIZE;
@@ -71,43 +74,19 @@ Coercion DijkGG_AdjMatGG: DijkGG >-> AdjMatGG.
    and pass it a DijkGG. The coercion will be seamless. 
  *)
 
-(* For the new plugin, we create a getter: *)
+(* For the two Dijkstra-specigic plugins, 
+   we create getters: 
+ *)
 Definition valid_edge_bounds (g: DijkGG) :=
   @veb g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
 Definition cost_to_self (g: DijkGG) :=
   @cts g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
-(*
-Definition vertex_valid (g : DijkstraGeneralGraph): Prop :=
-  forall v, vvalid g v -> 0 <= v < SIZE.
 
-Definition edge_valid (g : DijkstraGeneralGraph): Prop :=
-  forall a b, evalid g (a,b) ->
-              (vvalid g a /\ vvalid g b).
-
-Definition src_edge (g : DijkstraGeneralGraph): Prop :=
-  forall e, src g e = fst e.
-
-Definition dst_edge (g : DijkstraGeneralGraph): Prop :=
-  forall e, dst g e = snd e.
-
-(* further develop this to comment on valid, evalid *)
-Definition edge_in_range (g: DijkstraGeneralGraph): Prop :=
-  forall e,
-    0 <= elabel g e <= Int.max_signed / SIZE \/
-    elabel g e = inf.
-
-Definition cost_to_self_0 (g: DijkstraGeneralGraph): Prop :=
-  forall v, vvalid g v -> (elabel g (v, v)) = 0.
-
-Definition sound_dijk_graph (g : DijkstraGeneralGraph): Prop :=
-  vertex_valid g /\ edge_valid g /\ src_edge g /\ dst_edge g /\ edge_in_range g /\ cost_to_self_0 g.
-
-(* shouldn't this all go into soundness? *)
+(* And now some lemmas that come from soundness plugins. 
+   Some of these can be moved to AdjMat
  *)
-
-(* Lemmas that come from soundness plugins *)
 
 Lemma edge_cost_pos:
   forall (g: DijkGG) e,
