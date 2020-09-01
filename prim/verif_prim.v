@@ -498,11 +498,6 @@ forward_for_simple_bound SIZE
       undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
     )
   )%assert.
-
-(*Sudden issue here*)
-
-
-
 entailer!. (*precon taken care of*)
 (*loop*)
 forward.
@@ -577,19 +572,17 @@ forward_loop (
     )
     LOCAL (
       lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
-      lvar _parent (tarray tint 8) v_parent; lvar _key (tarray tint 8) v_key;
-      temp _graph (pointer_val_val gptr); temp _r (Vint (Int.repr r));
-      temp _msf (pointer_val_val mstptr)
+      temp _parent (pointer_val_val parent_ptr); lvar _key (tarray tint 8) v_key;
+      temp _graph (pointer_val_val gptr); temp _r (Vint (Int.repr r))
     )
     SEP (
       data_at Tsh (tarray tint SIZE) (map (fun x => if in_dec V_EqDec x popped_vertices
         then (Vint (Int.repr 1)) else (Vint (Int.repr 0))) (nat_inc_list (Z.to_nat SIZE))) v_out;
-      data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) v_parent;
+      data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x))
         pq_state) v_pq;
-      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
-      undirected_matrix sh (graph_to_symm_mat edgeless_graph') (pointer_val_val mstptr)
+      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
     )
   )
 break: (
@@ -625,17 +618,15 @@ break: (
     )
     LOCAL (
       lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
-      lvar _parent (tarray tint 8) v_parent; lvar _key (tarray tint 8) v_key;
-      temp _graph (pointer_val_val gptr); temp _r (Vint (Int.repr r));
-      temp _msf (pointer_val_val mstptr)
+      temp _parent (pointer_val_val parent_ptr); lvar _key (tarray tint 8) v_key;
+      temp _graph (pointer_val_val gptr); temp _r (Vint (Int.repr r))
     )
     SEP (
       data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr 1))) v_out;
-      data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) v_parent;
+      data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
       data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr (inf+1)))) v_pq;
-      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
-      undirected_matrix sh (graph_to_symm_mat edgeless_graph') (pointer_val_val mstptr)
+      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
     )
   )
 %assert.
@@ -866,8 +857,8 @@ break: (
       )
       LOCAL (
         temp _u (Vint (Int.repr u)); temp _t'1 (isEmpty pq_state); lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
-        lvar _parent (tarray tint 8) v_parent; lvar _key (tarray tint 8) v_key; temp _graph (pointer_val_val gptr);
-        temp _r (Vint (Int.repr r)); temp _msf (pointer_val_val mstptr)
+        temp _parent (pointer_val_val parent_ptr); lvar _key (tarray tint 8) v_key; temp _graph (pointer_val_val gptr);
+        temp _r (Vint (Int.repr r))
       )
       SEP (data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) pq_state') v_pq;
      data_at Tsh (tarray tint 8)
@@ -875,10 +866,9 @@ break: (
           (fun x : V =>
            if in_dec V_EqDec x (popped_vertices+::u) then Vint (Int.repr 1) else Vint (Int.repr 0))
           (nat_inc_list (Z.to_nat 8))) v_out;
-     data_at Tsh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) parents') v_parent;
+     data_at sh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) parents') (pointer_val_val parent_ptr);
      data_at Tsh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) keys') v_key;
-     undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
-     undirected_matrix sh (graph_to_symm_mat edgeless_graph') (pointer_val_val mstptr)
+     undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
       )
     )
   %assert.
@@ -957,7 +947,7 @@ break: (
     2: { unfold graph_to_symm_mat. rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia. }
     entailer!.
     { clear H0 H5 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 H23 H24 H25 H26 H27 H28.
-      clear Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_parent HPv_parent Pv_parent0 Pv_key HPv_key Pv_key0.
+      clear Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_key HPv_key Pv_key0.
       split3. 3: split.
       *intros. destruct (Z.lt_trichotomy v i). repeat rewrite upd_Znth_diff; try lia. apply Hinv2_1. lia. apply H5.
       destruct H13. subst v. destruct H5; contradiction. lia.
@@ -993,7 +983,7 @@ break: (
     2: unfold graph_to_symm_mat; rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
     time entailer!.
     clear H0 H5 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 H23 H24 H25 H26 H27 H28.
-    clear Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_parent HPv_parent Pv_parent0 Pv_key HPv_key Pv_key0.
+    clear Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_key HPv_key Pv_key0.
     split3.
     *intros. destruct (Z.lt_trichotomy v i). apply Hinv2_1; auto. lia. destruct H13. subst v. apply Hinv2_3. lia. lia.
     *intros. destruct (Z.lt_trichotomy v i).
@@ -1786,7 +1776,7 @@ break: (
         split; intros; apply connected_refl; rewrite vert_bound; lia.
   }
   time "end of pop loop (adde_u) (did not record original):" entailer!.
-  clear H9 H10 H11 H12 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_parent HPv_parent Pv_parent0 Pv_key HPv_key Pv_key0.
+  clear H9 H10 H11 H12 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_key HPv_key Pv_key0.
 
   (*permutation of EList*)
     apply (Permutation_trans (l':=(eformat (u,Znth u parents))::(EList mst'))).
@@ -2052,64 +2042,23 @@ assert (minimum_spanning_forest mst g). {
   destruct Hinv_11 as [M [? ?]].
   apply (partial_lgraph_spanning_mst mst M g); auto.
 }
-(*Should we bother with filling a matrix for it? The original Prim doesn't bother
-  Well I guess we need to return the graph somehow, as parents is a local array so we need to pass it out
-  Plus returning in the array form makes no sense, we'll have to create a new spatial representation for it
-*)
-clear Hinv_1 Hinv_2 Hinv_4 Hinv_5 Hinv_7 Hinv_8 Hinv_9 Hinv_11.
-rename Hinv_3 into Hpopped. rename Hinv_6 into Hmst_perm. rename Hinv_10 into Hparents_bound.
-clear Hprecon_1 Hrbound.
-forward_for_simple_bound SIZE (
-  EX i : Z,
-  EX t : G,
-  EX ft: FiniteGraph t,
-  PROP (is_partial_lgraph t mst;
-        Permutation (EList t)
-           (map (fun v : Z => eformat (v, Znth v parents))
-              (filter (fun v : Z => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat i))))
-       )
-  LOCAL (
-    lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
-    lvar _parent (tarray tint 8) v_parent; lvar _key (tarray tint 8) v_key;
-    temp _graph (pointer_val_val gptr); temp _r (Vint (Int.repr r));
-    temp _msf (pointer_val_val mstptr)
-  )
-  SEP (
-    data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr 1))) v_out;
-    data_at Tsh (tarray tint SIZE) (map (fun x : Z => Vint (Int.repr x)) parents) v_parent;
-    data_at Tsh (tarray tint SIZE) (map (fun x : Z => Vint (Int.repr x)) keys) v_key;
-    data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr (inf + 1)))) v_pq;
-    undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
-    undirected_matrix sh (graph_to_symm_mat t) (pointer_val_val mstptr)
-  )
-)%assert. {
-  Exists (edgeless_graph').
-  pose proof (@fin _ _ _ (sound_MatrixUGraph edgeless_graph')) as fe. Exists fe.
-  assert (is_partial_lgraph edgeless_graph' mst). { apply edgeless_partial_lgraph. }
-  assert (Permutation (EList edgeless_graph')
-      (map (fun v : Z => eformat (v, Znth v parents))
-         (filter (fun v : Z => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat 0))))). {
-    apply NoDup_Permutation. apply NoDup_EList. simpl. apply NoDup_nil.
-    intros; rewrite EList_evalid; simpl. split; auto.
-  }
-  time entailer!. (*49 seconds without PROP*)
+assert (Permutation (EList mst)
+          (map (fun v : Z => eformat (v, Znth v parents))
+             (filter (fun v : Z => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat SIZE))))). {
+apply (Permutation_trans (l':= (map (fun v : Z => eformat (v, Znth v parents))
+              (filter (fun v : Z => Znth v parents <? SIZE) popped_vertices)))).
+auto. apply Permutation_map. apply NoDup_Permutation.
+apply NoDup_filter. apply (Permutation_NoDup (l:=VList mst)). apply Permutation_sym; auto. apply NoDup_VList.
+apply NoDup_filter. apply nat_inc_list_NoDup.
+intros. do 2 rewrite filter_In. rewrite nat_inc_list_in_iff by auto. rewrite Z2Nat.id by lia.
+split; intros; destruct H1; split; auto.
+apply (Permutation_in (l':=VList mst)) in H1. 2: auto. rewrite VList_vvalid, vert_bound in H1. lia.
+apply (Permutation_in (l:=VList mst)). apply Permutation_sym; auto. rewrite VList_vvalid, vert_bound; lia.
 }
-(*loop*) {
-  Intros. rename H1 into Hi. rename H2 into Hinv_1. rename H3 into Hinv_2.
-  assert_PROP(Zlength (map (fun x : Z => Vint (Int.repr x)) parents) = SIZE). entailer!.
-  assert_PROP(Zlength (map (fun x : Z => Vint (Int.repr x)) keys) = SIZE). entailer!.
-  rewrite Zlength_map in H1. rename H1 into HZlength_parents.
-  rewrite Zlength_map in H2. rename H2 into HZlength_keys.
-  forward.
-  forward.
-  forward_if. {
-    forward.
-  }
-  (*no add*) {
-    admit.
-  }
+forward.
+Exists mst fmst parents.
+(*change from popped_vertices to nat_inc_list*)
+entailer!.
 }
-(*postcon*) {
-admit.
-}
-Abort.
+(*Should we bother with filling a matrix for it? The original Prim doesn't bother*)
+Qed.
