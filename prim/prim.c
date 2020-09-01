@@ -39,8 +39,8 @@ IMPORTANT: The soundness of the graph depends on declaring evalid g (u,v) -> u <
     otherwise algorithm doesn't preserve whether (u,v) or (v,u) is in graph
 It's not even clear in a conventional adjacency matrix anyway, because an undirected adjmatrix is symmetrical ("nice" graphs)
 */
-void prim(int graph[SIZE][SIZE], int r, int parent[SIZE]) {
-    //This should ideally be replaced by a pq-specific "find_item_in_queue"
+int prim(int graph[SIZE][SIZE], int r, int parent[SIZE]) {
+    //This should ideally be replaced by a pq-specific "find_item_in_queue", but depending on the pq may be O(logn)
     int key[SIZE];
     initialise_list(key, IFTY);
     initialise_list(parent, SIZE);
@@ -67,4 +67,5 @@ void prim(int graph[SIZE][SIZE], int r, int parent[SIZE]) {
             }
         }
     }
+    return 0;
 }
