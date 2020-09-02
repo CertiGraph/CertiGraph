@@ -186,7 +186,11 @@ Section AdjMatGraph.
     rewrite <- (edge_dst_snd g); trivial.
   Qed.
 
-
+  (*ASDF: This works here*)
+  Definition edgeless_lgraph2: AdjMatLG :=
+  @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
+    (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
+    (fun v => tt) (fun e => inf) tt. (*<--- different from edgeless_WEdgeGraph because of the default value*)
   
   (* SPATIAL REPRESENTATION *)
 
