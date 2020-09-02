@@ -143,6 +143,13 @@ Definition elabel_inf (g: MatrixUGraph) (e: E) := if evalid_dec g e then elabel 
 Definition elabel_inf_symm (g: MatrixUGraph) (e: E) :=
   if evalid_dec g (eformat e) then elabel g (eformat e) else inf.
 *)
+
+(* Use vert_to_list, 
+   graph_to_mat, 
+   elabel_Znth_graph_to_mat. 
+   In each, there is a 
+   special field "f" for your "eformat" to go
+ *)
 Definition vert_rep_symm (g : G) (v : V): list Z :=
   map (elabel g) (map (fun x => eformat (v,x)) (nat_inc_list (Z.to_nat SIZE))).
 
@@ -198,6 +205,10 @@ all: unfold SIZE; lia.
 Qed.
 
 (*************C related**********)
+(* a lot of this is same as AdjMat? *)
+(* there is a special function f throughout AdjMat's spatial
+   stuff where your "eformat" is supposed to go
+   *)
 
 Definition list_address a index size : val :=
   offset_val (index * sizeof (tarray tint size)) a.
