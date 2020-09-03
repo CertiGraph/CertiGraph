@@ -5,36 +5,42 @@
 /*    Array Masquerading as PQ    */
 /* ****************************** */
 
-
-void push (int vertex, int weight, int pq[SIZE]) {
+// precondition: vertex < size
+void push (int vertex, int weight, int* pq) {
     pq[vertex] = weight;   
 }
 
 // precondition: won't be called on an empty PQ
-int popMin (int pq[SIZE]) {
+int popMin (int size, int inf, int* pq) {
     int minVertex = 0;
     int minWeight = pq[minVertex];
     int i;
-    for (i = 0; i < SIZE; i++) {
+    for (i = 0; i < size; i++) {
         if (pq[i] < minWeight) {
             minVertex = i;
             minWeight = pq[i];
         }   
     }
-    pq[minVertex] = IFTY+1;
+    pq[minVertex] = inf+1;
     return minVertex;
 }
 
-void adjustWeight (int vertex, int newWeight, int pq[SIZE]) {
+void adjustWeight (int vertex, int newWeight, int* pq) {
     pq[vertex] = newWeight;
 }
 
 // Quick utility function to check if the PQ is empty
-int pq_emp (int pq[SIZE]) {
+int pq_emp (int size, int inf, int* pq) {
     int i;
-    for (i = 0; i < SIZE; i++) {
-        if (pq[i] < IFTY+1) // this cell is populated. pq is not empty.
+    for (i = 0; i < size; i++) {
+        if (pq[i] < inf+1) // this cell is populated. pq is not empty.
             return 0;
     }   
     return 1;
 }
+
+/*
+int main () {
+    return 0;
+}
+*/

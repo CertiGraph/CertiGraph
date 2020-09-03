@@ -66,19 +66,21 @@ Definition ___compcert_va_composite : ident := 19%positive.
 Definition ___compcert_va_float64 : ident := 18%positive.
 Definition ___compcert_va_int32 : ident := 16%positive.
 Definition ___compcert_va_int64 : ident := 17%positive.
-Definition _adjustWeight : ident := 61%positive.
-Definition _i : ident := 58%positive.
-Definition _main : ident := 63%positive.
-Definition _minVertex : ident := 56%positive.
-Definition _minWeight : ident := 57%positive.
-Definition _newWeight : ident := 60%positive.
-Definition _popMin : ident := 59%positive.
+Definition _adjustWeight : ident := 63%positive.
+Definition _i : ident := 60%positive.
+Definition _inf : ident := 57%positive.
+Definition _main : ident := 65%positive.
+Definition _minVertex : ident := 58%positive.
+Definition _minWeight : ident := 59%positive.
+Definition _newWeight : ident := 62%positive.
+Definition _popMin : ident := 61%positive.
 Definition _pq : ident := 54%positive.
-Definition _pq_emp : ident := 62%positive.
+Definition _pq_emp : ident := 64%positive.
 Definition _push : ident := 55%positive.
+Definition _size : ident := 56%positive.
 Definition _vertex : ident := 52%positive.
 Definition _weight : ident := 53%positive.
-Definition _t'1 : ident := 64%positive.
+Definition _t'1 : ident := 66%positive.
 
 Definition f_push := {|
   fn_return := tvoid;
@@ -97,7 +99,7 @@ Definition f_push := {|
 Definition f_popMin := {|
   fn_return := tint;
   fn_callconv := cc_default;
-  fn_params := ((_pq, (tptr tint)) :: nil);
+  fn_params := ((_size, tint) :: (_inf, tint) :: (_pq, (tptr tint)) :: nil);
   fn_vars := nil;
   fn_temps := ((_minVertex, tint) :: (_minWeight, tint) :: (_i, tint) ::
                (_t'1, tint) :: nil);
@@ -114,8 +116,8 @@ Definition f_popMin := {|
         (Sset _i (Econst_int (Int.repr 0) tint))
         (Sloop
           (Ssequence
-            (Sifthenelse (Ebinop Olt (Etempvar _i tint)
-                           (Econst_int (Int.repr 8) tint) tint)
+            (Sifthenelse (Ebinop Olt (Etempvar _i tint) (Etempvar _size tint)
+                           tint)
               Sskip
               Sbreak)
             (Ssequence
@@ -140,11 +142,8 @@ Definition f_popMin := {|
           (Ederef
             (Ebinop Oadd (Etempvar _pq (tptr tint))
               (Etempvar _minVertex tint) (tptr tint)) tint)
-          (Ebinop Oadd
-            (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-              (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                (Econst_int (Int.repr 8) tint) tint) tint)
-            (Econst_int (Int.repr 1) tint) tint))
+          (Ebinop Oadd (Etempvar _inf tint) (Econst_int (Int.repr 1) tint)
+            tint))
         (Sreturn (Some (Etempvar _minVertex tint)))))))
 |}.
 
@@ -165,7 +164,7 @@ Definition f_adjustWeight := {|
 Definition f_pq_emp := {|
   fn_return := tint;
   fn_callconv := cc_default;
-  fn_params := ((_pq, (tptr tint)) :: nil);
+  fn_params := ((_size, tint) :: (_inf, tint) :: (_pq, (tptr tint)) :: nil);
   fn_vars := nil;
   fn_temps := ((_i, tint) :: (_t'1, tint) :: nil);
   fn_body :=
@@ -174,8 +173,8 @@ Definition f_pq_emp := {|
     (Sset _i (Econst_int (Int.repr 0) tint))
     (Sloop
       (Ssequence
-        (Sifthenelse (Ebinop Olt (Etempvar _i tint)
-                       (Econst_int (Int.repr 8) tint) tint)
+        (Sifthenelse (Ebinop Olt (Etempvar _i tint) (Etempvar _size tint)
+                       tint)
           Sskip
           Sbreak)
         (Ssequence
@@ -184,12 +183,7 @@ Definition f_pq_emp := {|
               (Ebinop Oadd (Etempvar _pq (tptr tint)) (Etempvar _i tint)
                 (tptr tint)) tint))
           (Sifthenelse (Ebinop Olt (Etempvar _t'1 tint)
-                         (Ebinop Oadd
-                           (Ebinop Osub
-                             (Econst_int (Int.repr 2147483647) tint)
-                             (Ebinop Odiv
-                               (Econst_int (Int.repr 2147483647) tint)
-                               (Econst_int (Int.repr 8) tint) tint) tint)
+                         (Ebinop Oadd (Etempvar _inf tint)
                            (Econst_int (Int.repr 1) tint) tint) tint)
             (Sreturn (Some (Econst_int (Int.repr 0) tint)))
             Sskip)))

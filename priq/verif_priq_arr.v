@@ -16,54 +16,34 @@ Lemma body_pq_emp: semax_body Vprog Gprog f_pq_emp pq_emp_spec.
 Proof.
   start_function.
   forward_for_simple_bound
-    SIZE
+    size
     (EX i : Z,
-     PROP (isEmpty (sublist 0 i priq_contents) = Vone)
-     LOCAL (temp _pq pq)
-     SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
-  - unfold SIZE; lia.
-  - unfold SIZE; rep_lia.
+     PROP (isEmpty (sublist 0 i priq_contents) inf = Vone)
+     LOCAL (temp _size (Vint (Int.repr size)); temp _inf (Vint (Int.repr inf));
+     temp _pq pq)
+     SEP (data_at Tsh (tarray tint size) (map Vint (map Int.repr priq_contents)) pq)).
   - entailer!. 
   - simpl.
-    assert_PROP (Zlength priq_contents = SIZE). {
-      entailer!. repeat rewrite Zlength_map in H3; auto.
+    assert_PROP (Zlength priq_contents = size). {
+      entailer!. repeat rewrite Zlength_map; auto.
     }
     forward; forward_if; forward; entailer!.
-    + rewrite inf_eq2 in H3.
-      rewrite (isEmpty_in priq_contents (Znth i priq_contents)); trivial.
+    + rewrite (isEmpty_in priq_contents (Znth i priq_contents)); trivial.
       1: apply Znth_In; lia.
-      rewrite <- H1 in H0.
-      pose proof (Forall_Znth _ _ i H0 H).
-      rewrite Int.signed_repr in H3.
-      apply (Z.lt_stepr _ _ _ H3).
-      rewrite inf_eq. compute; trivial.
-      simpl in H7. split; [lia|].
-      apply Z.le_trans with (m := inf + 1); [lia|].
-      rewrite inf_eq; compute; inversion 1.
-    + rewrite inf_eq2 in H3.
-      rewrite (sublist_split 0 i (i+1)); try lia.
-      unfold isEmpty.
-      rewrite fold_right_app.
-      rewrite sublist_one; try lia. Opaque inf. simpl.
-      destruct (Z_lt_dec (Znth i priq_contents) (inf + 1)).
-      2: unfold isEmpty in H2; trivial.
-      rewrite Int.add_signed in H3.
-      assert (Hx: inf + 1 < Int.max_signed). {
-        rewrite inf_eq; compute; trivial.
-      }
-      rewrite Int.signed_repr in H3.
-      2: rewrite <- H1 in H0; apply (Forall_Znth _ _ i H0) in H; simpl in H; rep_lia.
-      rewrite Int.signed_repr in H3.
-      2: { rewrite inf_eq.
-           repeat rewrite Int.signed_repr;
-             compute; split; inversion 1.
-      }
-      do 2 rewrite Int.signed_repr in H3. lia.
-      all: try rewrite inf_eq; compute; split; inversion 1.
+      pose proof (Forall_Znth _ _ i H3 H); simpl in H9.
+      rewrite Int.signed_repr in H6; lia.
+    + rewrite (sublist_split 0 i (i+1)); try lia.
+      rewrite isEmpty_Vone_app; split; trivial.
+      rewrite sublist_one; try lia.
+      simpl.
+      destruct (Z_lt_dec (Znth i priq_contents) (inf + 1));
+        trivial.
+      exfalso.
+      rewrite Int.signed_repr in H6; try lia.
+      apply (Forall_Znth _ _ i H3) in H; simpl in H; rep_lia.
   - forward. entailer!.
-    rewrite sublist_same in H0; trivial.
-    2: { symmetry; repeat rewrite Zlength_map in H2.
-         unfold SIZE. simpl in H2. lia. }
+    rewrite sublist_same in H3; trivial.
+    2: repeat rewrite Zlength_map; trivial.
     replace (Vint (Int.repr 1)) with Vone by now unfold Vone, Int.one.
     symmetry; trivial.
 Qed.
@@ -74,54 +54,49 @@ Proof. start_function. forward. entailer!. Qed.
 Lemma body_popMin: semax_body Vprog Gprog f_popMin popMin_spec.
 Proof.
   start_function.
-  assert_PROP (Zlength priq_contents = SIZE). {
-    entailer!. repeat rewrite Zlength_map in H2; auto.
+  assert_PROP (Zlength priq_contents = size). {
+    entailer!. repeat rewrite Zlength_map; auto.
   }
-  assert (0 <= 0 < Zlength (map Int.repr priq_contents)) by
-      (rewrite Zlength_map; rewrite H1; unfold SIZE; lia).
-  assert (0 <= 0 < Zlength priq_contents) by
-      (rewrite H1; unfold SIZE; lia).
-  assert (Ha: inf + 1 <= Int.max_signed). {
-    rewrite inf_eq; rep_lia.
+  assert (0 <= 0 < Zlength (map Int.repr priq_contents)). {
+    rewrite Zlength_map. rewrite H4. lia.
   }
-
   forward. forward.
   forward_for_simple_bound
-    SIZE
+    size
     (EX i : Z,
      PROP ()
      LOCAL (temp _minWeight (Vint (Int.repr (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents))));
-                        temp _minVertex (Vint (Int.repr (find priq_contents (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents)) 0)));
-                        temp _pq pq)
-                 SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
-  - unfold SIZE; rep_lia.
-  - entailer!. simpl. rewrite find_index.
-    trivial. lia. simpl. unfold not. lia.
+            temp _minVertex (Vint (Int.repr (find priq_contents (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents)) 0)));
+            temp _size (Vint (Int.repr size));
+            temp _inf (Vint (Int.repr inf));
+            temp _pq pq)
+     SEP (data_at Tsh (tarray tint size) (map Vint (map Int.repr priq_contents)) pq)).
+  - entailer!. simpl. rewrite find_index; trivial. lia.
+    simpl. unfold not. lia.
   - forward.
     assert (0 <= i < Zlength priq_contents) by lia.
     assert (Int.min_signed <=
             fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents) <= Int.max_signed).
-    { apply Forall_fold_min. apply Forall_Znth. lia.
-      rewrite Forall_forall. intros. rewrite In_Znth_iff in H6.
-      destruct H6 as [? [? ?]]. rewrite <- H7.
-      pose proof (Forall_Znth _ _ x0 H6 H).
-      simpl in H8.
-      split; [lia|].
-      apply Z.le_trans with (m := inf + 1); [lia|].
-      rewrite inf_eq. rep_lia.
-      rewrite Forall_forall. intros. rewrite In_Znth_iff in H6.
-      destruct H6 as [? [? ?]]. rewrite <- H7.
-      apply (Forall_sublist _ 0 i _) in H.
-      apply (Forall_Znth _ _ _ H6) in H.
-      simpl in H.
-      split; [lia|].
-      apply Z.le_trans with (m := inf + 1); [lia|].
-      rewrite inf_eq; rep_lia.
+    { apply Forall_fold_min.
+      - apply Forall_Znth; [lia|].
+        rewrite Forall_forall. intros. rewrite In_Znth_iff in H8.
+        destruct H8 as [? [? ?]]. rewrite <- H9.
+        pose proof (Forall_Znth _ _ x0 H8 H).
+        simpl in H10.
+        split; [lia|].
+        apply Z.le_trans with (m := inf + 1); lia.
+      - rewrite Forall_forall. intros. rewrite In_Znth_iff in H8.
+        destruct H8 as [? [? ?]]. rewrite <- H9.
+        apply (Forall_sublist _ 0 i _) in H.
+        apply (Forall_Znth _ _ _ H8) in H.
+        simpl in H.
+        split; [lia|].
+        apply Z.le_trans with (m := inf + 1); lia.
     }
     assert (Int.min_signed <= Znth i priq_contents <= Int.max_signed). {
-      apply (Forall_Znth _ _ _ H5) in H; simpl in H.
-
-      rep_lia. }
+      apply (Forall_Znth _ _ _ H7) in H; simpl in H.
+      rep_lia.
+    }
     forward_if.
     + forward. forward. entailer!.
       rewrite (sublist_split 0 i (i+1)) by lia.
@@ -137,12 +112,12 @@ Proof.
       rewrite fold_min_another.
       rewrite Z.min_l; [|lia]. split; trivial.
   - forward.
-    + entailer!. rewrite <- H1.
+    + entailer!.
       apply find_range.
       rewrite sublist_same; [|lia..].
       apply min_in_list; [apply incl_refl | apply Znth_In; lia].
     + forward.
-      Exists (find priq_contents (fold_right Z.min (hd 0 priq_contents) (sublist 0 SIZE priq_contents)) 0).
+      Exists (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0).
       rewrite sublist_same by lia. entailer!.
       destruct priq_contents; simpl; auto.
 Qed.

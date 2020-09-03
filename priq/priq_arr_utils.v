@@ -1,5 +1,8 @@
 Require Import VST.floyd.proofauto.
 
+(*
+On their way out.
+
 Definition SIZE := 8.
 Definition inf := Int.max_signed - Int.max_signed / SIZE.
 
@@ -12,18 +15,19 @@ Lemma inf_eq2: Int.sub (Int.repr 2147483647)
 Proof. compute. trivial. Qed.
 
 Global Opaque inf.
+ *)
 
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
 
 (* a weight to be added cannot be inf + 1 *)
-Definition weight_inrange_priq item :=
+Definition weight_inrange_priq item inf :=
   Int.min_signed <= item <= inf.
 
 (* over time, the overall PQ can range from MIN to inf + 1 *)
-Definition inrange_priq (priq : list Z) :=
+Definition inrange_priq (priq : list Z) inf :=
   Forall (fun x => Int.min_signed <= x <= inf + 1) priq.
 
-Definition isEmpty (priq : list Z) : val :=
+Definition isEmpty (priq : list Z) inf : val :=
   fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then Vzero else acc) Vone priq.
 
 Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
@@ -37,8 +41,8 @@ Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
 
 (** LEMMAS ABOUT THESE UTILITIES **)
 
-Lemma isEmpty_in: forall l target,
-    In target l -> target < inf + 1 -> isEmpty l = Vzero.
+Lemma isEmpty_in: forall l target inf,
+    In target l -> target < inf + 1 -> isEmpty l inf = Vzero.
 Proof.
   intros. induction l.
   1: exfalso; apply (in_nil H).
@@ -50,8 +54,8 @@ Proof.
   unfold isEmpty in IHl. trivial.
 Qed.
 
-Lemma isEmpty_in': forall l,
-    (exists i, In i l /\ i < (inf + 1)) <-> isEmpty l = Vzero.
+Lemma isEmpty_in': forall l inf,
+    (exists i, In i l /\ i < (inf + 1)) <-> isEmpty l inf = Vzero.
 Proof.
   split; intros.
   - destruct H as [? [? ?]]. induction l.
@@ -70,22 +74,49 @@ Proof.
       exists x. split; [apply in_cons|]; assumption.
 Qed.
 
-Lemma isEmptyTwoCases: forall l,
-    isEmpty l = Vone \/ isEmpty l = Vzero.
+Lemma isEmptyTwoCases: forall l inf,
+    isEmpty l inf = Vone \/ isEmpty l inf = Vzero.
 Proof.
   intros. induction l. 1: simpl; left; trivial.
   destruct IHl; simpl; destruct (Z_lt_dec a (inf+1));
     (try now left); now right.
 Qed.
 
-Lemma isEmptyMeansInf: forall l,
-    isEmpty l = Vone -> Forall (fun x => x > inf) l.
+Lemma isEmptyMeansInf: forall l inf,
+    isEmpty l inf = Vone <-> Forall (fun x => x > inf) l.
 Proof.
-  intros. induction l; trivial. simpl in H.
-  destruct (Z_lt_dec a (inf+1)); [inversion H|].
-  specialize (IHl H). apply Forall_cons; trivial. lia.
+  intros.
+  split; intros.
+  - induction l; trivial. simpl in H.
+    destruct (Z_lt_dec a (inf+1)); [inversion H|].
+    specialize (IHl H). apply Forall_cons; trivial. lia.
+  - induction l; trivial. simpl.
+    destruct (Z_lt_dec a (inf+1)).
+    2: { apply IHl.
+         rewrite Forall_forall; intros.
+         rewrite Forall_forall in H. simpl in H.
+         apply H. right; trivial.
+    }
+    exfalso.
+    rewrite Forall_forall in H.
+    assert (In a (a :: l)) by (apply in_eq).
+    specialize (H _ H0). lia.
 Qed.
 
+Lemma isEmpty_Vone_app: forall l1 l2 inf,
+    isEmpty (l1 ++ l2) inf = Vone <->
+    isEmpty l1 inf = Vone /\ isEmpty l2 inf = Vone.
+Proof.
+  intros. split; intros.
+  - repeat rewrite isEmptyMeansInf, Forall_forall in *;
+      split; intros; apply H, in_or_app;
+        [left | right]; trivial.
+  - repeat rewrite isEmptyMeansInf, Forall_forall in *.
+    destruct H. intros.
+    apply in_app_or in H1; destruct H1;
+      [apply H | apply H0]; trivial.
+Qed.
+    
 Lemma find_index_gen: forall l i ans,
     0 <= i < Zlength l ->
     ~ In (Znth i l) (sublist 0 i l) ->
@@ -274,17 +305,23 @@ Proof.
   simpl. rewrite IHnum. rewrite Z.min_r; lia.
 Qed.
 
-Lemma find_src: forall src,
-    0 <= src < SIZE ->
-    find (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0)
-         (fold_right Z.min (hd 0 (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0))
-                     (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0)) 0 = src.
+Lemma find_src: forall src size inf,
+    0 < inf ->
+    0 <= src < size ->
+    find (upd_Znth src (list_repeat (Z.to_nat size) inf) 0)
+         (fold_right Z.min (hd 0 (upd_Znth src (list_repeat (Z.to_nat size) inf) 0))
+                     (upd_Znth src (list_repeat (Z.to_nat size) inf) 0)) 0 = src.
 Proof.
   intros.
-  remember (upd_Znth src (list_repeat (Z.to_nat SIZE) inf) 0) as l.
+  assert (Ha: 0 <= src < Zlength (list_repeat (Z.to_nat size) inf)). {
+    rewrite Zlength_list_repeat; lia.
+  }
+
+  remember (upd_Znth src (list_repeat (Z.to_nat size) inf) 0) as l.
   replace (fold_right Z.min (hd 0 l) l) with (Znth src l).
   - apply find_index.
-    1: rewrite Heql, upd_Znth_Zlength; trivial.
+    1: rewrite Heql, upd_Znth_Zlength;
+      rewrite Zlength_list_repeat; lia.
     rewrite Heql.
     rewrite upd_Znth_same; trivial.
     rewrite sublist_upd_Znth_l.
@@ -292,25 +329,26 @@ Proof.
     2: rewrite Zlength_list_repeat; lia.
     rewrite sublist_list_repeat by lia.
     replace (src - 0) with (src) by lia.
-    intro. apply in_list_repeat in H0.
-    inversion H0.
+    intro. apply in_list_repeat in H1. lia.
   - subst l.
     rewrite upd_Znth_same; trivial.
     rewrite upd_Znth_unfold at 2; auto.
     repeat rewrite fold_right_app.
     repeat rewrite sublist_list_repeat; try lia.
-    2: rewrite Zlength_list_repeat; [|unfold SIZE]; lia.
+    2: rewrite Zlength_list_repeat; lia.
     repeat rewrite Zlength_list_repeat by lia.
     replace (src - 0) with (src) by lia.
     rewrite <- Znth_0_hd.
-    2: { unfold SIZE in *; rewrite upd_Znth_Zlength by assumption.
+    2: { rewrite upd_Znth_Zlength by assumption.
          rewrite Zlength_list_repeat; lia. }
     destruct (Z.eq_dec src 0).
-    + rewrite e. rewrite upd_Znth_same. simpl.
-      compute; trivial. rewrite Zlength_list_repeat; lia.
+    + rewrite e. rewrite upd_Znth_same.
+      2: rewrite Zlength_list_repeat; lia.
+      simpl. rewrite Z.min_l; trivial.
+      rewrite min_picks_first; lia.
     + rewrite upd_Znth_diff;
         try rewrite Zlength_list_repeat; try lia.
-      rewrite Znth_list_repeat_inrange by (unfold SIZE in *; lia).
+      rewrite Znth_list_repeat_inrange by lia.
       simpl. rewrite Z.min_l.
       1,2: rewrite min_picks_first.
       all: try lia; compute; inversion 1.
@@ -320,11 +358,11 @@ Lemma fold_min_in_list: forall l, Zlength l > 0 -> In (fold_right Z.min (hd 0 l)
 Proof.
   intros. apply min_in_list.
   - apply incl_refl.
-  - rewrite <- Znth_0_hd by (unfold SIZE in *; lia). apply Znth_In; lia.
+  - rewrite <- Znth_0_hd by trivial. apply Znth_In; lia.
 Qed.
 
-Lemma find_min_lt_inf: forall u l,
-    u = find l (fold_right Z.min (hd 0 l) l) 0 -> isEmpty l = Vzero ->
+Lemma find_min_lt_inf: forall u l inf,
+    u = find l (fold_right Z.min (hd 0 l) l) 0 -> isEmpty l inf = Vzero ->
     Zlength l > 0 -> Znth u l < inf + 1.
 Proof.
   intros. rewrite <- isEmpty_in' in H0. destruct H0 as [? [? ?]].
