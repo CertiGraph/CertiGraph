@@ -1176,6 +1176,158 @@ apply NoDup_cons. unfold not; intros. destruct H3. symmetry in H3; contradiction
 apply NoDup_cons. unfold not; intros; auto. apply NoDup_nil.
 Qed.
 
+Lemma simple_upath_self:
+forall g u p, connected_by_path g p u u -> simple_upath g p -> p = (u::nil).
+Proof.
+intros. destruct H as [? [? ?]]. destruct p. inversion H1.
+simpl in H1; inversion H1. subst v.
+destruct p. auto. rewrite last_error_cons in H2. 2: unfold not; intros; inversion H3.
+destruct H0. apply NoDup_cons_2 in H3. exfalso; apply H3. apply last_error_In. auto.
+Qed.
+
+Lemma split_list_In_first:
+forall (l: list V) v, In v l -> exists la lb, l = la ++ v::lb /\ (forall u, In u la -> u <> v).
+Proof.
+induction l; intros. contradiction.
+destruct H. subst v. exists nil. exists l. rewrite app_nil_l; auto.
+destruct (EV a v). hnf in e. subst v.
+exists nil. exists l. split. simpl; auto. unfold not; intros; contradiction.
+unfold complement, equiv in c.
+apply IHl in H. destruct H as [la [lb [? ?]]].
+exists (a::la). exists lb. split. simpl; rewrite H; auto.
+unfold not; intros. destruct H1. subst u; subst v. contradiction.
+apply (H0 u); auto.
+Qed.
+
+Lemma split_list_In:
+forall (l: list V) v, In v l -> exists la lb, l = la ++ v::lb.
+Proof.
+intros. apply split_list_In_first in H. destruct H as [la [lb [? ?]]].
+exists la; exists lb; apply H.
+Qed.
+
+Lemma first_point_of_convergence_ugly:
+forall l1 l2 (v: V), hd_error l1 <> hd_error l2 -> In v l1 -> In v l2 ->
+  exists l1a l2a v' l1b l2b, l1 = l1a++v'::l1b /\ l2 = l2a++v'::l2b /\
+  (forall u, In u l1a -> ~ In u l2a) /\ (forall u, In u l2a -> ~ In u l1a) /\ l1a <> l2a.
+Proof.
+induction l1; intros. contradiction.
+destruct l2. contradiction.
+destruct H0; destruct H1.
+++
+subst a; subst v0; simpl in H. contradiction.
+++
+subst a. apply split_list_In in H1. destruct H1 as [lx [ly ?]].
+exists nil. exists (v0::lx). exists v. exists l1. exists ly.
+split. rewrite app_nil_l; auto. split. simpl; rewrite H0; auto.
+split. intros. contradiction.
+split. unfold not; intros; auto.
+unfold not; intros. inversion H1.
+++
+subst v0. apply split_list_In in H0. destruct H0 as [lx [ly ?]].
+exists (a::lx). exists nil. exists v. exists ly. exists l2.
+split. simpl; rewrite H0; auto. split. apply app_nil_l.
+split. unfold not; intros. contradiction. split. intros. contradiction.
+unfold not; intros; inversion H1.
+++
+assert (a <> v0). unfold not; intros. subst a. simpl in H. contradiction.
+destruct l1. contradiction. destruct l2. contradiction.
+destruct (EV v1 v2).
+**
+hnf in e. subst v2.
+exists (a::nil). exists (v0::nil). exists v1. exists l1. exists l2.
+split. simpl; auto. split. simpl; auto. split. unfold not; intros.
+destruct H3. subst a. destruct H4. subst v0. all: try contradiction.
+split. unfold not; intros. destruct H3. subst v0. destruct H4. subst a. all: try contradiction.
+unfold not; intros. inversion H3. contradiction.
+**
+(*use IHL*)
+unfold complement, equiv in c.
+apply (IHl1 (v2::l2) v) in H1. 2: { simpl; unfold not; intros; inversion H3. contradiction. } 2: auto.
+destruct H1 as [l1a [l2a [v' [l1b [l2b [? [? [? ?]]]]]]]].
+rename v0 into b.
+(*is a in l2a?*)
+destruct (in_dec EV a l2a). apply split_list_In_first in i. destruct i as [l2a1 [l2a2 [? ?]]].
+exists nil. exists (b::l2a1). exists a. exists (v1::l1). exists (l2a2++v'::l2b).
+split. simpl; auto. split. rewrite H3. subst l2a.
+simpl. rewrite app_comm_cons. rewrite <- (app_assoc (b::l2a1) (a::l2a2)). simpl. auto.
+split. unfold not; intros; contradiction.
+split. unfold not; intros; contradiction.
+unfold not; intros. inversion H8.
+(*is b i l2a?*)
+destruct (in_dec EV b l1a). apply split_list_In_first in i. destruct i as [l1a1 [l1a2 [? ?]]].
+exists (a::l1a1). exists nil. exists b. exists (l1a2++v'::l1b). exists (v2::l2).
+split. rewrite H1. subst l1a. simpl. rewrite app_comm_cons.
+rewrite <- (app_assoc (a::l1a1) (b::l1a2)). simpl; auto.
+split. simpl; auto.
+split. unfold not; intros; contradiction.
+split. unfold not; intros; contradiction.
+unfold not; intros. inversion H8.
+exists (a::l1a). exists (b::l2a). exists v'. exists l1b. exists l2b.
+split. simpl. rewrite H1. auto.
+split. simpl. rewrite H3. auto.
+split. unfold not; intros.
+destruct H6; destruct H7. subst a; subst b. contradiction.
+subst a. contradiction. subst b. contradiction.
+apply H4 in H6. contradiction.
+split. unfold not; intros. destruct H6; destruct H7. subst a; subst b. contradiction.
+subst b. contradiction. subst a. contradiction.
+apply H5 in H7. contradiction. auto.
+unfold not; intros. inversion H6. contradiction.
+Qed.
+
+Lemma first_point_of_divergence:
+forall l1 l2 (u: V), hd_error l1 = Some u -> hd_error l2 = Some u -> l1 <> l2 ->
+  exists la v l1b l2b, l1 = la++v::l1b /\ l2 = la++v::l2b /\ hd_error l1b <> hd_error l2b.
+Proof.
+induction l1; intros. inversion H.
+destruct l2. inversion H0.
+simpl in H. inversion H. subst a. simpl in H0. inversion H0. subst v. clear H H0.
+destruct l1. destruct l2. contradiction.
+exists nil. exists u. exists nil. exists (v::l2). simpl.
+split. auto. split. auto. unfold not; intros; inversion H.
+destruct l2. exists nil. exists u. exists (v::l1). exists nil. simpl.
+split. auto. split. auto. unfold not; intros; inversion H.
+rename v into a. rename v0 into b. destruct (EV a b).
+++
+hnf in e. subst b. assert (a::l1 <> a::l2). unfold not; intros; rewrite H in H1; contradiction.
+apply (IHl1 (a::l2) a) in H; auto. destruct H as [la [x [l1b [l2b [? [? ?]]]]]].
+exists (u::la). exists x. exists l1b. exists l2b.
+simpl. split. rewrite H; auto. split. rewrite H0; auto. auto.
+++
+exists nil. exists u. exists (a::l1). exists (b::l2).
+simpl. split. auto. split. auto. unfold complement, equiv in c. unfold not; intros. inversion H. contradiction.
+Qed.
+
+(*not strong enough... need to show l1b <> l2b too*)
+Lemma first_divergence_bubble_ugly:
+forall l1 l2 (u v: V), l1 <> l2 -> hd_error l1 = Some u -> hd_error l2 = Some u ->
+  last_error l1 = Some v -> last_error l2 = Some v -> u <> v ->
+  NoDup l1 -> NoDup l2 -> (*I'm sure this is unnecessary*)
+  exists la x l1b l2b y l1c l2c,
+    l1 = la++x::l1b++y::l1c /\ l2 = la++x::l2b++y::l2c /\
+    (forall u, In u l1b -> ~ In u l2b) /\
+    (forall u, In u l2b -> ~ In u l1b) /\ l1b <> l2b.
+Proof.
+intros. apply (first_point_of_divergence l1 l2 u) in H; auto.
+destruct H as [la [x [l1b [l2b [? [? ?]]]]]]. subst l1; subst l2.
+rewrite last_err_split2 in H2, H3.
+destruct l1b. destruct l2b. contradiction. inversion H2. subst x.
+rewrite last_error_cons in H3. apply last_error_In in H3.
+apply NoDup_app_r in H6. apply NoDup_cons_2 in H6. contradiction.
+unfold not; intros. inversion H.
+destruct l2b. inversion H3. subst x. apply NoDup_app_r in H5. apply NoDup_cons_2 in H5.
+rewrite last_error_cons in H2. apply last_error_In in H2. contradiction.
+unfold not; intros. inversion H.
+assert (In v (v1::l2b)). { rewrite last_error_cons in H3. apply last_error_In in H3. auto. unfold not; intros. inversion H. }
+apply (first_point_of_convergence_ugly (v0::l1b) (v1::l2b) v) in H.
+2: auto. 2: { rewrite last_error_cons in H2. apply last_error_In in H2. auto. unfold not; intros. inversion H7. }
+destruct H as [l1b' [l2b' [y [l1c [l2c [? [? [? ?]]]]]]]].
+rewrite H. rewrite H7.
+exists la. exists x. exists l1b'. exists l2b'. exists y. exists l1c. exists l2c.
+split. auto. split. auto. split; auto.
+Qed.
+
 Lemma uforest_uforest':
 forall g, (forall e, evalid g e -> strong_evalid g e) -> uforest g -> uforest' g.
 Proof.
@@ -1188,12 +1340,121 @@ split. intros. apply (uforest_no_multigraph g u v e1 e2); auto.
 split. auto.
 (*unique_simple_upath*)
 unfold unique_simple_upath; intros.
+destruct (EV u v). hnf in e. subst v.
+apply (simple_upath_self g u p1) in H1; auto. apply (simple_upath_self g u p2) in H3; auto.
+rewrite H1, H3. auto.
+unfold complement, equiv in c.
+destruct (list_eqdec EV p1 p2). hnf in e; auto. unfold complement, equiv in c0. exfalso.
 (*This is the tricky one. Need a lemma that finds the first "point" of divergence v1 and then the
 first point of convergence v2 after that, so that the sublists p1' p2' connect v1 and v2, but
 internal variables are all different.
+   |--p1'--|
+---x       y---
+    \-p2'-/
 Then the edges that fits_upath p1' and p2' cannot be identical as well
 Then p1' ++ tl (rev p2') is a simple ucycle*)
-Abort.
+assert (exists (la : list V) (x : V) (l1b l2b : list V) (y : V) (l1c l2c : list V),
+       p1 = la ++ x :: l1b ++ y :: l1c /\
+       p2 = la ++ x :: l2b ++ y :: l2c /\
+       (forall u : V, In u l1b -> ~ In u l2b) /\ (forall u : V, In u l2b -> ~ In u l1b) /\ l1b <> l2b).
+apply (first_divergence_bubble_ugly p1 p2 u v).
+auto. apply H2. apply H4. apply H2. apply H4. auto. apply H1. apply H3.
+destruct H5 as [pa [x [p1' [p2' [y [p1c [p2c ?]]]]]]]. destruct H5 as [? [? [? [? Hnot]]]].
+subst p1. subst p2.
+assert (connected_by_path g (x::p1'+::y) x y). {
+split. replace (pa ++ x :: p1' ++ y :: p1c) with (pa++(x::p1'+::y)++p1c) in H2. destruct H2.
+apply valid_upath_app_split in H2. destruct H2. apply valid_upath_app_split in H6. apply H6.
+simpl. rewrite <- app_assoc. simpl. auto.
+split. auto. rewrite app_comm_cons. apply last_err_appcons.
+}
+assert (simple_upath g (x::p1'+::y)). split. apply H5. destruct H1.
+apply NoDup_app_r in H6. replace (x :: p1' ++ y :: p1c) with ((x::p1'+::y)++p1c) in H6.
+apply NoDup_app_l in H6. auto.
+simpl. rewrite <- app_assoc. simpl; auto.
+assert (connected_by_path g (x::p2'+::y) x y). {
+split. replace (pa ++ x :: p2' ++ y :: p2c) with (pa++(x::p2'+::y)++p2c) in H4. destruct H4.
+apply valid_upath_app_split in H4. destruct H4. apply valid_upath_app_split in H10. apply H10.
+simpl. rewrite <- app_assoc. simpl. auto.
+split. auto. rewrite app_comm_cons. apply last_err_appcons.
+}
+assert (simple_upath g (x::p2'+::y)). split. apply H9. destruct H3.
+apply NoDup_app_r in H10. replace (x :: p2' ++ y :: p2c) with ((x::p2'+::y)++p2c) in H10.
+apply NoDup_app_l in H10. auto.
+simpl. rewrite <- app_assoc. simpl; auto.
+clear c0. clear H2 H1 H4 H3. clear p1c p2c pa. clear c u v.
+replace (x :: p2' +:: y) with (rev ((y::(rev p2')+::x))) in *.
+2: { simpl. rewrite rev_unit, rev_involutive. simpl; auto. }
+apply connected_by_path_rev in H9. rewrite rev_involutive in H9.
+apply simple_upath_rev in H10. rewrite rev_involutive in H10.
+set (p:=(x::p1'+::y)++ tl (y::rev p2'+::x)).
+assert (connected_by_path g p x x). unfold p.
+apply (connected_by_path_join g _ _ x y x); auto.
+assert (exists l, fits_upath g l p). apply connected_exists_list_edges in H1; auto.
+destruct H2 as [l ?].
+assert (simple_upath g (tl p)). {
+  split. apply valid_upath_tail. apply H1.
+unfold p. simpl.
+apply NoDup_app_inv. destruct H6. apply NoDup_cons_1 in H4. auto.
+destruct H10. apply NoDup_cons_1 in H4. auto.
+unfold not; intros. apply in_app_or in H3; apply in_app_or in H4.
+destruct H3; destruct H4.
+rewrite <- in_rev in H4. apply H8 in H4. auto.
+destruct H4. subst x0. destruct H6. apply NoDup_cons_2 in H6. apply H6.
+apply in_or_app; left; auto. contradiction.
+destruct H3. subst x0. destruct H10. apply NoDup_cons_2 in H10. apply H10.
+apply in_or_app; left; auto. contradiction.
+destruct H3; destruct H4; try contradiction. subst x0.
+destruct H6. apply NoDup_cons_2 in H6. apply H6.
+subst y. apply in_or_app. right; left; auto.
+}
+apply (H0 p l). unfold p, simple_ucycle, ucycle. split. apply H3.
+simpl. destruct (p1' +:: y ++ rev p2' +:: x) eqn:Htmp.
+assert (In x (p1' +:: y ++ rev p2' +:: x)). apply in_or_app; right; apply in_or_app; right; left; auto.
+rewrite Htmp in H4; contradiction.
+unfold p in H2. simpl in H2. rewrite Htmp in H2. destruct l. contradiction.
+split. rewrite <- Htmp. apply H1. split. auto.
+apply NoDup_cons.
+--(*want to show that if it were, there would be two x or two v in l0*)
+assert (Htl: connected_by_path g (tl p) v x). split. apply H3. split.
+unfold p; simpl; rewrite Htmp; auto.
+simpl. rewrite app_assoc. apply last_err_appcons.
+simpl in Htl. rewrite Htmp in Htl.
+unfold not; intros. destruct H2. unfold p in H3. simpl in H3. rewrite Htmp in H3. destruct H3.
+assert (Hv: ~ In v l0). apply NoDup_cons_2 in H12; auto.
+destruct l. contradiction. destruct l0. simpl in H11; contradiction.
+destruct H4.
+subst e0. destruct H11. assert (v0 = x). { destruct H2. destruct H4.
+destruct H13; destruct H13; destruct H14; destruct H14; rewrite H13 in H14; rewrite H15 in H16.
+apply NoDup_cons_2 in H12. exfalso; apply H12. left. auto.
+auto. auto.
+exfalso; apply NoDup_cons_2 in H12; apply H12; left; auto.
+}
+subst v0. clear H4. destruct l0.
+++
+(*show this means p1' = p2'*)
+destruct p1'. destruct p2'. contradiction.
+simpl in Htmp. inversion Htmp. destruct (rev p2'). simpl in H14. inversion H14. simpl in H14. inversion H14.
+pose proof (app_not_nil (l0+::v0) x). contradiction.
+inversion Htmp. destruct p1'. inversion H14.
+pose proof (app_not_nil (rev p2') x). contradiction.
+simpl in H14. inversion H14. rewrite app_assoc in H16.
+pose proof (app_not_nil (p1' +:: y ++ rev p2') x). contradiction.
+++
+assert (In x (v0::l0)). apply last_error_In. apply Htl.
+apply NoDup_cons_1 in H12. apply NoDup_cons_2 in H12. contradiction.
+++
+destruct H11. apply NoDup_cons_2 in H12. exfalso; apply H12.
+destruct H2. destruct H14; destruct H14.
+apply (fits_upath_vertex_dst_In g (v0::l0)) in H4. rewrite H15 in H4; auto. auto.
+apply (fits_upath_vertex_src_In g (v0::l0)) in H4. rewrite H14 in H4; auto. auto.
+--
+(*NoDup l*)
+apply fits_upath_cons in H2. rewrite <- Htmp in H2.
+apply (simple_upath_list_edges_NoDup g (tl p) l). auto.
+unfold p; simpl; auto.
+Qed.
+
+(*so as long as the graph is strong_evalid, uforest and uforest' are equiv*)
 
 (******************LABELED GRAPHS******************)
 
