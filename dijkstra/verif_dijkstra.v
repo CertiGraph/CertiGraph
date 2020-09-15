@@ -867,7 +867,9 @@ Definition dijk_forloop_break_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr 
               (pointer_val_val dist_ptr);
       DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size).
 
-Definition dijk_inner_forloop_inv (g: DijkGG inf size) sh src priq dist_ptr prev_ptr priq_ptr graph_ptr :=
+Definition dijk_inner_forloop_inv (g: DijkGG inf size) sh
+           src (priq dist prev : list Z)
+           dist_ptr prev_ptr priq_ptr graph_ptr :=
   EX i : Z,
   EX prev' : list V,
   EX priq' : list V,
@@ -930,6 +932,11 @@ Definition dijk_inner_forloop_inv (g: DijkGG inf size) sh src priq dist_ptr prev
       vvalid g dst ->
       ~ In dst popped' ->
       Znth dst priq' = Znth dst dist';
+
+    (* the lengths of the threee arrays *)
+    Zlength priq' = size;
+    Zlength dist' = size;
+    Zlength prev' = size;
     
     (* and ranges of the three arrays *)
     inrange_prev prev';
@@ -2047,8 +2054,10 @@ Proof.
          *)
         forward_for_simple_bound
           size
-          (dijk_inner_forloop_inv _ _ g sh src priq dist_ptr
-                                  prev_ptr priq_ptr graph_ptr).
+          (dijk_inner_forloop_inv
+             _ _ g sh src
+             priq dist prev
+             dist_ptr prev_ptr priq_ptr graph_ptr).
         -- (* We start the for loop as planned --
               with the old dist and prev arrays,
               and with a priq array where u has been popped *)
@@ -2066,7 +2075,7 @@ Proof.
           clear H15 H16 H17 H18 H19 H20 H21 H22
                 H23 H24 H25 H26 H27. 
           
-          split3; [| | split3; [| |split3; [| |split3]]]; trivial.
+          split3; [| | split3; [| |split3; [| |split3; [| |split]]]]; trivial.
           ++ intros.
              (* if popped = [], then 
                 prove inv_popped for [u].
@@ -2146,6 +2155,8 @@ Proof.
              apply not_in_cons in H16; destruct H16 as [_ ?].
              trivial. ulia.
 
+          ++ rewrite upd_Znth_Zlength; ulia.
+
           ++ apply Forall_upd_Znth; trivial.
              ulia. split; [|reflexivity].
              pose proof (inf_further_restricted _ _ g); lia.
@@ -2170,9 +2181,12 @@ Proof.
           rename H25 into H20.
           rename H26 into H_priq_popped_link.
           rename H27 into H_priq_dist_link.
-          rename H28 into H21.
-          rename H29 into H22.
-          rename H30 into H23.
+          rename H31 into H21.
+          rename H32 into H22.
+          rename H33 into H23.
+          rename H28 into H24.
+          rename H29 into H25.
+          rename H30 into H26.
 
           forward_call (sh, g, graph_ptr, u, i).
 
@@ -2218,18 +2232,6 @@ this is how it was done, in one fell swoop, earlier
 
           rewrite <- elabel_Znth_graph_to_mat in Heqcost; trivial.
 
-          assert_PROP (Zlength priq' = size). {
-            (* add to invariant *)
-            admit.
-          }
-
-          assert_PROP (Zlength prev' = size). {
-            admit.
-          }
-          assert_PROP (Zlength dist' = size). {
-            admit.
-          }
-          
           forward_if.
           ++ rename H27 into Htemp.
              assert (0 <= cost <= Int.max_signed / size). {
@@ -2326,8 +2328,8 @@ this is how it was done, in one fell swoop, earlier
 
                 assert (u <> i) by (intro; subst; lia).
                 
-                split3; [| | split3; [| | split3; [| | split3;[| |split]]]]; intros.
-                (* 9 goals, where the 9th is 
+                split3; [| | split3; [| | split3; [| | split3;[| |split3; [| | split3]]]]]; intros.
+                (* 13 goals, where the 13th is 
                    3 range-based goals together *)
                 --- apply inv_popped_newcost; try ulia.
                 --- apply inv_unpopped_newcost with (priq := priq'); ulia.
@@ -2353,6 +2355,9 @@ this is how it was done, in one fell swoop, earlier
                     repeat rewrite upd_Znth_diff; trivial; try lia.
                     apply H_priq_dist_link; trivial.
                     all: rewrite (vvalid_meaning g) in H31; ulia.
+                --- rewrite upd_Znth_Zlength; ulia.
+                --- rewrite upd_Znth_Zlength; ulia.
+                --- rewrite upd_Znth_Zlength; ulia.
                 --- split3; apply Forall_upd_Znth; ulia.
                     
              ** (* This is the branch where we didn't
