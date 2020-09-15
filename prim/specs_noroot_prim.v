@@ -5,7 +5,7 @@ Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.undirected_graph.
 Require Import CertiGraph.graph.AdjMatGraph.
 Require Import CertiGraph.prim.MatrixUGraph.
-Require Import CertiGraph.prim.prim.
+Require Import CertiGraph.prim.noroot_prim.
 Require Import CertiGraph.prim.spatial_undirected_matrix.
 Require Import CertiGraph.lib.List_ext.
 
@@ -20,6 +20,7 @@ Definition initialise_list_spec :=
   WITH sh: share, arr : val, old_list: list val, a: Z
   PRE [tptr tint, tint]
      PROP ( writable_share sh;
+            Zlength old_list = SIZE; (*<--I'm not sure if this is derivable from SEP*)
             repable_signed a
           )
      PARAMS ( arr; Vint (Int.repr a) )
@@ -51,12 +52,11 @@ Definition initialise_matrix_spec :=
 
 Definition prim_spec :=
   DECLARE _prim
-  WITH sh: share, g: G, garbage: list V, gptr : pointer_val, r: Z, parent_ptr : pointer_val
-  PRE [tptr (tarray tint SIZE), tint, tptr tint]
-     PROP ( writable_share sh;
-            vvalid g r
+  WITH sh: share, g: G, garbage: list V, gptr : pointer_val, parent_ptr : pointer_val
+  PRE [tptr (tarray tint SIZE), tptr tint]
+     PROP ( writable_share sh
           )
-     PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
+     PARAMS ( pointer_val_val gptr; pointer_val_val parent_ptr)
      GLOBALS ()
      SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
           data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
