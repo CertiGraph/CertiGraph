@@ -7,6 +7,9 @@
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
  
+extern void * mallocN (int n);
+extern void freeN (void *p);
+
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
 /*  from a single source to all possible destinations */
@@ -62,8 +65,12 @@ void getPaths (int src, int* dist, int* prev, int size, int inf) {
     printf("\nThe rest are unreachable.\n");
 }
 
+int getCell (int **graph, int u, int i) {
+    return graph[u][i];
+}
+
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
-    int* pq = malloc (size * sizeof *pq);
+    int* pq = mallocN (size * sizeof *pq);
     int i, j, u, cost;
     for (i = 0; i < size; i++) {
         dist[i] = inf;  // Best-known distance from src to i
@@ -78,7 +85,7 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
         // printf("Popped vertex %d\n", u); 
         // if (dist[u] == IFTY) break; // we're running on gas; there are no more reachable vertices 
         for (i = 0; i < size; i++) {
-            cost = graph[u][i]; 
+            cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine
                 if (dist[i] > dist[u] + cost) {  // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + cost;  // improve it
@@ -90,6 +97,7 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
             }
         }
     }
+//    freeN (pq);
     return;
     // return prev;
     // for(i = 0; i < SIZE; i++)
@@ -107,15 +115,15 @@ int main(int argc, const char * argv[])
     int src = rand() % size; 
 
     int** graph;
-    graph = malloc(size * sizeof *graph);
+    graph = mallocN (size * sizeof *graph);
     for (i=0; i < size; i++) {
-        graph[i] = malloc(size * sizeof *graph[i]);
+        graph[i] = mallocN (size * sizeof *graph[i]);
     }
 
     setup(graph, size, inf);
     print_graph(graph, size, inf, src);
-    int* prev = malloc (size * sizeof *prev);
-    int* dist = malloc (size * sizeof *dist);
+    int* prev = mallocN (size * sizeof *prev);
+    int* dist = mallocN (size * sizeof *dist);
     dijkstra(graph, src, dist, prev, size, inf);
     getPaths(src, dist, prev, size, inf);
     
@@ -125,7 +133,6 @@ int main(int argc, const char * argv[])
         free(graph[i]);
     }
     free(graph);
-
     return 0;
 }
 
