@@ -10,9 +10,9 @@ Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope logic.
 
-Definition vertex_type := tint.
-
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
+
+Definition vertex_type := tint.
 
 Definition SIZE := 8.
 
@@ -210,19 +210,19 @@ Qed.
    stuff where your "eformat" is supposed to go
    *)
 
-Definition list_address a index size : val :=
+Definition list_address (*{cs: compspecs}*) a index size : val :=
   offset_val (index * sizeof (tarray tint size)) a.
 
-Definition list_rep sh size l contents_mat index :=
+Definition list_rep (*{cs: compspecs}*) sh size l contents_mat index :=
   let mylist := (Znth index contents_mat) in
   data_at sh (tarray tint size) (map (fun x => Vint (Int.repr x)) mylist) (list_address l index size).
 
-Definition undirected_matrix sh matrix_contents gaddr : mpred :=
+Definition undirected_matrix (*{cs: compspecs}*) sh matrix_contents gaddr : mpred :=
   iter_sepcon.iter_sepcon (list_rep sh SIZE gaddr matrix_contents)
                           (nat_inc_list (Z.to_nat (Zlength matrix_contents))).
 
 (*isolate the "ith row"*)
-Lemma graph_unfold: forall sh contents ptr i,
+Lemma graph_unfold: forall (*{cs: compspecs}*) sh contents ptr i,
     0 <= i < (Zlength contents) ->
     undirected_matrix sh contents ptr =
     iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents) (*<---before*)

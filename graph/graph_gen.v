@@ -176,7 +176,7 @@ Lemma add_edge_evalid: forall g e s t, evalid (pregraph_add_edge g e s t) e. Pro
 
 Lemma add_edge_preserves_evalid: forall g e s t e', evalid g e' -> evalid (pregraph_add_edge g e s t) e'. Proof. intros. hnf; left; auto. Qed.
 
-Lemma add_edge_preserves_evalid': forall g e s t e', e<>e' -> evalid (pregraph_add_edge g e s t) e' -> evalid g e'.
+Lemma add_edge_evalid_rev: forall g e s t e', e<>e' -> evalid (pregraph_add_edge g e s t) e' -> evalid g e'.
 Proof.
 intros. simpl in H0. unfold addValidFunc in H0. destruct H0; [auto | symmetry in H0; contradiction].
 Qed.
@@ -213,7 +213,7 @@ Proof.
 intros; split; intros.
 +destruct H0 as [? [? ?]]. split. apply add_edge_preserves_evalid; auto.
 rewrite add_edge_preserves_src, add_edge_preserves_dst; auto.
-+destruct H0 as [? [? ?]]. apply add_edge_preserves_evalid' in H0; auto.
++destruct H0 as [? [? ?]]. apply add_edge_evalid_rev in H0; auto.
 rewrite add_edge_preserves_src in H1; auto. rewrite add_edge_preserves_dst in H2; auto. simpl in H1, H2.
 split; auto.
 Qed.
@@ -743,6 +743,18 @@ end.
 
 Definition labeledgraph_add_edge (g : Graph) (e : E) (o t : V) (d: DE) :=
   Build_LabeledGraph _ _ _ (pregraph_add_edge g e o t) (vlabel g) (update_elabel (elabel g) e d) (glabel g).
+
+Lemma add_edge_vlabel:
+forall g e o t d v, vlabel (labeledgraph_add_edge g e o t d) v = vlabel g v.
+Proof. intros. simpl. auto. Qed.
+
+Lemma add_edge_elabel:
+forall g e o t d, elabel (labeledgraph_add_edge g e o t d) e = d.
+Proof. intros. simpl. unfold update_elabel. destruct (equiv_dec e e). auto. unfold complement, equiv in c; contradiction. Qed.
+
+Lemma add_edge_preserves_elabel:
+forall g e o t d e', e <> e' -> elabel (labeledgraph_add_edge g e o t d) e' = elabel g e'.
+Proof. intros. simpl. unfold update_elabel. destruct (equiv_dec e e'). hnf in e0; contradiction. auto. Qed.
 
 (*add_edges?*)
 

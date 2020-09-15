@@ -489,7 +489,7 @@ Proof. intros. apply add_edge_preserves_evalid; auto. Qed.
 
 Lemma adde_evalid2':
   forall (g: FiniteWEdgeListGraph) e w e', e' <> e -> evalid (FiniteWEdgeListGraph_adde g e w) e' -> evalid g e'.
-Proof. intros. apply add_edge_preserves_evalid' in H0; auto. Qed.
+Proof. intros. apply add_edge_evalid_rev in H0; auto. Qed.
 
 Lemma adde_evalid_or:
   forall (g: FiniteWEdgeListGraph) e w e', evalid (FiniteWEdgeListGraph_adde g e w) e' -> (evalid g e' \/ e' = e).

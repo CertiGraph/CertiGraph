@@ -26,14 +26,13 @@ Definition inrange_priq (priq : list Z) :=
 Definition isEmpty (priq : list Z) : val :=
   fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then Vzero else acc) Vone priq.
 
-Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
+Fixpoint find {A: Type} {EA: EquivDec.EqDec A eq} (l : list A) (n : A) (ans : Z) :=
   match l with
   | [] => ans
-  | h :: t => if eq_dec h n
+  | h :: t => if EA h n
               then ans
               else (find t n (1 + ans))
   end.
-
 
 (** LEMMAS ABOUT THESE UTILITIES **)
 
@@ -86,7 +85,7 @@ Proof.
   specialize (IHl H). apply Forall_cons; trivial. lia.
 Qed.
 
-Lemma find_index_gen: forall l i ans,
+Lemma find_index_gen: forall {A:Type} {EA: EquivDec.EqDec A eq} {d: Inhabitant A} (l: list A) i ans,
     0 <= i < Zlength l ->
     ~ In (Znth i l) (sublist 0 i l) ->
     find l (Znth i l) ans = i + ans.
@@ -96,7 +95,7 @@ Proof.
   1: intros; rewrite Zlength_nil in H; exfalso; lia.
   unfold find.
   intros.
-  destruct (eq_dec a (Znth i (a :: l))).
+  destruct (EA a (Znth i (a :: l))).
   - rewrite <- e in H0. clear - H H0.
     destruct (Z.eq_dec 0 i). 1: lia.
     destruct H. assert (0 < i) by lia.
@@ -105,9 +104,9 @@ Proof.
     replace (Z.to_nat i) with (Z.to_nat (Z.succ (i-1))) by rep_lia.
     rewrite Z2Nat.inj_succ by lia.
     rewrite firstn_cons. apply in_eq.
-  - destruct (Z.eq_dec 0 i).
-    1: rewrite <- e in n; rewrite Znth_0_cons in n;
-      exfalso; lia.
+  - unfold RelationClasses.complement, Equivalence.equiv in c.
+    destruct (Z.eq_dec 0 i).
+    rewrite <- e in c; rewrite Znth_0_cons in c. contradiction.
     assert (0 <= i - 1 < Zlength l) by
         (rewrite Zlength_cons in H; rep_lia).
     assert (~ In (Znth (i - 1) l) (sublist 0 (i - 1) l)). {
@@ -125,7 +124,7 @@ Proof.
     unfold find. trivial.
 Qed.
 
-Lemma find_index: forall l i,
+Lemma find_index: forall {A:Type} {EA: EquivDec.EqDec A eq} {d: Inhabitant A} (l: list A) i,
     0 <= i < Zlength l ->
     ~ In (Znth i l) (sublist 0 i l) ->
     find l (Znth i l) 0 = i.
@@ -134,7 +133,7 @@ Proof.
   apply find_index_gen; trivial.
 Qed.
 
-Lemma find_range_gen: forall l target ans,
+Lemma find_range_gen: forall {A:Type} {EA: EquivDec.EqDec A eq} {d: Inhabitant A} (l: list A) target ans,
     In target l ->
     0 <= ans ->
     ans <= find l target ans < Zlength l + ans.
@@ -145,10 +144,10 @@ Proof.
   1: intros; simpl; now rewrite Zlength_nil.
   intros. apply in_inv in H. destruct H.
   - subst a. unfold find.
-    destruct (eq_dec target target).
+    destruct (EA target target).
     rewrite Zlength_cons. split; rep_lia.
-    exfalso; lia.
-  - unfold find. destruct (eq_dec a target).
+    unfold RelationClasses.complement, Equivalence.equiv in c; contradiction.
+  - unfold find. destruct (EA a target).
     1: rewrite Zlength_cons; split; rep_lia.
     assert (0 <= 1 + ans) by lia.
     pose proof (IHl (1+ans) H1 target H).
@@ -156,7 +155,7 @@ Proof.
     rewrite Zlength_cons. rep_lia.
 Qed.
 
-Lemma find_range: forall l target,
+Lemma find_range: forall {A:Type} {EA: EquivDec.EqDec A eq} {d: Inhabitant A} (l: list A) target,
     In target l ->
     0 <= find l target 0 < Zlength l.
 Proof.
@@ -165,7 +164,7 @@ Proof.
 Qed.
 
 Lemma Znth_find_gen:
-  forall l target ans,
+  forall {A:Type} {EA: EquivDec.EqDec A eq} {d: Inhabitant A} (l: list A) target ans,
     0 <= ans ->
     In target l ->
     Znth ((find l target ans)-ans) l = target.
@@ -175,13 +174,13 @@ Proof.
   intros.
   destruct H0.
   - subst target. simpl.
-    destruct (initial_world.EqDec_Z a a).
+    destruct (EA a a).
     + replace (ans-ans) with 0 by lia.
       rewrite Znth_0_cons; auto.
-    + exfalso; lia.
+    + unfold RelationClasses.complement, Equivalence.equiv in c; contradiction.
   - specialize (IHl H0).
     simpl.
-    destruct (initial_world.EqDec_Z a target).
+    destruct (EA a target).
     + replace (ans-ans) with 0 by lia.
       rewrite Znth_0_cons; auto.
     + assert (0 <= 1 + ans) by lia.
@@ -195,7 +194,7 @@ Proof.
 Qed.
 
 Lemma Znth_find:
-  forall l target,
+  forall {A:Type} {EA: EquivDec.EqDec A eq} {d: Inhabitant A} (l: list A) target,
     In target l ->
     Znth (find l target 0) l = target.
 Proof.
@@ -273,6 +272,9 @@ Proof.
   intros. induction num; trivial.
   simpl. rewrite IHnum. rewrite Z.min_r; lia.
 Qed.
+
+Instance Z_EqDec: EquivDec.EqDec Z eq.
+Proof. hnf. apply Z.eq_dec. Qed.
 
 Lemma find_src: forall src,
     0 <= src < SIZE ->
