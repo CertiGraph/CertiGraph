@@ -179,10 +179,10 @@ forall l1 l2 v ans, In v l1 -> find (l1++l2) v ans = find l1 v ans.
 Proof.
 induction l1; intros. contradiction.
 destruct (Z.eq_dec v a). subst a.
-simpl. unfold initial_world.EqDec_Z, zeq.
-destruct (Z.eq_dec v v). auto. contradiction.
+simpl.
+destruct (Z_EqDec v v). auto. unfold RelationClasses.complement, Equivalence.equiv in c; contradiction.
 destruct H. symmetry in H; contradiction.
-simpl. destruct (initial_world.EqDec_Z a v). symmetry in e; contradiction.
+simpl. destruct (Z_EqDec a v). symmetry in e; contradiction.
 rewrite IHl1; auto.
 Qed.
 
@@ -191,7 +191,7 @@ forall l v ans1 ans2, find l v (ans1+ans2) = ans1 + find l v ans2.
 Proof.
 induction l; intros.
 simpl. auto.
-simpl. destruct (initial_world.EqDec_Z a v). auto.
+simpl. destruct (Z_EqDec a v). auto.
 replace (1+(ans1+ans2)) with (ans1 + (1+ans2)) by lia. apply IHl.
 Qed.
 
@@ -200,7 +200,7 @@ forall l1 l2 v ans, ~ In v l1 -> find (l1++l2) v ans = Zlength l1 + find l2 v an
 Proof.
 induction l1; intros. rewrite app_nil_l, Zlength_nil. lia.
 assert (~ In v l1). unfold not; intros; apply H. right; auto.
-simpl. destruct (initial_world.EqDec_Z a v). subst a. exfalso. apply H. left; auto.
+simpl. destruct (Z_EqDec a v). hnf in e; subst a. exfalso. apply H. left; auto.
 rewrite Zlength_cons. rewrite IHl1; auto.
 rewrite <- Z.add_1_r, <- Z.add_assoc. rewrite find_accum_add1. auto.
 Qed.
@@ -222,7 +222,7 @@ forall l v ans, In v l -> find l v ans < Zlength l + ans.
 Proof.
 induction l; intros. contradiction.
 rewrite Zlength_cons.
-simpl. destruct (initial_world.EqDec_Z a v).
+simpl. destruct (Z_EqDec a v).
 pose proof (Zlength_nonneg l); lia.
 rewrite Z.add_succ_l. rewrite find_accum_add1, Z.add_1_l.
 assert (find l v ans < Zlength l + ans). apply IHl. destruct H. contradiction. auto.
@@ -234,7 +234,7 @@ forall l v ans, find l v ans <= Zlength l + ans.
 Proof.
 induction l; intros. rewrite Zlength_nil; simpl; lia.
 rewrite Zlength_cons.
-simpl. destruct (initial_world.EqDec_Z a v).
+simpl. destruct (Z_EqDec a v).
 pose proof (Zlength_nonneg l); lia.
 rewrite Z.add_succ_l. rewrite find_accum_add1, Z.add_1_l.
 specialize IHl with v ans.
@@ -244,14 +244,14 @@ Qed.
 Lemma find_cons:
 forall l v ans, find (v::l) v ans = ans.
 Proof.
-intros. simpl. destruct (initial_world.EqDec_Z v v). auto. contradiction.
+intros. simpl. destruct (Z_EqDec v v). auto. unfold RelationClasses.complement, Equivalence.equiv in c; contradiction.
 Qed.
 
 Lemma find_lbound:
 forall l v ans, ans <= find l v ans.
 Proof.
 induction l; intros. simpl. lia.
-simpl. destruct (initial_world.EqDec_Z a v). lia.
+simpl. destruct (Z_EqDec a v). lia.
 rewrite find_accum_add1. specialize IHl with v ans; lia.
 Qed.
 
@@ -260,7 +260,7 @@ forall l1 l2 v ans, find l1 v ans <= find (l1++l2) v ans.
 Proof.
 induction l1; intros.
 rewrite app_nil_l. simpl. apply find_lbound.
-simpl. destruct (initial_world.EqDec_Z a v). lia.
+simpl. destruct (Z_EqDec a v). lia.
 do 2 rewrite find_accum_add1. specialize IHl1 with l2 v ans. lia.
 Qed.
 
@@ -1741,8 +1741,8 @@ break: (
       destruct H13; destruct H13. subst u0; contradiction.
       symmetry in H15; contradiction.
     unfold RelationClasses.complement, Equivalence.equiv in c. apply H11.
-    exists e. apply adde_adj_edge_rev in H12; auto.
-    rewrite <- surjective_pairing. auto.
+    exists e. apply add_edge_adj_edge2 in H12; auto.
+    rewrite <- surjective_pairing; auto.
   }
   assert (Hconnnected: (forall u0 v : V,
     In u0 (popped_vertices +:: u) ->

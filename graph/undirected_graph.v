@@ -7,8 +7,6 @@ Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListDec.
 Require Import Coq.Logic.ProofIrrelevance.
 Require Import CertiGraph.lib.Ensembles_ext.
-(*Require Import CertiGraph.lib.Coqlib.*)
-(*Require Import CertiGraph.lib.EnumEnsembles.*)
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.graph.graph_model.
@@ -27,7 +25,7 @@ Local Notation PGraph := (PreGraph V E).
 
 (*as long as there is an edge from u to v, u and v are connected, regardless of who is the src*)
 Definition adj_edge (g: PGraph) (e: E) (u v: V) :=
-  strong_evalid g e /\ (*just evalid?*)
+  strong_evalid g e /\
   ((src g e = u /\ dst g e = v) \/ (src g e = v /\ dst g e = u)).
 
 Lemma strong_evalid_adj_edge:
@@ -51,8 +49,7 @@ all: subst u; subst v; split; auto.
 Qed.
 
 (*Consequently, we may not care about the exact nature of the edges*)
-Definition adjacent (g: PGraph) (u v: V) := exists e: E,
-  adj_edge g e u v.
+Definition adjacent (g: PGraph) (u v: V) := exists e: E, adj_edge g e u v.
 
 Corollary adjacent_requires_vvalid:
   forall g u v, adjacent g u v -> vvalid g u /\ vvalid g v.
@@ -68,7 +65,8 @@ split. apply H. right. apply H0.
 split. apply H. left. apply H0.
 Qed.
 
-(* But we may still need to pull out the edges, e.g. for labels
+(*
+But we may still need to pull out the edges, e.g. for labels
 Problem is, because the graph is still fundamentally directed, there can be edges going a->b and b->a
 So maybe we just return every such edge
 But, it makes no sense having an undirected graph with more than one edge between two vertices
@@ -691,23 +689,23 @@ Lemma adjacent_reachable:
   forall g u v, adjacent g u v ->
     (reachable g u v \/ reachable g v u).
 Proof.
-  intros.
-  unfold adjacent, adj_edge in H.
-  destruct H as [e [? [[? ?] | [? ?]]]];
-    [left | right];
-    unfold reachable, reachable_by, reachable_by_path.
-  - exists (u, (e::nil)); split.
-    + split; trivial.
-    + unfold good_path. split; simpl.
-      * split; trivial; symmetry; trivial.
-      * unfold path_prop. split; trivial.
-        rewrite Forall_forall; intros; split; trivial.
-  - exists (v, e::nil); split.
-    + split; trivial.
-    + unfold good_path. split; simpl.
-      * split; trivial; symmetry; trivial.
-      * unfold path_prop. split; trivial.
-        rewrite Forall_forall; intros; split; trivial.
+intros.
+unfold adjacent, adj_edge in H.
+destruct H as [e [? [[? ?] | [? ?]]]];
+  [left | right];
+  unfold reachable, reachable_by, reachable_by_path.
+- exists (u, (e::nil)); split.
+  + split; trivial.
+  + unfold good_path. split; simpl.
+    * split; trivial; symmetry; trivial.
+    * unfold path_prop. split; trivial.
+      rewrite Forall_forall; intros; split; trivial.
+- exists (v, e::nil); split.
+  + split; trivial.
+  + unfold good_path. split; simpl.
+    * split; trivial; symmetry; trivial.
+    * unfold path_prop. split; trivial.
+      rewrite Forall_forall; intros; split; trivial.
 Qed.
 
 Lemma reachable_implies_connected:
@@ -1118,7 +1116,8 @@ Qed.
 
 (*to be 100% close to CLRS' wording*)
 
-Definition uforest g:= forall p l, ~ simple_ucycle g p l.
+Definition uforest g:= ((forall e, evalid g e -> strong_evalid g e)) /\ (*strong evalid*)
+  (forall p l, ~ simple_ucycle g p l). (*no undirected cycles*)
 
 Corollary uforest'_no_simple_ucycle:
 forall g p l, uforest' g -> ~ simple_ucycle g p l.
@@ -1134,7 +1133,7 @@ Qed.
 Corollary uforest'_uforest:
 forall g, uforest' g -> uforest g.
 Proof.
-unfold uforest; intros. apply uforest'_no_simple_ucycle. auto.
+unfold uforest. split. apply H. intros. apply uforest'_no_simple_ucycle. auto.
 Qed.
 
 (*The proof of the converse may be finicky, because it requires reasoning about "do this"
@@ -1143,10 +1142,10 @@ At most, we redefine unique_simple_upath in the no-cycle way and show that krusk
 *)
 
 Lemma uforest_no_self_loops:
-forall g e, (forall e, evalid g e -> strong_evalid g e) -> uforest g
-  -> evalid g e -> src g e <> dst g e.
+forall g e, uforest g -> evalid g e -> src g e <> dst g e.
 Proof.
-unfold not; intros. apply (H0 (src g e :: dst g e :: nil) (e::nil)).
+unfold not; intros. rename H1 into H2; rename H0 into H1.
+destruct H. apply (H0 (src g e :: dst g e :: nil) (e::nil)).
 rewrite H2. split. simpl. apply NoDup_cons. unfold not; intros; auto. apply NoDup_nil.
 unfold ucycle. assert (adj_edge g e (dst g e) (dst g e)).
   rewrite <- H2 at 1. apply strong_evalid_adj_edge. apply H. apply H1.
@@ -1157,16 +1156,16 @@ apply NoDup_cons. unfold not; intros; auto. apply NoDup_nil.
 Qed.
 
 Lemma uforest_no_multigraph:
-forall g (u v : V) (e1 e2 : E), (forall e, evalid g e -> strong_evalid g e) ->
-  uforest g ->
+forall g (u v : V) (e1 e2 : E), uforest g ->
   adj_edge g e1 u v /\ adj_edge g e2 u v -> e1 = e2.
 Proof.
-intros. destruct H1. destruct (EE e1 e2). hnf in e; auto.
+intros. rename H0 into H1. destruct H.
+destruct H1. destruct (EE e1 e2). hnf in e; auto.
 unfold complement, equiv in c. exfalso.
 apply (H0 (u::v::u::nil) (e1::e2::nil)). split.
 simpl. apply NoDup_cons. unfold not; intros. destruct H3. 2: contradiction.
-subst v. destruct H2. apply (uforest_no_self_loops g e2); auto. apply H2.
-destruct H3; destruct H3; subst u; auto.
+subst v. destruct H2. apply (uforest_no_self_loops g e2); auto. split. apply H. apply H0.
+apply H2. destruct H3; destruct H3; subst u; auto.
 apply NoDup_cons. unfold not; intros; auto. apply NoDup_nil.
 unfold ucycle. split. unfold connected_by_path. simpl. split; auto.
 split. exists e1; auto. split. apply adjacent_symm. exists e1; auto.
@@ -1329,7 +1328,7 @@ split. auto. split. auto. split; auto.
 Qed.
 
 Lemma uforest_uforest':
-forall g, (forall e, evalid g e -> strong_evalid g e) -> uforest g -> uforest' g.
+forall g, uforest g -> uforest' g.
 Proof.
 unfold uforest, uforest'; intros.
 (*no self-loops*)
@@ -1337,8 +1336,9 @@ split. intros. apply uforest_no_self_loops; auto.
 (*no multi-edges*)
 split. intros. apply (uforest_no_multigraph g u v e1 e2); auto.
 (*strong evalid*)
-split. auto.
+split. apply H.
 (*unique_simple_upath*)
+destruct H.
 unfold unique_simple_upath; intros.
 destruct (EV u v). hnf in e. subst v.
 apply (simple_upath_self g u p1) in H1; auto. apply (simple_upath_self g u p2) in H3; auto.
@@ -1591,7 +1591,7 @@ assert (Heq_e: e <> e0). unfold not; intros. apply H0. left; rewrite H1; auto.
 assert (HIn_e: ~ In e l). unfold not; intros. apply H0. right; auto.
 clear H0.
 destruct H. split. destruct H. destruct H. split. split.
-apply add_edge_preserves_evalid' in H; auto.
+apply add_edge_evalid_rev in H; auto.
 rewrite add_edge_preserves_src, add_edge_preserves_dst in H2; auto. simpl in H2; auto.
 rewrite add_edge_preserves_src, add_edge_preserves_dst in H1; auto.
 apply IHp; auto.
@@ -1691,7 +1691,7 @@ assert (Hav0: connected g a v0). {
     destruct H0. apply NoDup_cons_2 in H6. contradiction.
   exists e0. destruct H2. repeat rewrite <- adde_vvalid in H7.
   rewrite add_edge_preserves_src in H5, H7; auto. rewrite add_edge_preserves_dst in H5, H7; auto.
-  apply add_edge_preserves_evalid' in H2; auto.
+  apply add_edge_evalid_rev in H2; auto.
   split; auto. split; auto.
 }
 (*IHp on v0*)
@@ -1966,7 +1966,7 @@ forall (g: PGraph) e u v e', ~ connected g u v ->
 Proof.
 intros. destruct H0. destruct H0.
 destruct (EE e e'). auto. unfold complement, equiv in c.
-exfalso. apply H. apply add_edge_preserves_evalid' in H0; auto.
+exfalso. apply H. apply add_edge_evalid_rev in H0; auto.
 rewrite add_edge_preserves_src, add_edge_preserves_dst in H2, H1; auto. simpl in H2.
 apply adjacent_connected. exists e'. split. split; auto. auto.
 Qed.
@@ -1985,7 +1985,7 @@ destruct (EE e e').
 unfold Equivalence.equiv in e0. subst e.
 rewrite add_edge_src, add_edge_dst; simpl; auto.
 unfold RelationClasses.complement, Equivalence.equiv in c.
-apply add_edge_preserves_evalid' in H3. 2: auto.
+apply add_edge_evalid_rev in H3. 2: auto.
 rewrite add_edge_preserves_src by auto. rewrite add_edge_preserves_dst by auto. apply H; auto.
 (*not multigraph*)
 split. intros. destruct H3.
@@ -2006,7 +2006,7 @@ unfold Equivalence.equiv in e0. subst e.
 apply add_edge_strong_evalid; simpl; auto.
 unfold RelationClasses.complement, Equivalence.equiv in c.
 apply add_edge_preserves_strong_evalid. auto.
-apply add_edge_preserves_evalid' in H3; auto. apply H. auto.
+apply add_edge_evalid_rev in H3; auto. apply H. auto.
 (*forest*)
 apply add_edge_unique_simple_upath; auto. apply H.
 Qed.

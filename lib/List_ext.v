@@ -9,6 +9,40 @@ Require Import CertiGraph.lib.EquivDec_ext.
 Require Import VST.floyd.sublist.
 Require Import VST.floyd.list_solver.
 
+Lemma list_prop_reduced_list: forall {A : Type} (Q : A -> Prop) (Q_lem : forall a, Q a \/ ~Q a) (l : list A),
+  exists l', forall a, In a l' <-> (In a l /\ Q a).
+Proof.
+  induction l. exists nil. split; inversion 1. trivial.
+  destruct IHl as [l' ?]. simpl.
+  destruct (Q_lem a).
+  exists (a :: l'). simpl. split; intros.
+  destruct H1. subst a0. split; auto.
+  rewrite H in H1. tauto. destruct H1. destruct H1. auto.
+  right. rewrite H. tauto.
+  exists l'. split; intros.
+  rewrite H in H1. tauto.
+  destruct H1. destruct H1. subst. contradiction.
+  rewrite H. tauto.
+Qed.
+
+Lemma list_decidable_prop_reduced_list: forall {A : Type} (P Q : A -> Prop) (l: list A),
+  (forall a, Q a \/ ~Q a) ->
+  (forall a, In a l <-> P a) -> 
+  (exists l', (forall a, In a l' <-> P a /\ Q a)).
+Proof.
+  intros.
+  destruct (list_prop_reduced_list Q H l) as [l' ?]. exists l'.
+  intuition. apply H1 in H2. destruct H2. apply H0. trivial.
+  apply H1 in H2. tauto.
+  apply H0 in H3. apply H1. tauto.
+Qed.
+
+Lemma Permutation_incl:
+forall {A:Type} (l1 l2: list A), Permutation l1 l2 -> incl l1 l2.
+Proof.
+unfold incl; intros. apply (Permutation_in (l:=l1)); auto.
+Qed.
+
 Lemma In_tail: forall A (a : A) L, In a (tl L) -> In a L.
 Proof. induction L; simpl; auto. Qed.
 
