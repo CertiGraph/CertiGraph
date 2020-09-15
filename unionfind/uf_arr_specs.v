@@ -26,6 +26,7 @@ Definition mallocN_spec :=
      PROP (malloc_compatible n (pointer_val_val v))
      LOCAL (temp ret_temp (pointer_val_val v))
      SEP (memory_block sh n (pointer_val_val v)).
+
 (*Basically collapses everything into the mpred defined by SAG_VST
 takes in a lst of rank-parent pairs(from where? g?)
   which is converted into the Cdata structures
