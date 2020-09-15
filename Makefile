@@ -85,15 +85,17 @@ KRUSKAL_FILES = \
   verif_kruskal_edgelist.v
 
 PRIM_FILES = \
-  MatrixUGraph.v \
-  prim.v spatial_undirected_matrix.v specs_prim.v \
-  verif_prim.v 
+  MatrixUGraph.v spatial_undirected_matrix.v \
+  prim.v specs_prim.v \
+  noroot_prim.v specs_noroot_prim.v \
+  verif_prim.v verif_noroot_prim.v
 
 DIJKSTRA_FILES = \
   dijkstra.v \
   MathDijkGraph.v SpaceDijkGraph.v \
   env_dijkstra_arr.v dijkstra_constants.v \
-  path_cost.v dijkstra_spec.v verif_dijkstra.v
+  path_cost.v dijkstra_spec.v \
+  # verif_dijkstra.v
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
@@ -143,7 +145,7 @@ VST_CRITICAL_FILES = \
 
 .PHONY: clightgen
 clightgen:
-	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c dijkstra/dijkstra.c
+	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c prim/noroot_prim.c dijkstra/dijkstra.c
 	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c
 
 .PHONY: vstandme7

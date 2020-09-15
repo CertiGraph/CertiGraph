@@ -890,7 +890,7 @@ Proof.
     assert (forall v : VType, vvalid (edgeless_WEdgeGraph (numV g)) v <-> vvalid g v). {
       intros. rewrite <- H0. simpl; split; auto.
     }
-    time entailer!. (*187 seconds without PROP*)
+    time "loop precon (originally 187 seconds)" entailer!.
   + (******LOOP BODY******)
   Intros.
   assert (HnumV_msf': numV msf' = numV g). {
