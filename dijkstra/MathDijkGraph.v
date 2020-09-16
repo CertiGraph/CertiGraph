@@ -31,11 +31,11 @@ Local Open Scope Z_scope.
 Definition DijkLG := AdjMatLG.
 
 (* The soundness condition *)
-Class SoundDijk (g: DijkLG) :=
+Class SoundDijk (g: DijkLG) inf size :=
   {
   basic:
     (* first, we can take AdjMat's soundness wholesale *)
-    (@SoundAdjMat SIZE inf g);
+    (@SoundAdjMat size inf g);
   
   veb:
     (* from the AdjMat soundness above we already know 
@@ -44,28 +44,36 @@ Class SoundDijk (g: DijkLG) :=
      *)
     forall e,
       evalid g e ->
-      0 <= elabel g e <= Int.max_signed / SIZE;
+      0 <= elabel g e <= Int.max_signed / size;
 
   cts: (* cost_to_self *)
     forall v, vvalid g v -> elabel g (v, v) = 0;
+
+  sfr: (* size is further restricted *)
+    size * 4 <= Int.max_signed;
+  (* sizeof tint = 4 *)
+  
+  ifr: (* inf is further restricted *)
+    Int.max_signed / size < inf <= Int.max_signed - (Int.max_signed / size)
+                                                      
   }.
 
 (* And here is the GeneralGraph that we will use *)
-Definition DijkGG := (GeneralGraph V E DV DE DG (fun g => SoundDijk g)).
+Definition DijkGG inf size := (GeneralGraph V E DV DE DG (fun g => SoundDijk g inf size)).
 
 (* Some handy coercions: *)
-Definition DijkGG_DijkLG (G: DijkGG): DijkLG := lg_gg G.
+Definition DijkGG_DijkLG inf size (G: (DijkGG inf size)): DijkLG := lg_gg G.
 Coercion DijkGG_DijkLG: DijkGG >-> DijkLG.
 Identity Coercion DijkLG_AdjMatLG: DijkLG >-> AdjMatLG.
 Identity Coercion AdjMatLG_LabeledGraph: AdjMatLG >-> LabeledGraph.
 
 (* We can always drag out SoundAdjMat *)
-Definition DijkGG_SoundAdjMat (g: DijkGG) :=
-  @basic g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+Definition DijkGG_SoundAdjMat inf size (g: (DijkGG inf size)) :=
+  @basic g inf size ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
 (* A DijkGG can be weakened into an AdjMatGG *)
-Definition DijkGG_AdjMatGG (G: DijkGG) : AdjMatGG :=
-  Build_GeneralGraph DV DE DG SoundAdjMat G (DijkGG_SoundAdjMat G).
+Definition DijkGG_AdjMatGG inf size (G: (DijkGG inf size)) : AdjMatGG :=
+  Build_GeneralGraph DV DE DG SoundAdjMat G (DijkGG_SoundAdjMat inf size G).
 
 Coercion DijkGG_AdjMatGG: DijkGG >-> AdjMatGG.
 
@@ -77,51 +85,98 @@ Coercion DijkGG_AdjMatGG: DijkGG >-> AdjMatGG.
 (* For the two Dijkstra-specigic plugins, 
    we create getters: 
  *)
-Definition valid_edge_bounds (g: DijkGG) :=
-  @veb g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+Definition valid_edge_bounds inf size (g: (DijkGG inf size)) :=
+  @veb g inf size ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
-Definition cost_to_self (g: DijkGG) :=
-  @cts g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+Definition cost_to_self inf size (g: (DijkGG inf size)) :=
+  @cts g inf size ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
+Definition size_further_restricted inf size (g: (DijkGG inf size)) :=
+  @sfr g inf size ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+Definition inf_further_restricted inf size (g: (DijkGG inf size)) :=
+  @ifr g inf size ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+Lemma inf_further_restricted':
+  forall inf size (g: DijkGG inf size),
+    0 < inf < Int.max_signed.
+Proof.
+  intros.
+  pose proof (inf_further_restricted _ _ g).
+  pose proof (size_representable g).
+  split.
+  - apply Z.le_lt_trans with (m := Int.max_signed / size);
+      [|lia].
+    apply Z.div_pos; [|lia]. compute; inversion 1.
+  - destruct H as [_ ?].
+    apply Z.le_lt_trans with (m := Int.max_signed - Int.max_signed/size); trivial.
+    assert (0 < Int.max_signed / size). {
+      apply Z.div_str_pos; trivial.
+    }
+    lia.
+Qed.
 
 (* And now some lemmas that come from soundness plugins. *)
 
 Lemma edge_cost_pos:
-  forall (g: DijkGG) e,
+  forall inf size (g: (DijkGG inf size)) e,
     0 <= elabel g e.
 Proof.
   intros.
-  pose proof (valid_edge_bounds g e).
+  pose proof (valid_edge_bounds inf size g e).
   pose proof (invalid_edge_weight g e).
   destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
   - apply H; trivial.
   - rewrite H0 in n.
     replace (elabel g e) with inf by trivial.
-    compute; inversion 1.
+    apply (@inf_representable _ _ g).
+Qed.
+
+Lemma div_pos_le:
+  forall a b,
+    0 <= a ->
+    0 < b ->
+    a / b <= a.
+Proof.
+  intros.
+  rewrite <- (Z2Nat.id a); trivial.
+  rewrite <- (Z2Nat.id b); [|lia].
+  remember (Z.to_nat a) as n1.
+  remember (Z.to_nat b) as n2.
+  rewrite <- div_Zdiv by lia.
+  apply inj_le.
+  replace n1 with (Nat.div n1 1) at 2.
+  2: apply Nat.div_1_r.
+  apply Nat.div_le_compat_l.
+  lia.
 Qed.
 
 Lemma edge_representable:
-  forall (g: DijkGG) e,
+  forall inf size (g: (DijkGG inf size)) e,
     Int.min_signed <= elabel g e <= Int.max_signed.
 Proof.
   intros.
-  pose proof (valid_edge_bounds g e).
+  pose proof (valid_edge_bounds inf size g e).
   pose proof (invalid_edge_weight g e).
-  pose proof (edge_cost_pos g e).
+  pose proof (edge_cost_pos inf size g e).
   destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
   - specialize (H e0).
     split; trivial.
     1: apply Z.le_trans with (m := 0); trivial; rep_lia.
-    apply Z.le_trans with (m := (Int.max_signed/SIZE)); trivial.
+    apply Z.le_trans with (m := (Int.max_signed / size)); trivial.
     apply H.
-    compute; inversion 1.
+    pose proof (size_representable g).
+    apply div_pos_le; lia.
   - rewrite H0 in n.
     replace (elabel g e) with inf by trivial.
-    rewrite inf_eq. split; compute; inversion 1.
+    pose proof (inf_representable g).
+    split; [|lia].
+    apply Z.le_trans with (m := 0); [|lia].
+    compute; inversion 1.
 Qed.
 
 Lemma strong_evalid_dijk:
-  forall (g: DijkGG) a b,
+  forall inf size (g: (DijkGG inf size)) a b,
     vvalid g a ->
     vvalid g b ->
     elabel g (a, b) < inf ->
@@ -134,8 +189,6 @@ Proof.
      rewrite (edge_dst_snd g)]; trivial.
   split.
   - apply edge_representable.
-  - intro. apply Zlt_not_le in H1.
-    apply H1. rewrite <- H2.
-    reflexivity.
+  - intro. simpl in H2. lia. 
 Qed.
 

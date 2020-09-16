@@ -8,19 +8,19 @@ Require Import CertiGraph.dijkstra.SpaceDijkGraph.
 Local Open Scope logic.
 Local Open Scope Z_scope.
 
-Definition path_cost (g : DijkGG) (path : @path V E) : DE :=
+Definition path_cost inf size (g : (DijkGG inf size)) (path : @path V E) : DE :=
   fold_left Z.add (map (elabel g) (snd path)) 0.
 
 Lemma one_step_path_Znth:
-  forall (g: DijkGG) s e,
-    path_cost g (s, e :: nil) =
+  forall inf size (g: (DijkGG inf size)) s e,
+    path_cost inf size g (s, e :: nil) =
     elabel g e.
 Proof.
   intros. unfold path_cost; simpl.
   apply Z.add_0_l.
 Qed.
 
-Lemma acc_pos: forall (g : DijkGG) l z,
+Lemma acc_pos: forall inf size (g : (DijkGG inf size)) l z,
     (forall e : E, In e l -> 0 <= elabel g e) ->
     0 <= z ->
     0 <= fold_left Z.add (map (elabel g) l) z.
@@ -32,9 +32,9 @@ Proof.
 Qed.
 
 Lemma path_cost_pos:
-  forall (g: DijkGG) p,
+  forall inf size (g: (DijkGG inf size)) p,
     valid_path g p ->
-    0 <= path_cost g p.
+    0 <= path_cost inf size g p.
 Proof.
   intros. apply acc_pos; [|lia].
   intros. apply edge_cost_pos.
@@ -55,15 +55,15 @@ Proof.
 Qed.
 
 Lemma path_cost_path_glue:
-  forall g p1 p2,
-    path_cost g (path_glue p1 p2) =
-    path_cost g p1 + path_cost g p2.
+  forall inf size (g: (DijkGG inf size)) p1 p2,
+    path_cost inf size g (path_glue p1 p2) =
+    path_cost inf size g p1 + path_cost inf size g p2.
 Proof.
   intros.
   unfold path_cost at 1, path_glue at 1.
   simpl. rewrite map_app.
   rewrite fold_left_app.
-  assert ((fold_left Z.add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
+  assert ((fold_left Z.add (map (elabel g) (snd p1)) 0) = (path_cost inf size g p1))
     by now unfold path_cost.
   unfold DE in *.
   rewrite H. 
@@ -71,15 +71,15 @@ Proof.
   remember (map (elabel g) (snd p2)) as l2.
   unfold DE in *.
   rewrite <- Heql2.
-  remember (path_cost g p1) as c1.
+  remember (path_cost inf size g p1) as c1.
   replace c1 with (c1 + 0) at 1 by lia.
   rewrite path_cost_init; trivial.
 Qed.
 
 Lemma path_cost_app_cons:
-  forall (g: DijkGG) path e,
-    path_cost g (fst path, snd path +:: e) =
-    path_cost g path + elabel g e.
+  forall inf size (g: (DijkGG inf size)) path e,
+    path_cost inf size g (fst path, snd path +:: e) =
+    path_cost inf size g path + elabel g e.
 Proof.
   intros.
   replace (fst path, snd path +:: e) with
@@ -90,15 +90,15 @@ Proof.
 Qed.
 
 Lemma path_cost_path_glue_lt:
-  forall (g: DijkGG) p1 p2 limit,
+  forall inf size (g: (DijkGG inf size)) p1 p2 limit,
     valid_path g p1 ->
     valid_path g p2 ->
-    path_cost g (path_glue p1 p2) < limit ->
-    path_cost g p1 < limit /\ path_cost g p2 < limit.
+    path_cost inf size g (path_glue p1 p2) < limit ->
+    path_cost inf size g p1 < limit /\ path_cost inf size g p2 < limit.
 Proof.
   intros.
   rewrite path_cost_path_glue in H1.
-  pose proof (path_cost_pos _ _ H).
-  pose proof (path_cost_pos _ _ H0).
+  pose proof (path_cost_pos _ _ _ _ H).
+  pose proof (path_cost_pos _ _ _ _ H0).
   split; lia.
 Qed.

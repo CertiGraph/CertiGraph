@@ -82,7 +82,7 @@ Section AdjMatGraph.
   Class SoundAdjMat (g: AdjMatLG) :=
     {
     sr: (* size_representable *)
-      0 <= size <= Int.max_signed;
+      0 < size <= Int.max_signed;
     ir: (* inf_representable *)
       0 <= inf <= Int.max_signed; 
     vm: (* vvalid_meaning *)
@@ -100,7 +100,7 @@ Section AdjMatGraph.
     fin:
       FiniteGraph g
     }.
-
+  
   (* example of how to instantiate *)
   Definition AdjMatGG := (GeneralGraph V E DV DE DG (fun g => SoundAdjMat g)).
   (* Clients may want to further restrict the 
