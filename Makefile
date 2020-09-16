@@ -98,6 +98,10 @@ DIJKSTRA_FILES = \
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
 
+PRIQ_MALLOC_FILES = \
+  priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
+
+
 CLIGHT_FILES = mark/mark_bi.v dispose/dispose_bi.v copy/copy_bi.v summatrix/summatrix.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
@@ -116,6 +120,7 @@ NORMAL_FILES = \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
   $(PRIQ_FILES:%.v=priq/%.v) \
+  $(PRIQ_MALLOC_FILES:%.v=priq_malloc/%.v) \
   $(PRIM_FILES:%.v=prim/%.v) \
   $(UNION_FIND_FILES:%.v=unionfind/%.v) \
   $(COPY_FILES:%.v=copy/%.v) \
@@ -141,10 +146,11 @@ all: \
 VST_CRITICAL_FILES = \
   progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
 
-.PHONY: clightgen
-clightgen:
-	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c dijkstra/dijkstra.c
-	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c
+
+#	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c 
+# ../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq_malloc/priq_arr.c dijkstra/dijkstra.c 
+#	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c 
+
 
 .PHONY: vstandme7
 vstandme7:

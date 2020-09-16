@@ -1,4 +1,4 @@
-Require Import CertiGraph.priq.priq_arr_utils.
+Require Import CertiGraph.priq_malloc.priq_arr_utils.
 (* remove once a better PQ is in place *)
 
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.

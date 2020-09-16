@@ -2,7 +2,7 @@
 #include <limits.h>
 #include <stdio.h>  
 #include <time.h>
-#include "../priq/priq_arr.h"
+#include "../priq_malloc/priq_arr.h"
 
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges

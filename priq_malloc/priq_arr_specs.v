@@ -1,5 +1,5 @@
-Require Export CertiGraph.priq.priq_arr.
-Require Export CertiGraph.priq.priq_arr_utils.
+Require Export CertiGraph.priq_malloc.priq_arr.
+Require Export CertiGraph.priq_malloc.priq_arr_utils.
 Require Export VST.floyd.proofauto.
 
 (* Specs for Anshuman's simple array-based PQ *)
