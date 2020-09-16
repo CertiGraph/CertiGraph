@@ -11,7 +11,7 @@ Module Info.
   Definition abi := "macosx"%string.
   Definition bitsize := 32.
   Definition big_endian := false.
-  Definition source_file := "priq/priq_arr.c"%string.
+  Definition source_file := "priq_malloc/priq_arr.c"%string.
   Definition normalized := true.
 End Info.
 

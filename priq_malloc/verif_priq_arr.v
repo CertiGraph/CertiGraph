@@ -1,9 +1,8 @@
 Require Import VST.floyd.proofauto.
-Require Import CertiGraph.priq.priq_arr_specs.
-Require Import CertiGraph.priq.priq_arr_utils.
+Require Import CertiGraph.priq_malloc.priq_arr_specs.
+Require Import CertiGraph.priq_malloc.priq_arr_utils.
 Require Import VST.floyd.sublist.
-
-Require Import CertiGraph.priq.priq_arr.
+Require Import CertiGraph.priq_malloc.priq_arr.
 
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
