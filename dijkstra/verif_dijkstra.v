@@ -2259,12 +2259,12 @@ this is how it was done, in one fell swoop, earlier
                assumption.
              }
              assert (0 <= Znth u dist' + cost <= Int.max_signed). {
-               split; [lia|].
-               assert (inf <= Int.max_signed - (Int.max_signed / size)). {
-                 admit.
-               }
-               
-               ulia.
+               (* the key point where 
+                  we were forced to lower
+                  inf's upper bound
+                *)
+               pose proof (inf_further_restricted _ _ g).
+               lia.
              }
              unfold V, DE in *.
              thaw FR.

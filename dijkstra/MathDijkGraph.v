@@ -54,7 +54,8 @@ Class SoundDijk (g: DijkLG) inf size :=
   (* sizeof tint = 4 *)
   
   ifr: (* inf is further restricted *)
-    Int.max_signed / size < inf < Int.max_signed
+    Int.max_signed / size < inf <= Int.max_signed - (Int.max_signed / size)
+                                                      
   }.
 
 (* And here is the GeneralGraph that we will use *)
@@ -102,12 +103,17 @@ Lemma inf_further_restricted':
 Proof.
   intros.
   pose proof (inf_further_restricted _ _ g).
-  destruct (size_representable g) as [? _].
-  split; [|lia].
-  destruct H as [? _].
-  apply Z.le_lt_trans with (m := Int.max_signed / size);
-    trivial.
-  apply Z.div_pos; trivial. compute; inversion 1.
+  pose proof (size_representable g).
+  split.
+  - apply Z.le_lt_trans with (m := Int.max_signed / size);
+      [|lia].
+    apply Z.div_pos; [|lia]. compute; inversion 1.
+  - destruct H as [_ ?].
+    apply Z.le_lt_trans with (m := Int.max_signed - Int.max_signed/size); trivial.
+    assert (0 < Int.max_signed / size). {
+      apply Z.div_str_pos; trivial.
+    }
+    lia.
 Qed.
 
 (* And now some lemmas that come from soundness plugins. *)
