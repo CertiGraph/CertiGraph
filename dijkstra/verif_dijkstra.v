@@ -1794,6 +1794,7 @@ Proof.
   freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
   unfold list_rep.
   Fail forward.
+  (* Okay fine, this is a hint *)
   
   assert_PROP (force_val
                  (sem_add_ptr_int
@@ -1814,10 +1815,51 @@ Proof.
   Fail forward. 
   (* Why is THIS the error message? 
      Where did Tint I32 Signed noattr come into play?
-  *)
+   *)
+
+  (*
+    When I had the matrix defined as graph[size][size], I was able to do it
+    in one step. The forward asked me to prove a similar thing, and I have them
+    this. It worked in one step.
+   *)
+
+        (*
+          assert_PROP (force_val
+                         (sem_add_ptr_int
+                            tint
+                            Signed
+                            (force_val
+                               (sem_add_ptr_int
+                                  (tarray tint size)
+                                  Signed
+                                  (pointer_val_val graph_ptr)
+                                  (Vint (Int.repr u))))
+                            (Vint (Int.repr i))) =
+                       field_address
+                         (tarray tint size)
+                         [ArraySubsc i]
+                         (@list_address
+                            size
+                            CompSpecs
+                            (pointer_val_val graph_ptr)
+                            u)). {
+            entailer!.
+            clear (* some stuff *) 
+            unfold list_address. simpl.
+            rewrite field_address_offset.
+            1: { rewrite offset_offset_val; simpl; f_equal.
+                 rewrite Z.add_0_l. f_equal. lia. }            
+            destruct H24 as [? [? [? [? ?]]]]. (* H24 was itself a field_compatible argument *)
+            unfold field_compatible; split3; [| | split3]; simpl; auto.
+          }
+         *)
+
+  
 Abort.
 
     (*
+Some more struggling... 
+
     - destruct H2 as [? [? [? [? ?]]]].
       unfold field_compatible; split3; [| | split3]; auto.
       + destruct graph_ptr; trivial.
@@ -2186,41 +2228,6 @@ Proof.
           rename H30 into H26.
 
           forward_call (sh, g, graph_ptr, u, i).
-
-(*
-this is how it was done, in one fell swoop, earlier
- *)
-          (*
-          assert_PROP (force_val
-                         (sem_add_ptr_int
-                            tint
-                            Signed
-                            (force_val
-                               (sem_add_ptr_int
-                                  (tarray tint size)
-                                  Signed
-                                  (pointer_val_val graph_ptr)
-                                  (Vint (Int.repr u))))
-                            (Vint (Int.repr i))) =
-                       field_address
-                         (tarray tint size)
-                         [ArraySubsc i]
-                         (@list_address
-                            size
-                            CompSpecs
-                            (pointer_val_val graph_ptr)
-                            u)). {
-            entailer!.
-            clear H8 H24 H25 H26 H27 H29. rename H28 into H24.
-            unfold list_address. simpl.
-            rewrite field_address_offset.
-            1: { rewrite offset_offset_val; simpl; f_equal.
-                 rewrite Z.add_0_l. f_equal. lia. }            
-            destruct H24 as [? [? [? [? ?]]]].
-            unfold field_compatible; split3; [| | split3]; simpl; auto.
-          }
-           *)
-
           remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
 
           assert (H_i_valid: vvalid g i). {
