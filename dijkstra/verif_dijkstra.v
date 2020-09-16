@@ -1792,6 +1792,7 @@ Proof.
   unfold DijkGraph.
   rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ u); trivial.
   Intros.
+  freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
   unfold list_rep.
   Fail forward.
   
@@ -1811,8 +1812,10 @@ Proof.
     1: f_equal.
     admit. (* even if we admit this... *)
   }
-  Fail forward.
-  (* Why is THIS the error message? *)
+  Fail forward. 
+  (* Why is THIS the error message? 
+     Where did Tint I32 Signed noattr come into play?
+  *)
 Abort.
 
     (*
