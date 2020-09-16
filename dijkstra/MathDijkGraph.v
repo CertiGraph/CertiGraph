@@ -51,6 +51,7 @@ Class SoundDijk (g: DijkLG) inf size :=
 
   sfr: (* size is further restricted *)
     size * 4 <= Int.max_signed;
+  (* sizeof tint = 4 *)
   
   ifr: (* inf is further restricted *)
     0 < inf < Int.max_signed
