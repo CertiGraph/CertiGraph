@@ -1,4 +1,4 @@
-Require Export CertiGraph.priq.priq_arr_utils.
+Require Export CertiGraph.priq_malloc.priq_arr_utils.
 
 (* 
  * There is no need to define the inf and SIZE again.

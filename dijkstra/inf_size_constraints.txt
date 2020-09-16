@@ -1,0 +1,43 @@
+
+List of constraints on inf and size
+
+in AdjMatGraph:
+ sr: (* size_representable *)
+      0 < size <= Int.max_signed;
+
+ ir: (* inf_representable *)
+ 	  0 <= inf <= Int.max_signed; 
+   
+in MathDijkGraph:
+  sfr: (* size is further restricted *)
+    size * 4 <= Int.max_signed;
+  
+  ifr: (* inf is further restricted *)
+	Int.max_signed / size < inf <= Int.max_signed - (Int.max_signed / size)
+
+Proved separately:
+  inf_further_restricted' (comes easily from ifr)
+    0 < inf < Int.max_signed
+
+
+Reasons:
+In sr, size = 0 is impossible because we define edge weight's range as 0 ... MAX/size
+In sfr, size * 4 <= MAX is needed because we malloc (size * sizeof(tint))
+In ifr, 
+	inf = 0 is impossible for a number of reasons. 
+		    One is that elabel(i,i) = 0 (cost to self)
+		    and we can't allow inf to occupy that magic value
+	MAX/size < inf is because we often need to show
+		elabel (mom', child') < inf
+		and we proceed by transitivity.
+	    elabel g (mom', child') <= Int.max_signed / size (* comes from valid edge bounds *)
+		and Int.max_signed / size < inf ---- (* was added *)
+		gives us the answer.
+ 	inf < MAX because pq uses inf + 1 as a "popped" signifier.
+ 		 	Perhaps this can be massaged away with a better PQ?
+ 	inf <= MAX - (MAX / size) because: 	
+	 	When improving the cost to i by going via u,
+		we need to show Znth u dist' + cost <= MAX (where cost = elabel (u, i)).
+		We know cost <= Int.max_signed / size
+		and Znth u dist' <= inf
+		So it suffices to show (inf <= MAX - (MAX / size))
