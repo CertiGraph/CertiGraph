@@ -330,8 +330,7 @@ Proof.
       assert (elabel g (mom', child') < inf). {
         apply Z.le_lt_trans with (m := Int.max_signed / size).
         apply valid_edge_bounds; trivial.
-        admit.
-        (* rewrite inf_eq. compute; trivial. *)
+        apply (inf_further_restricted _ _ g).
       }
       
       split3; [| |split3; [| |split3; [| |split3; [| |split3; [| |split]]]]]; trivial.
@@ -347,7 +346,7 @@ Proof.
     destruct H3 as [_ ?].
     rewrite path_cost_path_glue in H3; trivial.
     rewrite one_step_path_Znth in H3. lia.
-Admitted.
+Qed.
 
 Lemma evalid_dijk:
   forall (g: DijkGG inf size) a b cost,
@@ -363,9 +362,9 @@ Proof.
   apply Z.le_lt_trans with (m := Int.max_signed / size);
     trivial.
   rewrite H in H1; trivial.
-  admit.
-Admitted.
-
+  apply (inf_further_restricted _ _ g).
+Qed.
+  
 Lemma inv_popped_add_src:
   forall (g: DijkGG inf size) src popped prev dist,
     dijkstra_correct inf size g src popped prev dist ->
@@ -378,7 +377,7 @@ Proof.
   - split3; [| | split3]; trivial.
     + split; trivial.
     + unfold path_cost. simpl.
-      apply (inf_further_restricted _ _ g).
+      apply (inf_further_restricted' _ _ g).
     + rewrite Forall_forall; intros; simpl in H3; lia.
   - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
     + simpl in H3.
@@ -1838,12 +1837,7 @@ Abort.
         pose proof (Ptrofs.unsigned_range_2 (Ptrofs.repr (u * (4 * Z.max 0 size)))).
         pose proof (Ptrofs.unsigned_range_2 i0).
         rewrite Ptrofs.unsigned_repr; [lia|].
-        admit.
-      + clear -H7 g.
-        destruct graph_ptr; trivial.
-        simpl. constructor. simpl. intros.
-        admit.
-      + admit.
+...
   } *)
 
 
@@ -1923,11 +1917,11 @@ Proof.
       * rewrite upd_Znth_same; trivial. ulia. 
       * rewrite upd_Znth_same; trivial. ulia.
       * intros; rewrite find_src; trivial.
-        apply (inf_further_restricted _ _ g).
+        apply (inf_further_restricted' _ _ g).
       * intros. split; [inversion 1 | intros; exfalso].
         destruct (Z.eq_dec src v).
         -- subst src. rewrite upd_Znth_same in H15 by ulia.
-           pose proof (inf_further_restricted _ _ g).
+           pose proof (inf_further_restricted' _ _ g).
            lia. 
         -- assert (0 <= v < size) by now apply (vvalid_meaning g).
            rewrite upd_Znth_diff in H15 by ulia.
@@ -1935,7 +1929,7 @@ Proof.
            rewrite Z.add_1_r in H15.
            apply (Z.neq_succ_diag_l inf). lia.
            
-      * pose proof (inf_further_restricted _ _ g).
+      * pose proof (inf_further_restricted' _ _ g).
         split3; red; apply Forall_upd_Znth;
           try apply Forall_list_repeat;
           try rewrite inf_eq; ulia.
@@ -1970,7 +1964,7 @@ Proof.
       forward_call ((pointer_val_val priq_ptr),
                     priq, size, inf).
       1: { pose proof (size_representable g).
-           pose proof (inf_further_restricted _ _ g).
+           pose proof (inf_further_restricted' _ _ g).
            split3; [| |split3]; try ulia.
            apply H_inrange_priq_trans; trivial.
            apply Z.lt_trans with (m:=0);
@@ -1987,7 +1981,7 @@ Proof.
         clear Htemp.
         forward_call ((pointer_val_val priq_ptr), priq, size, inf).
         1: { pose proof (size_representable g).
-             pose proof (inf_further_restricted _ _ g).
+             pose proof (inf_further_restricted' _ _ g).
              split3; [| |split3; [| |split]]; try ulia.
              apply H_inrange_priq_trans; trivial.
              apply Z.lt_trans with (m:=0);
@@ -2097,7 +2091,7 @@ Proof.
              subst dst; clear H15.
              destruct H14; [left | right].
              ** exfalso. rewrite H14 in H2.
-                pose proof (inf_further_restricted _ _ g).
+                pose proof (inf_further_restricted' _ _ g).
                 ulia.
              ** exists (src, []). split3.
                 --- split3; [| |split3]; trivial.
@@ -2162,7 +2156,7 @@ Proof.
 
           ++ apply Forall_upd_Znth; trivial.
              ulia. split; [|reflexivity].
-             pose proof (inf_further_restricted _ _ g); lia.
+             pose proof (inf_further_restricted' _ _ g); lia.
         -- (* We now begin with the for loop's body *)
           rewrite <- Hequ.
           freeze FR := (data_at _ _ _ _) (data_at _ _ _ _) (data_at _ _ _ _).
@@ -2377,9 +2371,9 @@ this is how it was done, in one fell swoop, earlier
                 assert (elabel g (u, i) < inf). {
                   apply Z.le_lt_trans with (m := Int.max_signed / size);
                     trivial.
-                  apply H27. admit.
+                  apply H27.
+                  apply (inf_further_restricted _ _ g).
                 }
-                
                 split3; [| |split].
                 --- intros. apply inv_unpopped_new_dst with (u:= u) (i := i); trivial.
                 --- intros. destruct (Z.eq_dec dst i).

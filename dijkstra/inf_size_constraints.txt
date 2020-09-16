@@ -13,6 +13,10 @@ in MathDijkGraph:
     size * 4 <= Int.max_signed;
   
   ifr: (* inf is further restricted *)
+    Int.max_signed / size < inf < Int.max_signed
+
+Proved separately:
+  inf_further_restricted' (comes easily from ifr)
     0 < inf < Int.max_signed
 
 
@@ -23,24 +27,23 @@ In ifr,
 	inf = 0 is impossible for a number of reasons. 
 		    One is that elabel(i,i) = 0 (cost to self)
 		    and we can't allow inf to occupy that magic value
+	MAX/size < inf is because we often need to show
+		elabel (mom', child') < inf
+		and we proceed by transitivity.
+	    elabel g (mom', child') <= Int.max_signed / size (* comes from valid edge bounds *)
+		and Int.max_signed / size < inf ---- (* was added *)
+		gives us the answer.
  	inf < MAX because pq uses inf + 1 as a "popped" signifier.
- 		 	Perhaps this can be massaged away?
+ 		 	Perhaps this can be massaged away with a better PQ?
 
 
 Further tensions:
 
 1
-In path_leaving_popped_stronger, we need
-	Int.max_signed / size < inf
-This is because we need 
-	elabel (mom', child') < inf
-and we proceed by transitivity.
-	    elabel g (mom', child') <= Int.max_signed / size ---- comes from valid edge bounds
-	and Int.max_signed / size < inf ---- needs to be added?
-  gives [ans]
+done
 
 2
-In evalid_dijk, same thing needed for similar reasons
+done
 
 3
 When improving the cost to i by going via u,
@@ -50,5 +53,4 @@ and Znth u dist' <= inf
 So it suffices to show (inf <= MAX - (MAX / size))
 
 4
-Same as 1 and 2, for similar reasons
-
+done
