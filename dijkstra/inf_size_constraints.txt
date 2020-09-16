@@ -25,3 +25,30 @@ In ifr,
 		    and we can't allow inf to occupy that magic value
  	inf < MAX because pq uses inf + 1 as a "popped" signifier.
  		 	Perhaps this can be massaged away?
+
+
+Further tensions:
+
+1
+In path_leaving_popped_stronger, we need
+	Int.max_signed / size < inf
+This is because we need 
+	elabel (mom', child') < inf
+and we proceed by transitivity.
+	    elabel g (mom', child') <= Int.max_signed / size ---- comes from valid edge bounds
+	and Int.max_signed / size < inf ---- needs to be added?
+  gives [ans]
+
+2
+In evalid_dijk, same thing needed for similar reasons
+
+3
+When improving the cost to i by going via u,
+we need to show Znth u dist' + cost <= MAX (where cost = elabel (u, i)).
+We know cost <= Int.max_signed / size
+and Znth u dist' <= inf
+So it suffices to show (inf <= MAX - (MAX / size))
+
+4
+Same as 1 and 2, for similar reasons
+
