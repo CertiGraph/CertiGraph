@@ -1804,7 +1804,8 @@ break: (
         (* u0 is popped, so is Znth u parents, thus use invariant on them by adding eformat (u, Znth u parents) to the path
             Then add it again to go back to u*)
         apply (connected_trans adde_u u0 (Znth u parents) u).
-        apply adde_connected. rewrite <- Hinv_10; auto. apply (connected_trans g u0 u).
+        apply add_edge_connected. rewrite <- surjective_pairing. auto.
+        rewrite <- Hinv_10; auto. apply (connected_trans g u0 u).
         auto. apply adjacent_connected. rewrite eformat_adj. apply H7.
         apply connected_symm. apply adjacent_connected. rewrite eformat_adj. auto.
         (*adde -> g*)
@@ -1813,7 +1814,8 @@ break: (
         split; intros.
         apply (connected_trans adde_u u (Znth u parents) v).
         apply adjacent_connected. rewrite eformat_adj. auto.
-        apply adde_connected. rewrite <- Hinv_10; auto.
+        apply add_edge_connected. rewrite <- surjective_pairing; auto.
+        rewrite <- Hinv_10; auto.
         apply (connected_trans g (Znth u parents) u).
         apply adjacent_connected. rewrite eformat_adj, eformat_symm. apply H7. auto.
         apply (is_partial_lgraph_connected adde_u); auto.
