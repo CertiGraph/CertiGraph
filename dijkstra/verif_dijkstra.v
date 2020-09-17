@@ -2517,15 +2517,8 @@ Proof.
     + (* from the break's postcon, prove the overall postcon *)
       unfold dijk_forloop_break_inv.
       Intros prev priq dist popped.
-(*      freeze FR :=
-        (data_at _ _ _ (pointer_val_val prev_ptr))
-          (data_at _ _ _ (pointer_val_val dist_ptr))
-          (DijkGraph _ _ _ _ _).
-       forward_call ((wshare_share sh), priq_ptr, size, priq). 
-*)
-      (* the call to free *)
+      (* around here I'd like to call "free" to release the PQ *)
       forward.
-      Exists prev dist popped. entailer!.
+      Exists prev dist priq priq_ptr popped. entailer!.
       intros. destruct (H2 _ H12) as [? _]; trivial.
-      admit.
-Admitted.
+Qed.

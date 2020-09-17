@@ -145,15 +145,18 @@ Definition dijkstra_spec inf size :=
       data_at_ Tsh (tarray tint size) (pointer_val_val prev_ptr))
   POST [tvoid]
    EX prev: list V,
-   EX dist : list V,
-   EX popped : list V,                             
+   EX dist: list V,
+   EX priq: list V,
+   EX priq_ptr: pointer_val,
+   EX popped: list V,                             
    PROP (forall dst,
             vvalid g dst ->
             inv_popped inf size g src popped prev dist dst)
    LOCAL ()
    SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size;
        data_at Tsh (tarray tint size) (map Vint (map Int.repr prev)) (pointer_val_val prev_ptr);
-       data_at Tsh (tarray tint size) (map Vint (map Int.repr dist)) (pointer_val_val dist_ptr)).
+       data_at Tsh (tarray tint size) (map Vint (map Int.repr dist)) (pointer_val_val dist_ptr);
+       data_at Tsh (tarray tint size) (map Vint (map Int.repr priq)) (pointer_val_val priq_ptr)).
 
 Definition mallocN_spec :=
   DECLARE _mallocN
@@ -168,7 +171,6 @@ Definition mallocN_spec :=
      PROP (malloc_compatible n (pointer_val_val v))
      LOCAL (temp ret_temp (pointer_val_val v))
      SEP (data_at_ Tsh (tarray tint (n / sizeof tint)) (pointer_val_val v)).
-     (* SEP (memory_block sh n (pointer_val_val v)). *)
 
 (*Definition freeN_spec :=
   DECLARE _freeN
