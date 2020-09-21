@@ -61,7 +61,7 @@ Definition prim_spec :=
      SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
           data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
          )
-  POST [ tint ]
+  POST [ tvoid ]
      EX mst: G,
      EX fmst: FiniteGraph mst,
      EX parents: list V,
@@ -70,7 +70,7 @@ Definition prim_spec :=
             Permutation (EList mst) (map (fun v => eformat (v, Znth v parents))
               (filter (fun v => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat SIZE))))
           )
-     RETURN (Vint (Int.repr 0))
+     RETURN ()
      SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
           data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
          ).

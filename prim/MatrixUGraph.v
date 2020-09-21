@@ -1294,4 +1294,191 @@ intros. apply (Z.le_trans _ (sum_DE Z.add t' 0)). auto.
 apply H0. apply H2.
 Qed.
 
+(*MOVE TO APPROPRIATE PLACES*)
+Lemma adjacent_dec:
+forall (g: MatrixUGraph) u v, adjacent g u v \/ ~ adjacent g u v.
+Proof.
+intros. tauto.
+Qed.
+
+(*ideally generalise in_dec to any decidable function, and don't need NoDup*)
+Lemma filter_list_Permutation:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l1 l2: list A),
+  NoDup l2 ->
+  Permutation
+    ((filter (fun x => in_dec EA x l1) l2) ++ (filter (fun x => negb (in_dec EA x l1)) l2))
+    l2.
+Proof.
+intros. apply NoDup_Permutation.
+apply NoDup_app_inv. apply NoDup_filter. auto. apply NoDup_filter. auto.
+intros. rewrite filter_In in H0. rewrite filter_In. destruct H0.
+unfold not; intros. destruct H2. destruct (in_dec EA x l1).
+inversion H3. inversion H1. auto.
+intros; split; intros.
+apply in_app_or in H0; destruct H0; rewrite filter_In in H0; destruct H0; auto.
+apply in_or_app. repeat rewrite filter_In.
+destruct (in_dec EA x l1). left; split; auto. right; split; auto.
+Qed.
+
+Lemma fold_left_Zadd_diff_accum:
+forall (l: list Z) (x y: Z), x <= y -> fold_left Z.add l x <= fold_left Z.add l y.
+Proof.
+induction l; intros. simpl; auto.
+apply IHl. lia.
+Qed.
+
+Lemma fold_left_accum_Zadd:
+forall (l: list Z) (x y: Z), fold_left Z.add l (x+y) = (fold_left Z.add l x) + y.
+Proof.
+induction l; intros. simpl; auto.
+simpl. replace (x + y + a) with ((x+a) + y) by lia. apply (IHl (x+a) y).
+Qed.
+
+Lemma fold_left_Zadd_comp:
+forall (l1 l2: list Z), Zlength l1 = Zlength l2 -> (forall i, 0<=i<Zlength l1 -> Znth i l1 <= Znth i l2)
+  -> (forall s, fold_left Z.add l1 s <= fold_left Z.add l2 s).
+Proof.
+induction l1; intros.
+rewrite Zlength_nil in H. symmetry in H. apply Zlength_nil_inv in H. subst l2. lia.
+destruct l2. rewrite Zlength_cons in H. rewrite Zlength_nil in H. pose proof (Zlength_nonneg l1). lia.
+simpl. assert (a <= z). replace a with (Znth 0 (a::l1)). replace z with (Znth 0 (z::l2)).
+apply H0. split. lia. rewrite Zlength_cons. pose proof (Zlength_nonneg l1). lia.
+auto. auto.
+apply (Z.le_trans _ (fold_left Z.add l1 (s + z)) _).
+apply fold_left_Zadd_diff_accum. lia.
+apply IHl1. do 2 rewrite Zlength_cons in H. lia.
+intros. replace (Znth i l1) with (Znth (i+1) (a::l1)).
+ replace (Znth i l2) with (Znth (i+1) (z::l2)). apply H0. rewrite Zlength_cons. lia.
+all: rewrite (Znth_pos_cons (i+1)) by lia; rewrite Z.add_simpl_r; auto.
+Qed.
+
+Lemma fold_left_Zadd_map_remove:
+forall {A: Type} {EA: EquivDec.EqDec A eq} l f b,
+  In b l -> NoDup l ->
+  fold_left Z.add (map f (remove EA b l)) 0 = (fold_left Z.add (map f l) 0) - f b.
+Proof.
+induction l; intros. contradiction.
+simpl. rewrite fold_left_accum_Zadd.
+replace (fold_left Z.add (map f l) 0 + f a - f b) with
+  (fold_left Z.add (map f l) 0 - f b + f a) by lia.
+destruct H; destruct (EA b a). 
+++hnf in e. subst a. assert (~ In b l). apply NoDup_cons_2 in H0; auto.
+rewrite remove_not_in by auto. rewrite Z.sub_add. auto.
+++unfold RelationClasses.complement, Equivalence.equiv in c. subst a. contradiction.
+++hnf in e; subst a. apply NoDup_cons_2 in H0. contradiction.
+++simpl. rewrite fold_left_accum_Zadd. apply NoDup_cons_1 in H0. rewrite IHl; auto.
+Qed.
+
+Lemma path_partition_checkpoint':
+forall (g: MatrixUGraph) {fg: FiniteGraph g} (l1 l2: list V) p l a b, Permutation (l1++l2) (VList g) ->
+  In a l1 -> In b l2 -> connected_by_path g p a b -> fits_upath g l p ->
+  exists v1 v2, In v1 p /\ In v2 p /\
+    In v1 l1 /\ In v2 l2 /\ (exists e, adj_edge g e v1 v2 /\ In e l).
+Proof.
+  induction p; intros. destruct H2. destruct H4. inversion H4.
+  destruct p. destruct H2. destruct H4. inversion H4; inversion H5; subst a. subst a0.
+  assert (~ In b l2).
+  apply (NoDup_app_not_in V l1). apply (Permutation_NoDup (l:=VList g)).
+  apply Permutation_sym; auto. apply NoDup_VList. auto. contradiction.
+  destruct l. simpl in H3; contradiction.
+  destruct H2. destruct H4. destruct H2. inversion H4. subst a0.
+  assert (In v (l1 ++ l2)). apply (Permutation_in (l:=VList g)). apply Permutation_sym; auto.
+  rewrite VList_vvalid. apply adjacent_requires_vvalid in H2; apply H2.
+  apply in_app_or in H7; destruct H7.
+  assert (exists v1 v2 : V, In v1 (v :: p) /\ In v2 (v :: p) /\
+    In v1 l1 /\ In v2 l2 /\ (exists e, adj_edge g e v1 v2 /\ In e l)). apply (IHp l v b); auto.
+  split. auto. split. simpl; auto. rewrite last_error_cons in H5. auto.
+    unfold not; intros. assert (In v (v::p)). left; auto. rewrite H8 in H9. contradiction. auto. apply H3.
+  destruct H8 as [v1 [v2 [? [? [? [? ?]]]]]]. exists v1; exists v2. split. right; auto. split. right; auto.
+  split; auto. split; auto. destruct H12 as [e0 [? ?]]. exists e0. split. auto. right; auto.
+  exists a; exists v. split. left; auto. split. right; left; auto. split; auto. split; auto.
+  destruct H3. exists e. split; auto. left; auto.
+Qed.
+
+Lemma path_partition_checkpoint:
+forall (g: MatrixUGraph) {fg: FiniteGraph g} (l1 l2: list V) p a b, Permutation (l1++l2) (VList g) ->
+  In a l1 -> In b l2 -> connected_by_path g p a b ->
+  exists v1 v2, In v1 p /\ In v2 p /\
+    In v1 l1 /\ In v2 l2 /\ adjacent g v1 v2.
+Proof.
+intros. assert (exists l, fits_upath g l p). apply connected_exists_list_edges in H2; auto. destruct H3 as [l ?].
+pose proof (path_partition_checkpoint' g l1 l2 p l a b H H0 H1 H2 H3). destruct H4 as [v1 [v2 [? [? [? [? ?]]]]]].
+exists v1; exists v2. repeat split; auto. destruct H8 as [e [? ?]]. exists e; auto.
+Qed.
+
+Corollary path_partition_checkpoint2:
+forall (g: MatrixUGraph) {fg: FiniteGraph g} (l: list V) p l' a b, In a l -> ~ In b l ->
+  connected_by_path g p a b -> fits_upath g l' p ->
+  exists v1 v2, In v1 p /\ In v2 p /\
+    In v1 l /\ ~ In v2 l /\ (exists e, adj_edge g e v1 v2 /\ In e l').
+Proof.
+intros.
+apply (path_partition_checkpoint' g
+  (filter (fun x => (in_dec V_EqDec x l)) (VList g))
+  (filter (fun x => negb (in_dec V_EqDec x l)) (VList g)) p l' a b
+) in H2.
+2: { apply filter_list_Permutation. apply NoDup_VList. }
+2: { rewrite filter_In. split. rewrite VList_vvalid. apply connected_by_path_vvalid in H1; apply H1.
+      destruct (in_dec V_EqDec a l). auto. contradiction. }
+2: { rewrite filter_In. split. rewrite VList_vvalid. apply connected_by_path_vvalid in H1; apply H1.
+      destruct (In_dec V_EqDec b l). contradiction. auto. }
+2: auto.
+destruct H2 as [v1 [v2 [? [? [? [? ?]]]]]].
+exists v1; exists v2. split. auto. split. auto.
+split. rewrite filter_In in H4. destruct H4. destruct (in_dec V_EqDec v1 l). auto. inversion H7.
+split. rewrite filter_In in H5. destruct H5. destruct (in_dec V_EqDec v2 l). inversion H7. auto.
+auto.
+Qed.
+
+Lemma list_eq_Znth:
+  forall {A:Type} {d: Inhabitant A} (l l': list A), Zlength l = Zlength l' ->
+    (forall i, 0 <= i < Zlength l -> Znth i l = Znth i l') ->
+    l = l'.
+Proof.
+induction l; intros. symmetry; apply Zlength_nil_inv. rewrite Zlength_nil in H; auto.
+destruct l'. rewrite Zlength_cons, Zlength_nil in H.
+pose proof (Zlength_nonneg (A:=A) l).
+assert (Zlength l < Z.succ (Zlength l)) by lia. lia.
+replace a with (Znth 0 (a::l)). 2: rewrite Znth_0_cons; auto.
+replace a0 with (Znth 0 (a0::l)). 2: rewrite Znth_0_cons; auto.
+rewrite (H0 0). 2: rewrite Zlength_cons; pose proof (Zlength_nonneg (A:=A) l); lia.
+rewrite (IHl l'); auto.
+apply Z.succ_inj. do 2 rewrite Zlength_cons in H. auto.
+intros. replace (Znth i l) with (Znth (i+1) (a::l)).
+replace (Znth i l') with (Znth (i+1) (a0::l')). apply H0. rewrite Zlength_cons. lia.
+replace (Znth i l') with (Znth (i+1 - 1) l'). apply Znth_pos_cons. lia. rewrite Z.add_simpl_r; auto.
+replace (Znth i l) with (Znth (i+1 - 1) l). apply Znth_pos_cons. lia. rewrite Z.add_simpl_r; auto.
+Qed.
+
+Lemma Zlt_Zmin:
+forall x y, x < y -> Z.min x y = x.
+Proof. intros. rewrite Zmin_spec. destruct (zlt x y); lia. Qed.
+
+Lemma sublist_of_nil:
+forall {A:Type} lo hi, sublist lo hi (nil (A:=A)) = nil.
+Proof.
+intros. unfold sublist. rewrite firstn_nil. rewrite skipn_nil. auto.
+Qed.
+
+Lemma sublist_overshoot:
+forall {A:Type} (l: list A) lo hi, Zlength l <= lo -> sublist lo hi l = nil.
+Proof.
+intros. unfold sublist.
+rewrite skipn_short; auto.
+rewrite <- ZtoNat_Zlength.
+rewrite Zlength_firstn.
+destruct (Z.lt_trichotomy 0 hi). rewrite Z.max_r by lia.
+destruct (Z.lt_trichotomy hi (Zlength l)). rewrite Z.min_l. lia. lia. destruct H1. 
+subst hi. rewrite Z.min_id. lia. rewrite Z.min_r by lia. lia.
+destruct H0. subst hi. rewrite Z.max_id. rewrite Z.min_l. lia. pose proof (Zlength_nonneg l); lia.
+rewrite Z.max_l by lia. rewrite Z.min_l. lia. pose proof (Zlength_nonneg l); lia.
+Qed.
+
+Lemma sublist_same_overshoot:
+forall {A:Type} (l: list A) hi, Zlength l <= hi -> sublist 0 hi l = l.
+Proof.
+intros. unfold sublist. rewrite skipn_0. rewrite firstn_same. auto.
+rewrite <- ZtoNat_Zlength. lia.
+Qed.
+
 End MATRIXUGRAPH.

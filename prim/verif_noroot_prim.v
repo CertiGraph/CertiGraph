@@ -973,7 +973,7 @@ break: (
       rewrite upd_Znth_diff. apply Hinv2_4. unfold SIZE; auto. rewrite HZlength_keys'; unfold SIZE; lia.
       rewrite HZlength_keys'; lia. auto.
     } (*entailer unable to solve but no change to timing*)
-    time "inner loop update-because-lt-postcon (orig 71 seconds)" entailer!.
+    time "inner loop update-because-lt-postcon" entailer!.
     entailer!. (*bizarre, have to call back-to-back entailers*)
     -forward. (*nothing changed*)
     Exists parents'. Exists keys'. Exists pq_state'.
@@ -1021,7 +1021,7 @@ break: (
       Znth v keys' = Znth v keys /\ Znth v pq_state' = Znth v upd_pq_state). {
       intros. apply Hinv2_3. lia.
     } (*entailer unable to solve but no change to timing*)
-    time "inner loop no-update-because-not-lt-postcon (originally 60s)" entailer!.
+    time "inner loop no-update-because-not-lt-postcon" entailer!.
   +(*nothing changed because out of pq*)
   assert (In i (popped_vertices+::u)). {
     unfold typed_false in H5. destruct (V_EqDec u i); simpl in H5. unfold Equivalence.equiv in e; subst i. apply in_or_app; right; left; auto.
@@ -1055,7 +1055,7 @@ break: (
     Znth v keys' = Znth v keys /\ Znth v pq_state' = Znth v upd_pq_state). {
     intros. apply Hinv2_3. lia.
   }
-  time "inner loop no-update-because-out-postcon (originally 92 seconds):" entailer!.
+  time "inner loop no-update-because-out-postcon:" entailer!.
   +(*inner loop done, postcon leading to next outer loop iter*)
   Intros parents' keys' pq_state'.
   assert (Htmp: Znth u parents' = Znth u parents /\ Znth u keys' = Znth u keys /\ Znth u pq_state' = Znth u upd_pq_state). {
@@ -1744,7 +1744,8 @@ break: (
         (* u0 is popped, so is Znth u parents, thus use invariant on them by adding eformat (u, Znth u parents) to the path
             Then add it again to go back to u*)
         apply (connected_trans adde_u u0 (Znth u parents) u).
-        apply adde_connected. rewrite <- Hinv_10; auto. apply (connected_trans g u0 u).
+        apply add_edge_connected. rewrite <- surjective_pairing; auto.
+        rewrite <- Hinv_10; auto. apply (connected_trans g u0 u).
         auto. apply adjacent_connected. rewrite eformat_adj. apply H7.
         apply connected_symm. apply adjacent_connected. rewrite eformat_adj. auto.
         (*adde -> g*)
@@ -1753,14 +1754,14 @@ break: (
         split; intros.
         apply (connected_trans adde_u u (Znth u parents) v).
         apply adjacent_connected. rewrite eformat_adj. auto.
-        apply adde_connected. rewrite <- Hinv_10; auto.
+        apply add_edge_connected. rewrite <- surjective_pairing; auto. rewrite <- Hinv_10; auto.
         apply (connected_trans g (Znth u parents) u).
         apply adjacent_connected. rewrite eformat_adj, eformat_symm. apply H7. auto.
         apply (is_partial_lgraph_connected adde_u); auto.
     ****destruct H9. 2: contradiction. destruct H10. 2: contradiction. subst u0. subst v.
         split; intros; apply connected_refl; rewrite vert_bound; lia.
   }
-  time "end of pop loop (adde_u) (did not record original):" entailer!.
+  time "end of pop loop (adde_u):" entailer!.
   clear H9 H10 H11 H12 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_key HPv_key Pv_key0.
 
   (*permutation of EList*)
@@ -1928,7 +1929,7 @@ break: (
   assert (Hnot_adj: forall u0 v : V, In u0 (remove V_EqDec u unpopped_vertices) -> ~ adjacent mst' u0 v). {
     intros. apply Hinv_11. rewrite remove_In_iff in H6; apply H6.
   }
-  time "End of pop loop (same msf) (originally 150s):" entailer!.
+  time "End of pop loop (same msf):" entailer!.
   }
   { (*break*) forward. (*no more vertices in queue*)
     assert (Hempty: priq_arr_utils.isEmpty pq_state = Vone). {
