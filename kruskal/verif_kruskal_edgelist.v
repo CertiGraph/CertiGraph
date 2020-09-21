@@ -987,6 +987,25 @@ Proof.
   --- (* yes, add this edge.*)
     forward. forward. entailer!. apply Hdef_i.
     forward. forward. rewrite (surjective_pairing (Znth i sorted)).
+    (*this is when you manually update the fields
+
+    Tactic call ran for 83.16 secs (83.146u,0.036s) (success)
+    Tactic call ran for 50.323 secs (50.332u,0.016s) (success)
+    Tactic call ran for 136.395 secs (136.369u,0.093s) (success)
+    Tactic call ran for 75.162 secs (75.167u,0.04s) (success)
+    Tactic call ran for 90.805 secs (90.78u,0.072s) (success)
+    Tactic call ran for 52.881 secs (52.874u,0.036s) (success)
+    Tactic call ran for 131.789 secs (131.754u,0.1s) (success)
+    Tactic call ran for 73.214 secs (73.173u,0.08s) (success)
+    Tactic call ran for 141.335 secs (141.295u,0.113s) (success)
+    Tactic call ran for 130.169 secs (130.179u,0.06s) (success)
+    Tactic call ran for 84.157 secs (84.169u,0.024s) (success)
+
+    time forward. time entailer!.
+    time forward. time forward.
+    time forward. time entailer!.
+    time forward. time forward. time forward. time forward. time forward.
+    *)
     (*split. UGLY*)
     rewrite (split2_data_at_Tarray_app (numE msf') MAX_EDGES sh t_struct_edge
       (map wedge_to_cdata msflist) (Vundef_cwedges (MAX_EDGES - numE msf'))).

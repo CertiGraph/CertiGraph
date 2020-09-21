@@ -75,23 +75,23 @@ Definition _i : ident := 59%positive.
 Definition _initialise_list : ident := 71%positive.
 Definition _initialise_matrix : ident := 69%positive.
 Definition _j : ident := 66%positive.
-Definition _key : ident := 73%positive.
+Definition _key : ident := 74%positive.
 Definition _list : ident := 70%positive.
 Definition _main : ident := 64%positive.
 Definition _minVertex : ident := 57%positive.
 Definition _minWeight : ident := 58%positive.
 Definition _newWeight : ident := 61%positive.
-Definition _out : ident := 74%positive.
-Definition _parent : ident := 72%positive.
+Definition _out : ident := 75%positive.
+Definition _parent : ident := 73%positive.
 Definition _popMin : ident := 60%positive.
 Definition _pq : ident := 55%positive.
 Definition _pq_emp : ident := 63%positive.
-Definition _prim : ident := 78%positive.
+Definition _prim : ident := 79%positive.
 Definition _push : ident := 56%positive.
-Definition _r : ident := 79%positive.
-Definition _u : ident := 76%positive.
-Definition _v : ident := 75%positive.
-Definition _v__1 : ident := 77%positive.
+Definition _r : ident := 72%positive.
+Definition _u : ident := 77%positive.
+Definition _v : ident := 76%positive.
+Definition _v__1 : ident := 78%positive.
 Definition _vertex : ident := 53%positive.
 Definition _weight : ident := 54%positive.
 Definition _t'1 : ident := 80%positive.
@@ -221,7 +221,7 @@ Definition f_initialise_list := {|
 |}.
 
 Definition f_prim := {|
-  fn_return := tint;
+  fn_return := tvoid;
   fn_callconv := cc_default;
   fn_params := ((_graph, (tptr (tarray tint 8))) :: (_r, tint) ::
                 (_parent, (tptr tint)) :: nil);
@@ -399,7 +399,7 @@ Definition f_prim := {|
                           (Ebinop Oadd (Etempvar _v__1 tint)
                             (Econst_int (Int.repr 1) tint) tint)))))))
               Sskip)
-            (Sreturn (Some (Econst_int (Int.repr 0) tint)))))))))
+            (Sreturn None)))))))
 |}.
 
 Definition composites : list composite_definition :=

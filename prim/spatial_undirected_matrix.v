@@ -5,25 +5,15 @@ Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.undirected_graph.
 Require Import CertiGraph.graph.AdjMatGraph.
 Require Import CertiGraph.prim.MatrixUGraph.
+Require Import CertiGraph.priq.priq_arr_utils.
 Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope logic.
 
-Definition SIZE := 8.
-
-Lemma SIZE_rep: 0 <= SIZE <= Int.max_signed.
-Proof. unfold SIZE. set (i:=Int.max_signed); compute in i; subst i. lia. Qed.
-
-Definition inf := Int.max_signed - Int.max_signed / SIZE.
-
-Lemma inf_rep: 0 <= inf <= Int.max_signed.
-Proof. unfold inf. set (i:=Int.max_signed); compute in i; subst i. unfold SIZE.
-set (j:=2147483647 / 8); compute in j; subst j. lia. Qed.
-
-Definition G := @MatrixUGraph inf SIZE.
-Definition edgeless_graph' := @edgeless_graph inf SIZE inf_rep SIZE_rep.
-Definition adde := @MatrixUGraph_adde inf SIZE.
-Definition eremove := @MatrixUGraph_eremove inf SIZE.
+Definition G := @MatrixUGraph priq_arr_utils.inf priq_arr_utils.SIZE.
+Definition edgeless_graph' := @edgeless_graph priq_arr_utils.inf priq_arr_utils.SIZE inf_rep SIZE_rep.
+Definition adde := @MatrixUGraph_adde priq_arr_utils.inf priq_arr_utils.SIZE.
+Definition eremove := @MatrixUGraph_eremove priq_arr_utils.inf priq_arr_utils.SIZE.
 
 Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
 
@@ -36,12 +26,6 @@ Proof. unfold eformat; intros. rewrite <- Z.leb_gt in H; rewrite H. auto. Qed.
 Lemma eformat2: forall (e: E), snd e <= fst e -> eformat e = (snd e, fst e).
 Proof.
 intros. apply Z.le_lteq in H. destruct H. rewrite eformat2'; auto. rewrite eformat1, H. rewrite <- H at 2. destruct e; auto. lia.
-Qed.
-
-(*rather dumb lemma*)
-Lemma eformat_fstsnd: forall (e: E), (fst (eformat e), snd (eformat e)) = eformat e.
-Proof.
-intros. destruct (eformat e). simpl. auto.
 Qed.
 
 Lemma eformat_eq:
@@ -174,11 +158,11 @@ all: rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
 Qed.
 
 Lemma graph_to_mat_inf:
-  forall (g: G) u v, 0 <= u < v -> v < SIZE -> ~ evalid g (u,v) -> Znth v (Znth u (graph_to_symm_mat g)) = inf.
+  forall (g: G) u v, 0 <= u < v -> v < SIZE -> ~ evalid g (u,v) -> Znth v (Znth u (graph_to_symm_mat g)) = priq_arr_utils.inf.
 Proof.
 unfold graph_to_symm_mat, vert_rep_symm; intros.
 repeat rewrite Znth_map. repeat rewrite nat_inc_list_i.
-rewrite eformat1. apply (@invalid_edge_weight inf SIZE g (sound_MatrixUGraph g)); auto. simpl; lia.
+rewrite eformat1. apply (@invalid_edge_weight priq_arr_utils.inf priq_arr_utils.SIZE g (sound_MatrixUGraph g)); auto. simpl; lia.
 all: try (rewrite Z2Nat.id; lia).
 all: try (rewrite nat_inc_list_Zlength, Z2Nat.id; lia).
 rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
