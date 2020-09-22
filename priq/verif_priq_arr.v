@@ -29,7 +29,7 @@ Proof.
       entailer!. repeat rewrite Zlength_map in H3; auto.
     }
     forward; forward_if; forward; entailer!.
-    + rewrite inf_eq2 in H3.
+    + 
       rewrite (isEmpty_in priq_contents (Znth i priq_contents)); trivial.
       1: apply Znth_In; lia.
       rewrite <- H1 in H0.
@@ -40,26 +40,23 @@ Proof.
       simpl in H7. split; [lia|].
       apply Z.le_trans with (m := inf + 1); [lia|].
       rewrite inf_eq; compute; inversion 1.
-    + rewrite inf_eq2 in H3.
+    + 
       rewrite (sublist_split 0 i (i+1)); try lia.
       unfold isEmpty.
       rewrite fold_right_app.
       rewrite sublist_one; try lia. Opaque inf. simpl.
       destruct (Z_lt_dec (Znth i priq_contents) (inf + 1)).
       2: unfold isEmpty in H2; trivial.
-      rewrite Int.add_signed in H3.
-      assert (Hx: inf + 1 < Int.max_signed). {
-        rewrite inf_eq; compute; trivial.
-      }
+      assert (inf + 1 <= Int.max_signed). {
+        rewrite inf_eq. set (j:=Int.max_signed); compute in j; subst j. lia. }
       rewrite Int.signed_repr in H3.
-      2: rewrite <- H1 in H0; apply (Forall_Znth _ _ i H0) in H; simpl in H; rep_lia.
+      2: { rewrite <- H1 in H0. apply (Forall_Znth _ _ i H0) in H; simpl in H. lia. }
       rewrite Int.signed_repr in H3.
-      2: { rewrite inf_eq.
+      2: { 
            repeat rewrite Int.signed_repr;
              compute; split; inversion 1.
       }
-      do 2 rewrite Int.signed_repr in H3. lia.
-      all: try rewrite inf_eq; compute; split; inversion 1.
+      rewrite inf_eq in l. lia.
   - forward. entailer!.
     rewrite sublist_same in H0; trivial.
     2: { symmetry; repeat rewrite Zlength_map in H2.
