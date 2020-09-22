@@ -2,14 +2,13 @@ Require Import VST.floyd.proofauto.
 Require Import CertiGraph.lib.List_ext.
 
 Definition SIZE := 8.
-Definition inf := Int.max_signed - Int.max_signed / SIZE.
+Definition inf := Int.max_signed - 1.
 
-Lemma inf_eq: inf = 1879048192.
+Lemma inf_eq: inf = 2147483646.
 Proof. compute; trivial. Qed.
 
 Lemma inf_eq2: Int.sub (Int.repr 2147483647)
-                       (Int.divs (Int.repr 2147483647)
-                                 (Int.repr 8)) = Int.repr inf.
+                       (Int.repr 1) = Int.repr inf.
 Proof. compute. trivial. Qed.
 
 Lemma SIZE_rep: 0 <= priq_arr_utils.SIZE <= Int.max_signed.
@@ -17,7 +16,7 @@ Proof. unfold priq_arr_utils.SIZE. set (i:=Int.max_signed); compute in i; subst 
 
 Lemma inf_rep: 0 <= priq_arr_utils.inf <= Int.max_signed.
 Proof. set (i:=Int.max_signed); compute in i; subst i. rewrite inf_eq.
-set (j:=2147483647 / 8); compute in j; subst j. lia. Qed.
+lia. Qed.
 
 Lemma inf_repable:
 repable_signed inf.

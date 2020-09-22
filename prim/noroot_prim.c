@@ -1,9 +1,6 @@
 //well, no need for malloc and free I guess
 #include "../priq/priq_arr.h"
 
-#define SIZE 8  // number of vertices
-#define IFTY INT_MAX - INT_MAX/SIZE
-
 //I feel like we should store the matrix in a struct. That way SIZE can be preserved yet it can be moved around with ease
 
 int check_symmetric_matrix(int graph[SIZE][SIZE]) {

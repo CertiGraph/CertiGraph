@@ -1,6 +1,6 @@
 #define INT_MAX 2147483647
 #define SIZE 8
-#define IFTY INT_MAX - INT_MAX / SIZE
+#define IFTY INT_MAX - 1
 
 void push (int vertex, int weight, int pq[SIZE]);
 

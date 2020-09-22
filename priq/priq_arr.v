@@ -143,8 +143,7 @@ Definition f_popMin := {|
               (Etempvar _minVertex tint) (tptr tint)) tint)
           (Ebinop Oadd
             (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-              (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                (Econst_int (Int.repr 8) tint) tint) tint)
+              (Econst_int (Int.repr 1) tint) tint)
             (Econst_int (Int.repr 1) tint) tint))
         (Sreturn (Some (Etempvar _minVertex tint)))))))
 |}.
@@ -188,9 +187,7 @@ Definition f_pq_emp := {|
                          (Ebinop Oadd
                            (Ebinop Osub
                              (Econst_int (Int.repr 2147483647) tint)
-                             (Ebinop Odiv
-                               (Econst_int (Int.repr 2147483647) tint)
-                               (Econst_int (Int.repr 8) tint) tint) tint)
+                             (Econst_int (Int.repr 1) tint) tint)
                            (Econst_int (Int.repr 1) tint) tint) tint)
             (Sreturn (Some (Econst_int (Int.repr 0) tint)))
             Sskip)))
