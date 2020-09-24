@@ -20,4 +20,4 @@ Proof.
   lia.
 Qed.
 
-Definition DijkGraph sh cs g gaddr size : mpred := @SpaceAdjMatGraph size sh cs id g gaddr.
+Definition DijkGraph sh cs g g_ptr size addresses : mpred := @SpaceAdjMatGraph size sh cs id g g_ptr addresses.

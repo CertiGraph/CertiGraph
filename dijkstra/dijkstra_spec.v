@@ -107,6 +107,7 @@ Definition getCell_spec inf size :=
   WITH sh: wshare,
        g: (DijkGG inf size),
        graph_ptr: pointer_val,
+       addresses: list val,
        u: V,
        i : V
   PRE [tptr (tptr tint), tint, tint]
@@ -116,17 +117,18 @@ Definition getCell_spec inf size :=
          Vint (Int.repr u);
          Vint (Int.repr i))
   GLOBALS ()
-  SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size)
+  SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses)
   POST [tint]
   PROP ()
   RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_mat size g id))))) 
-  SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size).    
+  SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses).    
 
 Definition dijkstra_spec inf size :=
   DECLARE _dijkstra
   WITH sh: wshare,
        g: (DijkGG inf size),
        graph_ptr : pointer_val,
+       addresses : list val,
        dist_ptr : pointer_val,
        prev_ptr : pointer_val,
        src : V
@@ -140,7 +142,7 @@ Definition dijkstra_spec inf size :=
          Vint (Int.repr size);
          Vint (Int.repr inf))
   GLOBALS ()
-  SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size;
+  SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
       data_at_ Tsh (tarray tint size) (pointer_val_val dist_ptr);
       data_at_ Tsh (tarray tint size) (pointer_val_val prev_ptr))
   POST [tvoid]
@@ -153,7 +155,7 @@ Definition dijkstra_spec inf size :=
             vvalid g dst ->
             inv_popped inf size g src popped prev dist dst)
    LOCAL ()
-   SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size;
+   SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
        data_at Tsh (tarray tint size) (map Vint (map Int.repr prev)) (pointer_val_val prev_ptr);
        data_at Tsh (tarray tint size) (map Vint (map Int.repr dist)) (pointer_val_val dist_ptr);
        data_at Tsh (tarray tint size) (map Vint (map Int.repr priq)) (pointer_val_val priq_ptr)).
