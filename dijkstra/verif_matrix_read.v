@@ -195,7 +195,8 @@ Section GetCell.
     *)
                              
   
-Abort.
+  Abort.
 
+End GetCell.
 
   
