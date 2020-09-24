@@ -1,7 +1,7 @@
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
-Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.graph.AdjMatGraph_new.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.SpaceDijkGraph.
 
