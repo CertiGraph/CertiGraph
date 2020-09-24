@@ -761,7 +761,7 @@ Proof.
         rewrite <- Znth_0_hd; [apply Znth_In|]; ulia.
 Qed.
 
-Definition dijk_setup_loop_inv g sh src dist prev v_pq arr :=
+Definition dijk_setup_loop_inv g sh src dist prev v_pq arr addresses :=
   EX i : Z,
   PROP ()
   LOCAL (temp _dist (pointer_val_val dist);
@@ -788,9 +788,9 @@ Definition dijk_setup_loop_inv g sh src dist prev v_pq arr :=
               ((list_repeat (Z.to_nat i) (Vint (Int.repr inf)))
                  ++ (list_repeat (Z.to_nat (size-i))
                                  Vundef)) (pointer_val_val dist);
-      DijkGraph sh CompSpecs g (pointer_val_val arr) size).
+      DijkGraph sh CompSpecs g (pointer_val_val arr) size addresses).
 
-Definition dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr :=
+Definition dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
   EX prev : list V,
   EX priq : list V,
   EX dist : list V,
@@ -840,9 +840,9 @@ Definition dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr :=
               (tarray tint size)
               (map Vint (map Int.repr dist))
               (pointer_val_val dist_ptr);
-      DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size).
+      DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses).
 
-Definition dijk_forloop_break_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr :=
+Definition dijk_forloop_break_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
   EX prev: list V,
   EX priq: list V,
   EX dist: list V,
@@ -864,11 +864,11 @@ Definition dijk_forloop_break_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr 
               (tarray tint size)
               (map Vint (map Int.repr dist))
               (pointer_val_val dist_ptr);
-      DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size).
+      DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses).
 
 Definition dijk_inner_forloop_inv (g: DijkGG inf size) sh
            src (priq dist prev : list Z)
-           dist_ptr prev_ptr priq_ptr graph_ptr :=
+           dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
   EX i : Z,
   EX prev' : list V,
   EX priq' : list V,
@@ -962,7 +962,7 @@ Definition dijk_inner_forloop_inv (g: DijkGG inf size) sh
               (tarray tint size)
               (map Vint (map Int.repr dist'))
               (pointer_val_val dist_ptr);
-      DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size).
+      DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses).
 
 Lemma inv_unpopped_weak_add_unpopped:
   forall (g: DijkGG inf size) prev dist popped src u dst,
@@ -1789,99 +1789,28 @@ Lemma body_getCell inf size: semax_body Vprog (Gprog inf size) f_getCell (getCel
 Proof.
   start_function.
   unfold DijkGraph.
-  rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ u); trivial.
+  rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ _ u); trivial.
+
+  assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
+    unfold graph_to_mat, vert_to_list.
+    rewrite Znth_map; repeat rewrite Zlength_map.
+    all: rewrite nat_inc_list_Zlength; lia.
+  }
+
+  assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_mat size g id)))) by lia.
+
+  assert (0 <= i < Zlength (Znth u (@graph_to_mat size g id))). {
+    rewrite Zlength_map in H1. lia.
+  }
+  
   Intros.
   freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
   unfold list_rep.
-  Fail forward.
-  (* Okay fine, this is a hint *)
-  
-  assert_PROP (force_val
-                 (sem_add_ptr_int
-                    (tptr tint)
-                    Signed
-                    (pointer_val_val graph_ptr)
-                    (Vint (Int.repr u))) =
-               field_address
-                 (Tarray tint size noattr)
-                 [ArraySubsc u]
-                 (pointer_val_val graph_ptr)
-              ). {
-    entailer!. simpl.
-    rewrite field_address_offset.
-    1: f_equal.
-    admit. (* even if we admit this... *)
-  }
-  Fail forward. 
-  (* Why is THIS the error message? 
-     Where did Tint I32 Signed noattr come into play?
-   *)
-
-  (*
-    When I had the matrix defined as graph[size][size], I was able to do it
-    in one step. The forward asked me to prove a similar thing, and I have them
-    this. It worked in one step.
-   *)
-
-        (*
-          assert_PROP (force_val
-                         (sem_add_ptr_int
-                            tint
-                            Signed
-                            (force_val
-                               (sem_add_ptr_int
-                                  (tarray tint size)
-                                  Signed
-                                  (pointer_val_val graph_ptr)
-                                  (Vint (Int.repr u))))
-                            (Vint (Int.repr i))) =
-                       field_address
-                         (tarray tint size)
-                         [ArraySubsc i]
-                         (@list_address
-                            size
-                            CompSpecs
-                            (pointer_val_val graph_ptr)
-                            u)). {
-            entailer!.
-            clear (* some stuff *) 
-            unfold list_address. simpl.
-            rewrite field_address_offset.
-            1: { rewrite offset_offset_val; simpl; f_equal.
-                 rewrite Z.add_0_l. f_equal. lia. }            
-            destruct H24 as [? [? [? [? ?]]]]. (* H24 was itself a field_compatible argument *)
-            unfold field_compatible; split3; [| | split3]; simpl; auto.
-          }
-         *)
-
-  
-Abort.
-
-    (*
-Some more struggling... 
-
-    - destruct H2 as [? [? [? [? ?]]]].
-      unfold field_compatible; split3; [| | split3]; auto.
-      + destruct graph_ptr; trivial.
-      + destruct graph_ptr; trivial; simpl in H6 |- *.
-        apply Z.le_lt_trans
-          with
-            (m:= Ptrofs.unsigned (Ptrofs.add i0 (Ptrofs.repr (u * (4 * Z.max 0 size)))) +
-                 4 * Z.max 0 size); trivial.
-        apply Zplus_le_compat_r.
-
-        clear -H6 g.
-        replace Ptrofs.modulus with (Z.succ Ptrofs.max_unsigned) in H6.
-        2: compute; trivial.
-        apply Zlt_succ_le in H6.
-        
-        rewrite Ptrofs.add_unsigned in *.
-        pose proof (Ptrofs.unsigned_range_2 (Ptrofs.repr (u * (4 * Z.max 0 size)))).
-        pose proof (Ptrofs.unsigned_range_2 i0).
-        rewrite Ptrofs.unsigned_repr; [lia|].
-...
-  } *)
-
+  forward. forward. forward.
+  thaw FR. unfold DijkGraph.
+  rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ _ u); trivial.
+  entailer!.
+Qed.
 
 Lemma body_dijkstra inf size: semax_body Vprog (Gprog inf size) f_dijkstra (dijkstra_spec inf size).
 Proof.
@@ -1897,7 +1826,7 @@ Proof.
   Intro priq_ptr.
   forward_for_simple_bound
     size
-    (dijk_setup_loop_inv size inf g sh src dist_ptr prev_ptr priq_ptr graph_ptr).
+    (dijk_setup_loop_inv size inf g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).
   - rewrite list_repeat_0, app_nil_l, Z.sub_0_r, Z_div_mult, data_at__tarray.
     entailer!.
     simpl; lia.
@@ -1942,8 +1871,8 @@ Proof.
      *)
   
     forward_loop
-    (dijk_forloop_inv size inf g sh src dist_ptr prev_ptr priq_ptr graph_ptr)
-    break: (dijk_forloop_break_inv size inf g sh src dist_ptr prev_ptr priq_ptr graph_ptr).
+    (dijk_forloop_inv size inf g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses)
+    break: (dijk_forloop_break_inv size inf g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).
     + unfold dijk_forloop_inv.
       Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) src).
       Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) 0).
@@ -2096,7 +2025,7 @@ Proof.
           (dijk_inner_forloop_inv
              _ _ g sh src
              priq dist prev
-             dist_ptr prev_ptr priq_ptr graph_ptr).
+             dist_ptr prev_ptr priq_ptr graph_ptr addresses).
         -- (* We start the for loop as planned --
               with the old dist and prev arrays,
               and with a priq array where u has been popped *)
@@ -2227,7 +2156,7 @@ Proof.
           rename H29 into H25.
           rename H30 into H26.
 
-          forward_call (sh, g, graph_ptr, u, i).
+          forward_call (sh, g, graph_ptr, addresses, u, i).
           remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
 
           assert (H_i_valid: vvalid g i). {

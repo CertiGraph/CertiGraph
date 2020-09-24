@@ -247,29 +247,32 @@ Section AdjMatGraph.
   Definition graph_to_list (g: AdjMatLG) (f : E -> E) : list Z :=
     (concat (graph_to_mat g f)).
 
-  Definition list_address (cs: compspecs) a index : val :=
-    offset_val (index * sizeof (tarray tint size)) a.
+  Definition list_address addresses index : val :=
+    Znth index addresses.
 
-  Definition list_rep sh (cs: compspecs) l contents_mat index :=
+  Definition list_rep sh (cs: compspecs) addresses contents_mat index :=
     let mylist := (Znth index contents_mat) in
     data_at sh (tarray tint size)
             (map Vint (map Int.repr mylist))
-            (list_address cs l index).
+            (list_address addresses index).
 
-  Definition SpaceAdjMatGraph sh (cs: compspecs) (f : E -> E) g gaddr : mpred :=
-    iter_sepcon (list_rep sh cs gaddr (graph_to_mat g f))
-                (nat_inc_list (Z.to_nat size)).
-
-  Lemma SpaceAdjMatGraph_unfold: forall sh (cs: compspecs) (f : E -> E) g ptr i,
+  Definition SpaceAdjMatGraph sh (cs: compspecs) (f : E -> E) g (g_ptr: val) (addresses : list val) : mpred :=
+    sepcon (iter_sepcon (list_rep sh cs addresses (graph_to_mat g f))
+                        (nat_inc_list (Z.to_nat size)))
+           (data_at sh (tarray (tptr tint) size) addresses g_ptr).
+            
+  Lemma SpaceAdjMatGraph_unfold: forall sh (cs: compspecs) (f : E -> E) g (g_ptr : val) (addresses : list val) i,
       let contents := (graph_to_mat g f) in 
       0 <= i < size ->
-      SpaceAdjMatGraph sh cs f g ptr =
-      sepcon (iter_sepcon (list_rep sh cs ptr contents)
-                          (sublist 0 i (nat_inc_list (Z.to_nat size))))
-             (sepcon
-                (list_rep sh cs ptr contents i)
-                (iter_sepcon (list_rep sh cs ptr contents)
-                             (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat size))))).
+      SpaceAdjMatGraph sh cs f g g_ptr addresses =
+      sepcon
+        (sepcon (iter_sepcon (list_rep sh cs addresses contents)
+                             (sublist 0 i (nat_inc_list (Z.to_nat size))))
+                (sepcon
+                   (list_rep sh cs addresses contents i)
+                   (iter_sepcon (list_rep sh cs addresses contents)
+                                (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat size))))))
+        (data_at sh (tarray (tptr tint) size) addresses g_ptr).
   Proof.
     intros. unfold SpaceAdjMatGraph.
     replace (nat_inc_list (Z.to_nat size)) with
