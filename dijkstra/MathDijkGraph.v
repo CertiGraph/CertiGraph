@@ -14,7 +14,7 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
 Require Import CertiGraph.graph.FiniteGraph.
-Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.graph.AdjMatGraph_new.
 
 Require Import Coq.Classes.EquivDec.
 

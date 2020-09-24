@@ -2,7 +2,7 @@ Require Import VST.veric.SeparationLogic.
 Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
-Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.graph.AdjMatGraph_new.
 
 Local Open Scope logic.
 
