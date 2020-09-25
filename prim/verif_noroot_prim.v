@@ -5,7 +5,7 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.undirected_graph.
-Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.graph.AdjMatGraph_old.
 Require Import CertiGraph.prim.MatrixUGraph.
 Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.priq.priq_arr_utils.
