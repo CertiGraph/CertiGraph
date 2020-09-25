@@ -40,7 +40,8 @@ GRAPH_FILES = \
   find_not_in.v reachable_ind.v subgraph2.v spanning_tree.v dag.v marked_graph.v \
   weak_mark_lemmas.v dual_graph.v graph_morphism.v local_graph_copy.v tree_model.v \
   list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
-  graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v AdjMatGraph.v AdjMatGraph_new.v
+  graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v \
+  AdjMatGraph_old.v MathAdjMatGraph.v SpaceAdjMatGraph_noncont.v
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
