@@ -1,28 +1,10 @@
-Require Import Coq.Numbers.BinNums.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Classes.EquivDec.
-Require Import Coq.ZArith.ZArith_dec.
-Require Import Coq.ZArith.Zcomplements.
-Require Import Coq.micromega.Lia.
-Require Import Coq.ZArith.Znat.
 
 Require Import compcert.lib.Integers.
-Require Import compcert.common.Values.
-Require Import compcert.exportclight.Clightdefs.
 
-Require Import VST.veric.val_lemmas.
-Require Import VST.veric.expr.
-Require Import VST.veric.mpred.
-Require Import VST.floyd.forward.
-Require Import VST.floyd.sublist.
-Require Import VST.floyd.field_at.
-Require Import VST.floyd.coqlib3.
-Require Import VST.msl.iter_sepcon.
-Require Import VST.msl.seplog.
-
-Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.lib.List_ext.
-Require Import CertiGraph.lib.Coqlib.
+Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.path_lemmas.
 
