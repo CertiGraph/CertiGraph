@@ -162,6 +162,10 @@ vstandme7:
 vstandme3:
 	cd $(VST_DIR) && make $(VST_CRITICAL_FILES:%.v=%.vo) -j3 && cd - && make -j3
 
+.PHONY: mst
+mst:
+	make prim/verif_*.vo dijkstra/verif_dijkstra.vo kruskal/verif_kruskal_edgelist.vo -j7
+
 .depend depend:
 	@echo 'coqdep ... >.depend'
 	@$(COQDEP) $(NORMAL_FLAG) $(NORMAL_FILES) > .depend
