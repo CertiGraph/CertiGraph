@@ -1,22 +1,17 @@
 (*Described a pure undirected graph that can be represented by an adjacency matrix*)
-Require Import CertiGraph.lib.EnumEnsembles.
-Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Lia.
-Require Import VST.msl.seplog.
 Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
-Require Import Coq.Lists.List.
-Require Import CertiGraph.lib.Coqlib.
+Require Import compcert.lib.Coqlib.
+
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.graph.FiniteGraph.
-Require Import compcert.lib.Coqlib.
 Require Import CertiGraph.graph.undirected_graph.
 Require Import CertiGraph.graph.MathAdjMatGraph.
-Require Import CertiGraph.graph.SpaceAdjMatGraph_noncont.
 Require Import CertiGraph.priq.priq_arr_utils.
 
 Local Open Scope logic.
