@@ -1,4 +1,4 @@
-Require Export CertiGraph.priq.priq_arr_specs.
+Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.MathAdjMatGraph.
