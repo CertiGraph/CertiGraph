@@ -8,10 +8,10 @@ Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope logic.
 
-Definition G := @MatrixUGraph priq_arr_utils.inf priq_arr_utils.SIZE.
-Definition edgeless_graph' := @edgeless_graph priq_arr_utils.inf priq_arr_utils.SIZE inf_rep SIZE_rep.
-Definition adde := @MatrixUGraph_adde priq_arr_utils.inf priq_arr_utils.SIZE.
-Definition eremove := @MatrixUGraph_eremove priq_arr_utils.inf priq_arr_utils.SIZE.
+Definition G := @MatrixUGraph inf SIZE.
+Definition edgeless_graph' := @edgeless_graph inf SIZE inf_rep SIZE_rep.
+Definition adde := @MatrixUGraph_adde inf SIZE.
+Definition eremove := @MatrixUGraph_eremove inf SIZE.
 
 Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
 
