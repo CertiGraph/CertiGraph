@@ -71,8 +71,30 @@ Class AdjMatUSoundness (g: LabeledGraph V E DV DE DG) := {
 (* done? *)
 Definition MatrixUGraph := (GeneralGraph V E DV DE DG (fun g => AdjMatUSoundness g)).
 
-
 Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g).
+
+(*
+  Later on, I need to get from
+  MatrixUGraph ---> AdjMatLG 
+ *)
+Lemma AdjMatLG_MatrixUGraph (g: MatrixUGraph) : AdjMatLG.
+Proof.
+  admit.
+Admitted.
+Coercion AdjMatLG_MatrixUGraph: MatrixUGraph >-> AdjMatLG.
+
+(* 
+   Anshuman, Sep 26:
+   I'm not getting into it too much since a merge between
+   MatrixUGraph and newMatrixUGraph is probably coming up,
+   but several changes are needed here.
+   1. Don't redefine V_EqDec and E_EqDec here
+   2. Create some (PrimLG: LabeledGraph) 
+      and grow PrimGG atop of it. for example, 
+          Class AdjMatUSoundness (g: PrimLG) := {...}
+   3. Create the appropriate coercions in this file
+   4. Don't redefine the various getters for soundness
+ *)
 
 (* There is already a whole set of such getters in
    AdjMatGraph. I suggest just using those.
