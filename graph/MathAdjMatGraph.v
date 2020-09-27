@@ -5,7 +5,7 @@ Require Import compcert.lib.Integers.
 
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
-Require Import CertiGraph.graph.FiniteGraph.
+Require Export CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.path_lemmas.
 
 
