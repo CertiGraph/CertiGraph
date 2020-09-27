@@ -95,7 +95,8 @@ DIJKSTRA_FILES = \
   dijkstra.v matrix_read.v \
   MathDijkGraph.v SpaceDijkGraph.v \
   env_dijkstra_arr.v dijkstra_constants.v \
-  path_cost.v dijkstra_math_lemmas.v dijkstra_spec.v \
+  path_cost.v dijkstra_math_lemmas.v \
+  dijkstra_spec_pure.v dijkstra_spec.v \
   verif_dijkstra.v verif_matrix_read.v
 
 PRIQ_FILES = \
