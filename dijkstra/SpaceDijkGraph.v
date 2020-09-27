@@ -4,18 +4,25 @@ Require Export CertiGraph.graph.SpaceAdjMatGraph_noncont.
 
 Local Open Scope logic.
 
-Lemma elabel_Znth_graph_to_mat:
-  forall inf size (g: (DijkGG inf size)) src dst,
-    vvalid g src ->
-    vvalid g dst ->
-    elabel g (src, dst) =
-    Znth dst (Znth src (@graph_to_mat size g id)).
-Proof.
-  intros.
-  rewrite (vvalid_meaning g) in H, H0.
-  unfold graph_to_mat.
-  apply elabel_Znth_graph_to_mat with (f:=id); trivial.
-  lia.
-Qed.
+Section SpaceDijkGraph.
 
-Definition DijkGraph sh cs g g_ptr size addresses : mpred := @SpaceAdjMatGraph size sh cs id g g_ptr addresses.
+  Context {size : Z}.
+  Context {inf : Z}.
+
+  Lemma elabel_Znth_graph_to_mat:
+    forall (g: @DijkGG size inf) src dst,
+      vvalid g src ->
+      vvalid g dst ->
+      elabel g (src, dst) =
+      Znth dst (Znth src (@graph_to_mat size g id)).
+  Proof.
+    intros.
+    rewrite (vvalid_meaning g) in H, H0.
+    unfold graph_to_mat.
+    apply elabel_Znth_graph_to_mat with (f:=id); trivial.
+    lia.
+  Qed.
+
+  Definition DijkGraph sh cs g g_ptr size addresses : mpred := @SpaceAdjMatGraph size sh cs id g g_ptr addresses.
+
+End SpaceDijkGraph.

@@ -13,14 +13,19 @@ Require Export CertiGraph.dijkstra.dijkstra.
 
 Local Open Scope Z_scope.
 
+Section DijkstraSpec.
+
+Context {size : Z}.
+Context {inf : Z}.
+
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Global Existing Instance CompSpecs.
 
-Definition getCell_spec inf size :=
+Definition getCell_spec :=
   DECLARE _getCell
   WITH sh: wshare,
-       g: (DijkGG inf size),
+       g: @DijkGG size inf,
        graph_ptr: pointer_val,
        addresses: list val,
        u: V,
@@ -38,10 +43,10 @@ Definition getCell_spec inf size :=
   RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_mat size g id))))) 
   SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses).    
 
-Definition dijkstra_spec inf size :=
+Definition dijkstra_spec :=
   DECLARE _dijkstra
   WITH sh: wshare,
-       g: (DijkGG inf size),
+       g: DijkGG,
        graph_ptr : pointer_val,
        addresses : list val,
        dist_ptr : pointer_val,
@@ -68,7 +73,7 @@ Definition dijkstra_spec inf size :=
    EX popped: list V,                             
    PROP (forall dst,
             vvalid g dst ->
-            inv_popped inf size g src popped prev dist dst)
+            @inv_popped size inf g src popped prev dist dst)
    LOCAL ()
    SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
        data_at Tsh (tarray tint size) (map Vint (map Int.repr prev)) (pointer_val_val prev_ptr);
@@ -103,7 +108,7 @@ Definition mallocN_spec :=
     PROP () LOCAL () SEP (emp).
  *)
 
-Definition Gprog inf size : funspecs :=
+Definition Gprog : funspecs :=
   ltac:(with_library prog
                      [push_spec;
                      pq_emp_spec;
@@ -111,5 +116,7 @@ Definition Gprog inf size : funspecs :=
                      popMin_spec;
                      mallocN_spec;
                      (* freeN_spec; *)
-                     getCell_spec inf size;
-                     dijkstra_spec inf size]).
+                     getCell_spec;
+                     dijkstra_spec]).
+
+End DijkstraSpec.
