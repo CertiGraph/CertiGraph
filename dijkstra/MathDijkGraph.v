@@ -13,7 +13,6 @@ Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
-Require Import CertiGraph.graph.FiniteGraph.
 Require Export CertiGraph.graph.MathAdjMatGraph.
 
 Require Import Coq.Classes.EquivDec.

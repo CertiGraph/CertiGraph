@@ -3,10 +3,10 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_relation.
-Require Import CertiGraph.graph.FiniteGraph.
+(* Require Import CertiGraph.graph.FiniteGraph. *)
 
 Require Import CertiGraph.graph.undirected_graph. (* uforest' *)
-Require Import CertiGraph.graph.MathAdjMatGraph. (* kinda feel someone should encapsulate this *)
+(* Require Import CertiGraph.graph.MathAdjMatGraph. (* kinda feel someone should encapsulate this *) *)
 Require Import CertiGraph.prim.MatrixUGraph. (* vert_bound *)
 Require Import CertiGraph.priq.priq_arr_utils. (* find *)
 Require Import CertiGraph.prim.prim.

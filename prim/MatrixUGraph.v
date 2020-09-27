@@ -9,9 +9,9 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
-Require Import CertiGraph.graph.FiniteGraph.
+(* Require Import CertiGraph.graph.FiniteGraph. *)
 Require Import CertiGraph.graph.undirected_graph.
-Require Import CertiGraph.graph.MathAdjMatGraph.
+Require Export CertiGraph.graph.MathAdjMatGraph.
 Require Import CertiGraph.priq.priq_arr_utils.
 
 Local Open Scope logic.
