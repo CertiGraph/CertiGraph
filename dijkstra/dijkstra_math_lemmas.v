@@ -13,8 +13,10 @@ Local Open Scope Z_scope.
 Ltac trilia := trivial; lia.
 Ltac ulia := unfold V, E, DE in *; trilia.
 
-Context (size : Z).
-Context (inf : Z).
+Section DijkstraMathLemmas.
+
+Context {size : Z}.
+Context {inf : Z}.
 
 Definition inrange_prev prev :=
   Forall (fun x => 0 <= x < size \/ x = inf) prev.
@@ -71,17 +73,17 @@ Qed.
 
 
 Lemma popped_noninf_has_path:
-  forall {g mom src popped prev dist},
-    dijkstra_correct inf size g src popped prev dist ->
+  forall (g: @DijkGG size inf) mom src popped prev dist,
+    dijkstra_correct g src popped prev dist ->
     In mom popped ->
     Znth mom dist < inf ->
     vvalid g mom ->
     exists p2mom : path,
-      path_correct inf size g prev dist src mom p2mom /\
+      path_correct g prev dist src mom p2mom /\
       (forall step : Z,
           In_path g step p2mom ->
           In step popped) /\
-      path_globally_optimal inf size g src mom p2mom.
+      path_globally_optimal g src mom p2mom.
 Proof.
   intros.
   destruct (H _ H2) as [? _].
@@ -91,7 +93,7 @@ Proof.
 Qed.
 
 Lemma path_leaving_popped:
-  forall (g: DijkGG inf size) links s u popped,
+  forall (g: @DijkGG size inf) links s u popped,
     valid_path g (s, links) ->
     path_ends g (s, links) s u ->
     In s popped ->
@@ -105,7 +107,7 @@ Lemma path_leaving_popped:
       In mom popped /\
       ~ In child popped /\
       evalid g (mom, child) /\
-      path_in_popped inf size g popped p1.
+      path_in_popped g popped p1.
 Proof.
   intros. 
   generalize dependent s.
@@ -275,7 +277,7 @@ Proof.
 Qed.
 
 Lemma path_ends_one_step:
-  forall (g: DijkGG inf size) a b,
+  forall (g: @DijkGG size inf) a b,
     path_ends g (a, [(a, b)]) a b.
 Proof.
   intros. split; trivial.
@@ -283,12 +285,12 @@ Proof.
 Qed. 
 
 Lemma path_leaving_popped_stronger:
-  forall (g: DijkGG inf size) links s u popped,
+  forall (g: @DijkGG size inf) links s u popped,
     valid_path g (s, links) ->
     path_ends g (s, links) s u ->
     In s popped ->
     ~ In u popped ->
-    path_cost inf size g (s, links) < inf ->
+    path_cost g (s, links) < inf ->
     exists (p1 : path) (mom child : Z) (p2 : path),
       path_glue p1 (path_glue (mom, [(mom, child)]) p2) = (s, links) /\
       valid_path g p1 /\
@@ -298,10 +300,10 @@ Lemma path_leaving_popped_stronger:
       In mom popped /\
       ~ In child popped /\
       strong_evalid g (mom, child) /\
-      path_cost inf size g p1 < inf /\
+      path_cost g p1 < inf /\
       0 <= elabel g (mom, child) < inf /\
-      path_cost inf size g p2 + elabel g (mom, child) < inf /\
-      path_in_popped inf size g popped p1.
+      path_cost g p2 + elabel g (mom, child) < inf /\
+      path_in_popped g popped p1.
 Proof.
   intros.
   destruct (path_leaving_popped g links s u popped H H0 H1 H2)
@@ -322,7 +324,7 @@ Proof.
   assert (elabel g (mom', child') < inf). {
     apply Z.le_lt_trans with (m := Int.max_signed / size).
     apply valid_edge_bounds; trivial.
-    apply (inf_further_restricted _ _ g).
+    apply (inf_further_restricted g).
   }
   
   split3; [| |split3; [| |split3; [| |split3; [| |split3; [| |split]]]]]; trivial.
@@ -341,7 +343,7 @@ Proof.
 Qed.
 
 Lemma evalid_dijk:
-  forall (g: DijkGG inf size) a b cost,
+  forall (g: @DijkGG size inf) a b cost,
     cost = elabel g (a,b) ->
     0 <= cost <= Int.max_signed / size ->
     evalid g (a,b).
@@ -354,22 +356,22 @@ Proof.
   apply Z.le_lt_trans with (m := Int.max_signed / size);
     trivial.
   rewrite H in H1; trivial.
-  apply (inf_further_restricted _ _ g).
+  apply (inf_further_restricted g).
 Qed.
 
 Lemma inv_popped_add_src:
-  forall (g: DijkGG inf size) src popped prev dist,
-    dijkstra_correct inf size g src popped prev dist ->
+  forall (g: @DijkGG size inf) src popped prev dist,
+    dijkstra_correct g src popped prev dist ->
     vvalid g src ->
     Znth src dist = 0 ->
-    inv_popped inf size g src (src :: popped) prev dist src.
+    inv_popped g src (src :: popped) prev dist src.
 Proof.
   intros. right.
   exists (src, []); split3; trivial.
   - split3; [| | split3]; trivial.
     + split; trivial.
     + unfold path_cost. simpl.
-      apply (inf_further_restricted' _ _ g).
+      apply (inf_further_restricted' g).
     + rewrite Forall_forall; intros; simpl in H3; lia.
   - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
     + simpl in H3.
@@ -381,17 +383,17 @@ Proof.
 Qed.
 
 Lemma path_correct_app_cons:
-  forall (g: DijkGG inf size) src u mom p2mom prev dist,
-    path_correct inf size g prev dist src mom p2mom ->
+  forall (g: @DijkGG size inf) src u mom p2mom prev dist,
+    path_correct g prev dist src mom p2mom ->
     Znth u dist = Znth mom dist + elabel g (mom, u) ->
     Znth mom dist + elabel g (mom, u) < inf ->
     strong_evalid g (mom, u) ->
     Znth u prev = mom ->
-    path_correct inf size g prev dist src u (fst p2mom, snd p2mom +:: (mom, u)).
+    path_correct g prev dist src u (fst p2mom, snd p2mom +:: (mom, u)).
 Proof.
   intros.
   destruct H as [? [[? ?] [? [? ?]]]].
-  assert (path_cost inf size g p2mom + elabel g (mom, u) < inf) by
+  assert (path_cost g p2mom + elabel g (mom, u) < inf) by
       ulia. 
   split3; [| | split3]; trivial.
   - apply (valid_path_app_cons g); trivial; try rewrite <- surjective_pairing; trivial.
@@ -411,7 +413,7 @@ Proof.
 Qed.
 
 Lemma in_path_app_cons:
-  forall (g: DijkGG inf size) step p2a src a b,
+  forall (g: @DijkGG size inf) step p2a src a b,
     valid_path g p2a ->
     evalid g (a,b) ->
     path_ends g p2a src a ->
@@ -444,8 +446,8 @@ Proof.
 Qed.
 
 Lemma inv_popped_add_u:
-  forall (g: DijkGG inf size) src dst u popped prev priq dist,
-    dijkstra_correct inf size g src popped prev dist ->
+  forall (g: @DijkGG size inf) src dst u popped prev priq dist,
+    dijkstra_correct g src popped prev dist ->
     Znth src dist = 0 ->
     (forall dst : Z,
         vvalid g dst ->
@@ -459,7 +461,7 @@ Lemma inv_popped_add_u:
     vvalid g dst ->
     u = find priq (fold_right Z.min (hd 0 priq) priq) 0 ->
     In src popped ->
-    inv_popped inf size g src (u :: popped) prev dist dst.
+    inv_popped g src (u :: popped) prev dist dst.
 Proof.
   intros. rename H9 into Hequ. rename H10 into Hb.
   destruct (Z.eq_dec dst u).
@@ -496,8 +498,9 @@ Proof.
        *)
 
       remember (Znth u prev) as mom.
-      destruct (popped_noninf_has_path H H9) as [p2mom [? [? ?]]]; trivial.
-      1: pose proof (edge_cost_pos inf size g (mom, u)); ulia.
+      destruct (popped_noninf_has_path
+                  _ _ _ _ _ _ H H9) as [p2mom [? [? ?]]]; trivial.
+      1: pose proof (edge_cost_pos g (mom, u)); ulia.
 
       right. clear H17.
       exists (fst p2mom, snd p2mom +:: (mom, u)).              
@@ -530,10 +533,10 @@ Proof.
         unfold path_globally_optimal; intros.
         rewrite path_cost_app_cons; trivial.
         destruct (Z_le_gt_dec
-                    (path_cost inf size g p2mom + elabel g (mom, u))
-                    (path_cost inf size g p')); auto.
+                    (path_cost g p2mom + elabel g (mom, u))
+                    (path_cost g p')); auto.
         apply Z.gt_lt in g0.
-        destruct (zlt (path_cost inf size g p') inf); [|ulia].
+        destruct (zlt (path_cost g p') inf); [|ulia].
 
         (* p' claims to be a strictly better path
        from src to u (see g0).
@@ -561,10 +564,10 @@ Proof.
         clear Htemp.
 
         (* We clean up the goal *)
-        replace (path_cost inf size g (src, links)) with
-            (path_cost inf size g p1 +
+        replace (path_cost g (src, links)) with
+            (path_cost g p1 +
              elabel g (mom', child') +
-             path_cost inf size g p2).
+             path_cost g p2).
         2: { rewrite <- H24.
              do 2 rewrite path_cost_path_glue.
              rewrite one_step_path_Znth. lia.
@@ -593,8 +596,8 @@ Proof.
 
         (* so now we can prove something quite a bit stronger *)
         apply Z.le_trans with
-            (m := path_cost inf size g optp2mom' + elabel g (mom', child')).
-        2: pose proof (path_cost_pos _ _ _ _ H26); lia.
+            (m := path_cost g optp2mom' + elabel g (mom', child')).
+        2: pose proof (path_cost_pos _ _ H26); lia.
 
         (* Intuitionally this is clear: 
        u was chosen for being the cheapest 
@@ -606,7 +609,7 @@ Proof.
           destruct H38 as [_ [_ [_ [? _]]]].
           rewrite H38.
           apply Z.le_lt_trans
-            with (m := path_cost inf size g p1 + elabel g (mom', child')); [lia|].
+            with (m := path_cost g p1 + elabel g (mom', child')); [lia|].
           rewrite <- H24 in l.
           replace (path_glue p1 (path_glue (mom', [(mom', child')]) p2))
             with
@@ -706,14 +709,14 @@ Proof.
       repeat rewrite path_cost_path_glue.
       rewrite one_step_path_Znth.
       specialize (H24 p1 H13 H15).
-      pose proof (edge_cost_pos inf size g (mom, child)).
-      pose proof (path_cost_pos _ _ _ _ H14).
+      pose proof (edge_cost_pos g (mom, child)).
+      pose proof (path_cost_pos _ _ H14).
       ulia.
 
     + (* mom was popped @ < inf *)
       (* it turns out we can prove something stronger *)
       specialize (H25 p1 H13 H15).
-      cut (path_cost inf size g (path_glue optp2mom (path_glue (mom, [(mom, child)]) p2)) >= inf).
+      cut (path_cost g (path_glue optp2mom (path_glue (mom, [(mom, child)]) p2)) >= inf).
       1: repeat rewrite path_cost_path_glue; lia.
 
       (* 
@@ -732,7 +735,7 @@ Proof.
         specialize (H29 H18 H28 mom optp2mom H21 H17 H23).
         rewrite path_cost_path_glue in H29.
         repeat rewrite path_cost_path_glue.
-        pose proof (path_cost_pos _ _ _ _ H14).
+        pose proof (path_cost_pos _ _ H14).
         ulia.
       * (* child is seen but unpopped *)
         (* this is impossible: 
@@ -756,11 +759,11 @@ Qed.
 
 
 Lemma inv_unpopped_weak_add_unpopped:
-  forall (g: DijkGG inf size) prev dist popped src u dst,
-    dijkstra_correct inf size g src popped prev dist ->
+  forall (g: @DijkGG size inf) prev dist popped src u dst,
+    dijkstra_correct g src popped prev dist ->
     ~ In u popped ->
     vvalid g dst ->
-    inv_unpopped_weak inf size g src (u :: popped) prev dist dst u.
+    inv_unpopped_weak g src (u :: popped) prev dist dst u.
 Proof.
   (* Any vertex that is
      "seen but not popped"
@@ -787,9 +790,9 @@ Proof.
   }
   
   assert (Znth mom dist < inf) by
-      (pose proof (valid_edge_bounds inf size g _ H11); ulia).
+      (pose proof (valid_edge_bounds g _ H11); ulia).
   
-  destruct (popped_noninf_has_path H H6 H12) as [p2mom [? [? ?]]]; trivial.
+  destruct (popped_noninf_has_path _ _ _ _ _ _ H H6 H12) as [p2mom [? [? ?]]]; trivial.
   
   (* Several of the proof obligations
      fall away easily, and those that remain
@@ -809,11 +812,11 @@ Proof.
 Qed.
 
 Lemma inv_unseen_weak_add_unpopped:
-  forall (g : DijkGG inf size) prev dist popped src u dst,
-    dijkstra_correct inf size g src popped prev dist ->
+  forall (g : @DijkGG size inf) prev dist popped src u dst,
+    dijkstra_correct g src popped prev dist ->
     ~ In u popped ->
     vvalid g dst ->
-    inv_unseen_weak inf size g src (u :: popped) prev dist dst u.
+    inv_unseen_weak g src (u :: popped) prev dist dst u.
 Proof.
   intros.
   intro. intros.
@@ -851,9 +854,9 @@ Qed.
 
 
 Lemma dijkstra_correct_nothing_popped:
-  forall g src,
+  forall (g: @DijkGG size inf) src,
     0 <= src < size ->
-    dijkstra_correct inf size g src [] (upd_Znth src (list_repeat (Z.to_nat size) inf) src)
+    dijkstra_correct g src [] (upd_Znth src (list_repeat (Z.to_nat size) inf) src)
                      (upd_Znth src (list_repeat (Z.to_nat size) inf) 0).
 Proof.
   intros.
@@ -867,7 +870,7 @@ Proof.
 Qed.
 
 Lemma In_links_snd_In_path:
-  forall (g: DijkGG inf size) step path,
+  forall (g: @DijkGG size inf) step path,
     In step (snd path) ->
     In_path g (snd step) path.
 Proof.
@@ -877,7 +880,7 @@ Proof.
 Qed.
 
 Lemma In_links_fst_In_path:
-  forall (g: DijkGG inf size) step path,
+  forall (g: @DijkGG size inf) step path,
     In step (snd path) ->
     In_path g (fst step) path.
 Proof.
@@ -887,16 +890,16 @@ Proof.
 Qed.
 
 Lemma inv_popped_newcost:
-  forall (g: DijkGG inf size) src dst u i newcost popped prev dist,
+  forall (g: @DijkGG size inf) src dst u i newcost popped prev dist,
     vvalid g i ->
     vvalid g dst ->
     (forall dst : Z,
         vvalid g dst ->
-        inv_popped inf size g src popped prev dist dst) ->
+        inv_popped g src popped prev dist dst) ->
     Zlength prev = size ->
     Zlength dist = size ->
     ~ In i popped ->
-    inv_popped inf size g src popped
+    inv_popped g src popped
                (upd_Znth i prev u)
                (upd_Znth i dist newcost) dst.
 Proof.
@@ -932,17 +935,17 @@ Proof.
 Qed.
 
 Lemma inv_unpopped_newcost_dst_neq_i:
-  forall (g: DijkGG inf size) src dst u i newcost prev dist popped,
+  forall (g: @DijkGG size inf) src dst u i newcost prev dist popped,
     (forall dst : Z,
         0 <= dst < i ->
-        inv_unpopped inf size g src popped prev dist dst) ->
+        inv_unpopped g src popped prev dist dst) ->
     vvalid g i ->
     Zlength prev = size ->
     Zlength dist = size ->
     ~ In i popped ->
     0 <= dst < i + 1 ->
     dst <> i ->
-    inv_unpopped inf size g src popped (upd_Znth i prev u) (upd_Znth i dist newcost) dst.
+    inv_unpopped g src popped (upd_Znth i prev u) (upd_Znth i dist newcost) dst.
 Proof.
   intros. 
   assert (0 <= dst < i) by lia.
@@ -957,7 +960,7 @@ Proof.
   remember (Znth dst prev) as mom. 
   split; trivial.
   assert (Znth mom dist < inf). {
-    pose proof (edge_cost_pos inf size g (mom, dst)); ulia.
+    pose proof (edge_cost_pos g (mom, dst)); ulia.
   }
   assert (vvalid g dst). {
     apply (vvalid_meaning g); ulia.
@@ -982,20 +985,20 @@ Proof.
 Qed. 
 
 Lemma inv_unpopped_newcost:
-  forall (g: DijkGG inf size) src dst u i
+  forall (g: @DijkGG size inf) src dst u i
          dist prev priq popped newcost,
     (forall dst : Z,
         vvalid g dst ->
-        inv_popped inf size g src popped prev dist dst) ->
+        inv_popped g src popped prev dist dst) ->
     (forall dst : Z,
         0 <= dst < i ->
-        inv_unpopped inf size g src popped prev dist dst) ->
+        inv_unpopped g src popped prev dist dst) ->
     (forall dst : Z,
         i <= dst < size ->
-        inv_unpopped_weak inf size g src popped prev dist dst u) ->
+        inv_unpopped_weak g src popped prev dist dst u) ->
     (forall dst : Z,
         i <= dst < size ->
-        inv_unseen_weak inf size g src popped prev dist dst u) ->
+        inv_unseen_weak g src popped prev dist dst u) ->
     (forall dst : Z,
         vvalid g dst ->
         ~ In dst popped ->
@@ -1015,7 +1018,7 @@ Lemma inv_unpopped_newcost:
     ~ In i popped ->
     Znth i priq = inf \/ Znth i priq < inf ->
     0 <= dst < i + 1 ->
-    inv_unpopped inf size g src popped (upd_Znth i prev u) (upd_Znth i dist newcost) dst.
+    inv_unpopped g src popped (upd_Znth i prev u) (upd_Znth i dist newcost) dst.
 Proof.
   intros ? ? ? ? ? ? ? ? ? ?
          H_inv_popped H_inv_unpopped H_inv_unpopped_weak
@@ -1060,7 +1063,7 @@ Proof.
   2: lia. 
   destruct (Znth_dist_cases mom' dist); trivial.
   1: apply (vvalid_meaning g) in H17; ulia. 
-  1: { rewrite H20. pose proof (edge_cost_pos inf size g (mom', i)). ulia.
+  1: { rewrite H20. pose proof (edge_cost_pos g (mom', i)). ulia.
   }
 
   destruct (H_inv_popped _ H17 H18) as
@@ -1199,16 +1202,16 @@ Proof.
 Qed.
 
 Lemma inv_unpopped_weak_newcost:
-  forall (g: DijkGG inf size) src dst u i prev dist popped newcost,
+  forall (g: @DijkGG size inf) src dst u i prev dist popped newcost,
     (forall dst : Z,
         i <= dst < size ->
-        inv_unpopped_weak inf size g src popped prev dist dst u) ->
+        inv_unpopped_weak g src popped prev dist dst u) ->
     vvalid g i ->
     Zlength prev = size ->
     Zlength dist = size ->
     ~ In i popped ->
     i + 1 <= dst < size ->
-    inv_unpopped_weak inf size g src popped
+    inv_unpopped_weak g src popped
                       (upd_Znth i prev u)
                       (upd_Znth i dist newcost)
                       dst u.
@@ -1244,13 +1247,13 @@ Proof.
 Qed.
 
 Lemma path_correct_upd_dist:
-  forall (g: DijkGG inf size) src i m dist prev newcost p2m,
+  forall (g: @DijkGG size inf) src i m dist prev newcost p2m,
     vvalid g i ->
     vvalid g m ->
     Zlength dist = size ->
     m <> i ->
-    path_correct inf size g prev (upd_Znth i dist newcost) src m p2m ->
-    path_correct inf size g prev dist src m p2m.
+    path_correct g prev (upd_Znth i dist newcost) src m p2m ->
+    path_correct g prev dist src m p2m.
 Proof.
   intros.
   destruct H3 as [? [? [? [? ?]]]].
@@ -1261,18 +1264,18 @@ Proof.
 Qed.
 
 Lemma inv_unseen_newcost:
-  forall (g: DijkGG inf size) dst src i u dist prev popped newcost,
+  forall (g: @DijkGG size inf) dst src i u dist prev popped newcost,
     (forall dst : Z,
         vvalid g dst ->
-        inv_popped inf size g src popped prev dist dst) ->
+        inv_popped g src popped prev dist dst) ->
     (forall dst : Z,
         0 <= dst < i ->
-        inv_unseen inf size g src popped prev dist dst) ->
+        inv_unseen g src popped prev dist dst) ->
     vvalid g i ->
     Zlength dist = size ->
     0 <= dst < i + 1->
     newcost < inf ->
-    inv_unseen inf size g src popped (upd_Znth i prev u) (upd_Znth i dist newcost) dst.
+    inv_unseen g src popped (upd_Znth i prev u) (upd_Znth i dist newcost) dst.
 Proof.
   intros ? ? ? ? ? ? ? ? ?
          H_inv_popped H_inv_unseen H_i_valid.
@@ -1284,7 +1287,7 @@ Proof.
   - (* m was popped @ inf *)
     destruct H6 as [? [? _]].
     specialize (H8 p2m H6 H9).
-    pose proof (edge_cost_pos inf size g (m, dst)).
+    pose proof (edge_cost_pos g (m, dst)).
     rewrite path_cost_path_glue, one_step_path_Znth.
     ulia.
   - (* m was popped @ < inf *)
@@ -1292,7 +1295,7 @@ Proof.
       We will strengthen the goal and then prove it. *)
     destruct H6 as [? [? _]].
     specialize (H9 p2m H6 H10).
-    cut (path_cost inf size g (path_glue optp2m (m, [(m, dst)])) >= inf).
+    cut (path_cost g (path_glue optp2m (m, [(m, dst)])) >= inf).
     1: repeat rewrite path_cost_path_glue, one_step_path_Znth;
       ulia.
     assert (0 <= dst < i). {
@@ -1309,18 +1312,18 @@ Proof.
 Qed.
 
 Lemma inv_unseen_weak_newcost:
-  forall (g: DijkGG inf size) dst src u i dist prev popped newcost,
+  forall (g: @DijkGG size inf) dst src u i dist prev popped newcost,
     (forall dst : Z,
         vvalid g dst ->
-        inv_popped inf size g src popped prev dist dst) ->
+        inv_popped g src popped prev dist dst) ->
     (forall dst : Z,
         i <= dst < size ->
-        inv_unseen_weak inf size g src popped prev dist dst u) ->
+        inv_unseen_weak g src popped prev dist dst u) ->
     vvalid g i ->
     Zlength dist = size ->
     i + 1 <= dst < size ->
     newcost < inf ->
-    inv_unseen_weak inf size g src popped
+    inv_unseen_weak g src popped
                     (upd_Znth i prev u)
                     (upd_Znth i dist newcost) dst u.
 Proof.
@@ -1334,7 +1337,7 @@ Proof.
   - (* m was popped @ inf *)
     destruct H7 as [? [? _]].
     specialize (H9 p2m H7 H10).
-    pose proof (edge_cost_pos inf size g (m, dst)).
+    pose proof (edge_cost_pos g (m, dst)).
     rewrite path_cost_path_glue, one_step_path_Znth.
     ulia.
   - (* m was popped @ < inf *)
@@ -1342,7 +1345,7 @@ Proof.
        We will strengthen the goal and then prove it. *)
     destruct H7 as [? [? _]].
     specialize (H10 p2m H7 H11).
-    cut (path_cost inf size g (path_glue optp2m (m, [(m, dst)])) >= inf).
+    cut (path_cost g (path_glue optp2m (m, [(m, dst)])) >= inf).
     1: repeat rewrite path_cost_path_glue, one_step_path_Znth;
       ulia.
     assert (dst <> i). {
@@ -1357,22 +1360,22 @@ Proof.
 Qed.           
 
 Lemma inv_unpopped_new_dst:
-  forall (g: DijkGG inf size) src dst u i dist prev popped,
+  forall (g: @DijkGG size inf) src dst u i dist prev popped,
     vvalid g i ->
     (forall dst : Z,
         vvalid g dst ->
-        inv_popped inf size g src popped prev dist dst) ->
+        inv_popped g src popped prev dist dst) ->
     (forall dst : Z,
         0 <= dst < i ->
-        inv_unpopped inf size g src popped prev dist dst) ->
+        inv_unpopped g src popped prev dist dst) ->
     (forall dst : Z,
         i <= dst < size ->
-        inv_unpopped_weak inf size g src popped prev dist dst u) ->
+        inv_unpopped_weak g src popped prev dist dst u) ->
     inrange_dist dist ->
     Zlength dist = size ->
     Znth u dist + elabel g (u, i) >= Znth i dist ->
     0 <= dst < i + 1 ->
-    inv_unpopped inf size g src popped prev dist dst.
+    inv_unpopped g src popped prev dist dst.
 Proof.
   intros ? ? ? ? ? ? ? ? ?
          H_inv_popped H_inv_unpopped H_inv_unpopped_weak.
@@ -1407,7 +1410,7 @@ Proof.
   1: apply (vvalid_meaning g) in H15; ulia.
   1: {
     rewrite e.
-    pose proof (edge_cost_pos inf size g (mom', i)).
+    pose proof (edge_cost_pos g (mom', i)).
     ulia.
   }
   destruct (H_inv_popped _ H15 H16); [unfold V in *; ulia|].  
@@ -1494,10 +1497,10 @@ Proof.
     apply pfoot_in in H25. rewrite H20 in *. trivial.       Qed.
 
 Lemma path_in_popped_path_glue:
-  forall g p1 p2 popped,
-    path_in_popped inf size g popped p1 ->
-    path_in_popped inf size g popped p2 ->
-    path_in_popped inf size g popped (path_glue p1 p2).
+  forall (g: @DijkGG size inf) p1 p2 popped,
+    path_in_popped g popped p1 ->
+    path_in_popped g popped p2 ->
+    path_in_popped g popped (path_glue p1 p2).
 Proof.
   red. intros.
   apply In_path_glue in H1. destruct H1.
@@ -1506,12 +1509,12 @@ Proof.
 Qed.
 
 Lemma not_in_popped:
-  forall (g: DijkGG inf size) src u i cost prev dist popped,
+  forall (g: @DijkGG size inf) src u i cost prev dist popped,
     vvalid g u ->
     vvalid g i ->
     (forall dst : Z,
         vvalid g dst ->
-        inv_popped inf size g src popped prev dist dst) ->
+        inv_popped g src popped prev dist dst) ->
     In u popped ->
     cost = elabel g (u, i) ->
     0 <= Znth i dist <= inf ->
@@ -1572,3 +1575,4 @@ Proof.
       destruct H8; simpl in H8; trivial.
 Qed.
 
+End DijkstraMathLemmas.

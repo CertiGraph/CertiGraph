@@ -26,11 +26,16 @@ Require Export CertiGraph.dijkstra.dijkstra_constants.
 Local Open Scope logic.
 Local Open Scope Z_scope.
 
+Section MathDijkGraph.
+
+Context {size : Z}.
+Context {inf : Z}.
+
 (* Here is the LabeledGraph *)
 Definition DijkLG := AdjMatLG.
 
 (* The soundness condition *)
-Class SoundDijk (g: DijkLG) inf size :=
+Class SoundDijk (g: DijkLG) :=
   {
   basic:
     (* first, we can take AdjMat's soundness wholesale *)
@@ -58,21 +63,21 @@ Class SoundDijk (g: DijkLG) inf size :=
   }.
 
 (* And here is the GeneralGraph that we will use *)
-Definition DijkGG inf size := (GeneralGraph V E DV DE DG (fun g => SoundDijk g inf size)).
+Definition DijkGG := (GeneralGraph V E DV DE DG (fun g => SoundDijk g)).
 
 (* Some handy coercions: *)
-Definition DijkGG_DijkLG inf size (G: (DijkGG inf size)): DijkLG := lg_gg G.
+Definition DijkGG_DijkLG (g: DijkGG): DijkLG := lg_gg g.
 Coercion DijkGG_DijkLG: DijkGG >-> DijkLG.
 Identity Coercion DijkLG_AdjMatLG: DijkLG >-> AdjMatLG.
 Identity Coercion AdjMatLG_LabeledGraph: AdjMatLG >-> LabeledGraph.
 
 (* We can always drag out SoundAdjMat *)
-Definition DijkGG_SoundAdjMat inf size (g: (DijkGG inf size)) :=
-  @basic g inf size ((@sound_gg _ _ _ _ _ _ _ _ g)).
+Definition DijkGG_SoundAdjMat (g: DijkGG) :=
+  @basic g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
 (* A DijkGG can be weakened into an AdjMatGG *)
-Definition DijkGG_AdjMatGG inf size (G: (DijkGG inf size)) : AdjMatGG :=
-  Build_GeneralGraph DV DE DG SoundAdjMat G (DijkGG_SoundAdjMat inf size G).
+Definition DijkGG_AdjMatGG (g: DijkGG) : AdjMatGG :=
+  Build_GeneralGraph DV DE DG SoundAdjMat g (DijkGG_SoundAdjMat g).
 
 Coercion DijkGG_AdjMatGG: DijkGG >-> AdjMatGG.
 
@@ -84,24 +89,24 @@ Coercion DijkGG_AdjMatGG: DijkGG >-> AdjMatGG.
 (* For the two Dijkstra-specigic plugins, 
    we create getters: 
  *)
-Definition valid_edge_bounds inf size (g: (DijkGG inf size)) :=
-  @veb g inf size ((@sound_gg _ _ _ _ _ _ _ _ g)).
+Definition valid_edge_bounds (g: DijkGG) :=
+  @veb g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
-Definition cost_to_self inf size (g: (DijkGG inf size)) :=
-  @cts g inf size ((@sound_gg _ _ _ _ _ _ _ _ g)).
+Definition cost_to_self (g: DijkGG) :=
+  @cts g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
-Definition size_further_restricted inf size (g: (DijkGG inf size)) :=
-  @sfr g inf size ((@sound_gg _ _ _ _ _ _ _ _ g)).
+Definition size_further_restricted (g: DijkGG) :=
+  @sfr g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
-Definition inf_further_restricted inf size (g: (DijkGG inf size)) :=
-  @ifr g inf size ((@sound_gg _ _ _ _ _ _ _ _ g)).
+Definition inf_further_restricted (g: DijkGG) :=
+  @ifr g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
 Lemma inf_further_restricted':
-  forall inf size (g: DijkGG inf size),
+  forall (g: DijkGG),
     0 < inf < Int.max_signed.
 Proof.
   intros.
-  pose proof (inf_further_restricted _ _ g).
+  pose proof (inf_further_restricted g).
   pose proof (size_representable g).
   split.
   - apply Z.le_lt_trans with (m := Int.max_signed / size);
@@ -118,11 +123,11 @@ Qed.
 (* And now some lemmas that come from soundness plugins. *)
 
 Lemma edge_cost_pos:
-  forall inf size (g: (DijkGG inf size)) e,
+  forall (g: DijkGG) e,
     0 <= elabel g e.
 Proof.
   intros.
-  pose proof (valid_edge_bounds inf size g e).
+  pose proof (valid_edge_bounds g e).
   pose proof (invalid_edge_weight g e).
   destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
   - apply H; trivial.
@@ -151,13 +156,13 @@ Proof.
 Qed.
 
 Lemma edge_representable:
-  forall inf size (g: (DijkGG inf size)) e,
+  forall (g: DijkGG) e,
     Int.min_signed <= elabel g e <= Int.max_signed.
 Proof.
   intros.
-  pose proof (valid_edge_bounds inf size g e).
+  pose proof (valid_edge_bounds g e).
   pose proof (invalid_edge_weight g e).
-  pose proof (edge_cost_pos inf size g e).
+  pose proof (edge_cost_pos g e).
   destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
   - specialize (H e0).
     split; trivial.
@@ -175,7 +180,7 @@ Proof.
 Qed.
 
 Lemma strong_evalid_dijk:
-  forall inf size (g: (DijkGG inf size)) a b,
+  forall (g: DijkGG) a b,
     vvalid g a ->
     vvalid g b ->
     elabel g (a, b) < inf ->
@@ -191,3 +196,4 @@ Proof.
   - intro. simpl in H2. lia. 
 Qed.
 
+End MathDijkGraph.
