@@ -164,7 +164,7 @@ vstandme3:
 
 .PHONY: mst
 mst:
-	make prim/verif_*.vo dijkstra/verif_dijkstra.vo kruskal/verif_kruskal_edgelist.vo -j7
+	make prim/verif_*.vo dijkstra/verif_dijkstra.vo kruskal/verif_kruskal_edgelist.vo -kj7
 
 .depend depend:
 	@echo 'coqdep ... >.depend'
