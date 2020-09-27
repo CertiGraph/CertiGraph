@@ -1,10 +1,6 @@
-(* Require Import CertiGraph.priq_malloc.priq_arr_utils. *)
-(* remove once a better PQ is in place *)
-
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
-(* Require Import CertiGraph.dijkstra.SpaceDijkGraph. *)
-Require Import CertiGraph.dijkstra.dijkstra_spec.
+Require Export CertiGraph.dijkstra.dijkstra_spec_pure.
 Require Import CertiGraph.dijkstra.path_cost.
 
 Require Import VST.floyd.sublist.

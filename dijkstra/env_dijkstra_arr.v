@@ -1,6 +1,5 @@
 Require Export VST.floyd.proofauto.
 Require Export CertiGraph.floyd_ext.closed_lemmas.
-Require Export CertiGraph.dijkstra.dijkstra.
 
 (* grabbed from verif and put here *)
 Require Export VST.msl.iter_sepcon.
