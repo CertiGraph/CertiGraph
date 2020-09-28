@@ -21,7 +21,6 @@ Require Import CertiGraph.priq.priq_arr_utils.
 Local Open Scope logic.
 Local Open Scope Z_scope.
 
-(*Move this*)
 Lemma Permutation_Zlength:
   forall {A: Type} (l l': list A), Permutation l l' -> Zlength l = Zlength l'.
 Proof.
@@ -52,15 +51,10 @@ Defined.
 
 Context {inf: Z} {size: Z}.
 
-(* I suggest using AdjMat's soundess and adding 
-   your further restrictions to it.
-   See MathDijkGraph for an example 
- *)
 Class AdjMatUSoundness (g: LabeledGraph V E DV DE DG) := {
   size_rep: 0 <= size <= Int.max_signed;
   inf_rep: 0 <= inf <= Int.max_signed; 
   vert_representable: forall v, vvalid g v <-> 0 <= v < size;
-  (* so essentially evalid and strong_evalid have been collapsed *)
   edge_strong_evalid: forall e, evalid g e -> vvalid g (src g e) /\ vvalid g (dst g e);
   edge_weight_representable: forall e, evalid g e -> Int.min_signed <= elabel g e <= Int.max_signed;
   edge_weight_not_inf: forall e, evalid g e -> elabel g e < inf; (*no reason to have <>*)
@@ -71,20 +65,10 @@ Class AdjMatUSoundness (g: LabeledGraph V E DV DE DG) := {
   undirected_edge_rep: forall e, evalid g e -> src g e <= dst g e;
 }.
 
-(*Hm, was wondering if I could incorporate "soundness" in*)
-(* done? *)
 Definition MatrixUGraph := (GeneralGraph V E DV DE DG (fun g => AdjMatUSoundness g)).
-
 
 Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g).
 
-(* There is already a whole set of such getters in
-   AdjMatGraph. I suggest just using those.
-   Add more getters for any custom restictions
-   you place. If your lemmas are provable
-   from AdjMat's soundless, you can move them up 
-   to that file.
- *)
 Instance Finite_MatrixUPGraph (g: MatrixUGraph): FiniteGraph g.
 Proof. apply (@fin g (sound_MatrixUGraph g)). Qed.
 
@@ -669,13 +653,6 @@ Proof.
 unfold DEList; intros. apply fold_left_comm. intros; lia.
 apply Permutation_map. auto.
 Qed.
-
-(*
-Lemma msf_swap_edges:
-forall (t g: MatrixUGraph) (a b: E), minimum_spanning_forest t g -> evalid g a -> ~evalid t a ->
-  evalid t b -> elabel g a <= elabel g b
-  -> minimum_spanning_uforest MatrixUGraph_adde (MatrixUGraph_eremove b) a) g.
-*)
 
 Lemma connected_dec:
 forall (g: MatrixUGraph) u v, connected g u v \/ ~ connected g u v.

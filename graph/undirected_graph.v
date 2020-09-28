@@ -1116,8 +1116,10 @@ Qed.
 
 (*to be 100% close to CLRS' wording*)
 
-Definition uforest g:= ((forall e, evalid g e -> strong_evalid g e)) /\ (*strong evalid*)
+Definition uforest g := (forall e, evalid g e -> strong_evalid g e) /\ (*strong evalid*)
   (forall p l, ~ simple_ucycle g p l). (*no undirected cycles*)
+
+Definition utree g := uforest g /\ connected_graph g.
 
 Corollary uforest'_no_simple_ucycle:
 forall g p l, uforest' g -> ~ simple_ucycle g p l.

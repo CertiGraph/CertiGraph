@@ -56,7 +56,7 @@ void prim(int graph[SIZE][SIZE], int r, int parent[SIZE]) {
         out[u] = 1;
         for (int v = 0; v < SIZE; ++v) {
             if (out[v]==0) {				//(*this is why out array is kept, to not require extra O(logn) search of pq*)
-		if (graph[u][v] < key[v]) { //(*this is why key array is kept, to not require extra O(logn) search of pq*)
+		        if (graph[u][v] < key[v]) { //(*this is why key array is kept, to not require extra O(logn) search of pq*)
 	                parent[v] = u;
 	                key[v] = graph[u][v];
 	                adjustWeight(v, key[v], pq);
