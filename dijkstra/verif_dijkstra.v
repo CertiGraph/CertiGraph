@@ -5,8 +5,7 @@ Require Import CertiGraph.dijkstra.env_dijkstra_arr.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.SpaceDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_spec.
-Require Import CertiGraph.dijkstra.path_cost.
-Require Import CertiGraph.dijkstra.dijkstra_math_lemmas.
+Require Import CertiGraph.dijkstra.dijkstra_math_proof.
 
 Require Import VST.floyd.sublist.
 (* seems this has to be imported after the others *)
@@ -504,7 +503,6 @@ Section DijkstraProof.
                            (fold_right Z.min (hd 0 priq)
                                        priq) 0) as u.
             remember (Zlength priq) as size.
-
             symmetry in Heqsize.
             clear H15 H16 H17 H18 H19 H20 H21 H22
                   H23 H24 H25 H26 H27 H8.
@@ -524,7 +522,6 @@ Section DijkstraProof.
                }
                replace u with src in *.
                2: apply H_popped_src_2; trivial.
-
                intro.
                simpl in H16; destruct H16; [|lia].
                subst dst; clear H15.
@@ -535,8 +532,7 @@ Section DijkstraProof.
                ** exists (src, []). split3.
                   --- split3; [| |split3]; trivial.
                       +++ split; trivial.
-                      +++ unfold path_cost.
-                          simpl. ulia.
+                      +++ rewrite path_cost.path_cost_zero; ulia.
                       +++ apply Forall_forall.
                           inversion 1.
                   --- unfold path_in_popped.
@@ -546,9 +542,8 @@ Section DijkstraProof.
                           subst step. simpl; left; trivial.
                       +++ destruct H16 as [? [? _]].
                           inversion H16.
-                  --- red. intros.
-                      unfold path_cost at 1; simpl.
-                      apply path_cost_pos; trivial.
+                  --- red. intros. rewrite path_cost.path_cost_zero; try ulia.
+                      apply path_cost.path_cost_pos; trivial.
             ++ intros.
                apply (vvalid_meaning g) in H15.
                apply inv_unpopped_weak_add_unpopped; trivial.
@@ -803,6 +798,7 @@ Section DijkstraProof.
                      +++ apply H_inv_unpopped_weak; lia.
                  --- intros. destruct (Z.eq_dec dst i).
                      2: apply H_inv_unseen; lia.
+
                      unfold inv_unseen; intros.
                      subst dst.
 
@@ -814,7 +810,7 @@ Section DijkstraProof.
                      unfold V in *.
                      rewrite H34 in H_non_improvement.
                      assert (0 <= u < size) by lia.
-                     rewrite path_cost_path_glue, one_step_path_Znth.
+                     rewrite path_cost.path_cost_glue_one_step.
                      destruct H37 as [_ [_ [_ [? _]]]].
                      ulia.
                  --- intros.
@@ -902,9 +898,9 @@ Section DijkstraProof.
                    apply H23.
                    ulia.
                  }
-                 rewrite path_cost_path_glue, one_step_path_Znth.
+                 rewrite path_cost.path_cost_glue_one_step.
                  destruct H34 as [? _].
-                 pose proof (path_cost_pos _ _ H34).
+                 pose proof (path_cost.path_cost_pos _ _ H34).
                  ulia.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 

@@ -2,7 +2,6 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
-Require Import CertiGraph.dijkstra.SpaceDijkGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
@@ -15,10 +14,16 @@ Section PathCost.
   Definition path_cost (g: @DijkGG size inf) (path: @path V E) : DE :=
     fold_left Z.add (map (elabel g) (snd path)) 0.
 
+  Lemma path_cost_zero:
+    forall (g: @DijkGG size inf) src,
+      path_cost g (src, []) = 0.
+  Proof.
+    intros. unfold path_cost; trivial.
+  Qed.
+
   Lemma one_step_path_Znth:
     forall (g: @DijkGG size inf) s e,
-      path_cost g (s, e :: nil) =
-      elabel g e.
+      path_cost g (s, e :: nil) = elabel g e.
   Proof.
     intros. unfold path_cost; simpl.
     apply Z.add_0_l.
@@ -105,6 +110,14 @@ Section PathCost.
     pose proof (path_cost_pos _ _ H).
     pose proof (path_cost_pos _ _ H0).
     split; lia.
+  Qed.
+  
+  Lemma path_cost_glue_one_step:
+    forall (g: @DijkGG size inf) p2m u i,
+      path_cost g (path_glue p2m (u, [(u, i)])) = path_cost g p2m + elabel g (u, i).
+  Proof.
+    intros.
+    rewrite path_cost_path_glue, one_step_path_Znth; trivial.
   Qed.
 
 End PathCost.
