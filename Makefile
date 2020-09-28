@@ -92,12 +92,9 @@ PRIM_FILES = \
   verif_prim.v verif_noroot_prim.v
 
 DIJKSTRA_FILES = \
-  dijkstra.v matrix_read.v \
-  MathDijkGraph.v SpaceDijkGraph.v \
-  env_dijkstra_arr.v dijkstra_constants.v \
-  path_cost.v dijkstra_math_proof.v \
-  dijkstra_spec_pure.v dijkstra_spec.v \
-  verif_dijkstra.v verif_matrix_read.v
+  dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \
+  MathDijkGraph.v env_dijkstra_arr.v dijkstra_constants.v \
+  path_cost.v dijkstra_math_proof.v dijkstra_spec_pure.v \
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
