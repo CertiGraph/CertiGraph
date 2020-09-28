@@ -40,7 +40,8 @@ GRAPH_FILES = \
   find_not_in.v reachable_ind.v subgraph2.v spanning_tree.v dag.v marked_graph.v \
   weak_mark_lemmas.v dual_graph.v graph_morphism.v local_graph_copy.v tree_model.v \
   list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
-  graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v AdjMatGraph.v
+  graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v \
+  MathAdjMatGraph.v SpaceAdjMatGraph_noncont.v SpaceAdjMatGraph_cont.v
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
@@ -91,11 +92,12 @@ PRIM_FILES = \
   verif_prim.v verif_noroot_prim.v
 
 DIJKSTRA_FILES = \
-  dijkstra.v \
+  dijkstra.v matrix_read.v \
   MathDijkGraph.v SpaceDijkGraph.v \
   env_dijkstra_arr.v dijkstra_constants.v \
-  path_cost.v dijkstra_spec.v \
-  # verif_dijkstra.v
+  path_cost.v dijkstra_math_proof.v \
+  dijkstra_spec_pure.v dijkstra_spec.v \
+  verif_dijkstra.v verif_matrix_read.v
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
@@ -160,6 +162,10 @@ vstandme7:
 .PHONY: vstandme3
 vstandme3:
 	cd $(VST_DIR) && make $(VST_CRITICAL_FILES:%.v=%.vo) -j3 && cd - && make -j3
+
+.PHONY: mst
+mst:
+	make prim/verif_*.vo dijkstra/verif_dijkstra.vo kruskal/verif_kruskal_edgelist.vo -kj7
 
 .depend depend:
 	@echo 'coqdep ... >.depend'

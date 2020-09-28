@@ -1,21 +1,15 @@
 (*Described a pure undirected graph that can be represented by an adjacency matrix*)
-Require Import CertiGraph.lib.EnumEnsembles.
-Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Lia.
-Require Import VST.msl.seplog.
 Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
-Require Import Coq.Lists.List.
-Require Import CertiGraph.lib.Coqlib.
+Require Import compcert.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
-Require Import CertiGraph.graph.FiniteGraph.
-Require Import compcert.lib.Coqlib.
 Require Import CertiGraph.graph.undirected_graph.
-Require Import CertiGraph.graph.AdjMatGraph.
+Require Export CertiGraph.graph.MathAdjMatGraph.
 Require Import CertiGraph.priq.priq_arr_utils.
 
 Local Open Scope logic.
@@ -68,6 +62,30 @@ Class AdjMatUSoundness (g: LabeledGraph V E DV DE DG) := {
 Definition MatrixUGraph := (GeneralGraph V E DV DE DG (fun g => AdjMatUSoundness g)).
 
 Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g).
+
+(*
+  Later on, I need to get from
+  MatrixUGraph ---> AdjMatLG 
+ *)
+(*
+Lemma AdjMatLG_MatrixUGraph (g: MatrixUGraph) : AdjMatLG.
+Proof.
+  admit.
+Admitted.
+Coercion AdjMatLG_MatrixUGraph: MatrixUGraph >-> AdjMatLG.
+*)
+(* 
+   Anshuman, Sep 26:
+   I'm not getting into it too much since a merge between
+   MatrixUGraph and newMatrixUGraph is probably coming up,
+   but several changes are needed here.
+   1. Don't redefine V_EqDec and E_EqDec here
+   2. Create some (PrimLG: LabeledGraph) 
+      and grow PrimGG atop of it. for example, 
+          Class AdjMatUSoundness (g: PrimLG) := {...}
+   3. Create the appropriate coercions in this file
+   4. Don't redefine the various getters for soundness
+ *)
 
 Instance Finite_MatrixUPGraph (g: MatrixUGraph): FiniteGraph g.
 Proof. apply (@fin g (sound_MatrixUGraph g)). Qed.

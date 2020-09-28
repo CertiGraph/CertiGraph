@@ -3,14 +3,14 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_relation.
-Require Import CertiGraph.graph.FiniteGraph.
-Require Import CertiGraph.graph.undirected_graph.
-Require Import CertiGraph.graph.AdjMatGraph.
-Require Import CertiGraph.prim.MatrixUGraph.
-Require Import CertiGraph.priq.priq_arr_specs.
-Require Import CertiGraph.priq.priq_arr_utils.
+(* Require Import CertiGraph.graph.FiniteGraph. *)
+
+Require Import CertiGraph.graph.undirected_graph. (* uforest' *)
+(* Require Import CertiGraph.graph.MathAdjMatGraph. (* kinda feel someone should encapsulate this *) *)
+Require Import CertiGraph.prim.MatrixUGraph. (* vert_bound *)
+Require Import CertiGraph.priq.priq_arr_utils. (* find *)
 Require Import CertiGraph.prim.prim.
-Require Import CertiGraph.prim.spatial_undirected_matrix.
+Require Import CertiGraph.prim.spatial_undirected_matrix. (* list_address *)
 Require Import CertiGraph.prim.specs_prim.
 
 Local Open Scope Z.

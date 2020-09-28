@@ -3,10 +3,6 @@ Idea is with a definition of connectedness, there's no need to explicitly define
 Which sort of makes sense I guess, because every directed graph has an underlying undirected graph by just removing the direction
 And directed graphs make more sense in C compared to ugraphs (correct me if I'm wrong)
 *)
-Require Import Coq.Lists.List.
-Require Import Coq.Lists.ListDec.
-Require Import Coq.Logic.ProofIrrelevance.
-Require Import CertiGraph.lib.Ensembles_ext.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.graph.graph_model.
