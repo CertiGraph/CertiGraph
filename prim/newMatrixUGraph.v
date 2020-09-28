@@ -14,7 +14,7 @@ Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.graph.FiniteGraph.
 Require Import compcert.lib.Coqlib.
 Require Import CertiGraph.graph.undirected_graph.
-Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.graph.MathAdjMatGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
@@ -29,6 +29,7 @@ Qed.
 
 Section MATRIXUGRAPH.
 
+  (*
 Instance V_EqDec: EqDec V eq.
 Proof. hnf. apply Z.eq_dec. Qed.
 
@@ -42,7 +43,15 @@ Proof.
   - right; intro; apply c; inversion H; reflexivity.
 Defined.
 
-Context {inf: Z} {size: Z}.
+   *)
+
+  (* Anshuman, Sep 26:
+     I think this was part of your problem.
+     You had (re)definitions of delicate internal contexts,
+     and so AdjMatLG could not be coerced into LabeledGraph.
+   *)
+
+Context {inf: Z} {size: Z}.     
 
 Class AdjMatUSoundness (g: AdjMatLG) := {
   sadjmat: SoundAdjMat (size:=size) (inf:=inf) g;
@@ -51,7 +60,6 @@ Class AdjMatUSoundness (g: AdjMatLG) := {
   undirected_edge_rep: forall e, evalid g e -> src g e <= dst g e;
 }.
 
-(*Hm, was wondering if I could incorporate "soundness" in*)
 Definition MatrixUGraph := (GeneralGraph V E DV DE DG (fun g => AdjMatUSoundness g)).
 
 Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g).
@@ -66,15 +74,26 @@ Proof. apply (finGraph g). Qed.
 Section EDGELESS_MUGRAPH.
 
 Context {inf_bound: 0 <= inf <= Int.max_signed}.
-Context {size_bound: 0 <= size <= Int.max_signed}.
+Context {size_bound: 0 < size <= Int.max_signed}.
 
-Instance AdjMatUSound_edgeless2:
-  AdjMatUSoundness (@edgeless_lgraph2 size inf).
-Proof.
+(* Anshuman, Sep 26:
+   This is just a copy of your
+   edgeless_lgraph2 
+   from graph/MathAdjMatGraph.v
+   It now goes through.
+*)
+Definition edgeless_lgraph3  : AdjMatLG :=
+  @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
+                      (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
+                      (fun v => tt) (fun e => inf) tt. 
+
+Instance AdjMatUSound_edgeless3:
+  AdjMatUSoundness edgeless_lgraph3.
+Proof. 
 constructor.
 all: simpl; intros; try contradiction.
 constructor.
-auto. auto.
+auto. auto. 
 all: simpl; intros; try auto; try contradiction.
 split; intros; auto.
 split; intros. contradiction. destruct H. contradiction.
@@ -90,21 +109,21 @@ rewrite Z.max_l by lia. split; auto.
 exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
 Qed.
 
-(* Can't build, because it expects a LabeledGraph
-Definition edgeless_graph2: MatrixUGraph :=
+(* Can't build, because it expects a LabeledGraph *)
+(* Anshuman, Sep 26: Now can! *)
+Definition edgeless_graph3: MatrixUGraph :=
   @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG AdjMatUSoundness
-    edgeless_lgraph2 (AdjMatUSound_edgeless2).
-*)
+    edgeless_lgraph3 (AdjMatUSound_edgeless3).
 
 (*ASDF: Error message
 ... has type "LabeledGraph V E DV DE DG" while it is expected to have type
  "AdjMatLG".*)
-
-Definition edgeless_lgraph: AdjMatLG := (*nor does (@AdjMatLG size inf) work*)
-@Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
+(* Anshuman, Sep 26: Now can! *)
+Definition edgeless_lgraph: AdjMatLG := 
+  @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
   (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
-  (fun v => tt) (fun e => inf) tt. (*<--- different from edgeless_WEdgeGraph because of the default value*)
+  (fun v => tt) (fun e => inf) tt. 
 
-
+End EDGELESS_MUGRAPH.
 
 End MATRIXUGRAPH.

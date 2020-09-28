@@ -1,19 +1,17 @@
-Require Import VST.veric.SeparationLogic. (*hm interesting, they have a separate sublist definition*)
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.graph.graph_model.
-Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.undirected_graph.
-Require Import CertiGraph.graph.AdjMatGraph.
+Require Import CertiGraph.graph.MathAdjMatGraph.
 Require Import CertiGraph.prim.MatrixUGraph.
 Require Import CertiGraph.priq.priq_arr_utils.
 Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope logic.
 
-Definition G := @MatrixUGraph priq_arr_utils.inf priq_arr_utils.SIZE.
-Definition edgeless_graph' := @edgeless_graph priq_arr_utils.inf priq_arr_utils.SIZE inf_rep SIZE_rep.
-Definition adde := @MatrixUGraph_adde priq_arr_utils.inf priq_arr_utils.SIZE.
-Definition eremove := @MatrixUGraph_eremove priq_arr_utils.inf priq_arr_utils.SIZE.
+Definition G := @MatrixUGraph inf SIZE.
+Definition edgeless_graph' := @edgeless_graph inf SIZE inf_rep SIZE_rep.
+Definition adde := @MatrixUGraph_adde inf SIZE.
+Definition eremove := @MatrixUGraph_eremove inf SIZE.
 
 Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
 
