@@ -176,6 +176,9 @@ Lemma add_edge_evalid: forall g e s t, evalid (pregraph_add_edge g e s t) e. Pro
 
 Lemma add_edge_preserves_evalid: forall g e s t e', evalid g e' -> evalid (pregraph_add_edge g e s t) e'. Proof. intros. hnf; left; auto. Qed.
 
+Lemma add_edge_evalid_or: forall g e s t e', evalid (pregraph_add_edge g e s t) e' -> evalid g e' \/ e' = e.
+Proof. simpl; unfold addValidFunc; intros; auto. Qed.
+
 Lemma add_edge_evalid_rev: forall g e s t e', e<>e' -> evalid (pregraph_add_edge g e s t) e' -> evalid g e'.
 Proof.
 intros. simpl in H0. unfold addValidFunc in H0. destruct H0; [auto | symmetry in H0; contradiction].
