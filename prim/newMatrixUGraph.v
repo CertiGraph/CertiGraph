@@ -74,7 +74,7 @@ Proof. apply (finGraph g). Qed.
 Section EDGELESS_MUGRAPH.
 
 Context {inf_bound: 0 <= inf <= Int.max_signed}.
-Context {size_bound: 0 <= size <= Int.max_signed}.
+Context {size_bound: 0 < size <= Int.max_signed}.
 
 (* Anshuman, Sep 26:
    This is just a copy of your
@@ -93,8 +93,7 @@ Proof.
 constructor.
 all: simpl; intros; try contradiction.
 constructor.
-admit. (* Anshuman, Sep 26: I need to know if size = 0 is needed *)
-auto. 
+auto. auto. 
 all: simpl; intros; try auto; try contradiction.
 split; intros; auto.
 split; intros. contradiction. destruct H. contradiction.
@@ -108,7 +107,7 @@ destruct H. rewrite H. unfold Z.max; simpl. split; lia.
 rewrite Z.max_l by lia. split; auto.
 (*edges*)
 exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
-Admitted.
+Qed.
 
 (* Can't build, because it expects a LabeledGraph *)
 (* Anshuman, Sep 26: Now can! *)
