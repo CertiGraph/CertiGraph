@@ -313,6 +313,18 @@ Proof.
 intros. destruct H as [p ?]. apply (connected_by_path_vvalid _ _ _ _ H).
 Qed.
 
+Lemma adjacent_dec:
+forall g u v, adjacent g u v \/ ~ adjacent g u v.
+Proof.
+intros. tauto.
+Qed.
+
+Lemma connected_dec:
+forall g u v, connected g u v \/ ~ connected g u v.
+Proof.
+intros. tauto.
+Qed.
+
 Definition connected_graph (g: PGraph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
 
 (************REASONING ABOUT A SPECIFIC LIST OF EDGES************)
