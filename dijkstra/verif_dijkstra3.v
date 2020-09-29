@@ -1,14 +1,15 @@
-Require Import CertiGraph.priq_malloc.priq_arr_utils.
-(* remove once a better PQ is in place *)
-
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.
-Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.SpaceDijkGraph3.
 Require Import CertiGraph.dijkstra.dijkstra_spec3.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
+Require Import CertiGraph.dijkstra.MathDijkGraph.
+Require Import CertiGraph.dijkstra.dijkstra_constants.
+Require Import CertiGraph.priq_malloc.priq_arr_utils.
 
 Require Import VST.floyd.sublist.
 (* seems this has to be imported after the others *)
+
+Definition inrange_priq inf priq := @dijkstra_math_proof.inrange_priq inf priq.
 
 Local Open Scope Z_scope.
 
@@ -17,15 +18,13 @@ Local Open Scope Z_scope.
 Ltac trilia := trivial; lia.
 Ltac ulia := unfold V, E, DE in *; trilia.
 
-
 Section DijkstraProof.
   
   (* The invariants have been dragged out of the 
    proof for readability and reuse
    *)
-
-  Context {size: Z}.
-  Context {inf: Z}.
+  
+  Definition addresses := @nil val.
 
   Definition dijk_setup_loop_inv g sh src dist prev v_pq arr addresses :=
     EX i : Z,
@@ -34,9 +33,7 @@ Section DijkstraProof.
           temp _prev (pointer_val_val prev);
           temp _src (Vint (Int.repr src));
           temp _pq (pointer_val_val v_pq);
-          temp _graph (pointer_val_val arr);
-          temp _size (Vint (Int.repr size)); 
-          temp _inf (Vint (Int.repr inf)))
+          temp _graph (pointer_val_val arr))
     SEP (data_at Tsh
                  (tarray tint size)
                  ((list_repeat (Z.to_nat i)
@@ -93,9 +90,7 @@ Section DijkstraProof.
                temp _prev (pointer_val_val prev_ptr);
                temp _src (Vint (Int.repr src));
                temp _pq (pointer_val_val priq_ptr);
-               temp _graph (pointer_val_val graph_ptr);
-               temp _size (Vint (Int.repr size));
-               temp _inf (Vint (Int.repr inf)))
+               temp _graph (pointer_val_val graph_ptr))
          SEP (data_at Tsh
                       (tarray tint size)
                       (map Vint (map Int.repr prev))
@@ -221,9 +216,7 @@ Section DijkstraProof.
                temp _prev (pointer_val_val prev_ptr);
                temp _src (Vint (Int.repr src));
                temp _pq (pointer_val_val priq_ptr);
-               temp _graph (pointer_val_val graph_ptr);
-               temp _size (Vint (Int.repr size));
-               temp _inf (Vint (Int.repr inf)))
+               temp _graph (pointer_val_val graph_ptr))
          
          SEP (data_at Tsh
                       (tarray tint size)
@@ -241,11 +234,11 @@ Section DijkstraProof.
                                       size addresses).
   
 
-  Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
+  Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
   Proof.
     start_function.
     unfold DijkGraph.
-    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ _ u); trivial.
+    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ addresses u); trivial.
 
     assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
       unfold graph_to_mat, vert_to_list.
@@ -262,25 +255,50 @@ Section DijkstraProof.
     Intros.
     freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
     unfold list_rep.
-    forward. forward. forward.
+
+    assert_PROP (force_val
+                   (sem_add_ptr_int
+                      tint
+                      Signed
+                      (force_val
+                         (sem_add_ptr_int
+                            (tarray tint size)
+                            Signed
+                            (pointer_val_val graph_ptr)
+                            (Vint (Int.repr u))))
+                      (Vint (Int.repr i))) =
+                 field_address
+                   (tarray tint size)
+                   [ArraySubsc i]
+                   (@list_address
+                      size
+                      CompSpecs
+                      (pointer_val_val graph_ptr)
+                      u)). {
+      entailer!.
+      unfold list_address. simpl.
+      rewrite field_address_offset.
+      1: { rewrite offset_offset_val; simpl; f_equal.
+           rewrite Z.add_0_l. f_equal. lia. }            
+      destruct H5 as [? [? [? [? ?]]]]. 
+      unfold field_compatible; split3; [| | split3]; simpl; auto.
+    }
+    
+    repeat forward.
     thaw FR. unfold DijkGraph.
-    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ _ u); trivial.
+    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ addresses u); trivial.
     entailer!.
   Qed.
 
+
   (* DIJKSTRA PROOF BEGINS *)
 
-                                                                                            Lemma body_dijkstra: semax_body Vprog (@Gprog size inf) f_dijkstra (@dijkstra_spec size inf).
+  Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
   Proof.
     start_function.
     pose proof (size_further_restricted g).
     rename H1 into Hsz.
     forward_call (sh, size * sizeof(tint)).
-    1: {
-      simpl. split; [lia|].
-      apply Z.le_trans with (m:= Int.max_signed).
-      lia. compute; inversion 1.
-    } 
     Intro priq_ptr.
     forward_for_simple_bound
       size
@@ -293,15 +311,14 @@ Section DijkstraProof.
                     (list_repeat (Z.to_nat i)
                                  (Vint (Int.repr inf)) ++
                                  list_repeat (Z.to_nat
-                                                                                                                                                                                           (size - i)) Vundef), size, inf).
+                                                (size - i)) Vundef), size, inf).
       1: { split; trivial.
            unfold weight_inrange_priq.
            pose proof (inf_representable g).
            split; [|reflexivity].
-           apply Z.le_trans with (m:=0); [|lia].
-           compute; inversion 1.
+           apply (inf_representable g).
       }
-      rewrite upd_Znth_list_repeat; [|lia].
+      repeat rewrite upd_Znth_list_repeat; try lia.
       entailer!.     
     - (* At this point we are done with the
        first for loop. The arrays are all set to inf. *)
@@ -312,9 +329,8 @@ Section DijkstraProof.
       forward_call ((pointer_val_val priq_ptr), src, 0,
                     (list_repeat (Z.to_nat size) inf), size, inf).
       1: { split; trivial.
-           pose proof (inf_representable g).
-           unfold weight_inrange_priq.
-           split; [compute; inversion 1 | lia].
+           pose proof (inf_representable g). red.
+           split; compute; inversion 1.
       }
       do 2 rewrite map_list_repeat.
       assert (H_src_valid: vvalid g src). {
@@ -333,41 +349,41 @@ Section DijkstraProof.
       forward_loop
       (dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses)
 
-                                              break: (dijk_forloop_break_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).
+      break: (dijk_forloop_break_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).
       + unfold dijk_forloop_inv.
         Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) src).
         Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) 0).
         Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) 0).
         Exists (@nil V).
         repeat rewrite <- upd_Znth_map; entailer!;
-          clear H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12.
+          clear H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11.
+(*
         assert (Zlength (list_repeat (Z.to_nat size) inf) = size). {
           rewrite Zlength_list_repeat. lia.
           pose proof (size_representable g). lia.
         }
+ *)
         split3; [| |split3; [| |split]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
-        * rewrite upd_Znth_same; trivial. ulia. 
-        * rewrite upd_Znth_same; trivial. ulia.
+        * rewrite upd_Znth_same; trivial.  
+        * rewrite upd_Znth_same; trivial. 
         * intros; rewrite find_src; trivial.
           apply (inf_further_restricted' g).
         * intros. split; [inversion 1 | intros; exfalso].
           destruct (Z.eq_dec src v).
-          -- subst src. rewrite upd_Znth_same in H3 by ulia.
-             pose proof (inf_further_restricted' g).
-             lia. 
-          -- assert (0 <= v < size) by now apply (vvalid_meaning g).
-             rewrite upd_Znth_diff in H3 by ulia.
-             rewrite Znth_list_repeat_inrange in H3; trivial.
-             rewrite Z.add_1_r in H3.
+          -- subst src. rewrite upd_Znth_same in H2 by ulia.
+             rewrite inf_eq in H2. inversion H2.
+          -- apply (vvalid_meaning g) in H1.
+             rewrite upd_Znth_diff in H2
+               by (try rewrite Zlength_list_repeat; ulia).
+             rewrite Znth_list_repeat_inrange in H2; trivial.
+             rewrite Z.add_1_r in H2.
              apply (Z.neq_succ_diag_l inf). lia.
              
         * pose proof (inf_further_restricted' g).
           split3; red; apply Forall_upd_Znth;
             try apply Forall_list_repeat;
             try rewrite inf_eq; ulia. 
-          
-        * repeat rewrite map_list_repeat. entailer!.
 
       + (* Now the body of the while loop begins. *)
         unfold dijk_forloop_inv.
@@ -391,11 +407,12 @@ Section DijkstraProof.
                     @inrange_priq inf priq ->
                     priq_arr_utils.inrange_priq priq inf). {
           intros.
-          red in H11 |- *.
+          red in H11 |- *. red in H11.
           rewrite Forall_forall in H11 |- *.
           intros ? H_in. specialize (H11 _ H_in).
           rep_lia.
         }
+        (* todo needed?? *)
         
         forward_call ((pointer_val_val priq_ptr),
                       priq, size, inf).
@@ -403,16 +420,15 @@ Section DijkstraProof.
              pose proof (inf_further_restricted' g).
              split3; [| |split3]; try ulia.
              apply H_inrange_priq_trans; trivial.
-             apply Z.lt_trans with (m:=0);
-               [compute; trivial | ulia].
+             rewrite inf_eq. compute; trivial.
         }
         forward_if. (* checking if it's time to break *)
         * (* No, don't break. *)
           rename H11 into Htemp.
           assert (isEmpty priq inf = Vzero). {
             destruct (isEmptyTwoCases priq inf);
-              rewrite H11 in Htemp; simpl in Htemp;
-                now inversion Htemp.
+            rewrite H11 in Htemp; simpl in Htemp;
+              now inversion Htemp.
           }
           clear Htemp.
           forward_call ((pointer_val_val priq_ptr), priq, size, inf).
@@ -421,7 +437,8 @@ Section DijkstraProof.
                split3; [| |split3; [| |split]]; try ulia.
                apply H_inrange_priq_trans; trivial.
                apply Z.lt_trans with (m:=0);
-                 [compute; trivial | ulia].
+                 [compute; trivial |].
+               rewrite inf_eq; compute; trivial.
           }
           
           Intros u.
@@ -438,8 +455,7 @@ Section DijkstraProof.
             apply min_in_list. apply incl_refl.
             destruct priq.
             1: { rewrite Zlength_nil in H8.
-                 pose proof (size_representable g).
-                 lia.
+                 inversion H8.
             }
             simpl. left; trivial.
           }
@@ -461,12 +477,6 @@ Section DijkstraProof.
               [ apply incl_refl | apply Znth_In; ulia].
           }
           
-          assert (H_inf_reppable: Int.min_signed <= inf <= Int.max_signed). {
-            pose proof (inf_representable g).
-            split; [|lia].
-            apply Z.le_trans with (m:=0); [compute; inversion 1 | ulia].
-          }
-
           rewrite Znth_0_hd; [|ulia]. 
           do 2 rewrite upd_Znth_map.
           
@@ -474,7 +484,7 @@ Section DijkstraProof.
           assert (Htemp: 0 <= u < Zlength dist) by lia.
           pose proof (Znth_dist_cases _ _ Htemp H6).
           clear Htemp.
-          
+                    
           (* This is the priq array with which
            we will enter the for loop.
            The dist and prev arrays are the same.
@@ -502,11 +512,8 @@ Section DijkstraProof.
             remember (find priq
                            (fold_right Z.min (hd 0 priq)
                                        priq) 0) as u.
-            remember (Zlength priq) as size.
-            symmetry in Heqsize.
             clear H15 H16 H17 H18 H19 H20 H21 H22
-                  H23 H24 H25 H26 H27 H8.
-            rename Heqsize into H8.
+                  H23 H24 H25 H26 H27 H28.
             
             split3; [| | split3; [| |split3; [| |split3; [| |split]]]]; trivial.
             ++ intros.
@@ -517,7 +524,6 @@ Section DijkstraProof.
                destruct popped eqn:?.
                2: {
                  apply (inv_popped_add_u _ _ _ _ _ _ priq); try ulia.
-                 unfold V, E in *.
                  apply H_popped_src_1; inversion 1.
                }
                replace u with src in *.
@@ -526,9 +532,7 @@ Section DijkstraProof.
                simpl in H16; destruct H16; [|lia].
                subst dst; clear H15.
                destruct H14; [left | right].
-               ** exfalso. rewrite H14 in H2.
-                  pose proof (inf_further_restricted' g).
-                  ulia.
+               ** exfalso. rewrite H14 in H2. inversion H2.
                ** exists (src, []). split3.
                   --- split3; [| |split3]; trivial.
                       +++ split; trivial.
@@ -622,6 +626,7 @@ Section DijkstraProof.
             rename H30 into H26.
 
             forward_call (sh, g, graph_ptr, addresses, u, i).
+            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
 
             assert (H_i_valid: vvalid g i). {
@@ -671,15 +676,22 @@ Section DijkstraProof.
                unfold V, DE in *.
                thaw FR.
                forward. forward. forward_if.
+               
                ** rename H31 into H_improvement.
                   (* We know that we are definitely
                    going to make edits in the arrays:
                    we have found a better path to i, via u *)
-                  
+                  rewrite Int.signed_repr in H_improvement.
+                  2: {
+                    split.
+                    apply Z.le_trans with (m := 0); ulia.
+                    apply Z.le_trans with (m := inf); ulia.
+                  }
+
                   rename H28 into Htemp.
                   assert (H28: 0 <= Znth u dist' < inf) by lia.
                   clear Htemp.
-
+                    
                   assert (H_i_not_popped: ~ In i (popped')). { 
                     apply (not_in_popped g src u i cost prev' dist'); trivial.
                   }
@@ -695,7 +707,7 @@ Section DijkstraProof.
                   1,3: repeat rewrite Zlength_map; lia.
                   forward_call ((pointer_val_val priq_ptr), i,
                                 (Znth u dist' + cost), priq', size, inf).
-
+                  
 (* Now we must show that the for loop's invariant
    holds if we take another step,
    ie when i increments
@@ -705,6 +717,7 @@ Section DijkstraProof.
    to log a new improved path via u 
  *)
                   1: split; trivial; red; rep_lia.
+
                   Exists (upd_Znth i prev' u).
                   Exists (upd_Znth i priq' (Znth u dist' + cost)).
                   Exists (upd_Znth i dist' (Znth u dist' + cost)).
@@ -714,16 +727,14 @@ Section DijkstraProof.
                   entailer!.
 
                   clear H31 H32 H33 H34 H35 H36
-                        H37 H38 H39 H40 H41 H42 H8.
+                        H37 H38 H39 H40 H41 H42.
 
                   remember (find priq (fold_right Z.min (hd 0 priq)
                                                   priq) 0) as u.
-                  remember (Zlength priq) as size.
-                  rename Heqsize into H8.
-                  symmetry in H8.
                   
-                  Set Printing All.
+                  
                   remember (Znth u dist' + elabel g (u, i)) as newcost.
+                  Set Printing All.
                   unfold V, DE in *.
                   rewrite <- Heqnewcost in *.
                   Unset Printing All.
@@ -771,18 +782,22 @@ Section DijkstraProof.
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
                  rename H31 into H_non_improvement.
+                 rewrite Int.signed_repr in H_non_improvement.
+                 2: {
+                   split. 
+                   apply Z.le_trans with (m := 0); ulia.
+                   apply Z.le_trans with (m := inf); ulia.
+                 }
+                 
                  forward. 
                  (* The old arrays are just fine. *)
                  Exists prev' priq' dist' popped'.
                  entailer!.
                  remember (find priq (fold_right Z.min
                                                  (hd 0 priq) priq) 0) as u.
-                 remember (Zlength priq) as size.
                  
                  clear H31 H32 H33 H34 H35 H36
-                       H37 H38 H39 H40 H41 H42 H8.
-                 rename Heqsize into H8.
-                 symmetry in H8.
+                       H37 H38 H39 H40 H41 H42 H43.
                  
                  assert (elabel g (u, i) < inf). {
                    apply Z.le_lt_trans with (m := Int.max_signed / size);
@@ -823,12 +838,8 @@ Section DijkstraProof.
               thaw FR.
               entailer!.
               remember (find priq (fold_right Z.min (hd 0 priq) priq) 0) as u.
-              remember (Zlength priq) as size.
-
               clear H28 H29 H30 H31 H32 H33
-                    H34 H35 H36 H37 H38 H39 H8.
-              rename Heqsize into H8.
-              symmetry in H8.
+                    H34 H35 H36 H37 H38 H39 H40.
 
               rewrite Int.signed_repr in H27.
               2: apply edge_representable.
@@ -877,6 +888,9 @@ Section DijkstraProof.
                             simpl in H23. apply H23.
                             lia.
                           }
+                          rewrite <- inf_eq2 in H27.
+                          rewrite Int.signed_repr in H27 by
+                              apply (inf_representable g).
                           ulia.
                      }
                      apply H39; trivial.
@@ -901,6 +915,9 @@ Section DijkstraProof.
                  rewrite path_cost.path_cost_glue_one_step.
                  destruct H34 as [? _].
                  pose proof (path_cost.path_cost_pos _ _ H34).
+                 rewrite <- inf_eq2 in H27.
+                 rewrite Int.signed_repr in H27 by
+                     apply (inf_representable g).
                  ulia.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
@@ -917,23 +934,23 @@ Section DijkstraProof.
         * (* After breaking from the while loop,
            prove break's postcondition *)
           assert (isEmpty priq inf = Vone). {
-            destruct (isEmptyTwoCases priq inf); trivial.
-            rewrite H12 in H11; simpl in H11; now inversion H11.
+            destruct (isEmptyTwoCases priq inf); trivial;
+              rewrite H12 in H11; simpl in H11; now inversion H11.
           }
           clear H11.
           forward. Exists prev priq dist popped.
           entailer!.
           pose proof (isEmptyMeansInf priq inf).
-          rewrite H25 in H12.
+          rewrite H26 in H12.
           rewrite Forall_forall in H12 |- *.
-          intros. specialize (H12 _ H26). lia.
+          intros. specialize (H12 _ H27). lia.
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev priq dist popped.
         (* around here I'd like to call "free" to release the PQ *)
         forward.
         Exists prev dist priq priq_ptr popped. entailer!.
-        intros. destruct (H2 _ H12) as [? _]; trivial.
+        intros. destruct (H2 _ H13) as [? _]; trivial.
   Qed.
 
 End DijkstraProof.
