@@ -93,7 +93,8 @@ Section SpaceAdjMatGraph_cont.
     iter_sepcon (list_rep sh cs gaddr (graph_to_mat g f))
                 (nat_inc_list (Z.to_nat size)).
 
-  Lemma SpaceAdjMatGraph_unfold: forall sh (cs: compspecs) (f : E -> E) g ptr i,
+  Lemma SpaceAdjMatGraph_unfold: forall sh (cs: compspecs) (f : E -> E) g ptr
+                                        (addresses0 : list val) i,
       let contents := (graph_to_mat g f) in 
       0 <= i < size ->
       SpaceAdjMatGraph sh cs f g ptr =
