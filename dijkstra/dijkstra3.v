@@ -11,7 +11,7 @@ Module Info.
   Definition abi := "macosx"%string.
   Definition bitsize := 32.
   Definition big_endian := false.
-  Definition source_file := "dijkstra/dijkstra.c"%string.
+  Definition source_file := "dijkstra/dijkstra3.c"%string.
   Definition normalized := true.
 End Info.
 
@@ -207,12 +207,10 @@ Definition v___stringlit_2 := {|
 Definition f_setup := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_graph, (tptr (tptr tint))) :: (_size, tint) ::
-                (_inf, tint) :: nil);
+  fn_params := ((_graph, (tptr (tarray tint 8))) :: nil);
   fn_vars := nil;
   fn_temps := ((_i, tint) :: (_j, tint) :: (_random, tint) :: (_t'4, tint) ::
-               (_t'3, tint) :: (_t'2, tint) :: (_t'1, tint) ::
-               (_t'5, (tptr tint)) :: nil);
+               (_t'3, tint) :: (_t'2, tint) :: (_t'1, tint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
@@ -225,8 +223,8 @@ Definition f_setup := {|
     (Sset _i (Econst_int (Int.repr 0) tint))
     (Sloop
       (Ssequence
-        (Sifthenelse (Ebinop Olt (Etempvar _i tint) (Etempvar _size tint)
-                       tint)
+        (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                       (Econst_int (Int.repr 8) tint) tint)
           Sskip
           Sbreak)
         (Ssequence
@@ -234,7 +232,7 @@ Definition f_setup := {|
           (Sloop
             (Ssequence
               (Sifthenelse (Ebinop Ole (Etempvar _j tint)
-                             (Etempvar _size tint) tint)
+                             (Econst_int (Int.repr 8) tint) tint)
                 Sskip
                 Sbreak)
               (Ssequence
@@ -252,7 +250,14 @@ Definition f_setup := {|
                     (Sifthenelse (Ebinop Ogt (Etempvar _random tint)
                                    (Econst_int (Int.repr 50) tint) tint)
                       (Ssequence
-                        (Sset _t'4 (Ecast (Etempvar _inf tint) tint))
+                        (Sset _t'4
+                          (Ecast
+                            (Ebinop Osub
+                              (Econst_int (Int.repr 2147483647) tint)
+                              (Ebinop Odiv
+                                (Econst_int (Int.repr 2147483647) tint)
+                                (Econst_int (Int.repr 8) tint) tint) tint)
+                            tint))
                         (Sset _t'3 (Ecast (Etempvar _t'4 tint) tint)))
                       (Ssequence
                         (Sset _t'4
@@ -260,16 +265,15 @@ Definition f_setup := {|
                             (Ebinop Oadd (Econst_int (Int.repr 1) tint)
                               (Etempvar _random tint) tint) tint))
                         (Sset _t'3 (Ecast (Etempvar _t'4 tint) tint)))))
-                  (Ssequence
-                    (Sset _t'5
-                      (Ederef
-                        (Ebinop Oadd (Etempvar _graph (tptr (tptr tint)))
-                          (Etempvar _i tint) (tptr (tptr tint))) (tptr tint)))
-                    (Sassign
-                      (Ederef
-                        (Ebinop Oadd (Etempvar _t'5 (tptr tint))
-                          (Etempvar _j tint) (tptr tint)) tint)
-                      (Etempvar _t'3 tint))))))
+                  (Sassign
+                    (Ederef
+                      (Ebinop Oadd
+                        (Ederef
+                          (Ebinop Oadd
+                            (Etempvar _graph (tptr (tarray tint 8)))
+                            (Etempvar _i tint) (tptr (tarray tint 8)))
+                          (tarray tint 8)) (Etempvar _j tint) (tptr tint))
+                      tint) (Etempvar _t'3 tint)))))
             (Sset _j
               (Ebinop Oadd (Etempvar _j tint) (Econst_int (Int.repr 1) tint)
                 tint)))))
@@ -280,11 +284,9 @@ Definition f_setup := {|
 Definition f_print_graph := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_graph, (tptr (tptr tint))) :: (_size, tint) ::
-                (_inf, tint) :: (_src, tint) :: nil);
+  fn_params := ((_graph, (tptr (tarray tint 8))) :: (_src, tint) :: nil);
   fn_vars := nil;
-  fn_temps := ((_i, tint) :: (_j, tint) :: (_t'4, tint) ::
-               (_t'3, (tptr tint)) :: (_t'2, tint) :: (_t'1, (tptr tint)) ::
+  fn_temps := ((_i, tint) :: (_j, tint) :: (_t'2, tint) :: (_t'1, tint) ::
                nil);
   fn_body :=
 (Ssequence
@@ -292,8 +294,8 @@ Definition f_print_graph := {|
     (Sset _i (Econst_int (Int.repr 0) tint))
     (Sloop
       (Ssequence
-        (Sifthenelse (Ebinop Olt (Etempvar _i tint) (Etempvar _size tint)
-                       tint)
+        (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                       (Econst_int (Int.repr 8) tint) tint)
           Sskip
           Sbreak)
         (Ssequence
@@ -302,43 +304,47 @@ Definition f_print_graph := {|
             (Sloop
               (Ssequence
                 (Sifthenelse (Ebinop Olt (Etempvar _j tint)
-                               (Etempvar _size tint) tint)
+                               (Econst_int (Int.repr 8) tint) tint)
                   Sskip
                   Sbreak)
                 (Ssequence
                   (Sset _t'1
                     (Ederef
-                      (Ebinop Oadd (Etempvar _graph (tptr (tptr tint)))
-                        (Etempvar _i tint) (tptr (tptr tint))) (tptr tint)))
-                  (Ssequence
-                    (Sset _t'2
-                      (Ederef
-                        (Ebinop Oadd (Etempvar _t'1 (tptr tint))
-                          (Etempvar _j tint) (tptr tint)) tint))
-                    (Sifthenelse (Ebinop Oeq (Etempvar _t'2 tint)
-                                   (Etempvar _inf tint) tint)
+                      (Ebinop Oadd
+                        (Ederef
+                          (Ebinop Oadd
+                            (Etempvar _graph (tptr (tarray tint 8)))
+                            (Etempvar _i tint) (tptr (tarray tint 8)))
+                          (tarray tint 8)) (Etempvar _j tint) (tptr tint))
+                      tint))
+                  (Sifthenelse (Ebinop Oeq (Etempvar _t'1 tint)
+                                 (Ebinop Osub
+                                   (Econst_int (Int.repr 2147483647) tint)
+                                   (Ebinop Odiv
+                                     (Econst_int (Int.repr 2147483647) tint)
+                                     (Econst_int (Int.repr 8) tint) tint)
+                                   tint) tint)
+                    (Scall None
+                      (Evar _printf (Tfunction (Tcons (tptr tschar) Tnil)
+                                      tint
+                                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
+                      ((Evar ___stringlit_2 (tarray tschar 3)) :: nil))
+                    (Ssequence
+                      (Sset _t'2
+                        (Ederef
+                          (Ebinop Oadd
+                            (Ederef
+                              (Ebinop Oadd
+                                (Etempvar _graph (tptr (tarray tint 8)))
+                                (Etempvar _i tint) (tptr (tarray tint 8)))
+                              (tarray tint 8)) (Etempvar _j tint)
+                            (tptr tint)) tint))
                       (Scall None
                         (Evar _printf (Tfunction (Tcons (tptr tschar) Tnil)
                                         tint
                                         {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
-                        ((Evar ___stringlit_2 (tarray tschar 3)) :: nil))
-                      (Ssequence
-                        (Sset _t'3
-                          (Ederef
-                            (Ebinop Oadd (Etempvar _graph (tptr (tptr tint)))
-                              (Etempvar _i tint) (tptr (tptr tint)))
-                            (tptr tint)))
-                        (Ssequence
-                          (Sset _t'4
-                            (Ederef
-                              (Ebinop Oadd (Etempvar _t'3 (tptr tint))
-                                (Etempvar _j tint) (tptr tint)) tint))
-                          (Scall None
-                            (Evar _printf (Tfunction
-                                            (Tcons (tptr tschar) Tnil) tint
-                                            {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
-                            ((Evar ___stringlit_1 (tarray tschar 4)) ::
-                             (Etempvar _t'4 tint) :: nil))))))))
+                        ((Evar ___stringlit_1 (tarray tschar 4)) ::
+                         (Etempvar _t'2 tint) :: nil))))))
               (Sset _j
                 (Ebinop Oadd (Etempvar _j tint)
                   (Econst_int (Int.repr 1) tint) tint))))
@@ -351,8 +357,8 @@ Definition f_print_graph := {|
   (Scall None
     (Evar _printf (Tfunction (Tcons (tptr tschar) Tnil) tint
                     {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
-    ((Evar ___stringlit_4 (tarray tschar 22)) :: (Etempvar _size tint) ::
-     (Etempvar _src tint) :: nil)))
+    ((Evar ___stringlit_4 (tarray tschar 22)) ::
+     (Econst_int (Int.repr 8) tint) :: (Etempvar _src tint) :: nil)))
 |}.
 
 Definition f_printPath := {|
@@ -390,7 +396,7 @@ Definition f_getPaths := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
   fn_params := ((_src, tint) :: (_dist, (tptr tint)) ::
-                (_prev, (tptr tint)) :: (_size, tint) :: (_inf, tint) :: nil);
+                (_prev, (tptr tint)) :: nil);
   fn_vars := nil;
   fn_temps := ((_i, tint) :: (_t'1, tint) :: (_t'3, tint) :: (_t'2, tint) ::
                nil);
@@ -400,8 +406,8 @@ Definition f_getPaths := {|
     (Sset _i (Econst_int (Int.repr 0) tint))
     (Sloop
       (Ssequence
-        (Sifthenelse (Ebinop Olt (Etempvar _i tint) (Etempvar _size tint)
-                       tint)
+        (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                       (Econst_int (Int.repr 8) tint) tint)
           Sskip
           Sbreak)
         (Ssequence
@@ -414,7 +420,10 @@ Definition f_getPaths := {|
                     (Etempvar _i tint) (tptr tint)) tint))
               (Sset _t'1
                 (Ecast
-                  (Ebinop Olt (Etempvar _t'3 tint) (Etempvar _inf tint) tint)
+                  (Ebinop Olt (Etempvar _t'3 tint)
+                    (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                      (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
+                        (Econst_int (Int.repr 8) tint) tint) tint) tint)
                   tbool)))
             (Sset _t'1 (Econst_int (Int.repr 0) tint)))
           (Sifthenelse (Etempvar _t'1 tint)
@@ -449,30 +458,27 @@ Definition f_getPaths := {|
 Definition f_getCell := {|
   fn_return := tint;
   fn_callconv := cc_default;
-  fn_params := ((_graph, (tptr (tptr tint))) :: (_u, tint) :: (_i, tint) ::
-                nil);
+  fn_params := ((_graph, (tptr (tarray tint 8))) :: (_u, tint) ::
+                (_i, tint) :: nil);
   fn_vars := nil;
-  fn_temps := ((_t'2, tint) :: (_t'1, (tptr tint)) :: nil);
+  fn_temps := ((_t'1, tint) :: nil);
   fn_body :=
 (Ssequence
   (Sset _t'1
     (Ederef
-      (Ebinop Oadd (Etempvar _graph (tptr (tptr tint))) (Etempvar _u tint)
-        (tptr (tptr tint))) (tptr tint)))
-  (Ssequence
-    (Sset _t'2
-      (Ederef
-        (Ebinop Oadd (Etempvar _t'1 (tptr tint)) (Etempvar _i tint)
-          (tptr tint)) tint))
-    (Sreturn (Some (Etempvar _t'2 tint)))))
+      (Ebinop Oadd
+        (Ederef
+          (Ebinop Oadd (Etempvar _graph (tptr (tarray tint 8)))
+            (Etempvar _u tint) (tptr (tarray tint 8))) (tarray tint 8))
+        (Etempvar _i tint) (tptr tint)) tint))
+  (Sreturn (Some (Etempvar _t'1 tint))))
 |}.
 
 Definition f_dijkstra := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_graph, (tptr (tptr tint))) :: (_src, tint) ::
-                (_dist, (tptr tint)) :: (_prev, (tptr tint)) ::
-                (_size, tint) :: (_inf, tint) :: nil);
+  fn_params := ((_graph, (tptr (tarray tint 8))) :: (_src, tint) ::
+                (_dist, (tptr tint)) :: (_prev, (tptr tint)) :: nil);
   fn_vars := nil;
   fn_temps := ((_pq, (tptr tint)) :: (_i, tint) :: (_j, tint) ::
                (_u, tint) :: (_cost, tint) :: (_t'4, tint) :: (_t'3, tint) ::
@@ -483,34 +489,43 @@ Definition f_dijkstra := {|
   (Ssequence
     (Scall (Some _t'1)
       (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
-      ((Ebinop Omul (Etempvar _size tint) (Esizeof tint tuint) tuint) :: nil))
+      ((Ebinop Omul (Econst_int (Int.repr 8) tint) (Esizeof tint tuint)
+         tuint) :: nil))
     (Sset _pq (Etempvar _t'1 (tptr tvoid))))
   (Ssequence
     (Ssequence
       (Sset _i (Econst_int (Int.repr 0) tint))
       (Sloop
         (Ssequence
-          (Sifthenelse (Ebinop Olt (Etempvar _i tint) (Etempvar _size tint)
-                         tint)
+          (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                         (Econst_int (Int.repr 8) tint) tint)
             Sskip
             Sbreak)
           (Ssequence
             (Sassign
               (Ederef
                 (Ebinop Oadd (Etempvar _dist (tptr tint)) (Etempvar _i tint)
-                  (tptr tint)) tint) (Etempvar _inf tint))
+                  (tptr tint)) tint)
+              (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
+                  (Econst_int (Int.repr 8) tint) tint) tint))
             (Ssequence
               (Sassign
                 (Ederef
                   (Ebinop Oadd (Etempvar _prev (tptr tint))
                     (Etempvar _i tint) (tptr tint)) tint)
-                (Etempvar _inf tint))
+                (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                  (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
+                    (Econst_int (Int.repr 8) tint) tint) tint))
               (Scall None
                 (Evar _push (Tfunction
                               (Tcons tint
                                 (Tcons tint (Tcons (tptr tint) Tnil))) tvoid
                               cc_default))
-                ((Etempvar _i tint) :: (Etempvar _inf tint) ::
+                ((Etempvar _i tint) ::
+                 (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                   (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
+                     (Econst_int (Int.repr 8) tint) tint) tint) ::
                  (Etempvar _pq (tptr tint)) :: nil)))))
         (Sset _i
           (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint)
@@ -542,7 +557,10 @@ Definition f_dijkstra := {|
                                     (Tcons tint
                                       (Tcons tint (Tcons (tptr tint) Tnil)))
                                     tint cc_default))
-                    ((Etempvar _size tint) :: (Etempvar _inf tint) ::
+                    ((Econst_int (Int.repr 8) tint) ::
+                     (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                       (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
+                         (Econst_int (Int.repr 8) tint) tint) tint) ::
                      (Etempvar _pq (tptr tint)) :: nil))
                   (Sifthenelse (Eunop Onotbool (Etempvar _t'2 tint) tint)
                     Sskip
@@ -554,7 +572,10 @@ Definition f_dijkstra := {|
                                       (Tcons tint
                                         (Tcons tint (Tcons (tptr tint) Tnil)))
                                       tint cc_default))
-                      ((Etempvar _size tint) :: (Etempvar _inf tint) ::
+                      ((Econst_int (Int.repr 8) tint) ::
+                       (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
+                         (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
+                           (Econst_int (Int.repr 8) tint) tint) tint) ::
                        (Etempvar _pq (tptr tint)) :: nil))
                     (Sset _u (Etempvar _t'3 tint)))
                   (Ssequence
@@ -562,23 +583,28 @@ Definition f_dijkstra := {|
                     (Sloop
                       (Ssequence
                         (Sifthenelse (Ebinop Olt (Etempvar _i tint)
-                                       (Etempvar _size tint) tint)
+                                       (Econst_int (Int.repr 8) tint) tint)
                           Sskip
                           Sbreak)
                         (Ssequence
                           (Ssequence
                             (Scall (Some _t'4)
                               (Evar _getCell (Tfunction
-                                               (Tcons (tptr (tptr tint))
+                                               (Tcons (tptr (tarray tint 8))
                                                  (Tcons tint
                                                    (Tcons tint Tnil))) tint
                                                cc_default))
-                              ((Etempvar _graph (tptr (tptr tint))) ::
+                              ((Etempvar _graph (tptr (tarray tint 8))) ::
                                (Etempvar _u tint) :: (Etempvar _i tint) ::
                                nil))
                             (Sset _cost (Etempvar _t'4 tint)))
                           (Sifthenelse (Ebinop Olt (Etempvar _cost tint)
-                                         (Etempvar _inf tint) tint)
+                                         (Ebinop Osub
+                                           (Econst_int (Int.repr 2147483647) tint)
+                                           (Ebinop Odiv
+                                             (Econst_int (Int.repr 2147483647) tint)
+                                             (Econst_int (Int.repr 8) tint)
+                                             tint) tint) tint)
                             (Ssequence
                               (Sset _t'5
                                 (Ederef
@@ -649,13 +675,10 @@ Definition f_main := {|
   fn_return := tint;
   fn_callconv := cc_default;
   fn_params := ((_argc, tint) :: (_argv, (tptr (tptr tschar))) :: nil);
-  fn_vars := nil;
-  fn_temps := ((_i, tint) :: (_size, tint) :: (_inf, tint) :: (_src, tint) ::
-               (_graph, (tptr (tptr tint))) :: (_prev, (tptr tint)) ::
-               (_dist, (tptr tint)) :: (_t'7, (tptr tvoid)) ::
-               (_t'6, (tptr tvoid)) :: (_t'5, (tptr tvoid)) ::
-               (_t'4, (tptr tvoid)) :: (_t'3, tint) :: (_t'2, tint) ::
-               (_t'1, tint) :: (_t'8, (tptr tint)) :: nil);
+  fn_vars := ((_graph, (tarray (tarray tint 8) 8)) :: nil);
+  fn_temps := ((_src, tint) :: (_prev, (tptr tint)) ::
+               (_dist, (tptr tint)) :: (_t'4, (tptr tvoid)) ::
+               (_t'3, (tptr tvoid)) :: (_t'2, tint) :: (_t'1, tint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
@@ -669,165 +692,68 @@ Definition f_main := {|
     (Ssequence
       (Ssequence
         (Scall (Some _t'2) (Evar _rand (Tfunction Tnil tint cc_default)) nil)
-        (Sset _size
-          (Ebinop Oadd (Econst_int (Int.repr 1) tint)
-            (Ebinop Omod (Etempvar _t'2 tint) (Econst_int (Int.repr 20) tint)
-              tint) tint)))
+        (Sset _src
+          (Ebinop Omod (Etempvar _t'2 tint) (Econst_int (Int.repr 8) tint)
+            tint)))
       (Ssequence
-        (Sset _inf
-          (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-            (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-              (Etempvar _size tint) tint) tint))
+        (Scall None
+          (Evar _setup (Tfunction (Tcons (tptr (tarray tint 8)) Tnil) tvoid
+                         cc_default))
+          ((Evar _graph (tarray (tarray tint 8) 8)) :: nil))
         (Ssequence
-          (Ssequence
-            (Scall (Some _t'3) (Evar _rand (Tfunction Tnil tint cc_default))
-              nil)
-            (Sset _src
-              (Ebinop Omod (Etempvar _t'3 tint) (Etempvar _size tint) tint)))
+          (Scall None
+            (Evar _print_graph (Tfunction
+                                 (Tcons (tptr (tarray tint 8))
+                                   (Tcons tint Tnil)) tvoid cc_default))
+            ((Evar _graph (tarray (tarray tint 8) 8)) ::
+             (Etempvar _src tint) :: nil))
           (Ssequence
             (Ssequence
-              (Scall (Some _t'4)
+              (Scall (Some _t'3)
                 (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid)
                                  cc_default))
-                ((Ebinop Omul (Etempvar _size tint)
-                   (Esizeof (tptr tint) tuint) tuint) :: nil))
-              (Sset _graph (Etempvar _t'4 (tptr tvoid))))
+                ((Ebinop Omul (Econst_int (Int.repr 8) tint)
+                   (Esizeof tint tuint) tuint) :: nil))
+              (Sset _prev (Etempvar _t'3 (tptr tvoid))))
             (Ssequence
               (Ssequence
-                (Sset _i (Econst_int (Int.repr 0) tint))
-                (Sloop
-                  (Ssequence
-                    (Sifthenelse (Ebinop Olt (Etempvar _i tint)
-                                   (Etempvar _size tint) tint)
-                      Sskip
-                      Sbreak)
-                    (Ssequence
-                      (Scall (Some _t'5)
-                        (Evar _mallocN (Tfunction (Tcons tint Tnil)
-                                         (tptr tvoid) cc_default))
-                        ((Ebinop Omul (Etempvar _size tint)
-                           (Esizeof tint tuint) tuint) :: nil))
-                      (Sassign
-                        (Ederef
-                          (Ebinop Oadd (Etempvar _graph (tptr (tptr tint)))
-                            (Etempvar _i tint) (tptr (tptr tint)))
-                          (tptr tint)) (Etempvar _t'5 (tptr tvoid)))))
-                  (Sset _i
-                    (Ebinop Oadd (Etempvar _i tint)
-                      (Econst_int (Int.repr 1) tint) tint))))
+                (Scall (Some _t'4)
+                  (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid)
+                                   cc_default))
+                  ((Ebinop Omul (Econst_int (Int.repr 8) tint)
+                     (Esizeof tint tuint) tuint) :: nil))
+                (Sset _dist (Etempvar _t'4 (tptr tvoid))))
               (Ssequence
                 (Scall None
-                  (Evar _setup (Tfunction
-                                 (Tcons (tptr (tptr tint))
-                                   (Tcons tint (Tcons tint Tnil))) tvoid
-                                 cc_default))
-                  ((Etempvar _graph (tptr (tptr tint))) ::
-                   (Etempvar _size tint) :: (Etempvar _inf tint) :: nil))
+                  (Evar _dijkstra (Tfunction
+                                    (Tcons (tptr (tarray tint 8))
+                                      (Tcons tint
+                                        (Tcons (tptr tint)
+                                          (Tcons (tptr tint) Tnil)))) tvoid
+                                    cc_default))
+                  ((Evar _graph (tarray (tarray tint 8) 8)) ::
+                   (Etempvar _src tint) :: (Etempvar _dist (tptr tint)) ::
+                   (Etempvar _prev (tptr tint)) :: nil))
                 (Ssequence
                   (Scall None
-                    (Evar _print_graph (Tfunction
-                                         (Tcons (tptr (tptr tint))
-                                           (Tcons tint
-                                             (Tcons tint (Tcons tint Tnil))))
-                                         tvoid cc_default))
-                    ((Etempvar _graph (tptr (tptr tint))) ::
-                     (Etempvar _size tint) :: (Etempvar _inf tint) ::
-                     (Etempvar _src tint) :: nil))
+                    (Evar _getPaths (Tfunction
+                                      (Tcons tint
+                                        (Tcons (tptr tint)
+                                          (Tcons (tptr tint) Tnil))) tvoid
+                                      cc_default))
+                    ((Etempvar _src tint) :: (Etempvar _dist (tptr tint)) ::
+                     (Etempvar _prev (tptr tint)) :: nil))
                   (Ssequence
+                    (Scall None
+                      (Evar _free (Tfunction (Tcons (tptr tvoid) Tnil) tvoid
+                                    cc_default))
+                      ((Etempvar _prev (tptr tint)) :: nil))
                     (Ssequence
-                      (Scall (Some _t'6)
-                        (Evar _mallocN (Tfunction (Tcons tint Tnil)
-                                         (tptr tvoid) cc_default))
-                        ((Ebinop Omul (Etempvar _size tint)
-                           (Esizeof tint tuint) tuint) :: nil))
-                      (Sset _prev (Etempvar _t'6 (tptr tvoid))))
-                    (Ssequence
-                      (Ssequence
-                        (Scall (Some _t'7)
-                          (Evar _mallocN (Tfunction (Tcons tint Tnil)
-                                           (tptr tvoid) cc_default))
-                          ((Ebinop Omul (Etempvar _size tint)
-                             (Esizeof tint tuint) tuint) :: nil))
-                        (Sset _dist (Etempvar _t'7 (tptr tvoid))))
-                      (Ssequence
-                        (Scall None
-                          (Evar _dijkstra (Tfunction
-                                            (Tcons (tptr (tptr tint))
-                                              (Tcons tint
-                                                (Tcons (tptr tint)
-                                                  (Tcons (tptr tint)
-                                                    (Tcons tint
-                                                      (Tcons tint Tnil))))))
-                                            tvoid cc_default))
-                          ((Etempvar _graph (tptr (tptr tint))) ::
-                           (Etempvar _src tint) ::
-                           (Etempvar _dist (tptr tint)) ::
-                           (Etempvar _prev (tptr tint)) ::
-                           (Etempvar _size tint) :: (Etempvar _inf tint) ::
-                           nil))
-                        (Ssequence
-                          (Scall None
-                            (Evar _getPaths (Tfunction
-                                              (Tcons tint
-                                                (Tcons (tptr tint)
-                                                  (Tcons (tptr tint)
-                                                    (Tcons tint
-                                                      (Tcons tint Tnil)))))
-                                              tvoid cc_default))
-                            ((Etempvar _src tint) ::
-                             (Etempvar _dist (tptr tint)) ::
-                             (Etempvar _prev (tptr tint)) ::
-                             (Etempvar _size tint) :: (Etempvar _inf tint) ::
-                             nil))
-                          (Ssequence
-                            (Scall None
-                              (Evar _free (Tfunction
-                                            (Tcons (tptr tvoid) Tnil) tvoid
-                                            cc_default))
-                              ((Etempvar _prev (tptr tint)) :: nil))
-                            (Ssequence
-                              (Scall None
-                                (Evar _free (Tfunction
-                                              (Tcons (tptr tvoid) Tnil) tvoid
-                                              cc_default))
-                                ((Etempvar _dist (tptr tint)) :: nil))
-                              (Ssequence
-                                (Ssequence
-                                  (Sset _i (Econst_int (Int.repr 0) tint))
-                                  (Sloop
-                                    (Ssequence
-                                      (Sifthenelse (Ebinop Olt
-                                                     (Etempvar _i tint)
-                                                     (Etempvar _size tint)
-                                                     tint)
-                                        Sskip
-                                        Sbreak)
-                                      (Ssequence
-                                        (Sset _t'8
-                                          (Ederef
-                                            (Ebinop Oadd
-                                              (Etempvar _graph (tptr (tptr tint)))
-                                              (Etempvar _i tint)
-                                              (tptr (tptr tint)))
-                                            (tptr tint)))
-                                        (Scall None
-                                          (Evar _free (Tfunction
-                                                        (Tcons (tptr tvoid)
-                                                          Tnil) tvoid
-                                                        cc_default))
-                                          ((Etempvar _t'8 (tptr tint)) ::
-                                           nil))))
-                                    (Sset _i
-                                      (Ebinop Oadd (Etempvar _i tint)
-                                        (Econst_int (Int.repr 1) tint) tint))))
-                                (Ssequence
-                                  (Scall None
-                                    (Evar _free (Tfunction
-                                                  (Tcons (tptr tvoid) Tnil)
-                                                  tvoid cc_default))
-                                    ((Etempvar _graph (tptr (tptr tint))) ::
-                                     nil))
-                                  (Sreturn (Some (Econst_int (Int.repr 0) tint)))))))))))))))))))
+                      (Scall None
+                        (Evar _free (Tfunction (Tcons (tptr tvoid) Tnil)
+                                      tvoid cc_default))
+                        ((Etempvar _dist (tptr tint)) :: nil))
+                      (Sreturn (Some (Econst_int (Int.repr 0) tint)))))))))))))
   (Sreturn (Some (Econst_int (Int.repr 0) tint))))
 |}.
 

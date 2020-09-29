@@ -1,13 +1,10 @@
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
-Require Export CertiGraph.graph.SpaceAdjMatGraph_noncont.
-
+Require Export CertiGraph.graph.SpaceAdjMatGraph2.
+Require Import CertiGraph.dijkstra.dijkstra_constants.
 Local Open Scope logic.
 
 Section SpaceDijkGraph.
-
-  Context {size : Z}.
-  Context {inf : Z}.
 
   Lemma elabel_Znth_graph_to_mat:
     forall (g: @DijkGG size inf) src dst,
@@ -23,6 +20,8 @@ Section SpaceDijkGraph.
     lia.
   Qed.
 
-  Definition DijkGraph sh cs g g_ptr size addresses : mpred := @SpaceAdjMatGraph size sh cs id g g_ptr addresses.
+  Definition DijkGraph sh cs g g_ptr size (addresses: list val) : mpred := @SpaceAdjMatGraph size sh cs id g g_ptr.
+  (* "addresses" is accepted but not used *)
+  (* the user should just give a nil list *)
 
 End SpaceDijkGraph.

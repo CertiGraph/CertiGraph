@@ -41,7 +41,10 @@ GRAPH_FILES = \
   weak_mark_lemmas.v dual_graph.v graph_morphism.v local_graph_copy.v tree_model.v \
   list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
   graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v \
-  MathAdjMatGraph.v SpaceAdjMatGraph_noncont.v SpaceAdjMatGraph_cont.v
+  MathAdjMatGraph.v SpaceAdjMatGraph1.v SpaceAdjMatGraph2.v SpaceAdjMatGraph3.v
+  # 1 = noncontiguous
+  # 2 = contiguous 1-d
+  # 3 = contiguous 2-d
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
@@ -92,12 +95,15 @@ PRIM_FILES = \
   verif_prim.v verif_noroot_prim.v
 
 DIJKSTRA_FILES = \
-  dijkstra.v matrix_read.v \
-  MathDijkGraph.v SpaceDijkGraph.v \
-  env_dijkstra_arr.v dijkstra_constants.v \
-  path_cost.v dijkstra_math_proof.v \
-  dijkstra_spec_pure.v dijkstra_spec.v \
-  verif_dijkstra.v verif_matrix_read.v
+  dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \
+  dijkstra2.v SpaceDijkGraph2.v dijkstra_spec2.v verif_dijkstra2.v \
+  dijkstra3.v SpaceDijkGraph3.v dijkstra_spec3.v verif_dijkstra3.v \
+  MathDijkGraph.v env_dijkstra_arr.v dijkstra_constants.v \
+  path_cost.v dijkstra_math_proof.v dijkstra_spec_pure.v \
+  # 1 = noncontiguous
+  # 2 = contiguous 1-d
+  # 3 = contiguous 2-d
+
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
@@ -150,9 +156,9 @@ all: \
 VST_CRITICAL_FILES = \
   progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
 
-clightgen:
+# clightgen:
 #	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c prim/noroot_prim.c
-# ../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq_malloc/priq_arr.c dijkstra/dijkstra.c 
+# ../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq_malloc/priq_arr.c dijkstra/dijkstra1.c 
 #	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c 
 
 .PHONY: vstandme7
@@ -165,7 +171,7 @@ vstandme3:
 
 .PHONY: mst
 mst:
-	make prim/verif_*.vo dijkstra/verif_dijkstra.vo kruskal/verif_kruskal_edgelist.vo -kj7
+	make prim/verif_*.vo dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo kruskal/verif_kruskal_edgelist.vo -kj7
 
 .depend depend:
 	@echo 'coqdep ... >.depend'
@@ -177,4 +183,4 @@ clean:
 
 .DEFAULT_GOAL := all
 
-include .depend
+include .depend 

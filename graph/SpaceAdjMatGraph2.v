@@ -7,7 +7,9 @@ Require Import compcert.lib.Integers.
 Require Import compcert.common.Values.
 Require Import compcert.exportclight.Clightdefs.
 
+Require Import VST.veric.expr.
 Require Import VST.veric.mpred.
+Require Import VST.floyd.forward.
 Require Import VST.floyd.sublist.
 Require Import VST.floyd.field_at.
 Require Import VST.floyd.coqlib3.
@@ -18,11 +20,11 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.MathAdjMatGraph.
 
-
-Section SpaceAdjMatGraph_noncont.
+Section SpaceAdjMatGraph2.
 
   Context {size : Z}. 
-
+  
+  
   (* SPATIAL REPRESENTATION *)
 
   (* Assumption: (v,0), (v,1) ... (v, size-1) are edges.
@@ -74,52 +76,35 @@ Section SpaceAdjMatGraph_noncont.
     2, 3, 5: rewrite nat_inc_list_Zlength.
     all: rewrite Z2Nat.id; trivial.
   Qed.
+
+  Definition concat {A: Type} (l: list (list A)) : list A :=
+    fold_left (@List.app A) l (@nil A).
+
+  Definition l := (1 :: 2 :: nil) :: (3 :: 4 :: nil) ::  nil.
   
   Definition graph_to_list (g: AdjMatLG) (f : E -> E) : list Z :=
     (concat (graph_to_mat g f)).
 
-  Definition list_address addresses index : val :=
-    Znth index addresses.
-
-  Definition list_rep sh (cs: compspecs) addresses contents_mat index :=
-    let mylist := (Znth index contents_mat) in
-    data_at sh (tarray tint size)
-            (map Vint (map Int.repr mylist))
-            (list_address addresses index).
-
-  Definition SpaceAdjMatGraph sh (cs: compspecs) (f : E -> E) g (g_ptr: val) (addresses : list val) : mpred :=
-    sepcon (iter_sepcon (list_rep sh cs addresses (graph_to_mat g f))
-                        (nat_inc_list (Z.to_nat size)))
-           (data_at sh (tarray (tptr tint) size) addresses g_ptr).
-            
-  Lemma SpaceAdjMatGraph_unfold: forall sh (cs: compspecs) (f : E -> E) g (g_ptr : val) (addresses : list val) i,
-      let contents := (graph_to_mat g f) in 
-      0 <= i < size ->
-      SpaceAdjMatGraph sh cs f g g_ptr addresses =
-      sepcon
-        (sepcon (iter_sepcon (list_rep sh cs addresses contents)
-                             (sublist 0 i (nat_inc_list (Z.to_nat size))))
-                (sepcon
-                   (list_rep sh cs addresses contents i)
-                   (iter_sepcon (list_rep sh cs addresses contents)
-                                (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat size))))))
-        (data_at sh (tarray (tptr tint) size) addresses g_ptr).
+  Lemma graph_to_list_Zlength:
+    forall g (f : E -> E),
+      0 <= size ->
+      Zlength (graph_to_list g f) = size * size.
   Proof.
-    intros. unfold SpaceAdjMatGraph.
-    replace (nat_inc_list (Z.to_nat size)) with
-        (sublist 0 size (nat_inc_list (Z.to_nat size))) at 1.
-    2: rewrite sublist_same; trivial; rewrite nat_inc_list_Zlength; lia.
-    rewrite (sublist_split 0 i size),
-    (sublist_split i (i+1) size), (sublist_one i); try lia.
-    2, 3, 4: rewrite nat_inc_list_Zlength; rewrite Z2Nat.id; lia.
-    rewrite nat_inc_list_i.
-    2: rewrite Z2Nat_id', Z.max_r; lia.
-    repeat rewrite iter_sepcon_app.
-    simpl. rewrite sepcon_emp. subst contents.
-    rewrite graph_to_mat_Zlength; trivial. lia.
-  Qed.
+  Admitted.
 
+  Lemma graph_to_list_to_mat:
+    forall g (f : E -> E) u i,
+      0 <= u < size ->
+      0 <= i < size ->
+      Znth (u * size + i) (graph_to_list g id) =
+      Znth i (Znth u (graph_to_mat g id)).
+  Proof.
+  Admitted.
 
+  Definition SpaceAdjMatGraph sh (cs: compspecs) (f : E -> E) g gaddr : mpred :=
+    data_at sh (tarray tint (size * size))
+            (map Vint (map Int.repr (graph_to_list g id)))
+            gaddr.
 
 (*
   The below is not currently used by SpaceDijkGraph because 
@@ -132,17 +117,17 @@ Section SpaceAdjMatGraph_noncont.
   What it does:        
   Uses abstract_data_at to create a spatial representation.
  *)
-Class SpaceAdjMatGraph_abstract (Addr: Type) (Pred: Type) :=
-  abstract_data_at: Addr -> list Z -> Pred.
-
-Context {Pred: Type}.
-Context {Addr: Type}.
-Context {SAMG : SpaceAdjMatGraph_abstract Addr Pred}.
-
-Definition AdjMatGraph_rep
-           (g: AdjMatLG)
-           (f : E -> E)
-           (a : Addr) : Pred :=
-  abstract_data_at a (@graph_to_list g f).
-
-End SpaceAdjMatGraph_noncont.
+  Class SpaceAdjMatGraph_abstract (Addr: Type) (Pred: Type) :=
+    abstract_data_at: Addr -> list Z -> Pred.
+  
+  Context {Pred: Type}.
+  Context {Addr: Type}.
+  Context {SAMG : SpaceAdjMatGraph_abstract Addr Pred}.
+  
+  Definition AdjMatGraph_rep
+             (g: AdjMatLG)
+             (f : E -> E)
+             (a : Addr) : Pred :=
+    abstract_data_at a (@graph_to_list g f).
+  
+End SpaceAdjMatGraph2.
