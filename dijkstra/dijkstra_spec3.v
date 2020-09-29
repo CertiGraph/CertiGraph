@@ -8,16 +8,15 @@ Require Import CertiGraph.dijkstra.SpaceDijkGraph3.
 Require Import CertiGraph.dijkstra.path_cost.
 Require Import CertiGraph.dijkstra.dijkstra_spec_pure.
 
+
 (* The first moment we become implementation-specific *)
 Require Export CertiGraph.dijkstra.dijkstra3.
+Require Import CertiGraph.dijkstra.dijkstra_constants.
 
 Local Open Scope Z_scope.
 
 Section DijkstraSpec.
-
-  Context {size : Z}.
-  Context {inf : Z}.
-
+  
   Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
   Definition Vprog : varspecs. mk_varspecs prog. Defined.
   Global Existing Instance CompSpecs.
@@ -30,7 +29,7 @@ Section DijkstraSpec.
          addresses: list val,
          u: V,
          i : V
-    PRE [tptr (tptr tint), tint, tint]
+    PRE [tptr (tarray tint size), tint, tint]
       PROP (0 <= i < size;
           0 <= u < size)
       PARAMS (pointer_val_val graph_ptr;
@@ -52,15 +51,14 @@ Section DijkstraSpec.
          dist_ptr : pointer_val,
          prev_ptr : pointer_val,
          src : V
-    PRE [tptr (tptr tint), tint, tptr tint, tptr tint, tint, tint]
+    PRE [tptr (tarray tint size), tint, tptr tint, tptr tint]
+    
       PROP (0 <= src < size;
            Forall (fun list => Zlength list = size) (@graph_to_mat size g id))
       PARAMS (pointer_val_val graph_ptr;
              Vint (Int.repr src);
              pointer_val_val dist_ptr;
-             pointer_val_val prev_ptr;
-             Vint (Int.repr size);
-             Vint (Int.repr inf))
+             pointer_val_val prev_ptr)
       GLOBALS ()
       SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
           data_at_ Tsh (tarray tint size) (pointer_val_val dist_ptr);

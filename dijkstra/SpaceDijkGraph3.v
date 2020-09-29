@@ -1,13 +1,10 @@
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Export CertiGraph.graph.SpaceAdjMatGraph3.
-
+Require Import CertiGraph.dijkstra.dijkstra_constants.
 Local Open Scope logic.
 
 Section SpaceDijkGraph.
-
-  Context {size : Z}.
-  Context {inf : Z}.
 
   Lemma elabel_Znth_graph_to_mat:
     forall (g: @DijkGG size inf) src dst,
