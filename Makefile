@@ -96,6 +96,8 @@ PRIM_FILES = \
 
 DIJKSTRA_FILES = \
   dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \
+  dijkstra2.v \
+  dijkstra3.v \
   MathDijkGraph.v env_dijkstra_arr.v dijkstra_constants.v \
   path_cost.v dijkstra_math_proof.v dijkstra_spec_pure.v \
   # 1 = noncontiguous
