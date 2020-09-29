@@ -245,7 +245,7 @@ Section DijkstraProof.
   Proof.
     start_function.
     unfold DijkGraph.
-    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ _ u); trivial.
+    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ addresses u); trivial.
 
     assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
       unfold graph_to_mat, vert_to_list.
@@ -264,7 +264,7 @@ Section DijkstraProof.
     unfold list_rep.
     forward. forward. forward.
     thaw FR. unfold DijkGraph.
-    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ _ u); trivial.
+    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ addresses u); trivial.
     entailer!.
   Qed.
 
@@ -596,11 +596,7 @@ Section DijkstraProof.
           -- (* We now begin with the for loop's body *)
             rewrite <- Hequ.
             freeze FR := (data_at _ _ _ _) (data_at _ _ _ _) (data_at _ _ _ _).
-            (*
-          unfold DijkGraph.
-          rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ u).
-          2: ulia.
-             *)
+  
             Intros.
             rename H16 into H_inv_popped.
             rename H17 into H_inv_unpopped.
