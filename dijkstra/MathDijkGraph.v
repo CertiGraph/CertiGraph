@@ -16,12 +16,7 @@ Require Import CertiGraph.graph.path_lemmas.
 Require Export CertiGraph.graph.MathAdjMatGraph.
 
 Require Import Coq.Classes.EquivDec.
-
-(* This file is just one line: "Require Export priq.priq_arr_utils." 
-   It can be inlined. 
-   It is currently a separate file in case we want more constants stashed away 
- *)
-Require Export CertiGraph.dijkstra.dijkstra_constants.
+Require Export CertiGraph.priq_malloc.priq_arr_utils.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
