@@ -13,12 +13,12 @@ extern void freeN (void *p);
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
 /*  from a single source to all possible destinations */
+/*  This implementation uses a noncontiguous matrix   */
 /* ************************************************** */
 
 /* *************************** */
 /* Setting up a random problem */
 /* *************************** */
-
 
 void setup (int** graph, int size, int inf) {
     srand((unsigned int) time(NULL));
@@ -31,7 +31,6 @@ void setup (int** graph, int size, int inf) {
     }
 }
 
-// Used only for testing, will be removed eventually.
 void print_graph (int** graph, int size, int inf, int src) {
     int i, j;
     for (i = 0; i < size; i++) {
@@ -82,8 +81,6 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     adjustWeight(src, 0, pq); // special values for src
     while (!pq_emp(size, inf, pq)) {
         u = popMin(size, inf, pq);  // src -> u is optimal. relax u's neighbors, then done with u.
-        // printf("Popped vertex %d\n", u); 
-        // if (dist[u] == IFTY) break; // we're running on gas; there are no more reachable vertices 
         for (i = 0; i < size; i++) {
             cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine
@@ -91,20 +88,15 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
                     dist[i] = dist[u] + cost;  // improve it
                     prev[i] = u;  // note that we got there via 'u'
                     adjustWeight(i, dist[i], pq); // and stash the improvement in the PQ
-                    // printf("Improved %d --> %d to %d\n", src, i, dist[i]);
-                    // uncomment the above line to see how the "best answer" improves slowly
                 }
             }
         }
     }
 //    freeN (pq);
     return;
-    // return prev;
-    // for(i = 0; i < SIZE; i++)
-    //     printf("%d\t", prev[i]);
-    // printf("\n");
-    // getPaths(src, dist, prev);
 }
+
+
 
 int main(int argc, const char * argv[])
 {
@@ -116,14 +108,15 @@ int main(int argc, const char * argv[])
 
     int** graph;
     graph = mallocN (size * sizeof *graph);
-    for (i=0; i < size; i++) {
+    for (i = 0; i < size; i++) {
         graph[i] = mallocN (size * sizeof *graph[i]);
     }
-
     setup(graph, size, inf);
     print_graph(graph, size, inf, src);
+    
     int* prev = mallocN (size * sizeof *prev);
     int* dist = mallocN (size * sizeof *dist);
+    
     dijkstra(graph, src, dist, prev, size, inf);
     getPaths(src, dist, prev, size, inf);
     

@@ -26,7 +26,7 @@ Definition pq_emp_spec {CS: compspecs} :=
   DECLARE _pq_emp
   WITH pq: val, priq_contents: list Z, size: Z, inf: Z
   PRE [tint, tint, tptr tint]
-  PROP (inrange_priq priq_contents inf;
+  PROP (inrange_priq inf priq_contents;
        0 <= size <= Int.max_signed;
        0 <= inf;
        Int.min_signed < inf + 1 <= Int.max_signed)
@@ -62,7 +62,7 @@ Definition popMin_spec {CS: compspecs} :=
   DECLARE _popMin
   WITH pq: val, priq_contents: list Z, size: Z, inf: Z
   PRE [tint, tint, tptr tint]
-   PROP (inrange_priq priq_contents inf;
+   PROP (inrange_priq inf priq_contents;
         isEmpty priq_contents inf = Vzero;
         0 < size <= Int.max_signed;
         0 <= inf;
