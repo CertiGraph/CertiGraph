@@ -143,4 +143,4 @@ Section SpaceAdjMatGraph3.
              (a : Addr) : Pred :=
     abstract_data_at a (@graph_to_list g f).
   
-End SpaceAdjMatGrap3.
+End SpaceAdjMatGraph3.
