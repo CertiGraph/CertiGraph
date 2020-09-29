@@ -9,7 +9,7 @@ Require Import CertiGraph.lib.List_ext.
 Local Open Scope logic.
 
 Definition G := @MatrixUGraph inf SIZE.
-Definition edgeless_graph' := @edgeless_graph inf SIZE inf_rep SIZE_rep'.
+Definition edgeless_graph' := @edgeless_graph inf SIZE inf_rep SIZE_rep.
 Definition adde := @MatrixUGraph_adde inf SIZE.
 Definition eremove := @MatrixUGraph_eremove inf SIZE.
 
@@ -42,12 +42,12 @@ Proof.
 intros. apply evalid_strong_evalid in H.
 destruct (Z.lt_trichotomy u v).
 rewrite eformat1 in H. destruct H.
-rewrite src_fst, dst_snd in H1; auto. simpl; lia.
+rewrite (@src_fst _ _ _ (sound_MatrixUGraph g)), (@dst_snd _ _ _ (sound_MatrixUGraph g)) in H1; auto. simpl; lia.
 destruct H0.
 subst u. rewrite eformat1 in H. destruct H.
-rewrite src_fst, dst_snd in H0; auto. simpl; lia.
+rewrite (@src_fst _ _ _ (sound_MatrixUGraph g)), (@dst_snd _ _ _ (sound_MatrixUGraph g)) in H0; auto. simpl; lia.
 rewrite eformat2 in H. simpl in H; destruct H.
-rewrite src_fst, dst_snd in H1; auto. simpl in H1.
+rewrite (@src_fst _ _ _ (sound_MatrixUGraph g)), (@dst_snd _ _ _ (sound_MatrixUGraph g)) in H1; auto. simpl in H1.
 split; apply H1. simpl; lia.
 Qed.
 
@@ -65,8 +65,10 @@ Lemma eformat_adj': forall (g: G) u v, evalid g (eformat (u,v)) -> adj_edge g (e
 Proof.
 intros. split. apply evalid_strong_evalid; auto.
 destruct (Z.le_ge_cases u v).
-rewrite eformat1 in *. left. rewrite src_fst, dst_snd; auto. auto. auto.
-rewrite eformat2 in *. right. rewrite src_fst, dst_snd; auto. auto. auto.
+rewrite eformat1 in *. left. rewrite (@src_fst _ _ _ (sound_MatrixUGraph _)); auto.
+rewrite (@dst_snd _ _ _ (sound_MatrixUGraph _)); auto. simpl; auto. simpl; auto.
+rewrite eformat2 in *. right. rewrite (@src_fst _ _ _ (sound_MatrixUGraph _)); auto.
+rewrite (@dst_snd _ _ _ (sound_MatrixUGraph _)); auto. simpl; auto. simpl; auto.
 Qed.
 
 Lemma eformat_adj: forall (g: G) u v, adjacent g u v <-> evalid g (eformat (u,v)).
@@ -75,36 +77,40 @@ intros. split. intros.
 +
 destruct H. destruct H. destruct H.
 destruct H0; destruct H0. assert (x = (u,v)). {
-  rewrite src_fst in H0.
-  rewrite dst_snd in H2. rewrite <- H0, <- H2. destruct x; simpl; auto.
+  rewrite (@src_fst _ _ _ (sound_MatrixUGraph g) x H) in H0.
+  rewrite (@dst_snd _ _ _ (sound_MatrixUGraph g) x H) in H2. rewrite <- H0, <- H2. destruct x; simpl; auto.
 } subst x.
 rewrite eformat1; auto. simpl.
-rewrite <- H0. rewrite <- H2 at 2. apply undirected_edge_rep; auto.
+rewrite <- H0. rewrite <- H2 at 2. apply (@undirected_edge_rep _ _ _ (sound_MatrixUGraph g)). auto.
 assert (x = (v,u)). {
-  rewrite src_fst in H0; rewrite dst_snd in H2.
-  rewrite <- H0, <- H2. destruct x; simpl; auto.
+  rewrite (@src_fst _ _ _ (sound_MatrixUGraph g) x H) in H0.
+  rewrite (@dst_snd _ _ _ (sound_MatrixUGraph g) x H) in H2. rewrite <- H0, <- H2. destruct x; simpl; auto.
 } subst x.
 rewrite eformat2. simpl. auto. simpl. rewrite <- H0. rewrite <- H2 at 2.
-apply undirected_edge_rep; auto.
+apply (@undirected_edge_rep _ _ _ (sound_MatrixUGraph g)). auto.
 +intros. destruct (Z.lt_trichotomy u v).
 rewrite eformat1 in H. 2: simpl; lia.
 assert (evalid g (u,v)). auto.
 exists (u,v). split. apply evalid_strong_evalid; auto. left.
-rewrite src_fst, dst_snd; auto.
+rewrite (@src_fst _ _ _ (sound_MatrixUGraph g)); auto.
+rewrite (@dst_snd _ _ _ (sound_MatrixUGraph g)); auto.
 (*equal, repeat*)
 destruct H0. rewrite eformat1 in H. 2: simpl; lia.
 assert (evalid g (u,v)). auto.
 exists (u,v). split. apply evalid_strong_evalid; auto. left.
-rewrite src_fst, dst_snd; auto.
+rewrite (@src_fst _ _ _ (sound_MatrixUGraph g)); auto.
+rewrite (@dst_snd _ _ _ (sound_MatrixUGraph g)); auto.
 rewrite eformat2 in H. 2: simpl; lia. simpl in H.
 assert (evalid g (v,u)). auto.
 exists (v,u). split. apply evalid_strong_evalid; auto.
-rewrite src_fst, dst_snd; auto.
+rewrite (@src_fst _ _ _ (sound_MatrixUGraph g)); auto.
+rewrite (@dst_snd _ _ _ (sound_MatrixUGraph g)); auto.
 Qed.
 
 Corollary eformat_adj_elabel: forall (g: G) u v, adjacent g u v <-> elabel g (eformat (u,v)) < inf.
 Proof.
-intros. rewrite eformat_adj. apply evalid_inf_iff.
+intros. pose proof (@edge_weight_not_inf _ _ _ (sound_MatrixUGraph g)).
+rewrite eformat_adj. apply evalid_inf_iff.
 Qed.
 
 (*When these are unfolded in the goal and I destruct evalid_dec, I can get the hypothesis but the if... doesn't simplify
@@ -115,6 +121,12 @@ Definition elabel_inf_symm (g: MatrixUGraph) (e: E) :=
   if evalid_dec g (eformat e) then elabel g (eformat e) else inf.
 *)
 
+(* Use vert_to_list, 
+   graph_to_mat, 
+   elabel_Znth_graph_to_mat. 
+   In each, there is a 
+   special field "f" for your "eformat" to go
+ *)
 Definition vert_rep_symm (g : G) (v : V): list Z :=
   map (elabel g) (map (fun x => eformat (v,x)) (nat_inc_list (Z.to_nat SIZE))).
 
@@ -148,7 +160,7 @@ Lemma graph_to_mat_inf:
 Proof.
 unfold graph_to_symm_mat, vert_rep_symm; intros.
 repeat rewrite Znth_map. repeat rewrite nat_inc_list_i.
-rewrite eformat1. apply invalid_edge_weight; auto. simpl; lia.
+rewrite eformat1. apply (@invalid_edge_weight priq_arr_utils.inf priq_arr_utils.SIZE g (sound_MatrixUGraph g)); auto. simpl; lia.
 all: try (rewrite Z2Nat.id; lia).
 all: try (rewrite nat_inc_list_Zlength, Z2Nat.id; lia).
 rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.

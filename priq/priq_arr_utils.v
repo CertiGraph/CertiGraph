@@ -14,6 +14,9 @@ Proof. compute. trivial. Qed.
 Lemma SIZE_rep: 0 <= priq_arr_utils.SIZE <= Int.max_signed.
 Proof. unfold priq_arr_utils.SIZE. set (i:=Int.max_signed); compute in i; subst i. lia. Qed.
 
+Lemma SIZE_rep': 0 < priq_arr_utils.SIZE <= Int.max_signed.
+Proof. unfold priq_arr_utils.SIZE. set (i:=Int.max_signed); compute in i; subst i. lia. Qed.
+
 Lemma inf_rep: 0 <= priq_arr_utils.inf <= Int.max_signed.
 Proof. set (i:=Int.max_signed); compute in i; subst i. rewrite inf_eq.
 lia. Qed.

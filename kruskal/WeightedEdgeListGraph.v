@@ -56,19 +56,11 @@ Class Fin (g: WEdgeListGraph) :=
 
 Definition FiniteWEdgeListGraph := (GeneralGraph VType EType LV LE LG (fun g => Fin g)).
 
-(* Later, we'll need ways to fish out the LG from the GG, 
-   and we'll need to show that the specialized 
-   LG you have is, at heart, an LG 
- *)
 Definition FiniteWEdgeListGraph_WEdgeListGraph
            (g: FiniteWEdgeListGraph) : WEdgeListGraph := lg_gg g.
 Local Coercion FiniteWEdgeListGraph_WEdgeListGraph: FiniteWEdgeListGraph >-> WEdgeListGraph.
 Local Identity Coercion WEdgeListGraph_LabeledGraph: WEdgeListGraph >-> LabeledGraph.
 
-(* This is the main thing you needed: an existing instance of 
-   how to drag out FiniteGraph properties from your 
-   existing GeneralGraph
- *)
 Instance finGraph (g: FiniteWEdgeListGraph): FiniteGraph g := @fin g (@sound_gg _ _ _ _ _ _ _ _ g).
 (* Nice. Now your definitions will be cleaner. *)
 
