@@ -19,7 +19,7 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.MathAdjMatGraph.
 
 
-Section SpaceAdjMatGraph_noncont.
+Section SpaceAdjMatGraph1.
 
   Context {size : Z}. 
 
@@ -145,4 +145,4 @@ Definition AdjMatGraph_rep
            (a : Addr) : Pred :=
   abstract_data_at a (@graph_to_list g f).
 
-End SpaceAdjMatGraph_noncont.
+End SpaceAdjMatGraph1.
