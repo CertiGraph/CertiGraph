@@ -188,7 +188,7 @@ Section DijkstraProof.
       Znth src prev' = src;
       popped' <> [] -> In src popped';
       popped' = [] -> src = find priq' (fold_right Z.min
-                                                                    (hd 0 priq') priq') 0;
+                                                   (hd 0 priq') priq') 0;
       
       (* a useful fact about u *)
       In u popped';
