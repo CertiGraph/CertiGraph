@@ -301,7 +301,7 @@ Section DijkstraProof.
            apply Z.le_trans with (m:=0); [|lia].
            compute; inversion 1.
       }
-      rewrite upd_Znth_list_repeat; [|lia].
+      repeat rewrite upd_Znth_list_repeat; try lia.
       entailer!.     
     - (* At this point we are done with the
        first for loop. The arrays are all set to inf. *)
