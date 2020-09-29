@@ -41,7 +41,7 @@ GRAPH_FILES = \
   weak_mark_lemmas.v dual_graph.v graph_morphism.v local_graph_copy.v tree_model.v \
   list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
   graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v \
-  MathAdjMatGraph.v SpaceAdjMatGraph1.v SpaceAdjMatGraph3.v
+  MathAdjMatGraph.v SpaceAdjMatGraph1.v SpaceAdjMatGraph2.v SpaceAdjMatGraph3.v
   # 1 = noncontiguous
   # 2 = contiguous 1-d
   # 3 = contiguous 2-d
