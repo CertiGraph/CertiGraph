@@ -238,58 +238,20 @@ Section DijkstraProof.
   Proof.
     start_function.
     unfold DijkGraph.
-    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ addresses u); trivial.
-
-    assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
-      unfold graph_to_mat, vert_to_list.
-      rewrite Znth_map; repeat rewrite Zlength_map.
-      all: rewrite nat_inc_list_Zlength; lia.
+    unfold SpaceAdjMatGraph.
+    assert (0 <= u * 8 + i < size * size). {
+      rewrite size_eq in *; ulia.
     }
-
-    assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_mat size g id)))) by lia.
-
-    assert (0 <= i < Zlength (Znth u (@graph_to_mat size g id))). {
-      rewrite Zlength_map in H1. lia.
+    assert (0 <= u * 8 + i <
+            Zlength (map Int.repr (@graph_to_list size g id))). {
+      rewrite Zlength_map, graph_to_list_Zlength; ulia.
     }
-    
-    Intros.
-    freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
-    unfold list_rep.
+    assert (Int.min_signed < 0) by now compute. 
+    assert (size * size < Int.max_signed) by now compute.
 
-    assert_PROP (force_val
-                   (sem_add_ptr_int
-                      tint
-                      Signed
-                      (force_val
-                         (sem_add_ptr_int
-                            (tarray tint size)
-                            Signed
-                            (pointer_val_val graph_ptr)
-                            (Vint (Int.repr u))))
-                      (Vint (Int.repr i))) =
-                 field_address
-                   (tarray tint size)
-                   [ArraySubsc i]
-                   (@list_address
-                      size
-                      CompSpecs
-                      (pointer_val_val graph_ptr)
-                      u)). {
-      entailer!.
-      unfold list_address. simpl.
-      rewrite field_address_offset.
-      1: { rewrite offset_offset_val; simpl; f_equal.
-           rewrite Z.add_0_l. f_equal. lia. }            
-      destruct H5 as [? [? [? [? ?]]]]. 
-      unfold field_compatible; split3; [| | split3]; simpl; auto.
-    }
-    
-    repeat forward.
-    thaw FR. unfold DijkGraph.
-    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ addresses u); trivial.
-    entailer!.
+    forward. forward. entailer!. f_equal. f_equal.
+    apply graph_to_list_to_mat; trivial.
   Qed.
-
 
   (* DIJKSTRA PROOF BEGINS *)
 
@@ -405,7 +367,7 @@ Section DijkstraProof.
         assert (H_inrange_priq_trans:
                   forall priq,
                     @inrange_priq inf priq ->
-                    priq_arr_utils.inrange_priq priq inf). {
+                    priq_arr_utils.inrange_priq inf priq). {
           intros.
           red in H11 |- *. red in H11.
           rewrite Forall_forall in H11 |- *.

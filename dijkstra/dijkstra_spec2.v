@@ -29,7 +29,7 @@ Section DijkstraSpec.
          addresses: list val,
          u: V,
          i : V
-    PRE [tptr (tarray tint size), tint, tint]
+    PRE [tptr tint, tint, tint]
       PROP (0 <= i < size;
           0 <= u < size)
       PARAMS (pointer_val_val graph_ptr;
@@ -51,7 +51,7 @@ Section DijkstraSpec.
          dist_ptr : pointer_val,
          prev_ptr : pointer_val,
          src : V
-    PRE [tptr (tarray tint size), tint, tptr tint, tptr tint]
+    PRE [tptr tint, tint, tptr tint, tptr tint]
     
       PROP (0 <= src < size;
            Forall (fun list => Zlength list = size) (@graph_to_mat size g id))
