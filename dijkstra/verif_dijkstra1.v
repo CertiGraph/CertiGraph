@@ -262,7 +262,7 @@ Section DijkstraProof.
     Intros.
     freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
     unfold list_rep.
-    forward. forward. forward.
+    repeat forward.
     thaw FR. unfold DijkGraph.
     rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ addresses u); trivial.
     entailer!.
