@@ -1596,28 +1596,5 @@ Section DijkstraMathLemmas.
       all: rewrite (surjective_pairing p2u) in *;
         destruct H8; simpl in H8; trivial.
   Qed.
-
-  Lemma path_cost_pos:
-    forall (g: @DijkGG size inf) p,
-      valid_path g p ->
-      0 <= path_cost g p.
-  Proof.
-    intros. apply acc_pos; [|lia].
-    intros. apply edge_cost_pos.
-  Qed.
-
-  Lemma path_cost_path_glue_lt:
-    forall (g: @DijkGG size inf) p1 p2 limit,
-      valid_path g p1 ->
-      valid_path g p2 ->
-      path_cost g (path_glue p1 p2) < limit ->
-      path_cost g p1 < limit /\ path_cost g p2 < limit.
-  Proof.
-    intros.
-    rewrite path_cost_path_glue in H1.
-    pose proof (path_cost_pos _ _ H).
-    pose proof (path_cost_pos _ _ H0).
-    split; lia.
-  Qed.
-
+    
 End DijkstraMathLemmas.
