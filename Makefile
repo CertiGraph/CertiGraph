@@ -43,8 +43,8 @@ GRAPH_FILES = \
   graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v \
   MathAdjMatGraph.v SpaceAdjMatGraph1.v SpaceAdjMatGraph3.v
   # 1 = noncontiguous
-  # 2 = contiguous 2-d
-  # 3 = contiguous 3-d
+  # 2 = contiguous 1-d
+  # 3 = contiguous 2-d
 
 DATA_STRUCTURE_FILES = \
   spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
@@ -99,8 +99,8 @@ DIJKSTRA_FILES = \
   MathDijkGraph.v env_dijkstra_arr.v dijkstra_constants.v \
   path_cost.v dijkstra_math_proof.v dijkstra_spec_pure.v \
   # 1 = noncontiguous
-  # 2 = contiguous 2-d
-  # 3 = contiguous 3-d
+  # 2 = contiguous 1-d
+  # 3 = contiguous 2-d
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
