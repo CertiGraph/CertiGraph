@@ -3,8 +3,8 @@ Require Import CertiGraph.priq_malloc.priq_arr_utils.
 
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
-Require Import CertiGraph.dijkstra.SpaceDijkGraph.
-Require Import CertiGraph.dijkstra.dijkstra_spec.
+Require Import CertiGraph.dijkstra.SpaceDijkGraph1.
+Require Import CertiGraph.dijkstra.dijkstra_spec1.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
 
 Require Import VST.floyd.sublist.
