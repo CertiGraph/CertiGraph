@@ -405,7 +405,7 @@ Section DijkstraProof.
         assert (H_inrange_priq_trans:
                   forall priq,
                     @inrange_priq inf priq ->
-                    priq_arr_utils.inrange_priq priq inf). {
+                    priq_arr_utils.inrange_priq inf priq). {
           intros.
           red in H11 |- *. red in H11.
           rewrite Forall_forall in H11 |- *.
