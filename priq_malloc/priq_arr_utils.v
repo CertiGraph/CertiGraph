@@ -1,22 +1,5 @@
 Require Import VST.floyd.proofauto.
 
-(*
-On their way out.
-
-Definition SIZE := 8.
-Definition inf := Int.max_signed - Int.max_signed / SIZE.
-
-Lemma inf_eq: inf = 1879048192.
-Proof. compute; trivial. Qed.
-
-Lemma inf_eq2: Int.sub (Int.repr 2147483647)
-                       (Int.divs (Int.repr 2147483647)
-                                 (Int.repr 8)) = Int.repr inf.
-Proof. compute. trivial. Qed.
-
-Global Opaque inf.
- *)
-
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
 
 (* a weight to be added cannot be inf + 1 *)
@@ -24,7 +7,7 @@ Definition weight_inrange_priq item inf :=
   Int.min_signed <= item <= inf.
 
 (* over time, the overall PQ can range from MIN to inf + 1 *)
-Definition inrange_priq (priq : list Z) inf :=
+Definition inrange_priq inf (priq : list Z) :=
   Forall (fun x => Int.min_signed <= x <= inf + 1) priq.
 
 Definition isEmpty (priq : list Z) inf : val :=
