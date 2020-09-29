@@ -1,6 +1,6 @@
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
-Require Export CertiGraph.graph.SpaceAdjMatGraph_noncont.
+Require Export CertiGraph.graph.SpaceAdjMatGraph1.
 
 Local Open Scope logic.
 

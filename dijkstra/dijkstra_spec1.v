@@ -4,12 +4,12 @@ Require Import CertiGraph.priq_malloc.priq_arr_specs.
 (* Dijkstra-specific stuff *)
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
-Require Import CertiGraph.dijkstra.SpaceDijkGraph.
+Require Import CertiGraph.dijkstra.SpaceDijkGraph1.
 Require Import CertiGraph.dijkstra.path_cost.
 Require Import CertiGraph.dijkstra.dijkstra_spec_pure.
 
 (* The first moment we become implementation-specific *)
-Require Export CertiGraph.dijkstra.dijkstra.
+Require Export CertiGraph.dijkstra.dijkstra1.
 
 Local Open Scope Z_scope.
 
