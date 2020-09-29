@@ -96,13 +96,14 @@ PRIM_FILES = \
 
 DIJKSTRA_FILES = \
   dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \
-  dijkstra2.v \
-  dijkstra3.v SpaceDijkGraph3.v dijkstra_spec3.v verif_dijkstra3.v\
+  dijkstra2.v SpaceDijkGraph2.v dijkstra_spec2.v verif_dijkstra2.v \
+  dijkstra3.v SpaceDijkGraph3.v dijkstra_spec3.v verif_dijkstra3.v \
   MathDijkGraph.v env_dijkstra_arr.v dijkstra_constants.v \
   path_cost.v dijkstra_math_proof.v dijkstra_spec_pure.v \
   # 1 = noncontiguous
   # 2 = contiguous 1-d
   # 3 = contiguous 2-d
+
 
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
