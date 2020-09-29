@@ -20,7 +20,7 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.MathAdjMatGraph.
 
-Section SpaceAdjMatGraph_cont.
+Section SpaceAdjMatGraph3.
 
   Context {size : Z}. 
   
@@ -143,4 +143,4 @@ Section SpaceAdjMatGraph_cont.
              (a : Addr) : Pred :=
     abstract_data_at a (@graph_to_list g f).
   
-End SpaceAdjMatGraph_cont.
+End SpaceAdjMatGrap3.
