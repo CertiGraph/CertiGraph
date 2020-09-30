@@ -74,7 +74,7 @@ int getCell (int graph[SIZE*SIZE], int u, int i) {
 }
 
 void dijkstra (int graph[SIZE*SIZE], int src, int *dist, int *prev) {
-    int* pq = mallocN (SIZE * sizeof *pq);
+    int* pq = init(SIZE);
     int i, j, u, cost;
     for (i = 0; i < SIZE; i++) {
         dist[i] = INF;  // Best-known distance from src to i
@@ -97,7 +97,7 @@ void dijkstra (int graph[SIZE*SIZE], int src, int *dist, int *prev) {
             }
         }
     }
-//    freeN(pq);
+    // freePQ(pq);
     return;
 }
 

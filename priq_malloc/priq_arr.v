@@ -66,21 +66,41 @@ Definition ___compcert_va_composite : ident := 19%positive.
 Definition ___compcert_va_float64 : ident := 18%positive.
 Definition ___compcert_va_int32 : ident := 16%positive.
 Definition ___compcert_va_int64 : ident := 17%positive.
-Definition _adjustWeight : ident := 63%positive.
-Definition _i : ident := 60%positive.
-Definition _inf : ident := 57%positive.
-Definition _main : ident := 65%positive.
-Definition _minVertex : ident := 58%positive.
-Definition _minWeight : ident := 59%positive.
-Definition _newWeight : ident := 62%positive.
-Definition _popMin : ident := 61%positive.
-Definition _pq : ident := 54%positive.
-Definition _pq_emp : ident := 64%positive.
-Definition _push : ident := 55%positive.
-Definition _size : ident := 56%positive.
-Definition _vertex : ident := 52%positive.
-Definition _weight : ident := 53%positive.
-Definition _t'1 : ident := 66%positive.
+Definition _adjustWeight : ident := 66%positive.
+Definition _free : ident := 52%positive.
+Definition _freePQ : ident := 68%positive.
+Definition _i : ident := 63%positive.
+Definition _inf : ident := 60%positive.
+Definition _init : ident := 56%positive.
+Definition _main : ident := 69%positive.
+Definition _mallocN : ident := 53%positive.
+Definition _minVertex : ident := 61%positive.
+Definition _minWeight : ident := 62%positive.
+Definition _newWeight : ident := 65%positive.
+Definition _popMin : ident := 64%positive.
+Definition _pq : ident := 55%positive.
+Definition _pq_emp : ident := 67%positive.
+Definition _push : ident := 59%positive.
+Definition _size : ident := 54%positive.
+Definition _vertex : ident := 57%positive.
+Definition _weight : ident := 58%positive.
+Definition _t'1 : ident := 70%positive.
+
+Definition f_init := {|
+  fn_return := (tptr tint);
+  fn_callconv := cc_default;
+  fn_params := ((_size, tint) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_pq, (tptr tint)) :: (_t'1, (tptr tvoid)) :: nil);
+  fn_body :=
+(Ssequence
+  (Ssequence
+    (Scall (Some _t'1)
+      (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
+      ((Ebinop Omul (Etempvar _size tint) (Esizeof tint tuint) tuint) :: nil))
+    (Sset _pq (Etempvar _t'1 (tptr tvoid))))
+  (Sreturn (Some (Etempvar _pq (tptr tint)))))
+|}.
 
 Definition f_push := {|
   fn_return := tvoid;
@@ -190,6 +210,18 @@ Definition f_pq_emp := {|
       (Sset _i
         (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint) tint))))
   (Sreturn (Some (Econst_int (Int.repr 1) tint))))
+|}.
+
+Definition f_freePQ := {|
+  fn_return := tvoid;
+  fn_callconv := cc_default;
+  fn_params := ((_pq, (tptr tint)) :: nil);
+  fn_vars := nil;
+  fn_temps := nil;
+  fn_body :=
+(Scall None
+  (Evar _free (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
+  ((Etempvar _pq (tptr tint)) :: nil))
 |}.
 
 Definition composites : list composite_definition :=
@@ -440,29 +472,37 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
- (_push, Gfun(Internal f_push)) :: (_popMin, Gfun(Internal f_popMin)) ::
+ (_free, Gfun(External EF_free (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
+ (_mallocN,
+   Gfun(External (EF_external "mallocN"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
+ (_init, Gfun(Internal f_init)) :: (_push, Gfun(Internal f_push)) ::
+ (_popMin, Gfun(Internal f_popMin)) ::
  (_adjustWeight, Gfun(Internal f_adjustWeight)) ::
- (_pq_emp, Gfun(Internal f_pq_emp)) :: nil).
+ (_pq_emp, Gfun(Internal f_pq_emp)) :: (_freePQ, Gfun(Internal f_freePQ)) ::
+ nil).
 
 Definition public_idents : list ident :=
-(_pq_emp :: _adjustWeight :: _popMin :: _push :: ___builtin_debug ::
- ___builtin_write32_reversed :: ___builtin_write16_reversed ::
- ___builtin_read32_reversed :: ___builtin_read16_reversed ::
- ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
- ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
- ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
- ___builtin_clzl :: ___builtin_clz :: ___compcert_i64_umulh ::
- ___compcert_i64_smulh :: ___compcert_i64_sar :: ___compcert_i64_shr ::
- ___compcert_i64_shl :: ___compcert_i64_umod :: ___compcert_i64_smod ::
- ___compcert_i64_udiv :: ___compcert_i64_sdiv :: ___compcert_i64_utof ::
- ___compcert_i64_stof :: ___compcert_i64_utod :: ___compcert_i64_stod ::
- ___compcert_i64_dtou :: ___compcert_i64_dtos :: ___compcert_va_composite ::
- ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
- ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
- ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
- ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
- ___builtin_fsqrt :: ___builtin_fabs :: ___builtin_bswap16 ::
- ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 :: nil).
+(_freePQ :: _pq_emp :: _adjustWeight :: _popMin :: _push :: _init ::
+ _mallocN :: _free :: ___builtin_debug :: ___builtin_write32_reversed ::
+ ___builtin_write16_reversed :: ___builtin_read32_reversed ::
+ ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
+ ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
+ ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
+ ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
+ ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
+ ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
+ ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
+ ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
+ ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
+ ___compcert_va_composite :: ___compcert_va_float64 ::
+ ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
+ ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
+ ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
+ ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
+ ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
+ ___builtin_bswap :: ___builtin_bswap64 :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.
