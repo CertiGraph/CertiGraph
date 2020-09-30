@@ -1,9 +1,16 @@
+#include <stdlib.h>
 #include "priq_arr.h"
 
+extern void * mallocN (int n);
 
 /* ****************************** */
 /*    Array Masquerading as PQ    */
 /* ****************************** */
+
+int* init (int size) {
+    int* pq = mallocN (size * sizeof *pq);
+    return pq;
+}
 
 // precondition: vertex < size
 void push (int vertex, int weight, int* pq) {
@@ -37,6 +44,10 @@ int pq_emp (int size, int inf, int* pq) {
             return 0;
     }   
     return 1;
+}
+
+void freePQ (int* pq) {
+    free(pq);
 }
 
 /*

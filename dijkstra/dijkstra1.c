@@ -69,7 +69,7 @@ int getCell (int **graph, int u, int i) {
 }
 
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
-    int* pq = mallocN (size * sizeof *pq);
+    int* pq = init(size);
     int i, j, u, cost;
     for (i = 0; i < size; i++) {
         dist[i] = inf;  // Best-known distance from src to i
@@ -92,7 +92,7 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
             }
         }
     }
-//    freeN (pq);
+    freePQ (pq);
     return;
 }
 
