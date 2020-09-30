@@ -4,14 +4,30 @@ Require Import CertiGraph.priq_malloc.priq_arr_utils.
 Require Import VST.floyd.sublist.
 Require Import CertiGraph.priq_malloc.priq_arr.
 
+Section PQProof.
+
+Context {size : Z}.
+Context {inf : Z}.
+
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Local Open Scope Z_scope.
 
-Lemma body_push: semax_body Vprog Gprog f_push push_spec. 
+Lemma body_init: semax_body Vprog (@Gprog size inf _) f_init (@init_spec size _). 
+Proof.
+  start_function.
+  assert (Int.max_signed < Int.max_unsigned) by now compute.
+  forward_call (size * sizeof(tint)).
+  1: simpl; split; Lia.lia.
+  Intro pq. forward. Exists pq.
+  rewrite Z_div_mult. entailer!.
+  simpl; reflexivity.
+Qed.
+
+Lemma body_push: semax_body Vprog (@Gprog size inf _) f_push (@push_spec size inf _). 
 Proof. start_function. forward. entailer!. Qed.
 
-Lemma body_pq_emp: semax_body Vprog Gprog f_pq_emp pq_emp_spec.
+Lemma body_pq_emp: semax_body Vprog (@Gprog size inf _) f_pq_emp (@pq_emp_spec size inf _).
 Proof.
   start_function.
   forward_for_simple_bound
@@ -47,10 +63,10 @@ Proof.
     symmetry; trivial.
 Qed.
 
-Lemma body_adjustWeight: semax_body Vprog Gprog f_adjustWeight adjustWeight_spec.
+Lemma body_adjustWeight: semax_body Vprog (@Gprog size inf _) f_adjustWeight (@adjustWeight_spec size inf _).
 Proof. start_function. forward. entailer!. Qed.
 
-Lemma body_popMin: semax_body Vprog Gprog f_popMin popMin_spec.
+Lemma body_popMin: semax_body Vprog (@Gprog size inf _) f_popMin (@popMin_spec size inf _).
 Proof.
   start_function.
   assert_PROP (Zlength priq_contents = size). {
@@ -120,3 +136,5 @@ Proof.
       rewrite sublist_same by lia. entailer!.
       destruct priq_contents; simpl; auto.
 Qed.
+
+End PQProof.
