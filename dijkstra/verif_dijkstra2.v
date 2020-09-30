@@ -244,7 +244,7 @@ Section DijkstraProof.
     }
     assert (0 <= u * 8 + i <
             Zlength (map Int.repr (@graph_to_list size g id))). {
-      rewrite Zlength_map, graph_to_list_Zlength; ulia.
+      rewrite Zlength_map, (graph_to_list_Zlength _ _ size); ulia.
     }
     assert (Int.min_signed < 0) by now compute. 
     assert (size * size < Int.max_signed) by now compute.
