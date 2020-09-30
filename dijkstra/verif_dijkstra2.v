@@ -374,7 +374,6 @@ Section DijkstraProof.
           intros ? H_in. specialize (H11 _ H_in).
           rep_lia.
         }
-        (* todo needed?? *)
         
         forward_call ((pointer_val_val priq_ptr),
                       priq, size, inf).
