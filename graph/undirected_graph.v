@@ -313,6 +313,18 @@ Proof.
 intros. destruct H as [p ?]. apply (connected_by_path_vvalid _ _ _ _ H).
 Qed.
 
+Lemma adjacent_dec:
+forall g u v, adjacent g u v \/ ~ adjacent g u v.
+Proof.
+intros. tauto.
+Qed.
+
+Lemma connected_dec:
+forall g u v, connected g u v \/ ~ connected g u v.
+Proof.
+intros. tauto.
+Qed.
+
 Definition connected_graph (g: PGraph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
 
 (************REASONING ABOUT A SPECIFIC LIST OF EDGES************)
@@ -1112,8 +1124,10 @@ Qed.
 
 (*to be 100% close to CLRS' wording*)
 
-Definition uforest g:= ((forall e, evalid g e -> strong_evalid g e)) /\ (*strong evalid*)
+Definition uforest g := (forall e, evalid g e -> strong_evalid g e) /\ (*strong evalid*)
   (forall p l, ~ simple_ucycle g p l). (*no undirected cycles*)
+
+Definition utree g := uforest g /\ connected_graph g.
 
 Corollary uforest'_no_simple_ucycle:
 forall g p l, uforest' g -> ~ simple_ucycle g p l.

@@ -1,3 +1,4 @@
+(*Described a pure undirected graph that can be represented by an adjacency matrix*)
 Require Import Coq.micromega.Lia.
 Require Import VST.floyd.sublist.
 Require Import compcert.lib.Integers.
@@ -14,7 +15,6 @@ Require Import CertiGraph.priq.priq_arr_utils.
 Local Open Scope logic.
 Local Open Scope Z_scope.
 
-(*Move this*)
 Lemma Permutation_Zlength:
   forall {A: Type} (l l': list A), Permutation l l' -> Zlength l = Zlength l'.
 Proof.
@@ -22,65 +22,78 @@ intros. assert (length l = length l'). apply Permutation_length. apply H.
 repeat rewrite Zlength_correct. rewrite H0. auto.
 Qed.
 
+Lemma incl_nil:
+forall {A: Type} (l: list A), incl l nil -> l = nil.
+Proof.
+induction l; intros. auto. assert (In a nil). apply H. left; auto. contradiction.
+Qed.
+
 Section MATRIXUGRAPH.
 
-Context {inf: Z} {size: Z}.     
+Instance V_EqDec: EqDec V eq.
+Proof. hnf. apply Z.eq_dec. Qed.
 
-Class AdjMatUSoundness (g: AdjMatLG) := {
-  sadjmat: SoundAdjMat (size:=size) (inf:=inf) g;
-  ese: forall e, evalid g e -> strong_evalid g e;
-  sib: forall e, evalid g e -> elabel g e < inf; (*no reason to have <>*)
-  uer: forall e, evalid g e -> src g e <= dst g e;
+Instance E_EqDec: EqDec E eq.
+Proof.
+  hnf. intros [x] [y].
+  destruct (equiv_dec x y).
+  - hnf in e. destruct (Z.eq_dec z z0); subst.
+    + left; reflexivity.
+    + right. intro. apply n. inversion H. reflexivity.
+  - right; intro; apply c; inversion H; reflexivity.
+Defined.
+
+Context {inf: Z} {size: Z}.
+
+Class AdjMatUSoundness (g: LabeledGraph V E DV DE DG) := {
+  size_rep: 0 <= size <= Int.max_signed;
+  inf_rep: 0 <= inf <= Int.max_signed; 
+  vert_representable: forall v, vvalid g v <-> 0 <= v < size;
+  edge_strong_evalid: forall e, evalid g e -> vvalid g (src g e) /\ vvalid g (dst g e);
+  edge_weight_representable: forall e, evalid g e -> Int.min_signed <= elabel g e <= Int.max_signed;
+  edge_weight_not_inf: forall e, evalid g e -> elabel g e < inf; (*no reason to have <>*)
+  invalid_edge_weight: forall e, ~ evalid g e -> elabel g e = inf;
+  src_fst: forall e, evalid g e -> src g e = fst e;
+  dst_snd: forall e, evalid g e -> dst g e = snd e;
+  fin: FiniteGraph g;
+  undirected_edge_rep: forall e, evalid g e -> src g e <= dst g e;
 }.
 
 Definition MatrixUGraph := (GeneralGraph V E DV DE DG (fun g => AdjMatUSoundness g)).
 
 Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g).
-Definition sound_adjMatGraph (g: MatrixUGraph) := (@sadjmat g (sound_MatrixUGraph g)).
-Definition finGraph (g: MatrixUGraph) := (@fin _ _ g (sound_adjMatGraph g)).
+
+(*
+  Later on, I need to get from
+  MatrixUGraph ---> AdjMatLG 
+ *)
+(*
+Lemma AdjMatLG_MatrixUGraph (g: MatrixUGraph) : AdjMatLG.
+Proof.
+  admit.
+Admitted.
+Coercion AdjMatLG_MatrixUGraph: MatrixUGraph >-> AdjMatLG.
+*)
+(* 
+   Anshuman, Sep 26:
+   I'm not getting into it too much since a merge between
+   MatrixUGraph and newMatrixUGraph is probably coming up,
+   but several changes are needed here.
+   1. Don't redefine V_EqDec and E_EqDec here
+   2. Create some (PrimLG: LabeledGraph) 
+      and grow PrimGG atop of it. for example, 
+          Class AdjMatUSoundness (g: PrimLG) := {...}
+   3. Create the appropriate coercions in this file
+   4. Don't redefine the various getters for soundness
+ *)
 
 Instance Finite_MatrixUPGraph (g: MatrixUGraph): FiniteGraph g.
-Proof. apply (finGraph g). Qed.
-
-Definition MatrixUGraph_AdjMatGG (g: MatrixUGraph) : AdjMatGG :=
-    Build_GeneralGraph DV DE DG SoundAdjMat g (sound_adjMatGraph g).
-Coercion MatrixUGraph_AdjMatGG: MatrixUGraph >-> AdjMatGG.
-
-(*still nitty-gritty issues with the coercion*)
-Definition size_representable (g: MatrixUGraph) :=
-  @sr _ _ g (sound_adjMatGraph g).
-
-Definition inf_representable (g: MatrixUGraph) :=
-  @ir _ _ g (sound_adjMatGraph g).
-
-Definition vvalid_meaning (g: MatrixUGraph) :=
-  @vm _ _ g (sound_adjMatGraph g).
-
-Definition evalid_meaning (g: MatrixUGraph) :=
-  @em _ _ g (sound_adjMatGraph g).
-
-Definition invalid_edge_weight (g: MatrixUGraph) :=
-  @iew _ _ g (sound_adjMatGraph g).
-
-Definition src_fst (g: MatrixUGraph) :=
-  @esf _ _ g (sound_adjMatGraph g).
-
-Definition dst_snd (g: MatrixUGraph) :=
-  @eds _ _ g (sound_adjMatGraph g).
-
-Definition evalid_strong_evalid (g: MatrixUGraph) :=
-  @ese g (sound_MatrixUGraph g).
-
-Definition strong_inf_bound (g: MatrixUGraph) :=
-  @sib g (sound_MatrixUGraph g).
-
-Definition undirected_edge_rep (g: MatrixUGraph) :=
-  @uer g (sound_MatrixUGraph g).
+Proof. apply (@fin g (sound_MatrixUGraph g)). Qed.
 
 Lemma vert_bound:
 forall (g: MatrixUGraph) v, vvalid g v <-> 0 <= v < size.
 Proof.
-intros. apply (vvalid_meaning g).
+intros. apply (@vert_representable g (sound_MatrixUGraph g)).
 Qed.
 
 Lemma MatrixUGraph_VList:
@@ -97,16 +110,22 @@ Qed.
 Lemma evalid_form: (*useful for a = (u,v) etc*)
 forall (g: MatrixUGraph) e, evalid g e -> e = (src g e, dst g e).
 Proof.
-intros. rewrite (src_fst g e) by auto.
-rewrite (dst_snd g e) by auto.
+intros. rewrite (@src_fst _ (sound_MatrixUGraph g) e) by auto.
+rewrite (@dst_snd _ (sound_MatrixUGraph g) e) by auto.
 destruct e; simpl; auto.
+Qed.
+
+Lemma evalid_strong_evalid:
+forall (g: MatrixUGraph) e, evalid g e -> strong_evalid g e.
+Proof.
+intros; split. auto. apply (@edge_strong_evalid _ (sound_MatrixUGraph g) e); auto.
 Qed.
 
 Lemma evalid_vvalid:
 forall (g: MatrixUGraph) u v, evalid g (u,v) -> vvalid g u /\ vvalid g v.
 Proof.
 intros. apply evalid_strong_evalid in H. destruct H.
-rewrite (src_fst g), (dst_snd g) in H0 by auto.
+rewrite (@src_fst _ (sound_MatrixUGraph _)), (@dst_snd _ (sound_MatrixUGraph _)) in H0 by auto.
 simpl in H0; auto.
 Qed.
 
@@ -114,23 +133,24 @@ Lemma evalid_adjacent:
 forall (g: MatrixUGraph) u v, evalid g (u,v) -> adjacent g u v.
 Proof.
 intros. exists (u,v); split. apply evalid_strong_evalid; auto.
-rewrite src_fst, dst_snd by auto. left; simpl; auto.
+rewrite (@src_fst _ (sound_MatrixUGraph _)), (@dst_snd _ (sound_MatrixUGraph _)) by auto.
+left; simpl; auto.
 Qed.
 
 Lemma evalid_inf_iff:
 forall (g: MatrixUGraph) e, evalid g e <-> elabel g e < inf.
 Proof.
-intros; split; intros. apply (strong_inf_bound g); auto.
-destruct (evalid_dec g e). auto. apply invalid_edge_weight in n; lia.
+intros; split; intros. apply (@edge_weight_not_inf _ (sound_MatrixUGraph g)); auto.
+destruct (evalid_dec g e). auto. apply (@invalid_edge_weight _ (sound_MatrixUGraph g)) in n. lia.
 Qed.
 
 Lemma weight_representable:
 forall (g: MatrixUGraph) e, Int.min_signed <= elabel g e <= Int.max_signed.
 Proof.
 intros. destruct (evalid_dec g e).
-apply (evalid_meaning g e); auto.
-apply (invalid_edge_weight g e) in n. rewrite n.
-pose proof (inf_representable g). split.
+apply (@edge_weight_representable g (sound_MatrixUGraph g) e). auto.
+apply (@invalid_edge_weight g (sound_MatrixUGraph g) e) in n. rewrite n.
+pose proof (@inf_rep g (sound_MatrixUGraph g)). split.
 set (i:=Int.min_signed); compute in i; subst i. lia.
 apply H.
 Qed.
@@ -139,16 +159,16 @@ Lemma weight_inf_bound:
 forall (g: MatrixUGraph) e, elabel g e <= inf.
 Proof.
 intros. destruct (evalid_dec g e).
-apply Z.lt_le_incl. apply (strong_inf_bound g e). auto.
-apply (invalid_edge_weight g) in n. lia.
+apply Z.lt_le_incl. apply (@edge_weight_not_inf g (sound_MatrixUGraph g) e). auto.
+apply (@invalid_edge_weight g (sound_MatrixUGraph g)) in n. lia.
 Qed.
 
 Lemma adj_edge_form:
 forall (g: MatrixUGraph) u v a b, adj_edge g (u,v) a b -> a <= b -> (u = a /\ v = b).
 Proof.
 intros. destruct H. assert (src g (u,v) <= dst g (u,v)).
-apply (undirected_edge_rep g). apply H.
-rewrite src_fst, dst_snd in *.
+apply (@undirected_edge_rep g (sound_MatrixUGraph g)). apply H.
+rewrite (@src_fst g (sound_MatrixUGraph g)), (@dst_snd g (sound_MatrixUGraph g)) in *.
 simpl in *. destruct H1. auto. destruct H1; subst u; subst v. lia.
 all: apply H.
 Qed.
@@ -158,31 +178,23 @@ Qed.
 Section EDGELESS_MUGRAPH.
 
 Context {inf_bound: 0 <= inf <= Int.max_signed}.
-Context {size_bound: 0 < size <= Int.max_signed}.
+Context {size_bound: 0 <= size <= Int.max_signed}.
 
-(* Anshuman, Sep 26:
-   This is just a copy of your
-   edgeless_lgraph2 
-   from graph/MathAdjMatGraph.v
-   It now goes through.
-*)
-Definition edgeless_lgraph : AdjMatLG :=
-  @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
-    (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
-    (fun v => tt) (fun e => inf) tt. 
+Definition edgeless_lgraph: LabeledGraph V E DV DE DG :=
+@Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
+  (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
+  (fun v => tt) (fun e => inf) tt. (*<--- different from edgeless_WEdgeGraph because of the default value*)
 
 Instance AdjMatUSound_edgeless:
   AdjMatUSoundness edgeless_lgraph.
-Proof. 
+Proof.
 constructor.
 all: simpl; intros; try contradiction.
-constructor.
-auto. auto. 
-all: simpl; intros; try auto; try contradiction.
-split; intros; auto.
-split; intros. contradiction. destruct H. contradiction.
-split; intros; auto.
-constructor; unfold EnumEnsembles.Enumerable.
++lia.
++lia.
++lia.
++auto.
++constructor; unfold EnumEnsembles.Enumerable.
 (*vertices*)
 exists (nat_inc_list (Z.to_nat size)); split. apply nat_inc_list_NoDup.
 simpl. intros. rewrite nat_inc_list_in_iff. rewrite Z_to_nat_max.
@@ -196,6 +208,10 @@ Qed.
 Definition edgeless_graph: MatrixUGraph :=
   @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG AdjMatUSoundness
     edgeless_lgraph (AdjMatUSound_edgeless).
+
+Lemma edgeless_graph_vvalid:
+  forall k, vvalid edgeless_graph k <-> 0 <= k < size.
+Proof. simpl. intros; split; intros; auto. Qed.
 
 Lemma edgeless_graph_evalid:
   forall e, ~ evalid edgeless_graph e.
@@ -262,6 +278,8 @@ Qed.
 
 End EDGELESS_MUGRAPH.
 
+(**************ADDING AN EDGE****************)
+
 Section ADD_EDGE_MUGRAPH.
 
 Context {g: MatrixUGraph}.
@@ -292,43 +310,36 @@ Qed.
 Instance AdjMatUSound_adde':
   AdjMatUSoundness MatrixUGraph_adde'.
 Proof.
-constructor; simpl. constructor; simpl.
-+apply (size_representable g).
-+apply (inf_representable g).
-+apply (vvalid_meaning g).
-+unfold addValidFunc, updateEdgeFunc, update_elabel; intros.
-  split; intros. destruct H. unfold equiv_dec; destruct E_EqDec.
-  split. pose proof (inf_representable g); lia. lia.
-  apply evalid_meaning in H. apply H.
-  subst e. unfold equiv_dec. destruct E_EqDec.
-  split. pose proof (inf_representable g); lia. lia.
-  unfold complement, equiv in c; contradiction.
-  unfold equiv_dec in H; destruct (E_EqDec (u,v)).
-  hnf in e0; subst e. right; auto.
-  left. apply evalid_meaning. auto.
-+unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
-  split; intros. exfalso; apply H. right. hnf in e0. subst e; auto. lia.
-  unfold complement, equiv in c. split; intros.
-  apply invalid_edge_weight. unfold not; intros; apply H. left; auto.
-  apply invalid_edge_weight in H. unfold not; intros.
-  destruct H0. contradiction. symmetry in H0; contradiction.
-+unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
-  unfold equiv in e0; subst e. simpl; auto.
-  apply (src_fst g e).
-+unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
-  unfold equiv in e0; subst e. simpl; auto.
-  apply (dst_snd g e).
-+apply Fin_MatrixUGraph_adde'.
-+unfold addValidFunc, updateEdgeFunc, equiv_dec; intros.
-  destruct (E_EqDec e (u,v)). hnf in e0; subst e. apply add_edge_strong_evalid; auto.
-  unfold complement, equiv in c. destruct H. apply add_edge_preserves_strong_evalid.
-  unfold not; intros. symmetry in H0; contradiction. apply evalid_strong_evalid; auto.
-  contradiction.
-+unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
-  lia. unfold complement, equiv in c. destruct H. apply strong_inf_bound; auto.
+constructor; simpl.
++apply (@size_rep g (sound_MatrixUGraph g)).
++apply (@inf_rep g (sound_MatrixUGraph g)).
++apply (@vert_representable g (sound_MatrixUGraph g)).
++unfold addValidFunc, updateEdgeFunc; intros. unfold equiv_dec. destruct (E_EqDec (u,v) e).
+  split; auto.
+  unfold complement, equiv in c. destruct H. apply (@edge_strong_evalid g (sound_MatrixUGraph g) e H).
   symmetry in H; contradiction.
++unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  pose proof (@inf_rep g (sound_MatrixUGraph g)). lia.
+  unfold complement, equiv in c. destruct H. apply (@edge_weight_representable g (sound_MatrixUGraph g) e H).
+  symmetry in H; contradiction.
++unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  unfold equiv in e0; subst e. lia.
+  destruct H. apply (@edge_weight_not_inf g (sound_MatrixUGraph g) e H).
+  unfold complement, equiv in c. symmetry in H; contradiction.
++unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  unfold equiv in e0. exfalso; apply H; auto.
+  destruct (evalid_dec g e). exfalso; apply H; auto. apply (@invalid_edge_weight g (sound_MatrixUGraph g) e n).
 +unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
-  lia. destruct H. apply (undirected_edge_rep g e); auto.
+  unfold equiv in e0; subst e. simpl; auto.
+  destruct H. apply (@src_fst g (sound_MatrixUGraph g) e H).
+  unfold complement, equiv in c; symmetry in H; contradiction.
++unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  unfold equiv in e0; subst e. simpl; auto.
+  destruct H. apply (@dst_snd g (sound_MatrixUGraph g) e H).
+  unfold complement, equiv in c; symmetry in H; contradiction.
++apply Fin_MatrixUGraph_adde'.
++unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+  lia. destruct H. apply (@undirected_edge_rep g (sound_MatrixUGraph g) e H).
   unfold complement, equiv in c. symmetry in H; contradiction.
 Qed.
 
@@ -384,16 +395,59 @@ apply (Permutation_in (l':=(u,v)::l)) in H1. destruct H1. symmetry in H1; contra
 apply Permutation_sym; auto.
 Qed.
 
+Lemma adde_src_new:
+  src MatrixUGraph_adde (u,v) = u.
+Proof.
+apply (@src_fst _ (sound_MatrixUGraph _)). apply add_edge_evalid.
+Qed.
+
+Lemma adde_dst_new:
+  dst MatrixUGraph_adde (u,v) = v.
+Proof.
+apply (@dst_snd _ (sound_MatrixUGraph _)). apply add_edge_evalid.
+Qed.
+
+Lemma adde_src_old:
+  forall e', (u,v) <> e' -> src MatrixUGraph_adde e' = src g e'.
+Proof.
+unfold MatrixUGraph_adde; simpl; unfold addValidFunc, updateEdgeFunc; intros.
+unfold equiv_dec. destruct E_EqDec. unfold equiv in e; contradiction. auto.
+Qed.
+
 Lemma adde_src:
   forall e', evalid g e' -> src MatrixUGraph_adde e' = src g e'.
 Proof.
-intros. rewrite src_fst; rewrite src_fst. auto.
+intros. rewrite (@src_fst _ (sound_MatrixUGraph _)). rewrite (@src_fst _ (sound_MatrixUGraph _)). auto.
+auto. apply add_edge_preserves_evalid; auto.
+Qed.
+
+Lemma adde_dst_old:
+  forall e', (u,v) <> e' -> dst MatrixUGraph_adde e' = dst g e'.
+Proof.
+unfold MatrixUGraph_adde; simpl; unfold addValidFunc, updateEdgeFunc; intros.
+unfold equiv_dec. destruct E_EqDec. unfold equiv in e; contradiction. auto.
 Qed.
 
 Lemma adde_dst:
   forall e', evalid g e' -> dst MatrixUGraph_adde e' = dst g e'.
 Proof.
-intros. rewrite dst_snd; rewrite dst_snd. auto.
+intros. rewrite (@dst_snd _ (sound_MatrixUGraph _)). rewrite (@dst_snd _ (sound_MatrixUGraph _)). auto.
+auto. apply add_edge_preserves_evalid; auto.
+Qed.
+
+Corollary adde_strong_evalid_new:
+  strong_evalid MatrixUGraph_adde (u,v).
+Proof.
+split. apply add_edge_evalid. rewrite adde_src_new, adde_dst_new. simpl; auto.
+Qed.
+
+Lemma adde_strong_evalid_old:
+  forall e', (u,v) <> e' ->
+  evalid g e' ->
+  strong_evalid MatrixUGraph_adde e'.
+Proof.
+intros. split. apply add_edge_preserves_evalid. apply H0.
+apply (@edge_strong_evalid _ (sound_MatrixUGraph _)). apply add_edge_preserves_evalid. apply H0.
 Qed.
 
 Lemma adde_elabel_new:
@@ -420,10 +474,14 @@ split. intros. rewrite adde_evalid_or in H4. destruct H4.
 apply H1; auto. subst e; auto.
 split. intros. rewrite adde_evalid_or in H4. destruct H4.
 rewrite <- H2. apply adde_src. auto. auto. rewrite adde_src in H5 by auto. simpl in H5; auto.
-subst e. rewrite src_fst; rewrite src_fst; auto.
+subst e. rewrite (@src_fst _ (sound_MatrixUGraph g')).
+rewrite (@src_fst _ (sound_MatrixUGraph MatrixUGraph_adde)). auto.
+apply add_edge_evalid. auto.
 intros. rewrite adde_evalid_or in H4. destruct H4.
 rewrite <- H3. apply adde_dst. auto. auto. rewrite adde_dst in H5 by auto. simpl in H5; auto.
-subst e. rewrite dst_snd, dst_snd; auto.
+subst e. rewrite (@dst_snd _ (sound_MatrixUGraph g')).
+rewrite (@dst_snd _ (sound_MatrixUGraph MatrixUGraph_adde)). auto.
+apply add_edge_evalid. auto.
 Qed.
 
 Lemma adde_partial_lgraph:
@@ -468,27 +526,26 @@ Qed.
 Instance AdjMatUSound_eremove':
   AdjMatUSoundness MatrixUGraph_eremove'.
 Proof.
-constructor; simpl. constructor; simpl.
-++apply (size_representable g).
-++apply (inf_representable g).
-++apply (vvalid_meaning g).
-++unfold removeValidFunc; split; intros; destruct (E_EqDec e0 e).
-  destruct H. hnf in e1. contradiction.
-  apply (evalid_meaning g). apply H.
-  destruct H. contradiction.
-  apply (evalid_meaning g) in H; auto.
-++unfold removeValidFunc; split; intros;destruct (E_EqDec e0 e).
-  auto. apply invalid_edge_weight. unfold not; intros; apply H. split; auto.
-  unfold not; intros; destruct H0. hnf in e1; contradiction.
-  unfold not; intros. apply invalid_edge_weight in H; apply H; apply H0.
-++apply (src_fst g).
-++apply (dst_snd g).
+constructor; simpl.
+++apply (@size_rep g (sound_MatrixUGraph g)).
+++apply (@inf_rep g (sound_MatrixUGraph g)).
+++apply (@vert_representable g (sound_MatrixUGraph g)).
+++unfold removeValidFunc; intros. destruct H. apply evalid_strong_evalid in H. apply H.
+++unfold removeValidFunc; intros. destruct (E_EqDec e0 e). auto.
+  pose proof (@inf_rep _ (sound_MatrixUGraph g)). split. apply (Z.le_trans _ 0).
+  pose proof Int.min_signed_neg. lia. lia. lia.
+  apply (@edge_weight_representable g (sound_MatrixUGraph g) e0). apply H.
+++unfold removeValidFunc; intros. destruct (E_EqDec e0 e). destruct H. hnf in e1. contradiction.
+  apply (@edge_weight_not_inf g (sound_MatrixUGraph g) e0). apply H.
+++unfold removeValidFunc; intros. destruct (E_EqDec e0 e). auto.
+  apply (@invalid_edge_weight g (sound_MatrixUGraph g) e0). unfold not; intros; apply H. split; auto.
+++unfold removeValidFunc; intros. destruct H.
+  apply (@src_fst g (sound_MatrixUGraph g) e0 H).
+++unfold removeValidFunc; intros. destruct H.
+  apply (@dst_snd g (sound_MatrixUGraph g) e0 H).
 ++apply Fin_MatrixUGraph_eremove'.
-++unfold removeValidFunc; intros. destruct H. apply remove_edge_preserves_strong_evalid; split.
-  apply evalid_strong_evalid; auto. auto.
-++unfold removeValidFunc; intros. destruct H. destruct (E_EqDec e0 e).
-  hnf in e1; contradiction. apply strong_inf_bound; auto.
-++unfold removeValidFunc; intros. destruct H. apply undirected_edge_rep; auto.
+++unfold removeValidFunc; intros. destruct H.
+  apply (@undirected_edge_rep g (sound_MatrixUGraph g) e0 H).
 Qed.
 
 Definition MatrixUGraph_eremove: MatrixUGraph :=
@@ -615,12 +672,18 @@ unfold DEList; intros. apply fold_left_comm. intros; lia.
 apply Permutation_map. auto.
 Qed.
 
+Lemma connected_dec:
+forall (g: MatrixUGraph) u v, connected g u v \/ ~ connected g u v.
+Proof.
+intros. tauto.
+Qed.
+
 Lemma exists_labeled_spanning_uforest_pre:
 forall (l: list E) (g: MatrixUGraph), Permutation l (EList g) -> exists (t: MatrixUGraph), labeled_spanning_uforest t g.
 Proof.
 induction l; intros.
 (*nil case*)
-exists (@edgeless_graph (inf_representable g) (size_representable g)).
+exists (@edgeless_graph (@inf_rep g (sound_MatrixUGraph g)) (@size_rep g (sound_MatrixUGraph g))).
 split. split. apply edgeless_partial_lgraph. split. apply uforest'_edgeless_graph.
 unfold spanning; intros. destruct (V_EqDec u v).
 hnf in e. subst v. split; intros; apply connected_refl.
@@ -631,11 +694,11 @@ unfold connected_by_path in H0. destruct H0. destruct H1. destruct x. inversion 
 destruct x. inversion H1. inversion H2. subst v0. contradiction.
 destruct H0. destruct H0. destruct H0. destruct H0.
 rewrite <- EList_evalid in H0. rewrite <- H in H0. contradiction.
-pose proof (@edgeless_graph_disconnected (inf_representable g) (size_representable g) u v c).
+pose proof (@edgeless_graph_disconnected (@inf_rep g (sound_MatrixUGraph g)) (@size_rep g (sound_MatrixUGraph g)) u v c).
 contradiction.
 unfold preserve_vlabel, preserve_elabel; split; intros.
 destruct vlabel. destruct vlabel. auto.
-pose proof (@edgeless_graph_evalid (inf_representable g) (size_representable g) e).
+pose proof (@edgeless_graph_evalid (@inf_rep g (sound_MatrixUGraph g)) (@size_rep g (sound_MatrixUGraph g)) e).
 contradiction.
 (*inductive step*)
 set (u:=src g a). set (v:=dst g a).
@@ -716,10 +779,11 @@ apply remove_edge_unaffected in H7; auto. auto.
 apply Htg.
 ++
 assert (vvalid g u /\ vvalid g v). apply connected_vvalid in H0; auto. destruct H3.
-assert (u <= v). apply (undirected_edge_rep g). auto.
+assert (u <= v). apply (@undirected_edge_rep g (sound_MatrixUGraph g)). auto.
 set (w:= elabel g a).
-assert (Int.min_signed <= w < inf). unfold w. split.
-pose proof (weight_representable g a). apply H6. apply (strong_inf_bound g). auto.
+assert (Int.min_signed <= w < inf). split.
+unfold w; apply (@edge_weight_representable g (sound_MatrixUGraph g)). auto.
+unfold w; apply (@edge_weight_not_inf g (sound_MatrixUGraph g)). auto.
 rewrite vert_bound in H3, H4. rewrite <- (vert_bound t) in H3, H4.
 assert (Ha: a = (u,v)). unfold u, v; apply evalid_form; auto. rewrite Ha in *.
 set (adde_a:=@MatrixUGraph_adde t u v H3 H4 H5 w H6).
@@ -942,19 +1006,19 @@ assert (find (a :: l') x 0 <= find (a :: l') y 0 <-> find (a :: l) x 0 <= find (
 right; auto. right; auto.
 apply NoDup_cons_2 in H3.
 simpl in H8.
-destruct (prod_eqdec Z_EqDec Z_EqDec a x). hnf in e. subst x. contradiction.
-destruct (prod_eqdec Z_EqDec Z_EqDec a y). hnf in e. subst y. contradiction.
+destruct (E_EqDec a x). hnf in e. subst x. contradiction.
+destruct (E_EqDec a y). hnf in e. subst y. contradiction.
 replace 1 with (1+0) in H8 by lia. repeat rewrite find_accum_add1 in H8.
 split; intros. lia. lia.
 ******
 unfold complement, equiv in c.
 assert (find (e :: l') e 0 <= find (e :: l') a 0 <-> find (a :: l) e 0 <= find (a :: l) a 0). apply H5.
 left; auto. auto. simpl in H6.
-destruct (prod_eqdec Z_EqDec Z_EqDec e e). 2: { unfold complement, equiv in c0; contradiction. }
-destruct (prod_eqdec Z_EqDec Z_EqDec a a). 2: { unfold complement, equiv in c0; contradiction. }
+destruct (E_EqDec e e). 2: { unfold complement, equiv in c0; contradiction. }
+destruct (E_EqDec a a). 2: { unfold complement, equiv in c0; contradiction. }
 clear e0 e1.
-destruct (prod_eqdec Z_EqDec Z_EqDec e a). hnf in e0; contradiction.
-destruct (prod_eqdec Z_EqDec Z_EqDec a e). hnf in e0; symmetry in e0; contradiction.
+destruct (E_EqDec e a). hnf in e0; contradiction.
+destruct (E_EqDec a e). hnf in e0; symmetry in e0; contradiction.
 clear c0 c1.
 assert (0 <= find l' a 1). { apply (Z.le_trans 0 1). lia. apply find_lbound. }
 apply H6 in H7. assert (1 <= 0). { apply (Z.le_trans 1 (find l e 1)). apply find_lbound. auto. }
@@ -963,8 +1027,8 @@ lia.
 left. apply H1. split. auto. split. unfold incl; intros. assert (In a0 (a::l)). apply H4; auto.
 destruct H7. subst a0. contradiction. auto.
 intros. assert (find l' x 0 <= find l' y 0 <-> find (a :: l) x 0 <= find (a :: l) y 0). apply H5; auto.
-simpl in H8. destruct (prod_eqdec Z_EqDec Z_EqDec a x). hnf in e. subst x. contradiction.
-destruct (prod_eqdec Z_EqDec Z_EqDec a y). hnf in e. subst y. contradiction.
+simpl in H8. destruct (E_EqDec a x). hnf in e. subst x. contradiction.
+destruct (E_EqDec a y). hnf in e. subst y. contradiction.
 replace 1 with (1+0) in H8 by lia. do 2 rewrite find_accum_add1 in H8.
 split; intros. apply H8 in H9. lia.
 apply H8. lia.
@@ -976,8 +1040,8 @@ split. auto. split. unfold incl; intros. right. apply H4. auto.
 intros.
 assert (find l' x 0 <= find l' y 0 <-> find l x 0 <= find l y 0). apply H5; auto.
 simpl.
-destruct (prod_eqdec Z_EqDec Z_EqDec a x). hnf in e; subst x. apply H4 in H6; contradiction.
-destruct (prod_eqdec Z_EqDec Z_EqDec a y). hnf in e; subst y. apply H4 in H7; contradiction.
+destruct (E_EqDec a x). hnf in e; subst x. apply H4 in H6; contradiction.
+destruct (E_EqDec a y). hnf in e; subst y. apply H4 in H7; contradiction.
 replace 1 with (1+0) by lia. do 2 rewrite (find_accum_add1).
 split; intros. apply H8 in H9. lia. lia.
 ****
@@ -987,16 +1051,16 @@ split. apply NoDup_cons; auto.
 split. unfold incl; intros. destruct H7. subst a0. left; auto.
 right. apply H5. auto.
 intros. destruct H7.
-subst x. simpl. destruct (prod_eqdec Z_EqDec Z_EqDec a a). 2: { unfold complement, equiv in c; contradiction. }
-destruct (prod_eqdec Z_EqDec Z_EqDec a y). lia. split; intros. apply (Z.le_trans 0 1). lia. apply find_lbound. apply (Z.le_trans 0 1). lia. apply find_lbound.
+subst x. simpl. destruct (E_EqDec a a). 2: { unfold complement, equiv in c; contradiction. }
+destruct (E_EqDec a y). lia. split; intros. apply (Z.le_trans 0 1). lia. apply find_lbound. apply (Z.le_trans 0 1). lia. apply find_lbound.
 destruct H8. subst y. simpl.
-destruct (prod_eqdec Z_EqDec Z_EqDec a a). 2: { unfold complement, equiv in c; contradiction. }
-destruct (prod_eqdec Z_EqDec Z_EqDec a x). lia. split; intros.
+destruct (E_EqDec a a). 2: { unfold complement, equiv in c; contradiction. }
+destruct (E_EqDec a x). lia. split; intros.
 assert (1 <= 0). apply (Z.le_trans 1 (find l' x 1)). apply find_lbound. lia. lia.
 assert (1 <= 0). apply (Z.le_trans 1 (find l x 1)). apply find_lbound. lia. lia.
 assert (find l' x 0 <= find l' y 0 <-> find l x 0 <= find l y 0). apply H6; auto. simpl.
-destruct (prod_eqdec Z_EqDec Z_EqDec a x). hnf in e; subst x; contradiction.
-destruct (prod_eqdec Z_EqDec Z_EqDec a y). hnf in e; subst y; contradiction.
+destruct (E_EqDec a x). hnf in e; subst x; contradiction.
+destruct (E_EqDec a y). hnf in e; subst y; contradiction.
 replace 1 with (1+0) by lia. repeat rewrite find_accum_add1.
 split; intros; lia.
 Qed.
@@ -1014,7 +1078,7 @@ exists a'. split. right; auto. intros. destruct H3. subst b; lia. apply H1 in H3
 Qed.
 
 Lemma test2:
-forall (l' l: list E), NoDup l -> NoDup l' -> incl l' l -> exists lsorted, Permutation lsorted l' /\
+forall l' l, NoDup l -> NoDup l' -> incl l' l -> exists lsorted, Permutation lsorted l' /\
 (forall a b, In a lsorted -> In b lsorted -> (find lsorted a 0 <= find lsorted b 0 <-> find l a 0 <= find l b 0)).
 Proof.
 induction l'; intros l Hl; intros.
@@ -1043,13 +1107,13 @@ apply IHlsorted. 2: { unfold not; intros. apply Ha. right; auto. }
 intros. split; intros.
 apply H2. right; auto. right; auto.
 apply NoDup_cons_2 in Hsorted_NoDup.
-simpl. destruct (prod_eqdec Z_EqDec Z_EqDec a0 a1). hnf in e; subst a0; contradiction.
-destruct (prod_eqdec Z_EqDec Z_EqDec a0 b). hnf in e; subst a0; contradiction.
+simpl. destruct (E_EqDec a0 a1). hnf in e; subst a0; contradiction.
+destruct (E_EqDec a0 b). hnf in e; subst a0; contradiction.
 replace 1 with (1+0) by lia. do 2 rewrite find_accum_add1. lia.
 apply H2 in H4. 2: right; auto. 2: right; auto.
 simpl in H4. apply NoDup_cons_2 in Hsorted_NoDup.
-destruct (prod_eqdec Z_EqDec Z_EqDec a0 a1). hnf in e; subst a0; contradiction.
-destruct (prod_eqdec Z_EqDec Z_EqDec a0 b). hnf in e; subst a0; contradiction.
+destruct (E_EqDec a0 a1). hnf in e; subst a0; contradiction.
+destruct (E_EqDec a0 b). hnf in e; subst a0; contradiction.
 replace 1 with (1+0) in H4 by lia. do 2 rewrite find_accum_add1 in H4. lia.
 } clear IHlsorted.
 destruct H1 as [l1 [l2 [? [? ?]]]].
@@ -1120,7 +1184,7 @@ subst a0. rewrite find_cons. split; intros. apply H5; auto. pose proof (find_lbo
 ****
 subst b. rewrite find_cons. (*falseness*)
 split; intros.
-assert (0 < find (a::l2) a0 0). simpl. destruct (prod_eqdec Z_EqDec Z_EqDec a a0).
+assert (0 < find (a::l2) a0 0). simpl. destruct (E_EqDec a a0).
 hnf in e. subst a0. exfalso; apply Ha. apply in_or_app; right; auto.
 pose proof (find_lbound l2 a0 1). lia.
 lia.
@@ -1133,8 +1197,8 @@ apply H0. left; auto.
 **** rewrite <- H2.
 2: apply in_or_app; right; auto. 2: apply in_or_app; right; auto.
 simpl.
-destruct (prod_eqdec Z_EqDec Z_EqDec a a0). hnf in e; subst a0. exfalso; apply Ha. apply in_or_app; right; auto.
-destruct (prod_eqdec Z_EqDec Z_EqDec a b). hnf in e; subst b. exfalso; apply Ha. apply in_or_app; right; auto.
+destruct (E_EqDec a a0). hnf in e; subst a0. exfalso; apply Ha. apply in_or_app; right; auto.
+destruct (E_EqDec a b). hnf in e; subst b. exfalso; apply Ha. apply in_or_app; right; auto.
 replace 1 with (1+0) by lia. do 2 rewrite find_accum_add1. split; intros; lia.
 Qed.
 

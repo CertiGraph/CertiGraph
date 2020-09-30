@@ -6,10 +6,11 @@ Require Import CertiGraph.graph.path_lemmas.
 Require Import CertiGraph.graph.UnionFind.
 Require Import CertiGraph.msl_application.ArrayGraph.
 Require Import CertiGraph.unionfind.env_unionfind_arr.
-(*edgelist*)
-Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
 (*spanning tree definition*)
 Require Import CertiGraph.graph.undirected_graph.
+
+Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+Local Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
 
 Lemma reachable_uf_equiv_connected:
   forall (g1 g2: UFGraph) u v,
