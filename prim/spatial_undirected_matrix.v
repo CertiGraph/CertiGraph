@@ -1,7 +1,7 @@
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.undirected_graph.
-Require Import CertiGraph.graph.MathAdjMatGraph.
+Require Export CertiGraph.graph.SpaceAdjMatGraph3.
 Require Import CertiGraph.prim.MatrixUGraph.
 Require Import CertiGraph.priq.priq_arr_utils.
 Require Import CertiGraph.lib.List_ext.
@@ -115,38 +115,37 @@ Definition elabel_inf_symm (g: MatrixUGraph) (e: E) :=
   if evalid_dec g (eformat e) then elabel g (eformat e) else inf.
 *)
 
+
+(************* Spatial Rep **********)
+
 Definition vert_rep_symm (g : G) (v : V): list Z :=
-  map (elabel g) (map (fun x => eformat (v,x)) (nat_inc_list (Z.to_nat SIZE))).
+  (@vert_to_list SIZE g eformat v).
 
 (* from Graph to list (list Z) *)
 Definition graph_to_symm_mat (g : G) : list (list Z) :=
-  map (vert_rep_symm g) (nat_inc_list (Z.to_nat SIZE)).
+  (@graph_to_mat SIZE g eformat).
 
 Lemma graph_to_mat_eq:
   forall (g: G) i j, 0 <= i < SIZE -> 0 <= j < SIZE ->
     (Znth i (Znth j (graph_to_symm_mat g))) = elabel g (eformat (i,j)).
 Proof.
-intros. unfold graph_to_symm_mat, vert_rep_symm. rewrite Znth_map. rewrite Znth_map. rewrite Znth_map.
-rewrite nat_inc_list_i. rewrite nat_inc_list_i. rewrite eformat_symm; auto.
-lia. lia. rewrite nat_inc_list_Zlength; lia. rewrite Zlength_map.
-all: rewrite nat_inc_list_Zlength; lia.
+  intros.
+  symmetry. rewrite eformat_symm.
+  apply elabel_Znth_graph_to_mat; lia.
 Qed.
 
 Lemma graph_to_mat_symmetric:
   forall (g: G) i j, 0 <= i < SIZE -> 0 <= j < SIZE ->
     (Znth i (Znth j (graph_to_symm_mat g))) = (Znth j (Znth i (graph_to_symm_mat g))).
 Proof.
-unfold graph_to_symm_mat, vert_rep_symm; intros.
-repeat rewrite Znth_map. repeat rewrite nat_inc_list_i by lia.
-rewrite eformat_symm. auto.
-all: try (rewrite nat_inc_list_Zlength, Z2Nat.id; lia).
-all: rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia.
+  intros. repeat rewrite graph_to_mat_eq; trivial.
+  f_equal. apply eformat_symm.
 Qed.
 
 Lemma graph_to_mat_inf:
   forall (g: G) u v, 0 <= u < v -> v < SIZE -> ~ evalid g (u,v) -> Znth v (Znth u (graph_to_symm_mat g)) = priq_arr_utils.inf.
 Proof.
-unfold graph_to_symm_mat, vert_rep_symm; intros.
+unfold graph_to_symm_mat, graph_to_mat, vert_to_list; intros.
 repeat rewrite Znth_map. repeat rewrite nat_inc_list_i.
 rewrite eformat1. apply invalid_edge_weight; auto. simpl; lia.
 all: try (rewrite Z2Nat.id; lia).
@@ -169,41 +168,22 @@ simpl. repeat rewrite edgeless_vert_rep; simpl. auto.
 all: unfold SIZE; lia.
 Qed.
 
-(*************C related**********)
-
-Definition list_address {cs: compspecs} a index size : val :=
-  offset_val (index * sizeof (tarray tint size)) a.
-
-Definition list_rep {cs: compspecs} sh size l contents_mat index :=
-  let mylist := (Znth index contents_mat) in
-  data_at sh (tarray tint size) (map (fun x => Vint (Int.repr x)) mylist) (list_address l index size).
-
-Definition undirected_matrix {cs: compspecs} sh matrix_contents gaddr : mpred :=
-  iter_sepcon.iter_sepcon (list_rep sh SIZE gaddr matrix_contents)
-                          (nat_inc_list (Z.to_nat (Zlength matrix_contents))).
+Definition undirected_matrix {cs: compspecs} sh g_contents gaddr : mpred :=
+  (@SpaceAdjMatGraph' SIZE sh (cs: compspecs) eformat g_contents gaddr). 
 
 (*isolate the "ith row"*)
 Lemma graph_unfold: forall {cs: compspecs} sh contents ptr i,
+    Zlength contents = SIZE ->
     0 <= i < (Zlength contents) ->
     undirected_matrix sh contents ptr =
-    iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents) (*<---before*)
+    iter_sepcon.iter_sepcon (@list_rep SIZE sh cs ptr contents) (*<---before*)
             (sublist 0 i (nat_inc_list (Z.to_nat (Zlength contents)))) *
-    (list_rep sh SIZE ptr contents i * (*ith array*)
-           iter_sepcon.iter_sepcon (list_rep sh SIZE ptr contents) (*after*)
+    (@list_rep SIZE sh cs ptr contents i * (*ith array*)
+           iter_sepcon.iter_sepcon (@list_rep SIZE sh cs ptr contents) (*after*)
              (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents))))).
 Proof.
-  intros. unfold undirected_matrix.
-  replace (nat_inc_list (Z.to_nat (Zlength contents))) with
-      (sublist 0 (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents)))) at 1.
-  2: { rewrite sublist_same; trivial.
-       rewrite nat_inc_list_Zlength, Z2Nat_id', Z.max_r; trivial.
-       apply Zlength_nonneg.
-  }
-  rewrite (sublist_split 0 i (Zlength contents)),
-  (sublist_split i (i+1) (Zlength contents)), (sublist_one i); try lia.
-  2, 3, 4: rewrite nat_inc_list_Zlength; rewrite Z2Nat.id; lia.
-  rewrite nat_inc_list_i.
-  2: rewrite Z2Nat_id', Z.max_r; trivial; apply Zlength_nonneg. 
-  repeat rewrite iter_sepcon.iter_sepcon_app.
-  simpl. rewrite sepcon_emp. reflexivity.
+  intros.
+  unfold undirected_matrix.
+  rewrite (SpaceAdjMatGraph_unfold' _ _ _ _ _ [] i); try lia.
+  rewrite H. reflexivity.
 Qed.
