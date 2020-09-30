@@ -1,5 +1,9 @@
 //well, no need for malloc and free I guess
-#include "../priq/priq_arr.h"
+#include "../priq_malloc/priq_arr.h"
+
+#define INT_MAX 2147483647
+#define SIZE 8
+#define INF INT_MAX - 1
 
 //I feel like we should store the matrix in a struct. That way SIZE can be preserved yet it can be moved around with ease
 
@@ -39,7 +43,7 @@ It's not even clear in a conventional adjacency matrix anyway, because an undire
 void prim(int graph[SIZE][SIZE], int r, int parent[SIZE]) {
     //This should ideally be replaced by a pq-specific "find_item_in_queue", but depending on the pq may be O(logn)
     int key[SIZE];
-    initialise_list(key, IFTY);
+    initialise_list(key, INF);
     initialise_list(parent, SIZE);
     //as a marker to check if v is in pq. 1 for NOT in pq (already checked). This should ideally be replaced by a pq-specific "in_queue"
     int out[SIZE];
@@ -47,12 +51,12 @@ void prim(int graph[SIZE][SIZE], int r, int parent[SIZE]) {
     key[r] = 0; //first in pq
     
     //Q = G.V;
-    int pq[SIZE];
+    int* pq = init(SIZE);
     for (int v = 0; v < SIZE; ++v) {
         push(v, key[v], pq);
     }
-    while (!pq_emp(pq)) {
-        int u = popMin(pq);
+    while (!pq_emp(SIZE, INF, pq)) {
+        int u = popMin(SIZE, INF, pq);
         out[u] = 1;
         for (int v = 0; v < SIZE; ++v) {
             if (out[v]==0) {				//(*this is why out array is kept, to not require extra O(logn) search of pq*)
@@ -60,9 +64,10 @@ void prim(int graph[SIZE][SIZE], int r, int parent[SIZE]) {
 	                parent[v] = u;
 	                key[v] = graph[u][v];
 	                adjustWeight(v, key[v], pq);
-		}
+                }
             }
         }
     }
+    // freePQ(pq);
     return;
 }
