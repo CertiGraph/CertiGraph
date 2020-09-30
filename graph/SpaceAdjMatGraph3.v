@@ -89,9 +89,38 @@ Section SpaceAdjMatGraph3.
             (map Vint (map Int.repr mylist))
             (list_address cs l index).
 
-  Definition SpaceAdjMatGraph sh (cs: compspecs) (f : E -> E) g gaddr : mpred :=
-    iter_sepcon (list_rep sh cs gaddr (graph_to_mat g f))
+    Definition SpaceAdjMatGraph' sh (cs: compspecs) (f : E -> E) g_contents gaddr : mpred :=
+    iter_sepcon (list_rep sh cs gaddr g_contents)
                 (nat_inc_list (Z.to_nat size)).
+
+    Definition SpaceAdjMatGraph sh (cs: compspecs) (f : E -> E) g gaddr : mpred :=
+      SpaceAdjMatGraph' sh cs f (graph_to_mat g f) gaddr.
+  
+  Lemma SpaceAdjMatGraph_unfold': forall sh (cs: compspecs) (f : E -> E) g_contents ptr
+                                        (addresses0 : list val) i,
+      0 <= i < size ->
+      Zlength g_contents = size ->
+      SpaceAdjMatGraph' sh cs f g_contents ptr =
+      sepcon (iter_sepcon (list_rep sh cs ptr g_contents)
+                          (sublist 0 i (nat_inc_list (Z.to_nat size))))
+             (sepcon
+                (list_rep sh cs ptr g_contents i)
+                (iter_sepcon (list_rep sh cs ptr g_contents)
+                             (sublist (i + 1) (Zlength g_contents) (nat_inc_list (Z.to_nat size))))).
+  Proof.
+    intros. unfold SpaceAdjMatGraph'.
+    replace (nat_inc_list (Z.to_nat size)) with
+        (sublist 0 size (nat_inc_list (Z.to_nat size))) at 1.
+    2: rewrite sublist_same; trivial; rewrite nat_inc_list_Zlength; lia.
+    rewrite (sublist_split 0 i size),
+    (sublist_split i (i+1) size), (sublist_one i); try lia.
+    2, 3, 4: rewrite nat_inc_list_Zlength; rewrite Z2Nat.id; lia.
+    rewrite nat_inc_list_i.
+    2: rewrite Z2Nat_id', Z.max_r; lia.
+    repeat rewrite iter_sepcon_app.
+    simpl. rewrite sepcon_emp. rewrite H0.
+    reflexivity.
+  Qed.
 
   Lemma SpaceAdjMatGraph_unfold: forall sh (cs: compspecs) (f : E -> E) g ptr
                                         (addresses0 : list val) i,
@@ -106,17 +135,8 @@ Section SpaceAdjMatGraph3.
                              (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat size))))).
   Proof.
     intros. unfold SpaceAdjMatGraph.
-    replace (nat_inc_list (Z.to_nat size)) with
-        (sublist 0 size (nat_inc_list (Z.to_nat size))) at 1.
-    2: rewrite sublist_same; trivial; rewrite nat_inc_list_Zlength; lia.
-    rewrite (sublist_split 0 i size),
-    (sublist_split i (i+1) size), (sublist_one i); try lia.
-    2, 3, 4: rewrite nat_inc_list_Zlength; rewrite Z2Nat.id; lia.
-    rewrite nat_inc_list_i.
-    2: rewrite Z2Nat_id', Z.max_r; lia.
-    repeat rewrite iter_sepcon_app.
-    simpl. rewrite sepcon_emp. subst contents.
-    rewrite graph_to_mat_Zlength; trivial. lia.
+    apply SpaceAdjMatGraph_unfold'; trivial.
+    subst contents. rewrite graph_to_mat_Zlength; trivial. lia.
   Qed.
 
 (*
