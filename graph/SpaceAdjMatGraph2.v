@@ -82,26 +82,25 @@ Section SpaceAdjMatGraph2.
 
    Lemma Zlength_concat:
    forall size n f,
-     0 <= size ->
      0 <= n ->
      Forall (fun list : list Z => Zlength list = n)
-            (map f (nat_inc_list (Z.to_nat size))) ->
-     Zlength (concat (map f (nat_inc_list (Z.to_nat size)))) =
-     Z.of_nat (Z.to_nat size) * n.
+            (map f (nat_inc_list size)) ->
+     Zlength (concat (map f (nat_inc_list size))) =
+     Z.of_nat size * n.
  Proof.
    intros.
-   induction (Z.to_nat size0).
+   clear H. induction size0.
    1: simpl; apply Zlength_nil.
    rewrite Nat2Z.inj_succ, Z.mul_succ_l.
    simpl. rewrite map_app, concat_app, Zlength_app.
    simpl. rewrite app_nil_r.
    f_equal.
-   - apply IHn0.
-     rewrite Forall_forall in H1 |- *.
-     intros. apply H1.
+   - apply IHsize0.
+     rewrite Forall_forall in H0 |- *.
+     intros. apply H0.
      simpl. rewrite map_app.
      apply in_or_app; left; trivial.
-   - rewrite Forall_forall in H1. apply H1.
+   - rewrite Forall_forall in H0. apply H0.
      apply in_map. rewrite nat_inc_list_in_iff. lia.
  Qed.
 
@@ -116,6 +115,63 @@ Section SpaceAdjMatGraph2.
     rewrite <- (Z2Nat.id size); trivial.
     unfold graph_to_list, graph_to_mat in *.
     apply Zlength_concat; trivial.
+  Qed.
+
+  Lemma graph_to_list_to_mat:
+    forall g (f : E -> E) u i,
+      0 <= u < size ->
+      0 <= i < size ->
+      0 < size ->
+      Forall (fun list => Zlength list = size)
+             (graph_to_mat g f) ->
+      Znth (u * size + i) (graph_to_list g f) =
+      Znth i (Znth u (graph_to_mat g f)).
+  Proof.
+    intros.
+    assert (Htemp: 0 <= size) by lia.
+    clear Htemp.
+    unfold graph_to_list, graph_to_mat in *.
+    rewrite <- (Z2Nat.id size) in H by lia.
+    generalize dependent u.
+    induction (Z.to_nat size).
+    1: intros; lia.
+    intros. simpl.
+    rewrite map_app, concat_app.
+    assert (Forall (fun list : list Z => Zlength list = size)
+                   (map (vert_to_list g f) (nat_inc_list n))). {
+      rewrite Forall_forall in H2 |- *.
+      intros. apply H2. simpl. rewrite map_app.
+      apply in_or_app. left; trivial.
+    }
+    specialize (IHn H3).
+    destruct H.
+    rewrite Nat2Z.inj_succ in H4.
+    apply Z.lt_succ_r in H4.
+    rewrite Z.le_lteq in H4. destruct H4.
+    - repeat rewrite app_Znth1.
+      + apply IHn; trivial; lia.
+      + rewrite Zlength_map, nat_inc_list_Zlength; lia.
+      + rewrite (Zlength_concat _ size); trivial; [|lia].
+        rewrite <- (Z.succ_pred (Z.of_nat n)).
+        rewrite Z.mul_succ_l.
+        apply Z.add_le_lt_mono; try lia.
+        apply Zorder.Zmult_le_compat_r; lia.
+    - clear IHn. repeat rewrite app_Znth2.
+      + rewrite (Zlength_concat _ size); trivial; [|lia].
+        replace (u * size + i - Z.of_nat n * size)
+          with
+            (u * size - Z.of_nat n * size  + i) by lia.
+        replace (u * size - Z.of_nat n * size)
+          with
+            ((u - Z.of_nat n) * size) by lia.
+        rewrite Zlength_map, nat_inc_list_Zlength.
+        simpl. rewrite app_nil_r.
+        replace (u - Z.of_nat n) with 0 by lia.
+        rewrite Znth_0_cons.
+        replace (0 * size + i) with i by lia.
+        reflexivity.
+      + rewrite Zlength_map, nat_inc_list_Zlength; lia.
+      + rewrite (Zlength_concat _ size); trivial; lia.
   Qed.
 
   Definition SpaceAdjMatGraph' sh (cs: compspecs) (f : E -> E) g_contents gaddr : mpred :=
@@ -149,45 +205,6 @@ Section SpaceAdjMatGraph2.
              (f : E -> E)
              (a : Addr) : Pred :=
     abstract_data_at a (@graph_to_list g f).
-  
+
 End SpaceAdjMatGraph2.
 
-(* Lemma Zlength_concat: *)
-  (* forall  *)
-
-Lemma graph_to_list_to_mat:
-  forall {size} g (f : E -> E) u i,
-    0 <= u < size ->
-    0 <= i < size ->
-    0 < size ->
-    Forall (fun list => Zlength list = size)
-           (@graph_to_mat size g f) ->
-    Znth (u * size + i) (@graph_to_list size g f) =
-    Znth i (Znth u (@graph_to_mat size g f)).
-Proof.
-  intros.
-  assert (Htemp: 0 <= size) by lia.
-  clear Htemp.
-  unfold graph_to_list, graph_to_mat in *.
-  induction (Z.to_nat size).
-  1: { admit. }
-  simpl.
-  rewrite map_app, concat_app.
-  destruct (Coqlib.zlt u (Z.of_nat n)).
-  - repeat rewrite app_Znth1.
-    + apply IHn.
-      rewrite Forall_forall in H2 |- *.
-      intros. apply H2. simpl. rewrite map_app.
-      apply in_or_app. left; trivial.
-    + rewrite Zlength_map, nat_inc_list_Zlength; lia.
-    + rewrite Zlength_concat
-
-      unfold vert_to_list.
-      admit.
-  - repeat rewrite app_Znth2.
-    + rewrite Zlength_map, nat_inc_list_Zlength.
-      simpl. rewrite app_nil_r.
-      admit.
-    + rewrite Zlength_map, nat_inc_list_Zlength; lia.
-    + admit.
-Admitted.
