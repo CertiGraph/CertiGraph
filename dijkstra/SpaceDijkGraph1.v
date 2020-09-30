@@ -23,6 +23,7 @@ Section SpaceDijkGraph.
     lia.
   Qed.
 
-  Definition DijkGraph sh cs g g_ptr size addresses : mpred := @SpaceAdjMatGraph size sh cs id g g_ptr addresses.
+  Definition DijkGraph sh cs g g_ptr size addresses : mpred :=
+    @SpaceAdjMatGraph size sh cs id g g_ptr addresses.
 
 End SpaceDijkGraph.

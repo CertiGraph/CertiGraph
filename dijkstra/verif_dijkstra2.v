@@ -238,7 +238,7 @@ Section DijkstraProof.
   Proof.
     start_function.
     unfold DijkGraph.
-    unfold SpaceAdjMatGraph.
+    unfold SpaceAdjMatGraph, SpaceAdjMatGraph'.
     assert (0 <= u * 8 + i < size * size). {
       rewrite size_eq in *; ulia.
     }
