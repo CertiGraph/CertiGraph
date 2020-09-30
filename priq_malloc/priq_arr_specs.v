@@ -34,7 +34,7 @@ Definition init_spec {CS: compspecs} :=
   POST [tptr tint]
   EX pq: pointer_val,
   PROP ()
-  LOCAL ()
+  LOCAL (temp ret_temp (pointer_val_val pq))
   SEP (data_at_ Tsh (tarray tint size) (pointer_val_val pq)).
 
 Definition push_spec {CS: compspecs} :=
