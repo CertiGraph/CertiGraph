@@ -31,7 +31,8 @@ Section DijkstraSpec.
          i : V
     PRE [tptr tint, tint, tint]
       PROP (0 <= i < size;
-          0 <= u < size)
+           0 <= u < size;
+           Forall (fun list => Zlength list = size) (@graph_to_mat size g id))
       PARAMS (pointer_val_val graph_ptr;
            Vint (Int.repr u);
            Vint (Int.repr i))
