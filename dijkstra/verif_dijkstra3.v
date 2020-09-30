@@ -298,20 +298,23 @@ Section DijkstraProof.
     start_function.
     pose proof (size_further_restricted g).
     rename H1 into Hsz.
-    forward_call (sh, size * sizeof(tint)).
+    forward_call (tt).
+    1: { split; [split|]; try lia.
+         apply Z.le_trans with (m := 0).
+         compute; trivial. lia.
+    }
     Intro priq_ptr.
     forward_for_simple_bound
       size
       (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).
-    - rewrite list_repeat_0, app_nil_l, Z.sub_0_r, Z_div_mult, data_at__tarray.
+    - rewrite list_repeat_0, app_nil_l, Z.sub_0_r, data_at__tarray.
       entailer!.
-      simpl; lia.
     - forward. forward.
       forward_call ((pointer_val_val priq_ptr), i, inf,
                     (list_repeat (Z.to_nat i)
                                  (Vint (Int.repr inf)) ++
                                  list_repeat (Z.to_nat
-                                                (size - i)) Vundef), size, inf).
+                                                (size - i)) Vundef)).
       1: { split; trivial.
            unfold weight_inrange_priq.
            pose proof (inf_representable g).
@@ -327,7 +330,7 @@ Section DijkstraProof.
       forward. forward.
       do 2 rewrite <- map_list_repeat.
       forward_call ((pointer_val_val priq_ptr), src, 0,
-                    (list_repeat (Z.to_nat size) inf), size, inf).
+                    (list_repeat (Z.to_nat size) inf)).
       1: { split; trivial.
            pose proof (inf_representable g). red.
            split; compute; inversion 1.
@@ -413,8 +416,7 @@ Section DijkstraProof.
           rep_lia.
         }
         
-        forward_call ((pointer_val_val priq_ptr),
-                      priq, size, inf).
+        forward_call ((pointer_val_val priq_ptr), priq).
         1: { pose proof (size_representable g).
              pose proof (inf_further_restricted' g).
              split3; [| |split3]; try ulia.
@@ -430,7 +432,7 @@ Section DijkstraProof.
               now inversion Htemp.
           }
           clear Htemp.
-          forward_call ((pointer_val_val priq_ptr), priq, size, inf).
+          forward_call ((pointer_val_val priq_ptr), priq).
           1: { pose proof (size_representable g).
                pose proof (inf_further_restricted' g).
                split3; [| |split3; [| |split]]; try ulia.
@@ -705,7 +707,7 @@ Section DijkstraProof.
                   1: entailer!.
                   1,3: repeat rewrite Zlength_map; lia.
                   forward_call ((pointer_val_val priq_ptr), i,
-                                (Znth u dist' + cost), priq', size, inf).
+                                (Znth u dist' + cost), priq').
                   
 (* Now we must show that the for loop's invariant
    holds if we take another step,
@@ -887,9 +889,7 @@ Section DijkstraProof.
                             simpl in H23. apply H23.
                             lia.
                           }
-                          rewrite <- inf_eq2 in H27.
-                          rewrite Int.signed_repr in H27 by
-                              apply (inf_representable g).
+                          rewrite <- inf_eq in H27.
                           ulia.
                      }
                      apply H39; trivial.
@@ -914,9 +914,7 @@ Section DijkstraProof.
                  rewrite path_cost.path_cost_glue_one_step.
                  destruct H34 as [? _].
                  pose proof (path_cost.path_cost_pos _ _ H34).
-                 rewrite <- inf_eq2 in H27.
-                 rewrite Int.signed_repr in H27 by
-                     apply (inf_representable g).
+                 rewrite <- inf_eq in H27.
                  ulia.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 

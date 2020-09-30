@@ -110,10 +110,11 @@ Section DijkstraSpec.
 
   Definition Gprog : funspecs :=
     ltac:(with_library prog
-                       [push_spec;
-                       pq_emp_spec;
-                       adjustWeight_spec;
-                       popMin_spec;
+                       [(@init_spec size _);
+                       (@push_spec size inf _);
+                       (@pq_emp_spec size inf _);
+                       (@adjustWeight_spec size inf _);
+                       (@popMin_spec size inf _);
                        mallocN_spec;
                        (* freeN_spec; *)
                        getCell_spec;
