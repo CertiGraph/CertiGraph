@@ -653,32 +653,7 @@ break: (
   +assert (~ In i (popped_vertices+::u)). {
     destruct (in_dec V_EqDec i (popped_vertices +:: u)). simpl in H5. inversion H5. auto.
    }
-
    forward_call (sh, g, gptr, (@nil val), u, i).
-
-   (*
-  rewrite (graph_unfold _ _ _ u). unfold list_rep.
-   2: { unfold graph_to_symm_mat, graph_to_mat.
-        rewrite Zlength_map, nat_inc_list_Zlength. rewrite Z2Nat.id. lia. unfold SIZE; lia. } 
-  assert_PROP (field_compatible (tarray tint SIZE) [ArraySubsc i] (offset_val (u * sizeof (tarray tint SIZE)) (pointer_val_val gptr))). entailer!.
-  assert_PROP(force_val (sem_add_ptr_int tint Signed (force_val (sem_add_ptr_int (tarray tint SIZE) Signed (pointer_val_val gptr) (Vint (Int.repr u))))
-   (Vint (Int.repr i))) = (field_address (tarray tint SIZE) [ArraySubsc i] (offset_val (u * sizeof (tarray tint SIZE)) (pointer_val_val gptr)))). {
-    entailer!. symmetry; rewrite field_address_offset. simpl. unfold offset_val.
-    destruct gptr; simpl; auto.
-    rewrite Ptrofs.add_assoc. rewrite (Ptrofs.add_signed (Ptrofs.repr (u*32))).
-    rewrite Ptrofs.signed_repr. rewrite Ptrofs.signed_repr. rewrite Z.add_0_l. rewrite Z.mul_comm. auto.
-    all: set (k:=Ptrofs.min_signed); compute in k; subst k; set (k:=Ptrofs.max_signed); compute in k; subst k.
-    rewrite Z.add_0_l. unfold SIZE in H3; lia. unfold SIZE in H2; lia. auto.
-  } Intros.
-  assert (Zlength (Znth u (graph_to_symm_mat g)) = SIZE). {
-    unfold graph_to_symm_mat, graph_to_mat. unfold vert_to_list. rewrite Znth_map.
-    rewrite Zlength_map. rewrite Zlength_map. rewrite nat_inc_list_Zlength, Z2Nat.id; auto.
-    unfold SIZE; lia. rewrite nat_inc_list_Zlength, Z2Nat.id. lia. lia.
-  }
-  2: { unfold graph_to_symm_mat.
-       rewrite graph_to_mat_Zlength; lia.
-  } *)
-
    forward.
    assert (1 = 1) by trivial.
    assert (1 = 1) by trivial.

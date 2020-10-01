@@ -1,4 +1,5 @@
 Require Import VST.floyd.proofauto.
+Require Import VST.msl.iter_sepcon.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.graph.graph_model.
@@ -16,6 +17,58 @@ Local Open Scope Z.
 (***********************VERIFICATION***********************)
 
 (**Initialisation functions**)
+Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
+Proof.
+  start_function.
+  unfold undirected_matrix.
+  rewrite (SpaceAdjMatGraph_unfold' _ _ _ _ addresses u); trivial.
+  
+  assert ((Zlength (map Int.repr (Znth u (graph_to_symm_mat g)))) = SIZE). {
+    unfold graph_to_symm_mat, graph_to_mat, vert_to_list.
+    rewrite Znth_map; repeat rewrite Zlength_map.
+    all: rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
+  }
+  assert (0 <= i < Zlength (map Int.repr (Znth u (graph_to_symm_mat g)))) by lia.
+  assert (0 <= i < Zlength (Znth u (graph_to_symm_mat g))). {
+    rewrite Zlength_map in H1. lia.
+  }
+
+  Intros.
+  freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
+  unfold list_rep.
+  
+  assert_PROP (force_val
+                 (sem_add_ptr_int
+                    tint
+                    Signed
+                    (force_val
+                       (sem_add_ptr_int
+                          (tarray tint SIZE)
+                          Signed
+                          (pointer_val_val graph_ptr)
+                          (Vint (Int.repr u))))
+                    (Vint (Int.repr i))) =
+               field_address
+                 (tarray tint SIZE)
+                 [ArraySubsc i]
+                 (@list_address
+                    SIZE
+                    CompSpecs
+                    (pointer_val_val graph_ptr)
+                    u)). {
+    entailer!.
+    unfold list_address. simpl.
+    rewrite field_address_offset.
+    1: { rewrite offset_offset_val; simpl; f_equal.
+         rewrite Z.add_0_l. f_equal. lia. }            
+    destruct H5 as [? [? [? [? ?]]]]. 
+    unfold field_compatible; split3; [| | split3]; simpl; auto.
+  }
+  forward. forward. 
+  thaw FR. unfold undirected_matrix.
+  rewrite (SpaceAdjMatGraph_unfold' _ _ _ _ addresses u); trivial.
+  entailer!.
+Qed.
 
 Lemma body_initialise_list: semax_body Vprog Gprog f_initialise_list initialise_list_spec.
 Proof.
@@ -160,7 +213,7 @@ repeat rewrite data_at__tarray.
 set (k:=default_val tint); compute in k; subst k.
 forward_call (Tsh, v_key, (list_repeat (Z.to_nat 8) Vundef), inf).
 assert_PROP (Zlength (map (fun x : Z => Vint (Int.repr x)) garbage) = SIZE). entailer!.
-forward_call (sh, (pointer_val_val parent_ptr), (map (fun x : Z => Vint (Int.repr x)) garbage), SIZE).
+forward_call (wshare_share sh, (pointer_val_val parent_ptr), (map (fun x : Z => Vint (Int.repr x)) garbage), SIZE).
 clear H garbage.
 forward_call (Tsh, v_out, (list_repeat (Z.to_nat 8) Vundef), 0).
 assert (Hstarting_keys: forall i, 0 <= i < SIZE -> is_int I32 Signed (Znth i (list_repeat (Z.to_nat SIZE) (Vint (Int.repr inf))))). {
@@ -566,26 +619,15 @@ break: (
   +assert (~ In i (popped_vertices+::u)). {
     destruct (in_dec V_EqDec i (popped_vertices +:: u)). simpl in H5. inversion H5. auto.
   }
-  rewrite (graph_unfold _ _ _ u). unfold list_rep.
-   2: { unfold graph_to_symm_mat.
-        rewrite graph_to_mat_Zlength; lia. }
-  assert_PROP (field_compatible (tarray tint SIZE) [ArraySubsc i] (offset_val (u * sizeof (tarray tint SIZE)) (pointer_val_val gptr))). entailer!.
-  assert_PROP(force_val (sem_add_ptr_int tint Signed (force_val (sem_add_ptr_int (tarray tint SIZE) Signed (pointer_val_val gptr) (Vint (Int.repr u))))
-   (Vint (Int.repr i))) = (field_address (tarray tint SIZE) [ArraySubsc i] (offset_val (u * sizeof (tarray tint SIZE)) (pointer_val_val gptr)))). {
-    entailer!. symmetry; rewrite field_address_offset. simpl. unfold offset_val.
-    destruct gptr; simpl; auto.
-    rewrite Ptrofs.add_assoc. rewrite (Ptrofs.add_signed (Ptrofs.repr (u*32))).
-    rewrite Ptrofs.signed_repr. rewrite Ptrofs.signed_repr. rewrite Z.add_0_l. rewrite Z.mul_comm. auto.
-    all: set (k:=Ptrofs.min_signed); compute in k; subst k; set (k:=Ptrofs.max_signed); compute in k; subst k.
-    rewrite Z.add_0_l. unfold SIZE in H3; lia. unfold SIZE in H2; lia. auto.
-  } Intros.
-  assert (Zlength (Znth u (graph_to_symm_mat g)) = SIZE). {
-    unfold graph_to_symm_mat, graph_to_mat, vert_to_list. rewrite Znth_map.
-    rewrite Zlength_map. rewrite Zlength_map. rewrite nat_inc_list_Zlength, Z2Nat.id; auto.
-    unfold SIZE; lia. rewrite nat_inc_list_Zlength, Z2Nat.id. lia. lia.
-  }
-  forward. forward.
-  forward_if.
+   forward_call (sh, g, gptr, (@nil val), u, i).
+   forward.
+   assert (1 = 1) by trivial.
+   assert (1 = 1) by trivial.
+   assert (1 = 1) by trivial.
+   (* AM: Just don't want to renumber all the hypotheses
+      going forth 
+    *)
+   forward_if.
     -(*g[u][i] < ...*)
     (*implies adjacency*)
     rewrite graph_to_mat_eq in H10; try lia. rewrite eformat_symm in H10.
@@ -598,7 +640,7 @@ break: (
       assert (Znth i keys' <= inf). apply Hinv2_4. lia.
       (*can't lia here for some reason*) apply (Z.lt_le_trans _ (Znth i keys')); auto.
     }
-    forward. forward. forward. forward. entailer!.
+    forward. forward. forward. entailer!.
     rewrite upd_Znth_same. simpl. auto. rewrite Zlength_map. rewrite HZlength_keys'. auto.
     rewrite upd_Znth_same. 2: { simpl. auto. rewrite Zlength_map. rewrite HZlength_keys'. auto. }
     forward_call (v_pq, i, Znth i (Znth u (graph_to_symm_mat g)), pq_state').
@@ -671,7 +713,6 @@ break: (
       rewrite HZlength_keys'; lia. auto.
     } (*entailer unable to solve but no change to timing*)
     time "inner loop update-because-lt-postcon (orig 71 seconds)" entailer!.
-    entailer!. (*bizarre, have to call back-to-back entailers*)
     unfold graph_to_symm_mat. rewrite graph_to_mat_Zlength; lia.
     -forward. (*nothing changed*)
     Exists parents'. Exists keys'. Exists pq_state'.
@@ -720,7 +761,6 @@ break: (
       intros. apply Hinv2_3. lia.
     } (*entailer unable to solve but no change to timing*)
     time "inner loop no-update-because-not-lt-postcon (originally 60s)" entailer!.
-    - unfold graph_to_symm_mat. rewrite graph_to_mat_Zlength; lia.
   +(*nothing changed because out of pq*)
   assert (In i (popped_vertices+::u)). {
     unfold typed_false in H5. destruct (V_EqDec u i); simpl in H5. unfold Equivalence.equiv in e; subst i. apply in_or_app; right; left; auto.

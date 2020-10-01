@@ -28,6 +28,10 @@ void initialise_list(int list[SIZE], int a) {
     }
 }
 
+int getCell (int graph[SIZE][SIZE], int u, int i) {
+    return graph[u][i];
+}
+
 /*
 CLRS: MST-PRIM(G,w,r)
 w is the weight function and stored in g, so no need
@@ -38,6 +42,7 @@ It's not even clear in a conventional adjacency matrix anyway, because an undire
 */
 int prim(int graph[SIZE][SIZE], int parent[SIZE]) {
     //This should ideally be replaced by a pq-specific "find_item_in_queue", but depending on the pq may be O(logn)
+    int cost;
     int key[SIZE];
     initialise_list(key, IFTY);
     initialise_list(parent, SIZE);
@@ -55,11 +60,12 @@ int prim(int graph[SIZE][SIZE], int parent[SIZE]) {
         out[u] = 1;
         for (int v = 0; v < SIZE; ++v) {
             if (out[v]==0) {				//(*this is why out array is kept, to not require extra O(logn) search of pq*)
-		if (graph[u][v] < key[v]) { //(*this is why key array is kept, to not require extra O(logn) search of pq*)
+		        cost = getCell(graph, u, v);
+                if (cost < key[v]) { //(*this is why key array is kept, to not require extra O(logn) search of pq*)
 	                parent[v] = u;
-	                key[v] = graph[u][v];
+	                key[v] = cost;
 	                adjustWeight(v, key[v], pq);
-		}
+                }
             }
         }
     }
