@@ -1,3 +1,4 @@
+Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.prim.MatrixUGraph.
@@ -10,6 +11,27 @@ Local Open Scope Z_scope.
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
+
+Definition getCell_spec :=
+  DECLARE _getCell
+  WITH sh: wshare,
+       g: G,
+       graph_ptr: pointer_val,
+       addresses: list val,
+       u: V,
+       i : V
+  PRE [tptr (tarray tint SIZE), tint, tint]
+    PROP (0 <= i < SIZE;
+          0 <= u < SIZE)
+    PARAMS (pointer_val_val graph_ptr;
+           Vint (Int.repr u);
+           Vint (Int.repr i))
+    GLOBALS ()
+    SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
+  POST [tint]
+    PROP ()
+    RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_symm_mat g))))) 
+    SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
 
 Definition initialise_list_spec :=
   DECLARE _initialise_list
@@ -29,7 +51,7 @@ Definition initialise_list_spec :=
 
 Definition initialise_matrix_spec :=
   DECLARE _initialise_matrix
-  WITH sh: share, arr : val, old_contents: list (list Z), a: Z
+  WITH sh: wshare, arr : val, old_contents: list (list Z), a: Z
   PRE [tptr (tarray tint SIZE), tint]
      PROP ( writable_share sh;
             Zlength old_contents = SIZE;
@@ -47,7 +69,7 @@ Definition initialise_matrix_spec :=
 
 Definition prim_spec :=
   DECLARE _prim
-  WITH sh: share, g: G, garbage: list V, gptr : pointer_val, r: Z, parent_ptr : pointer_val
+  WITH sh: wshare, g: G, garbage: list V, gptr : pointer_val, r: Z, parent_ptr : pointer_val
   PRE [tptr (tarray tint SIZE), tint, tptr tint]
      PROP ( writable_share sh;
             vvalid g r
@@ -77,6 +99,7 @@ Definition Gprog : funspecs :=
                      pq_emp_spec;
                      popMin_spec;
                      adjustWeight_spec;
+                     getCell_spec;
                      initialise_list_spec;
                      initialise_matrix_spec;
                      prim_spec
