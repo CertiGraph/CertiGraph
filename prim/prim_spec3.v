@@ -3,7 +3,7 @@ Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.prim.MatrixUGraph.
 Require Import CertiGraph.prim.prim3.
-Require Import CertiGraph.graph.SpaceAdjMatGraph3.
+Require Import CertiGraph.prim.spatial_undirected_matrix.
 Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope Z_scope.
@@ -27,11 +27,11 @@ Definition getCell_spec :=
            Vint (Int.repr u);
            Vint (Int.repr i))
     GLOBALS ()
-    SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (@graph_to_mat SIZE g eformat) (pointer_val_val graph_ptr))
+    SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
   POST [tint]
     PROP ()
-    RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_mat SIZE g eformat))))) 
-    SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (@graph_to_mat SIZE g eformat) (pointer_val_val graph_ptr)).    
+    RETURN (Vint (Int.repr (Znth i (Znth u (graph_to_symm_mat g))))) 
+    SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
 
 Definition initialise_list_spec :=
   DECLARE _initialise_list
@@ -79,7 +79,7 @@ Definition prim_spec :=
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()
-     SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (@graph_to_mat SIZE g eformat) (pointer_val_val gptr); 
+     SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr); 
 
        (* undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr); *)
           data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
@@ -94,7 +94,7 @@ Definition prim_spec :=
               (filter (fun v => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat SIZE))))
           )
      RETURN ()
-     SEP ((@SpaceAdjMatGraph' SIZE CompSpecs sh (@graph_to_mat SIZE g eformat) (pointer_val_val gptr));
+     SEP ((@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr));
 
        (* undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr); *)
           data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)

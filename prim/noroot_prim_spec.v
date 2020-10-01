@@ -4,12 +4,11 @@ Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.undirected_graph.
-Require Import CertiGraph.graph.MathAdjMatGraph.
-(* Require Import CertiGraph.graph.SpaceAdjMatGraph_noncont. *)
+Require Import CertiGraph.lib.List_ext.
+
 Require Import CertiGraph.prim.MatrixUGraph.
 Require Import CertiGraph.prim.noroot_prim.
 Require Import CertiGraph.prim.spatial_undirected_matrix.
-Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope Z_scope.
 
@@ -32,11 +31,11 @@ Definition getCell_spec :=
            Vint (Int.repr u);
            Vint (Int.repr i))
     GLOBALS ()
-    SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
+    SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
   POST [tint]
     PROP ()
     RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_symm_mat g))))) 
-    SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
+    SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
 
 Definition initialise_list_spec :=
   DECLARE _initialise_list
@@ -66,12 +65,11 @@ Definition initialise_matrix_spec :=
           )
      PARAMS ( arr ; Vint (Int.repr a) )
      GLOBALS ()
-     SEP (undirected_matrix sh (old_contents) (arr))
+     SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh old_contents arr)
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (undirected_matrix sh (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a)) arr
-         ).
+     SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a)) arr).
 
 Definition prim_spec :=
   DECLARE _prim
@@ -81,7 +79,7 @@ Definition prim_spec :=
           )
      PARAMS ( pointer_val_val gptr; pointer_val_val parent_ptr)
      GLOBALS ()
-     SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
+     SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr);
           data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
          )
   POST [ tint ]
@@ -94,7 +92,7 @@ Definition prim_spec :=
               (filter (fun v => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat SIZE))))
           )
      RETURN (Vint (Int.repr 0))
-     SEP (undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr);
+     SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr);
           data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
          ).
 

@@ -8,9 +8,12 @@ Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope logic.
 
+Definition graph_to_symm_mat g :=
+  @graph_to_mat SIZE g eformat.
+
 Lemma graph_to_mat_eq:
   forall (g: AdjMatLG) i j, 0 <= i < SIZE -> 0 <= j < SIZE ->
-    (Znth i (Znth j (@graph_to_mat SIZE g eformat))) = elabel g (eformat (i,j)).
+    (Znth i (Znth j (graph_to_symm_mat g))) = elabel g (eformat (i,j)).
 Proof.
   intros.
   symmetry. rewrite eformat_symm.
@@ -20,8 +23,8 @@ Qed.
 Lemma graph_to_mat_symmetric:
   forall (g: AdjMatLG) i j,
     0 <= i < SIZE -> 0 <= j < SIZE ->
-    (Znth i (Znth j (@graph_to_mat SIZE g eformat))) =
-    (Znth j (Znth i (@graph_to_mat SIZE g eformat))).
+    (Znth i (Znth j (graph_to_symm_mat g))) =
+    (Znth j (Znth i (graph_to_symm_mat g))).
 Proof.
   intros. repeat rewrite graph_to_mat_eq; trivial.
   f_equal. apply eformat_symm.
@@ -32,10 +35,10 @@ Lemma graph_to_mat_inf:
     0 <= u < v ->
     v < SIZE ->
     ~ evalid g (u,v) ->
-    Znth v (Znth u (@graph_to_mat SIZE g eformat)) =
+    Znth v (Znth u (graph_to_symm_mat g)) =
     priq_arr_utils.inf.
 Proof.
-  intros.
+  intros. unfold graph_to_symm_mat.
   rewrite <- elabel_Znth_graph_to_mat; try lia.
   rewrite eformat1.
   apply (MathAdjMatGraph.invalid_edge_weight); auto.
@@ -53,7 +56,7 @@ Proof.
 Qed.
 
 Lemma edgeless_to_symm_mat:
-  (@graph_to_mat SIZE edgeless_graph' eformat) =
+  graph_to_symm_mat edgeless_graph' =
   list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) inf).
 Proof.
   simpl. repeat rewrite edgeless_vert_rep; simpl. auto.

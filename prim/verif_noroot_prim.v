@@ -10,7 +10,7 @@ Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.priq.priq_arr_utils.
 Require Import CertiGraph.prim.spatial_undirected_matrix.
 Require Import CertiGraph.prim.noroot_prim.
-Require Import CertiGraph.prim.specs_noroot_prim.
+Require Import CertiGraph.prim.noroot_prim_spec.
 
 Local Open Scope Z.
 
@@ -20,8 +20,7 @@ Local Open Scope Z.
 Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
 Proof.
   start_function.
-  unfold undirected_matrix.
-  rewrite (SpaceAdjMatGraph_unfold' _ _ _ _ addresses u); trivial.
+  rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u); trivial.
   
   assert ((Zlength (map Int.repr (Znth u (graph_to_symm_mat g)))) = SIZE). {
     unfold graph_to_symm_mat, graph_to_mat, vert_to_list.
@@ -65,8 +64,8 @@ Proof.
     unfold field_compatible; split3; [| | split3]; simpl; auto.
   }
   forward. forward. 
-  thaw FR. unfold undirected_matrix.
-  rewrite (SpaceAdjMatGraph_unfold' _ _ _ _ addresses u); trivial.
+  thaw FR.
+  rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u); trivial.
   entailer!.
 Qed.
 
@@ -112,12 +111,13 @@ forward_for_simple_bound SIZE
         (sublist i SIZE (nat_inc_list (Z.to_nat (Zlength old_contents))))
     ))%assert.
 unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
-rewrite (graph_unfold _ _ _ 0). rewrite H. entailer!.
+rewrite (SpaceAdjMatGraph_unfold' _ _ _ (@nil val) 0). rewrite H. entailer!.
 replace (@list_rep SIZE CompSpecs sh arr old_contents 0) with (iter_sepcon.iter_sepcon (@list_rep SIZE CompSpecs sh arr old_contents) [0]).
 2: { simpl. rewrite sepcon_emp. auto. }
 rewrite <- iter_sepcon.iter_sepcon_app.
 (*ok this is not good, make a generic scalable lemma*) simpl. entailer!.
-1,2: rewrite H; unfold SIZE; lia.
+unfold SIZE; lia.
+trivial.
 
 (*inner loop*)
 
@@ -170,7 +170,7 @@ rewrite (sublist_split 0 i (i+1)) by lia. rewrite (sublist_one i (i+1)) by lia. 
 rewrite iter_sepcon.iter_sepcon_app. rewrite sublist_nil. rewrite app_nil_r. entailer!. simpl. rewrite sepcon_emp; auto.
 rewrite <- Zlength_correct. lia.
 (*postcon*)
-entailer!. rewrite (graph_unfold _ _ _ 0). repeat rewrite sublist_nil. repeat rewrite iter_sepcon.iter_sepcon_nil.
+entailer!. rewrite (@SpaceAdjMatGraph_unfold' _ _ _ _ _ (@nil val) 0). repeat rewrite sublist_nil. repeat rewrite iter_sepcon.iter_sepcon_nil.
 rewrite sepcon_emp. rewrite sepcon_comm. rewrite sepcon_emp.
 rewrite Z.add_0_l. rewrite (sublist_split 0 1 (SIZE)). rewrite sublist_one. rewrite nat_inc_list_i.
 rewrite iter_sepcon.iter_sepcon_app. rewrite Zlength_list_repeat. replace (Datatypes.length old_contents) with (Z.to_nat SIZE).
@@ -195,7 +195,8 @@ rewrite Z2Nat.id in H2; auto. unfold SIZE; lia.
 (*remaining lias*)
 unfold SIZE; lia. rewrite <- ZtoNat_Zlength. rewrite H; auto. unfold SIZE; lia. rewrite <- Zlength_correct, H; unfold SIZE; lia.
 lia. rewrite <- HZlength_nat_inc_list; unfold SIZE; lia. lia. lia.
-rewrite <- HZlength_nat_inc_list; unfold SIZE; lia. rewrite Zlength_list_repeat; unfold SIZE; lia.
+rewrite <- HZlength_nat_inc_list; unfold SIZE; lia.
+unfold SIZE; lia.
 rewrite Zlength_list_repeat; unfold SIZE; lia.
 Qed.
 
@@ -241,7 +242,7 @@ forward_for_simple_bound SIZE
       data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr SIZE))) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) starting_keys v_key;
       data_at Tsh (tarray tint 8) (sublist 0 i starting_keys ++ sublist i SIZE (list_repeat (Z.to_nat 8) Vundef)) v_pq;
-      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
+      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
     )
   )%assert.
 entailer!. (*precon taken care of*)
@@ -321,7 +322,7 @@ forward_loop (
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x))
         pq_state) v_pq;
-      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
+      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
     )
   )
 break: (
@@ -364,7 +365,7 @@ break: (
       data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
       data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr (inf+1)))) v_pq;
-      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
+      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
     )
   )
 %assert.
@@ -587,7 +588,7 @@ break: (
           (nat_inc_list (Z.to_nat 8))) v_out;
      data_at sh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) parents') (pointer_val_val parent_ptr);
      data_at Tsh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) keys') v_key;
-     undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
+     (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
       )
     )
   %assert.
@@ -652,11 +653,9 @@ break: (
     Exists (upd_Znth i parents' u).
     Exists (upd_Znth i keys' (Znth i (Znth u (graph_to_symm_mat g)))).
     Exists (upd_Znth i pq_state' (Znth i (Znth u (graph_to_symm_mat g)))).
-    rewrite (graph_unfold _ (graph_to_symm_mat g) _ u). unfold list_rep.
+    rewrite (@SpaceAdjMatGraph_unfold' _ _ _ _ _ (@nil val) u). unfold list_rep.
     rewrite list_map_compose. repeat rewrite (upd_Znth_map (fun x => Vint (Int.repr x))). unfold SIZE.
-    2: { unfold graph_to_symm_mat.
-         rewrite graph_to_mat_Zlength; lia.
-    }
+    2: lia. 
     clear H0 H5 H7 H8.
     assert (Hx1: forall v : Z, 0 <= v < i + 1 ->
       ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
@@ -716,8 +715,9 @@ break: (
     unfold graph_to_symm_mat. rewrite graph_to_mat_Zlength; lia.
     -forward. (*nothing changed*)
     Exists parents'. Exists keys'. Exists pq_state'.
-    rewrite (graph_unfold _ (graph_to_symm_mat g) _ u). unfold list_rep.
-    2,3: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia.
+    rewrite (@SpaceAdjMatGraph_unfold' _ _ _ _ _ (@nil val) u). unfold list_rep.
+    2: lia.
+    2: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia.
     assert (Hx1: forall v : Z,
           0 <= v < i + 1 ->
           ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
@@ -768,8 +768,9 @@ break: (
   }
   forward. (*again nothing changed*)
   Exists parents'. Exists keys'. Exists pq_state'.
-  rewrite (graph_unfold _ (graph_to_symm_mat g) _ u). unfold list_rep.
-  2,3: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia. 
+  rewrite (@SpaceAdjMatGraph_unfold' _ _ _ _ _ (@nil val) u). unfold list_rep.
+  2: lia.
+  2: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia. 
   assert (forall v : Z,
           0 <= v < i + 1 ->
           ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
