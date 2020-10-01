@@ -20,7 +20,7 @@ Section SpaceDijkGraph.
     lia.
   Qed.
 
-  Definition DijkGraph sh cs g g_ptr size (addresses: list val) : mpred := @SpaceAdjMatGraph size sh cs id g g_ptr.
+  Definition DijkGraph sh cs g g_ptr size (addresses: list val) : mpred := @SpaceAdjMatGraph size cs sh id g g_ptr.
   (* "addresses" is accepted but not used *)
   (* the user should just give a nil list *)
 

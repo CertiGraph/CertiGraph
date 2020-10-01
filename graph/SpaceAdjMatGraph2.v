@@ -23,7 +23,7 @@ Require Import CertiGraph.graph.MathAdjMatGraph.
 Section SpaceAdjMatGraph2.
 
   Context {size : Z}. 
-  
+  Context {CompSpecs : compspecs}. 
   
   (* SPATIAL REPRESENTATION *)
 
@@ -174,13 +174,13 @@ Section SpaceAdjMatGraph2.
       + rewrite (Zlength_concat _ size); trivial; lia.
   Qed.
 
-  Definition SpaceAdjMatGraph' sh (cs: compspecs) (f : E -> E) g_contents gaddr : mpred :=
+  Definition SpaceAdjMatGraph' sh (f : E -> E) g_contents gaddr : mpred :=
     data_at sh (tarray tint (size * size))
             (map Vint (map Int.repr g_contents))
             gaddr.
 
-  Definition SpaceAdjMatGraph sh (cs: compspecs) (f : E -> E) g gaddr : mpred :=
-    SpaceAdjMatGraph' sh cs f (graph_to_list g f) gaddr.
+  Definition SpaceAdjMatGraph sh (f : E -> E) g gaddr : mpred :=
+    SpaceAdjMatGraph' sh f (graph_to_list g f) gaddr.
 
 (*
   The below is not currently used by SpaceDijkGraph because 

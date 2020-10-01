@@ -22,8 +22,8 @@ Require Import CertiGraph.graph.MathAdjMatGraph.
 
 Section SpaceAdjMatGraph3.
 
-  Context {size : Z}. 
-  
+  Context {size : Z}.
+  Context {CompSpecs : compspecs}. 
   
   (* SPATIAL REPRESENTATION *)
 
@@ -80,32 +80,32 @@ Section SpaceAdjMatGraph3.
   Definition graph_to_list (g: AdjMatLG) (f : E -> E) : list Z :=
     (concat (graph_to_mat g f)).
 
-  Definition list_address (cs: compspecs) a index : val :=
+  Definition list_address a index : val :=
     offset_val (index * sizeof (tarray tint size)) a.
 
-  Definition list_rep sh (cs: compspecs) l contents_mat index :=
+  Definition list_rep sh l contents_mat index :=
     let mylist := (Znth index contents_mat) in
     data_at sh (tarray tint size)
             (map Vint (map Int.repr mylist))
-            (list_address cs l index).
+            (list_address l index).
 
-    Definition SpaceAdjMatGraph' sh (cs: compspecs) (f : E -> E) g_contents gaddr : mpred :=
-    iter_sepcon (list_rep sh cs gaddr g_contents)
+    Definition SpaceAdjMatGraph' sh (f : E -> E) g_contents gaddr : mpred :=
+    iter_sepcon (list_rep sh gaddr g_contents)
                 (nat_inc_list (Z.to_nat size)).
 
-    Definition SpaceAdjMatGraph sh (cs: compspecs) (f : E -> E) g gaddr : mpred :=
-      SpaceAdjMatGraph' sh cs f (graph_to_mat g f) gaddr.
+    Definition SpaceAdjMatGraph sh (f : E -> E) g gaddr : mpred :=
+      SpaceAdjMatGraph' sh f (graph_to_mat g f) gaddr.
   
-  Lemma SpaceAdjMatGraph_unfold': forall sh (cs: compspecs) (f : E -> E) g_contents ptr
+  Lemma SpaceAdjMatGraph_unfold': forall sh (f : E -> E) g_contents ptr
                                         (addresses0 : list val) i,
       0 <= i < size ->
       Zlength g_contents = size ->
-      SpaceAdjMatGraph' sh cs f g_contents ptr =
-      sepcon (iter_sepcon (list_rep sh cs ptr g_contents)
+      SpaceAdjMatGraph' sh f g_contents ptr =
+      sepcon (iter_sepcon (list_rep sh ptr g_contents)
                           (sublist 0 i (nat_inc_list (Z.to_nat size))))
              (sepcon
-                (list_rep sh cs ptr g_contents i)
-                (iter_sepcon (list_rep sh cs ptr g_contents)
+                (list_rep sh ptr g_contents i)
+                (iter_sepcon (list_rep sh ptr g_contents)
                              (sublist (i + 1) (Zlength g_contents) (nat_inc_list (Z.to_nat size))))).
   Proof.
     intros. unfold SpaceAdjMatGraph'.
@@ -122,16 +122,16 @@ Section SpaceAdjMatGraph3.
     reflexivity.
   Qed.
 
-  Lemma SpaceAdjMatGraph_unfold: forall sh (cs: compspecs) (f : E -> E) g ptr
+  Lemma SpaceAdjMatGraph_unfold: forall sh (f : E -> E) g ptr
                                         (addresses0 : list val) i,
       let contents := (graph_to_mat g f) in 
       0 <= i < size ->
-      SpaceAdjMatGraph sh cs f g ptr =
-      sepcon (iter_sepcon (list_rep sh cs ptr contents)
+      SpaceAdjMatGraph sh f g ptr =
+      sepcon (iter_sepcon (list_rep sh ptr contents)
                           (sublist 0 i (nat_inc_list (Z.to_nat size))))
              (sepcon
-                (list_rep sh cs ptr contents i)
-                (iter_sepcon (list_rep sh cs ptr contents)
+                (list_rep sh ptr contents i)
+                (iter_sepcon (list_rep sh ptr contents)
                              (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat size))))).
   Proof.
     intros. unfold SpaceAdjMatGraph.

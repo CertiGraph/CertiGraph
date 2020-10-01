@@ -55,14 +55,14 @@ forward_for_simple_bound SIZE
      SEP (
       iter_sepcon.iter_sepcon (fun i => data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) ((@list_address SIZE CompSpecs arr i)))
         (sublist 0 i (nat_inc_list (Z.to_nat (Zlength old_contents))));
-      iter_sepcon.iter_sepcon ((@list_rep SIZE sh CompSpecs arr old_contents))
+      iter_sepcon.iter_sepcon ((@list_rep SIZE CompSpecs sh arr old_contents))
         (sublist i SIZE (nat_inc_list (Z.to_nat (Zlength old_contents))))
     ))%assert.
 unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
 rewrite (graph_unfold _ _ _ 0); trivial.
 2: rewrite H; unfold SIZE; lia.
 rewrite H. entailer!.
-replace (@list_rep SIZE sh CompSpecs arr old_contents 0) with (iter_sepcon.iter_sepcon (@list_rep SIZE sh CompSpecs arr old_contents) [0]).
+replace (@list_rep SIZE CompSpecs sh arr old_contents 0) with (iter_sepcon.iter_sepcon (@list_rep SIZE CompSpecs sh arr old_contents) [0]).
 2: { simpl. rewrite sepcon_emp. auto. }
 rewrite <- iter_sepcon.iter_sepcon_app.
 (*ok this is not good, make a generic scalable lemma*) simpl. entailer!.
@@ -80,7 +80,7 @@ forward_for_simple_bound SIZE
       iter_sepcon.iter_sepcon (fun i => data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) (@list_address SIZE CompSpecs arr i))
         (sublist 0 i (nat_inc_list (Z.to_nat (Zlength old_contents))));
       data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat j) (Vint (Int.repr a))++sublist j SIZE (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (@list_address SIZE CompSpecs arr i);
-      iter_sepcon.iter_sepcon (@list_rep SIZE sh CompSpecs arr old_contents)
+      iter_sepcon.iter_sepcon (@list_rep SIZE CompSpecs sh arr old_contents)
         (sublist (i+1) SIZE (nat_inc_list (Z.to_nat (Zlength old_contents))))
     ))%assert.
 unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
@@ -131,7 +131,7 @@ rewrite (iter_sepcon.iter_sepcon_func_strong _
               (map Int.repr
                  (Znth index
                     (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a)))))
-           (list_address CompSpecs arr index))
+           (list_address arr index))
    (fun i : Z =>
       data_at sh (tarray tint SIZE) (map (fun x : Z => Vint (Int.repr x)) (list_repeat (Z.to_nat SIZE) a))
               (@list_address SIZE CompSpecs arr i))). entailer!. simpl; entailer.
