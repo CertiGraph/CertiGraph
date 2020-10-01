@@ -161,12 +161,6 @@ Section EDGELESS_MUGRAPH.
 Context {inf_bound: 0 <= inf <= Int.max_signed}.
 Context {size_bound: 0 < size <= Int.max_signed}.
 
-(* Anshuman, Sep 26:
-   This is just a copy of your
-   edgeless_lgraph2 
-   from graph/MathAdjMatGraph.v
-   It now goes through.
-*)
 Definition edgeless_lgraph : AdjMatLG :=
   @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
     (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
