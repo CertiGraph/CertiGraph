@@ -238,7 +238,7 @@ Section DijkstraProof.
   Proof.
     start_function.
     unfold DijkGraph.
-    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ addresses u); trivial.
+    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
 
     assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
       unfold graph_to_mat, vert_to_list.
@@ -286,7 +286,7 @@ Section DijkstraProof.
     
     repeat forward.
     thaw FR. unfold DijkGraph.
-    rewrite (SpaceAdjMatGraph_unfold _ _ id _ _ addresses u); trivial.
+    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
     entailer!.
   Qed.
 

@@ -169,21 +169,21 @@ all: unfold SIZE; lia.
 Qed.
 
 Definition undirected_matrix {cs: compspecs} sh g_contents gaddr : mpred :=
-  (@SpaceAdjMatGraph' SIZE sh (cs: compspecs) eformat g_contents gaddr). 
+  (@SpaceAdjMatGraph' SIZE (cs: compspecs) sh eformat g_contents gaddr). 
 
 (*isolate the "ith row"*)
 Lemma graph_unfold: forall {cs: compspecs} sh contents ptr i,
     Zlength contents = SIZE ->
     0 <= i < (Zlength contents) ->
     undirected_matrix sh contents ptr =
-    iter_sepcon.iter_sepcon (@list_rep SIZE sh cs ptr contents) (*<---before*)
+    iter_sepcon.iter_sepcon (@list_rep SIZE cs sh ptr contents) (*<---before*)
             (sublist 0 i (nat_inc_list (Z.to_nat (Zlength contents)))) *
-    (@list_rep SIZE sh cs ptr contents i * (*ith array*)
-           iter_sepcon.iter_sepcon (@list_rep SIZE sh cs ptr contents) (*after*)
+    (@list_rep SIZE cs sh ptr contents i * (*ith array*)
+           iter_sepcon.iter_sepcon (@list_rep SIZE cs sh ptr contents) (*after*)
              (sublist (i + 1) (Zlength contents) (nat_inc_list (Z.to_nat (Zlength contents))))).
 Proof.
   intros.
   unfold undirected_matrix.
-  rewrite (SpaceAdjMatGraph_unfold' _ _ _ _ _ [] i); try lia.
+  rewrite (SpaceAdjMatGraph_unfold' _ _ _ _ [] i); try lia.
   rewrite H. reflexivity.
 Qed.
