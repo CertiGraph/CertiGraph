@@ -78,7 +78,7 @@ forward_for_simple_bound SIZE
      PROP ()
      LOCAL (temp _list arr; temp _a (Vint (Int.repr a)))
      SEP (
-      data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat i) (Vint (Int.repr a))++(sublist i SIZE old_list)) arr
+      data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat i) (Vint (Int.repr a))++(sublist i SIZE old_list)) arr
     ))%assert.
 unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
 entailer!. rewrite app_nil_l. rewrite sublist_same by lia. entailer!.
@@ -105,16 +105,16 @@ forward_for_simple_bound SIZE
      PROP ()
      LOCAL (temp _graph arr; temp _a (Vint (Int.repr a)))
      SEP (
-      iter_sepcon.iter_sepcon (fun i => data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) ((@list_address SIZE CompSpecs arr i)))
+      iter_sepcon.iter_sepcon (fun i => data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) ((@list_address SIZE CompSpecs arr i)))
         (sublist 0 i (nat_inc_list (Z.to_nat (Zlength old_contents))));
-      iter_sepcon.iter_sepcon ((@list_rep SIZE CompSpecs sh arr old_contents))
+      iter_sepcon.iter_sepcon ((@list_rep SIZE CompSpecs Tsh arr old_contents))
         (sublist i SIZE (nat_inc_list (Z.to_nat (Zlength old_contents))))
     ))%assert.
 unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
 rewrite (SpaceAdjMatGraph_unfold' _ _ _ (@nil val) 0); trivial.
 2: unfold SIZE; lia.
 rewrite H. entailer!.
-replace (@list_rep SIZE CompSpecs sh arr old_contents 0) with (iter_sepcon.iter_sepcon (@list_rep SIZE CompSpecs sh arr old_contents) [0]).
+replace (@list_rep SIZE CompSpecs Tsh arr old_contents 0) with (iter_sepcon.iter_sepcon (@list_rep SIZE CompSpecs Tsh arr old_contents) [0]).
 2: { simpl. rewrite sepcon_emp. auto. }
 rewrite <- iter_sepcon.iter_sepcon_app.
 (*ok this is not good, make a generic scalable lemma*) simpl. entailer!.
@@ -129,10 +129,10 @@ forward_for_simple_bound SIZE
      PROP ()
      LOCAL (temp _i (Vint (Int.repr i)); temp _graph arr; temp _a (Vint (Int.repr a)))
      SEP (
-      iter_sepcon.iter_sepcon (fun i => data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) (@list_address SIZE CompSpecs arr i))
+      iter_sepcon.iter_sepcon (fun i => data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) (@list_address SIZE CompSpecs arr i))
         (sublist 0 i (nat_inc_list (Z.to_nat (Zlength old_contents))));
-      data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat j) (Vint (Int.repr a))++sublist j SIZE (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (@list_address SIZE CompSpecs arr i);
-      iter_sepcon.iter_sepcon (@list_rep SIZE CompSpecs sh arr old_contents)
+      data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat j) (Vint (Int.repr a))++sublist j SIZE (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (@list_address SIZE CompSpecs arr i);
+      iter_sepcon.iter_sepcon (@list_rep SIZE CompSpecs Tsh arr old_contents)
         (sublist (i+1) SIZE (nat_inc_list (Z.to_nat (Zlength old_contents))))
     ))%assert.
 unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
@@ -178,14 +178,14 @@ unfold list_rep. rewrite Znth_list_repeat_inrange.
 rewrite <- (map_map Int.repr Vint).
 rewrite (iter_sepcon.iter_sepcon_func_strong _
    (fun index : Z =>
-         data_at sh (tarray tint SIZE)
+         data_at Tsh (tarray tint SIZE)
            (map Vint
               (map Int.repr
                  (Znth index
                     (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a)))))
            (list_address arr index))
    (fun i : Z =>
-      data_at sh (tarray tint SIZE) (map (fun x : Z => Vint (Int.repr x)) (list_repeat (Z.to_nat SIZE) a))
+      data_at Tsh (tarray tint SIZE) (map (fun x : Z => Vint (Int.repr x)) (list_repeat (Z.to_nat SIZE) a))
               (@list_address SIZE CompSpecs arr i))). entailer!. simpl; entailer.
 intros. replace (Znth x (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a))) with
 (list_repeat (Z.to_nat SIZE) a); auto.
@@ -212,12 +212,12 @@ set (i:=Int.max_signed); compute in i; subst i. lia.
 (*replace all data_at_ with data_at Vundef*)
 repeat rewrite data_at__tarray.
 set (k:=default_val tint); compute in k; subst k.
-forward_call (Tsh, v_key, (list_repeat (Z.to_nat 8) Vundef), inf).
+forward_call (v_key, (list_repeat (Z.to_nat 8) Vundef), inf).
 1: { 
 assert_PROP (Zlength (map (fun x : Z => Vint (Int.repr x)) garbage) = SIZE). entailer!.
-forward_call (wshare_share sh, (pointer_val_val parent_ptr), (map (fun x : Z => Vint (Int.repr x)) garbage), SIZE).
+forward_call (pointer_val_val parent_ptr, (map (fun x : Z => Vint (Int.repr x)) garbage), SIZE).
 clear H garbage.
-forward_call (Tsh, v_out, (list_repeat (Z.to_nat 8) Vundef), 0).
+forward_call (v_out, (list_repeat (Z.to_nat 8) Vundef), 0).
 assert (Hrbound: 0 <= r < SIZE). apply vert_bound in Hprecon_1; auto.
 forward.
 assert (Hstarting_keys: forall i, 0 <= i < SIZE -> is_int I32 Signed (Znth i (upd_Znth r (list_repeat (Z.to_nat SIZE) (Vint (Int.repr inf))) (Vint (Int.repr 0))))). {
@@ -245,10 +245,10 @@ forward_for_simple_bound SIZE
     )
     SEP (
       data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr 0))) v_out;
-      data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr SIZE))) (pointer_val_val parent_ptr);
+      data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr SIZE))) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) starting_keys v_key;
       data_at Tsh (tarray tint 8) (sublist 0 i starting_keys ++ sublist i SIZE (list_repeat (Z.to_nat 8) Vundef)) v_pq;
-      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
+      (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr))
     )
   )%assert.
 entailer!. (*precon taken care of*)
@@ -331,11 +331,11 @@ forward_loop (
     SEP (
       data_at Tsh (tarray tint SIZE) (map (fun x => if in_dec V_EqDec x popped_vertices
         then (Vint (Int.repr 1)) else (Vint (Int.repr 0))) (nat_inc_list (Z.to_nat SIZE))) v_out;
-      data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr);
+      data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x))
         pq_state) v_pq;
-      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
+      (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr))
     )
   )
 break: (
@@ -376,10 +376,10 @@ break: (
     )
     SEP (
       data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr 1))) v_out;
-      data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr);
+      data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
       data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr (inf+1)))) v_pq;
-      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
+      (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr))
     )
   )
 %assert.
@@ -465,7 +465,7 @@ break: (
     apply edgeless_partial_lgraph.
   }
 
-  (*fix up the SEP*)
+                                                         (*fix up the SEP*)
   replace (map (fun x : V => if in_dec V_EqDec x [] then Vint (Int.repr 1) else Vint (Int.repr 0)) (nat_inc_list (Z.to_nat SIZE)))
     with (map (fun x : Z => Vint (Int.repr x)) (list_repeat (Z.to_nat SIZE) 0)). 2: {
     apply list_eq_Znth. repeat rewrite Zlength_map. rewrite Zlength_list_repeat by lia. rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
@@ -618,9 +618,9 @@ break: (
           (fun x : V =>
            if in_dec V_EqDec x (popped_vertices+::u) then Vint (Int.repr 1) else Vint (Int.repr 0))
           (nat_inc_list (Z.to_nat 8))) v_out;
-     data_at sh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) parents') (pointer_val_val parent_ptr);
+     data_at Tsh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) parents') (pointer_val_val parent_ptr);
      data_at Tsh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) keys') v_key;
-     (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
+     (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr))
       )
     )
   %assert.
@@ -652,7 +652,7 @@ break: (
   +assert (~ In i (popped_vertices+::u)). {
     destruct (in_dec V_EqDec i (popped_vertices +:: u)). simpl in H5. inversion H5. auto.
    }
-   forward_call (sh, g, gptr, (@nil val), u, i).
+   forward_call (g, gptr, (@nil val), u, i).
    forward.
    assert (1 = 1) by trivial.
    assert (1 = 1) by trivial.
@@ -746,13 +746,13 @@ break: (
       rewrite HZlength_keys'; lia. auto.
     } (*entailer unable to solve but no change to timing*)
     time "inner loop update-because-lt-postcon (orig 71 seconds)" entailer!.
-    rewrite graph_to_mat_Zlength; trivial. lia.
+    unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; trivial. lia.
     -forward. (*nothing changed*)
     Exists parents'. Exists keys'. Exists pq_state'.
     rewrite (SpaceAdjMatGraph_unfold' _ _ _ (@nil val) u).
     unfold list_rep.
     2: lia.
-    2: rewrite graph_to_mat_Zlength; lia.
+    2: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia.
 
     assert (Hx1: forall v : Z,
           0 <= v < i + 1 ->
@@ -808,7 +808,7 @@ break: (
   rewrite (SpaceAdjMatGraph_unfold' _ _ _ (@nil val) u).
   unfold list_rep.
   2: lia.
-  2: rewrite graph_to_mat_Zlength; lia.
+  2: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia.
   assert (forall v : Z,
           0 <= v < i + 1 ->
           ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
@@ -1844,7 +1844,8 @@ apply (Permutation_in (l:=VList mst)). apply Permutation_sym; auto. rewrite VLis
 forward.
 Exists mst fmst parents.
 (*change from popped_vertices to nat_inc_list*)
-entailer!.
- 
-(*Should we bother with filling a matrix for it? The original Prim doesn't bother*)
-Admitted.
+entailer!. }}
+                                                         
+                                                         
+(*Should we bother with filling a matrix for it? The original Prim doesn't bother*) 
+Qed.

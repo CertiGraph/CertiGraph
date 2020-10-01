@@ -14,8 +14,7 @@ Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 Definition getCell_spec :=
   DECLARE _getCell
-  WITH sh: wshare,
-       g: G,
+  WITH g: G,
        graph_ptr: pointer_val,
        addresses: list val,
        u: V,
@@ -27,62 +26,62 @@ Definition getCell_spec :=
            Vint (Int.repr u);
            Vint (Int.repr i))
     GLOBALS ()
-    SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
+    SEP (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
   POST [tint]
     PROP ()
     RETURN (Vint (Int.repr (Znth i (Znth u (graph_to_symm_mat g))))) 
-    SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
+    SEP (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
 
 Definition initialise_list_spec :=
   DECLARE _initialise_list
-  WITH sh: share, arr : val, old_list: list val, a: Z
+  WITH arr : val, old_list: list val, a: Z
   PRE [tptr tint, tint]
-     PROP ( writable_share sh;
+     PROP ( writable_share Tsh;
             repable_signed a
           )
      PARAMS ( arr; Vint (Int.repr a) )
      GLOBALS ()
-     SEP (data_at sh (tarray tint SIZE) (old_list) (arr))
+     SEP (data_at Tsh (tarray tint SIZE) (old_list) (arr))
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) arr
+     SEP (data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) arr
          ).
 
 Definition initialise_matrix_spec :=
   DECLARE _initialise_matrix
-  WITH sh: wshare, arr : val, old_contents: list (list Z), a: Z
+  WITH arr : val, old_contents: list (list Z), a: Z
   PRE [tptr (tarray tint SIZE), tint]
-     PROP ( writable_share sh;
+     PROP ( writable_share Tsh;
             Zlength old_contents = SIZE;
             forall row, In row old_contents -> Zlength row = SIZE;
             repable_signed a
           )
      PARAMS ( arr ; Vint (Int.repr a) )
      GLOBALS ()
-     SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh old_contents arr)
+     SEP (@SpaceAdjMatGraph' SIZE CompSpecs Tsh old_contents arr)
 
      (* (undirected_matrix sh (old_contents) (arr)) *)
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a)) arr).
+     SEP (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a)) arr).
 
      (* (undirected_matrix sh (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a)) arr *)
 
 Definition prim_spec :=
   DECLARE _prim
-  WITH sh: wshare, g: G, garbage: list V, gptr : pointer_val, r: Z, parent_ptr : pointer_val
+  WITH g: G, garbage: list V, gptr : pointer_val, r: Z, parent_ptr : pointer_val
   PRE [tptr (tarray tint SIZE), tint, tptr tint]
-     PROP ( writable_share sh;
+     PROP ( writable_share Tsh;
             vvalid g r
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()
-     SEP (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr); 
+     SEP (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr); 
 
        (* undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr); *)
-          data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
+          data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
          )
   POST [ tvoid ]
      EX mst: G,
@@ -94,10 +93,10 @@ Definition prim_spec :=
               (filter (fun v => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat SIZE))))
           )
      RETURN ()
-     SEP ((@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr));
+     SEP ((@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr));
 
        (* undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr); *)
-          data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
+          data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
          ).
 
 Definition Gprog : funspecs :=
