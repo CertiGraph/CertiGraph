@@ -2,8 +2,21 @@ Require Import VST.floyd.proofauto.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.undirected_graph.
 Require Export CertiGraph.graph.SpaceAdjMatGraph3.
-Require Import CertiGraph.prim.MatrixUGraph.
+Require Export CertiGraph.graph.MathAdjMatGraph.
+Require Import CertiGraph.graph.eformat_lemmas.
 Require Import CertiGraph.priq.priq_arr_utils.
+(* 
+Anshuman, Oct 1:
+I want to stop using priq/priq_arr_utils.
+Whatever you're using from in there is pure, 
+and not related to PQ.
+
+That stuff should be lifted into its own file, 
+and PQ and this file should both just call that file.    
+
+After that is done, most of this file can be lifted
+up to graph/
+*)
 Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope logic.
@@ -44,7 +57,21 @@ Proof.
   apply (MathAdjMatGraph.invalid_edge_weight); auto.
   simpl; lia.
 Qed.
- 
+
+
+(* 
+Anshuman, Oct 1:
+I know the import needs to go up. Just showing that
+only after this point do we need to get specific to 
+MatrixUGraph. The above can be lifted.
+*)
+Require Import CertiGraph.prim.MatrixUGraph.
+
+Definition edgeless_graph' := @edgeless_graph inf SIZE inf_rep SIZE_rep'.
+Definition adde := @MatrixUGraph_adde inf SIZE.
+Definition eremove := @MatrixUGraph_eremove inf SIZE.
+
+
 Lemma edgeless_vert_rep:
   forall v,
     0 <= v < SIZE ->
