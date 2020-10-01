@@ -1304,9 +1304,6 @@ End MATRIXUGRAPH.
  *)
 
 Definition G := @MatrixUGraph inf SIZE.
-Definition edgeless_graph' := @edgeless_graph inf SIZE inf_rep SIZE_rep'.
-Definition adde := @MatrixUGraph_adde inf SIZE.
-Definition eremove := @MatrixUGraph_eremove inf SIZE.
 
 Lemma eformat_evalid_vvalid:
 forall (g: G) u v, evalid g (eformat (u,v)) -> vvalid g u /\ vvalid g v.
