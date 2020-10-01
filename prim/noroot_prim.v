@@ -102,7 +102,6 @@ Definition _t'4 : ident := 84%positive.
 Definition _t'5 : ident := 85%positive.
 Definition _t'6 : ident := 86%positive.
 Definition _t'7 : ident := 87%positive.
-Definition _t'8 : ident := 88%positive.
 
 Definition f_check_symmetric_matrix := {|
   fn_return := tint;
@@ -221,6 +220,25 @@ Definition f_initialise_list := {|
       (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint) tint))))
 |}.
 
+Definition f_getCell := {|
+  fn_return := tint;
+  fn_callconv := cc_default;
+  fn_params := ((_graph, (tptr (tarray tint 8))) :: (_u, tint) ::
+                (_i, tint) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_t'1, tint) :: nil);
+  fn_body :=
+(Ssequence
+  (Sset _t'1
+    (Ederef
+      (Ebinop Oadd
+        (Ederef
+          (Ebinop Oadd (Etempvar _graph (tptr (tarray tint 8)))
+            (Etempvar _u tint) (tptr (tarray tint 8))) (tarray tint 8))
+        (Etempvar _i tint) (tptr tint)) tint))
+  (Sreturn (Some (Etempvar _t'1 tint))))
+|}.
+
 Definition f_prim := {|
   fn_return := tint;
   fn_callconv := cc_default;
@@ -228,10 +246,10 @@ Definition f_prim := {|
                 nil);
   fn_vars := ((_key, (tarray tint 8)) :: (_out, (tarray tint 8)) ::
               (_pq, (tarray tint 8)) :: nil);
-  fn_temps := ((_v, tint) :: (_u, tint) :: (_v__1, tint) :: (_t'2, tint) ::
-               (_t'1, tint) :: (_t'8, tint) :: (_t'7, tint) ::
-               (_t'6, tint) :: (_t'5, tint) :: (_t'4, tint) ::
-               (_t'3, tint) :: nil);
+  fn_temps := ((_cost, tint) :: (_v, tint) :: (_u, tint) :: (_v__1, tint) ::
+               (_t'3, tint) :: (_t'2, tint) :: (_t'1, tint) ::
+               (_t'7, tint) :: (_t'6, tint) :: (_t'5, tint) ::
+               (_t'4, tint) :: nil);
   fn_body :=
 (Ssequence
   (Scall None
@@ -263,7 +281,7 @@ Definition f_prim := {|
                 Sskip
                 Sbreak)
               (Ssequence
-                (Sset _t'8
+                (Sset _t'7
                   (Ederef
                     (Ebinop Oadd (Evar _key (tarray tint 8))
                       (Etempvar _v tint) (tptr tint)) tint))
@@ -272,7 +290,7 @@ Definition f_prim := {|
                                 (Tcons tint
                                   (Tcons tint (Tcons (tptr tint) Tnil)))
                                 tvoid cc_default))
-                  ((Etempvar _v tint) :: (Etempvar _t'8 tint) ::
+                  ((Etempvar _v tint) :: (Etempvar _t'7 tint) ::
                    (Evar _pq (tarray tint 8)) :: nil))))
             (Sset _v
               (Ebinop Oadd (Etempvar _v tint) (Econst_int (Int.repr 1) tint)
@@ -310,30 +328,33 @@ Definition f_prim := {|
                           Sskip
                           Sbreak)
                         (Ssequence
-                          (Sset _t'3
+                          (Sset _t'4
                             (Ederef
                               (Ebinop Oadd (Evar _out (tarray tint 8))
                                 (Etempvar _v__1 tint) (tptr tint)) tint))
-                          (Sifthenelse (Ebinop Oeq (Etempvar _t'3 tint)
+                          (Sifthenelse (Ebinop Oeq (Etempvar _t'4 tint)
                                          (Econst_int (Int.repr 0) tint) tint)
                             (Ssequence
-                              (Sset _t'4
-                                (Ederef
-                                  (Ebinop Oadd
-                                    (Ederef
-                                      (Ebinop Oadd
-                                        (Etempvar _graph (tptr (tarray tint 8)))
-                                        (Etempvar _u tint)
-                                        (tptr (tarray tint 8)))
-                                      (tarray tint 8)) (Etempvar _v__1 tint)
-                                    (tptr tint)) tint))
+                              (Ssequence
+                                (Scall (Some _t'3)
+                                  (Evar _getCell (Tfunction
+                                                   (Tcons
+                                                     (tptr (tarray tint 8))
+                                                     (Tcons tint
+                                                       (Tcons tint Tnil)))
+                                                   tint cc_default))
+                                  ((Etempvar _graph (tptr (tarray tint 8))) ::
+                                   (Etempvar _u tint) ::
+                                   (Etempvar _v__1 tint) :: nil))
+                                (Sset _cost (Etempvar _t'3 tint)))
                               (Ssequence
                                 (Sset _t'5
                                   (Ederef
                                     (Ebinop Oadd (Evar _key (tarray tint 8))
                                       (Etempvar _v__1 tint) (tptr tint))
                                     tint))
-                                (Sifthenelse (Ebinop Olt (Etempvar _t'4 tint)
+                                (Sifthenelse (Ebinop Olt
+                                               (Etempvar _cost tint)
                                                (Etempvar _t'5 tint) tint)
                                   (Ssequence
                                     (Sassign
@@ -343,25 +364,13 @@ Definition f_prim := {|
                                           (Etempvar _v__1 tint) (tptr tint))
                                         tint) (Etempvar _u tint))
                                     (Ssequence
-                                      (Ssequence
-                                        (Sset _t'7
-                                          (Ederef
-                                            (Ebinop Oadd
-                                              (Ederef
-                                                (Ebinop Oadd
-                                                  (Etempvar _graph (tptr (tarray tint 8)))
-                                                  (Etempvar _u tint)
-                                                  (tptr (tarray tint 8)))
-                                                (tarray tint 8))
-                                              (Etempvar _v__1 tint)
-                                              (tptr tint)) tint))
-                                        (Sassign
-                                          (Ederef
-                                            (Ebinop Oadd
-                                              (Evar _key (tarray tint 8))
-                                              (Etempvar _v__1 tint)
-                                              (tptr tint)) tint)
-                                          (Etempvar _t'7 tint)))
+                                      (Sassign
+                                        (Ederef
+                                          (Ebinop Oadd
+                                            (Evar _key (tarray tint 8))
+                                            (Etempvar _v__1 tint)
+                                            (tptr tint)) tint)
+                                        (Etempvar _cost tint))
                                       (Ssequence
                                         (Sset _t'6
                                           (Ederef
@@ -659,10 +668,11 @@ Definition global_definitions : list (ident * globdef fundef type) :=
  (_check_symmetric_matrix, Gfun(Internal f_check_symmetric_matrix)) ::
  (_initialise_matrix, Gfun(Internal f_initialise_matrix)) ::
  (_initialise_list, Gfun(Internal f_initialise_list)) ::
- (_prim, Gfun(Internal f_prim)) :: nil).
+ (_getCell, Gfun(Internal f_getCell)) :: (_prim, Gfun(Internal f_prim)) ::
+ nil).
 
 Definition public_idents : list ident :=
-(_prim :: _initialise_list :: _initialise_matrix ::
+(_prim :: _getCell :: _initialise_list :: _initialise_matrix ::
  _check_symmetric_matrix :: _pq_emp :: _adjustWeight :: _popMin :: _push ::
  ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
