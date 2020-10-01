@@ -89,18 +89,18 @@ Section SpaceAdjMatGraph3.
             (map Vint (map Int.repr mylist))
             (list_address l index).
 
-    Definition SpaceAdjMatGraph' sh (f : E -> E) g_contents gaddr : mpred :=
+    Definition SpaceAdjMatGraph' sh g_contents gaddr : mpred :=
     iter_sepcon (list_rep sh gaddr g_contents)
                 (nat_inc_list (Z.to_nat size)).
 
     Definition SpaceAdjMatGraph sh (f : E -> E) g gaddr : mpred :=
-      SpaceAdjMatGraph' sh f (graph_to_mat g f) gaddr.
+      SpaceAdjMatGraph' sh (graph_to_mat g f) gaddr.
   
-  Lemma SpaceAdjMatGraph_unfold': forall sh (f : E -> E) g_contents ptr
+  Lemma SpaceAdjMatGraph_unfold': forall sh g_contents ptr
                                         (addresses0 : list val) i,
       0 <= i < size ->
       Zlength g_contents = size ->
-      SpaceAdjMatGraph' sh f g_contents ptr =
+      SpaceAdjMatGraph' sh g_contents ptr =
       sepcon (iter_sepcon (list_rep sh ptr g_contents)
                           (sublist 0 i (nat_inc_list (Z.to_nat size))))
              (sepcon
