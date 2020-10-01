@@ -92,9 +92,9 @@ KRUSKAL_FILES = \
 
 PRIM_FILES = \
   MatrixUGraph.v spatial_undirected_matrix.v \
-  prim.v specs_prim.v \
+  prim3.v prim_spec3.v \
   noroot_prim.v specs_noroot_prim.v \
-  verif_prim.v verif_noroot_prim.v
+  verif_prim3.v verif_noroot_prim.v
 
 DIJKSTRA_FILES = \
   dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \
@@ -173,7 +173,7 @@ vstandme3:
 
 .PHONY: mst
 mst:
-	make prim/verif_*.vo dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo kruskal/verif_kruskal_edgelist.vo -kj7
+	make prim/verif_*.vo dijkstra/verif_*.vo kruskal/verif_*.vo -kj7
 
 .depend depend:
 	@echo 'coqdep ... >.depend'
