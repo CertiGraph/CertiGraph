@@ -6,6 +6,7 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_relation.
 
 Require Import CertiGraph.graph.undirected_graph. 
+Require Import CertiGraph.graph.SpaceAdjMatGraph3. 
 Require Import CertiGraph.prim.MatrixUGraph. 
 Require Import CertiGraph.priq.priq_arr_utils.
 Require Import CertiGraph.prim.prim3.
@@ -21,16 +22,14 @@ Local Open Scope Z.
 Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
 Proof.
   start_function.
-  unfold undirected_matrix.
-  rewrite (SpaceAdjMatGraph_unfold' _ _ _ _ addresses u); trivial.
-  
-  assert ((Zlength (map Int.repr (Znth u (graph_to_symm_mat g)))) = SIZE). {
-    unfold graph_to_symm_mat, graph_to_mat, vert_to_list.
+  rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u); trivial.
+  assert ((Zlength (map Int.repr (Znth u (@graph_to_mat SIZE g eformat)))) = SIZE). {
+    unfold graph_to_mat, vert_to_list.
     rewrite Znth_map; repeat rewrite Zlength_map.
     all: rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
   }
-  assert (0 <= i < Zlength (map Int.repr (Znth u (graph_to_symm_mat g)))) by lia.
-  assert (0 <= i < Zlength (Znth u (graph_to_symm_mat g))). {
+  assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_mat SIZE g eformat)))) by lia.
+  assert (0 <= i < Zlength (Znth u (@graph_to_mat SIZE g eformat))). {
     rewrite Zlength_map in H1. lia.
   }
 
@@ -66,8 +65,8 @@ Proof.
     unfold field_compatible; split3; [| | split3]; simpl; auto.
   }
   forward. forward. 
-  thaw FR. unfold undirected_matrix.
-  rewrite (SpaceAdjMatGraph_unfold' _ _ _ _ addresses u); trivial.
+  thaw FR. 
+  rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u); trivial.
   entailer!.
 Qed.
 
@@ -113,8 +112,8 @@ forward_for_simple_bound SIZE
         (sublist i SIZE (nat_inc_list (Z.to_nat (Zlength old_contents))))
     ))%assert.
 unfold SIZE; set (j:=Int.max_signed); compute in j; lia.
-rewrite (graph_unfold _ _ _ 0); trivial.
-2: rewrite H; unfold SIZE; lia.
+rewrite (SpaceAdjMatGraph_unfold' _ _ _ (@nil val) 0); trivial.
+2: unfold SIZE; lia.
 rewrite H. entailer!.
 replace (@list_rep SIZE CompSpecs sh arr old_contents 0) with (iter_sepcon.iter_sepcon (@list_rep SIZE CompSpecs sh arr old_contents) [0]).
 2: { simpl. rewrite sepcon_emp. auto. }
@@ -170,7 +169,7 @@ rewrite (sublist_split 0 i (i+1)) by lia. rewrite (sublist_one i (i+1)) by lia. 
 rewrite iter_sepcon.iter_sepcon_app. rewrite sublist_nil. rewrite app_nil_r. entailer!. simpl. rewrite sepcon_emp; auto.
 rewrite <- Zlength_correct. lia.
 (*postcon*)
-entailer!. rewrite (graph_unfold _ _ _ 0). repeat rewrite sublist_nil. repeat rewrite iter_sepcon.iter_sepcon_nil.
+entailer!. rewrite (SpaceAdjMatGraph_unfold' _ _ _ (@nil val) 0). repeat rewrite sublist_nil. repeat rewrite iter_sepcon.iter_sepcon_nil.
 rewrite sepcon_emp. rewrite sepcon_comm. rewrite sepcon_emp.
 rewrite Z.add_0_l. rewrite (sublist_split 0 1 (SIZE)). rewrite sublist_one. rewrite nat_inc_list_i.
 rewrite iter_sepcon.iter_sepcon_app. rewrite Zlength_list_repeat. replace (Datatypes.length old_contents) with (Z.to_nat SIZE).
@@ -196,7 +195,8 @@ rewrite Z2Nat.id in H2; auto. unfold SIZE; lia.
 (*remaining lias*)
 unfold SIZE; lia. rewrite <- ZtoNat_Zlength. rewrite H; auto. unfold SIZE; lia. rewrite <- Zlength_correct, H; unfold SIZE; lia.
 lia. rewrite <- HZlength_nat_inc_list; unfold SIZE; lia. lia. lia.
-rewrite <- HZlength_nat_inc_list; unfold SIZE; lia. rewrite Zlength_list_repeat; unfold SIZE; lia.
+rewrite <- HZlength_nat_inc_list; unfold SIZE; lia.
+unfold SIZE; lia. 
 rewrite Zlength_list_repeat; unfold SIZE; lia.
 Qed.
 
@@ -249,7 +249,7 @@ forward_for_simple_bound SIZE
       data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr SIZE))) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) starting_keys v_key;
       data_at Tsh (tarray tint 8) (sublist 0 i starting_keys ++ sublist i SIZE (list_repeat (Z.to_nat 8) Vundef)) v_pq;
-      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
+      (@SpaceAdjMatGraph' SIZE CompSpecs sh (@graph_to_mat SIZE g eformat) (pointer_val_val gptr))
     )
   )%assert.
 entailer!. (*precon taken care of*)
@@ -336,7 +336,7 @@ forward_loop (
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x))
         pq_state) v_pq;
-      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
+      (@SpaceAdjMatGraph' SIZE CompSpecs sh (@graph_to_mat SIZE g eformat) (pointer_val_val gptr))
     )
   )
 break: (
@@ -380,7 +380,7 @@ break: (
       data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
       data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr (inf+1)))) v_pq;
-      undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
+      (@SpaceAdjMatGraph' SIZE CompSpecs sh (@graph_to_mat SIZE g eformat) (pointer_val_val gptr))
     )
   )
 %assert.
@@ -621,7 +621,7 @@ break: (
           (nat_inc_list (Z.to_nat 8))) v_out;
      data_at sh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) parents') (pointer_val_val parent_ptr);
      data_at Tsh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) keys') v_key;
-     undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr)
+     (@SpaceAdjMatGraph' SIZE CompSpecs sh (@graph_to_mat SIZE g eformat) (pointer_val_val gptr))
       )
     )
   %assert.
@@ -678,24 +678,25 @@ break: (
     entailer!.
     rewrite upd_Znth_same. simpl. auto. rewrite Zlength_map. rewrite HZlength_keys'. auto.
     rewrite upd_Znth_same. 2: { simpl. auto. rewrite Zlength_map. rewrite HZlength_keys'. auto. }
-    forward_call (v_pq, i, Znth i (Znth u (graph_to_symm_mat g)), pq_state').
+    forward_call (v_pq, i, Znth i (Znth u (@graph_to_mat SIZE g eformat)), pq_state').
     replace (map (fun x : Z => Vint (Int.repr x)) pq_state') with (map Vint (map Int.repr pq_state')).
     entailer!. rewrite list_map_compose. auto.
     split. lia.
     unfold weight_inrange_priq. rewrite graph_to_mat_eq. split.
     apply weight_representable. rewrite eformat_adj_elabel, eformat_symm in Hadj_ui. lia. lia. lia.
     Exists (upd_Znth i parents' u).
-    Exists (upd_Znth i keys' (Znth i (Znth u (graph_to_symm_mat g)))).
-    Exists (upd_Znth i pq_state' (Znth i (Znth u (graph_to_symm_mat g)))).
-    rewrite (graph_unfold _ (graph_to_symm_mat g) _ u). unfold list_rep.
+    Exists (upd_Znth i keys' (Znth i (Znth u (@graph_to_mat SIZE g eformat)))).
+    Exists (upd_Znth i pq_state' (Znth i (Znth u (@graph_to_mat SIZE g eformat)))).
+    rewrite (SpaceAdjMatGraph_unfold' _ _ _ (@nil val) u).
+    unfold list_rep.
     rewrite list_map_compose. repeat rewrite (upd_Znth_map (fun x => Vint (Int.repr x))). unfold SIZE.
-    2: { unfold graph_to_symm_mat, graph_to_mat. rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id; lia. }
+    2: lia.
     clear H0 H5 H7 H8.
     assert (Hx1: forall v : Z, 0 <= v < i + 1 ->
       ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
       Znth v (upd_Znth i parents' u) = Znth v parents /\
-      Znth v (upd_Znth i keys' (Znth i (Znth u (graph_to_symm_mat g)))) = Znth v keys /\
-      Znth v (upd_Znth i pq_state' (Znth i (Znth u (graph_to_symm_mat g)))) =
+      Znth v (upd_Znth i keys' (Znth i (Znth u (@graph_to_mat SIZE g eformat)))) = Znth v keys /\
+      Znth v (upd_Znth i pq_state' (Znth i (Znth u (@graph_to_mat SIZE g eformat)))) =
       Znth v upd_pq_state). {
       intros. destruct (Z.lt_trichotomy v i). repeat rewrite upd_Znth_diff; try lia. apply Hinv2_1. lia. apply H5.
       destruct H7. subst v. destruct H5; contradiction. lia.
@@ -706,9 +707,9 @@ break: (
     ~ In v (popped_vertices +:: u) ->
     Znth v (upd_Znth i parents' u) =
     (if elabel g (eformat (u, v)) <? Znth v upd_pq_state then u else Znth v parents) /\
-    Znth v (upd_Znth i keys' (Znth i (Znth u (graph_to_symm_mat g)))) =
+    Znth v (upd_Znth i keys' (Znth i (Znth u (@graph_to_mat SIZE g eformat)))) =
     Z.min (elabel g (eformat (u, v))) (Znth v upd_pq_state) /\
-    Znth v (upd_Znth i pq_state' (Znth i (Znth u (graph_to_symm_mat g)))) =
+    Znth v (upd_Znth i pq_state' (Znth i (Znth u (@graph_to_mat SIZE g eformat)))) =
     Z.min (elabel g (eformat (u, v))) (Znth v upd_pq_state)). {
       intros. destruct (Z.lt_trichotomy v i).
         (*v<i*) repeat rewrite upd_Znth_diff; try lia. apply Hinv2_2. lia. auto. auto.
@@ -721,7 +722,7 @@ break: (
           destruct (in_dec V_EqDec i popped_vertices). exfalso; apply H7. apply in_or_app; left; auto. auto. lia.
           symmetry. apply Hinv2_3. lia. unfold not; intros. apply H7. apply in_or_app; right; subst i; left; auto.
         rewrite H8. split3.
-        rewrite <- graph_to_mat_eq; try lia. destruct (Znth u (Znth i (graph_to_symm_mat g)) <? Znth i keys') eqn:bool.
+        rewrite <- graph_to_mat_eq; try lia. destruct (Znth u (Znth i (@graph_to_mat SIZE g eformat)) <? Znth i keys') eqn:bool.
         auto. rewrite graph_to_mat_eq in bool; try lia. rewrite Z.ltb_nlt in bool. contradiction.
         rewrite graph_to_mat_eq; try lia. rewrite eformat_symm. rewrite Zlt_Zmin; auto.
         rewrite graph_to_mat_eq; try lia. rewrite eformat_symm. rewrite Zlt_Zmin; auto.
@@ -730,8 +731,8 @@ break: (
     assert(Hx3: forall v : Z,
     i + 1 <= v < 8 ->
     Znth v (upd_Znth i parents' u) = Znth v parents /\
-    Znth v (upd_Znth i keys' (Znth i (Znth u (graph_to_symm_mat g)))) = Znth v keys /\
-    Znth v (upd_Znth i pq_state' (Znth i (Znth u (graph_to_symm_mat g)))) = Znth v upd_pq_state). {
+    Znth v (upd_Znth i keys' (Znth i (Znth u (@graph_to_mat SIZE g eformat)))) = Znth v keys /\
+    Znth v (upd_Znth i pq_state' (Znth i (Znth u (@graph_to_mat SIZE g eformat)))) = Znth v upd_pq_state). {
       intros. repeat rewrite upd_Znth_diff; try lia. apply Hinv2_3. unfold SIZE; lia.
       rewrite HZlength_pq_state'. unfold SIZE; lia.
       rewrite HZlength_keys'. unfold SIZE; lia.
@@ -739,19 +740,20 @@ break: (
     } (*entailer unable to solve but no change to timing*)
     assert (Hx4: forall v : Z,
     0 <= v < 8 ->
-    Int.min_signed <= Znth v (upd_Znth i keys' (Znth i (Znth u (graph_to_symm_mat g)))) <= inf). {
+    Int.min_signed <= Znth v (upd_Znth i keys' (Znth i (Znth u (@graph_to_mat SIZE g eformat)))) <= inf). {
       intros. destruct (Z.eq_dec v i). subst i. rewrite upd_Znth_same. rewrite graph_to_mat_eq.
       split. apply (weight_representable g (eformat (v,u))). apply weight_inf_bound. lia. lia. rewrite HZlength_keys'; lia.
       rewrite upd_Znth_diff. apply Hinv2_4. unfold SIZE; auto. rewrite HZlength_keys'; unfold SIZE; lia.
       rewrite HZlength_keys'; lia. auto.
     } (*entailer unable to solve but no change to timing*)
     time "inner loop update-because-lt-postcon (orig 71 seconds)" entailer!.
-    unfold graph_to_symm_mat.
     rewrite graph_to_mat_Zlength; trivial. lia.
     -forward. (*nothing changed*)
     Exists parents'. Exists keys'. Exists pq_state'.
-    rewrite (graph_unfold _ (graph_to_symm_mat g) _ u). unfold list_rep.
-    2,3: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia.
+    rewrite (SpaceAdjMatGraph_unfold' _ _ _ (@nil val) u).
+    unfold list_rep.
+    2: lia.
+    2: rewrite graph_to_mat_Zlength; lia.
 
     assert (Hx1: forall v : Z,
           0 <= v < i + 1 ->
@@ -780,7 +782,7 @@ break: (
         auto. lia. symmetry. apply Hinv2_3. lia. unfold not; intros. apply H13. apply in_or_app; right; subst i; left; auto.
       } rewrite H14. rewrite graph_to_mat_symmetric; try lia.
       rewrite !Int.signed_repr in H10. split3.
-      destruct (Znth i (Znth u (graph_to_symm_mat g)) <? Znth i keys') eqn:bool.
+      destruct (Znth i (Znth u (@graph_to_mat SIZE g eformat)) <? Znth i keys') eqn:bool.
       rewrite Z.ltb_lt in bool. lia.
       apply Hinv2_3. lia.
       rewrite Z.min_r; lia.
@@ -804,8 +806,10 @@ break: (
   }
   forward. (*again nothing changed*)
   Exists parents'. Exists keys'. Exists pq_state'.
-  rewrite (graph_unfold _ (graph_to_symm_mat g) _ u). unfold list_rep.
-  2,3: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia.
+  rewrite (SpaceAdjMatGraph_unfold' _ _ _ (@nil val) u).
+  unfold list_rep.
+  2: lia.
+  2: rewrite graph_to_mat_Zlength; lia.
   assert (forall v : Z,
           0 <= v < i + 1 ->
           ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
@@ -857,7 +861,7 @@ break: (
     replace (Znth v parents') with (Znth v parents). 2: symmetry; apply Hinv2_1; auto. apply Hinv_4; auto.
     replace (Znth v parents') with (if elabel g (eformat (u, v)) <? Znth v upd_pq_state then u else Znth v parents).
     2: symmetry; apply (Hinv2_2 v); auto. rewrite <- graph_to_mat_eq; auto.
-    destruct (Znth u (Znth v (graph_to_symm_mat g)) <? Znth v upd_pq_state) eqn:bool. lia. apply Hinv_4; auto.
+    destruct (Znth u (Znth v (@graph_to_mat SIZE g eformat)) <? Znth v upd_pq_state) eqn:bool. lia. apply Hinv_4; auto.
     replace (Znth v parents') with (Znth v parents). 2: symmetry; apply Hinv2_1; auto. apply Hinv_4; auto.
   }
   assert (Hkeys': forall v : Z, 0 <= v < SIZE -> Znth v keys' = (if V_EqDec v r then 0 else elabel g (eformat (v, Znth v parents')))). {
@@ -873,7 +877,7 @@ break: (
     assert (hd_error (v :: popped_vertices) = Some r). apply Hr2. unfold not; intros. inversion H7. inversion H7. subst v.
     exfalso. apply n. apply in_or_app; left; left; auto.
     (*v <> r*)
-    rewrite <- graph_to_mat_eq by lia. destruct (Znth u (Znth v (graph_to_symm_mat g)) <? Znth v upd_pq_state) eqn:bool.
+    rewrite <- graph_to_mat_eq by lia. destruct (Znth u (Znth v (@graph_to_mat SIZE g eformat)) <? Znth v upd_pq_state) eqn:bool.
     rewrite graph_to_mat_eq by lia. rewrite graph_to_mat_eq in bool by lia. rewrite Z.ltb_lt in bool. rewrite Zlt_Zmin by auto. rewrite eformat_symm; auto.
     rewrite graph_to_mat_eq by lia. rewrite graph_to_mat_eq in bool by lia. rewrite Z.ltb_ge in bool. rewrite Z.min_r by auto.
     unfold upd_pq_state. destruct (Z.eq_dec v u). subst v. exfalso; apply n. apply in_or_app; right; left; auto.
@@ -959,7 +963,7 @@ break: (
     replace (Znth v parents') with (if elabel g (eformat (u, v)) <? Znth v upd_pq_state then u else Znth v parents) in H6.
     2: symmetry; apply Hinv2_2; auto.
     rewrite <- (graph_to_mat_eq g u v) in * by lia.
-    destruct (Znth u (Znth v (graph_to_symm_mat g)) <? Znth v upd_pq_state) eqn: bool.
+    destruct (Znth u (Znth v (@graph_to_mat SIZE g eformat)) <? Znth v upd_pq_state) eqn: bool.
     (*smaller, updated: u is the new parent*)
       rewrite Z.ltb_lt in bool. split. rewrite eformat_symm. apply eformat_adj. auto.
       split. exists (Zlength popped_vertices). split. rewrite Zlength_app, Zlength_cons, Zlength_nil.
@@ -1047,7 +1051,7 @@ break: (
     assert (~ evalid g (eformat (u,v))). unfold not; intros; apply H8. rewrite eformat_adj; auto.
     apply invalid_edge_weight in H13.
     (*replace (elabel g (eformat (u,v))) with inf.*) (*here we go again...*)
-    repeat rewrite <- graph_to_mat_eq by lia. replace (Znth u (Znth v (graph_to_symm_mat g))) with inf.
+    repeat rewrite <- graph_to_mat_eq by lia. replace (Znth u (Znth v (@graph_to_mat SIZE g eformat))) with inf.
     rewrite graph_to_mat_eq by lia. apply weight_inf_bound.
     rewrite <- graph_to_mat_eq in H13 by lia. lia.
   }
@@ -1075,7 +1079,7 @@ break: (
     destruct (adjacent_dec g u v).
     replace (Znth v parents') with (if elabel g (eformat (u, v)) <? Znth v upd_pq_state then u else Znth v parents) in H6.
     2: { symmetry; apply Hinv2_2; auto. }
-    rewrite <- graph_to_mat_eq in H6 by lia. destruct (Znth u (Znth v (graph_to_symm_mat g)) <? Znth v upd_pq_state).
+    rewrite <- graph_to_mat_eq in H6 by lia. destruct (Znth u (Znth v (@graph_to_mat SIZE g eformat)) <? Znth v upd_pq_state).
     assert (vvalid g u). apply adjacent_requires_vvalid in H8. apply H8. rewrite vert_bound in H9. lia.
     apply Hinv_8. lia. lia. rewrite find_notIn_0, sublist_same; auto.
     unfold not; intros; apply n; apply in_or_app; left; auto.
@@ -1088,7 +1092,7 @@ break: (
     destruct (adjacent_dec g u v). 2: auto.
     replace (Znth v parents') with (if elabel g (eformat (u, v)) <? Znth v upd_pq_state then u else Znth v parents) in H6.
     2: { symmetry; apply Hinv2_2; auto. }
-    rewrite <- graph_to_mat_eq in H6 by lia. destruct (Znth u (Znth v (graph_to_symm_mat g)) <? Znth v upd_pq_state) eqn:bool.
+    rewrite <- graph_to_mat_eq in H6 by lia. destruct (Znth u (Znth v (@graph_to_mat SIZE g eformat)) <? Znth v upd_pq_state) eqn:bool.
     assert (vvalid g u). apply adjacent_requires_vvalid in H7. apply H7. rewrite vert_bound in H8. lia.
     rewrite eformat_adj, evalid_inf_iff, <- graph_to_mat_eq in H7 by lia.
     rewrite Z.ltb_ge in bool. unfold upd_pq_state in bool.
@@ -1842,6 +1846,6 @@ forward.
 Exists mst fmst parents.
 (*change from popped_vertices to nat_inc_list*)
 entailer!.
-
+ 
 (*Should we bother with filling a matrix for it? The original Prim doesn't bother*)
 Admitted.
