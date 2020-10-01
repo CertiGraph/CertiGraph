@@ -9,6 +9,7 @@ Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.graph.undirected_graph.
 Require Export CertiGraph.graph.MathAdjMatGraph.
+Require Export CertiGraph.graph.eformat_lemmas.
 Require Import CertiGraph.priq.priq_arr_utils.
 
 Local Open Scope logic.
@@ -792,118 +793,19 @@ Proof.
 unfold incl; intros. rewrite EList_evalid in *. apply H; auto.
 Qed.
 
+Lemma exists_Zmin: (* TODO move this *)
+  forall {A:Type} (l: list A) (f: A -> Z), l <> nil -> exists a, In a l /\ (forall b, In b l -> f a <= f b).
+Proof.
+induction l; intros. contradiction.
+destruct l. exists a. split. left; auto. intros. destruct H0. subst b. lia. contradiction.
+assert (exists a : A, In a (a0 :: l) /\ (forall b : A, In b (a0 :: l) -> f a <= f b)). apply IHl. unfold not; intros. inversion H0.
+destruct H0 as [a' [? ?]].
+destruct (Z.le_ge_cases (f a) (f a')).
+exists a. split. left; auto. intros. destruct H3. subst a; lia. apply H1 in H3. lia.
+exists a'. split. right; auto. intros. destruct H3. subst b; lia. apply H1 in H3; lia.
+Qed.
+
 (***************FIND LEMMAS*******)
-Lemma find_app_In1:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l1 l2: list A) v ans, In v l1 -> find (l1++l2) v ans = find l1 v ans.
-Proof.
-induction l1; intros. contradiction.
-destruct (EA v a). hnf in e. subst a.
-simpl.
-destruct (EA v v). auto. unfold RelationClasses.complement, Equivalence.equiv in c; contradiction.
-destruct H. symmetry in H; contradiction.
-simpl. destruct (EA a v). symmetry in e; contradiction.
-rewrite IHl1; auto.
-Qed.
-
-Lemma find_accum_add1:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans1 ans2, find l v (ans1+ans2) = ans1 + find l v ans2.
-Proof.
-induction l; intros.
-simpl. auto.
-simpl. destruct (EA a v). auto.
-replace (1+(ans1+ans2)) with (ans1 + (1+ans2)) by lia. apply IHl.
-Qed.
-
-Lemma find_app_notIn1:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l1: list A) l2 v ans, ~ In v l1 -> find (l1++l2) v ans = Zlength l1 + find l2 v ans.
-Proof.
-induction l1; intros. rewrite app_nil_l, Zlength_nil. lia.
-assert (~ In v l1). unfold not; intros; apply H. right; auto.
-simpl. destruct (EA a v). hnf in e; subst a. exfalso. apply H. left; auto.
-rewrite Zlength_cons. rewrite IHl1; auto.
-rewrite <- Z.add_1_r, <- Z.add_assoc. rewrite find_accum_add1. auto.
-Qed.
-
-Corollary find_notIn:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, ~ In v l -> find l v ans = Zlength l + ans.
-Proof.
-intros. replace l with (l++nil). rewrite find_app_notIn1. simpl.
-rewrite app_nil_r; auto.
-auto. apply app_nil_r.
-Qed.
-
-Corollary find_notIn_0:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v, ~ In v l -> find l v 0 = Zlength l.
-Proof. intros. rewrite find_notIn by auto. rewrite Z.add_0_r; auto. Qed.
-
-Lemma find_In_ubound:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, In v l -> find l v ans < Zlength l + ans.
-Proof.
-induction l; intros. contradiction.
-rewrite Zlength_cons.
-simpl. destruct (EA a v).
-pose proof (Zlength_nonneg l); lia.
-rewrite Z.add_succ_l. rewrite find_accum_add1, Z.add_1_l.
-assert (find l v ans < Zlength l + ans). apply IHl. destruct H. contradiction. auto.
-lia.
-Qed.
-
-Lemma find_ubound:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, find l v ans <= Zlength l + ans.
-Proof.
-induction l; intros. rewrite Zlength_nil; simpl; lia.
-rewrite Zlength_cons.
-simpl. destruct (EA a v).
-pose proof (Zlength_nonneg l); lia.
-rewrite Z.add_succ_l. rewrite find_accum_add1, Z.add_1_l.
-specialize IHl with v ans.
-lia.
-Qed.
-
-Lemma find_cons:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, find (v::l) v ans = ans.
-Proof.
-intros. simpl. destruct (EA v v). auto. unfold RelationClasses.complement, Equivalence.equiv in c; contradiction.
-Qed.
-
-Lemma find_lbound:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, ans <= find l v ans.
-Proof.
-induction l; intros. simpl. lia.
-simpl. destruct (EA a v). lia.
-rewrite find_accum_add1. specialize IHl with v ans; lia.
-Qed.
-
-Lemma find_app_le:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l1: list A) l2 v ans, find l1 v ans <= find (l1++l2) v ans.
-Proof.
-induction l1; intros.
-rewrite app_nil_l. simpl. apply find_lbound.
-simpl. destruct (EA a v). lia.
-do 2 rewrite find_accum_add1. specialize IHl1 with l2 v ans. lia.
-Qed.
-
-Lemma find_eq:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) x y acc, NoDup l -> In x l -> In y l -> find l x acc = find l y acc -> x = y.
-Proof.
-induction l; intros. contradiction.
-destruct H0; destruct H1.
-++
-subst x; subst y. auto.
-++
-subst x. rewrite find_cons in H2.
-simpl in H2. destruct (EA a y). hnf in e; subst y. apply NoDup_cons_2 in H; contradiction.
-rewrite find_accum_add1 in H2. pose proof (find_lbound l y acc). lia.
-++
-subst y. rewrite find_cons in H2.
-simpl in H2. destruct (EA a x). hnf in e; subst x. apply NoDup_cons_2 in H; contradiction.
-rewrite find_accum_add1 in H2. pose proof (find_lbound l x acc). lia.
-++
-simpl in H2. destruct (EA a x). hnf in e; subst x. apply NoDup_cons_2 in H; contradiction.
-destruct (EA a y). hnf in e; subst y. apply NoDup_cons_2 in H; contradiction.
-do 2 rewrite find_accum_add1 in H2. apply (IHl x y acc).
-apply NoDup_cons_1 in H; auto. auto. auto. lia.
-Qed.
 
 Lemma NoDup_incl_ordered_powerlist:
 forall (l: list E), NoDup l -> exists L,
@@ -999,18 +901,6 @@ destruct (prod_eqdec Z_EqDec Z_EqDec a x). hnf in e; subst x; contradiction.
 destruct (prod_eqdec Z_EqDec Z_EqDec a y). hnf in e; subst y; contradiction.
 replace 1 with (1+0) by lia. repeat rewrite find_accum_add1.
 split; intros; lia.
-Qed.
-
-Lemma exists_Zmin:
-  forall {A:Type} (l: list A) (f: A -> Z), l <> nil -> exists a, In a l /\ (forall b, In b l -> f a <= f b).
-Proof.
-induction l; intros. contradiction.
-destruct l. exists a. split. left; auto. intros. destruct H0. subst b. lia. contradiction.
-assert (exists a : A, In a (a0 :: l) /\ (forall b : A, In b (a0 :: l) -> f a <= f b)). apply IHl. unfold not; intros. inversion H0.
-destruct H0 as [a' [? ?]].
-destruct (Z.le_ge_cases (f a) (f a')).
-exists a. split. left; auto. intros. destruct H3. subst a; lia. apply H1 in H3. lia.
-exists a'. split. right; auto. intros. destruct H3. subst b; lia. apply H1 in H3; lia.
 Qed.
 
 Lemma test2:
@@ -1413,3 +1303,74 @@ rewrite <- ZtoNat_Zlength. lia.
 Qed.
 
 End MATRIXUGRAPH.
+
+(* AM:
+   I moved these over from spatial because they are independent of 
+   any specific spatial representation. 
+ *)
+
+Definition G := @MatrixUGraph inf SIZE.
+Definition edgeless_graph' := @edgeless_graph inf SIZE inf_rep SIZE_rep'.
+Definition adde := @MatrixUGraph_adde inf SIZE.
+Definition eremove := @MatrixUGraph_eremove inf SIZE.
+
+Lemma eformat_evalid_vvalid:
+forall (g: G) u v, evalid g (eformat (u,v)) -> vvalid g u /\ vvalid g v.
+Proof.
+intros. apply evalid_strong_evalid in H.
+destruct (Z.lt_trichotomy u v).
+rewrite eformat1 in H. destruct H.
+rewrite src_fst, dst_snd in H1; auto. simpl; lia.
+destruct H0.
+subst u. rewrite eformat1 in H. destruct H.
+rewrite src_fst, dst_snd in H0; auto. simpl; lia.
+rewrite eformat2 in H. simpl in H; destruct H.
+rewrite src_fst, dst_snd in H1; auto. simpl in H1.
+split; apply H1. simpl; lia.
+Qed.
+
+Lemma eformat_adj': forall (g: G) u v, evalid g (eformat (u,v)) -> adj_edge g (eformat (u,v)) u v.
+Proof.
+intros. split. apply evalid_strong_evalid; auto.
+destruct (Z.le_ge_cases u v).
+rewrite eformat1 in *. left. rewrite src_fst, dst_snd; auto. auto. auto.
+rewrite eformat2 in *. right. rewrite src_fst, dst_snd; auto. auto. auto.
+Qed.
+
+Lemma eformat_adj: forall (g: G) u v, adjacent g u v <-> evalid g (eformat (u,v)).
+Proof.
+intros. split. intros.
++
+destruct H. destruct H. destruct H.
+destruct H0; destruct H0. assert (x = (u,v)). {
+  rewrite src_fst in H0.
+  rewrite dst_snd in H2. rewrite <- H0, <- H2. destruct x; simpl; auto.
+} subst x.
+rewrite eformat1; auto. simpl.
+rewrite <- H0. rewrite <- H2 at 2. apply undirected_edge_rep; auto.
+assert (x = (v,u)). {
+  rewrite src_fst in H0; rewrite dst_snd in H2.
+  rewrite <- H0, <- H2. destruct x; simpl; auto.
+} subst x.
+rewrite eformat2. simpl. auto. simpl. rewrite <- H0. rewrite <- H2 at 2.
+apply undirected_edge_rep; auto.
++intros. destruct (Z.lt_trichotomy u v).
+rewrite eformat1 in H. 2: simpl; lia.
+assert (evalid g (u,v)). auto.
+exists (u,v). split. apply evalid_strong_evalid; auto. left.
+rewrite src_fst, dst_snd; auto.
+(*equal, repeat*)
+destruct H0. rewrite eformat1 in H. 2: simpl; lia.
+assert (evalid g (u,v)). auto.
+exists (u,v). split. apply evalid_strong_evalid; auto. left.
+rewrite src_fst, dst_snd; auto.
+rewrite eformat2 in H. 2: simpl; lia. simpl in H.
+assert (evalid g (v,u)). auto.
+exists (v,u). split. apply evalid_strong_evalid; auto.
+rewrite src_fst, dst_snd; auto.
+Qed.
+
+Corollary eformat_adj_elabel: forall (g: G) u v, adjacent g u v <-> elabel g (eformat (u,v)) < inf.
+Proof.
+intros. rewrite eformat_adj. apply evalid_inf_iff.
+Qed.
