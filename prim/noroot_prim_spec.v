@@ -8,7 +8,7 @@ Require Import CertiGraph.lib.List_ext.
 
 Require Import CertiGraph.prim.MatrixUGraph.
 Require Import CertiGraph.prim.noroot_prim.
-Require Import CertiGraph.prim.spatial_undirected_matrix.
+Require Import CertiGraph.prim.spatial_undirected_matrix3.
 
 Local Open Scope Z_scope.
 

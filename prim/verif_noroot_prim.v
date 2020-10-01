@@ -8,7 +8,7 @@ Require Import CertiGraph.graph.undirected_graph.
 Require Import CertiGraph.prim.MatrixUGraph.
 Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.priq.priq_arr_utils.
-Require Import CertiGraph.prim.spatial_undirected_matrix.
+Require Import CertiGraph.prim.spatial_undirected_matrix3.
 Require Import CertiGraph.prim.noroot_prim.
 Require Import CertiGraph.prim.noroot_prim_spec.
 
