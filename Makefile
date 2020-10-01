@@ -101,7 +101,7 @@ DIJKSTRA_FILES = \
   dijkstra2.v SpaceDijkGraph2.v dijkstra_spec2.v verif_dijkstra2.v \
   dijkstra3.v SpaceDijkGraph3.v dijkstra_spec3.v verif_dijkstra3.v \
   MathDijkGraph.v env_dijkstra_arr.v dijkstra_constants.v \
-  path_cost.v dijkstra_math_proof.v dijkstra_spec_pure.v \
+  path_cost.v dijkstra_math_proof.v dijkstra_spec_pure.v 
   # 1 = noncontiguous
   # 2 = contiguous 1-d
   # 3 = contiguous 2-d
@@ -173,7 +173,7 @@ vstandme3:
 
 .PHONY: mst
 mst:
-	make prim/verif_*.vo dijkstra/verif_*.vo kruskal/verif_*.vo -kj7
+	make prim/verif_prim3.vo prim/verif_noroot_prim.vo dijkstra/verif*.vo kruskal/verif*.vo -kj7
 
 .depend depend:
 	@echo 'coqdep ... >.depend'

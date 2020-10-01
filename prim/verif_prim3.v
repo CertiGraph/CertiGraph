@@ -8,9 +8,9 @@ Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.graph.undirected_graph. 
 Require Import CertiGraph.prim.MatrixUGraph. 
 Require Import CertiGraph.priq.priq_arr_utils.
-Require Import CertiGraph.prim.prim.
+Require Import CertiGraph.prim.prim3.
 Require Import CertiGraph.prim.spatial_undirected_matrix. (* list_address *)
-Require Import CertiGraph.prim.specs_prim.
+Require Import CertiGraph.prim.prim_spec3.
 
 Local Open Scope Z.
 
@@ -1844,4 +1844,4 @@ Exists mst fmst parents.
 entailer!.
 
 (*Should we bother with filling a matrix for it? The original Prim doesn't bother*)
-Admitted
+Admitted.
