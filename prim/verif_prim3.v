@@ -4,11 +4,7 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_relation.
-Require Import CertiGraph.graph.undirected_graph. 
-Require Import CertiGraph.graph.SpaceAdjMatGraph3. 
 Require Import CertiGraph.prim.MatrixUGraph. 
-Require Import CertiGraph.priq.priq_arr_utils.
-Require Import CertiGraph.prim.prim3.
 Require Import CertiGraph.prim.spatial_undirected_matrix3.
 Require Import CertiGraph.prim.prim_spec3.
 

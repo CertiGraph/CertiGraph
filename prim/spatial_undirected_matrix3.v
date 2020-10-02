@@ -1,12 +1,11 @@
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.graph.graph_model.
-Require Import CertiGraph.graph.undirected_graph.
 Require Export CertiGraph.graph.SpaceAdjMatGraph3.
-Require Export CertiGraph.graph.MathAdjMatGraph.
-Require Import CertiGraph.graph.eformat_lemmas.
-Require Import CertiGraph.priq.priq_arr_utils.
+Require Import CertiGraph.prim.MatrixUGraph.
 (* 
-Anshuman, Oct 1:
+Anshuman, Oct 2:
+priq/priq_arr_utils comes from MatrixUGraph via Import-Export.
+
 I want to stop using priq/priq_arr_utils.
 Whatever you're using from in there is pure, 
 and not related to PQ.

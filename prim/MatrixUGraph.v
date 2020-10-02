@@ -7,10 +7,26 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
-Require Import CertiGraph.graph.undirected_graph.
+Require Export CertiGraph.graph.undirected_graph.
 Require Export CertiGraph.graph.MathAdjMatGraph.
 Require Export CertiGraph.graph.eformat_lemmas.
-Require Import CertiGraph.priq.priq_arr_utils.
+Require Export CertiGraph.priq.priq_arr_utils.
+
+(* 
+Anshuman, Oct 2:
+priq/priq_arr_utils is imported here and Exported out. 
+It is needed by spatial_undirected_matrix and verif_prim.
+
+I want to stop using priq/priq_arr_utils.
+Whatever you're using from in there is pure, 
+and not related to PQ.
+
+That stuff should be lifted into its own file, 
+and PQ and this file should both just call that file.    
+
+After that is done, most of this file can be lifted
+up to graph/
+*)
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
