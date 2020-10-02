@@ -1,5 +1,4 @@
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.
-Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Export CertiGraph.dijkstra.dijkstra_spec_pure.
 Require Import CertiGraph.dijkstra.path_cost.
 
