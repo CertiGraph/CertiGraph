@@ -96,7 +96,7 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
             }
         }
     }
-    // freePQ(pq);
+    freePQ(pq);
     return;
 }
 
