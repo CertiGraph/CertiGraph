@@ -647,7 +647,7 @@ Definition f_dijkstra := {|
               Sskip)
             (Ssequence
               (Scall None
-                (Evar _freePQ (Tfunction (Tcons (tptr tint) Tnil) tvoid
+                (Evar _freePQ (Tfunction (Tcons (tptr tvoid) Tnil) tvoid
                                 cc_default))
                 ((Etempvar _pq (tptr tint)) :: nil))
               (Sreturn None))))))))
@@ -1138,7 +1138,7 @@ Definition global_definitions : list (ident * globdef fundef type) :=
  (_freePQ,
    Gfun(External (EF_external "freePQ"
                    (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
-     (Tcons (tptr tint) Tnil) tvoid cc_default)) ::
+     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_mallocN,
    Gfun(External (EF_external "mallocN"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))

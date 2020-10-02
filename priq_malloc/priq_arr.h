@@ -9,4 +9,4 @@ void adjustWeight (int vertex, int newWeight, int* pq);
 
 int pq_emp (int size, int inf, int* pq);
 
-void freePQ (int* pq);
+void freePQ (void* pq);

@@ -47,7 +47,7 @@ int pq_emp (int size, int inf, int* pq) {
     return 1;
 }
 
-void freePQ (int* pq) {
+void freePQ (void* pq) {
     freeN(pq);
 }
 

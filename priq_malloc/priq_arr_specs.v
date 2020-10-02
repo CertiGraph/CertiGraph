@@ -7,7 +7,8 @@ Section PQSpec.
 
 Context {size : Z}.
 Context {inf : Z}.
-  
+Parameter free_tok : val -> Z -> mpred.
+
 Definition mallocN_spec {CS: compspecs} :=
   DECLARE _mallocN
   WITH n: Z
@@ -20,7 +21,22 @@ Definition mallocN_spec {CS: compspecs} :=
   EX v: pointer_val,
   PROP (malloc_compatible n (pointer_val_val v))
   LOCAL (temp ret_temp (pointer_val_val v))
-  SEP (data_at_ Tsh (tarray tint (n / sizeof tint)) (pointer_val_val v)).
+  SEP (data_at_ Tsh (tarray tint (n / sizeof tint)) (pointer_val_val v) *
+       free_tok (pointer_val_val v) n).
+
+Definition freePQ_spec {CS: compspecs} :=
+  DECLARE _freePQ
+  WITH sh: share, p: pointer_val, n: Z, contents: list Z
+    PRE [tptr tvoid]
+    PROP ()
+    PARAMS (pointer_val_val p)
+    GLOBALS ()
+    SEP (data_at sh (tarray tint n)
+                 (map Vint (map Int.repr contents))
+                 (pointer_val_val p) *
+        free_tok (pointer_val_val p) (sizeof tint * n))
+  POST [tvoid]
+    PROP () LOCAL () SEP (emp).
 
 Definition init_spec {CS: compspecs} :=
   DECLARE _init
@@ -35,7 +51,8 @@ Definition init_spec {CS: compspecs} :=
   EX pq: pointer_val,
   PROP ()
   LOCAL (temp ret_temp (pointer_val_val pq))
-  SEP (data_at_ Tsh (tarray tint size) (pointer_val_val pq)).
+  SEP (data_at_ Tsh (tarray tint size) (pointer_val_val pq) *
+      free_tok (pointer_val_val pq) (sizeof tint * size)).
 
 Definition push_spec {CS: compspecs} :=
   DECLARE _push
@@ -116,6 +133,7 @@ Definition popMin_spec {CS: compspecs} :=
 Definition Gprog {CS: compspecs}: funspecs :=
   ltac:(with_library prog
                      [mallocN_spec;
+                     freePQ_spec;
                      init_spec;
                      push_spec;
                      pq_emp_spec;
