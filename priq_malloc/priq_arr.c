@@ -2,6 +2,7 @@
 #include "priq_arr.h"
 
 extern void * mallocN (int n);
+extern void freeN (void *p);
 
 /* ****************************** */
 /*    Array Masquerading as PQ    */
@@ -47,7 +48,7 @@ int pq_emp (int size, int inf, int* pq) {
 }
 
 void freePQ (int* pq) {
-    free(pq);
+    freeN(pq);
 }
 
 /*
