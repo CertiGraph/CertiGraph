@@ -1,5 +1,5 @@
 (* A separate file with the underlying PQ spec-ed out *)
-Require Import CertiGraph.priq_malloc.priq_arr_specs.
+Require Export CertiGraph.priq_malloc.priq_arr_specs.
 
 (* Dijkstra-specific stuff *)
 Require Import CertiGraph.dijkstra.env_dijkstra_arr.
@@ -68,8 +68,6 @@ Section DijkstraSpec.
     POST [tvoid]
       EX prev: list V,
       EX dist: list V,
-      EX priq: list V,
-      EX priq_ptr: pointer_val,
       EX popped: list V,                             
       PROP (forall dst,
                vvalid g dst ->
@@ -77,36 +75,7 @@ Section DijkstraSpec.
       LOCAL ()
       SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
           data_at Tsh (tarray tint size) (map Vint (map Int.repr prev)) (pointer_val_val prev_ptr);
-          data_at Tsh (tarray tint size) (map Vint (map Int.repr dist)) (pointer_val_val dist_ptr);
-          data_at Tsh (tarray tint size) (map Vint (map Int.repr priq)) (pointer_val_val priq_ptr)).
-  
-  Definition mallocN_spec :=
-    DECLARE _mallocN
-    WITH sh:wshare, n: Z
-    PRE [tint]
-      PROP (4 <= n <= Int.max_unsigned)
-      PARAMS (Vint (Int.repr n))
-      GLOBALS ()
-      SEP ()
-    POST [ tptr tvoid ]
-      EX v: pointer_val,
-      PROP (malloc_compatible n (pointer_val_val v))
-      LOCAL (temp ret_temp (pointer_val_val v))
-      SEP (data_at_ Tsh (tarray tint (n / sizeof tint)) (pointer_val_val v)).
-
-  (*Definition freeN_spec :=
-  DECLARE _freeN
-  WITH sh: share, p: pointer_val, n: Z, contents: list Z
-    PRE [tptr tvoid]
-    PROP ()
-    PARAMS (pointer_val_val p)
-    GLOBALS ()
-    SEP (data_at sh (tarray tint n)
-                 (map Vint (map Int.repr contents))
-                 (pointer_val_val p))
-  POST [tvoid]
-    PROP () LOCAL () SEP (emp).
-   *)
+          data_at Tsh (tarray tint size) (map Vint (map Int.repr dist)) (pointer_val_val dist_ptr)).
 
   Definition Gprog : funspecs :=
     ltac:(with_library prog
@@ -115,8 +84,7 @@ Section DijkstraSpec.
                        (@pq_emp_spec size inf _);
                        (@adjustWeight_spec size inf _);
                        (@popMin_spec size inf _);
-                       mallocN_spec;
-                       (* freeN_spec; *)
+                       freePQ_spec;
                        getCell_spec;
                        dijkstra_spec]).
 

@@ -54,7 +54,8 @@ Section DijkstraProof.
                 ((list_repeat (Z.to_nat i) (Vint (Int.repr inf)))
                    ++ (list_repeat (Z.to_nat (size-i))
                                    Vundef)) (pointer_val_val dist);
-        DijkGraph sh CompSpecs g (pointer_val_val arr) size addresses).
+        DijkGraph sh CompSpecs g (pointer_val_val arr) size addresses;
+        free_tok (pointer_val_val v_pq) (sizeof tint * size)).
   
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
@@ -108,8 +109,8 @@ Section DijkstraProof.
                      (tarray tint size)
                      (map Vint (map Int.repr dist))
                      (pointer_val_val dist_ptr);
-             DijkGraph sh CompSpecs g (pointer_val_val graph_ptr)
-                                                  size addresses).
+             DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
+             free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
   Definition dijk_forloop_break_inv (g: @DijkGG size inf) sh
                                     src dist_ptr prev_ptr priq_ptr
@@ -136,8 +137,8 @@ Section DijkstraProof.
                      (tarray tint size)
                      (map Vint (map Int.repr dist))
                      (pointer_val_val dist_ptr);
-             DijkGraph sh CompSpecs g (pointer_val_val graph_ptr)
-                                                    size addresses).
+             DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
+             free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
   Definition dijk_inner_forloop_inv (g: @DijkGG size inf) sh
              src (priq dist prev : list Z)
@@ -237,8 +238,8 @@ Section DijkstraProof.
                      (tarray tint size)
                      (map Vint (map Int.repr dist'))
                      (pointer_val_val dist_ptr);
-             DijkGraph sh CompSpecs g (pointer_val_val graph_ptr)
-                                      size addresses).
+             DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
+             free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
 
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
@@ -270,7 +271,7 @@ Section DijkstraProof.
 
   (* DIJKSTRA PROOF BEGINS *)
 
-                                                                                            Lemma body_dijkstra: semax_body Vprog (@Gprog size inf) f_dijkstra (@dijkstra_spec size inf).
+  Lemma body_dijkstra: semax_body Vprog (@Gprog size inf) f_dijkstra (@dijkstra_spec size inf).
   Proof.
     start_function.
     pose proof (size_further_restricted g).
@@ -280,7 +281,7 @@ Section DijkstraProof.
       simpl. split; [split|]; try lia.
       apply Z.le_trans with (m := 0). 
       compute; inversion 1. lia.
-    } 
+    }
     Intro priq_ptr.
     forward_for_simple_bound
       size
@@ -924,10 +925,15 @@ Section DijkstraProof.
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev priq dist popped.
-        (* around here I'd like to call "free" to release the PQ *)
+        freeze FR := (data_at _ _ _ (pointer_val_val prev_ptr))
+                       (data_at _ _ _ (pointer_val_val dist_ptr))
+                       (DijkGraph _ _ _ _ _ _).
+        forward_call (Tsh, priq_ptr, size, priq).
+        entailer!.
+        thaw FR.
         forward.
-        Exists prev dist priq priq_ptr popped. entailer!.
-        intros. destruct (H2 _ H12) as [? _]; trivial.
+        Exists prev dist popped. entailer!.
+        intros. destruct (H2 _ H9) as [? _]; trivial.
   Qed.
 
 End DijkstraProof.

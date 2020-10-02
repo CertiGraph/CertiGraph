@@ -215,13 +215,13 @@ Definition f_pq_emp := {|
 Definition f_freePQ := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_pq, (tptr tint)) :: nil);
+  fn_params := ((_pq, (tptr tvoid)) :: nil);
   fn_vars := nil;
   fn_temps := nil;
   fn_body :=
 (Scall None
   (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
-  ((Etempvar _pq (tptr tint)) :: nil))
+  ((Etempvar _pq (tptr tvoid)) :: nil))
 |}.
 
 Definition composites : list composite_definition :=

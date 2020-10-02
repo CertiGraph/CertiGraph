@@ -20,8 +20,10 @@ Proof.
   forward_call (size * sizeof(tint)).
   1: simpl; split; Lia.lia.
   Intro pq. forward. Exists pq.
-  rewrite Z_div_mult. entailer!.
-  simpl; reflexivity.
+  rewrite Z_div_mult by (simpl; lia).
+  entailer!.
+  rewrite Z.mul_comm.
+  apply derives_refl.
 Qed.
 
 Lemma body_push: semax_body Vprog (@Gprog size inf _) f_push (@push_spec size inf _). 
