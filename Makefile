@@ -93,7 +93,7 @@ KRUSKAL_FILES = \
 PRIM_FILES = \
   MatrixUGraph.v \
   prim3.v prim_spec3.v spatial_undirected_matrix3.v verif_prim3.v \
-  noroot_prim.v noroot_prim_spec.v verif_noroot_prim.v
+  noroot_prim.v noroot_prim_spec.v verif_noroot_prim.v prim_constants.v
 #prim1.v prim_spec1.v spatial_undirected_matrix1.v verif_prim1.v \  
 
 DIJKSTRA_FILES = \
