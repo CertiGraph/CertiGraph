@@ -8,24 +8,39 @@ Require Import CertiGraph.priq.priq_arr.
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Local Open Scope Z_scope.
+Instance Z_EqDec : EquivDec.EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
-Lemma body_push: semax_body Vprog Gprog f_push push_spec. 
+Section PriqProof.
+
+Definition size := 8.
+Definition inf := 2147483646.
+
+Lemma size_eq: size = 8.
+Proof. auto. Qed.
+
+Lemma inf_eq: inf = 2147483646.
+Proof. auto. Qed.
+
+Opaque size.
+Opaque inf.
+
+Lemma body_push: semax_body Vprog (@Gprog _ size inf) f_push (@push_spec _ size inf). 
 Proof. start_function. forward. entailer!. Qed.
 
-Lemma body_pq_emp: semax_body Vprog Gprog f_pq_emp pq_emp_spec.
+Lemma body_pq_emp: semax_body Vprog (@Gprog _ size inf) f_pq_emp (@pq_emp_spec _ size inf).
 Proof.
   start_function.
   forward_for_simple_bound
-    SIZE
+    size
     (EX i : Z,
-     PROP (isEmpty (sublist 0 i priq_contents) = Vone)
+     PROP (@isEmpty inf (sublist 0 i priq_contents) = Vone)
      LOCAL (temp _pq pq)
-     SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
-  - unfold SIZE; lia.
-  - unfold SIZE; rep_lia.
+     SEP (data_at Tsh (tarray tint size) (map Vint (map Int.repr priq_contents)) pq)).
+  - rewrite size_eq; lia.
+  - rewrite size_eq; rep_lia.
   - entailer!. 
   - simpl.
-    assert_PROP (Zlength priq_contents = SIZE). {
+    assert_PROP (Zlength priq_contents = size). {
       entailer!. repeat rewrite Zlength_map in H3; auto.
     }
     forward; forward_if; forward; entailer!.
@@ -60,38 +75,39 @@ Proof.
   - forward. entailer!.
     rewrite sublist_same in H0; trivial.
     2: { symmetry; repeat rewrite Zlength_map in H2.
-         unfold SIZE. simpl in H2. lia. }
+         rewrite Zmax0r in H2. lia.
+         rewrite size_eq; lia. }
     replace (Vint (Int.repr 1)) with Vone by now unfold Vone, Int.one.
     symmetry; trivial.
 Qed.
 
-Lemma body_adjustWeight: semax_body Vprog Gprog f_adjustWeight adjustWeight_spec.
+Lemma body_adjustWeight: semax_body Vprog (@Gprog _ size inf) f_adjustWeight (@adjustWeight_spec _ size inf).
 Proof. start_function. forward. entailer!. Qed.
 
-Lemma body_popMin: semax_body Vprog Gprog f_popMin popMin_spec.
+Lemma body_popMin: semax_body Vprog (@Gprog _ size inf) f_popMin (@popMin_spec _ size inf).
 Proof.
   start_function.
-  assert_PROP (Zlength priq_contents = SIZE). {
+  assert_PROP (Zlength priq_contents = size). {
     entailer!. repeat rewrite Zlength_map in H2; auto.
   }
   assert (0 <= 0 < Zlength (map Int.repr priq_contents)) by
-      (rewrite Zlength_map; rewrite H1; unfold SIZE; lia).
+      (rewrite Zlength_map; rewrite H1; rewrite size_eq; lia).
   assert (0 <= 0 < Zlength priq_contents) by
-      (rewrite H1; unfold SIZE; lia).
+      (rewrite H1; rewrite size_eq; lia).
   assert (Ha: inf + 1 <= Int.max_signed). {
     rewrite inf_eq; rep_lia.
   }
 
   forward. forward.
   forward_for_simple_bound
-    SIZE
+    size
     (EX i : Z,
      PROP ()
      LOCAL (temp _minWeight (Vint (Int.repr (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents))));
                         temp _minVertex (Vint (Int.repr (find priq_contents (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents)) 0)));
                         temp _pq pq)
-                 SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
-  - unfold SIZE; rep_lia.
+                 SEP (data_at Tsh (tarray tint size) (map Vint (map Int.repr priq_contents)) pq)).
+  - rewrite size_eq. rep_lia.
   - entailer!. simpl. rewrite find_index.
     trivial. lia. simpl. unfold not. lia.
   - forward.
@@ -139,7 +155,9 @@ Proof.
       rewrite sublist_same; [|lia..].
       apply min_in_list; [apply incl_refl | apply Znth_In; lia].
     + forward.
-      Exists (find priq_contents (fold_right Z.min (hd 0 priq_contents) (sublist 0 SIZE priq_contents)) 0).
+      Exists (find priq_contents (fold_right Z.min (hd 0 priq_contents) (sublist 0 size priq_contents)) 0).
       rewrite sublist_same by lia. entailer!.
       destruct priq_contents; simpl; auto.
 Qed.
+
+End PriqProof.

@@ -8,6 +8,7 @@ Section PQProof.
 
 Context {size : Z}.
 Context {inf : Z}.
+Instance Z_EqDec : EquivDec.EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
@@ -35,7 +36,7 @@ Proof.
   forward_for_simple_bound
     size
     (EX i : Z,
-     PROP (isEmpty (sublist 0 i priq_contents) inf = Vone)
+     PROP (@isEmpty inf (sublist 0 i priq_contents) = Vone)
      LOCAL (temp _size (Vint (Int.repr size)); temp _inf (Vint (Int.repr inf));
      temp _pq pq)
      SEP (data_at Tsh (tarray tint size) (map Vint (map Int.repr priq_contents)) pq)).

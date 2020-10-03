@@ -1,31 +1,38 @@
 Require Import VST.floyd.proofauto.
+Require Import CertiGraph.lib.List_ext.
+
+Section PriqArrUtils.
+
+Context {size : Z}.
+Context {inf: Z}.
+
+Instance Z_EqDec : EquivDec.EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
 
 (* a weight to be added cannot be inf + 1 *)
-Definition weight_inrange_priq item inf :=
+Definition weight_inrange_priq item :=
   Int.min_signed <= item <= inf.
 
 (* over time, the overall PQ can range from MIN to inf + 1 *)
-Definition inrange_priq inf (priq : list Z) :=
+Definition inrange_priq (priq : list Z) :=
   Forall (fun x => Int.min_signed <= x <= inf + 1) priq.
 
-Definition isEmpty (priq : list Z) inf : val :=
+Definition isEmpty (priq : list Z) : val :=
   fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then Vzero else acc) Vone priq.
 
-Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
+Fixpoint find {A: Type} {EA: EquivDec.EqDec A eq} (l : list A) (n : A) (ans : Z) :=
   match l with
   | [] => ans
-  | h :: t => if eq_dec h n
+  | h :: t => if EA h n
               then ans
               else (find t n (1 + ans))
   end.
 
-
 (** LEMMAS ABOUT THESE UTILITIES **)
 
-Lemma isEmpty_in: forall l target inf,
-    In target l -> target < inf + 1 -> isEmpty l inf = Vzero.
+Lemma isEmpty_in: forall l target,
+    In target l -> target < inf + 1 -> isEmpty l = Vzero.
 Proof.
   intros. induction l.
   1: exfalso; apply (in_nil H).
@@ -37,8 +44,8 @@ Proof.
   unfold isEmpty in IHl. trivial.
 Qed.
 
-Lemma isEmpty_in': forall l inf,
-    (exists i, In i l /\ i < (inf + 1)) <-> isEmpty l inf = Vzero.
+Lemma isEmpty_in': forall l,
+    (exists i, In i l /\ i < (inf + 1)) <-> isEmpty l = Vzero.
 Proof.
   split; intros.
   - destruct H as [? [? ?]]. induction l.
@@ -57,16 +64,16 @@ Proof.
       exists x. split; [apply in_cons|]; assumption.
 Qed.
 
-Lemma isEmptyTwoCases: forall l inf,
-    isEmpty l inf = Vone \/ isEmpty l inf = Vzero.
+Lemma isEmptyTwoCases: forall l,
+    isEmpty l = Vone \/ isEmpty l = Vzero.
 Proof.
   intros. induction l. 1: simpl; left; trivial.
   destruct IHl; simpl; destruct (Z_lt_dec a (inf+1));
     (try now left); now right.
 Qed.
 
-Lemma isEmptyMeansInf: forall l inf,
-    isEmpty l inf = Vone <-> Forall (fun x => x > inf) l.
+Lemma isEmptyMeansInf: forall l,
+    isEmpty l = Vone <-> Forall (fun x => x > inf) l.
 Proof.
   intros.
   split; intros.
@@ -86,9 +93,9 @@ Proof.
     specialize (H _ H0). lia.
 Qed.
 
-Lemma isEmpty_Vone_app: forall l1 l2 inf,
-    isEmpty (l1 ++ l2) inf = Vone <->
-    isEmpty l1 inf = Vone /\ isEmpty l2 inf = Vone.
+Lemma isEmpty_Vone_app: forall l1 l2,
+    isEmpty (l1 ++ l2) = Vone <->
+    isEmpty l1 = Vone /\ isEmpty l2 = Vone.
 Proof.
   intros. split; intros.
   - repeat rewrite isEmptyMeansInf, Forall_forall in *;
@@ -100,7 +107,7 @@ Proof.
       [apply H | apply H0]; trivial.
 Qed.
     
-Lemma find_index_gen: forall l i ans,
+Lemma find_index_gen: forall (l: list Z) i ans,
     0 <= i < Zlength l ->
     ~ In (Znth i l) (sublist 0 i l) ->
     find l (Znth i l) ans = i + ans.
@@ -110,7 +117,7 @@ Proof.
   1: intros; rewrite Zlength_nil in H; exfalso; lia.
   unfold find.
   intros.
-  destruct (eq_dec a (Znth i (a :: l))).
+  destruct (Z_EqDec a (Znth i (a :: l))).
   - rewrite <- e in H0. clear - H H0.
     destruct (Z.eq_dec 0 i). 1: lia.
     destruct H. assert (0 < i) by lia.
@@ -118,10 +125,11 @@ Proof.
     unfold sublist. replace (i-0) with i by lia. simpl.
     replace (Z.to_nat i) with (Z.to_nat (Z.succ (i-1))) by rep_lia.
     rewrite Z2Nat.inj_succ by lia.
-    rewrite firstn_cons. apply in_eq.
+    rewrite firstn_cons. simpl; left; trivial.
   - destruct (Z.eq_dec 0 i).
-    1: rewrite <- e in n; rewrite Znth_0_cons in n;
-      exfalso; lia.
+    1: rewrite <- e in c; rewrite Znth_0_cons in c;
+      exfalso.
+    apply c. reflexivity.
     assert (0 <= i - 1 < Zlength l) by
         (rewrite Zlength_cons in H; rep_lia).
     assert (~ In (Znth (i - 1) l) (sublist 0 (i - 1) l)). {
@@ -139,7 +147,7 @@ Proof.
     unfold find. trivial.
 Qed.
 
-Lemma find_index: forall l i,
+Lemma find_index: forall (l: list Z) i,
     0 <= i < Zlength l ->
     ~ In (Znth i l) (sublist 0 i l) ->
     find l (Znth i l) 0 = i.
@@ -148,7 +156,7 @@ Proof.
   apply find_index_gen; trivial.
 Qed.
 
-Lemma find_range_gen: forall l target ans,
+Lemma find_range_gen: forall (l: list Z) target ans,
     In target l ->
     0 <= ans ->
     ans <= find l target ans < Zlength l + ans.
@@ -159,10 +167,10 @@ Proof.
   1: intros; simpl; now rewrite Zlength_nil.
   intros. apply in_inv in H. destruct H.
   - subst a. unfold find.
-    destruct (eq_dec target target).
+    destruct (Z_EqDec target target). 
     rewrite Zlength_cons. split; rep_lia.
-    exfalso; lia.
-  - unfold find. destruct (eq_dec a target).
+    exfalso. apply c. reflexivity. 
+  - unfold find. destruct (Z_EqDec a target).
     1: rewrite Zlength_cons; split; rep_lia.
     assert (0 <= 1 + ans) by lia.
     pose proof (IHl (1+ans) H1 target H).
@@ -179,7 +187,7 @@ Proof.
 Qed.
 
 Lemma Znth_find_gen:
-  forall l target ans,
+  forall (l: list Z) target ans,
     0 <= ans ->
     In target l ->
     Znth ((find l target ans)-ans) l = target.
@@ -189,13 +197,13 @@ Proof.
   intros.
   destruct H0.
   - subst target. simpl.
-    destruct (initial_world.EqDec_Z a a).
+    destruct (Z_EqDec a a).
     + replace (ans-ans) with 0 by lia.
       rewrite Znth_0_cons; auto.
-    + exfalso; lia.
+    + exfalso; apply c; reflexivity.
   - specialize (IHl H0).
     simpl.
-    destruct (initial_world.EqDec_Z a target).
+    destruct (Z_EqDec a target).
     + replace (ans-ans) with 0 by lia.
       rewrite Znth_0_cons; auto.
     + assert (0 <= 1 + ans) by lia.
@@ -209,7 +217,7 @@ Proof.
 Qed.
 
 Lemma Znth_find:
-  forall l target,
+  forall (l: list Z) target,
     In target l ->
     Znth (find l target 0) l = target.
 Proof.
@@ -288,7 +296,7 @@ Proof.
   simpl. rewrite IHnum. rewrite Z.min_r; lia.
 Qed.
 
-Lemma find_src: forall src size inf,
+Lemma find_src: forall src,
     0 < inf ->
     0 <= src < size ->
     find (upd_Znth src (list_repeat (Z.to_nat size) inf) 0)
@@ -344,8 +352,8 @@ Proof.
   - rewrite <- Znth_0_hd by trivial. apply Znth_In; lia.
 Qed.
 
-Lemma find_min_lt_inf: forall u l inf,
-    u = find l (fold_right Z.min (hd 0 l) l) 0 -> isEmpty l inf = Vzero ->
+Lemma find_min_lt_inf: forall u l,
+    u = find l (fold_right Z.min (hd 0 l) l) 0 -> isEmpty l = Vzero ->
     Zlength l > 0 -> Znth u l < inf + 1.
 Proof.
   intros. rewrite <- isEmpty_in' in H0. destruct H0 as [? [? ?]].
@@ -353,3 +361,118 @@ Proof.
   - pose proof (fold_min _ _ H0). lia.
   - now apply fold_min_in_list.
 Qed.
+
+Lemma find_app_In1:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l1 l2: list A) v ans, In v l1 -> find (l1++l2) v ans = find l1 v ans.
+Proof.
+induction l1; intros. contradiction.
+destruct (EA v a). hnf in e. subst a.
+simpl.
+destruct (EA v v). auto. unfold RelationClasses.complement, Equivalence.equiv in c; contradiction.
+destruct H. symmetry in H; contradiction.
+simpl. destruct (EA a v). symmetry in e; contradiction.
+rewrite IHl1; auto.
+Qed.
+
+Lemma find_accum_add1:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans1 ans2, find l v (ans1+ans2) = ans1 + find l v ans2.
+Proof.
+induction l; intros.
+simpl. auto.
+simpl. destruct (EA a v). auto.
+replace (1+(ans1+ans2)) with (ans1 + (1+ans2)) by lia. apply IHl.
+Qed.
+
+Lemma find_app_notIn1:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l1: list A) l2 v ans, ~ In v l1 -> find (l1++l2) v ans = Zlength l1 + find l2 v ans.
+Proof.
+induction l1; intros. rewrite app_nil_l, Zlength_nil. lia.
+assert (~ In v l1). unfold not; intros; apply H. right; auto.
+simpl. destruct (EA a v). hnf in e; subst a. exfalso. apply H. left; auto.
+rewrite Zlength_cons. rewrite IHl1; auto.
+rewrite <- Z.add_1_r, <- Z.add_assoc. rewrite find_accum_add1. auto.
+Qed.
+
+Corollary find_notIn:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, ~ In v l -> find l v ans = Zlength l + ans.
+Proof.
+intros. replace l with (l++nil). rewrite find_app_notIn1. simpl.
+rewrite app_nil_r; auto.
+auto. apply app_nil_r.
+Qed.
+
+Corollary find_notIn_0:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v, ~ In v l -> find l v 0 = Zlength l.
+Proof. intros. rewrite find_notIn by auto. rewrite Z.add_0_r; auto. Qed.
+
+Lemma find_In_ubound:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, In v l -> find l v ans < Zlength l + ans.
+Proof.
+induction l; intros. contradiction.
+rewrite Zlength_cons.
+simpl. destruct (EA a v).
+pose proof (Zlength_nonneg l); lia.
+rewrite Z.add_succ_l. rewrite find_accum_add1, Z.add_1_l.
+assert (find l v ans < Zlength l + ans). apply IHl. destruct H. contradiction. auto.
+lia.
+Qed.
+
+Lemma find_ubound:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, find l v ans <= Zlength l + ans.
+Proof.
+induction l; intros. rewrite Zlength_nil; simpl; lia.
+rewrite Zlength_cons.
+simpl. destruct (EA a v).
+pose proof (Zlength_nonneg l); lia.
+rewrite Z.add_succ_l. rewrite find_accum_add1, Z.add_1_l.
+specialize IHl with v ans.
+lia.
+Qed.
+
+Lemma find_cons:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, find (v::l) v ans = ans.
+Proof.
+intros. simpl. destruct (EA v v). auto. unfold RelationClasses.complement, Equivalence.equiv in c; contradiction.
+Qed.
+
+Lemma find_lbound:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, ans <= find l v ans.
+Proof.
+induction l; intros. simpl. lia.
+simpl. destruct (EA a v). lia.
+rewrite find_accum_add1. specialize IHl with v ans; lia.
+Qed.
+
+Lemma find_app_le:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l1: list A) l2 v ans, find l1 v ans <= find (l1++l2) v ans.
+Proof.
+induction l1; intros.
+rewrite app_nil_l. simpl. apply find_lbound.
+simpl. destruct (EA a v). lia.
+do 2 rewrite find_accum_add1. specialize IHl1 with l2 v ans. lia.
+Qed.
+
+Lemma find_eq:
+forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) x y acc, NoDup l -> In x l -> In y l -> find l x acc = find l y acc -> x = y.
+Proof.
+induction l; intros. contradiction.
+destruct H0; destruct H1.
+++
+subst x; subst y. auto.
+++
+subst x. rewrite find_cons in H2.
+simpl in H2. destruct (EA a y). hnf in e; subst y. trivial.
+rewrite find_accum_add1 in H2. pose proof (find_lbound l y acc). lia.
+++
+subst y. rewrite find_cons in H2.
+simpl in H2. destruct (EA a x). hnf in e; subst x. trivial.
+rewrite find_accum_add1 in H2. pose proof (find_lbound l x acc). lia.
+++
+simpl in H2. destruct (EA a x). hnf in e; subst x. apply NoDup_cons_2 in H; contradiction.
+destruct (EA a y). hnf in e; subst y. apply NoDup_cons_2 in H; contradiction.
+do 2 rewrite find_accum_add1 in H2. apply (IHl x y acc).
+apply NoDup_cons_1 in H; auto. auto. auto. lia.
+Qed.
+
+
+End PriqArrUtils.
