@@ -9,6 +9,8 @@ Context {size : Z}.
 Context {inf : Z}.
 Parameter free_tok : val -> Z -> mpred.
 
+Instance Z_EqDec : EquivDec.EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
+
 Definition mallocN_spec {CS: compspecs} :=
   DECLARE _mallocN
   WITH n: Z
@@ -59,7 +61,7 @@ Definition push_spec {CS: compspecs} :=
   WITH pq: val, vertex : Z, weight : Z, priq_contents_val: list val
   PRE [tint, tint, tptr tint]
   PROP (0 <= vertex < size;
-       weight_inrange_priq weight inf)
+       (@weight_inrange_priq inf weight))
   PARAMS (Vint (Int.repr vertex);
           Vint (Int.repr weight);
           pq)
@@ -76,7 +78,7 @@ Definition pq_emp_spec {CS: compspecs} :=
   DECLARE _pq_emp
   WITH pq: val, priq_contents: list Z
   PRE [tint, tint, tptr tint]
-  PROP (inrange_priq inf priq_contents;
+  PROP (@inrange_priq inf priq_contents;
        0 <= size <= Int.max_signed;
        0 <= inf;
        Int.min_signed < inf + 1 <= Int.max_signed)
@@ -87,7 +89,7 @@ Definition pq_emp_spec {CS: compspecs} :=
    SEP (data_at Tsh (tarray tint size) (map Vint (map Int.repr priq_contents)) pq)
   POST [ tint ]
    PROP ()
-   LOCAL (temp ret_temp (isEmpty priq_contents inf))
+   LOCAL (temp ret_temp (@isEmpty inf priq_contents))
    SEP (data_at Tsh (tarray tint size) (map Vint (map Int.repr priq_contents)) pq).
 
 Definition adjustWeight_spec {CS: compspecs} :=
@@ -95,7 +97,7 @@ Definition adjustWeight_spec {CS: compspecs} :=
   WITH pq: val, vertex : Z, newWeight : Z, priq_contents: list Z
   PRE [tint, tint, tptr tint]
   PROP (0 <= vertex < size;
-       weight_inrange_priq newWeight inf)
+       @weight_inrange_priq inf newWeight)
   PARAMS (Vint (Int.repr vertex);
           Vint (Int.repr newWeight);
           pq)
@@ -112,8 +114,8 @@ Definition popMin_spec {CS: compspecs} :=
   DECLARE _popMin
   WITH pq: val, priq_contents: list Z
   PRE [tint, tint, tptr tint]
-   PROP (inrange_priq inf priq_contents;
-        isEmpty priq_contents inf = Vzero;
+   PROP (@inrange_priq inf priq_contents;
+        @isEmpty inf priq_contents = Vzero;
         0 < size <= Int.max_signed;
         0 <= inf;
         Int.min_signed < inf + 1 <= Int.max_signed)
