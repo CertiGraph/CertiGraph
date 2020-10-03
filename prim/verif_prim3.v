@@ -14,9 +14,8 @@ Local Open Scope Z.
 
 Section PrimProof.
 
-Instance Z_EqDec : EquivDec.EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
-
-
+Context {V_EqDec : EquivDec.EqDec V eq}.
+Context {E_EqDec : EquivDec.EqDec E eq}.
 Definition addresses := @nil val.
 
 (***********************VERIFICATION***********************)
@@ -463,7 +462,7 @@ break: (
          (filter (fun v : Z => Znth v (list_repeat (Z.to_nat size) size) <? size) []))). {
     simpl.
     (*because I've trouble using edgeless_graph_EList*) apply NoDup_Permutation. apply NoDup_EList. apply NoDup_nil.
-    intros. rewrite EList_evalid. split; intros. pose proof (@edgeless_graph_evalid inf size inf_rep size_rep' x); contradiction. contradiction.
+    intros. rewrite EList_evalid. split; intros. pose proof (@edgeless_graph_evalid inf size _ _ inf_rep size_rep' x); contradiction. contradiction.
   }
   assert (Hr1: forall u v : V, In u (nil (A:=V)) -> In v (nil (A:=V)) -> connected g u v <-> connected edgeless_graph' u v). {
     intros. contradiction.
@@ -478,7 +477,7 @@ break: (
   (*Hinv_12 (nil <> nil) seems to be missing, autoresolved?*)
   assert (Hinv_13: forall u v : V, In u (VList g) -> ~ adjacent edgeless_graph' u v). {
     unfold not; intros. destruct H0 as [e [? ?]]. destruct H0.
-    pose proof (@edgeless_graph_evalid inf size inf_rep size_rep' e); contradiction.
+    pose proof (@edgeless_graph_evalid inf size _ _ inf_rep size_rep' e); contradiction.
   }
   assert (Hinv_14: forall v u1 u2 : V,
     In v (nil (A:=V)) ->
@@ -580,7 +579,7 @@ break: (
     simpl. left; trivial.
   }
   assert (Hu_not_popped: ~ In u popped_vertices). { unfold not; intros.
-    assert (Znth u pq_state < inf + 1). apply (@find_min_lt_inf inf u pq_state Hu H1).
+    assert (Znth u pq_state < inf + 1). apply (@find_min_lt_inf inf _ u pq_state Hu H1).
     rewrite HZlength_pq_state; lia. rewrite Hinv_6 in H4 by lia.
     destruct (in_dec V_EqDec u popped_vertices). lia. contradiction.
   }
@@ -693,9 +692,16 @@ break: (
   +assert (~ In i (popped_vertices+::u)). {
     destruct (in_dec V_EqDec i (popped_vertices +:: u)). simpl in H5. inversion H5. auto.
    }
+   unfold G, MatrixUGraph in g.
+   Fail rewrite size_eq.
    forward_call (g, gptr, addresses, u, i).
-   
-   admit. (* AM: super weird?? *)
+   admit.
+   (* 
+      AM: super weird. I wonder where the 
+      z v/z size
+      issue came about.
+      Any clues?
+    *)
    forward.
    assert (1 = 1) by trivial.
    assert (1 = 1) by trivial.
@@ -1273,7 +1279,7 @@ break: (
     apply (NoDup_app_not_in V popped_vertices). apply (Permutation_NoDup (l:=VList g)).
     apply Permutation_sym; apply Hinv_3. apply NoDup_VList. auto.
   }
-  set (adde_u:=adde mst' (fst (eformat (u,Znth u parents))) (snd (eformat (u,Znth u parents))) Hfst Hsnd Hfst_le_snd (elabel g (eformat (u,(Znth u parents)))) H8).
+  set (adde_u:=adde _ _ mst' (fst (eformat (u,Znth u parents))) (snd (eformat (u,Znth u parents))) Hfst Hsnd Hfst_le_snd (elabel g (eformat (u,(Znth u parents)))) H8).
   Exists (adde_u).
   Exists (finGraph adde_u).
   Exists parents' keys' pq_state' (popped_vertices+::u) (remove V_EqDec u unpopped_vertices).
@@ -1347,7 +1353,7 @@ break: (
       clear Hinv_1 Hinv_2 Hinv_3 Hinv_4 Hinv_5 Hinv_6 Hinv_7 Hinv_8 Hinv_9 Hinv_10 Hr1 Hr2 Hinv_13 Hinv_14.
       clear Hinv2_1 Hinv2_2 Hinv2_3 Hparents_bound Hkeys' Hpq_state' Hheavy Hheavy2 Hweight Hpopped_nil Hpopped_unnil.
       clear Hpopped_or_unpopped Hpopped_vvalid Hunpopped_vvalid Hu_not_popped Hu_unpopped Hur Hu_min HZlength_parents HZlength_keys HZlength_pq_state Hu_parents Hu_keys Hu_pq_state Huparents_popped Huparents_unpopped.
-      set (remove_b:= eremove M b). (*huh, how come I don't need to provide evalid b?*)
+      set (remove_b:= eremove _ _ M b). (*huh, how come I don't need to provide evalid b?*)
       assert (Ha_fst_vvalid: vvalid remove_b (fst a)). {
         unfold a; simpl. destruct (Z.le_ge_cases u (Znth u parents)).
         rewrite eformat1 by auto; simpl. rewrite vert_bound; lia.
@@ -1367,7 +1373,7 @@ break: (
       assert (Ha_weight_bound: Int.min_signed <= w < inf). {
         split. apply weight_representable. apply evalid_inf_iff; auto.
       }
-      set (swap:=adde remove_b (fst a) (snd a) Ha_fst_vvalid Ha_snd_vvalid Ha_fst_le_snd w Ha_weight_bound).
+      set (swap:=adde _ _ remove_b (fst a) (snd a) Ha_fst_vvalid Ha_snd_vvalid Ha_fst_le_snd w Ha_weight_bound).
       assert (Hadde_partial_swap: is_partial_lgraph adde_u swap). {
         unfold is_partial_lgraph; split. split. 2: split3.
         intros. rewrite vert_bound; rewrite vert_bound in H19. lia.
@@ -1922,3 +1928,5 @@ admit.
                                                          
 (*Should we bother with filling a matrix for it? The original Prim doesn't bother*) 
 Admitted.
+
+End PrimProof.

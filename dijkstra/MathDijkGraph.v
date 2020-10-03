@@ -25,6 +25,8 @@ Section MathDijkGraph.
 
   Context {size : Z}.
   Context {inf : Z}.
+  Context {V_EqDec : EqDec V eq}. 
+  Context {E_EqDec : EqDec E eq}. 
 
   (* Here is the LabeledGraph *)
   Definition DijkLG := AdjMatLG.
@@ -34,7 +36,7 @@ Section MathDijkGraph.
     {
     basic:
       (* first, we can take AdjMat's soundness wholesale *)
-      (@SoundAdjMat size inf g);
+      (@SoundAdjMat size inf _ _ g);
     
     veb:
       (* from the AdjMat soundness above we already know 
@@ -129,7 +131,7 @@ Section MathDijkGraph.
     - apply H; trivial.
     - rewrite H0 in n.
       replace (elabel g e) with inf by trivial.
-      apply (@inf_representable _ _ g).
+      apply (@inf_representable _ _ _ _ g).
   Qed.
 
   Lemma div_pos_le:

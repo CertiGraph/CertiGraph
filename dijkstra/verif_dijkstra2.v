@@ -20,12 +20,14 @@ Ltac ulia := unfold V, E, DE in *; trilia.
 
 Section DijkstraProof.
   
+  Context {V_EqDec : EquivDec.EqDec V eq}.
+  Context {E_EqDec : EquivDec.EqDec E eq}.
+  Definition addresses := @nil val.
+
   (* The invariants have been dragged out of the 
    proof for readability and reuse
    *)
   
-  Definition addresses := @nil val.
-
   Definition dijk_setup_loop_inv g sh src dist prev v_pq arr addresses :=
     EX i : Z,
     PROP ()
@@ -54,7 +56,7 @@ Section DijkstraProof.
         DijkGraph sh CompSpecs g (pointer_val_val arr) size addresses;
         free_tok (pointer_val_val v_pq) (sizeof tint * size)).
   
-  Definition dijk_forloop_inv (g: @DijkGG size inf) sh src
+  Definition dijk_forloop_inv (g: @DijkGG size inf _ _) sh src
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
     EX prev : list V,
     EX priq : list V,
@@ -107,7 +109,7 @@ Section DijkstraProof.
              DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
                      free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
-  Definition dijk_forloop_break_inv (g: @DijkGG size inf) sh
+  Definition dijk_forloop_break_inv (g: @DijkGG size inf _ _) sh
                                     src dist_ptr prev_ptr priq_ptr
                                     graph_ptr addresses :=
     EX prev: list V,
@@ -135,7 +137,7 @@ Section DijkstraProof.
              DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
                      free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
-  Definition dijk_inner_forloop_inv (g: @DijkGG size inf) sh
+  Definition dijk_inner_forloop_inv (g: @DijkGG size inf _ _) sh
              src (priq dist prev : list Z)
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
     EX i : Z,
@@ -244,7 +246,7 @@ Section DijkstraProof.
       rewrite size_eq in *; ulia.
     }
     assert (0 <= u * 8 + i <
-            Zlength (map Int.repr (@graph_to_list size g id))). {
+            Zlength (map Int.repr (@graph_to_list size _ _ g id))). {
       rewrite Zlength_map, (graph_to_list_Zlength _ _ size); ulia.
     }
     assert (Int.min_signed < 0) by now compute. 
@@ -371,7 +373,7 @@ Section DijkstraProof.
         assert (H_inrange_priq_trans:
                   forall priq,
                     @inrange_priq inf priq ->
-                    priq_arr_utils.inrange_priq inf priq). {
+                    @priq_arr_utils.inrange_priq inf priq). {
           intros.
           red in H11 |- *. red in H11.
           rewrite Forall_forall in H11 |- *.
@@ -389,8 +391,8 @@ Section DijkstraProof.
         forward_if. (* checking if it's time to break *)
         * (* No, don't break. *)
           rename H11 into Htemp.
-          assert (isEmpty priq inf = Vzero). {
-            destruct (isEmptyTwoCases priq inf);
+          assert (@isEmpty inf priq = Vzero). {
+            destruct (@isEmptyTwoCases inf priq);
             rewrite H11 in Htemp; simpl in Htemp;
               now inversion Htemp.
           }
@@ -591,7 +593,7 @@ Section DijkstraProof.
 
             forward_call (sh, g, graph_ptr, addresses, u, i).
             
-            remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
+            remember (Znth i (Znth u (@graph_to_mat size _ _ g id))) as cost.
 
             assert (H_i_valid: vvalid g i). {
               apply (vvalid_meaning g); trivial.
@@ -897,14 +899,14 @@ Section DijkstraProof.
             
         * (* After breaking from the while loop,
            prove break's postcondition *)
-          assert (isEmpty priq inf = Vone). {
-            destruct (isEmptyTwoCases priq inf); trivial;
+          assert (@isEmpty inf priq = Vone). {
+            destruct (@isEmptyTwoCases inf priq); trivial;
               rewrite H12 in H11; simpl in H11; now inversion H11.
           }
           clear H11.
           forward. Exists prev priq dist popped.
           entailer!.
-          pose proof (isEmptyMeansInf priq inf).
+          pose proof (@isEmptyMeansInf inf priq).
           rewrite H26 in H12.
           rewrite Forall_forall in H12 |- *.
           intros. specialize (H12 _ H27). lia.

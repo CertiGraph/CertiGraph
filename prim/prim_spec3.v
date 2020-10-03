@@ -14,6 +14,8 @@ Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 Section PrimSpec.
 
+Context {V_EqDec : EquivDec.EqDec V eq}.
+Context {E_EqDec : EquivDec.EqDec E eq}.
 
 Definition getCell_spec :=
   DECLARE _getCell
@@ -91,7 +93,7 @@ Definition prim_spec :=
      EX fmst: FiniteGraph mst,
      EX parents: list V,
      PROP ( (*connected_graph mst;*)
-            (@minimum_spanning_forest size inf mst g);
+            (@minimum_spanning_forest size inf _ _ mst g);
             Permutation (EList mst) (map (fun v => eformat (v, Znth v parents))
               (filter (fun v => Znth v parents <? size) (nat_inc_list (Z.to_nat size))))
           )
@@ -106,7 +108,7 @@ Definition Gprog : funspecs :=
   ltac:(with_library prog
                      [(@push_spec size inf _);
                      (@pq_emp_spec size inf _);
-                     (@popMin_spec size inf _);
+                     (@popMin_spec size inf _ _);
                      (@adjustWeight_spec size inf _);
                      (@init_spec size _);
                      freePQ_spec;

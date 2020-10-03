@@ -37,8 +37,8 @@ Section MathAdjMatGraph.
   Definition DE : Type := Z. 
   Definition DG: Type := unit.
 
-  Instance V_EqDec : EqDec V eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
-
+  (* Instance V_EqDec : EqDec V eq. Proof. hnf. intros. apply Z.eq_dec. Defined. *)
+  (*
   Instance E_EqDec: EqDec E eq.
   Proof.
     hnf. intros [x] [y].
@@ -48,6 +48,12 @@ Section MathAdjMatGraph.
       + right. intro. apply n. inversion H. reflexivity.
     - right; intro; apply c; inversion H; reflexivity.
   Defined.
+   *)
+
+  Context {size : Z}. 
+  Context {inf : Z}.
+  Context {V_EqDec : EqDec V eq}. 
+  Context {E_EqDec: EqDec E eq}.
 
   Definition AdjMatLG := (@LabeledGraph V E _ _ DV DE DG).
   (* This is the basic LabeledGraph for all our AdjMat representations.
@@ -58,8 +64,7 @@ Section MathAdjMatGraph.
   (* The instantiator will have to supply a max number of vertices
    and a special "infinity" value to indicate unreachability 
    *)
-  Context {size : Z}. 
-  Context {inf : Z}.
+
   
   Class SoundAdjMat (g: AdjMatLG) :=
     {

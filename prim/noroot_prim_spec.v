@@ -14,6 +14,9 @@ Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 Section NoRootPrimSpec.
 
+Context {V_EqDec : EquivDec.EqDec V eq}.
+Context {E_EqDec : EquivDec.EqDec E eq}.
+
 Definition getCell_spec :=
   DECLARE _getCell
   WITH sh: wshare,
@@ -32,7 +35,7 @@ Definition getCell_spec :=
     SEP (@SpaceAdjMatGraph' size CompSpecs sh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
   POST [tint]
     PROP ()
-    RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_symm_mat g))))) 
+    RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_symm_mat _ _ g))))) 
     SEP (@SpaceAdjMatGraph' size CompSpecs sh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
 
 Definition initialise_list_spec :=
@@ -98,7 +101,7 @@ Definition Gprog : funspecs :=
   ltac:(with_library prog
                      [(@push_spec size inf _);
                      (@pq_emp_spec size inf _);
-                     (@popMin_spec size inf _);
+                     (@popMin_spec size inf _ _);
                      (@adjustWeight_spec size inf _);
                      (@init_spec size _);
                      freePQ_spec;

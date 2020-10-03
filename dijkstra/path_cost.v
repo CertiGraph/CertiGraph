@@ -10,26 +10,28 @@ Section PathCost.
 
   Context {size : Z}.
   Context {inf : Z}.
+  Context {V_EqDec : EquivDec.EqDec V eq}. 
+  Context {E_EqDec : EquivDec.EqDec E eq}. 
 
-  Definition path_cost (g: @DijkGG size inf) (path: @path V E) : DE :=
+  Definition path_cost (g: @DijkGG size inf _ _) (path: @path V E) : DE :=
     fold_left Z.add (map (elabel g) (snd path)) 0.
 
   Lemma path_cost_zero:
-    forall (g: @DijkGG size inf) src,
+    forall (g: @DijkGG size inf _ _) src,
       path_cost g (src, []) = 0.
   Proof.
     intros. unfold path_cost; trivial.
   Qed.
 
   Lemma one_step_path_Znth:
-    forall (g: @DijkGG size inf) s e,
+    forall (g: @DijkGG size inf _ _) s e,
       path_cost g (s, e :: nil) = elabel g e.
   Proof.
     intros. unfold path_cost; simpl.
     apply Z.add_0_l.
   Qed.
 
-  Lemma acc_pos: forall (g: @DijkGG size inf) l z,
+  Lemma acc_pos: forall (g: @DijkGG size inf _ _) l z,
       (forall e : E, In e l -> 0 <= elabel g e) ->
       0 <= z ->
       0 <= fold_left Z.add (map (elabel g) l) z.
@@ -41,7 +43,7 @@ Section PathCost.
   Qed.
 
   Lemma path_cost_pos:
-    forall (g: @DijkGG size inf) p,
+    forall (g: @DijkGG size inf _ _) p,
       valid_path g p ->
       0 <= path_cost g p.
   Proof.
@@ -64,7 +66,7 @@ Section PathCost.
   Qed.
 
   Lemma path_cost_path_glue:
-    forall (g: @DijkGG size inf) p1 p2,
+    forall (g: @DijkGG size inf _ _) p1 p2,
       path_cost g (path_glue p1 p2) =
       path_cost g p1 + path_cost g p2.
   Proof.
@@ -86,7 +88,7 @@ Section PathCost.
   Qed.
 
   Lemma path_cost_app_cons:
-    forall (g: @DijkGG size inf) path e,
+    forall (g: @DijkGG size inf _ _) path e,
       path_cost g (fst path, snd path +:: e) =
       path_cost g path + elabel g e.
   Proof.
@@ -99,7 +101,7 @@ Section PathCost.
   Qed.
 
   Lemma path_cost_path_glue_lt:
-    forall (g: @DijkGG size inf) p1 p2 limit,
+    forall (g: @DijkGG size inf _ _) p1 p2 limit,
       valid_path g p1 ->
       valid_path g p2 ->
       path_cost g (path_glue p1 p2) < limit ->
@@ -113,7 +115,7 @@ Section PathCost.
   Qed.
   
   Lemma path_cost_glue_one_step:
-    forall (g: @DijkGG size inf) p2m u i,
+    forall (g: @DijkGG size inf _ _) p2m u i,
       path_cost g (path_glue p2m (u, [(u, i)])) = path_cost g p2m + elabel g (u, i).
   Proof.
     intros.

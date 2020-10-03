@@ -16,7 +16,10 @@ Require Import CertiGraph.dijkstra.dijkstra_constants.
 Local Open Scope Z_scope.
 
 Section DijkstraSpec.
-  
+
+  Context {V_EqDec : EquivDec.EqDec V eq}. 
+  Context {E_EqDec : EquivDec.EqDec E eq}. 
+
   Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
   Definition Vprog : varspecs. mk_varspecs prog. Defined.
   Global Existing Instance CompSpecs.
@@ -24,7 +27,7 @@ Section DijkstraSpec.
   Definition getCell_spec :=
     DECLARE _getCell
     WITH sh: wshare,
-         g: @DijkGG size inf,
+         g: @DijkGG size inf _ _,
          graph_ptr: pointer_val,
          addresses: list val,
          u: V,
@@ -32,7 +35,7 @@ Section DijkstraSpec.
     PRE [tptr tint, tint, tint]
       PROP (0 <= i < size;
            0 <= u < size;
-           Forall (fun list => Zlength list = size) (@graph_to_mat size g id))
+           Forall (fun list => Zlength list = size) (@graph_to_mat size _ _ g id))
       PARAMS (pointer_val_val graph_ptr;
            Vint (Int.repr u);
            Vint (Int.repr i))
@@ -40,7 +43,7 @@ Section DijkstraSpec.
       SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses)
     POST [tint]
       PROP ()
-      RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_mat size g id))))) 
+      RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_mat size _ _ g id))))) 
       SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses).    
   
   Definition dijkstra_spec :=
@@ -55,7 +58,7 @@ Section DijkstraSpec.
     PRE [tptr tint, tint, tptr tint, tptr tint]
     
       PROP (0 <= src < size;
-           Forall (fun list => Zlength list = size) (@graph_to_mat size g id))
+           Forall (fun list => Zlength list = size) (@graph_to_mat size _ _ g id))
       PARAMS (pointer_val_val graph_ptr;
              Vint (Int.repr src);
              pointer_val_val dist_ptr;
@@ -70,7 +73,7 @@ Section DijkstraSpec.
       EX popped: list V,                             
       PROP (forall dst,
                vvalid g dst ->
-               @inv_popped size inf g src popped prev dist dst)
+               @inv_popped size inf _ _ g src popped prev dist dst)
       LOCAL ()
       SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
           data_at Tsh (tarray tint size) (map Vint (map Int.repr prev)) (pointer_val_val prev_ptr);
@@ -82,7 +85,7 @@ Section DijkstraSpec.
                        (@push_spec size inf _);
                        (@pq_emp_spec size inf _);
                        (@adjustWeight_spec size inf _);
-                       (@popMin_spec size inf _);
+                       (@popMin_spec size inf _ _);
                        freePQ_spec;
                        getCell_spec;
                        dijkstra_spec]).
