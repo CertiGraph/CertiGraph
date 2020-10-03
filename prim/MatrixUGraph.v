@@ -10,7 +10,7 @@ Require Import CertiGraph.graph.graph_relation.
 Require Export CertiGraph.graph.undirected_graph.
 Require Export CertiGraph.graph.MathAdjMatGraph.
 Require Export CertiGraph.graph.eformat_lemmas.
-Require Export CertiGraph.priq.priq_arr_utils.
+Require Import CertiGraph.priq_malloc.priq_arr_utils.
 
 (* 
 Anshuman, Oct 2:
@@ -41,7 +41,9 @@ Qed.
 
 Section MATRIXUGRAPH.
 
-Context {inf: Z} {size: Z}.     
+  Context {size: Z} {inf: Z}.
+
+  Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
 Class AdjMatUSoundness (g: AdjMatLG) := {
   sadjmat: SoundAdjMat (size:=size) (inf:=inf) g;
@@ -817,6 +819,10 @@ Qed.
 
 (***************FIND LEMMAS*******)
 
+(* This is where we need priq_arr_utils, and that too just for find. 
+   Thus my suggestion: move these two huge lemmas up
+ *)
+
 Lemma NoDup_incl_ordered_powerlist:
 forall (l: list E), NoDup l -> exists L,
   (forall l', (NoDup l' /\ incl l' l /\ (forall x y, In x l' -> In y l' -> (find l' x 0 <= find l' y 0 <-> find l x 0 <= find l y 0)))
@@ -1313,71 +1319,3 @@ rewrite <- ZtoNat_Zlength. lia.
 Qed.
 
 End MATRIXUGRAPH.
-
-(* AM:
-   I moved these over from spatial because they are independent of 
-   any specific spatial representation. 
- *)
-
-Definition G := @MatrixUGraph inf SIZE.
-
-Lemma eformat_evalid_vvalid:
-forall (g: G) u v, evalid g (eformat (u,v)) -> vvalid g u /\ vvalid g v.
-Proof.
-intros. apply evalid_strong_evalid in H.
-destruct (Z.lt_trichotomy u v).
-rewrite eformat1 in H. destruct H.
-rewrite src_fst, dst_snd in H1; auto. simpl; lia.
-destruct H0.
-subst u. rewrite eformat1 in H. destruct H.
-rewrite src_fst, dst_snd in H0; auto. simpl; lia.
-rewrite eformat2 in H. simpl in H; destruct H.
-rewrite src_fst, dst_snd in H1; auto. simpl in H1.
-split; apply H1. simpl; lia.
-Qed.
-
-Lemma eformat_adj': forall (g: G) u v, evalid g (eformat (u,v)) -> adj_edge g (eformat (u,v)) u v.
-Proof.
-intros. split. apply evalid_strong_evalid; auto.
-destruct (Z.le_ge_cases u v).
-rewrite eformat1 in *. left. rewrite src_fst, dst_snd; auto. auto. auto.
-rewrite eformat2 in *. right. rewrite src_fst, dst_snd; auto. auto. auto.
-Qed.
-
-Lemma eformat_adj: forall (g: G) u v, adjacent g u v <-> evalid g (eformat (u,v)).
-Proof.
-intros. split. intros.
-+
-destruct H. destruct H. destruct H.
-destruct H0; destruct H0. assert (x = (u,v)). {
-  rewrite src_fst in H0.
-  rewrite dst_snd in H2. rewrite <- H0, <- H2. destruct x; simpl; auto.
-} subst x.
-rewrite eformat1; auto. simpl.
-rewrite <- H0. rewrite <- H2 at 2. apply undirected_edge_rep; auto.
-assert (x = (v,u)). {
-  rewrite src_fst in H0; rewrite dst_snd in H2.
-  rewrite <- H0, <- H2. destruct x; simpl; auto.
-} subst x.
-rewrite eformat2. simpl. auto. simpl. rewrite <- H0. rewrite <- H2 at 2.
-apply undirected_edge_rep; auto.
-+intros. destruct (Z.lt_trichotomy u v).
-rewrite eformat1 in H. 2: simpl; lia.
-assert (evalid g (u,v)). auto.
-exists (u,v). split. apply evalid_strong_evalid; auto. left.
-rewrite src_fst, dst_snd; auto.
-(*equal, repeat*)
-destruct H0. rewrite eformat1 in H. 2: simpl; lia.
-assert (evalid g (u,v)). auto.
-exists (u,v). split. apply evalid_strong_evalid; auto. left.
-rewrite src_fst, dst_snd; auto.
-rewrite eformat2 in H. 2: simpl; lia. simpl in H.
-assert (evalid g (v,u)). auto.
-exists (v,u). split. apply evalid_strong_evalid; auto.
-rewrite src_fst, dst_snd; auto.
-Qed.
-
-Corollary eformat_adj_elabel: forall (g: G) u v, adjacent g u v <-> elabel g (eformat (u,v)) < inf.
-Proof.
-intros. rewrite eformat_adj. apply evalid_inf_iff.
-Qed.
