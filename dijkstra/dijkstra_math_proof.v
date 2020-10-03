@@ -16,6 +16,8 @@ Section DijkstraMathLemmas.
 
   Context {size : Z}.
   Context {inf : Z}.
+  Context {V_EqDec : EquivDec.EqDec V eq}.
+  Context {E_EqDec : EquivDec.EqDec E eq}.
 
   Definition inrange_prev prev :=
     Forall (fun x => 0 <= x < size \/ x = inf) prev.
@@ -72,7 +74,7 @@ Section DijkstraMathLemmas.
 
 
   Lemma popped_noninf_has_path:
-    forall (g: @DijkGG size inf) mom src popped prev dist,
+    forall (g: @DijkGG size inf _ _) mom src popped prev dist,
       dijkstra_correct g src popped prev dist ->
       In mom popped ->
       Znth mom dist < inf ->
@@ -92,7 +94,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma path_leaving_popped:
-    forall (g: @DijkGG size inf) links s u popped,
+    forall (g: @DijkGG size inf _ _) links s u popped,
       valid_path g (s, links) ->
       path_ends g (s, links) s u ->
       In s popped ->
@@ -278,7 +280,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma path_ends_one_step:
-    forall (g: @DijkGG size inf) a b,
+    forall (g: @DijkGG size inf _ _) a b,
       path_ends g (a, [(a, b)]) a b.
   Proof.
     intros. split; trivial.
@@ -286,7 +288,7 @@ Section DijkstraMathLemmas.
   Qed. 
 
   Lemma path_leaving_popped_stronger:
-    forall (g: @DijkGG size inf) links s u popped,
+    forall (g: @DijkGG size inf _ _) links s u popped,
       valid_path g (s, links) ->
       path_ends g (s, links) s u ->
       In s popped ->
@@ -317,7 +319,7 @@ Section DijkstraMathLemmas.
       simpl. rewrite (edge_src_fst g); split; trivial.
       split3; trivial.
       rewrite (edge_src_fst g); simpl; trivial.
-      apply (path_ends_valid_dst _ s _ p1); trivial.
+      apply (path_ends_valid_dst (pg_lg (lg_gg g)) s mom' p1); trivial.
       rewrite (edge_dst_snd g); simpl; trivial.
       apply (path_ends_valid_src _ _ u p2); trivial.
     }
@@ -347,7 +349,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma evalid_dijk:
-    forall (g: @DijkGG size inf) a b cost,
+    forall (g: @DijkGG size inf _ _) a b cost,
       cost = elabel g (a,b) ->
       0 <= cost <= Int.max_signed / size ->
       evalid g (a,b).
@@ -364,7 +366,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_popped_add_src:
-    forall (g: @DijkGG size inf) src popped prev dist,
+    forall (g: @DijkGG size inf _ _) src popped prev dist,
       dijkstra_correct g src popped prev dist ->
       vvalid g src ->
       Znth src dist = 0 ->
@@ -387,7 +389,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma path_correct_app_cons:
-    forall (g: @DijkGG size inf) src u mom p2mom prev dist,
+    forall (g: @DijkGG size inf _ _) src u mom p2mom prev dist,
       path_correct g prev dist src mom p2mom ->
       Znth u dist = Znth mom dist + elabel g (mom, u) ->
       Znth mom dist + elabel g (mom, u) < inf ->
@@ -418,7 +420,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma in_path_app_cons:
-    forall (g: @DijkGG size inf) step p2a src a b,
+    forall (g: @DijkGG size inf _ _) step p2a src a b,
       valid_path g p2a ->
       evalid g (a,b) ->
       path_ends g p2a src a ->
@@ -451,7 +453,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_popped_add_u:
-    forall (g: @DijkGG size inf) src dst u popped prev priq dist,
+    forall (g: @DijkGG size inf _ _) src dst u popped prev priq dist,
       dijkstra_correct g src popped prev dist ->
       Znth src dist = 0 ->
       (forall dst : Z,
@@ -773,7 +775,7 @@ Section DijkstraMathLemmas.
 
 
   Lemma inv_unpopped_weak_add_unpopped:
-    forall (g: @DijkGG size inf) prev dist popped src u dst,
+    forall (g: @DijkGG size inf _ _) prev dist popped src u dst,
       dijkstra_correct g src popped prev dist ->
       ~ In u popped ->
       vvalid g dst ->
@@ -827,7 +829,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_unseen_weak_add_unpopped:
-    forall (g : @DijkGG size inf) prev dist popped src u dst,
+    forall (g: @DijkGG size inf _ _) prev dist popped src u dst,
       dijkstra_correct g src popped prev dist ->
       ~ In u popped ->
       vvalid g dst ->
@@ -871,7 +873,7 @@ Section DijkstraMathLemmas.
 
 
   Lemma dijkstra_correct_nothing_popped:
-    forall (g: @DijkGG size inf) src,
+    forall (g: @DijkGG size inf _ _) src,
       0 <= src < size ->
       dijkstra_correct g src [] (upd_Znth src
                                           (list_repeat (Z.to_nat size) inf) src)
@@ -888,7 +890,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma In_links_snd_In_path:
-    forall (g: @DijkGG size inf) step path,
+    forall (g: @DijkGG size inf _ _) step path,
       In step (snd path) ->
       In_path g (snd step) path.
   Proof.
@@ -898,7 +900,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma In_links_fst_In_path:
-    forall (g: @DijkGG size inf) step path,
+    forall (g: @DijkGG size inf _ _) step path,
       In step (snd path) ->
       In_path g (fst step) path.
   Proof.
@@ -908,7 +910,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_popped_newcost:
-    forall (g: @DijkGG size inf) src dst u i newcost popped prev dist,
+    forall (g: @DijkGG size inf _ _) src dst u i newcost popped prev dist,
       vvalid g i ->
       vvalid g dst ->
       (forall dst : Z,
@@ -953,7 +955,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_unpopped_newcost_dst_neq_i:
-    forall (g: @DijkGG size inf) src dst u i newcost prev dist popped,
+    forall (g: @DijkGG size inf _ _) src dst u i newcost prev dist popped,
       (forall dst : Z,
           0 <= dst < i ->
           inv_unpopped g src popped prev dist dst) ->
@@ -1003,7 +1005,7 @@ Section DijkstraMathLemmas.
   Qed. 
 
   Lemma inv_unpopped_newcost:
-    forall (g: @DijkGG size inf) src dst u i
+    forall (g: @DijkGG size inf _ _) src dst u i
            dist prev priq popped newcost,
       (forall dst : Z,
           vvalid g dst ->
@@ -1221,7 +1223,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_unpopped_weak_newcost:
-    forall (g: @DijkGG size inf) src dst u i prev dist popped newcost,
+    forall (g: @DijkGG size inf _ _) src dst u i prev dist popped newcost,
       (forall dst : Z,
           i <= dst < size ->
           inv_unpopped_weak g src popped prev dist dst u) ->
@@ -1266,7 +1268,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma path_correct_upd_dist:
-    forall (g: @DijkGG size inf) src i m dist prev newcost p2m,
+    forall (g: @DijkGG size inf _ _) src i m dist prev newcost p2m,
       vvalid g i ->
       vvalid g m ->
       Zlength dist = size ->
@@ -1283,7 +1285,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_unseen_newcost:
-    forall (g: @DijkGG size inf) dst src i u dist prev popped newcost,
+    forall (g: @DijkGG size inf _ _) dst src i u dist prev popped newcost,
       (forall dst : Z,
           vvalid g dst ->
           inv_popped g src popped prev dist dst) ->
@@ -1332,7 +1334,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_unseen_weak_newcost:
-    forall (g: @DijkGG size inf) dst src u i dist prev popped newcost,
+    forall (g: @DijkGG size inf _ _) dst src u i dist prev popped newcost,
       (forall dst : Z,
           vvalid g dst ->
           inv_popped g src popped prev dist dst) ->
@@ -1380,7 +1382,7 @@ Section DijkstraMathLemmas.
   Qed.           
 
   Lemma inv_unpopped_new_dst:
-    forall (g: @DijkGG size inf) src dst u i dist prev popped,
+    forall (g: @DijkGG size inf _ _) src dst u i dist prev popped,
       vvalid g i ->
       (forall dst : Z,
           vvalid g dst ->
@@ -1518,7 +1520,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma path_in_popped_path_glue:
-    forall (g: @DijkGG size inf) p1 p2 popped,
+    forall (g: @DijkGG size inf _ _) p1 p2 popped,
       path_in_popped g popped p1 ->
       path_in_popped g popped p2 ->
       path_in_popped g popped (path_glue p1 p2).
@@ -1530,7 +1532,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma not_in_popped:
-    forall (g: @DijkGG size inf) src u i cost prev dist popped,
+    forall (g: @DijkGG size inf _ _) src u i cost prev dist popped,
       vvalid g u ->
       vvalid g i ->
       (forall dst : Z,

@@ -22,8 +22,13 @@ Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope logic.
 
+Section SpatialPrim.
+
+Context {V_EqDec : EquivDec.EqDec V eq}.
+Context {E_EqDec : EquivDec.EqDec E eq}.
+
 Definition graph_to_symm_mat g :=
-  @graph_to_mat size g eformat.
+  @graph_to_mat size _ _ g eformat.
 
 Lemma graph_to_mat_eq:
   forall (g: AdjMatLG) i j, 0 <= i < size -> 0 <= j < size ->
@@ -45,7 +50,7 @@ Proof.
 Qed.
 
 Lemma graph_to_mat_inf:
-  forall (g: @AdjMatGG size inf) u v,
+  forall (g: @AdjMatGG size inf _ _) u v,
     0 <= u < v ->
     v < size ->
     ~ evalid g (u,v) ->
@@ -59,8 +64,8 @@ Proof.
   simpl; lia.
 Qed.
 
-Definition G := (@MatrixUGraph size inf).
-Definition edgeless_graph' := @edgeless_graph size inf inf_rep size_rep'.
+Definition G := (@MatrixUGraph size inf _ _).
+Definition edgeless_graph' := @edgeless_graph size inf _ _ inf_rep size_rep'.
 Definition adde := @MatrixUGraph_adde size inf.
 Definition eremove := @MatrixUGraph_eremove size inf.
 
@@ -128,7 +133,7 @@ Qed.
 Lemma edgeless_vert_rep:
   forall v,
     0 <= v < size ->
-    (@vert_to_list size edgeless_graph' eformat v) =
+    (@vert_to_list size _ _ edgeless_graph' eformat v) =
     list_repeat (Z.to_nat size) inf.
 Proof.
   intros. simpl. auto.
@@ -142,3 +147,5 @@ Proof.
   simpl. repeat rewrite edgeless_vert_rep;
            try rewrite size_eq; trivial; lia.
 Qed.
+
+End SpatialPrim.

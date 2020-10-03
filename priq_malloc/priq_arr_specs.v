@@ -1,6 +1,6 @@
+Require Export VST.floyd.proofauto.
 Require Export CertiGraph.priq_malloc.priq_arr.
 Require Export CertiGraph.priq_malloc.priq_arr_utils.
-Require Export VST.floyd.proofauto.
 
 (* Specs for Anshuman's simple array-based PQ *)
 Section PQSpec.
@@ -8,8 +8,7 @@ Section PQSpec.
 Context {size : Z}.
 Context {inf : Z}.
 Parameter free_tok : val -> Z -> mpred.
-
-Instance Z_EqDec : EquivDec.EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
+Context {Z_EqDec : EquivDec.EqDec Z eq}. 
 
 Definition mallocN_spec {CS: compspecs} :=
   DECLARE _mallocN
@@ -126,10 +125,10 @@ Definition popMin_spec {CS: compspecs} :=
    SEP   (data_at Tsh (tarray tint size) (map Vint (map Int.repr priq_contents)) pq)
   POST [ tint ]
    EX rt : Z,
-   PROP (rt = priq_arr_utils.find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0)
+   PROP (rt = find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0)
    LOCAL (temp ret_temp  (Vint (Int.repr rt)))
    SEP   (data_at Tsh (tarray tint size) (upd_Znth
-                                            (priq_arr_utils.find priq_contents (fold_right Z.min (Znth 0 priq_contents) priq_contents) 0)
+                                            (find priq_contents (fold_right Z.min (Znth 0 priq_contents) priq_contents) 0)
                                             (map Vint (map Int.repr priq_contents)) (Vint (Int.repr (inf+1)))) pq).
 
 Definition Gprog {CS: compspecs}: funspecs :=

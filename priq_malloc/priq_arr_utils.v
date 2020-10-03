@@ -5,8 +5,7 @@ Section PriqArrUtils.
 
 Context {size : Z}.
 Context {inf: Z}.
-
-Instance Z_EqDec : EquivDec.EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
+Context {Z_EqDec : EquivDec.EqDec Z eq}. 
 
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
 
