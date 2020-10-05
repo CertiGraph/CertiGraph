@@ -91,9 +91,11 @@ KRUSKAL_FILES = \
   verif_kruskal_edgelist.v
 
 PRIM_FILES = \
-  MatrixUGraph.v \
-  prim3.v prim_spec3.v spatial_undirected_matrix3.v verif_prim3.v \
-  noroot_prim.v noroot_prim_spec.v verif_noroot_prim.v prim_constants.v
+  MatrixUGraph.v spatial_undirected_matrix.v \
+  prim.v specs_prim.v verif_prim.v \
+  noroot_prim.v specs_noroot_prim.v verif_noroot_prim.v \
+  MatrixUGraph3.v prim3.v prim_spec3.v spatial_undirected_matrix3.v verif_prim3.v \
+  noroot_prim3.v noroot_prim3_spec.v verif_noroot_prim3.v prim_constants.v
 #prim1.v prim_spec1.v spatial_undirected_matrix1.v verif_prim1.v \  
 
 DIJKSTRA_FILES = \

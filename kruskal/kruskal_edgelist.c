@@ -1,4 +1,5 @@
 #include "../unionfind/unionfind_arr.h"
+#define INT_MAX 2147483647
 
 static const int MAX_EDGES = 8;
 
@@ -35,8 +36,37 @@ void fill_edge(struct edge *wedge, int w, int u, int v) {
   wedge->dst = v;
 }
 
+void swap_edges(struct edge *a, struct edge *b) {
+	struct edge tmp;
+  tmp.weight = a->weight; tmp.src = a->src; tmp.dst = a->dst;
+	a->weight = b->weight; a->src = b->src; a->dst = b->dst;
+	b->weight = tmp.weight; b->src = tmp.src; b->dst = tmp.dst;
+}
+
 /*********************SORTING***********************/
-extern void sort_edges(struct edge* a, int l);
+int yucky_find_min(struct edge* a, int lo, int hi) {
+  int min_value = INT_MAX;
+  int min_index = lo;
+  for (int i = lo; i < hi; ++i) {
+    int w = a[i].weight;
+    if (w <= min_value) {
+      min_value = w;
+      min_index = i;
+    }
+  }
+  return min_index;
+}
+
+void sort_edges(struct edge* a, int n) {
+  //selection sort
+  int i = 0;
+  while (i <= n) {
+    int j = yucky_find_min(a, i, n);
+    swap_edges(a+i,a+j);
+    ++i;
+  }
+  return;
+}
 
 void free_graph(struct graph * graph) {
     free(graph->edge_list);

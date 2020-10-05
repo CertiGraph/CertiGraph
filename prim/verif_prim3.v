@@ -4,7 +4,7 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_relation.
-Require Import CertiGraph.prim.MatrixUGraph. 
+Require Import CertiGraph.prim.MatrixUGraph3. 
 Require Import CertiGraph.prim.spatial_undirected_matrix3.
 Require Import CertiGraph.prim.prim_spec3.
 Require Import CertiGraph.prim.prim_constants.
@@ -126,13 +126,10 @@ rewrite sublist_same.
 entailer!.
 trivial.
 rewrite nat_inc_list_Zlength, size_eq. lia.
-admit.
-(* need lemma about nat_inc_list: *)
-(*
-nat_inc_list (Z.to_nat size) =
-  [0] ++ sublist 1 size (nat_inc_list (Z.to_nat size))
-*)
-
+replace (nat_inc_list (Z.to_nat size)) with (sublist 0 size (nat_inc_list (Z.to_nat size))).
+2: rewrite sublist_same; auto. rewrite (sublist_split 0 1 size).
+rewrite nat_inc_list_sublist. simpl; auto. lia. rewrite size_eq; lia. lia.
+rewrite size_eq, nat_inc_list_Zlength; lia.
 (*inner loop*)
 replace (sublist i size (nat_inc_list (Z.to_nat (Zlength old_contents))))
   with ([i]++sublist (i+1) size (nat_inc_list (Z.to_nat (Zlength old_contents)))).
@@ -212,7 +209,7 @@ lia. rewrite <- HZlength_nat_inc_list; rewrite size_eq; lia. lia. lia.
 rewrite <- HZlength_nat_inc_list; rewrite size_eq; lia.
 rewrite size_eq; lia. 
 rewrite Zlength_list_repeat; rewrite size_eq; lia.
-Admitted.
+Qed.
 
 
 (******************PRIM'S***************)
@@ -1921,12 +1918,8 @@ forward.
 Exists mst fmst parents.
 (*change from popped_vertices to nat_inc_list*)
 entailer!.
-rewrite size_eq.
-admit.
+rewrite size_eq. entailer!.
 }}
-                                                         
-                                                         
-(*Should we bother with filling a matrix for it? The original Prim doesn't bother*) 
 Admitted.
 
 End PrimProof.
