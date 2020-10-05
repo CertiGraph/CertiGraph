@@ -91,10 +91,11 @@ KRUSKAL_FILES = \
   verif_kruskal_edgelist.v
 
 PRIM_FILES = \
-  MatrixUGraph3.v \
-  prim3.v prim_spec3.v spatial_undirected_matrix3.v verif_prim3.v \
-  noroot_prim3.v noroot_prim_spec3.v verif_noroot_prim3.v prim_constants.v
-#prim1.v prim_spec1.v spatial_undirected_matrix1.v verif_prim1.v \  
+  MatrixUGraph.v spatial_undirected_matrix.v \
+  prim.v specs_prim.v verif_prim.v \
+  noroot_prim.v specs_noroot_prim.v verif_noroot_prim.v \
+  MatrixUGraph3.v prim3.v prim_spec3.v spatial_undirected_matrix3.v verif_prim3.v \
+  noroot_prim3.v noroot_prim3_spec.v verif_noroot_prim3.v prim_constants.v
 
 DIJKSTRA_FILES = \
   dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \
@@ -108,7 +109,7 @@ DIJKSTRA_FILES = \
 
 
 PRIQ_FILES = \
-  priq_arr.v priq_arr_specs.v priq_constants.v verif_priq_arr.v 
+  priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
 
 PRIQ_MALLOC_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
@@ -173,7 +174,7 @@ vstandme3:
 
 .PHONY: mst
 mst:
-	make priq/verif_priq_arr.vo priq_malloc/verif_priq_arr.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo dijkstra/verif*.vo kruskal/verif*.vo -kj7
+	make priq_malloc/verif_priq_arr.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo dijkstra/verif*.vo kruskal/verif*.vo -kj7
 
 .depend depend:
 	@echo 'coqdep ... >.depend'
