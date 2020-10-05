@@ -95,7 +95,7 @@ PRIM_FILES = \
   prim.v specs_prim.v verif_prim.v \
   noroot_prim.v specs_noroot_prim.v verif_noroot_prim.v \
   MatrixUGraph3.v prim3.v prim_spec3.v spatial_undirected_matrix3.v verif_prim3.v \
-  noroot_prim3.v noroot_prim3_spec.v verif_noroot_prim3.v prim_constants.v
+  noroot_prim3.v noroot_prim_spec3.v verif_noroot_prim3.v prim_constants.v
 
 DIJKSTRA_FILES = \
   dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \
@@ -174,7 +174,10 @@ vstandme3:
 
 .PHONY: mst
 mst:
-	make priq_malloc/verif_priq_arr.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo dijkstra/verif*.vo kruskal/verif*.vo -kj7
+	make priq_malloc/verif_priq_arr.vo priq/verif_priq_arr.vo \
+	prim/verif_prim.vo prim/verif_noroot_prim.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo \
+	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
+	kruskal/verif_kruskal_edgelist.vo -kj7
 
 .depend depend:
 	@echo 'coqdep ... >.depend'
