@@ -59,10 +59,10 @@ Proof.
   simpl; lia.
 Qed.
 
-Definition G := @MatrixUGraph inf size.
-Definition edgeless_graph' := @edgeless_graph inf size inf_rep size_rep'.
-Definition adde := @MatrixUGraph_adde inf size.
-Definition eremove := @MatrixUGraph_eremove inf size.
+Definition G := @MatrixUGraph size inf.
+Definition edgeless_graph' := @edgeless_graph size inf inf_rep size_rep'.
+Definition adde := @MatrixUGraph_adde size inf.
+Definition eremove := @MatrixUGraph_eremove size inf.
 
 Lemma edgeless_vert_rep:
   forall v,

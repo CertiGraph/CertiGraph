@@ -173,7 +173,7 @@ vstandme3:
 
 .PHONY: mst
 mst:
-	make priq/verif_priq_arr.vo priq_malloc/verif_priq_arr.vo prim/verif_prim3.vo prim/verif_noroot_prim.vo dijkstra/verif*.vo kruskal/verif*.vo -kj7
+	make priq/verif_priq_arr.vo priq_malloc/verif_priq_arr.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo dijkstra/verif*.vo kruskal/verif*.vo -kj7
 
 .depend depend:
 	@echo 'coqdep ... >.depend'
