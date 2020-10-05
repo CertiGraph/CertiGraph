@@ -1,7 +1,7 @@
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.graph.graph_model.
 Require Export CertiGraph.graph.SpaceAdjMatGraph3.
-Require Import CertiGraph.prim.MatrixUGraph.
+Require Import CertiGraph.prim.MatrixUGraph3.
 Require Import CertiGraph.prim.prim_constants.
 
 (* 

@@ -5,7 +5,7 @@ Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.graph.undirected_graph.
-Require Import CertiGraph.prim.MatrixUGraph.
+Require Import CertiGraph.prim.MatrixUGraph3.
 Require Import CertiGraph.prim.spatial_undirected_matrix3.
 Require Import CertiGraph.prim.noroot_prim.
 Require Import CertiGraph.prim.noroot_prim_spec.
