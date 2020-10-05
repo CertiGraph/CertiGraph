@@ -1,8 +1,9 @@
 Require Import CertiGraph.floyd_ext.share.
-Require Import CertiGraph.priq.priq_arr_specs.
+Require Export CertiGraph.priq_malloc.priq_arr_specs.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.prim.MatrixUGraph.
 Require Export CertiGraph.prim.prim3.
+Require Import CertiGraph.prim.prim_constants.
 Require Import CertiGraph.prim.spatial_undirected_matrix3.
 Require Import CertiGraph.lib.List_ext.
 
@@ -99,12 +100,14 @@ Definition prim_spec :=
           data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
          ).
 
-Definition Gprog : funspecs :=
+Definition Gprog {Z_EqDec : EquivDec.EqDec Z eq}: funspecs :=
   ltac:(with_library prog
-                     [push_spec;
-                     pq_emp_spec;
-                     popMin_spec;
-                     adjustWeight_spec;
+                     [(@push_spec SIZE inf _);
+                     (@pq_emp_spec SIZE inf _);
+                     (@popMin_spec SIZE inf Z_EqDec _);
+                     (@adjustWeight_spec SIZE inf _);
+                     (@init_spec SIZE _);
+                     freePQ_spec;
                      getCell_spec;
                      initialise_list_spec;
                      initialise_matrix_spec;
