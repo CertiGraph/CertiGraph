@@ -20,18 +20,18 @@ Definition getCell_spec :=
        addresses: list val,
        u: V,
        i : V
-  PRE [tptr (tarray tint SIZE), tint, tint]
-    PROP (0 <= i < SIZE;
-          0 <= u < SIZE)
+  PRE [tptr (tarray tint size), tint, tint]
+    PROP (0 <= i < size;
+          0 <= u < size)
     PARAMS (pointer_val_val graph_ptr;
            Vint (Int.repr u);
            Vint (Int.repr i))
     GLOBALS ()
-    SEP (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
+    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
   POST [tint]
     PROP ()
     RETURN (Vint (Int.repr (Znth i (Znth u (graph_to_symm_mat g))))) 
-    SEP (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
+    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
 
 Definition initialise_list_spec :=
   DECLARE _initialise_list
@@ -42,47 +42,47 @@ Definition initialise_list_spec :=
           )
      PARAMS ( arr; Vint (Int.repr a) )
      GLOBALS ()
-     SEP (data_at Tsh (tarray tint SIZE) (old_list) (arr))
+     SEP (data_at Tsh (tarray tint size) (old_list) (arr))
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr a))) arr
+     SEP (data_at Tsh (tarray tint size) (list_repeat (Z.to_nat size) (Vint (Int.repr a))) arr
          ).
 
 Definition initialise_matrix_spec :=
   DECLARE _initialise_matrix
   WITH arr : val, old_contents: list (list Z), a: Z
-  PRE [tptr (tarray tint SIZE), tint]
+  PRE [tptr (tarray tint size), tint]
      PROP ( writable_share Tsh;
-            Zlength old_contents = SIZE;
-            forall row, In row old_contents -> Zlength row = SIZE;
+            Zlength old_contents = size;
+            forall row, In row old_contents -> Zlength row = size;
             repable_signed a
           )
      PARAMS ( arr ; Vint (Int.repr a) )
      GLOBALS ()
-     SEP (@SpaceAdjMatGraph' SIZE CompSpecs Tsh old_contents arr)
+     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh old_contents arr)
 
      (* (undirected_matrix sh (old_contents) (arr)) *)
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a)) arr).
+     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) a)) arr).
 
-     (* (undirected_matrix sh (list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) a)) arr *)
+     (* (undirected_matrix sh (list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) a)) arr *)
 
 Definition prim_spec :=
   DECLARE _prim
   WITH g: G, garbage: list V, gptr : pointer_val, r: Z, parent_ptr : pointer_val
-  PRE [tptr (tarray tint SIZE), tint, tptr tint]
+  PRE [tptr (tarray tint size), tint, tptr tint]
      PROP ( writable_share Tsh;
             vvalid g r
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()
-     SEP (@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr); 
+     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr); 
 
        (* undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr); *)
-          data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
+          data_at Tsh (tarray tint size) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
          )
   POST [ tvoid ]
      EX mst: G,
@@ -91,22 +91,22 @@ Definition prim_spec :=
      PROP ( (*connected_graph mst;*)
             minimum_spanning_forest mst g;
             Permutation (EList mst) (map (fun v => eformat (v, Znth v parents))
-              (filter (fun v => Znth v parents <? SIZE) (nat_inc_list (Z.to_nat SIZE))))
+              (filter (fun v => Znth v parents <? size) (nat_inc_list (Z.to_nat size))))
           )
      RETURN ()
-     SEP ((@SpaceAdjMatGraph' SIZE CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr));
+     SEP ((@SpaceAdjMatGraph' size CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr));
 
        (* undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr); *)
-          data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
+          data_at Tsh (tarray tint size) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
          ).
 
 Definition Gprog {Z_EqDec : EquivDec.EqDec Z eq}: funspecs :=
   ltac:(with_library prog
-                     [(@push_spec SIZE inf _);
-                     (@pq_emp_spec SIZE inf _);
-                     (@popMin_spec SIZE inf Z_EqDec _);
-                     (@adjustWeight_spec SIZE inf _);
-                     (@init_spec SIZE _);
+                     [(@push_spec size inf _);
+                     (@pq_emp_spec size inf _);
+                     (@popMin_spec size inf Z_EqDec _);
+                     (@adjustWeight_spec size inf _);
+                     (@init_spec size _);
                      freePQ_spec;
                      getCell_spec;
                      initialise_list_spec;
