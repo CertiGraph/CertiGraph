@@ -26,6 +26,7 @@ Section DijkstraProof.
 
   Context {size: Z}.
   Context {inf: Z}.
+  Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
   Definition dijk_setup_loop_inv g sh src dist prev v_pq arr addresses :=
     EX i : Z,
@@ -60,7 +61,7 @@ Section DijkstraProof.
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
     EX prev : list V,
-    EX priq : list V,
+    EX priq : list Z,
     EX dist : list V,
     EX popped : list V,
     PROP (
@@ -116,7 +117,7 @@ Section DijkstraProof.
                                     src dist_ptr prev_ptr priq_ptr
                                     graph_ptr addresses :=
     EX prev: list V,
-    EX priq: list V,
+    EX priq: list Z,
     EX dist: list V,
     EX popped: list V,
     PROP (
@@ -145,7 +146,7 @@ Section DijkstraProof.
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
     EX i : Z,
     EX prev' : list V,
-    EX priq' : list V,
+    EX priq' : list Z,
     EX dist' : list V,
     EX popped' : list V,
     let u :=
@@ -242,7 +243,7 @@ Section DijkstraProof.
              free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
 
-  Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
+  Lemma body_getCell: semax_body Vprog (@Gprog size inf Z_EqDec) f_getCell (@getCell_spec size inf).
   Proof.
     start_function.
     unfold DijkGraph.
@@ -271,7 +272,7 @@ Section DijkstraProof.
 
   (* DIJKSTRA PROOF BEGINS *)
 
-  Lemma body_dijkstra: semax_body Vprog (@Gprog size inf) f_dijkstra (@dijkstra_spec size inf).
+  Lemma body_dijkstra: semax_body Vprog (@Gprog size inf Z_EqDec) f_dijkstra (@dijkstra_spec size inf).
   Proof.
     start_function.
     pose proof (size_further_restricted g).

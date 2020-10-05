@@ -1,5 +1,9 @@
 Require Import VST.floyd.proofauto.
 
+Section PAU.
+
+Context {Z_EqDec : EquivDec.EqDec Z eq}.
+
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
 
 (* a weight to be added cannot be inf + 1 *)
@@ -13,14 +17,13 @@ Definition inrange_priq inf (priq : list Z) :=
 Definition isEmpty (priq : list Z) inf : val :=
   fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then Vzero else acc) Vone priq.
 
-Fixpoint find (l : list Z) (n : Z) (ans : Z) :=
+Fixpoint find {A: Type} {EA: EquivDec.EqDec A eq} (l : list A) (n : A) (ans : Z) :=
   match l with
   | [] => ans
-  | h :: t => if eq_dec h n
+  | h :: t => if EA h n
               then ans
               else (find t n (1 + ans))
   end.
-
 
 (** LEMMAS ABOUT THESE UTILITIES **)
 
@@ -100,7 +103,7 @@ Proof.
       [apply H | apply H0]; trivial.
 Qed.
     
-Lemma find_index_gen: forall l i ans,
+Lemma find_index_gen: forall (l: list Z) i ans,
     0 <= i < Zlength l ->
     ~ In (Znth i l) (sublist 0 i l) ->
     find l (Znth i l) ans = i + ans.
@@ -110,7 +113,7 @@ Proof.
   1: intros; rewrite Zlength_nil in H; exfalso; lia.
   unfold find.
   intros.
-  destruct (eq_dec a (Znth i (a :: l))).
+  destruct (Z_EqDec a (Znth i (a :: l))).
   - rewrite <- e in H0. clear - H H0.
     destruct (Z.eq_dec 0 i). 1: lia.
     destruct H. assert (0 < i) by lia.
@@ -120,8 +123,8 @@ Proof.
     rewrite Z2Nat.inj_succ by lia.
     rewrite firstn_cons. apply in_eq.
   - destruct (Z.eq_dec 0 i).
-    1: rewrite <- e in n; rewrite Znth_0_cons in n;
-      exfalso; lia.
+    1: rewrite <- e in c. rewrite Znth_0_cons in c.
+      exfalso; apply c; reflexivity.
     assert (0 <= i - 1 < Zlength l) by
         (rewrite Zlength_cons in H; rep_lia).
     assert (~ In (Znth (i - 1) l) (sublist 0 (i - 1) l)). {
@@ -139,7 +142,7 @@ Proof.
     unfold find. trivial.
 Qed.
 
-Lemma find_index: forall l i,
+Lemma find_index: forall (l: list Z) i,
     0 <= i < Zlength l ->
     ~ In (Znth i l) (sublist 0 i l) ->
     find l (Znth i l) 0 = i.
@@ -148,7 +151,7 @@ Proof.
   apply find_index_gen; trivial.
 Qed.
 
-Lemma find_range_gen: forall l target ans,
+Lemma find_range_gen: forall (l: list Z) target ans,
     In target l ->
     0 <= ans ->
     ans <= find l target ans < Zlength l + ans.
@@ -159,10 +162,10 @@ Proof.
   1: intros; simpl; now rewrite Zlength_nil.
   intros. apply in_inv in H. destruct H.
   - subst a. unfold find.
-    destruct (eq_dec target target).
+    destruct (Z_EqDec target target).
     rewrite Zlength_cons. split; rep_lia.
-    exfalso; lia.
-  - unfold find. destruct (eq_dec a target).
+    exfalso; apply c; reflexivity.
+  - unfold find. destruct (Z_EqDec a target).
     1: rewrite Zlength_cons; split; rep_lia.
     assert (0 <= 1 + ans) by lia.
     pose proof (IHl (1+ans) H1 target H).
@@ -170,7 +173,7 @@ Proof.
     rewrite Zlength_cons. rep_lia.
 Qed.
 
-Lemma find_range: forall l target,
+Lemma find_range: forall (l: list Z) target,
     In target l ->
     0 <= find l target 0 < Zlength l.
 Proof.
@@ -179,7 +182,7 @@ Proof.
 Qed.
 
 Lemma Znth_find_gen:
-  forall l target ans,
+  forall (l: list Z) target ans,
     0 <= ans ->
     In target l ->
     Znth ((find l target ans)-ans) l = target.
@@ -189,13 +192,13 @@ Proof.
   intros.
   destruct H0.
   - subst target. simpl.
-    destruct (initial_world.EqDec_Z a a).
+    destruct (Z_EqDec a a).
     + replace (ans-ans) with 0 by lia.
       rewrite Znth_0_cons; auto.
-    + exfalso; lia.
+    + exfalso; apply c; reflexivity. 
   - specialize (IHl H0).
     simpl.
-    destruct (initial_world.EqDec_Z a target).
+    destruct (Z_EqDec a target).
     + replace (ans-ans) with 0 by lia.
       rewrite Znth_0_cons; auto.
     + assert (0 <= 1 + ans) by lia.
@@ -209,7 +212,7 @@ Proof.
 Qed.
 
 Lemma Znth_find:
-  forall l target,
+  forall (l: list Z) target,
     In target l ->
     Znth (find l target 0) l = target.
 Proof.
@@ -302,7 +305,7 @@ Proof.
 
   remember (upd_Znth src (list_repeat (Z.to_nat size) inf) 0) as l.
   replace (fold_right Z.min (hd 0 l) l) with (Znth src l).
-  - apply find_index.
+  - apply (find_index l src).
     1: rewrite Heql, upd_Znth_Zlength;
       rewrite Zlength_list_repeat; lia.
     rewrite Heql.
@@ -353,3 +356,5 @@ Proof.
   - pose proof (fold_min _ _ H0). lia.
   - now apply fold_min_in_list.
 Qed.
+
+End PAU.

@@ -7,6 +7,7 @@ Section PQSpec.
 
 Context {size : Z}.
 Context {inf : Z}.
+Context {Z_EqDec : EquivDec.EqDec Z eq}.
 Parameter free_tok : val -> Z -> mpred.
 
 Definition mallocN_spec {CS: compspecs} :=

@@ -24,6 +24,7 @@ Section DijkstraProof.
    proof for readability and reuse
    *)
   
+  Context {Z_EqDec : EquivDec.EqDec Z eq}.
   Definition addresses := @nil val.
 
   Definition dijk_setup_loop_inv g sh src dist prev v_pq arr addresses :=
@@ -57,7 +58,7 @@ Section DijkstraProof.
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
     EX prev : list V,
-    EX priq : list V,
+    EX priq : list Z,
     EX dist : list V,
     EX popped : list V,
     PROP (
@@ -111,7 +112,7 @@ Section DijkstraProof.
                                     src dist_ptr prev_ptr priq_ptr
                                     graph_ptr addresses :=
     EX prev: list V,
-    EX priq: list V,
+    EX priq: list Z,
     EX dist: list V,
     EX popped: list V,
     PROP (
@@ -140,7 +141,7 @@ Section DijkstraProof.
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
     EX i : Z,
     EX prev' : list V,
-    EX priq' : list V,
+    EX priq' : list Z,
     EX dist' : list V,
     EX popped' : list V,
     let u :=
