@@ -41,7 +41,7 @@ Qed.
 
 Section MATRIXUGRAPH.
 
-Context {inf: Z} {size: Z}. (* todo: flip order *)
+Context {size: Z} {inf: Z}.
 
 Class AdjMatUSoundness (g: AdjMatLG) := {
   sadjmat: SoundAdjMat (size:=size) (inf:=inf) g;
