@@ -11,7 +11,7 @@ Section DijkstraSpecPure.
   Context {V_EqDec : EquivDec.EqDec V eq}. 
   Context {E_EqDec : EquivDec.EqDec E eq}. 
 
-  Definition path_correct (g: @DijkGG size inf _ _)
+  Definition path_correct (g: @DijkGG size inf)
              (prev dist: list V) src dst p : Prop  :=
     valid_path g p /\
     path_ends g p src dst /\
@@ -19,12 +19,12 @@ Section DijkstraSpecPure.
     Znth dst dist = path_cost g p /\
     Forall (fun x => Znth (snd x) prev = fst x) (snd p).
 
-  Definition path_globally_optimal (g: @DijkGG size inf _ _) src dst p : Prop :=
+  Definition path_globally_optimal (g: @DijkGG size inf) src dst p : Prop :=
     forall p', valid_path g p' ->
                path_ends g p' src dst ->
                path_cost g p <= path_cost g p'.
 
-  Definition path_in_popped (g: @DijkGG size inf _ _) popped p :=
+  Definition path_in_popped (g: @DijkGG size inf) popped p :=
     forall step, In_path g step p ->
                  In step popped.
 
@@ -41,7 +41,7 @@ Section DijkstraSpecPure.
         path_in_popped g popped p /\
         path_globally_optimal g src dst p).
 
-  Definition inv_unpopped (g : @DijkGG size inf _ _) src
+  Definition inv_unpopped (g : @DijkGG size inf) src
              (popped prev dist: list V) (dst: V) :=
     ~ In dst popped ->
     Znth dst dist < inf ->
@@ -58,7 +58,7 @@ Section DijkstraSpecPure.
        In mom' popped ->
        Znth dst dist <= Znth mom' dist + elabel g (mom', dst)).
 
-  Definition inv_unpopped_weak (g : @DijkGG size inf _ _) (src: V)
+  Definition inv_unpopped_weak (g : @DijkGG size inf) (src: V)
              (popped prev dist : list V) (dst u : V) :=
     ~ In dst popped ->
     Znth dst dist < inf ->

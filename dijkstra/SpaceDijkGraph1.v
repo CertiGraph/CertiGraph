@@ -12,11 +12,11 @@ Section SpaceDijkGraph.
   Context {E_EqDec : EquivDec.EqDec E eq}. 
 
   Lemma elabel_Znth_graph_to_mat:
-    forall (g: @DijkGG size inf _ _) src dst,
+    forall (g: @DijkGG size inf) src dst,
       vvalid g src ->
       vvalid g dst ->
       elabel g (src, dst) =
-      Znth dst (Znth src (@graph_to_mat size _ _ g id)).
+      Znth dst (Znth src (@graph_to_mat size g id)).
   Proof.
     intros.
     rewrite (vvalid_meaning g) in H, H0.
@@ -26,6 +26,6 @@ Section SpaceDijkGraph.
   Qed.
 
   Definition DijkGraph sh cs g g_ptr size addresses : mpred :=
-    @SpaceAdjMatGraph size cs _ _ sh id g g_ptr addresses.
+    @SpaceAdjMatGraph size cs sh id g g_ptr addresses.
 
 End SpaceDijkGraph.

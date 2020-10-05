@@ -7,9 +7,8 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
-Require Import CertiGraph.graph.undirected_graph.
+Require Export CertiGraph.graph.undirected_graph.
 Require Export CertiGraph.graph.MathAdjMatGraph.
-<<<<<<<< HEAD:prim/MatrixUGraph3.v
 Require Export CertiGraph.graph.eformat_lemmas.
 Require Export CertiGraph.priq_malloc.priq_arr_utils.
 
@@ -17,20 +16,14 @@ Require Export CertiGraph.priq_malloc.priq_arr_utils.
 Anshuman, Oct 2:
 priq/priq_arr_utils is imported here and Exported out. 
 It is needed by spatial_undirected_matrix and verif_prim.
-
 I want to stop using priq/priq_arr_utils.
 Whatever you're using from in there is pure, 
 and not related to PQ.
-
 That stuff should be lifted into its own file, 
 and PQ and this file should both just call that file.    
-
 After that is done, most of this file can be lifted
 up to graph/
 *)
-========
-Require Import CertiGraph.priq.priq_arr_utils.
->>>>>>>> 75daf205f53f8de7251e324eb88ce8284f9384f0:prim/MatrixUGraph.v
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
@@ -45,26 +38,7 @@ Qed.
 
 Section MATRIXUGRAPH.
 
-<<<<<<<< HEAD:prim/MatrixUGraph3.v
 Context {size: Z} {inf: Z}.
-========
-Context {inf: Z} {size: Z}.
-
-Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
-
-Instance V_EqDec: EqDec V eq.
-Proof. hnf. apply Z.eq_dec. Qed.
-
-Instance E_EqDec: EqDec E eq.
-Proof.
-  hnf. intros [x] [y].
-  destruct (equiv_dec x y).
-  - hnf in e. destruct (Z.eq_dec z z0); subst.
-    + left; reflexivity.
-    + right. intro. apply n. inversion H. reflexivity.
-  - right; intro; apply c; inversion H; reflexivity.
-Defined.
->>>>>>>> 75daf205f53f8de7251e324eb88ce8284f9384f0:prim/MatrixUGraph.v
 
 Class AdjMatUSoundness (g: AdjMatLG) := {
   sadjmat: SoundAdjMat (size:=size) (inf:=inf) g;
@@ -77,7 +51,7 @@ Definition MatrixUGraph := (GeneralGraph V E DV DE DG (fun g => AdjMatUSoundness
 
 Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g).
 Definition sound_adjMatGraph (g: MatrixUGraph) := (@sadjmat g (sound_MatrixUGraph g)).
-Definition finGraph (g: MatrixUGraph) := (@fin _ _ V_EqDec E_EqDec g (sound_adjMatGraph g)).
+Definition finGraph (g: MatrixUGraph) := (@fin _ _ g (sound_adjMatGraph g)).
 
 Instance Finite_MatrixUPGraph (g: MatrixUGraph): FiniteGraph g.
 Proof. apply (finGraph g). Qed.
@@ -88,25 +62,25 @@ Coercion MatrixUGraph_AdjMatGG: MatrixUGraph >-> AdjMatGG.
 
 (*still nitty-gritty issues with the coercion*)
 Definition size_representable (g: MatrixUGraph) :=
-  @sr _ _ V_EqDec E_EqDec g (sound_adjMatGraph g).
+  @sr _ _ g (sound_adjMatGraph g).
 
 Definition inf_representable (g: MatrixUGraph) :=
-  @ir _ _ V_EqDec E_EqDec g (sound_adjMatGraph g).
+  @ir _ _ g (sound_adjMatGraph g).
 
 Definition vvalid_meaning (g: MatrixUGraph) :=
-  @vm _ _ V_EqDec E_EqDec g (sound_adjMatGraph g).
+  @vm _ _ g (sound_adjMatGraph g).
 
 Definition evalid_meaning (g: MatrixUGraph) :=
-  @em _ _ V_EqDec E_EqDec g (sound_adjMatGraph g).
+  @em _ _ g (sound_adjMatGraph g).
 
 Definition invalid_edge_weight (g: MatrixUGraph) :=
-  @iew _ _ V_EqDec E_EqDec g (sound_adjMatGraph g).
+  @iew _ _ g (sound_adjMatGraph g).
 
 Definition src_fst (g: MatrixUGraph) :=
-  @esf _ _ V_EqDec E_EqDec g (sound_adjMatGraph g).
+  @esf _ _ g (sound_adjMatGraph g).
 
 Definition dst_snd (g: MatrixUGraph) :=
-  @eds _ _ V_EqDec E_EqDec g (sound_adjMatGraph g).
+  @eds _ _ g (sound_adjMatGraph g).
 
 Definition evalid_strong_evalid (g: MatrixUGraph) :=
   @ese g (sound_MatrixUGraph g).
@@ -200,12 +174,6 @@ Section EDGELESS_MUGRAPH.
 Context {inf_bound: 0 <= inf <= Int.max_signed}.
 Context {size_bound: 0 < size <= Int.max_signed}.
 
-(* Anshuman, Sep 26:
-   This is just a copy of your
-   edgeless_lgraph2 
-   from graph/MathAdjMatGraph.v
-   It now goes through.
-*)
 Definition edgeless_lgraph : AdjMatLG :=
   @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
     (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
@@ -832,118 +800,19 @@ Proof.
 unfold incl; intros. rewrite EList_evalid in *. apply H; auto.
 Qed.
 
+Lemma exists_Zmin: (* TODO move this *)
+  forall {A:Type} (l: list A) (f: A -> Z), l <> nil -> exists a, In a l /\ (forall b, In b l -> f a <= f b).
+Proof.
+induction l; intros. contradiction.
+destruct l. exists a. split. left; auto. intros. destruct H0. subst b. lia. contradiction.
+assert (exists a : A, In a (a0 :: l) /\ (forall b : A, In b (a0 :: l) -> f a <= f b)). apply IHl. unfold not; intros. inversion H0.
+destruct H0 as [a' [? ?]].
+destruct (Z.le_ge_cases (f a) (f a')).
+exists a. split. left; auto. intros. destruct H3. subst a; lia. apply H1 in H3. lia.
+exists a'. split. right; auto. intros. destruct H3. subst b; lia. apply H1 in H3; lia.
+Qed.
+
 (***************FIND LEMMAS*******)
-Lemma find_app_In1:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l1 l2: list A) v ans, In v l1 -> find (l1++l2) v ans = find l1 v ans.
-Proof.
-induction l1; intros. contradiction.
-destruct (EA v a). hnf in e. subst a.
-simpl.
-destruct (EA v v). auto. unfold RelationClasses.complement, Equivalence.equiv in c; contradiction.
-destruct H. symmetry in H; contradiction.
-simpl. destruct (EA a v). symmetry in e; contradiction.
-rewrite IHl1; auto.
-Qed.
-
-Lemma find_accum_add1:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans1 ans2, find l v (ans1+ans2) = ans1 + find l v ans2.
-Proof.
-induction l; intros.
-simpl. auto.
-simpl. destruct (EA a v). auto.
-replace (1+(ans1+ans2)) with (ans1 + (1+ans2)) by lia. apply IHl.
-Qed.
-
-Lemma find_app_notIn1:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l1: list A) l2 v ans, ~ In v l1 -> find (l1++l2) v ans = Zlength l1 + find l2 v ans.
-Proof.
-induction l1; intros. rewrite app_nil_l, Zlength_nil. lia.
-assert (~ In v l1). unfold not; intros; apply H. right; auto.
-simpl. destruct (EA a v). hnf in e; subst a. exfalso. apply H. left; auto.
-rewrite Zlength_cons. rewrite IHl1; auto.
-rewrite <- Z.add_1_r, <- Z.add_assoc. rewrite find_accum_add1. auto.
-Qed.
-
-Corollary find_notIn:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, ~ In v l -> find l v ans = Zlength l + ans.
-Proof.
-intros. replace l with (l++nil). rewrite find_app_notIn1. simpl.
-rewrite app_nil_r; auto.
-auto. apply app_nil_r.
-Qed.
-
-Corollary find_notIn_0:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v, ~ In v l -> find l v 0 = Zlength l.
-Proof. intros. rewrite find_notIn by auto. rewrite Z.add_0_r; auto. Qed.
-
-Lemma find_In_ubound:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, In v l -> find l v ans < Zlength l + ans.
-Proof.
-induction l; intros. contradiction.
-rewrite Zlength_cons.
-simpl. destruct (EA a v).
-pose proof (Zlength_nonneg l); lia.
-rewrite Z.add_succ_l. rewrite find_accum_add1, Z.add_1_l.
-assert (find l v ans < Zlength l + ans). apply IHl. destruct H. contradiction. auto.
-lia.
-Qed.
-
-Lemma find_ubound:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, find l v ans <= Zlength l + ans.
-Proof.
-induction l; intros. rewrite Zlength_nil; simpl; lia.
-rewrite Zlength_cons.
-simpl. destruct (EA a v).
-pose proof (Zlength_nonneg l); lia.
-rewrite Z.add_succ_l. rewrite find_accum_add1, Z.add_1_l.
-specialize IHl with v ans.
-lia.
-Qed.
-
-Lemma find_cons:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, find (v::l) v ans = ans.
-Proof.
-intros. simpl. destruct (EA v v). auto. unfold RelationClasses.complement, Equivalence.equiv in c; contradiction.
-Qed.
-
-Lemma find_lbound:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) v ans, ans <= find l v ans.
-Proof.
-induction l; intros. simpl. lia.
-simpl. destruct (EA a v). lia.
-rewrite find_accum_add1. specialize IHl with v ans; lia.
-Qed.
-
-Lemma find_app_le:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l1: list A) l2 v ans, find l1 v ans <= find (l1++l2) v ans.
-Proof.
-induction l1; intros.
-rewrite app_nil_l. simpl. apply find_lbound.
-simpl. destruct (EA a v). lia.
-do 2 rewrite find_accum_add1. specialize IHl1 with l2 v ans. lia.
-Qed.
-
-Lemma find_eq:
-forall {A:Type} {EA: EquivDec.EqDec A eq} (l: list A) x y acc, NoDup l -> In x l -> In y l -> find l x acc = find l y acc -> x = y.
-Proof.
-induction l; intros. contradiction.
-destruct H0; destruct H1.
-++
-subst x; subst y. auto.
-++
-subst x. rewrite find_cons in H2.
-simpl in H2. destruct (EA a y). hnf in e; subst y. apply NoDup_cons_2 in H; contradiction.
-rewrite find_accum_add1 in H2. pose proof (find_lbound l y acc). lia.
-++
-subst y. rewrite find_cons in H2.
-simpl in H2. destruct (EA a x). hnf in e; subst x. apply NoDup_cons_2 in H; contradiction.
-rewrite find_accum_add1 in H2. pose proof (find_lbound l x acc). lia.
-++
-simpl in H2. destruct (EA a x). hnf in e; subst x. apply NoDup_cons_2 in H; contradiction.
-destruct (EA a y). hnf in e; subst y. apply NoDup_cons_2 in H; contradiction.
-do 2 rewrite find_accum_add1 in H2. apply (IHl x y acc).
-apply NoDup_cons_1 in H; auto. auto. auto. lia.
-Qed.
 
 Lemma NoDup_incl_ordered_powerlist:
   forall {E_EqDec : EqDec E eq} (l: list E), NoDup l -> exists L,
@@ -1039,18 +908,6 @@ destruct (E_EqDec a x). hnf in e; subst x; contradiction.
 destruct (E_EqDec a y). hnf in e; subst y; contradiction.
 replace 1 with (1+0) by lia. repeat rewrite find_accum_add1.
 split; intros; lia.
-Qed.
-
-Lemma exists_Zmin:
-  forall {A:Type} (l: list A) (f: A -> Z), l <> nil -> exists a, In a l /\ (forall b, In b l -> f a <= f b).
-Proof.
-induction l; intros. contradiction.
-destruct l. exists a. split. left; auto. intros. destruct H0. subst b. lia. contradiction.
-assert (exists a : A, In a (a0 :: l) /\ (forall b : A, In b (a0 :: l) -> f a <= f b)). apply IHl. unfold not; intros. inversion H0.
-destruct H0 as [a' [? ?]].
-destruct (Z.le_ge_cases (f a) (f a')).
-exists a. split. left; auto. intros. destruct H3. subst a; lia. apply H1 in H3. lia.
-exists a'. split. right; auto. intros. destruct H3. subst b; lia. apply H1 in H3; lia.
 Qed.
 
 Lemma test2:
@@ -1452,14 +1309,4 @@ intros. unfold sublist. rewrite skipn_0. rewrite firstn_same. auto.
 rewrite <- ZtoNat_Zlength. lia.
 Qed.
 
-<<<<<<<< HEAD:prim/MatrixUGraph3.v
 End MATRIXUGRAPH.
-
-(* AM:
-   I moved these over from spatial because they are independent of 
-   any specific spatial representation. 
- *)
-
-========
-End MATRIXUGRAPH.
->>>>>>>> 75daf205f53f8de7251e324eb88ce8284f9384f0:prim/MatrixUGraph.v
