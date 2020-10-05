@@ -2,19 +2,21 @@ Require Import VST.floyd.proofauto.
 
 Section PAU.
 
+Context {size : Z}.
+Context {inf : Z}.
 Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
 
 (* a weight to be added cannot be inf + 1 *)
-Definition weight_inrange_priq item inf :=
+Definition weight_inrange_priq item :=
   Int.min_signed <= item <= inf.
 
 (* over time, the overall PQ can range from MIN to inf + 1 *)
-Definition inrange_priq inf (priq : list Z) :=
+Definition inrange_priq (priq : list Z) :=
   Forall (fun x => Int.min_signed <= x <= inf + 1) priq.
 
-Definition isEmpty (priq : list Z) inf : val :=
+Definition isEmpty (priq : list Z) : val :=
   fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then Vzero else acc) Vone priq.
 
 Fixpoint find {A: Type} {EA: EquivDec.EqDec A eq} (l : list A) (n : A) (ans : Z) :=
@@ -27,8 +29,8 @@ Fixpoint find {A: Type} {EA: EquivDec.EqDec A eq} (l : list A) (n : A) (ans : Z)
 
 (** LEMMAS ABOUT THESE UTILITIES **)
 
-Lemma isEmpty_in: forall l target inf,
-    In target l -> target < inf + 1 -> isEmpty l inf = Vzero.
+Lemma isEmpty_in: forall l target,
+    In target l -> target < inf + 1 -> isEmpty l = Vzero.
 Proof.
   intros. induction l.
   1: exfalso; apply (in_nil H).
@@ -40,8 +42,8 @@ Proof.
   unfold isEmpty in IHl. trivial.
 Qed.
 
-Lemma isEmpty_in': forall l inf,
-    (exists i, In i l /\ i < (inf + 1)) <-> isEmpty l inf = Vzero.
+Lemma isEmpty_in': forall l,
+    (exists i, In i l /\ i < (inf + 1)) <-> isEmpty l = Vzero.
 Proof.
   split; intros.
   - destruct H as [? [? ?]]. induction l.
@@ -60,16 +62,16 @@ Proof.
       exists x. split; [apply in_cons|]; assumption.
 Qed.
 
-Lemma isEmptyTwoCases: forall l inf,
-    isEmpty l inf = Vone \/ isEmpty l inf = Vzero.
+Lemma isEmptyTwoCases: forall l,
+    isEmpty l = Vone \/ isEmpty l = Vzero.
 Proof.
   intros. induction l. 1: simpl; left; trivial.
   destruct IHl; simpl; destruct (Z_lt_dec a (inf+1));
     (try now left); now right.
 Qed.
 
-Lemma isEmptyMeansInf: forall l inf,
-    isEmpty l inf = Vone <-> Forall (fun x => x > inf) l.
+Lemma isEmptyMeansInf: forall l,
+    isEmpty l = Vone <-> Forall (fun x => x > inf) l.
 Proof.
   intros.
   split; intros.
@@ -89,9 +91,9 @@ Proof.
     specialize (H _ H0). lia.
 Qed.
 
-Lemma isEmpty_Vone_app: forall l1 l2 inf,
-    isEmpty (l1 ++ l2) inf = Vone <->
-    isEmpty l1 inf = Vone /\ isEmpty l2 inf = Vone.
+Lemma isEmpty_Vone_app: forall l1 l2,
+    isEmpty (l1 ++ l2) = Vone <->
+    isEmpty l1 = Vone /\ isEmpty l2 = Vone.
 Proof.
   intros. split; intros.
   - repeat rewrite isEmptyMeansInf, Forall_forall in *;
@@ -291,7 +293,7 @@ Proof.
   simpl. rewrite IHnum. rewrite Z.min_r; lia.
 Qed.
 
-Lemma find_src: forall src size inf,
+Lemma find_src: forall src,
     0 < inf ->
     0 <= src < size ->
     find (upd_Znth src (list_repeat (Z.to_nat size) inf) 0)
@@ -302,7 +304,6 @@ Proof.
   assert (Ha: 0 <= src < Zlength (list_repeat (Z.to_nat size) inf)). {
     rewrite Zlength_list_repeat; lia.
   }
-
   remember (upd_Znth src (list_repeat (Z.to_nat size) inf) 0) as l.
   replace (fold_right Z.min (hd 0 l) l) with (Znth src l).
   - apply (find_index l src).
@@ -347,8 +348,8 @@ Proof.
   - rewrite <- Znth_0_hd by trivial. apply Znth_In; lia.
 Qed.
 
-Lemma find_min_lt_inf: forall u l inf,
-    u = find l (fold_right Z.min (hd 0 l) l) 0 -> isEmpty l inf = Vzero ->
+Lemma find_min_lt_inf: forall u l,
+    u = find l (fold_right Z.min (hd 0 l) l) 0 -> isEmpty l = Vzero ->
     Zlength l > 0 -> Znth u l < inf + 1.
 Proof.
   intros. rewrite <- isEmpty_in' in H0. destruct H0 as [? [? ?]].

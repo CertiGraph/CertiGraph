@@ -36,7 +36,7 @@ Proof.
   forward_for_simple_bound
     size
     (EX i : Z,
-     PROP (isEmpty (sublist 0 i priq_contents) inf = Vone)
+     PROP (@isEmpty inf (sublist 0 i priq_contents) = Vone)
      LOCAL (temp _size (Vint (Int.repr size)); temp _inf (Vint (Int.repr inf));
      temp _pq pq)
      SEP (data_at Tsh (tarray tint size) (map Vint (map Int.repr priq_contents)) pq)).

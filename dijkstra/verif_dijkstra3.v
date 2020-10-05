@@ -410,7 +410,7 @@ Section DijkstraProof.
         assert (H_inrange_priq_trans:
                   forall priq,
                     @inrange_priq inf priq ->
-                    priq_arr_utils.inrange_priq inf priq). {
+                    @priq_arr_utils.inrange_priq inf priq). {
           intros.
           red in H11 |- *. red in H11.
           rewrite Forall_forall in H11 |- *.
@@ -428,8 +428,8 @@ Section DijkstraProof.
         forward_if. (* checking if it's time to break *)
         * (* No, don't break. *)
           rename H11 into Htemp.
-          assert (isEmpty priq inf = Vzero). {
-            destruct (isEmptyTwoCases priq inf);
+          assert (@isEmpty inf priq = Vzero). {
+            destruct (@isEmptyTwoCases inf priq);
             rewrite H11 in Htemp; simpl in Htemp;
               now inversion Htemp.
           }
@@ -932,14 +932,14 @@ Section DijkstraProof.
             
         * (* After breaking from the while loop,
            prove break's postcondition *)
-          assert (isEmpty priq inf = Vone). {
-            destruct (isEmptyTwoCases priq inf); trivial;
+          assert (@isEmpty inf priq = Vone). {
+            destruct (@isEmptyTwoCases inf priq); trivial;
               rewrite H12 in H11; simpl in H11; now inversion H11.
           }
           clear H11.
           forward. Exists prev priq dist popped.
           entailer!.
-          pose proof (isEmptyMeansInf priq inf).
+          pose proof (@isEmptyMeansInf inf priq).
           rewrite H26 in H12.
           rewrite Forall_forall in H12 |- *.
           intros. specialize (H12 _ H27). lia.
