@@ -1,6 +1,6 @@
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.priq.priq_arr_specs.
-Require Import CertiGraph.priq.priq_arr_utils.
+Require Import CertiGraph.priq.priq_constants.
 Require Import VST.floyd.sublist.
 
 Require Import CertiGraph.priq.priq_arr.
@@ -18,7 +18,7 @@ Proof.
   forward_for_simple_bound
     SIZE
     (EX i : Z,
-     PROP (isEmpty (sublist 0 i priq_contents) = Vone)
+     PROP (@isEmpty inf (sublist 0 i priq_contents) = Vone)
      LOCAL (temp _pq pq)
      SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
   - unfold SIZE; lia.
@@ -88,7 +88,7 @@ Proof.
     (EX i : Z,
      PROP ()
      LOCAL (temp _minWeight (Vint (Int.repr (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents))));
-                        temp _minVertex (Vint (Int.repr (find priq_contents (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents)) 0)));
+                        temp _minVertex (Vint (Int.repr (priq_arr_utils.find priq_contents (fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents)) 0)));
                         temp _pq pq)
                  SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)).
   - unfold SIZE; rep_lia.
@@ -139,7 +139,7 @@ Proof.
       rewrite sublist_same; [|lia..].
       apply min_in_list; [apply incl_refl | apply Znth_In; lia].
     + forward.
-      Exists (find priq_contents (fold_right Z.min (hd 0 priq_contents) (sublist 0 SIZE priq_contents)) 0).
+      Exists (priq_arr_utils.find priq_contents (fold_right Z.min (hd 0 priq_contents) (sublist 0 SIZE priq_contents)) 0).
       rewrite sublist_same by lia. entailer!.
       destruct priq_contents; simpl; auto.
 Qed.
