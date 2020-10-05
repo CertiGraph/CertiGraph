@@ -36,7 +36,7 @@ Section MathDijkGraph.
     {
     basic:
       (* first, we can take AdjMat's soundness wholesale *)
-      (@SoundAdjMat size inf _ _ g);
+      (@SoundAdjMat size inf g);
     
     veb:
       (* from the AdjMat soundness above we already know 
@@ -131,7 +131,7 @@ Section MathDijkGraph.
     - apply H; trivial.
     - rewrite H0 in n.
       replace (elabel g e) with inf by trivial.
-      apply (@inf_representable _ _ _ _ g).
+      apply (@inf_representable _ _ g).
   Qed.
 
   Lemma div_pos_le:
