@@ -1,9 +1,8 @@
-//#include "binary_heap.h"
 #include "unionfind_arr.h"
 #include <malloc.h>
-//extern void * mallocN(int n);
-//extern void free(void *p);
 #include <stdio.h>
+
+#define INT_MAX 2147483647
 
 static const int MAX_EDGES = 8;  //don't want to use MAX_MAX_EDGES because mallocing that much is crazy
 
@@ -44,24 +43,29 @@ void swap_edges(struct edge *a, struct edge *b) {
 	b->weight = tmp.weight; b->src = tmp.src; b->dst = tmp.dst;
 }
 
-void sort_edges(struct edge* a, int m, int n) {
-  int i, j;
-  struct edge pivot;
-
-  if (m < n) {
-    pivot.weight = a[n].weight; pivot.src = a[n].src; pivot.dst = a[n].dst;	//copy everything to avoid headaches in proof
-    i = m; j = n;
-    while (i <= j) {
-      while (a[i].weight < pivot.weight) i++;
-      while (a[j].weight > pivot.weight) j--;
-      if (i <= j) {
-	swap_edges(a+i,a+j);
-        i++; j--;
-      }
+int yucky_find_min(struct edge* a, int lo, int hi) {
+  int min_value = INT_MAX;
+  int min_index = lo;
+  for (int i = lo; i < hi; ++i) {
+    int w = a[i].weight;
+    if (w <= min_value) {
+      min_value = w;
+      min_index = i;
     }
-    sort_edges(a, m, j);
-    sort_edges(a, i, n);
   }
+  return min_index;
+}
+
+void yucky_sort(struct edge* a, int n) {
+  //selection sort
+  //struct edge tmp;
+  int i = 0;
+  while (i <= n) {
+    int j = yucky_find_min(a, i, n);
+    swap_edges(a+i,a+j);
+    ++i;
+  }
+  return;
 }
 
 void free_graph(struct graph * graph) {
@@ -78,7 +82,7 @@ struct graph *kruskal(struct graph *graph) {
     //"add" all vertices
     mst->V = graph_V;
 
-    sort_edges(graph->edge_list, 0, graph_E-1); //because the new sort_spec now gives the length of the list instead of the index of the last element
+    yucky_sort(graph->edge_list, graph_E-1);
 
     for (int i = 0; i < graph_E; ++i) {
         //extract the data

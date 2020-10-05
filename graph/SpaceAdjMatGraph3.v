@@ -23,7 +23,9 @@ Require Import CertiGraph.graph.MathAdjMatGraph.
 Section SpaceAdjMatGraph3.
 
   Context {size : Z}.
-  Context {CompSpecs : compspecs}. 
+  Context {CompSpecs : compspecs}.
+  Context {V_EqDec : EquivDec.EqDec V eq}. 
+  Context {E_EqDec: EquivDec.EqDec E eq}.
   
   (* SPATIAL REPRESENTATION *)
 
