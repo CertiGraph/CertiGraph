@@ -6,13 +6,17 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.graph.undirected_graph.
 Require Import CertiGraph.prim.MatrixUGraph.
-Require Import CertiGraph.priq.priq_arr_specs.
-Require Import CertiGraph.priq.priq_arr_utils.
 Require Import CertiGraph.prim.spatial_undirected_matrix3.
 Require Import CertiGraph.prim.noroot_prim.
 Require Import CertiGraph.prim.noroot_prim_spec.
+Require Import CertiGraph.prim.prim_constants.
+Require Import CertiGraph.priq_malloc.priq_arr_utils.
+
 
 Local Open Scope Z.
+Context {Z_EqDec : EquivDec.EqDec Z eq}.
+Transparent SIZE.
+Transparent inf.
 
 (***********************VERIFICATION***********************)
 
@@ -228,25 +232,33 @@ assert (HZlength_starting_keys: Zlength starting_keys = SIZE). {
 }
 pose proof SIZE_rep as SIZE_rep.
 unfold repable_signed in inf_repable.
+forward_call(tt).
+1: unfold SIZE; compute; split3; trivial.
+Intro priq_ptr.
+remember (pointer_val_val priq_ptr) as v_pq.
 (*push all vertices into priq*)
 forward_for_simple_bound SIZE
   (EX i : Z,
     PROP ()
     LOCAL (
-      lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
-      lvar _key (tarray tint 8) v_key; temp _graph (pointer_val_val gptr);
-      temp _parent (pointer_val_val parent_ptr)
+            temp _pq v_pq; lvar _out (tarray tint 8) v_out;
+            lvar _key (tarray tint 8) v_key; temp _graph (pointer_val_val gptr);
+            temp _parent (pointer_val_val parent_ptr)
     )
     SEP (
       data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr 0))) v_out;
       data_at sh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr SIZE))) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) starting_keys v_key;
       data_at Tsh (tarray tint 8) (sublist 0 i starting_keys ++ sublist i SIZE (list_repeat (Z.to_nat 8) Vundef)) v_pq;
-      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
+      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr));
+      free_tok v_pq (sizeof tint * SIZE)
+
     )
   )%assert.
 entailer!. (*precon taken care of*)
 (*loop*)
+1: { rewrite sublist_nil, sublist_same, app_nil_l. unfold SIZE. entailer!. trivial. unfold SIZE; rewrite Zlength_list_repeat; lia.
+}
 forward.
 assert (Znth i starting_keys = Vint (Int.repr (Znth i (list_repeat (Z.to_nat SIZE) inf)))). {
   unfold starting_keys. rewrite Znth_map; auto.
@@ -311,7 +323,7 @@ forward_loop (
       exists M, minimum_spanning_forest M g /\ is_partial_lgraph mst' M
     )
     LOCAL (
-      lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
+      temp _pq v_pq; lvar _out (tarray tint 8) v_out;
       temp _parent (pointer_val_val parent_ptr); lvar _key (tarray tint 8) v_key;
       temp _graph (pointer_val_val gptr)
     )
@@ -322,7 +334,8 @@ forward_loop (
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x))
         pq_state) v_pq;
-      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
+      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr));
+      free_tok v_pq (sizeof tint * SIZE)
     )
   )
 break: (
@@ -356,7 +369,7 @@ break: (
       exists M, minimum_spanning_forest M g /\ is_partial_lgraph mst M
     )
     LOCAL (
-      lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
+      temp _pq v_pq; lvar _out (tarray tint 8) v_out;
       temp _parent (pointer_val_val parent_ptr); lvar _key (tarray tint 8) v_key;
       temp _graph (pointer_val_val gptr)
     )
@@ -365,7 +378,8 @@ break: (
       data_at sh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) keys) v_key;
       data_at Tsh (tarray tint SIZE) (list_repeat (Z.to_nat SIZE) (Vint (Int.repr (inf+1)))) v_pq;
-      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
+      (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr));
+      free_tok v_pq (sizeof tint * SIZE)
     )
   )
 %assert.
@@ -482,24 +496,32 @@ break: (
     intros. rewrite <- VList_vvalid. apply (Permutation_in (l:=popped_vertices++unpopped_vertices)).
     apply Hinv_3. apply in_or_app; right; auto.
   }
-  assert (priq_arr_utils.inrange_priq pq_state). {
-    unfold priq_arr_utils.inrange_priq. rewrite Forall_forall. intros x Hx.
+  assert (@inrange_priq inf pq_state). {
+    unfold inrange_priq. rewrite Forall_forall. intros x Hx.
     rewrite In_Znth_iff in Hx. destruct Hx as [i [? ?]]. rewrite HZlength_pq_state in H. subst x.
     rewrite Hinv_6. 2: lia. destruct (in_dec V_EqDec i popped_vertices). lia.
     rewrite Hinv_5. 2: lia.
     split. apply weight_representable. apply (Z.le_trans _ inf). apply weight_inf_bound. lia.
   }
   replace (data_at Tsh (tarray tint SIZE) (map (fun x : Z => Vint (Int.repr x)) pq_state) v_pq)
-    with (data_at Tsh (tarray tint priq_arr_utils.SIZE) (map Vint (map Int.repr pq_state)) v_pq).
-  2: { unfold priq_arr_utils.SIZE, SIZE. rewrite list_map_compose. auto. }
+    with (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr pq_state)) v_pq).
+  2: { unfold SIZE. rewrite list_map_compose. auto. }
   forward_call (v_pq, pq_state).
+  1: { repeat split; trivial;
+       try unfold inf; try unfold SIZE; compute; inversion 1.
+  }
   forward_if.
+  
   (*PROCEED WITH LOOP*) {
-  assert (priq_arr_utils.isEmpty pq_state = Vzero). {
-    destruct (priq_arr_utils.isEmptyTwoCases pq_state);
+  assert (@isEmpty inf pq_state = Vzero). {
+    destruct (@isEmptyTwoCases inf pq_state);
     rewrite H1 in H0; simpl in H0; now inversion H0.
   }
-  forward_call (v_pq, pq_state). Intros u. rename H2 into Hu.
+  forward_call (v_pq, pq_state).
+  1: { repeat split; trivial;
+       try unfold inf; try unfold SIZE; compute; inversion 1.
+  }
+  Intros u. rename H2 into Hu.
   (* u is the minimally chosen item from the
      "seen but not popped" category of vertices *)
   assert (0 <= u < SIZE). {
@@ -509,7 +531,7 @@ break: (
     simpl. left; trivial.
   }
   assert (Hu_not_popped: ~ In u popped_vertices). { unfold not; intros.
-    assert (Znth u pq_state < priq_arr_utils.inf + 1). apply (find_min_lt_inf u pq_state Hu H1).
+    assert (Znth u pq_state < inf + 1). apply (find_min_lt_inf u pq_state Hu H1).
     rewrite HZlength_pq_state; lia. rewrite Hinv_6 in H4 by lia.
     destruct (in_dec V_EqDec u popped_vertices). lia. contradiction.
   }
@@ -548,7 +570,7 @@ break: (
     apply fold_min. apply Znth_In. lia.
     apply fold_min_in_list. lia.
   }
-  clear Hu. set (upd_pq_state:=upd_Znth u pq_state (priq_arr_utils.inf + 1)).
+  clear Hu. set (upd_pq_state:=upd_Znth u pq_state (inf + 1)).
   (*for loop to update un-popped vertices' min weight.
   The result is every vertex who's NOT in popped_vertices and connected, as their weight maintained or lowered*)
   forward_for_simple_bound SIZE (
@@ -577,7 +599,7 @@ break: (
         (*for convenience, unpopped and not u -> Znth v keys = Znth v pq_state'?*)
       )
       LOCAL (
-        temp _u (Vint (Int.repr u)); temp _t'1 (isEmpty pq_state); lvar _pq (tarray tint 8) v_pq; lvar _out (tarray tint 8) v_out;
+        temp _u (Vint (Int.repr u)); temp _t'2 (@isEmpty inf pq_state); temp _pq v_pq; lvar _out (tarray tint 8) v_out;
         temp _parent (pointer_val_val parent_ptr); lvar _key (tarray tint 8) v_key; temp _graph (pointer_val_val gptr)
       )
       SEP (data_at Tsh (tarray tint SIZE) (map (fun x => Vint (Int.repr x)) pq_state') v_pq;
@@ -588,7 +610,8 @@ break: (
           (nat_inc_list (Z.to_nat 8))) v_out;
      data_at sh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) parents') (pointer_val_val parent_ptr);
      data_at Tsh (tarray tint 8) (map (fun x : Z => Vint (Int.repr x)) keys') v_key;
-     (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr))
+     (@SpaceAdjMatGraph' SIZE CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr));
+      free_tok v_pq (sizeof tint * SIZE)
       )
     )
   %assert.
@@ -1492,7 +1515,7 @@ break: (
         split; intros; apply connected_refl; rewrite vert_bound; lia.
   }
   time "end of pop loop (adde_u) (did not record original):" entailer!.
-  clear H9 H10 H11 H12 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 Pv_pq HPv_pq Pv_pq0 Pv_out HPv_out Pv_out0 Pv_key HPv_key Pv_key0.
+  clear H9 H10 H11 H12 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 Pv_out HPv_out Pv_out0 Pv_key HPv_key Pv_key0.
 
   (*permutation of EList*)
     apply (Permutation_trans (l':=(eformat (u,Znth u parents))::(EList mst'))).
@@ -1660,11 +1683,12 @@ break: (
   time "End of pop loop (same msf) (originally 150s):" entailer!.
   }
   { (*break*) forward. (*no more vertices in queue*)
-    assert (Hempty: priq_arr_utils.isEmpty pq_state = Vone). {
-      destruct (priq_arr_utils.isEmptyTwoCases pq_state);
+    assert (Hempty: @isEmpty inf pq_state = Vone). {
+      destruct (@isEmptyTwoCases inf pq_state);
       rewrite H1 in H0; simpl in H0; now inversion H0.
     } clear H0.
-    pose proof (priq_arr_utils.isEmptyMeansInf pq_state Hempty). clear Hempty. rewrite Forall_forall in H0.
+    rewrite (@isEmptyMeansInf inf pq_state) in Hempty.
+    rename Hempty into H0. rewrite Forall_forall in H0.
     assert (Permutation popped_vertices (VList mst')). {
       apply NoDup_Permutation.
       apply Permutation_sym, Permutation_NoDup, NoDup_app_l in Hinv_3. auto. apply NoDup_VList.
@@ -1673,7 +1697,7 @@ break: (
       rewrite VList_vvalid, vert_bound, <- (vert_bound g), vert_bound in H1.
       assert (Znth x pq_state = (if in_dec V_EqDec x popped_vertices then inf + 1 else Znth x keys)). apply Hinv_6; auto.
       destruct (in_dec V_EqDec x popped_vertices). auto. exfalso. rewrite Hinv_5 in H2.
-      assert (Znth x pq_state > priq_arr_utils.inf). apply H0. apply Znth_In. rewrite HZlength_pq_state. auto. 2: auto.
+      assert (Znth x pq_state > inf). apply H0. apply Znth_In. rewrite HZlength_pq_state. auto. 2: auto.
       rewrite H2 in H3. pose proof (weight_inf_bound g (eformat (x, Znth x parents))).
       (*how now brown cow, I can't lia*)
       apply Zgt_not_le in H3. contradiction.
@@ -1747,6 +1771,13 @@ split; intros; destruct H1; split; auto.
 apply (Permutation_in (l':=VList mst)) in H1. 2: auto. rewrite VList_vvalid, vert_bound in H1. lia.
 apply (Permutation_in (l:=VList mst)). apply Permutation_sym; auto. rewrite VList_vvalid, vert_bound; lia.
 }
+freeze FR := (data_at _ _ _ v_out)
+               (data_at _ _ _ (pointer_val_val parent_ptr))
+               (data_at _ _ _ v_key)
+               (SpaceAdjMatGraph' _ _ _).
+        forward_call (Tsh, priq_ptr, SIZE, (list_repeat (Z.to_nat SIZE) (inf + 1))).
+entailer!.
+thaw FR.
 forward.
 Exists mst fmst parents.
 (*change from popped_vertices to nat_inc_list*)
