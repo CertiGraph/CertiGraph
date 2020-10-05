@@ -2,9 +2,6 @@
 #include "../../priq/priq_arr.h"
 #include <stdio.h>
 
-#define SIZE 8  // number of vertices
-#define IFTY INT_MAX - INT_MAX/SIZE
-
 void print_adj_matrix(int graph[SIZE][SIZE]) {
     for (int i = 0; i < SIZE; ++i) {
         for (int j = 0; j < SIZE; ++j) {
@@ -92,13 +89,13 @@ int main() {
             graph[i][j] = IFTY;
         }
     }
-    /* Modded from geekstogeeks
+    /*
             W5 
        V0--------V1 
         |  \     | 
-      W6|  W5\   |W5                          ---
-        |      \ |         W1                 | |
-       V2--------V3     V4-----V5     V6     V7--
+      W6|  W5\   |W5                          
+        |      \ |         W1                 
+       V2--------V3     V4-----V5     V6     V7    V8
             W4
     */
     graph[0][1]=5; graph[1][0]=5;
@@ -107,16 +104,21 @@ int main() {
     graph[1][3]=5; graph[3][1]=5;
     graph[2][3]=4; graph[3][2]=4;
     graph[4][5]=1; graph[5][4]=1;
-    graph[7][7]=1; graph[7][7]=1;
+    //graph[7][7]=1; graph[7][7]=1;
+    printf("Before graph\n");
     print_adj_matrix(graph);
     printf("\n");
-   int parent[SIZE] = {0};
+    int parent[SIZE] = {0};
 
     prim(graph, parent);
+    printf("Edges in forest\n");
     for (int i = 0; i < SIZE; ++i) {
-        printf("%d %d\n", i, parent[i]);
+        if (parent[i] < SIZE) {
+            printf("%d-%d\n", i, parent[i]);
+        }
     }
     printf("\n");
+    printf("After Prim\n");
     print_msf(graph, parent);
     return 0;
 }

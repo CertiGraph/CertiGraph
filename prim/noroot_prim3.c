@@ -1,7 +1,7 @@
-//well, no need for malloc and free I guess
-#include "../priq/priq_arr.h"
+#include "../priq_malloc/priq_arr.h"
 
-//I feel like we should store the matrix in a struct. That way SIZE can be preserved yet it can be moved around with ease
+#define SIZE 8
+#define INF 2147483646 // INT_MAX - 1
 
 int check_symmetric_matrix(int graph[SIZE][SIZE]) {
     for (int i = 0; i < SIZE; ++i) {
@@ -28,6 +28,10 @@ void initialise_list(int list[SIZE], int a) {
     }
 }
 
+int getCell (int graph[SIZE][SIZE], int u, int i) {
+    return graph[u][i];
+}
+
 /*
 CLRS: MST-PRIM(G,w,r)
 w is the weight function and stored in g, so no need
@@ -38,30 +42,34 @@ It's not even clear in a conventional adjacency matrix anyway, because an undire
 */
 int prim(int graph[SIZE][SIZE], int parent[SIZE]) {
     //This should ideally be replaced by a pq-specific "find_item_in_queue", but depending on the pq may be O(logn)
+    int cost;
     int key[SIZE];
-    initialise_list(key, IFTY);
+    initialise_list(key, INF);
     initialise_list(parent, SIZE);
     //as a marker to check if v is in pq. 1 for NOT in pq (already checked). This should ideally be replaced by a pq-specific "in_queue"
     int out[SIZE];
     initialise_list(out, 0);
     
+
     //Q = G.V;
-    int pq[SIZE];
+    int* pq = init(SIZE);
     for (int v = 0; v < SIZE; ++v) {
         push(v, key[v], pq);
     }
-    while (!pq_emp(pq)) {
-        int u = popMin(pq);
+    while (!pq_emp(SIZE, INF, pq)) {
+        int u = popMin(SIZE, INF, pq);
         out[u] = 1;
         for (int v = 0; v < SIZE; ++v) {
             if (out[v]==0) {				//(*this is why out array is kept, to not require extra O(logn) search of pq*)
-		if (graph[u][v] < key[v]) { //(*this is why key array is kept, to not require extra O(logn) search of pq*)
+		        cost = getCell(graph, u, v);
+                if (cost < key[v]) { //(*this is why key array is kept, to not require extra O(logn) search of pq*)
 	                parent[v] = u;
-	                key[v] = graph[u][v];
+	                key[v] = cost;
 	                adjustWeight(v, key[v], pq);
-		}
+                }
             }
         }
     }
+    freePQ(pq);
     return 0;
 }
