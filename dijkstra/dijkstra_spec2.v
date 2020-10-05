@@ -16,6 +16,8 @@ Require Import CertiGraph.dijkstra.dijkstra_constants.
 Local Open Scope Z_scope.
 
 Section DijkstraSpec.
+
+  Context {Z_EqDec : EquivDec.EqDec Z eq}.
   
   Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
   Definition Vprog : varspecs. mk_varspecs prog. Defined.
@@ -82,7 +84,7 @@ Section DijkstraSpec.
                        (@push_spec size inf _);
                        (@pq_emp_spec size inf _);
                        (@adjustWeight_spec size inf _);
-                       (@popMin_spec size inf _);
+                       (@popMin_spec size inf Z_EqDec _);
                        freePQ_spec;
                        getCell_spec;
                        dijkstra_spec]).

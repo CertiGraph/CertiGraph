@@ -16,6 +16,7 @@ Section DijkstraMathLemmas.
 
   Context {size : Z}.
   Context {inf : Z}.
+  Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
   Definition inrange_prev prev :=
     Forall (fun x => 0 <= x < size \/ x = inf) prev.
@@ -451,7 +452,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_popped_add_u:
-    forall (g: @DijkGG size inf) src dst u popped prev priq dist,
+    forall (g: @DijkGG size inf) src dst u popped prev (priq: list Z) dist,
       dijkstra_correct g src popped prev dist ->
       Znth src dist = 0 ->
       (forall dst : Z,
@@ -681,7 +682,7 @@ Section DijkstraMathLemmas.
               rewrite <- H20, <- H12.
               repeat rewrite <- H1; trivial.
               subst u.
-              rewrite Znth_find.
+              rewrite (Znth_find priq (fold_right Z.min (hd 0 priq) priq)).
               1: { apply fold_min_general.
                    apply Znth_In.
                    apply (vvalid_meaning g) in H36; trivial.
@@ -1004,7 +1005,7 @@ Section DijkstraMathLemmas.
 
   Lemma inv_unpopped_newcost:
     forall (g: @DijkGG size inf) src dst u i
-           dist prev priq popped newcost,
+           dist prev (priq: list Z) popped newcost,
       (forall dst : Z,
           vvalid g dst ->
           inv_popped g src popped prev dist dst) ->

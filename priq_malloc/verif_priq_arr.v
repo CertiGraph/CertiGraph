@@ -8,12 +8,13 @@ Section PQProof.
 
 Context {size : Z}.
 Context {inf : Z}.
+Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Local Open Scope Z_scope.
 
-Lemma body_init: semax_body Vprog (@Gprog size inf _) f_init (@init_spec size _). 
+Lemma body_init: semax_body Vprog (@Gprog size inf Z_EqDec _) f_init (@init_spec size _). 
 Proof.
   start_function.
   assert (Int.max_signed < Int.max_unsigned) by now compute.
@@ -26,10 +27,10 @@ Proof.
   apply derives_refl.
 Qed.
 
-Lemma body_push: semax_body Vprog (@Gprog size inf _) f_push (@push_spec size inf _). 
+Lemma body_push: semax_body Vprog (@Gprog size inf Z_EqDec _) f_push (@push_spec size inf _). 
 Proof. start_function. forward. entailer!. Qed.
 
-Lemma body_pq_emp: semax_body Vprog (@Gprog size inf _) f_pq_emp (@pq_emp_spec size inf _).
+Lemma body_pq_emp: semax_body Vprog (@Gprog size inf Z_EqDec _) f_pq_emp (@pq_emp_spec size inf _).
 Proof.
   start_function.
   forward_for_simple_bound
@@ -65,10 +66,10 @@ Proof.
     symmetry; trivial.
 Qed.
 
-Lemma body_adjustWeight: semax_body Vprog (@Gprog size inf _) f_adjustWeight (@adjustWeight_spec size inf _).
+Lemma body_adjustWeight: semax_body Vprog (@Gprog size inf Z_EqDec _) f_adjustWeight (@adjustWeight_spec size inf _).
 Proof. start_function. forward. entailer!. Qed.
 
-Lemma body_popMin: semax_body Vprog (@Gprog size inf _) f_popMin (@popMin_spec size inf _).
+Lemma body_popMin: semax_body Vprog (@Gprog size inf Z_EqDec _) f_popMin (@popMin_spec size inf Z_EqDec _).
 Proof.
   start_function.
   assert_PROP (Zlength priq_contents = size). {
