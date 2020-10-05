@@ -23,10 +23,10 @@ Require Import CertiGraph.lib.List_ext.
 Local Open Scope logic.
 
 Definition graph_to_symm_mat g :=
-  @graph_to_mat SIZE g eformat.
+  @graph_to_mat size g eformat.
 
 Lemma graph_to_mat_eq:
-  forall (g: AdjMatLG) i j, 0 <= i < SIZE -> 0 <= j < SIZE ->
+  forall (g: AdjMatLG) i j, 0 <= i < size -> 0 <= j < size ->
     (Znth i (Znth j (graph_to_symm_mat g))) = elabel g (eformat (i,j)).
 Proof.
   intros.
@@ -36,7 +36,7 @@ Qed.
 
 Lemma graph_to_mat_symmetric:
   forall (g: AdjMatLG) i j,
-    0 <= i < SIZE -> 0 <= j < SIZE ->
+    0 <= i < size -> 0 <= j < size ->
     (Znth i (Znth j (graph_to_symm_mat g))) =
     (Znth j (Znth i (graph_to_symm_mat g))).
 Proof.
@@ -45,9 +45,9 @@ Proof.
 Qed.
 
 Lemma graph_to_mat_inf:
-  forall (g: @AdjMatGG SIZE inf) u v,
+  forall (g: @AdjMatGG size inf) u v,
     0 <= u < v ->
-    v < SIZE ->
+    v < size ->
     ~ evalid g (u,v) ->
     Znth v (Znth u (graph_to_symm_mat g)) =
     inf.
@@ -59,16 +59,16 @@ Proof.
   simpl; lia.
 Qed.
 
-Definition G := @MatrixUGraph inf SIZE.
-Definition edgeless_graph' := @edgeless_graph inf SIZE inf_rep SIZE_rep'.
-Definition adde := @MatrixUGraph_adde inf SIZE.
-Definition eremove := @MatrixUGraph_eremove inf SIZE.
+Definition G := @MatrixUGraph inf size.
+Definition edgeless_graph' := @edgeless_graph inf size inf_rep size_rep'.
+Definition adde := @MatrixUGraph_adde inf size.
+Definition eremove := @MatrixUGraph_eremove inf size.
 
 Lemma edgeless_vert_rep:
   forall v,
-    0 <= v < SIZE ->
-    (@vert_to_list SIZE edgeless_graph' eformat v) =
-    list_repeat (Z.to_nat SIZE) inf.
+    0 <= v < size ->
+    (@vert_to_list size edgeless_graph' eformat v) =
+    list_repeat (Z.to_nat size) inf.
 Proof.
   intros. simpl. auto.
   (*should try to find a better scalable way*)
@@ -76,7 +76,7 @@ Qed.
 
 Lemma edgeless_to_symm_mat:
   graph_to_symm_mat edgeless_graph' =
-  list_repeat (Z.to_nat SIZE) (list_repeat (Z.to_nat SIZE) inf).
+  list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) inf).
 Proof.
   simpl. repeat rewrite edgeless_vert_rep; simpl. auto.
 Qed.
