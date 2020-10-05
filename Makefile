@@ -108,7 +108,7 @@ DIJKSTRA_FILES = \
 
 
 PRIQ_FILES = \
-  priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
+  priq_arr.v priq_arr_specs.v priq_constants.v verif_priq_arr.v 
 
 PRIQ_MALLOC_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 

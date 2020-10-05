@@ -1,5 +1,6 @@
 Require Export CertiGraph.priq.priq_arr.
-Require Export CertiGraph.priq.priq_arr_utils.
+Require Export CertiGraph.priq.priq_constants.
+Require Export CertiGraph.priq_malloc.priq_arr_utils.
 Require Export VST.floyd.proofauto.
 
 (* Specs for Anshuman's simple array-based PQ *)
@@ -9,7 +10,7 @@ Definition push_spec {CS: compspecs} :=
   WITH pq: val, vertex : Z, weight : Z, priq_contents_val: list val
   PRE [tint, tint, tptr tint]
   PROP (0 <= vertex < SIZE;
-       weight_inrange_priq weight)
+       @weight_inrange_priq inf weight)
   PARAMS (Vint (Int.repr vertex);
           Vint (Int.repr weight);
           pq)
@@ -26,13 +27,13 @@ Definition pq_emp_spec {CS: compspecs} :=
   DECLARE _pq_emp
   WITH pq: val, priq_contents: list Z
   PRE [tptr tint]
-   PROP (inrange_priq priq_contents)
+   PROP (@inrange_priq inf priq_contents)
    PARAMS (pq)
    GLOBALS ()
    SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
   POST [ tint ]
    PROP ()
-   LOCAL (temp ret_temp (isEmpty priq_contents))
+   LOCAL (temp ret_temp (@isEmpty inf priq_contents))
    SEP (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq).
 
 Definition adjustWeight_spec {CS: compspecs} :=
@@ -40,7 +41,7 @@ Definition adjustWeight_spec {CS: compspecs} :=
   WITH pq: val, vertex : Z, newWeight : Z, priq_contents: list Z
   PRE [tint, tint, tptr tint]
   PROP (0 <= vertex < SIZE;
-       weight_inrange_priq newWeight)
+       @weight_inrange_priq inf newWeight)
   PARAMS (Vint (Int.repr vertex);
           Vint (Int.repr newWeight);
           pq)
@@ -57,8 +58,8 @@ Definition popMin_spec {CS: compspecs} :=
   DECLARE _popMin
   WITH pq: val, priq_contents: list Z
   PRE [tptr tint]
-   PROP (inrange_priq priq_contents;
-        isEmpty priq_contents = Vzero)
+   PROP (@inrange_priq inf priq_contents;
+        @isEmpty inf priq_contents = Vzero)
    PARAMS (pq)
    GLOBALS ()
    SEP   (data_at Tsh (tarray tint SIZE) (map Vint (map Int.repr priq_contents)) pq)
