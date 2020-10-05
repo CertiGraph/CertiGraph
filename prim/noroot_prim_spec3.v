@@ -7,7 +7,7 @@ Require Import CertiGraph.graph.undirected_graph.
 Require Import CertiGraph.lib.List_ext.
 
 Require Import CertiGraph.prim.MatrixUGraph3.
-Require Import CertiGraph.prim.noroot_prim.
+Require Import CertiGraph.prim.noroot_prim3.
 Require Import CertiGraph.prim.prim_constants.
 Require Import CertiGraph.prim.spatial_undirected_matrix3.
 
