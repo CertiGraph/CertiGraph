@@ -11,7 +11,7 @@ Module Info.
   Definition abi := "macosx"%string.
   Definition bitsize := 32.
   Definition big_endian := false.
-  Definition source_file := "prim/noroot_prim.c"%string.
+  Definition source_file := "prim/noroot_prim3.c"%string.
   Definition normalized := true.
 End Info.
 
