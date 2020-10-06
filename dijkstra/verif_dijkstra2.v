@@ -7,11 +7,6 @@ Require Import CertiGraph.dijkstra.dijkstra_constants.
 
 Local Open Scope Z_scope.
 
-(** CONSTANTS AND RANGES **)
-
-Ltac trilia := trivial; lia.
-Ltac ulia := unfold V, E, DE in *; trilia.
-
 Section DijkstraProof.
   
   (* The invariants have been dragged out of the 
@@ -494,7 +489,7 @@ Section DijkstraProof.
                       +++ destruct H16 as [? [? _]].
                           inversion H16.
                   --- red. intros. rewrite path_cost.path_cost_zero; try ulia.
-                      apply path_cost.path_cost_pos; trivial.
+                      apply path_cost_pos; trivial.
             ++ intros.
                apply (vvalid_meaning g) in H15.
                apply inv_unpopped_weak_add_unpopped; trivial.
@@ -621,7 +616,7 @@ Section DijkstraProof.
                  pose proof (inf_further_restricted g).
                  lia.
                }
-               unfold V, DE in *.
+               unfold V in *.
                thaw FR.
                forward. forward. forward_if.
                
@@ -671,7 +666,7 @@ Section DijkstraProof.
                   Exists (upd_Znth i dist' (Znth u dist' + cost)).
                   Exists popped'.
                   repeat rewrite <- upd_Znth_map.
-                  unfold V, DE in *.
+                  unfold V in *.
                   entailer!.
 
                   clear H31 H32 H33 H34 H35 H36
@@ -683,7 +678,7 @@ Section DijkstraProof.
                   
                   remember (Znth u dist' + elabel g (u, i)) as newcost.
                   Set Printing All.
-                  unfold V, DE in *.
+                  unfold V in *.
                   rewrite <- Heqnewcost in *.
                   Unset Printing All.
 
@@ -772,7 +767,7 @@ Section DijkstraProof.
                      unfold V in *.
                      rewrite H34 in H_non_improvement.
                      assert (0 <= u < size) by lia.
-                     rewrite path_cost.path_cost_glue_one_step.
+                     rewrite path_cost_glue_one_step.
                      destruct H37 as [_ [_ [_ [? _]]]].
                      ulia.
                  --- intros.
@@ -859,9 +854,9 @@ Section DijkstraProof.
                    apply H23.
                    ulia.
                  }
-                 rewrite path_cost.path_cost_glue_one_step.
+                 rewrite path_cost_glue_one_step.
                  destruct H34 as [? _].
-                 pose proof (path_cost.path_cost_pos _ _ H34).
+                 pose proof (path_cost_pos _ _ H34).
                  rewrite <- inf_eq2 in H27.
                  rewrite Int.signed_repr in H27 by
                      apply (inf_representable g).
