@@ -18,7 +18,7 @@ Section Mathematical_AdjMat_Model.
   (* Most of the types are constrained because 
      we want easy AdjMat representation. *)
   Definition V : Type := Z.
-  Definition E : Type := Z * Z.
+  Definition E : Type := V * V.
 (*
   Definition DV: Type := unit.
   Definition DE : Type := Z.
@@ -30,14 +30,7 @@ Section Mathematical_AdjMat_Model.
   
   Instance V_EqDec : EqDec V eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
   Instance E_EqDec: EqDec E eq.
-  Proof.
-    hnf. intros [x] [y].
-    destruct (equiv_dec x y).
-    - hnf in e. destruct (Z.eq_dec z z0); subst.
-      + left; reflexivity.
-      + right. intro. apply n. inversion H. reflexivity.
-    - right; intro; apply c; inversion H; reflexivity.
-  Defined.
+  Proof. apply (prod_eqdec V_EqDec V_EqDec). Defined.
 
   Context {size : Z}. 
   Context {inf : Z}.
