@@ -48,7 +48,7 @@ Section DijkstraProof.
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
     EX prev : list V,
     EX priq : list Z,
-    EX dist : list V,
+    EX dist : list Z,
     EX popped : list V,
     PROP (
         (* The overall correctness condition *)
@@ -102,7 +102,7 @@ Section DijkstraProof.
                                     graph_ptr addresses :=
     EX prev: list V,
     EX priq: list Z,
-    EX dist: list V,
+    EX dist: list Z,
     EX popped: list V,
     PROP (
         (* This fact comes from breaking while *)
@@ -131,7 +131,7 @@ Section DijkstraProof.
     EX i : Z,
     EX prev' : list V,
     EX priq' : list Z,
-    EX dist' : list V,
+    EX dist' : list Z,
     EX popped' : list V,
     let u :=
         find priq (fold_right Z.min (hd 0 priq) priq) 0 in
@@ -362,8 +362,7 @@ Section DijkstraProof.
         forward_call ((pointer_val_val priq_ptr), priq).
         1: { pose proof (size_representable g).
              pose proof (inf_further_restricted' g).
-             split3; [| |split3]; try ulia.
-             rewrite inf_eq. compute; trivial.
+             split3; [| |split3]; ulia.
         }
         forward_if. (* checking if it's time to break *)
         * (* No, don't break. *)
@@ -377,10 +376,7 @@ Section DijkstraProof.
           forward_call ((pointer_val_val priq_ptr), priq).
           1: { pose proof (size_representable g).
                pose proof (inf_further_restricted' g).
-               split3; [| |split3; [| |split]]; try ulia.
-               apply Z.lt_trans with (m:=0);
-                 [compute; trivial |].
-               rewrite inf_eq; compute; trivial.
+               split3; [| |split3; [| |split]]; ulia.
           }
           
           Intros u.

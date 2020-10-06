@@ -50,7 +50,7 @@ Section DijkstraProof.
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
     EX prev : list V,
     EX priq : list Z,
-    EX dist : list V,
+    EX dist : list Z,
     EX popped : list V,
     PROP (
         (* The overall correctness condition *)
@@ -106,7 +106,7 @@ Section DijkstraProof.
                                     graph_ptr addresses :=
     EX prev: list V,
     EX priq: list Z,
-    EX dist: list V,
+    EX dist: list Z,
     EX popped: list V,
     PROP (
         (* This fact comes from breaking while *)
@@ -135,7 +135,7 @@ Section DijkstraProof.
     EX i : Z,
     EX prev' : list V,
     EX priq' : list Z,
-    EX dist' : list V,
+    EX dist' : list Z,
     EX popped' : list V,
     let u :=
         find priq (fold_right Z.min (hd 0 priq) priq) 0 in
@@ -324,25 +324,27 @@ Section DijkstraProof.
 
                                               break: (dijk_forloop_break_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).
       + unfold dijk_forloop_inv.
-        Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) src).
-        Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) 0).
+        Exists (upd_Znth src (@list_repeat V (Z.to_nat size) (inf: V)) src).
+        Exists (upd_Znth src (@list_repeat V (Z.to_nat size) (inf: V)) 0).
         Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) 0).
         Exists (@nil V).
         repeat rewrite <- upd_Znth_map; entailer!;
           clear H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12.
-        assert (Zlength (list_repeat (Z.to_nat size) inf) = size). {
+        assert (Zlength (list_repeat (Z.to_nat size) (inf: V)) = size). {
           rewrite Zlength_list_repeat. lia.
           pose proof (size_representable g). lia.
         }
         split3; [| |split3; [| |split]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
-        * rewrite upd_Znth_same; trivial. ulia. 
-        * rewrite upd_Znth_same; trivial. ulia.
-         * intros; rewrite find_src; trivial.
+        * fold V in *. rewrite upd_Znth_same; ulia. 
+        * rewrite upd_Znth_same; trivial. fold V in *. ulia.
+        * intros; rewrite find_src; trivial.
           apply (inf_further_restricted' g).
         * intros. split; [inversion 1 | intros; exfalso].
           destruct (Z.eq_dec src v).
-          -- subst src. rewrite upd_Znth_same in H3 by ulia.
+          -- subst src.
+             fold V in *.
+             rewrite upd_Znth_same in H3 by ulia.
              pose proof (inf_further_restricted' g).
              lia. 
           -- assert (0 <= v < size) by now apply (vvalid_meaning g).
@@ -443,7 +445,6 @@ Section DijkstraProof.
           rewrite Znth_0_hd; [|ulia]. 
           do 2 rewrite upd_Znth_map.
           
-          unfold V in *.
           assert (Htemp: 0 <= u < Zlength dist) by lia.
           pose proof (Znth_dist_cases _ _ Htemp H6).
           clear Htemp.
@@ -490,7 +491,6 @@ Section DijkstraProof.
                destruct popped eqn:?.
                2: {
                  apply (inv_popped_add_u _ _ _ _ _ _ priq); try ulia.
-                 unfold V, E in *.
                  apply H_popped_src_1; inversion 1.
                }
                replace u with src in *.
@@ -637,7 +637,6 @@ Section DijkstraProof.
                  pose proof (inf_further_restricted g).
                  lia.
                }
-               unfold V in *.
                thaw FR.
                forward. forward. forward_if.
                ** rename H31 into H_improvement.
@@ -679,7 +678,6 @@ Section DijkstraProof.
                   Exists (upd_Znth i dist' (Znth u dist' + cost)).
                   Exists popped'.
                   repeat rewrite <- upd_Znth_map.
-                  unfold V in *.
                   entailer!.
 
                   clear H31 H32 H33 H34 H35 H36
@@ -690,13 +688,11 @@ Section DijkstraProof.
                   remember (Zlength priq) as size.
                   rename Heqsize into H8.
                   symmetry in H8.
-                  
-                  Set Printing All.
-                  remember (Znth u dist' + elabel g (u, i)) as newcost.
-                  unfold V in *.
-                  rewrite <- Heqnewcost in *.
-                  Unset Printing All.
 
+                  remember (Znth u dist' + elabel g (u, i)) as newcost.
+                  fold V in *.
+                  rewrite <- Heqnewcost in *.
+              
                   assert (u <> i) by (intro; subst; lia).
                   
                   split3; [| | split3;
@@ -735,7 +731,7 @@ Section DijkstraProof.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
-                  --- split3; apply Forall_upd_Znth; trivial; rep_lia.
+                  --- split3; apply Forall_upd_Znth;  ulia.
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
                  rename H31 into H_non_improvement.
@@ -775,7 +771,6 @@ Section DijkstraProof.
                      2: now apply (H_inv_unseen_weak _ H38) with (m:=m).
                      subst m.
                      rename p2m into p2u.
-                     unfold V in *.
                      rewrite H34 in H_non_improvement.
                      assert (0 <= u < size) by lia.
                      rewrite path_cost_glue_one_step.
@@ -814,7 +809,6 @@ Section DijkstraProof.
                      destruct (H_inv_unpopped_weak i H31 H29 H30).
                      1: left; trivial.
                      destruct H32 as [? [[? [? [? [? [? ?]]]]]?]].
-                     unfold V in *.
                      remember (Znth i prev') as mom.
 
                      assert (Znth mom dist' < inf). {
@@ -832,7 +826,6 @@ Section DijkstraProof.
                           pose proof (edge_cost_pos g (mom', i)).
                           ulia.
                      }
-                     unfold V in *.
                      
                      destruct (zlt (Znth mom' dist' +
                                     elabel g (mom', i)) inf).

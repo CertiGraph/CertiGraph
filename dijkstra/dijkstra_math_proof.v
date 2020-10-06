@@ -4,9 +4,6 @@ Require Import CertiGraph.dijkstra.dijkstra_spec_pure.
 
 Local Open Scope Z_scope.
 
-Ltac trilia := trivial; lia.
-Ltac ulia := unfold V, E in *; trilia.
-
 Section DijkstraMathLemmas.
 
   Context {size : Z}.
@@ -113,7 +110,7 @@ Section DijkstraMathLemmas.
 
 
   Lemma popped_noninf_has_path:
-    forall (g: @DijkGG size inf) mom src popped prev dist,
+    forall (g: @DijkGG size inf) mom src popped prev (dist: list Z),
       dijkstra_correct g src popped prev dist ->
       In mom popped ->
       Znth mom dist < inf ->
@@ -138,7 +135,7 @@ Section DijkstraMathLemmas.
       path_ends g (s, links) s u ->
       In s popped ->
       ~ In u popped ->
-      exists (p1 : path) (mom child : Z) (p2 : path),
+      exists (p1 : path) (mom child : V) (p2 : path),
         path_glue p1 (path_glue (mom, [(mom, child)]) p2) = (s, links) /\
         valid_path g p1 /\
         valid_path g p2 /\
@@ -164,7 +161,7 @@ Section DijkstraMathLemmas.
         simpl in H. destruct H as [? _].
         rewrite (edge_src_fst g) in H; trivial.
       }
-      remember (snd a) as t.
+      remember (snd a) as t. 
       assert (a = (s,t)). {
         rewrite (surjective_pairing a).
         subst; trivial.
@@ -206,7 +203,7 @@ Section DijkstraMathLemmas.
 
         split3; [| |split3; [| | split3; [| |split3]]]; trivial.
         * rewrite (path_glue_assoc g); trivial.
-          -- unfold E, V in *. rewrite H8.
+          -- fold E in *. rewrite H8.
              unfold path_glue; trivial.
              simpl. rewrite H5; trivial.
           -- apply (path_ends_meet _ _ _ t m u); trivial.
@@ -333,7 +330,7 @@ Section DijkstraMathLemmas.
       In s popped ->
       ~ In u popped ->
       path_cost g (s, links) < inf ->
-      exists (p1 : path) (mom child : Z) (p2 : path),
+      exists (p1 : path) (mom child : V) (p2 : path),
         path_glue p1 (path_glue (mom, [(mom, child)]) p2) = (s, links) /\
         valid_path g p1 /\
         valid_path g p2 /\
@@ -493,7 +490,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_popped_add_u:
-    forall (g: @DijkGG size inf) src dst u popped prev (priq: list Z) dist,
+    forall (g: @DijkGG size inf) src dst u popped prev (priq dist: list Z),
       dijkstra_correct g src popped prev dist ->
       Znth src dist = 0 ->
       (forall dst : Z,
@@ -702,8 +699,7 @@ Section DijkstraMathLemmas.
             destruct (H _ H36) as [_ [_ ?]].
             specialize (H45 H30 H44 mom' optp2mom' H35 H29 H38).
             rewrite path_cost_path_glue, one_step_path_Znth in H45.
-            destruct H38 as [_ [? [_ [Hc _]]]].
-            ulia.
+            destruct H38 as [_ [? [_ [Hc _]]]]. lia.
           + (* dist[child'] < inf. We use inv_unpopped *)
             destruct (H _ H36) as [_ [? _]].
             red in H45.
@@ -719,7 +715,6 @@ Section DijkstraMathLemmas.
             * specialize (H50 mom' H35 H29).
               apply Z.le_trans with (m := Znth child' dist); trivial.
               2: destruct H38 as [_ [_ [_ [? _]]]]; ulia.
-              unfold V, E in *.
               rewrite <- H20, <- H12.
               repeat rewrite <- H1; trivial.
               subst u.
@@ -864,7 +859,7 @@ Section DijkstraMathLemmas.
     1: simpl; right; trivial.
     intros.
     apply H10; trivial.
-    simpl in H19; destruct H19; trilia.
+    simpl in H19; destruct H19; ulia.
   Qed.
 
   Lemma inv_unseen_weak_add_unpopped:
@@ -984,17 +979,16 @@ Section DijkstraMathLemmas.
       specialize (H9 _ H16). 
       rewrite Forall_forall in H14. specialize (H14 _ H15).
       assert (snd x <> i). {
-        intro contra. unfold V in *.
+        intro contra.
         rewrite contra in *. apply H4; ulia.
       }
-      unfold V in *.
       rewrite upd_Znth_diff; try lia.
       rewrite H2, <- (vvalid_meaning g); trivial.
       apply (valid_path_valid _ p2dst); trivial.
   Qed.
 
   Lemma inv_unpopped_newcost_dst_neq_i:
-    forall (g: @DijkGG size inf) src dst u i newcost prev dist popped,
+    forall (g: @DijkGG size inf) src (dst u i: V) newcost prev dist popped,
       (forall dst : Z,
           0 <= dst < i ->
           inv_unpopped g src popped prev dist dst) ->
@@ -1011,15 +1005,15 @@ Section DijkstraMathLemmas.
     (* We will proceed using the old best-known path for dst *)
     assert (0 <= i < size) by now apply (vvalid_meaning g).
     unfold inv_unpopped. intros.
-    rewrite upd_Znth_diff in * by ulia.
+    rewrite upd_Znth_diff in H9 by ulia.
+    rewrite upd_Znth_diff by ulia.
     destruct (H _ H6 H8) as
         [? | [? [? [? [? [? [? ?]]]]]]]; trivial;
       [left | right]; trivial.
-    unfold V in *.
     remember (Znth dst prev) as mom. 
     split; trivial.
     assert (Znth mom dist < inf). {
-      pose proof (edge_cost_pos g (mom, dst)); ulia.
+      pose proof (edge_cost_pos g (mom, dst)). ulia.
     }
     assert (vvalid g dst). {
       apply (vvalid_meaning g); ulia.
@@ -1044,7 +1038,7 @@ Section DijkstraMathLemmas.
   Qed. 
 
   Lemma inv_unpopped_newcost:
-    forall (g: @DijkGG size inf) src dst u i
+    forall (g: @DijkGG size inf) src dst (u i: V)
            dist prev (priq: list Z) popped newcost,
       (forall dst : Z,
           vvalid g dst ->
@@ -1098,7 +1092,6 @@ Section DijkstraMathLemmas.
     destruct (Z.eq_dec i src); [left | right; split]; trivial.
     destruct (H_inv_popped _ H H2).
     1: ulia.
-    unfold V in *.
     assert (0 <= i < size) by now apply (vvalid_meaning g).
     assert (0 <= u < size) by now apply (vvalid_meaning g).
     rewrite upd_Znth_same by lia.
@@ -1133,7 +1126,6 @@ Section DijkstraMathLemmas.
     pose proof (path_ends_In_path_dst _ _ _ _ H24).
     destruct (zlt ((Znth mom' dist) + elabel g (mom', i)) inf).
     2: {
-      unfold V in *.
       destruct (zlt (elabel g (mom', i)) inf); lia.
     }
     
@@ -1169,7 +1161,7 @@ Section DijkstraMathLemmas.
           global optimal, so dist[u] <= path_cost [s to u],
           so dist[u] + graph[u][i] <= path_cost p'.
          *)
-        unfold V in *. subst mom'.
+        subst mom'.
         unfold path_globally_optimal in H13. ulia.
       }
       
@@ -1281,12 +1273,10 @@ Section DijkstraMathLemmas.
     assert (i <= dst < size) by lia.
     destruct (Z.eq_dec dst i).
     1: subst dst; lia.
-    unfold V in *.
     rewrite upd_Znth_diff in H6 by lia.
     destruct (H_inv_unpopped_weak _ H7 H5 H6)
       as [? | [? [[? [? [? [? [? ?]]]]] ?]]];
       [left | right]; trivial.
-    unfold V in *.
     rewrite upd_Znth_diff by ulia.
     remember (Znth dst prev) as mom. 
     assert (mom <> i). {
@@ -1323,7 +1313,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_unseen_newcost:
-    forall (g: @DijkGG size inf) dst src i u dist prev popped newcost,
+    forall (g: @DijkGG size inf) (dst src i u: V) dist prev popped newcost,
       (forall dst : Z,
           vvalid g dst ->
           inv_popped g src popped prev dist dst) ->
@@ -1372,7 +1362,7 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma inv_unseen_weak_newcost:
-    forall (g: @DijkGG size inf) dst src u i dist prev popped newcost,
+    forall (g: @DijkGG size inf) (dst src u i: V) dist prev popped newcost,
       (forall dst : Z,
           vvalid g dst ->
           inv_popped g src popped prev dist dst) ->
@@ -1420,7 +1410,7 @@ Section DijkstraMathLemmas.
   Qed.           
 
   Lemma inv_unpopped_new_dst:
-    forall (g: @DijkGG size inf) src dst u i dist prev popped,
+    forall (g: @DijkGG size inf) (src dst u i: V) dist prev popped,
       vvalid g i ->
       (forall dst : Z,
           vvalid g dst ->
@@ -1460,7 +1450,6 @@ Section DijkstraMathLemmas.
     assert (i <= i < size) by lia.
     destruct (H_inv_unpopped_weak i H6 H4 H5) as
         [? | [? [[? [? [? [? [? ?]]]]] ?]]]; [left | right]; trivial.
-    unfold V in *.
     remember (Znth i prev) as mom.
     split3; [| |split3; [| |split3]]; trivial.
     intros.
@@ -1473,7 +1462,7 @@ Section DijkstraMathLemmas.
       pose proof (edge_cost_pos g (mom', i)).
       ulia.
     }
-    destruct (H_inv_popped _ H15 H16); [unfold V in *; ulia|].  
+    destruct (H_inv_popped _ H15 H16); [ulia|].  
     destruct H17 as [p2mom' [? [? ?]]].
     assert (Hrem := H17).
     
@@ -1518,7 +1507,6 @@ Section DijkstraMathLemmas.
         }
         destruct (zlt (Znth mom' dist + elabel g (mom', i)) inf).
         2: {
-          unfold V in *.
           destruct (zlt (elabel g (mom', i)) inf); lia.
         }
         
@@ -1621,7 +1609,7 @@ Section DijkstraMathLemmas.
     1: ulia.
     destruct H5 as [p2i [[_ [_ [_ [? _]]]] [_ ?]]].
     destruct H6 as [? [? [_ [? _]]]].
-    unfold V, E in *. rewrite H9, H5.
+    rewrite H9, H5.
     specialize (H7 (fst p2u, snd p2u +:: (u,i))).  
     rewrite path_cost_app_cons in H7; trivial.
     rewrite H0. apply H7.
