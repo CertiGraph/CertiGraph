@@ -42,7 +42,7 @@ GRAPH_FILES = \
   list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
   graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v \
   MathAdjMatGraph.v SpaceAdjMatGraph1.v SpaceAdjMatGraph2.v SpaceAdjMatGraph3.v \
-  eformat_lemmas.v
+  eformat_lemmas.v path_cost.v 
 
   # 1 = noncontiguous
   # 2 = contiguous 1-d
@@ -101,7 +101,7 @@ DIJKSTRA_FILES = \
   dijkstra2.v SpaceDijkGraph2.v dijkstra_spec2.v verif_dijkstra2.v \
   dijkstra3.v SpaceDijkGraph3.v dijkstra_spec3.v verif_dijkstra3.v \
   MathDijkGraph.v dijkstra_env.v dijkstra_constants.v \
-  path_cost.v dijkstra_math_proof.v dijkstra_spec_pure.v 
+  dijkstra_math_proof.v dijkstra_spec_pure.v 
   # 1 = noncontiguous
   # 2 = contiguous 1-d
   # 3 = contiguous 2-d
