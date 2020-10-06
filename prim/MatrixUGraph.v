@@ -47,7 +47,7 @@ Class AdjMatUSoundness (g: AdjMatLG) := {
   uer: forall e, evalid g e -> src g e <= dst g e;
 }.
 
-Definition MatrixUGraph := (GeneralGraph V E DV DE DG (fun g => AdjMatUSoundness g)).
+Definition MatrixUGraph := (GeneralGraph V E unit Z unit (fun g => AdjMatUSoundness g)).
 
 Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g).
 Definition sound_adjMatGraph (g: MatrixUGraph) := (@sadjmat g (sound_MatrixUGraph g)).
@@ -57,7 +57,7 @@ Instance Finite_MatrixUPGraph (g: MatrixUGraph): FiniteGraph g.
 Proof. apply (finGraph g). Qed.
 
 Definition MatrixUGraph_AdjMatGG (g: MatrixUGraph) : AdjMatGG :=
-    Build_GeneralGraph DV DE DG SoundAdjMat g (sound_adjMatGraph g).
+    Build_GeneralGraph unit Z unit SoundAdjMat g (sound_adjMatGraph g).
 Coercion MatrixUGraph_AdjMatGG: MatrixUGraph >-> AdjMatGG.
 
 (*still nitty-gritty issues with the coercion*)
@@ -175,7 +175,7 @@ Context {inf_bound: 0 <= inf <= Int.max_signed}.
 Context {size_bound: 0 < size <= Int.max_signed}.
 
 Definition edgeless_lgraph : AdjMatLG :=
-  @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
+  @Build_LabeledGraph V E V_EqDec E_EqDec unit Z unit
     (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
     (fun v => tt) (fun e => inf) tt. 
 
@@ -202,7 +202,7 @@ exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
 Qed.
 
 Definition edgeless_graph: MatrixUGraph :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG AdjMatUSoundness
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit AdjMatUSoundness
     edgeless_lgraph (AdjMatUSound_edgeless).
 
 Lemma edgeless_graph_evalid:
@@ -274,7 +274,7 @@ Section ADD_EDGE_MUGRAPH.
 
 Context {g: MatrixUGraph}.
 Context {u v: V} {vvalid_u: vvalid g u} {vvalid_v: vvalid g v} {uv_smaller: u <= v}.
-Context {w: DE} {w_rep: Int.min_signed <= w < inf}.
+Context {w: Z} {w_rep: Int.min_signed <= w < inf}.
 
 Definition MatrixUGraph_adde':=
   labeledgraph_add_edge g (u,v) u v w.
@@ -341,7 +341,7 @@ constructor; simpl. constructor; simpl.
 Qed.
 
 Definition MatrixUGraph_adde: MatrixUGraph :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG AdjMatUSoundness
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit AdjMatUSoundness
     MatrixUGraph_adde' (AdjMatUSound_adde').
 
 Lemma adde_vvalid:
@@ -456,7 +456,7 @@ Context {g: MatrixUGraph}.
 Context {e: E} {evalid_e: evalid g e}.
 
 Definition MatrixUGraph_eremove':=
-  @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG (pregraph_remove_edge g e)
+  @Build_LabeledGraph V E V_EqDec E_EqDec unit Z unit (pregraph_remove_edge g e)
   (vlabel g)
   (fun e0 => if E_EqDec e0 e then inf else elabel g e0 )
   (glabel g).
@@ -500,7 +500,7 @@ constructor; simpl. constructor; simpl.
 Qed.
 
 Definition MatrixUGraph_eremove: MatrixUGraph :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG AdjMatUSoundness
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit AdjMatUSoundness
     MatrixUGraph_eremove' (AdjMatUSound_eremove').
 
 Lemma eremove_EList:

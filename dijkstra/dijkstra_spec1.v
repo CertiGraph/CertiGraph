@@ -6,7 +6,6 @@ Require Export CertiGraph.priq.priq_arr_specs.
 (* Dijkstra-specific stuff *)
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.SpaceDijkGraph1.
-Require Import CertiGraph.dijkstra.path_cost.
 Require Export CertiGraph.dijkstra.dijkstra_spec_pure.
 
 (* The first moment we become implementation-specific *)

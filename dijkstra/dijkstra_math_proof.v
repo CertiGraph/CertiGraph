@@ -2,12 +2,11 @@ Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_spec_pure.
 Require Import CertiGraph.dijkstra.path_cost.
-Require Import VST.floyd.sublist.
 
 Local Open Scope Z_scope.
 
 Ltac trilia := trivial; lia.
-Ltac ulia := unfold V, E, DE in *; trilia.
+Ltac ulia := unfold V, E in *; trilia.
 
 Section DijkstraMathLemmas.
 
@@ -46,12 +45,57 @@ Section DijkstraMathLemmas.
       0 <= Znth i dist < inf.
   Proof.
     intros.
-    apply (Forall_Znth _ _ _ H) in H0.
+    apply (sublist.Forall_Znth _ _ _ H) in H0.
     simpl in H0. lia.
   Qed.
 
   (** MISC HELPER LEMMAS **)
 
+  (* Four Dijkstra-specific path-cost lemmas *)
+    Lemma path_cost_app_cons:
+    forall (g: @DijkGG size inf) path e,
+      path_cost g (fst path, snd path +:: e) =
+      path_cost g path + elabel g e.
+  Proof.
+    intros.
+    replace (fst path, snd path +:: e) with
+        (path_glue path (fst e, [e])).
+    rewrite path_cost_path_glue.
+    rewrite one_step_path_Znth; trivial.
+    unfold path_glue. simpl. trivial.
+  Qed.
+ 
+  Lemma path_cost_glue_one_step:
+    forall (g: @DijkGG size inf) p2m u i,
+      path_cost g (path_glue p2m (u, [(u, i)])) = path_cost g p2m + elabel g (u, i).
+  Proof.
+    intros.
+    rewrite path_cost_path_glue, one_step_path_Znth; trivial.
+  Qed.
+
+  Lemma path_cost_pos:
+    forall (g: @DijkGG size inf) p,
+      valid_path g p ->
+      0 <= path_cost g p.
+  Proof.
+    intros. apply acc_pos; [|lia].
+    intros. apply edge_cost_pos.
+  Qed.
+
+  Lemma path_cost_path_glue_lt:
+    forall (g: @DijkGG size inf) p1 p2 limit,
+      valid_path g p1 ->
+      valid_path g p2 ->
+      path_cost g (path_glue p1 p2) < limit ->
+      path_cost g p1 < limit /\ path_cost g p2 < limit.
+  Proof.
+    intros.
+    rewrite path_cost_path_glue in H1.
+    pose proof (path_cost_pos _ _ H).
+    pose proof (path_cost_pos _ _ H0).
+    split; lia.
+  Qed.
+  
   (* never used, but perhaps handy *)
   Lemma Int_repr_eq_small:
     forall a b,
@@ -85,7 +129,7 @@ Section DijkstraMathLemmas.
     intros.
     destruct (H _ H2) as [? _].
     specialize (H3 H0).
-    destruct H3; [ulia|].
+    destruct H3; [lia|].
     apply H3; trivial.
   Qed.
 
@@ -341,7 +385,8 @@ Section DijkstraMathLemmas.
       apply path_cost_path_glue_lt in H3; trivial.
       destruct H3 as [_ ?].
       rewrite path_cost_path_glue in H3; trivial.
-      rewrite one_step_path_Znth in H3. lia.
+      rewrite one_step_path_Znth in H3.
+      lia.
   Qed.
 
   Lemma evalid_dijk:
@@ -578,7 +623,7 @@ Section DijkstraMathLemmas.
                path_cost g p2).
           2: { rewrite <- H24.
                do 2 rewrite path_cost_path_glue.
-               rewrite one_step_path_Znth. lia.
+               rewrite one_step_path_Znth. ulia.
           }
 
           assert (vvalid g mom'). {
@@ -644,7 +689,7 @@ Section DijkstraMathLemmas.
           
           assert (0 <= Znth mom' dist). {
             rewrite (vvalid_meaning g) in H35.
-            apply (Forall_Znth _ _ mom') in H2.
+            apply (sublist.Forall_Znth _ _ mom') in H2.
             apply H2. ulia.
           }
           assert (Htemp: 0 <= child' < Zlength dist). {

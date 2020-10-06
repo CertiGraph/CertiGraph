@@ -297,7 +297,7 @@ forward_loop (
   EX mst':G,
   EX fmst': FiniteGraph mst',
   EX parents: list V,
-  EX keys: list DE, (*can give a concrete definition in SEP, but it leads to shenanigans during entailer*)
+  EX keys: list Z, (*can give a concrete definition in SEP, but it leads to shenanigans during entailer*)
   EX pq_state: list V, (*can give a concrete definition in SEP, but it leads to shenanigans during entailer*)
   EX popped_vertices: list V,
   EX unpopped_vertices: list V,
@@ -356,7 +356,7 @@ break: (
   EX fmst: FiniteGraph mst,
   EX popped_vertices: list V,
   EX parents: list V,
-  EX keys: list DE,
+  EX keys: list Z,
     PROP (
       is_partial_lgraph mst g;
       uforest' mst;
