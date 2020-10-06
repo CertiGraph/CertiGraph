@@ -1,8 +1,8 @@
 Require Import VST.floyd.proofauto.
-Require Import CertiGraph.priq_malloc.priq_arr_specs.
-Require Import CertiGraph.priq_malloc.priq_arr_utils.
+Require Import CertiGraph.priq.priq_arr_specs.
+Require Import CertiGraph.priq.priq_arr_utils.
 Require Import VST.floyd.sublist.
-Require Import CertiGraph.priq_malloc.priq_arr.
+Require Import CertiGraph.priq.priq_arr.
 
 Section PQProof.
 

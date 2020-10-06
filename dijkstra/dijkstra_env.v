@@ -14,4 +14,4 @@ Require Export CertiGraph.lib.EquivDec_ext.
 Require Export CertiGraph.graph.graph_model.
 Require Export CertiGraph.graph.MathAdjMatGraph.
 Require Export CertiGraph.graph.path_lemmas.
-Require Export CertiGraph.priq_malloc.priq_arr_utils.
+Require Export CertiGraph.priq.priq_arr_utils.

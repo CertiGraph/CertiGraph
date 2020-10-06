@@ -1,4 +1,4 @@
-#include "../priq_malloc/priq_arr.h"
+#include "../priq/priq_arr.h"
 
 #define SIZE 8
 #define INF 2147483646 // INT_MAX - 1

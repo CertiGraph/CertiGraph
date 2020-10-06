@@ -1,5 +1,5 @@
 Require Import CertiGraph.floyd_ext.share.
-Require Export CertiGraph.priq_malloc.priq_arr_specs.
+Require Export CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.prim.MatrixUGraph.
 Require Export CertiGraph.prim.prim3.
