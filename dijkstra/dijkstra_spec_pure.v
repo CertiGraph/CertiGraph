@@ -1,5 +1,5 @@
-Require Import CertiGraph.dijkstra.env_dijkstra_arr.
-Require Export CertiGraph.dijkstra.MathDijkGraph.
+Require Import CertiGraph.dijkstra.dijkstra_env.
+Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.path_cost.
 
 Local Open Scope Z_scope.

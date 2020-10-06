@@ -1,6 +1,4 @@
-Require Import CertiGraph.lib.List_ext.
-Require Import CertiGraph.graph.graph_model.
-Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 
 Local Open Scope logic.

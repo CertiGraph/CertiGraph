@@ -8,21 +8,7 @@ Require Import CertiGraph.graph.graph_model.
 Require Export CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.path_lemmas.
 
-
-(*
-  AdjMat wishlist
-  0. some distinguished inf value
-  1. V: Z, E: Z, Elabel: Z
-  2. forall e, ensure elabel is reppable
-  3. forall e, evalid e -> elabel e < inf
-  4. etc... soundness
-  5. vert to list function
-  6. graph to mat function 
-  7. graph_rep (graph -> mpred)
-  8. graph_unfold
- *)
-
-Section MathAdjMatGraph.
+Section Mathematical_AdjMat_Model.
 
   Coercion pg_lg: LabeledGraph >-> PreGraph.
   Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
@@ -37,11 +23,7 @@ Section MathAdjMatGraph.
   Definition DE : Type := Z. 
   Definition DG: Type := unit.
 
-  Context {size : Z}. 
-  Context {inf : Z}.
-
   Instance V_EqDec : EqDec V eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
-  
   Instance E_EqDec: EqDec E eq.
   Proof.
     hnf. intros [x] [y].
@@ -52,17 +34,21 @@ Section MathAdjMatGraph.
     - right; intro; apply c; inversion H; reflexivity.
   Defined.
 
-  Definition AdjMatLG := (@LabeledGraph V E _ _ DV DE DG).
-  (* This is the basic LabeledGraph for all our AdjMat representations.
-   We need some further restrictions, which we will place 
-   in the GeneralGraph's soundness condition.  
-   *)
-
+  Context {size : Z}. 
+  Context {inf : Z}.
   (* The instantiator will have to supply a max number of vertices
-   and a special "infinity" value to indicate unreachability 
+     and a special "infinity" value to indicate unreachability 
+   *)
+  
+  (* This is the basic LabeledGraph for all our AdjMat representations. *)
+  Definition AdjMatLG := (@LabeledGraph V E _ _ DV DE DG).
+  (* We need some further restrictions, which we will place 
+     in the GeneralGraph's soundness condition.  
    *)
 
-  
+  (* Each field of the class is a "plugin"
+     which further restricts various aspects of the graph
+   *)
   Class SoundAdjMat (g: AdjMatLG) :=
     {
     sr: (* size_representable *)
@@ -85,11 +71,18 @@ Section MathAdjMatGraph.
       FiniteGraph g
     }.
   
-  (* example of how to instantiate *)
+  (* Academic example of how to instantiate the above *)
   Definition AdjMatGG := (GeneralGraph V E DV DE DG (fun g => SoundAdjMat g)).
-  (* Clients may want to further restrict the 
-     soundness condition and then use that restricted version. *)
+  (* In reality, clients may want to:
+     1. create a new soundness condition where one of the 
+        plugins is "SoundAdjMat" above
+     2. add further program-specific restrictions in 
+        other plugins
+     3. use this new accreted soundness condition to 
+        build their GeneralGraph, as shown above.
+   *)
 
+  
   (* Getters for the plugins *)
 
   Definition size_representable (g: AdjMatGG) :=
@@ -116,6 +109,7 @@ Section MathAdjMatGraph.
   Definition finGraph (g: AdjMatGG) :=
     @fin g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
+  
   (* Some lemmas from the above soundness plugins *)
   
   Lemma valid_path_app_cons:
@@ -170,11 +164,4 @@ Section MathAdjMatGraph.
     rewrite <- (edge_dst_snd g); trivial.
   Qed.
 
-  (*ASDF: This works here*)
-  Definition edgeless_lgraph2: AdjMatLG :=
-  @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
-    (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
-    (fun v => tt) (fun e => inf) tt. (*<--- different from edgeless_WEdgeGraph because of the default value*)
-
-End MathAdjMatGraph.
-
+End Mathematical_AdjMat_Model.

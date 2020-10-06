@@ -1,7 +1,8 @@
-Require Import CertiGraph.dijkstra.env_dijkstra_arr.
+Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
-Require Export CertiGraph.graph.SpaceAdjMatGraph2.
 Require Import CertiGraph.dijkstra.dijkstra_constants.
+Require Export CertiGraph.graph.SpaceAdjMatGraph2.
+
 Local Open Scope logic.
 
 Section SpaceDijkGraph.

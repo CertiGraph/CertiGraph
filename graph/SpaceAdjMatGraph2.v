@@ -20,7 +20,12 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.MathAdjMatGraph.
 
-Section SpaceAdjMatGraph2.
+Section Spatial_AdjMat_Model_2.
+  (* Model 2 is for a stack-allocated graph,
+     where the graph is declared on the stack
+     as a single-dimension array of size "size^2". 
+     Access to graph[u][v] is via graph[size*u + v].
+   *)
 
   Context {size : Z}. 
   Context {CompSpecs : compspecs}.
@@ -29,9 +34,12 @@ Section SpaceAdjMatGraph2.
   
   (* SPATIAL REPRESENTATION *)
 
-  (* Assumption: (v,0), (v,1) ... (v, size-1) are edges.
-   Action: makes a list containing each edge's elabel.
-   The argument f is an opportunity to tweak the edges as needed
+  (* Assumption: 
+     (v,0), (v,1) ... (v, size-1) are edges.
+   
+   Action: 
+    Makes a list containing each edge's elabel.
+    The argument f is an opportunity to tweak the edges as needed
    *)  
   Definition vert_to_list (g: AdjMatLG) (f : E -> E) (v : V) :=
     map (elabel g)
@@ -39,11 +47,11 @@ Section SpaceAdjMatGraph2.
              (nat_inc_list (Z.to_nat size))).
 
   (* Assumptions: 
-   1. 0, 1, ... (size-1) are vertices
-   2. for any vertex v,
+     1. 0, 1, ... (size-1) are vertices
+     2. for any vertex v,
           (v,0), (v,1) ... (v, size-1) are edges.
           
-      Action:
+     Action:
       Makes a list of lists, where each member list 
       is a vertex's edge-label-list (see helper above).
    *)
@@ -184,29 +192,5 @@ Section SpaceAdjMatGraph2.
   Definition SpaceAdjMatGraph sh (f : E -> E) g gaddr : mpred :=
     SpaceAdjMatGraph' sh (graph_to_list g f) gaddr.
 
-(*
-  The below is not currently used by SpaceDijkGraph because 
-  iter_sepcon is cleaner. However, just keep it around 
-  because it is a general model.
-  For a (better?) example of this in use for VST, see above.
- *)
-
-(* 
-  What it does:        
-  Uses abstract_data_at to create a spatial representation.
- *)
-  Class SpaceAdjMatGraph_abstract (Addr: Type) (Pred: Type) :=
-    abstract_data_at: Addr -> list Z -> Pred.
-  
-  Context {Pred: Type}.
-  Context {Addr: Type}.
-  Context {SAMG : SpaceAdjMatGraph_abstract Addr Pred}.
-  
-  Definition AdjMatGraph_rep
-             (g: AdjMatLG)
-             (f : E -> E)
-             (a : Addr) : Pred :=
-    abstract_data_at a (@graph_to_list g f).
-
-End SpaceAdjMatGraph2.
+End Spatial_AdjMat_Model_2.
 
