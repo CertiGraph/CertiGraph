@@ -106,13 +106,8 @@ DIJKSTRA_FILES = \
   # 2 = contiguous 1-d
   # 3 = contiguous 2-d
 
-
-PRIQ_FILES = \
-  priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
-
 PRIQ_MALLOC_FILES = \
   priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
-
 
 CLIGHT_FILES = mark/mark_bi.v dispose/dispose_bi.v copy/copy_bi.v summatrix/summatrix.v
 
@@ -131,7 +126,6 @@ NORMAL_FILES = \
   $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
-  $(PRIQ_FILES:%.v=priq/%.v) \
   $(PRIQ_MALLOC_FILES:%.v=priq_malloc/%.v) \
   $(PRIM_FILES:%.v=prim/%.v) \
   $(UNION_FIND_FILES:%.v=unionfind/%.v) \
@@ -173,7 +167,7 @@ vstandme3:
 
 .PHONY: mst
 mst:
-	make priq_malloc/verif_priq_arr.vo priq/verif_priq_arr.vo \
+	make priq_malloc/verif_priq_arr.vo \
 	prim/verif_prim3.vo prim/verif_noroot_prim3.vo \
 	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
 	kruskal/verif_kruskal_edgelist.vo -kj7
