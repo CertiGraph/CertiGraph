@@ -672,7 +672,8 @@ break: (
     entailer!. rewrite list_map_compose. auto.
     split. lia.
     unfold weight_inrange_priq. rewrite graph_to_mat_eq. split.
-    apply weight_representable. rewrite eformat_adj_elabel, eformat_symm in Hadj_ui. lia. lia. lia.
+    apply weight_representable. rewrite eformat_adj_elabel, eformat_symm in Hadj_ui.
+    fold V in *. lia. lia. lia.
     Exists (upd_Znth i parents' u).
     Exists (upd_Znth i keys' (Znth i (Znth u (graph_to_symm_mat g)))).
     Exists (upd_Znth i pq_state' (Znth i (Znth u (graph_to_symm_mat g)))).
