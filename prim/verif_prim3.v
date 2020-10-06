@@ -525,8 +525,8 @@ break: (
     intros. rewrite <- VList_vvalid. apply (Permutation_in (l:=popped_vertices++unpopped_vertices)).
     apply Hinv_3. apply in_or_app; right; auto.
   }
-  assert (@priq_arr_utils.inrange_priq inf pq_state). {
-    unfold priq_arr_utils.inrange_priq. rewrite Forall_forall. intros x Hx.
+  assert (@inrange_priq inf pq_state). {
+    unfold inrange_priq. rewrite Forall_forall. intros x Hx.
     rewrite In_Znth_iff in Hx. destruct Hx as [i [? ?]]. rewrite HZlength_pq_state in H. subst x.
     rewrite Hinv_6. 2: lia. destruct (in_dec V_EqDec i popped_vertices). lia.
     rewrite Hinv_5. 2: lia. destruct (V_EqDec i r). auto.

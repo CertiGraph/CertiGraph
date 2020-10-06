@@ -9,14 +9,6 @@ Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
 (** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
 
-(* a weight to be added cannot be inf + 1 *)
-Definition weight_inrange_priq item :=
-  Int.min_signed <= item <= inf.
-
-(* over time, the overall PQ can range from MIN to inf + 1 *)
-Definition inrange_priq (priq : list Z) :=
-  Forall (fun x => Int.min_signed <= x <= inf + 1) priq.
-
 Definition isEmpty (priq : list Z) : val :=
   fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then Vzero else acc) Vone priq.
 
