@@ -10,7 +10,7 @@ Require Import CertiGraph.prim.spatial_undirected_matrix3.
 Require Import CertiGraph.prim.noroot_prim3.
 Require Import CertiGraph.prim.noroot_prim_spec3.
 Require Import CertiGraph.prim.prim_constants.
-Require Import CertiGraph.priq_malloc.priq_arr_utils.
+Require Import CertiGraph.priq.priq_arr_utils.
 
 
 Local Open Scope Z.

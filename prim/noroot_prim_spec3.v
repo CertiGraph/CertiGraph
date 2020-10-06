@@ -1,6 +1,6 @@
 Require Import CertiGraph.floyd_ext.share.
 Require Import VST.floyd.proofauto.
-Require Export CertiGraph.priq_malloc.priq_arr_specs.
+Require Export CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.undirected_graph.

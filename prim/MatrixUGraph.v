@@ -10,7 +10,7 @@ Require Import CertiGraph.graph.graph_relation.
 Require Export CertiGraph.graph.undirected_graph.
 Require Export CertiGraph.graph.MathAdjMatGraph.
 Require Export CertiGraph.graph.eformat_lemmas.
-Require Export CertiGraph.priq_malloc.priq_arr_utils.
+Require Export CertiGraph.priq.priq_arr_utils.
 
 (* 
 Anshuman, Oct 2:
