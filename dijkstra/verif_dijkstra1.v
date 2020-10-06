@@ -1,14 +1,8 @@
-Require Import CertiGraph.priq_malloc.priq_arr_utils.
-(* remove once a better PQ is in place *)
-
-Require Import CertiGraph.dijkstra.env_dijkstra_arr.
+Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
+Require Import CertiGraph.dijkstra.dijkstra_math_proof.
 Require Import CertiGraph.dijkstra.SpaceDijkGraph1.
 Require Import CertiGraph.dijkstra.dijkstra_spec1.
-Require Import CertiGraph.dijkstra.dijkstra_math_proof.
-
-Require Import VST.floyd.sublist.
-(* seems this has to be imported after the others *)
 
 Local Open Scope Z_scope.
 
@@ -350,7 +344,7 @@ Section DijkstraProof.
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; trivial. ulia. 
         * rewrite upd_Znth_same; trivial. ulia.
-        * intros; rewrite find_src; trivial.
+         * intros; rewrite find_src; trivial.
           apply (inf_further_restricted' g).
         * intros. split; [inversion 1 | intros; exfalso].
           destruct (Z.eq_dec src v).
@@ -364,9 +358,11 @@ Section DijkstraProof.
              apply (Z.neq_succ_diag_l inf). lia.
              
         * pose proof (inf_further_restricted' g).
+          assert (Int.min_signed < 0). {
+            compute; trivial.
+          }
           split3; red; apply Forall_upd_Znth;
-            try apply Forall_list_repeat;
-            try rewrite inf_eq; ulia. 
+            try apply Forall_list_repeat; ulia.
           
         * repeat rewrite map_list_repeat. entailer!.
 
@@ -386,25 +382,11 @@ Section DijkstraProof.
         { entailer!. now repeat rewrite Zlength_map in *. }
         assert_PROP (Zlength dist = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
-
-        assert (H_inrange_priq_trans:
-                  forall priq,
-                    @inrange_priq inf priq ->
-                    @priq_arr_utils.inrange_priq inf priq). {
-          intros.
-          red in H11 |- *.
-          rewrite Forall_forall in H11 |- *.
-          intros ? H_in. specialize (H11 _ H_in).
-          rep_lia.
-        }
         
         forward_call ((pointer_val_val priq_ptr), priq).
         1: { pose proof (size_representable g).
              pose proof (inf_further_restricted' g).
-             split3; [| |split3]; try ulia.
-             apply H_inrange_priq_trans; trivial.
-             apply Z.lt_trans with (m:=0);
-               [compute; trivial | ulia].
+             split3; [| |split3]; trivial; rep_lia.
         }
         forward_if. (* checking if it's time to break *)
         * (* No, don't break. *)
@@ -418,10 +400,7 @@ Section DijkstraProof.
           forward_call ((pointer_val_val priq_ptr), priq).
           1: { pose proof (size_representable g).
                pose proof (inf_further_restricted' g).
-               split3; [| |split3; [| |split]]; try ulia.
-               apply H_inrange_priq_trans; trivial.
-               apply Z.lt_trans with (m:=0);
-                 [compute; trivial | ulia].
+               split3; [| |split3; [| |split]]; trivial; rep_lia.
           }
           
           Intros u.
@@ -647,12 +626,12 @@ Section DijkstraProof.
                
                assert (0 <= Znth u dist' <= inf). {
                  assert (0 <= u < Zlength dist') by lia.
-                 apply (Forall_Znth _ _ _ H28) in H23.
+                 apply (sublist.Forall_Znth _ _ _ H28) in H23.
                  assumption.
                }
                assert (0 <= Znth i dist' <= inf). {
                  assert (0 <= i < Zlength dist') by lia.
-                 apply (Forall_Znth _ _ _ H29) in H23.
+                 apply (sublist.Forall_Znth _ _ _ H29) in H23.
                  assumption.
                }
                assert (0 <= Znth u dist' + cost <= Int.max_signed). {
@@ -762,8 +741,7 @@ Section DijkstraProof.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
-                  --- split3; apply Forall_upd_Znth; ulia.
-                      
+                  --- split3; apply Forall_upd_Znth; trivial; rep_lia.
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
                  rename H31 into H_non_improvement.
@@ -869,7 +847,7 @@ Section DijkstraProof.
                      destruct (Z.eq_dec mom' u).
                      1: { subst mom'.
                           assert (0 <= Znth u dist'). {
-                            apply (Forall_Znth _ _ u) in H23.
+                            apply (sublist.Forall_Znth _ _ u) in H23.
                             simpl in H23. apply H23.
                             lia.
                           }
@@ -890,7 +868,7 @@ Section DijkstraProof.
                  
                  subst m.
                  assert (0 <= Znth u dist'). {
-                   apply (Forall_Znth _ _ u) in H23.
+                   apply (sublist.Forall_Znth _ _ u) in H23.
                    apply H23.
                    ulia.
                  }

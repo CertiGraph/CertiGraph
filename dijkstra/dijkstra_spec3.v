@@ -1,13 +1,13 @@
+Require Import CertiGraph.dijkstra.dijkstra_env.
+
 (* A separate file with the underlying PQ spec-ed out *)
 Require Export CertiGraph.priq_malloc.priq_arr_specs.
 
-(* Dijkstra-specific stuff *)
-Require Import CertiGraph.dijkstra.env_dijkstra_arr.
+(* Dijkstra-specific imports *)
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.SpaceDijkGraph3.
 Require Import CertiGraph.dijkstra.path_cost.
-Require Import CertiGraph.dijkstra.dijkstra_spec_pure.
-
+Require Export CertiGraph.dijkstra.dijkstra_spec_pure.
 
 (* The first moment we become implementation-specific *)
 Require Export CertiGraph.dijkstra.dijkstra3.

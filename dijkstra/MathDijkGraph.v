@@ -1,22 +1,5 @@
-Require Export VST.floyd.proofauto.
-
-Require Import Coq.ZArith.ZArith.
-Require Import Coq.micromega.Lia.
-Require Import Coq.Lists.List.
-
-Require Import VST.msl.seplog.
-Require Import VST.floyd.sublist.
-Require Import compcert.lib.Integers.
-
-Require Import CertiGraph.lib.Coqlib.
-Require Import CertiGraph.lib.EquivDec_ext.
-Require Import CertiGraph.lib.List_ext.
-Require Import CertiGraph.graph.graph_model.
-Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Export CertiGraph.graph.MathAdjMatGraph.
-
-Require Import Coq.Classes.EquivDec.
-Require Export CertiGraph.priq_malloc.priq_arr_utils.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
@@ -40,8 +23,8 @@ Section MathDijkGraph.
     
     veb:
       (* from the AdjMat soundness above we already know 
-       e is representable, 
-       but for Dijkstra we need a further constraint. 
+         e is representable, 
+         but for Dijkstra we need a further constraint. 
        *)
       forall e,
         evalid g e ->
@@ -79,13 +62,11 @@ Section MathDijkGraph.
   Coercion DijkGG_AdjMatGG: DijkGG >-> AdjMatGG.
 
   (* Great! So now when we want to access an AdjMat
-   plugin, we can simply use the AdjMat getter 
-   and pass it a DijkGG. The coercion will be seamless. 
+     plugin, we can simply use the AdjMat getter 
+     and pass it a DijkGG. The coercion will be seamless. 
    *)
 
-  (* For the two Dijkstra-specigic plugins, 
-   we create getters: 
-   *)
+  (* For the two Dijkstra-specigic plugins, we create getters: *)
   Definition valid_edge_bounds (g: DijkGG) :=
     @veb g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
