@@ -902,4 +902,4 @@ Section DijkstraProof.
         intros. destruct (H2 _ H9) as [? _]; trivial.
   Qed.
 
-End DijkstraProof.
+End DijkstraProof. 
