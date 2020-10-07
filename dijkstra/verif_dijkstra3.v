@@ -558,7 +558,9 @@ Section DijkstraProof.
             rename H29 into H25.
             rename H30 into H26.
 
+            Transparent size.
             forward_call (sh, g, graph_ptr, addresses, u, i).
+            Global Opaque size.
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
 
             assert (H_i_valid: vvalid g i). {
@@ -754,7 +756,7 @@ Section DijkstraProof.
               clear H28 H29 H30 H31 H32 H33
                     H34 H35 H36 H37 H38 H39 H40.
 
-              fold inf in H27. rewrite Int.signed_repr in H27.
+              rewrite <- inf_eq in H27. rewrite Int.signed_repr in H27.
               2: apply edge_representable.
               split3; [| |split]; intros.
               ** destruct (Z.eq_dec dst i).
