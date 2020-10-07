@@ -35,7 +35,7 @@ Section MathDijkGraph.
 
     sfr: (* size is further restricted *)
       size * 4 <= Int.max_signed;
-    (* sizeof tint = 4 *)
+    (* because sizeof tint = 4 *)
     
     ifr: (* inf is further restricted *)
       Int.max_signed / size < inf <= Int.max_signed - (Int.max_signed / size)
@@ -79,7 +79,7 @@ Section MathDijkGraph.
   Definition inf_further_restricted (g: DijkGG) :=
     @ifr g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
-  Lemma inf_further_restricted':
+  Lemma inf_bounds:
     forall (g: DijkGG),
       0 < inf < Int.max_signed.
   Proof.

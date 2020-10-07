@@ -414,7 +414,7 @@ Section DijkstraMathLemmas.
     - split3; [| | split3]; trivial.
       + split; trivial.
       + unfold path_cost. simpl.
-        apply (inf_further_restricted' g).
+        apply (inf_bounds g).
       + rewrite Forall_forall; intros; simpl in H3; lia.
     - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
       + simpl in H3.
