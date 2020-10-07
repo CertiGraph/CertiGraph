@@ -228,20 +228,28 @@ Section DijkstraProof.
   Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
   Proof.
     start_function.
+    assert (0 < size * size <= Int.max_signed) by admit.
+    pose proof (size_further_restricted g).
+    rename H2 into Hsz.
     unfold DijkGraph.
     unfold SpaceAdjMatGraph, SpaceAdjMatGraph'.
-    assert (0 <= u * 8 + i < size * size). {
-      rewrite size_eq in *; ulia.
+    rewrite <- size_eq.
+    assert (0 <= u * size + i < size * size). {
+      split.
+      - apply Z.add_nonneg_nonneg; try ulia.
+        apply Z.mul_nonneg_nonneg; try ulia.
+      - replace size with (size - 1 + 1) at 2 by lia.
+        rewrite Z.mul_add_distr_r, Z.mul_1_l.
+        apply Z.add_le_lt_mono; try ulia.
+        apply Zmult_le_compat_r; ulia.
     }
-    assert (0 <= u * 8 + i <
+    assert (0 <= u * size + i <
             Zlength (map Int.repr (@graph_to_list size g id))). {
       rewrite Zlength_map, (graph_to_list_Zlength _ _ size); ulia.
-    }
-    assert (Int.min_signed < 0) by now compute. 
-    assert (size * size < Int.max_signed) by now compute.
+    } 
     forward. forward. entailer!. f_equal. f_equal.
-    apply graph_to_list_to_mat; trivial.
-  Qed.
+    apply graph_to_list_to_mat; ulia.
+  Admitted.
 
   
   (* DIJKSTRA PROOF BEGINS *)
