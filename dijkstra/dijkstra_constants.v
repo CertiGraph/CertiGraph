@@ -4,5 +4,8 @@ Definition size := 8 : Z.
 Definition inf := 1879048192 : Z.
 (* Int.max_signed - Int.max_signed/size *)
 
-Opaque size.
-Opaque inf.
+Lemma size_eq: size = 8%Z.
+Proof. auto. Qed.
+
+Global Opaque size.
+Global Opaque inf.
