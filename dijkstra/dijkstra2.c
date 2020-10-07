@@ -7,7 +7,7 @@
 #define SIZE 8  // number of vertices
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
-#define INF INT_MAX - INT_MAX/SIZE
+#define INF  1879048192 // INT_MAX - INT_MAX/SIZE
 #define graph(i, j) (graph[(i) * SIZE + (j)])
 
 extern void * mallocN (int n);
