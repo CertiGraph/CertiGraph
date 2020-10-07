@@ -9,7 +9,6 @@ Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
 Require Export CertiGraph.graph.undirected_graph.
 Require Export CertiGraph.graph.MathAdjMatGraph.
-Require Export CertiGraph.graph.eformat_lemmas.
 Require Export CertiGraph.priq.priq_arr_utils.
 
 (* 
@@ -24,10 +23,10 @@ priq/priq_arr_utils can be split into two parts,
 (a) should be lifted to graph/
 
 Then this file should also be split into two parts, 
-(c) which calls (a)
+(c), which calls (a)
 (d) which calls (b)
 
-(c) should be lifted to graph/
+(c) should be lifted to graph/ as graph/MathUAdjMatGraph.v
 *)
 
 Local Open Scope logic.
@@ -46,10 +45,10 @@ Section MATRIXUGRAPH.
 Context {size: Z} {inf: Z}.
 
 Class AdjMatUSoundness (g: AdjMatLG) := {
-  sadjmat: SoundAdjMat (size:=size) (inf:=inf) g;
-  ese: forall e, evalid g e -> strong_evalid g e;
-  sib: forall e, evalid g e -> elabel g e < inf; (*no reason to have <>*)
-  uer: forall e, evalid g e -> src g e <= dst g e;
+  sadjmat: SoundAdjMat (size:=size) (inf:=inf) g;  (* c *)
+  ese: forall e, evalid g e -> strong_evalid g e;  (* d *)
+  sib: forall e, evalid g e -> elabel g e < inf;   (* d *)
+  uer: forall e, evalid g e -> src g e <= dst g e; (* c *)
 }.
 
 Definition MatrixUGraph := (GeneralGraph V E unit Z unit (fun g => AdjMatUSoundness g)).
@@ -1312,6 +1311,44 @@ forall {A:Type} (l: list A) hi, Zlength l <= hi -> sublist 0 hi l = l.
 Proof.
 intros. unfold sublist. rewrite skipn_0. rewrite firstn_same. auto.
 rewrite <- ZtoNat_Zlength. lia.
+Qed.
+
+
+(* Eformat Lemmas have been put back here.
+   Sorry about moving them in the first place; 
+   that was an error in judgement. 
+ *)
+Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
+
+Lemma eformat1: forall (e: E), fst e <= snd e -> eformat e = e.
+Proof. unfold eformat; intros. rewrite Zle_is_le_bool in H; rewrite H. auto. Qed.
+
+Lemma eformat2': forall (e: E), snd e < fst e -> eformat e = (snd e, fst e).
+Proof. unfold eformat; intros. rewrite <- Z.leb_gt in H; rewrite H. auto. Qed.
+
+Lemma eformat2: forall (e: E), snd e <= fst e -> eformat e = (snd e, fst e).
+Proof.
+  intros. apply Z.le_lteq in H. destruct H. rewrite eformat2'; auto. rewrite eformat1, H. rewrite <- H at 2. destruct e; auto. lia.
+Qed.
+
+Lemma eformat_eq:
+  forall u v a b, eformat (u,v) = eformat (a,b) -> ((u=a /\ v=b) \/ (u=b /\ v=a)).
+Proof.
+  intros. destruct (Z.le_ge_cases u v); destruct (Z.le_ge_cases a b).
+  rewrite eformat1, eformat1 in H. apply pair_equal_spec in H. left; auto. simpl; auto. simpl; auto. simpl; auto.
+  rewrite eformat1, eformat2 in H. simpl in H. apply pair_equal_spec in H. right; auto. simpl; auto. simpl; auto.
+  rewrite eformat2, eformat1 in H. simpl in H. apply pair_equal_spec in H. right; split; apply H. simpl; auto. simpl; auto.
+  rewrite eformat2, eformat2 in H. simpl in H. apply pair_equal_spec in H. left; split; apply H. simpl; auto. simpl; auto.
+Qed.
+
+Lemma eformat_symm:
+  forall u v, eformat (u,v) = eformat (v,u).
+Proof.
+  intros. destruct (Z.lt_trichotomy u v).
+  rewrite eformat1. rewrite eformat2. simpl; auto. simpl; lia. simpl; lia.
+  destruct H.
+  rewrite eformat1. rewrite eformat2. simpl; auto. simpl; lia. simpl; lia.
+  rewrite eformat2'. rewrite eformat1. simpl; auto. simpl; lia. simpl; lia.
 Qed.
 
 End MATRIXUGRAPH.
