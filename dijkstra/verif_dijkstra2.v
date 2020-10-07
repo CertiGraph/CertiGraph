@@ -228,7 +228,6 @@ Section DijkstraProof.
   Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
   Proof.
     start_function.
-    assert (0 < size * size <= Int.max_signed) by admit.
     pose proof (size_further_restricted g).
     rename H2 into Hsz.
     unfold DijkGraph.
@@ -249,14 +248,14 @@ Section DijkstraProof.
     } 
     forward. forward. entailer!. f_equal. f_equal.
     apply graph_to_list_to_mat; ulia.
-  Admitted.
-
+  Qed.
   
   (* DIJKSTRA PROOF BEGINS *)
   
   Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
   Proof.
     start_function.
+    rename H1 into size_sq_bounds.
     pose proof (size_further_restricted g).
     pose proof (inf_bounds g).
     rename H1 into Hsz.
@@ -730,7 +729,7 @@ Section DijkstraProof.
               clear H28 H29 H30 H31 H32 H33
                     H34 H35 H36 H37 H38 H39 H40.
 
-              fold inf in H27. rewrite Int.signed_repr in H27.
+              rewrite <- inf_eq in H27. rewrite Int.signed_repr in H27.
               2: apply edge_representable.
               split3; [| |split]; intros.
               ** destruct (Z.eq_dec dst i).
@@ -840,3 +839,4 @@ Section DijkstraProof.
   Qed.
 
 End DijkstraProof.
+                                   

@@ -33,7 +33,8 @@ Section DijkstraSpec.
     PRE [tptr tint, tint, tint]
       PROP (0 <= i < size;
            0 <= u < size;
-           Forall (fun list => Zlength list = size) (@graph_to_mat size g id))
+           Forall (fun list => Zlength list = size) (@graph_to_mat size g id);
+           (size * size <= Int.max_signed))
       PARAMS (pointer_val_val graph_ptr;
            Vint (Int.repr u);
            Vint (Int.repr i))
@@ -56,7 +57,8 @@ Section DijkstraSpec.
     PRE [tptr tint, tint, tptr tint, tptr tint]
     
       PROP (0 <= src < size;
-           Forall (fun list => Zlength list = size) (@graph_to_mat size g id))
+           Forall (fun list => Zlength list = size) (@graph_to_mat size g id);
+           (size * size <= Int.max_signed))
       PARAMS (pointer_val_val graph_ptr;
              Vint (Int.repr src);
              pointer_val_val dist_ptr;

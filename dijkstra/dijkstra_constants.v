@@ -7,5 +7,8 @@ Definition inf := 1879048192 : Z.
 Lemma size_eq: size = 8%Z.
 Proof. auto. Qed.
 
+Lemma inf_eq: inf = 1879048192%Z.
+Proof. auto. Qed.
+
 Global Opaque size.
 Global Opaque inf.
