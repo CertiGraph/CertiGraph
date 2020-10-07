@@ -42,7 +42,7 @@ GRAPH_FILES = \
   list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
   graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v \
   MathAdjMatGraph.v SpaceAdjMatGraph1.v SpaceAdjMatGraph2.v SpaceAdjMatGraph3.v \
-  eformat_lemmas.v path_cost.v 
+  path_cost.v 
 
   # 1 = noncontiguous
   # 2 = contiguous 1-d
@@ -91,8 +91,8 @@ KRUSKAL_FILES = \
   verif_kruskal_edgelist.v
 
 PRIM_FILES = \
-  MatrixUGraph.v prim_constants.v \
-  spatial_undirected_matrix3.v \
+  MathPrimGraph.v prim_constants.v \
+  SpacePrimGraph3.v \
   prim3.v prim_spec3.v verif_prim3.v \
   noroot_prim3.v noroot_prim_spec3.v verif_noroot_prim3.v 
 
