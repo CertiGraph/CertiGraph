@@ -20,7 +20,7 @@ Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Definition getCell_spec :=
   DECLARE _getCell
   WITH sh: wshare,
-       g: G,
+       g: @G size inf,
        graph_ptr: pointer_val,
        addresses: list val,
        u: V,
@@ -32,11 +32,11 @@ Definition getCell_spec :=
            Vint (Int.repr u);
            Vint (Int.repr i))
     GLOBALS ()
-    SEP (@SpaceAdjMatGraph' size CompSpecs sh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
+    SEP (@SpaceAdjMatGraph' size CompSpecs sh (@graph_to_symm_mat size g) (pointer_val_val graph_ptr))
   POST [tint]
     PROP ()
-    RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_symm_mat g))))) 
-    SEP (@SpaceAdjMatGraph' size CompSpecs sh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
+    RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_symm_mat size g))))) 
+    SEP (@SpaceAdjMatGraph' size CompSpecs sh (@graph_to_symm_mat size g) (pointer_val_val graph_ptr)).    
 
 Definition initialise_list_spec :=
   DECLARE _initialise_list
@@ -80,7 +80,7 @@ Definition prim_spec :=
           )
      PARAMS ( pointer_val_val gptr; pointer_val_val parent_ptr)
      GLOBALS ()
-     SEP (@SpaceAdjMatGraph' size CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr);
+     SEP (@SpaceAdjMatGraph' size CompSpecs sh (@graph_to_symm_mat size g) (pointer_val_val gptr);
           data_at sh (tarray tint size) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
          )
   POST [ tint ]
@@ -88,12 +88,12 @@ Definition prim_spec :=
      EX fmst: FiniteGraph mst,
      EX parents: list V,
      PROP ( (*connected_graph mst;*)
-            minimum_spanning_forest mst g;
+            @minimum_spanning_forest size inf mst g;
             Permutation (EList mst) (map (fun v => eformat (v, Znth v parents))
               (filter (fun v => Znth v parents <? size) (nat_inc_list (Z.to_nat size))))
           )
      RETURN (Vint (Int.repr 0))
-     SEP (@SpaceAdjMatGraph' size CompSpecs sh (graph_to_symm_mat g) (pointer_val_val gptr);
+     SEP (@SpaceAdjMatGraph' size CompSpecs sh (@graph_to_symm_mat size g) (pointer_val_val gptr);
           data_at sh (tarray tint size) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
          ).
 

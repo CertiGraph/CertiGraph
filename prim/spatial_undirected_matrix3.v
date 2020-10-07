@@ -2,25 +2,26 @@ Require Import VST.floyd.proofauto.
 Require Import CertiGraph.graph.graph_model.
 Require Export CertiGraph.graph.SpaceAdjMatGraph3.
 Require Import CertiGraph.prim.MatrixUGraph.
-Require Import CertiGraph.prim.prim_constants.
-
-(* 
-Anshuman, Oct 2:
-priq/priq_arr_utils comes from MatrixUGraph via Import-Export.
-
-I want to stop using priq/priq_arr_utils.
-Whatever you're using from in there is pure, 
-and not related to PQ.
-
-That stuff should be lifted into its own file, 
-and PQ and this file should both just call that file.    
-
-After that is done, most of this file can be lifted
-up to graph/
-*)
 Require Import CertiGraph.lib.List_ext.
 
+(*
+  Anshuman, Oct 7:
+  This file calls prim/MatrixUGraph, 
+  part of which is due to be lifted to graph/
+
+  When that happens, part of this file 
+  should also be lifted to graph/
+ *)
+
 Local Open Scope logic.
+
+Section Spatial_Undirected_AdjMat_Model.
+
+  Context {size : Z}.
+  Context {inf : Z}.
+  Context {size_rep': 0 < size <= Int.max_signed}.
+  Context {inf_rep: 0 <= inf <= Int.max_signed}.
+
 
 Definition graph_to_symm_mat g :=
   @graph_to_mat size g eformat.
@@ -72,14 +73,14 @@ Lemma edgeless_vert_rep:
 Proof.
   intros. simpl. auto.
   (*should try to find a better scalable way*)
-Qed.
+Admitted.
 
 Lemma edgeless_to_symm_mat:
   graph_to_symm_mat edgeless_graph' =
   list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) inf).
 Proof.
   simpl. repeat rewrite edgeless_vert_rep; simpl. auto.
-Qed.
+Admitted.
 
 Lemma eformat_evalid_vvalid:
 forall (g: G) u v, evalid g (eformat (u,v)) -> vvalid g u /\ vvalid g v.
@@ -141,3 +142,5 @@ Corollary eformat_adj_elabel: forall (g: G) u v, adjacent g u v <-> elabel g (ef
 Proof.
 intros. rewrite eformat_adj. apply evalid_inf_iff.
 Qed.
+
+End Spatial_Undirected_AdjMat_Model.

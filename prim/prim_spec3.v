@@ -9,13 +9,18 @@ Require Import CertiGraph.lib.List_ext.
 
 Local Open Scope Z_scope.
 
+Section PrimSpec.
+  
+Context {Z_EqDec : EquivDec.EqDec Z eq}.
+  
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
-
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
+Global Existing Instance CompSpecs.
+
 
 Definition getCell_spec :=
   DECLARE _getCell
-  WITH g: G,
+  WITH g: @G size inf,
        graph_ptr: pointer_val,
        addresses: list val,
        u: V,
@@ -27,18 +32,19 @@ Definition getCell_spec :=
            Vint (Int.repr u);
            Vint (Int.repr i))
     GLOBALS ()
-    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val graph_ptr))
+    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val graph_ptr))
   POST [tint]
     PROP ()
-    RETURN (Vint (Int.repr (Znth i (Znth u (graph_to_symm_mat g))))) 
-    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val graph_ptr)).    
+    RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_symm_mat size g))))) 
+    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val graph_ptr)).    
 
 Definition initialise_list_spec :=
   DECLARE _initialise_list
   WITH arr : val, old_list: list val, a: Z
   PRE [tptr tint, tint]
      PROP ( writable_share Tsh;
-            repable_signed a
+            repable_signed a;
+            size <= Int.max_signed
           )
      PARAMS ( arr; Vint (Int.repr a) )
      GLOBALS ()
@@ -56,7 +62,8 @@ Definition initialise_matrix_spec :=
      PROP ( writable_share Tsh;
             Zlength old_contents = size;
             forall row, In row old_contents -> Zlength row = size;
-            repable_signed a
+            repable_signed a;
+            0 < size <= Int.max_signed
           )
      PARAMS ( arr ; Vint (Int.repr a) )
      GLOBALS ()
@@ -79,7 +86,7 @@ Definition prim_spec :=
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()
-     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr); 
+     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val gptr); 
 
        (* undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr); *)
           data_at Tsh (tarray tint size) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
@@ -89,18 +96,18 @@ Definition prim_spec :=
      EX fmst: FiniteGraph mst,
      EX parents: list V,
      PROP ( (*connected_graph mst;*)
-            minimum_spanning_forest mst g;
+            @minimum_spanning_forest size inf mst g;
             Permutation (EList mst) (map (fun v => eformat (v, Znth v parents))
               (filter (fun v => Znth v parents <? size) (nat_inc_list (Z.to_nat size))))
           )
      RETURN ()
-     SEP ((@SpaceAdjMatGraph' size CompSpecs Tsh (graph_to_symm_mat g) (pointer_val_val gptr));
+     SEP ((@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val gptr));
 
        (* undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr); *)
           data_at Tsh (tarray tint size) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
          ).
 
-Definition Gprog {Z_EqDec : EquivDec.EqDec Z eq}: funspecs :=
+Definition Gprog : funspecs :=
   ltac:(with_library prog
                      [(@push_spec size inf _);
                      (@pq_emp_spec size inf _);
@@ -113,3 +120,5 @@ Definition Gprog {Z_EqDec : EquivDec.EqDec Z eq}: funspecs :=
                      initialise_matrix_spec;
                      prim_spec
        ]).
+
+End PrimSpec.

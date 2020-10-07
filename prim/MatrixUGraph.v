@@ -13,16 +13,21 @@ Require Export CertiGraph.graph.eformat_lemmas.
 Require Export CertiGraph.priq.priq_arr_utils.
 
 (* 
-Anshuman, Oct 2:
-priq/priq_arr_utils is imported here and Exported out. 
+Anshuman, Oct 7:
+priq/priq_arr_utils is Imported here and Exported out. 
 It is needed by spatial_undirected_matrix and verif_prim.
-I want to stop using priq/priq_arr_utils.
-Whatever you're using from in there is pure, 
-and not related to PQ.
-That stuff should be lifted into its own file, 
-and PQ and this file should both just call that file.    
-After that is done, most of this file can be lifted
-up to graph/
+
+priq/priq_arr_utils can be split into two parts, 
+(a) the pure part
+(b) the part that is specific to Prim
+
+(a) should be lifted to graph/
+
+Then this file should also be split into two parts, 
+(c) which calls (a)
+(d) which calls (b)
+
+(c) should be lifted to graph/
 *)
 
 Local Open Scope logic.
