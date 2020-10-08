@@ -19,7 +19,7 @@ Section MathDijkGraph.
     {
     basic:
       (* first, we can take AdjMat's soundness wholesale *)
-      (@SoundAdjMat size inf g);
+      @SoundAdjMat size inf g;
     
     veb:
       (* from the AdjMat soundness above we already know 
@@ -46,38 +46,39 @@ Section MathDijkGraph.
   Definition DijkGG := (GeneralGraph V E unit Z unit (fun g => SoundDijk g)).
 
   (* Some handy coercions: *)
-  Definition DijkGG_DijkLG (g: DijkGG): DijkLG := lg_gg g.
-  Coercion DijkGG_DijkLG: DijkGG >-> DijkLG.
-  Identity Coercion DijkLG_AdjMatLG: DijkLG >-> AdjMatLG.
-  Identity Coercion AdjMatLG_LabeledGraph: AdjMatLG >-> LabeledGraph.
+  Identity Coercion AdjMatLG_DijkLG: DijkLG >-> AdjMatLG.
+  Identity Coercion LabeledGraph_AdjMatLG: AdjMatLG >-> LabeledGraph.
+
+  (* We can drag out the soundness condition *)
+  Definition SoundDijk_DijkGG (g: DijkGG) := (@sound_gg _ _ _ _ _ _ _ _ g).
 
   (* We can always drag out SoundAdjMat *)
-  Definition DijkGG_SoundAdjMat (g: DijkGG) :=
-    @basic g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+  Definition SoundAdjMat_DijkGG (g: DijkGG) :=
+    @basic g (SoundDijk_DijkGG g).
 
   (* A DijkGG can be weakened into an AdjMatGG *)
-  Definition DijkGG_AdjMatGG (g: DijkGG) : AdjMatGG :=
-    Build_GeneralGraph unit Z unit SoundAdjMat g (DijkGG_SoundAdjMat g).
+  Definition AdjMatGG_DijkGG (g: DijkGG) : AdjMatGG :=
+    Build_GeneralGraph unit Z unit SoundAdjMat g (SoundAdjMat_DijkGG g).
 
-  Coercion DijkGG_AdjMatGG: DijkGG >-> AdjMatGG.
+  Coercion AdjMatGG_DijkGG: DijkGG >-> AdjMatGG.
 
   (* Great! So now when we want to access an AdjMat
      plugin, we can simply use the AdjMat getter 
      and pass it a DijkGG. The coercion will be seamless. 
    *)
 
-  (* For the two Dijkstra-specigic plugins, we create getters: *)
+  (* For the four Dijkstra-specific plugins, we create getters: *)
   Definition valid_edge_bounds (g: DijkGG) :=
-    @veb g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+    @veb g (SoundDijk_DijkGG g).
 
   Definition cost_to_self (g: DijkGG) :=
-    @cts g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+    @cts g (SoundDijk_DijkGG g).
 
   Definition size_further_restricted (g: DijkGG) :=
-    @sfr g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+    @sfr g (SoundDijk_DijkGG g).
 
   Definition inf_further_restricted (g: DijkGG) :=
-    @ifr g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+    @ifr g (SoundDijk_DijkGG g).
 
   Lemma inf_bounds:
     forall (g: DijkGG),
@@ -174,5 +175,5 @@ Section MathDijkGraph.
     - apply edge_representable.
     - intro. simpl in H2. lia. 
   Qed.
-
+  
 End MathDijkGraph.
