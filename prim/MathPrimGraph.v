@@ -22,12 +22,11 @@ priq/priq_arr_utils can be split into two parts,
 
 (a) should be lifted to graph/ and (b) may need to call (a).
 
-Then this file should also be split into two parts, 
+Then this file should probably also be split into two parts, 
 (c), which calls (a)
-(d) which calls (b)
+(d) which calls (b) and (c)
 
 (c) should be lifted to graph/ as graph/MathUAdjMatGraph.v
-(d) may need to call (c) 
 *)
 
 Local Open Scope logic.
