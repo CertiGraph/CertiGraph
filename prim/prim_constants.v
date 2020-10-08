@@ -1,4 +1,4 @@
-Require Export VST.floyd.proofauto.
+Require Import VST.floyd.proofauto.
 
 Definition size := 8 : Z.
 Definition inf := 2147483646 : Z.

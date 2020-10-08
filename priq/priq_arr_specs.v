@@ -1,7 +1,7 @@
 Require Export VST.floyd.proofauto.
-Require Export CertiGraph.priq.priq_arr.
-Require Export CertiGraph.priq.find_lemmas.
+Require Export CertiGraph.lib.find_lemmas.
 Require Export CertiGraph.priq.is_empty_lemmas.
+Require Export CertiGraph.priq.priq_arr.
 
 (* Specs for Anshuman's simple array-based PQ *)
 Section PQSpec.

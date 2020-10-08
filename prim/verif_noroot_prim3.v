@@ -6,10 +6,10 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.prim.MathPrimGraph. 
 Require Import CertiGraph.prim.SpacePrimGraph3.
+Require Export CertiGraph.lib.find_lemmas.
+Require Export CertiGraph.priq.is_empty_lemmas.
 Require Import CertiGraph.prim.noroot_prim_spec3.
 Require Import CertiGraph.prim.prim_constants.
-Require Export CertiGraph.priq.find_lemmas.
-Require Export CertiGraph.priq.is_empty_lemmas.
 
 Local Open Scope Z.
 

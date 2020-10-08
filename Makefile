@@ -15,7 +15,8 @@ CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_CERTIGRAPH)
 
 LIB_FILES = \
   Coqlib.v Equivalence_ext.v List_Func_ext.v Ensembles_ext.v List_ext.v \
-  EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v Morphisms_ext.v
+  EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v Morphisms_ext.v \
+  find_lemmas.v 
 
 MSL_EXT_FILES = \
   log_normalize.v iter_sepcon.v ramification_lemmas.v abs_addr.v seplog.v \
@@ -107,7 +108,7 @@ DIJKSTRA_FILES = \
   # 3 = contiguous 2-d
 
 PRIQ_FILES = \
-  priq_arr.v priq_arr_specs.v is_empty_lemmas.v find_lemmas.v verif_priq_arr.v 
+  priq_arr.v priq_arr_specs.v is_empty_lemmas.v verif_priq_arr.v 
 
 CLIGHT_FILES = mark/mark_bi.v dispose/dispose_bi.v copy/copy_bi.v summatrix/summatrix.v
 
