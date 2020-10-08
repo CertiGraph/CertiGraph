@@ -8,8 +8,8 @@ Require Import CertiGraph.prim.MathPrimGraph.
 Require Import CertiGraph.prim.SpacePrimGraph3.
 Require Import CertiGraph.prim.noroot_prim_spec3.
 Require Import CertiGraph.prim.prim_constants.
-Require Import CertiGraph.priq.priq_arr_utils.
-
+Require Export CertiGraph.priq.find_lemmas.
+Require Export CertiGraph.priq.is_empty_lemmas.
 
 Local Open Scope Z.
 
@@ -19,6 +19,18 @@ Section NoRootPrimProof.
 
 Context {Z_EqDec : EquivDec.EqDec Z eq}.
 Definition addresses := @nil val.
+
+(* A little helper *)
+(* TODO: find a better home for this *)
+Lemma find_min_lt_inf: forall u l,
+    u = find l (fold_right Z.min (hd 0 l) l) 0 -> (@isEmpty inf l) = Vzero ->
+    Zlength l > 0 -> Znth u l < inf + 1.
+Proof.
+  intros. rewrite <- isEmpty_in' in H0. destruct H0 as [? [? ?]].
+  rewrite H. rewrite Znth_find.
+  - pose proof (fold_min _ _ H0). lia.
+  - now apply fold_min_in_list.
+Qed.
 
 (**Initialisation functions**)
 

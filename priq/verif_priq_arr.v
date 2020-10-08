@@ -1,6 +1,7 @@
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.priq.priq_arr_specs.
-Require Import CertiGraph.priq.priq_arr_utils.
+Require Export CertiGraph.priq.find_lemmas.
+Require Export CertiGraph.priq.is_empty_lemmas.
 Require Import VST.floyd.sublist.
 Require Import CertiGraph.priq.priq_arr.
 
