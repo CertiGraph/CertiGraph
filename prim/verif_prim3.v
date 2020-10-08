@@ -14,12 +14,12 @@ Local Open Scope Z.
 
 (***********************VERIFICATION***********************)
 
-(**Initialisation functions**)
-
 Section PrimProof.
 
 Context {Z_EqDec : EquivDec.EqDec Z eq}.
 Definition addresses := @nil val.
+
+(**Initialisation functions**)
 
 Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
 Proof.
@@ -67,7 +67,7 @@ Proof.
     unfold field_compatible; split3; [| | split3]; simpl; auto.
   }
   forward. forward. 
-  thaw FR. 
+  thaw FR.
   rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u); trivial.
   entailer!.
 Qed.
@@ -279,6 +279,8 @@ forward_call(tt).
 rewrite <- size_eq in *.
 Intro priq_ptr.
 remember (pointer_val_val priq_ptr) as v_pq.
+
+(*push all vertices into priq*)
 forward_for_simple_bound size
   (EX i : Z,
     PROP ()
@@ -442,8 +444,7 @@ break: (
   remember (@edgeless_graph'
             size inf
             Hsz
-            inf_repable
-         ) as elg. 
+            inf_repable) as elg. 
   Exists elg.
   pose proof (finGraph elg) as fe. Exists fe.
   Exists (list_repeat (Z.to_nat size) size).
@@ -495,7 +496,9 @@ break: (
          (filter (fun v : Z => Znth v (list_repeat (Z.to_nat size) size) <? size) []))). {
     simpl.
     (*because I've trouble using edgeless_graph_EList*) apply NoDup_Permutation. apply NoDup_EList. apply NoDup_nil.
-    intros. rewrite EList_evalid. split; intros. subst elg. pose proof (@edgeless_graph_evalid size inf inf_repable Hsz x); contradiction. contradiction.
+    intros. rewrite EList_evalid. split; intros.
+    subst elg.
+    pose proof (@edgeless_graph_evalid size inf inf_repable Hsz x); contradiction. contradiction.
   }
   assert (Hr1: forall u v : V, In u (nil (A:=V)) -> In v (nil (A:=V)) -> connected g u v <-> connected elg u v). {
     intros. contradiction.
@@ -601,14 +604,15 @@ break: (
           I have done this in 
           dijkstra/MathDijkGraph, which 
           you can study for inspiration.
-          The plugin is called
+          The plugin there is called
           inf_further_restricted.
         *)
   }
   forward_if.
+
   (*PROCEED WITH LOOP*) {
-  assert (@priq_arr_utils.isEmpty inf pq_state = Vzero). {
-    destruct (@priq_arr_utils.isEmptyTwoCases inf pq_state);
+  assert (@isEmpty inf pq_state = Vzero). {
+    destruct (@isEmptyTwoCases inf pq_state);
     rewrite H1 in H0; simpl in H0; now inversion H0.
   }
   forward_call (v_pq, pq_state).
@@ -753,9 +757,8 @@ break: (
   forward_if.
     -(*g[u][i] < ...*)
     (*implies adjacency*)
-      rewrite (@graph_to_mat_eq _ Hsz)
-        in H10; try lia. rewrite eformat_symm in H10.
-    rewrite Int.signed_repr in H10. rewrite Int.signed_repr in H10.
+      rewrite (@graph_to_mat_eq _ Hsz) in H10; try lia. rewrite eformat_symm in H10.
+      rewrite Int.signed_repr in H10. rewrite Int.signed_repr in H10.
     2: { assert (Int.min_signed <= Znth i keys' <= inf). apply Hinv2_4; lia.
       set (k:=Int.max_signed); compute in k; subst k. rewrite inf_eq in H11; lia. }
     2: { apply weight_representable. }
@@ -764,8 +767,7 @@ break: (
       assert (Znth i keys' <= inf). apply Hinv2_4. lia.
       (*can't lia here for some reason*) apply (Z.lt_le_trans _ (Znth i keys')); auto.
     }
-    forward. forward. forward.
-    entailer!.
+    forward. forward. forward. entailer!.
     rewrite upd_Znth_same. simpl. auto. rewrite Zlength_map. rewrite HZlength_keys'. auto.
     rewrite upd_Znth_same. 2: { simpl. auto. rewrite Zlength_map. rewrite HZlength_keys'. auto. }
     forward_call (v_pq, i, Znth i (Znth u (@graph_to_symm_mat size g)), pq_state').
@@ -773,8 +775,7 @@ break: (
     entailer!. rewrite list_map_compose. auto.
     split. lia.
     unfold weight_inrange_priq.
-    rewrite (@graph_to_mat_eq _
-             Hsz). split.
+    rewrite (@graph_to_mat_eq _ Hsz). split.
     apply weight_representable. rewrite eformat_adj_elabel, eformat_symm in Hadj_ui.
     fold V in *. lia. lia. lia.
     Exists (upd_Znth i parents' u).

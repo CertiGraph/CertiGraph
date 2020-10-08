@@ -68,14 +68,10 @@ Definition initialise_matrix_spec :=
      PARAMS ( arr ; Vint (Int.repr a) )
      GLOBALS ()
      SEP (@SpaceAdjMatGraph' size CompSpecs Tsh old_contents arr)
-
-     (* (undirected_matrix sh (old_contents) (arr)) *)
   POST [ tvoid ]
      PROP ()
      LOCAL ()
      SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) a)) arr).
-
-     (* (undirected_matrix sh (list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) a)) arr *)
 
 Definition prim_spec :=
   DECLARE _prim
@@ -87,8 +83,6 @@ Definition prim_spec :=
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()
      SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val gptr); 
-
-       (* undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr); *)
           data_at Tsh (tarray tint size) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
          )
   POST [ tvoid ]
@@ -101,13 +95,11 @@ Definition prim_spec :=
               (filter (fun v => Znth v parents <? size) (nat_inc_list (Z.to_nat size))))
           )
      RETURN ()
-     SEP ((@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val gptr));
-
-       (* undirected_matrix sh (graph_to_symm_mat g) (pointer_val_val gptr); *)
+     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val gptr);
           data_at Tsh (tarray tint size) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
          ).
 
-Definition Gprog : funspecs :=
+Definition Gprog: funspecs :=
   ltac:(with_library prog
                      [(@push_spec size inf _);
                      (@pq_emp_spec size inf _);
