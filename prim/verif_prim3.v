@@ -465,7 +465,7 @@ break: (
     hnf in e; subst v. rewrite upd_Znth_same. auto. rewrite Zlength_list_repeat; lia.
     unfold RelationClasses.complement, Equivalence.equiv in c. rewrite upd_Znth_diff.
     repeat rewrite Znth_list_repeat_inrange by lia. symmetry; rewrite <- (invalid_edge_weight g); auto.
-    unfold not; intros. rewrite <- eformat_adj in H0. apply adjacent_requires_vvalid in H0. destruct H0.
+    unfold not; intros. rewrite <- (eformat_adj g) in H0. apply adjacent_requires_vvalid in H0. destruct H0.
     rewrite vert_bound in H1. lia.
     rewrite Zlength_list_repeat; lia. rewrite Zlength_list_repeat; lia. auto.
   }
@@ -1094,7 +1094,8 @@ break: (
         rewrite find_notIn, Z.add_0_r by auto. rewrite sublist_same by auto. auto.
         contradiction.
       }
-      apply invalid_edge_weight in H12. rewrite H12.
+      apply (invalid_edge_weight g) in H12.
+      replace (elabel g (eformat (u0, v))) with inf by trivial.
       rewrite (@graph_to_mat_eq _ Hsz) by lia. apply (weight_inf_bound).
       (*u0 = u.*)
       destruct H9. 2: contradiction. subst u0.
@@ -1143,11 +1144,11 @@ break: (
     destruct H13. 2: contradiction. subst u0.
     (*but elabel g (eformat (u,v)) = inf because it's invalid*)
     assert (~ evalid g (eformat (u,v))). unfold not; intros; apply H8. rewrite eformat_adj; auto.
-    apply invalid_edge_weight in H13.
-    (*replace (elabel g (eformat (u,v))) with inf.*) (*here we go again...*)
+    apply (invalid_edge_weight g) in H13.
     repeat rewrite <- (@graph_to_mat_eq _ Hsz) by lia. replace (Znth u (Znth v (@graph_to_symm_mat size g))) with inf.
     rewrite (@graph_to_mat_eq _ Hsz) by lia. apply weight_inf_bound.
-    rewrite <- (@graph_to_mat_eq _ Hsz) in H13 by lia. lia.
+    rewrite <- (@graph_to_mat_eq _ Hsz) in H13 by lia.
+    symmetry. assumption. 
   }
   assert (Hheavy2: forall v : Z, 0 <= v < size -> Znth v parents' = size ->
     forall u0 : V, In u0 (sublist 0 (find (popped_vertices +:: u) v 0) (popped_vertices +:: u)) ->
@@ -1196,7 +1197,7 @@ break: (
     hnf in e; subst v. exfalso; apply n. apply hd_error_In. apply Hpopped_unnil.
     unfold not; intros. assert (In u (popped_vertices+::u)). apply in_or_app; right; left; auto.
     rewrite H8 in H9; contradiction.
-    assert (elabel g (eformat (v,Znth v parents)) = inf). apply invalid_edge_weight.
+    assert (elabel g (eformat (v,Znth v parents)) = inf). apply (invalid_edge_weight g).
     unfold not; intros. apply eformat_evalid_vvalid in H8. destruct H8. rewrite H6 in H9. rewrite vert_bound in H9. lia.
     rewrite H8 in bool. lia.
     replace (Zlength pq_state) with size; lia.
@@ -1252,8 +1253,10 @@ break: (
     apply Z.le_lteq in H13. destruct H13.
     2: { assert (~ adjacent g u1 u2). apply Hinv_8. lia. lia.
           rewrite find_notIn, Z.add_0_r, sublist_same by auto. auto.
-        rewrite eformat_adj in H14. apply invalid_edge_weight in H14.
-        rewrite H14. apply weight_inf_bound. }
+        rewrite eformat_adj in H14. apply (invalid_edge_weight g) in H14.
+        replace (elabel g (eformat (u1, u2))) with inf
+          by trivial.
+        apply weight_inf_bound. }
     (*u2 <> u*) unfold RelationClasses.complement, Equivalence.equiv in c.
     assert (Znth u pq_state <= Znth u2 pq_state). apply Hu_min; lia.
     rewrite (Hinv_6 u2) in H14 by lia. destruct (in_dec V_EqDec u2 popped_vertices). contradiction.
@@ -1312,7 +1315,7 @@ break: (
   Exists (adde_u).
   Exists (finGraph adde_u).
   Exists parents' keys' pq_state' (popped_vertices+::u) (remove V_EqDec u unpopped_vertices).
-  assert (HM: exists M : MatrixUGraph, minimum_spanning_forest M g /\ is_partial_lgraph adde_u M). {
+  assert (HM: exists M : PrimGG, minimum_spanning_forest M g /\ is_partial_lgraph adde_u M). {
     destruct Hinv_15 as [M [Hmsf_M Hpartial_M]]. pose proof (finGraph M).
     destruct (evalid_dec M (eformat (u, Znth u parents))).
     ****
@@ -1325,7 +1328,7 @@ break: (
       *)
       assert (connected M (Znth u parents) u). apply Hmsf_M. apply adjacent_connected. exists a.
         split. apply evalid_strong_evalid; auto.
-        rewrite src_fst, dst_snd; auto.
+        rewrite (edge_src_fst g), (edge_dst_snd g); auto.
         unfold a; destruct (Z.le_ge_cases u (Znth u parents)). rewrite eformat1 by (simpl; auto).
         simpl. right. auto.
         rewrite eformat2 by (simpl; auto). simpl. left; auto.
@@ -1408,8 +1411,8 @@ break: (
         intros. rewrite vert_bound; rewrite vert_bound in H19. lia.
         intros. simpl. simpl in H19. simpl. unfold graph_gen.addValidFunc, graph_gen.removeValidFunc in *.
         destruct H19. left. split. apply Hpartial_M. auto. unfold not; intros; subst e. contradiction. right; auto.
-        intros. rewrite src_fst; rewrite src_fst; auto.
-        intros. rewrite dst_snd; rewrite dst_snd; auto.
+        intros. rewrite (edge_src_fst swap); rewrite (edge_src_fst adde_u); auto.
+        intros. rewrite (edge_dst_snd swap); rewrite (edge_dst_snd adde_u); auto.
         unfold preserve_vlabel, preserve_elabel; split; intros.
         destruct vlabel. destruct vlabel. auto.
         simpl. simpl in H19. unfold graph_gen.addValidFunc in H19. unfold graph_gen.update_elabel.
@@ -1446,7 +1449,7 @@ break: (
       }
       assert (Hp1p2': (connected_by_path remove_b p1 (Znth u parents) (fst b) /\ connected_by_path remove_b p2 (snd b) u) \/
         (connected_by_path remove_b p1 (Znth u parents) (snd b) /\ connected_by_path remove_b p2 (fst b) u)). {
-        rewrite src_fst, dst_snd in Hp1p2.
+        rewrite (edge_src_fst M), (edge_dst_snd M) in Hp1p2.
         destruct Hp1p2; [left | right].
         destruct H22. split. split. apply (fits_upath_valid_upath remove_b p1 l1); auto. apply H22.
         split. apply (fits_upath_valid_upath remove_b p2 l2); auto. apply H23.
@@ -1460,8 +1463,8 @@ break: (
           destruct H22. apply Hmsf_M. auto. rewrite <- surjective_pairing in H22. subst e. auto.
           split. split. 2: split3.
           intros. rewrite vert_bound; rewrite vert_bound in H22. lia. auto.
-          intros. rewrite src_fst, src_fst; auto.
-          intros. rewrite dst_snd, dst_snd; auto.
+          intros. rewrite (edge_src_fst swap), (edge_src_fst g); auto.
+          intros. rewrite (edge_dst_snd swap), (edge_dst_snd g); auto.
           unfold preserve_vlabel, preserve_elabel; split; intros. destruct vlabel; destruct vlabel; auto.
           simpl. unfold graph_gen.update_elabel, EquivDec.equiv_dec. rewrite <- surjective_pairing.
           simpl in H22. unfold graph_gen.addValidFunc, graph_gen.removeValidFunc in H22.
@@ -1474,7 +1477,7 @@ break: (
         assert (uforest' swap). {
           assert (uforest' remove_b /\ ~ connected remove_b (src M b) (dst M b)). {
             apply remove_edge_uforest'. apply Hmsf_M. auto. }
-          destruct H23. rewrite src_fst, dst_snd in H24.
+          destruct H23. rewrite (edge_src_fst M), (edge_dst_snd M) in H24.
           apply add_edge_uforest'; auto.
           unfold not; intros; destruct H25 as [pa ?]. apply H24. clear H24.
           destruct Hp1p2'.
@@ -1521,7 +1524,7 @@ break: (
           ++ (*b is in l', must take detour*)
           assert (In b l'); auto. apply (fits_upath_split2 M p' l' b x y) in H; auto.
           destruct H as [p1x [p2y [l1x [l2y [? [? [? [? ?]]]]]]]]. subst l'; subst p'.
-          rewrite src_fst, dst_snd in H0.
+          rewrite (edge_src_fst M), (edge_dst_snd M) in H0.
           assert (~ In b l1x). { unfold not; intros. apply (NoDup_app_not_in _ l1x ([b]++l2y) H27 b) in H. apply H. apply in_or_app; left; left; auto. }
           assert (~ In b l2y). { apply NoDup_app_r in H27. apply (NoDup_app_not_in _ [b] l2y H27 b). left; auto. }
           destruct H0; destruct H0.
@@ -1602,9 +1605,9 @@ break: (
   assert (Hu_new: evalid adde_u (eformat (u, Znth u parents))). {
     simpl. unfold graph_gen.addValidFunc. right; rewrite <- surjective_pairing. auto. }
   assert (Hsrc: src adde_u (eformat (u, Znth u parents)) = fst (eformat (u, Znth u parents))). {
-    apply src_fst. }
+    apply (edge_src_fst adde_u). }
   assert (Hdst: dst adde_u (eformat (u, Znth u parents)) = snd (eformat (u, Znth u parents))). {
-    apply dst_snd. }
+    apply (edge_dst_snd adde_u). }
   assert (Hnot_adj: forall u0 v : V, In u0 (remove V_EqDec u unpopped_vertices) -> ~ adjacent adde_u u0 v). {
     intros. rewrite remove_In_iff in H9; destruct H9.
     assert (~ adjacent mst' u0 v). apply Hinv_13. auto.
@@ -1771,7 +1774,7 @@ break: (
           rewrite H19 in H20; contradiction. subst u. contradiction.
           auto.
         rewrite H19 in H17. replace (elabel g (eformat (u, Znth u parents))) with inf in H17. lia.
-        symmetry; apply invalid_edge_weight.
+        symmetry; apply (invalid_edge_weight g).
         unfold not; intros. rewrite H4 in H20. apply eformat_evalid_vvalid in H20. destruct H20.
         rewrite vert_bound in H21; lia.
       }
@@ -1821,7 +1824,7 @@ break: (
           rewrite H19 in H20; contradiction. subst u. contradiction.
           auto.
         rewrite H19 in H17. replace (elabel g (eformat (u, Znth u parents))) with inf in H17. lia.
-        symmetry; apply invalid_edge_weight.
+        symmetry; apply (invalid_edge_weight g).
         unfold not; intros. rewrite H4 in H20. apply eformat_evalid_vvalid in H20. destruct H20.
         rewrite vert_bound in H21; lia.
       }

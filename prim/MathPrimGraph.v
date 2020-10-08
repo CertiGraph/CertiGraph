@@ -1,5 +1,6 @@
 Require Import Coq.micromega.Lia.
 Require Import VST.floyd.sublist.
+Require Import VST.floyd.functional_base.
 Require Import compcert.lib.Integers.
 Require Import compcert.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
@@ -40,69 +41,67 @@ intros. assert (length l = length l'). apply Permutation_length. apply H.
 repeat rewrite Zlength_correct. rewrite H0. auto.
 Qed.
 
-Section MATRIXUGRAPH.
+Section MathPrimGraph.
 
 Context {size: Z} {inf: Z}.
 
-Class AdjMatUSoundness (g: AdjMatLG) := {
-  sadjmat: SoundAdjMat (size:=size) (inf:=inf) g;  (* c *)
+Definition PrimLG := AdjMatLG.
+
+Class SoundPrim (g: PrimLG) := {
+  sadjmat: @SoundAdjMat size inf g;  (* c *)
   ese: forall e, evalid g e -> strong_evalid g e;  (* d *)
   sib: forall e, evalid g e -> elabel g e < inf;   (* d *)
   uer: forall e, evalid g e -> src g e <= dst g e; (* c *)
 }.
 
-Definition MatrixUGraph := (GeneralGraph V E unit Z unit (fun g => AdjMatUSoundness g)).
+Definition PrimGG := (GeneralGraph V E unit Z unit (fun g => SoundPrim g)).
 
-Definition sound_MatrixUGraph (g: MatrixUGraph) := (@sound_gg _ _ _ _ _ _ _ _ g).
-Definition sound_adjMatGraph (g: MatrixUGraph) := (@sadjmat g (sound_MatrixUGraph g)).
-Definition finGraph (g: MatrixUGraph) := (@fin _ _ g (sound_adjMatGraph g)).
+(* Some handy coercions: *)
+Identity Coercion AdjMatLG_PrimLG: PrimLG >-> AdjMatLG.
+Identity Coercion LabeledGraph_AdjMatLG: AdjMatLG >-> LabeledGraph.
 
-Instance Finite_MatrixUPGraph (g: MatrixUGraph): FiniteGraph g.
+Definition SoundPrim_PrimGG (g: PrimGG) := (@sound_gg _ _ _ _ _ _ _ _ g).
+
+(* We can always drag out SoundAdjMat *)
+Definition SoundAdjMat_PrimGG (g: PrimGG) :=
+  @sadjmat g (SoundPrim_PrimGG g).
+
+(* A PrimGG can be weakened into an AdjMatGG *)
+Definition AdjMatGG_PrimGG (g: PrimGG) : AdjMatGG :=
+  Build_GeneralGraph unit Z unit SoundAdjMat g (SoundAdjMat_PrimGG g).
+
+Coercion AdjMatGG_PrimGG: PrimGG >-> AdjMatGG.
+
+(* Great! So now when we want to access an AdjMat
+   plugin, we can simply use the AdjMat gett  er 
+   and pass it a DijkGG. The coercion will be seamless. 
+ *)
+
+(* For the three Prim-specific plugins, we create getters: *)
+
+Definition evalid_strong_evalid (g: PrimGG) :=
+  @ese g (SoundPrim_PrimGG g).
+
+Definition strong_inf_bound (g: PrimGG) :=
+  @sib g (SoundPrim_PrimGG g).
+
+Definition undirected_edge_rep (g: PrimGG) :=
+  @uer g (SoundPrim_PrimGG g).
+
+(* We often need to know that a PrimGG
+   is a FiniteGraph *)
+Instance Finite_MatrixUPGraph (g: PrimGG):
+  FiniteGraph g.
 Proof. apply (finGraph g). Qed.
 
-Definition MatrixUGraph_AdjMatGG (g: MatrixUGraph) : AdjMatGG :=
-    Build_GeneralGraph unit Z unit SoundAdjMat g (sound_adjMatGraph g).
-Coercion MatrixUGraph_AdjMatGG: MatrixUGraph >-> AdjMatGG.
-
-(*still nitty-gritty issues with the coercion*)
-Definition size_representable (g: MatrixUGraph) :=
-  @sr _ _ g (sound_adjMatGraph g).
-
-Definition inf_representable (g: MatrixUGraph) :=
-  @ir _ _ g (sound_adjMatGraph g).
-
-Definition vvalid_meaning (g: MatrixUGraph) :=
-  @vm _ _ g (sound_adjMatGraph g).
-
-Definition evalid_meaning (g: MatrixUGraph) :=
-  @em _ _ g (sound_adjMatGraph g).
-
-Definition invalid_edge_weight (g: MatrixUGraph) :=
-  @iew _ _ g (sound_adjMatGraph g).
-
-Definition src_fst (g: MatrixUGraph) :=
-  @esf _ _ g (sound_adjMatGraph g).
-
-Definition dst_snd (g: MatrixUGraph) :=
-  @eds _ _ g (sound_adjMatGraph g).
-
-Definition evalid_strong_evalid (g: MatrixUGraph) :=
-  @ese g (sound_MatrixUGraph g).
-
-Definition strong_inf_bound (g: MatrixUGraph) :=
-  @sib g (sound_MatrixUGraph g).
-
-Definition undirected_edge_rep (g: MatrixUGraph) :=
-  @uer g (sound_MatrixUGraph g).
-
 Lemma vert_bound:
-forall (g: MatrixUGraph) v, vvalid g v <-> 0 <= v < size.
+forall (g: PrimGG) v, vvalid g v <-> 0 <= v < size.
 Proof.
 intros. apply (vvalid_meaning g).
 Qed.
 
-Lemma MatrixUGraph_VList:
-forall (g: MatrixUGraph), Permutation (VList g) (nat_inc_list (Z.to_nat size)).
+Lemma PrimGG_VList:
+  forall (g: PrimGG), Permutation (VList g) (nat_inc_list (Z.to_nat size)).
 Proof.
 intros. apply NoDup_Permutation. apply NoDup_VList. apply nat_inc_list_NoDup.
 intros. rewrite VList_vvalid. rewrite vert_bound.
@@ -113,60 +112,65 @@ rewrite Z.max_l by lia. split; auto.
 Qed.
 
 Lemma evalid_form: (*useful for a = (u,v) etc*)
-forall (g: MatrixUGraph) e, evalid g e -> e = (src g e, dst g e).
+forall (g: PrimGG) e, evalid g e -> e = (src g e, dst g e).
 Proof.
-intros. rewrite (src_fst g e) by auto.
-rewrite (dst_snd g e) by auto.
-destruct e; simpl; auto.
+  intros.
+  rewrite (edge_src_fst g).
+  rewrite (edge_dst_snd g).
+  destruct e; simpl; auto.
 Qed.
 
 Lemma evalid_vvalid:
-forall (g: MatrixUGraph) u v, evalid g (u,v) -> vvalid g u /\ vvalid g v.
+forall (g: PrimGG) u v, evalid g (u,v) -> vvalid g u /\ vvalid g v.
 Proof.
 intros. apply evalid_strong_evalid in H. destruct H.
-rewrite (src_fst g), (dst_snd g) in H0 by auto.
+rewrite (edge_src_fst g), (edge_dst_snd g) in H0 by auto.
 simpl in H0; auto.
 Qed.
 
 Lemma evalid_adjacent:
-forall (g: MatrixUGraph) u v, evalid g (u,v) -> adjacent g u v.
+forall (g: PrimGG) u v, evalid g (u,v) -> adjacent g u v.
 Proof.
 intros. exists (u,v); split. apply evalid_strong_evalid; auto.
-rewrite src_fst, dst_snd by auto. left; simpl; auto.
+rewrite (edge_src_fst g), (edge_dst_snd g) by auto. left; simpl; auto.
 Qed.
 
 Lemma evalid_inf_iff:
-forall (g: MatrixUGraph) e, evalid g e <-> elabel g e < inf.
+forall (g: PrimGG) e, evalid g e <-> elabel g e < inf.
 Proof.
 intros; split; intros. apply (strong_inf_bound g); auto.
-destruct (evalid_dec g e). auto. apply invalid_edge_weight in n; lia.
+destruct (evalid_dec g e). 
+auto. exfalso.
+rewrite (invalid_edge_weight g) in n.
+replace (elabel g e) with inf in * by trivial.
+lia.
 Qed.
 
 Lemma weight_representable:
-forall (g: MatrixUGraph) e, Int.min_signed <= elabel g e <= Int.max_signed.
+forall (g: PrimGG) e, Int.min_signed <= elabel g e <= Int.max_signed.
 Proof.
-intros. destruct (evalid_dec g e).
+  intros. destruct (evalid_dec g e).
 apply (evalid_meaning g e); auto.
-apply (invalid_edge_weight g e) in n. rewrite n.
-pose proof (inf_representable g). split.
-set (i:=Int.min_signed); compute in i; subst i. lia.
-apply H.
+rewrite (invalid_edge_weight g) in n.
+replace (elabel g e) with inf in * by trivial.
+pose proof (inf_representable g). rep_lia. 
 Qed.
 
 Lemma weight_inf_bound:
-forall (g: MatrixUGraph) e, elabel g e <= inf.
+forall (g: PrimGG) e, elabel g e <= inf.
 Proof.
 intros. destruct (evalid_dec g e).
 apply Z.lt_le_incl. apply (strong_inf_bound g e). auto.
-apply (invalid_edge_weight g) in n. lia.
+apply (invalid_edge_weight g) in n.
+replace (elabel g e) with inf in * by trivial. lia.
 Qed.
 
 Lemma adj_edge_form:
-forall (g: MatrixUGraph) u v a b, adj_edge g (u,v) a b -> a <= b -> (u = a /\ v = b).
+forall (g: PrimGG) u v a b, adj_edge g (u,v) a b -> a <= b -> (u = a /\ v = b).
 Proof.
 intros. destruct H. assert (src g (u,v) <= dst g (u,v)).
 apply (undirected_edge_rep g). apply H.
-rewrite src_fst, dst_snd in *.
+rewrite (edge_src_fst g), (edge_dst_snd g) in *.
 simpl in *. destruct H1. auto. destruct H1; subst u; subst v. lia.
 all: apply H.
 Qed.
@@ -184,7 +188,7 @@ Definition edgeless_lgraph : AdjMatLG :=
     (fun v => tt) (fun e => inf) tt. 
 
 Instance AdjMatUSound_edgeless:
-  AdjMatUSoundness edgeless_lgraph.
+  SoundPrim edgeless_lgraph.
 Proof. 
 constructor.
 all: simpl; intros; try contradiction.
@@ -205,8 +209,8 @@ rewrite Z.max_l by lia. split; auto.
 exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
 Qed.
 
-Definition edgeless_graph: MatrixUGraph :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit AdjMatUSoundness
+Definition edgeless_graph: PrimGG :=
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
     edgeless_lgraph (AdjMatUSound_edgeless).
 
 Lemma edgeless_graph_evalid:
@@ -227,7 +231,7 @@ Proof.
 Qed.
 
 Lemma edgeless_partial_lgraph:
-  forall (g: MatrixUGraph), is_partial_lgraph edgeless_graph g.
+  forall (g: PrimGG), is_partial_lgraph edgeless_graph g.
 Proof.
 intros. split. unfold is_partial_graph.
 split. intros. simpl. simpl in H. rewrite vert_bound. auto.
@@ -276,20 +280,21 @@ End EDGELESS_MUGRAPH.
 
 Section ADD_EDGE_MUGRAPH.
 
-Context {g: MatrixUGraph}.
+Context {g: PrimGG}.
 Context {u v: V} {vvalid_u: vvalid g u} {vvalid_v: vvalid g v} {uv_smaller: u <= v}.
 Context {w: Z} {w_rep: Int.min_signed <= w < inf}.
 
-Definition MatrixUGraph_adde':=
+Definition PrimGG_adde':=
   labeledgraph_add_edge g (u,v) u v w.
 
-Instance Fin_MatrixUGraph_adde':
-  FiniteGraph (MatrixUGraph_adde').
+Instance Fin_PrimGG_adde':
+  FiniteGraph (PrimGG_adde').
 Proof.
 constructor; unfold EnumEnsembles.Enumerable; simpl.
-(*vertices*)exists (VList g). split. apply NoDup_VList. apply VList_vvalid.
+(*vertices*)
+exists (VList g). split. apply NoDup_VList. apply VList_vvalid.
 (*edge*)
-unfold addValidFunc. destruct (in_dec E_EqDec (u,v) (EList g)).
+unfold addValidFunc. destruct (in_dec E_EqDec (u,v) (EList g)). 
 (*case e already inside*)
 exists (EList g). split. apply NoDup_EList. intros; split; intros. left. apply EList_evalid in H; auto.
 destruct H. apply EList_evalid; auto. rewrite H; auto.
@@ -302,7 +307,7 @@ rewrite H. simpl. left; auto.
 Qed.
 
 Instance AdjMatUSound_adde':
-  AdjMatUSoundness MatrixUGraph_adde'.
+  SoundPrim PrimGG_adde'.
 Proof.
 constructor; simpl. constructor; simpl.
 +apply (size_representable g).
@@ -311,26 +316,26 @@ constructor; simpl. constructor; simpl.
 +unfold addValidFunc, updateEdgeFunc, update_elabel; intros.
   split; intros. destruct H. unfold equiv_dec; destruct E_EqDec.
   split. pose proof (inf_representable g); lia. lia.
-  apply evalid_meaning in H. apply H.
+  apply (evalid_meaning g) in H. apply H.
   subst e. unfold equiv_dec. destruct E_EqDec.
   split. pose proof (inf_representable g); lia. lia.
   unfold complement, equiv in c; contradiction.
   unfold equiv_dec in H; destruct (E_EqDec (u,v)).
   hnf in e0; subst e. right; auto.
-  left. apply evalid_meaning. auto.
+  left. apply (evalid_meaning g). auto.
 +unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
   split; intros. exfalso; apply H. right. hnf in e0. subst e; auto. lia.
   unfold complement, equiv in c. split; intros.
-  apply invalid_edge_weight. unfold not; intros; apply H. left; auto.
-  apply invalid_edge_weight in H. unfold not; intros.
+  apply (invalid_edge_weight g). unfold not; intros; apply H. left; auto.
+  apply (invalid_edge_weight g) in H. unfold not; intros.
   destruct H0. contradiction. symmetry in H0; contradiction.
 +unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
   unfold equiv in e0; subst e. simpl; auto.
-  apply (src_fst g e).
+  apply (edge_src_fst g e).
 +unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
   unfold equiv in e0; subst e. simpl; auto.
-  apply (dst_snd g e).
-+apply Fin_MatrixUGraph_adde'.
+  apply (edge_dst_snd g e).
++apply Fin_PrimGG_adde'.
 +unfold addValidFunc, updateEdgeFunc, equiv_dec; intros.
   destruct (E_EqDec e (u,v)). hnf in e0; subst e. apply add_edge_strong_evalid; auto.
   unfold complement, equiv in c. destruct H. apply add_edge_preserves_strong_evalid.
@@ -344,23 +349,23 @@ constructor; simpl. constructor; simpl.
   unfold complement, equiv in c. symmetry in H; contradiction.
 Qed.
 
-Definition MatrixUGraph_adde: MatrixUGraph :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit AdjMatUSoundness
-    MatrixUGraph_adde' (AdjMatUSound_adde').
+Definition PrimGG_adde: PrimGG :=
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
+    PrimGG_adde' (AdjMatUSound_adde').
 
 Lemma adde_vvalid:
-  vvalid g v <-> vvalid MatrixUGraph_adde v.
+  vvalid g v <-> vvalid PrimGG_adde v.
 Proof.
 intros. simpl. split; auto.
 Qed.
 
 Lemma adde_evalid_or:
-  forall e, evalid MatrixUGraph_adde e <-> (evalid g e \/ e = (u,v)).
-Proof. unfold MatrixUGraph_adde; simpl; unfold addValidFunc. intros; split; auto. Qed.
+  forall e, evalid PrimGG_adde e <-> (evalid g e \/ e = (u,v)).
+Proof. unfold PrimGG_adde; simpl; unfold addValidFunc. intros; split; auto. Qed.
 
 (*all the Elist stuff are useless by themselves, because (@fin .. sound_matrx) clashes with Fin for some reason*)
 Lemma adde_EList_new:
-  ~ evalid g (u,v) -> Permutation ((u,v)::(EList g)) (EList MatrixUGraph_adde).
+  ~ evalid g (u,v) -> Permutation ((u,v)::(EList g)) (EList PrimGG_adde).
 Proof.
 intros. apply NoDup_Permutation. apply NoDup_cons. rewrite EList_evalid; auto. apply NoDup_EList. apply NoDup_EList.
 intros; split; intros. rewrite EList_evalid, adde_evalid_or. destruct H0.
@@ -369,7 +374,7 @@ rewrite EList_evalid, adde_evalid_or in H0. destruct H0. right; rewrite EList_ev
 Qed.
 
 Lemma adde_EList_old:
-  forall e, In e (EList g) -> In e (EList MatrixUGraph_adde).
+  forall e, In e (EList g) -> In e (EList PrimGG_adde).
 Proof.
 intros. unfold EList. destruct finiteE. simpl. destruct a.
 apply H1. rewrite adde_evalid_or. left; rewrite <- EList_evalid; apply H.
@@ -377,13 +382,13 @@ Qed.
 
 Lemma adde_EList_rev:
   forall l, ~ evalid g (u,v) ->
-    Permutation ((u,v)::l) (EList MatrixUGraph_adde) ->
+    Permutation ((u,v)::l) (EList PrimGG_adde) ->
     Permutation l (EList g).
 Proof.
 intros. apply NoDup_Permutation.
 apply NoDup_Perm_EList in H0. apply NoDup_cons_1 in H0; auto.
 apply NoDup_EList.
-intros; split; intros. assert (In x (EList MatrixUGraph_adde)).
+intros; split; intros. assert (In x (EList PrimGG_adde)).
 apply (Permutation_in (l:=(u,v)::l)). auto. right; auto.
 apply EList_evalid in H2. apply adde_evalid_or in H2. destruct H2.
 rewrite EList_evalid; auto.
@@ -397,26 +402,36 @@ apply Permutation_sym; auto.
 Qed.
 
 Lemma adde_src:
-  forall e', evalid g e' -> src MatrixUGraph_adde e' = src g e'.
+  forall e', evalid g e' -> src PrimGG_adde e' = src g e'.
 Proof.
-intros. rewrite src_fst; rewrite src_fst. auto.
+  intros.
+  pose proof (edge_src_fst g e').
+  pose proof (edge_src_fst PrimGG_adde e').
+  replace (src g e') with (fst e') by trivial.
+  replace (src PrimGG_adde e') with (fst e') by trivial.
+  reflexivity.
 Qed.
 
 Lemma adde_dst:
-  forall e', evalid g e' -> dst MatrixUGraph_adde e' = dst g e'.
+  forall e', evalid g e' -> dst PrimGG_adde e' = dst g e'.
 Proof.
-intros. rewrite dst_snd; rewrite dst_snd. auto.
+  intros.
+  pose proof (edge_dst_snd g e').
+  pose proof (edge_dst_snd PrimGG_adde e').
+  replace (dst g e') with (snd e') by trivial.
+  replace (dst PrimGG_adde e') with (snd e') by trivial.
+  reflexivity.
 Qed.
 
 Lemma adde_elabel_new:
-  elabel MatrixUGraph_adde (u,v) = w.
+  elabel PrimGG_adde (u,v) = w.
 Proof.
 intros. simpl. unfold update_elabel, equiv_dec. destruct E_EqDec. auto.
 unfold complement, equiv in c. contradiction.
 Qed.
 
 Lemma adde_elabel_old:
-  forall e, e <> (u,v) -> elabel MatrixUGraph_adde e = elabel g e.
+  forall e, e <> (u,v) -> elabel PrimGG_adde e = elabel g e.
 Proof.
 intros. simpl. unfold update_elabel, equiv_dec. destruct E_EqDec.
 unfold equiv in e0. symmetry in e0; contradiction.
@@ -424,7 +439,7 @@ auto.
 Qed.
 
 Lemma adde_partial_graph:
-  forall (g': MatrixUGraph), is_partial_graph g g' -> evalid g' (u,v) -> is_partial_graph MatrixUGraph_adde g'.
+  forall (g': PrimGG), is_partial_graph g g' -> evalid g' (u,v) -> is_partial_graph PrimGG_adde g'.
 Proof.
 intros. destruct H as [? [? [? ?]]].
 split. intros. simpl. apply H. auto.
@@ -432,14 +447,15 @@ split. intros. rewrite adde_evalid_or in H4. destruct H4.
 apply H1; auto. subst e; auto.
 split. intros. rewrite adde_evalid_or in H4. destruct H4.
 rewrite <- H2. apply adde_src. auto. auto. rewrite adde_src in H5 by auto. simpl in H5; auto.
-subst e. rewrite src_fst; rewrite src_fst; auto.
+subst e. rewrite (edge_src_fst g').
+rewrite (edge_src_fst PrimGG_adde); auto.
 intros. rewrite adde_evalid_or in H4. destruct H4.
 rewrite <- H3. apply adde_dst. auto. auto. rewrite adde_dst in H5 by auto. simpl in H5; auto.
-subst e. rewrite dst_snd, dst_snd; auto.
+subst e. rewrite (edge_dst_snd g'), (edge_dst_snd PrimGG_adde); auto.
 Qed.
 
 Lemma adde_partial_lgraph:
-  forall (g': MatrixUGraph), is_partial_lgraph g g' -> evalid g' (u,v) -> w = elabel g' (u,v) -> is_partial_lgraph MatrixUGraph_adde g'.
+  forall (g': PrimGG), is_partial_lgraph g g' -> evalid g' (u,v) -> w = elabel g' (u,v) -> is_partial_lgraph PrimGG_adde g'.
 Proof.
 intros. split. apply adde_partial_graph. apply H. auto.
 split. unfold preserve_vlabel; intros.
@@ -456,17 +472,17 @@ End ADD_EDGE_MUGRAPH.
 
 Section REMOVE_EDGE_MUGRAPH.
 
-Context {g: MatrixUGraph}.
+Context {g: PrimGG}.
 Context {e: E} {evalid_e: evalid g e}.
 
-Definition MatrixUGraph_eremove':=
+Definition PrimGG_eremove':=
   @Build_LabeledGraph V E V_EqDec E_EqDec unit Z unit (pregraph_remove_edge g e)
   (vlabel g)
   (fun e0 => if E_EqDec e0 e then inf else elabel g e0 )
   (glabel g).
 
-Instance Fin_MatrixUGraph_eremove':
-  FiniteGraph (MatrixUGraph_eremove').
+Instance Fin_PrimGG_eremove':
+  FiniteGraph (PrimGG_eremove').
 Proof.
 constructor; unfold EnumEnsembles.Enumerable; simpl.
 (*vertices*)exists (VList g). split. apply NoDup_VList. apply VList_vvalid.
@@ -478,7 +494,7 @@ intros. rewrite remove_In_iff, EList_evalid; auto. split; auto.
 Qed.
 
 Instance AdjMatUSound_eremove':
-  AdjMatUSoundness MatrixUGraph_eremove'.
+  SoundPrim PrimGG_eremove'.
 Proof.
 constructor; simpl. constructor; simpl.
 ++apply (size_representable g).
@@ -490,12 +506,12 @@ constructor; simpl. constructor; simpl.
   destruct H. contradiction.
   apply (evalid_meaning g) in H; auto.
 ++unfold removeValidFunc; split; intros;destruct (E_EqDec e0 e).
-  auto. apply invalid_edge_weight. unfold not; intros; apply H. split; auto.
+  auto. apply (invalid_edge_weight g). unfold not; intros; apply H. split; auto.
   unfold not; intros; destruct H0. hnf in e1; contradiction.
-  unfold not; intros. apply invalid_edge_weight in H; apply H; apply H0.
-++apply (src_fst g).
-++apply (dst_snd g).
-++apply Fin_MatrixUGraph_eremove'.
+  unfold not; intros. apply (invalid_edge_weight g) in H; apply H; apply H0.
+++apply (edge_src_fst g).
+++apply (edge_dst_snd g).
+++apply Fin_PrimGG_eremove'.
 ++unfold removeValidFunc; intros. destruct H. apply remove_edge_preserves_strong_evalid; split.
   apply evalid_strong_evalid; auto. auto.
 ++unfold removeValidFunc; intros. destruct H. destruct (E_EqDec e0 e).
@@ -503,12 +519,12 @@ constructor; simpl. constructor; simpl.
 ++unfold removeValidFunc; intros. destruct H. apply undirected_edge_rep; auto.
 Qed.
 
-Definition MatrixUGraph_eremove: MatrixUGraph :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit AdjMatUSoundness
-    MatrixUGraph_eremove' (AdjMatUSound_eremove').
+Definition PrimGG_eremove: PrimGG :=
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
+    PrimGG_eremove' (AdjMatUSound_eremove').
 
 Lemma eremove_EList:
-  forall l, Permutation (e::l) (EList g) -> Permutation l (EList MatrixUGraph_eremove).
+  forall l, Permutation (e::l) (EList g) -> Permutation l (EList PrimGG_eremove).
 Proof.
 intros. assert (Hel: NoDup (e::l)). apply NoDup_Perm_EList in H; auto.
 apply NoDup_Permutation.
@@ -522,36 +538,36 @@ destruct H0. symmetry in H0; contradiction. auto.
 Qed.
 
 Lemma eremove_EList_rev:
-  forall l, evalid g e -> Permutation l (EList (MatrixUGraph_eremove)) -> Permutation (e::l) (EList g).
+  forall l, evalid g e -> Permutation l (EList (PrimGG_eremove)) -> Permutation (e::l) (EList g).
 Proof.
-intros. assert (~ In e (EList MatrixUGraph_eremove)).
+intros. assert (~ In e (EList PrimGG_eremove)).
 rewrite EList_evalid. simpl. unfold removeValidFunc, not; intros. destruct H1. contradiction.
 assert (~ In e l). unfold not; intros.
-apply (Permutation_in (l':= (EList MatrixUGraph_eremove))) in H2. contradiction. auto.
+apply (Permutation_in (l':= (EList PrimGG_eremove))) in H2. contradiction. auto.
 apply NoDup_Permutation. apply NoDup_cons; auto. apply NoDup_Perm_EList in H0; auto.
 apply NoDup_EList.
 intros; split; intros. apply EList_evalid. destruct H3. subst x. auto.
-apply (Permutation_in (l':= (EList MatrixUGraph_eremove))) in H3; auto.
+apply (Permutation_in (l':= (EList PrimGG_eremove))) in H3; auto.
 rewrite EList_evalid in H3. simpl in H3. unfold removeValidFunc in H3. apply H3.
 destruct (E_EqDec x e). unfold equiv in e0. subst x. left; auto.
 unfold complement, equiv in c. right.
-assert (evalid MatrixUGraph_eremove x).
+assert (evalid PrimGG_eremove x).
 simpl. unfold removeValidFunc. rewrite EList_evalid in H3. split; auto.
 rewrite <- EList_evalid in H4.
-apply (Permutation_in (l:= (EList MatrixUGraph_eremove))). apply Permutation_sym; auto. apply H4.
+apply (Permutation_in (l:= (EList PrimGG_eremove))). apply Permutation_sym; auto. apply H4.
 Qed.
 
 End REMOVE_EDGE_MUGRAPH.
 
 (**************MST****************)
 
-Definition minimum_spanning_forest (t g: MatrixUGraph) :=
+Definition minimum_spanning_forest (t g: PrimGG) :=
  labeled_spanning_uforest t g /\
-  forall (t': MatrixUGraph), labeled_spanning_uforest t' g ->
+  forall (t': PrimGG), labeled_spanning_uforest t' g ->
     Z.le (sum_DE Z.add t 0) (sum_DE Z.add t' 0).
 
 Lemma partial_lgraph_spanning_equiv:
-forall (t1 t2 g: MatrixUGraph), is_partial_lgraph t1 t2 -> labeled_spanning_uforest t1 g
+forall (t1 t2 g: PrimGG), is_partial_lgraph t1 t2 -> labeled_spanning_uforest t1 g
   -> labeled_spanning_uforest t2 g -> Permutation (EList t1) (EList t2).
 Proof.
 intros. apply NoDup_Permutation.
@@ -593,7 +609,7 @@ rewrite <- H11 in H8. apply H8. left; auto.
 Qed.
 
 Corollary partial_lgraph_spanning_sum_LE:
-forall (t1 t2 g: MatrixUGraph), is_partial_lgraph t1 t2 -> labeled_spanning_uforest t1 g
+forall (t1 t2 g: PrimGG), is_partial_lgraph t1 t2 -> labeled_spanning_uforest t1 g
   -> labeled_spanning_uforest t2 g -> sum_DE Z.add t1 0 = sum_DE Z.add t2 0.
 Proof.
 intros. assert (Permutation (EList t1) (EList t2)).
@@ -609,7 +625,7 @@ apply map_ext_in. intros. symmetry; apply H0. rewrite EList_evalid in H3; auto.
 Qed.
 
 Corollary partial_lgraph_spanning_mst:
-forall (t1 t2 g: MatrixUGraph), is_partial_lgraph t1 t2 -> labeled_spanning_uforest t1 g
+forall (t1 t2 g: PrimGG), is_partial_lgraph t1 t2 -> labeled_spanning_uforest t1 g
   -> minimum_spanning_forest t2 g -> minimum_spanning_forest t1 g.
 Proof.
 intros. split. auto.
@@ -620,7 +636,7 @@ Qed.
 
 (*The following are to let us reason about lists instead of graphs*)
 Lemma sum_DE_equiv:
-  forall (g: MatrixUGraph) (l: list E),
+  forall (g: PrimGG) (l: list E),
   Permutation (EList g) l -> sum_DE Z.add g 0 = fold_left Z.add (map (elabel g) l) 0.
 Proof.
 unfold DEList; intros. apply fold_left_comm. intros; lia.
@@ -628,7 +644,7 @@ apply Permutation_map. auto.
 Qed.
 
 Lemma exists_labeled_spanning_uforest_pre:
-forall (l: list E) (g: MatrixUGraph), Permutation l (EList g) -> exists (t: MatrixUGraph), labeled_spanning_uforest t g.
+forall (l: list E) (g: PrimGG), Permutation l (EList g) -> exists (t: PrimGG), labeled_spanning_uforest t g.
 Proof.
 induction l; intros.
 (*nil case*)
@@ -654,7 +670,7 @@ set (u:=src g a). set (v:=dst g a).
 assert (connected g u v). apply adjacent_connected. exists a.
 unfold u; unfold v; apply strong_evalid_adj_edge.
 apply evalid_strong_evalid. rewrite <- EList_evalid, <- H. left; auto.
-set (remove_a:=(@MatrixUGraph_eremove g a)).
+set (remove_a:=(@PrimGG_eremove g a)).
 assert (Ha_evalid: evalid g a). { rewrite <- EList_evalid. apply (Permutation_in (l:=(a::l))).
   apply H. left; auto. }
 specialize IHl with remove_a.
@@ -734,7 +750,7 @@ assert (Int.min_signed <= w < inf). unfold w. split.
 pose proof (weight_representable g a). apply H6. apply (strong_inf_bound g). auto.
 rewrite vert_bound in H3, H4. rewrite <- (vert_bound t) in H3, H4.
 assert (Ha: a = (u,v)). unfold u, v; apply evalid_form; auto. rewrite Ha in *.
-set (adde_a:=@MatrixUGraph_adde t u v H3 H4 H5 w H6).
+set (adde_a:=@PrimGG_adde t u v H3 H4 H5 w H6).
 exists adde_a. split. split.
 apply adde_partial_lgraph; auto. unfold w. rewrite Ha; auto.
 split.
@@ -793,13 +809,13 @@ unfold complement, equiv in c. symmetry in H7; contradiction.
 Qed.
 
 Corollary exists_labeled_spanning_uforest:
-forall (g: MatrixUGraph), exists (t: MatrixUGraph), labeled_spanning_uforest t g.
+forall (g: PrimGG), exists (t: PrimGG), labeled_spanning_uforest t g.
 Proof.
 intros. apply (exists_labeled_spanning_uforest_pre (EList g)). apply Permutation_refl.
 Qed.
 
 Lemma partial_graph_incl:
-forall (t g: MatrixUGraph), is_partial_graph t g -> incl (EList t) (EList g).
+forall (t g: PrimGG), is_partial_graph t g -> incl (EList t) (EList g).
 Proof.
 unfold incl; intros. rewrite EList_evalid in *. apply H; auto.
 Qed.
@@ -1040,14 +1056,14 @@ replace 1 with (1+0) by lia. do 2 rewrite find_accum_add1. split; intros; lia.
 Qed.
 
 Lemma exists_dec:
-forall (g: MatrixUGraph) l, (exists (t: MatrixUGraph), labeled_spanning_uforest t g /\ Permutation l (EList t)) \/
-  ~ (exists (t: MatrixUGraph), labeled_spanning_uforest t g /\ Permutation l (EList t)).
+forall (g: PrimGG) l, (exists (t: PrimGG), labeled_spanning_uforest t g /\ Permutation l (EList t)) \/
+  ~ (exists (t: PrimGG), labeled_spanning_uforest t g /\ Permutation l (EList t)).
 Proof.
 intros. tauto.
 Qed.
 
 Lemma partial_lgraph_elabel_map:
-forall (t g: MatrixUGraph) l, is_partial_lgraph t g -> incl l (EList t) ->
+forall (t g: PrimGG) l, is_partial_lgraph t g -> incl l (EList t) ->
   map (elabel t) l = map (elabel g) l.
 Proof.
 induction l; intros. simpl; auto.
@@ -1057,7 +1073,7 @@ apply H. rewrite <- EList_evalid. apply H0. left; auto.
 Qed.
 
 Lemma exists_msf:
-forall {E_EqDec : EqDec E eq} (g: MatrixUGraph), exists (t: MatrixUGraph), minimum_spanning_forest t g.
+forall {E_EqDec : EqDec E eq} (g: PrimGG), exists (t: PrimGG), minimum_spanning_forest t g.
 Proof.
 intros. pose proof (NoDup_incl_ordered_powerlist (EList g) (NoDup_EList g)).
 destruct H as [L ?].
@@ -1065,7 +1081,7 @@ destruct H as [L ?].
 destruct (list_decidable_prop_reduced_list
   (fun l' => NoDup l' /\ incl l' (EList g) /\ (forall x y, In x l' -> In y l' ->
       (find l' x 0 <= find l' y 0 <-> find (EList g) x 0 <= find (EList g) y 0)))
-  (fun l => (exists (t: MatrixUGraph), labeled_spanning_uforest t g /\ Permutation l (EList t)))
+  (fun l => (exists (t: PrimGG), labeled_spanning_uforest t g /\ Permutation l (EList t)))
   L
 ).
 apply exists_dec.
@@ -1106,7 +1122,7 @@ apply Permutation_incl; auto.
 Qed.
 
 Lemma msf_if_le_msf:
-forall {E_EqDec : EqDec E eq} (t g: MatrixUGraph), labeled_spanning_uforest t g ->
+forall {E_EqDec : EqDec E eq} (t g: PrimGG), labeled_spanning_uforest t g ->
   (forall t', minimum_spanning_forest t' g -> sum_DE Z.add t 0 <= sum_DE Z.add t' 0) ->
   minimum_spanning_forest t g.
 Proof.
@@ -1117,7 +1133,7 @@ apply H2. auto.
 Qed.
 
 Corollary msf_if_le_msf':
-forall {E_EqDec : EqDec E eq} (t t' g: MatrixUGraph), labeled_spanning_uforest t g ->
+forall {E_EqDec : EqDec E eq} (t t' g: PrimGG), labeled_spanning_uforest t g ->
   minimum_spanning_forest t' g -> sum_DE Z.add t 0 <= sum_DE Z.add t' 0 ->
   minimum_spanning_forest t g.
 Proof.
@@ -1128,7 +1144,7 @@ Qed.
 
 (*MOVE TO APPROPRIATE PLACES*)
 Lemma adjacent_dec:
-forall (g: MatrixUGraph) u v, adjacent g u v \/ ~ adjacent g u v.
+forall (g: PrimGG) u v, adjacent g u v \/ ~ adjacent g u v.
 Proof.
 intros. tauto.
 Qed.
@@ -1202,7 +1218,7 @@ rewrite remove_not_in by auto. rewrite Z.sub_add. auto.
 Qed.
 
 Lemma path_partition_checkpoint':
-forall (g: MatrixUGraph) {fg: FiniteGraph g} (l1 l2: list V) p l a b, Permutation (l1++l2) (VList g) ->
+forall (g: PrimGG) {fg: FiniteGraph g} (l1 l2: list V) p l a b, Permutation (l1++l2) (VList g) ->
   In a l1 -> In b l2 -> connected_by_path g p a b -> fits_upath g l p ->
   exists v1 v2, In v1 p /\ In v2 p /\
     In v1 l1 /\ In v2 l2 /\ (exists e, adj_edge g e v1 v2 /\ In e l).
@@ -1228,7 +1244,7 @@ Proof.
 Qed.
 
 Lemma path_partition_checkpoint:
-forall (g: MatrixUGraph) {fg: FiniteGraph g} (l1 l2: list V) p a b, Permutation (l1++l2) (VList g) ->
+forall (g: PrimGG) {fg: FiniteGraph g} (l1 l2: list V) p a b, Permutation (l1++l2) (VList g) ->
   In a l1 -> In b l2 -> connected_by_path g p a b ->
   exists v1 v2, In v1 p /\ In v2 p /\
     In v1 l1 /\ In v2 l2 /\ adjacent g v1 v2.
@@ -1239,7 +1255,7 @@ exists v1; exists v2. repeat split; auto. destruct H8 as [e [? ?]]. exists e; au
 Qed.
 
 Corollary path_partition_checkpoint2:
-forall (g: MatrixUGraph) {fg: FiniteGraph g} (l: list V) p l' a b, In a l -> ~ In b l ->
+forall (g: PrimGG) {fg: FiniteGraph g} (l: list V) p l' a b, In a l -> ~ In b l ->
   connected_by_path g p a b -> fits_upath g l' p ->
   exists v1 v2, In v1 p /\ In v2 p /\
     In v1 l /\ ~ In v2 l /\ (exists e, adj_edge g e v1 v2 /\ In e l').
@@ -1351,4 +1367,4 @@ Proof.
   rewrite eformat2'. rewrite eformat1. simpl; auto. simpl; lia. simpl; lia.
 Qed.
 
-End MATRIXUGRAPH.
+End MathPrimGraph.
