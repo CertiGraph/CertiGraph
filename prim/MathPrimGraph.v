@@ -20,13 +20,14 @@ priq/priq_arr_utils can be split into two parts,
 (a) the pure part
 (b) the part that is specific to Prim
 
-(a) should be lifted to graph/
+(a) should be lifted to graph/ and (b) may need to call (a).
 
 Then this file should also be split into two parts, 
 (c), which calls (a)
 (d) which calls (b)
 
 (c) should be lifted to graph/ as graph/MathUAdjMatGraph.v
+(d) may need to call (c) 
 *)
 
 Local Open Scope logic.
