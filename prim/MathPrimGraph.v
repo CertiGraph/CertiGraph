@@ -1,12 +1,12 @@
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.List_ext.
+Require Export CertiGraph.lib.find_lemmas.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
 Require Export CertiGraph.graph.undirected_graph.
 Require Export CertiGraph.graph.MathAdjMatGraph.
-Require Export CertiGraph.priq.find_lemmas.
 
 (* 
 Anshuman, Oct 7:

@@ -1,8 +1,7 @@
 Require Import VST.floyd.proofauto.
+Require Export CertiGraph.lib.find_lemmas.
 Require Import CertiGraph.priq.priq_arr_specs.
-Require Export CertiGraph.priq.find_lemmas.
 Require Export CertiGraph.priq.is_empty_lemmas.
-Require Import VST.floyd.sublist.
 Require Import CertiGraph.priq.priq_arr.
 
 Section PQProof.
@@ -49,7 +48,7 @@ Proof.
     forward; forward_if; forward; entailer!.
     + rewrite (isEmpty_in priq_contents (Znth i priq_contents)); trivial.
       1: apply Znth_In; lia.
-      pose proof (Forall_Znth _ _ i H3 H); simpl in H9.
+      pose proof (sublist.Forall_Znth _ _ i H3 H); simpl in H9.
       rewrite Int.signed_repr in H6; lia.
     + rewrite (sublist_split 0 i (i+1)); try lia.
       rewrite isEmpty_Vone_app; split; trivial.
@@ -59,7 +58,7 @@ Proof.
         trivial.
       exfalso.
       rewrite Int.signed_repr in H6; try lia.
-      apply (Forall_Znth _ _ i H3) in H; simpl in H; rep_lia.
+      apply (sublist.Forall_Znth _ _ i H3) in H; simpl in H; rep_lia.
   - forward. entailer!.
     rewrite sublist_same in H3; trivial.
     2: repeat rewrite Zlength_map; trivial.
@@ -98,23 +97,23 @@ Proof.
     assert (Int.min_signed <=
             fold_right Z.min (Znth 0 priq_contents) (sublist 0 i priq_contents) <= Int.max_signed).
     { apply Forall_fold_min.
-      - apply Forall_Znth; [lia|].
+      - apply sublist.Forall_Znth; [lia|].
         rewrite Forall_forall. intros. rewrite In_Znth_iff in H8.
         destruct H8 as [? [? ?]]. rewrite <- H9.
-        pose proof (Forall_Znth _ _ x0 H8 H).
+        pose proof (sublist.Forall_Znth _ _ x0 H8 H).
         simpl in H10.
         split; [lia|].
         apply Z.le_trans with (m := inf + 1); lia.
       - rewrite Forall_forall. intros. rewrite In_Znth_iff in H8.
         destruct H8 as [? [? ?]]. rewrite <- H9.
         apply (Forall_sublist _ 0 i _) in H.
-        apply (Forall_Znth _ _ _ H8) in H.
+        apply (sublist.Forall_Znth _ _ _ H8) in H.
         simpl in H.
         split; [lia|].
         apply Z.le_trans with (m := inf + 1); lia.
     }
     assert (Int.min_signed <= Znth i priq_contents <= Int.max_signed). {
-      apply (Forall_Znth _ _ _ H7) in H; simpl in H.
+      apply (sublist.Forall_Znth _ _ _ H7) in H; simpl in H.
       rep_lia.
     }
     forward_if.
