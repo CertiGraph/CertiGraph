@@ -148,6 +148,68 @@ simpl in *. destruct H1. auto. destruct H1; subst u; subst v. lia.
 all: apply H.
 Qed.
 
+Lemma eformat_evalid_vvalid:
+forall (g: PrimGG) u v, evalid g (eformat (u,v)) -> vvalid g u /\ vvalid g v.
+Proof.
+intros. apply evalid_strong_evalid in H.
+destruct (Z.lt_trichotomy u v).
+rewrite eformat1 in H. destruct H.
+rewrite (edge_src_fst g), (edge_dst_snd g) in H1; auto. simpl; lia.
+destruct H0.
+subst u. rewrite eformat1 in H. destruct H.
+rewrite (edge_src_fst g), (edge_dst_snd g) in H0; auto. simpl; lia.
+rewrite eformat2 in H. simpl in H; destruct H.
+rewrite (edge_src_fst g), (edge_dst_snd g) in H1; auto. simpl in H1.
+split; apply H1. simpl; lia.
+Qed.
+
+Lemma eformat_adj': forall (g : PrimGG) u v, evalid g (eformat (u,v)) -> adj_edge g (eformat (u,v)) u v.
+Proof.
+intros. split. apply (evalid_strong_evalid g); auto.
+destruct (Z.le_ge_cases u v).
+rewrite eformat1 in *. left. rewrite (edge_src_fst g), (edge_dst_snd g); auto. auto. auto.
+rewrite eformat2 in *. right. rewrite (edge_src_fst g), (edge_dst_snd g); auto. auto. auto.
+Qed.
+
+Lemma eformat_adj: forall (g: PrimGG) u v, adjacent g u v <-> evalid g (eformat (u,v)).
+Proof.
+intros. split. intros.
++
+destruct H. destruct H. destruct H.
+destruct H0; destruct H0. assert (x = (u,v)). {
+  rewrite (edge_src_fst g) in H0.
+  rewrite (edge_dst_snd g) in H2. rewrite <- H0, <- H2. destruct x; simpl; auto.
+} subst x.
+rewrite eformat1; auto. simpl.
+rewrite <- H0. rewrite <- H2 at 2. apply (undirected_edge_rep g); auto.
+assert (x = (v,u)). {
+  rewrite (edge_src_fst g) in H0; rewrite (edge_dst_snd g) in H2.
+  rewrite <- H0, <- H2. destruct x; simpl; auto.
+} subst x.
+rewrite eformat2. simpl. auto. simpl. rewrite <- H0. rewrite <- H2 at 2.
+apply (undirected_edge_rep g); auto.
++intros. destruct (Z.lt_trichotomy u v).
+rewrite eformat1 in H. 2: simpl; lia.
+assert (evalid g (u,v)). auto.
+exists (u,v). split. apply evalid_strong_evalid; auto. left.
+rewrite (edge_src_fst g), (edge_dst_snd g); auto.
+(*equal, repeat*)
+destruct H0. rewrite eformat1 in H. 2: simpl; lia.
+assert (evalid g (u,v)). auto.
+exists (u,v). split. apply evalid_strong_evalid; auto. left.
+rewrite (edge_src_fst g), (edge_dst_snd g); auto.
+rewrite eformat2 in H. 2: simpl; lia. simpl in H.
+assert (evalid g (v,u)). auto.
+exists (v,u). split. apply evalid_strong_evalid; auto.
+rewrite (edge_src_fst g), (edge_dst_snd g); auto.
+Qed.
+
+Corollary eformat_adj_elabel: forall (g: PrimGG) u v, adjacent g u v <-> elabel g (eformat (u,v)) < inf.
+Proof.
+intros. rewrite eformat_adj. apply evalid_inf_iff.
+Qed.
+
+
 (****************Edgeless graph again*****************)
 
 Section EDGELESS_MUGRAPH.
@@ -1088,42 +1150,5 @@ intros. unfold sublist. rewrite skipn_0. rewrite firstn_same. auto.
 rewrite <- ZtoNat_Zlength. lia.
 Qed.
 
-
-(* Eformat Lemmas have been put back here.
-   Sorry about moving them in the first place; 
-   that was an error in judgement. 
- *)
-Definition eformat (e: E) := if fst e <=? snd e then e else (snd e, fst e).
-
-Lemma eformat1: forall (e: E), fst e <= snd e -> eformat e = e.
-Proof. unfold eformat; intros. rewrite Zle_is_le_bool in H; rewrite H. auto. Qed.
-
-Lemma eformat2': forall (e: E), snd e < fst e -> eformat e = (snd e, fst e).
-Proof. unfold eformat; intros. rewrite <- Z.leb_gt in H; rewrite H. auto. Qed.
-
-Lemma eformat2: forall (e: E), snd e <= fst e -> eformat e = (snd e, fst e).
-Proof.
-  intros. apply Z.le_lteq in H. destruct H. rewrite eformat2'; auto. rewrite eformat1, H. rewrite <- H at 2. destruct e; auto. lia.
-Qed.
-
-Lemma eformat_eq:
-  forall u v a b, eformat (u,v) = eformat (a,b) -> ((u=a /\ v=b) \/ (u=b /\ v=a)).
-Proof.
-  intros. destruct (Z.le_ge_cases u v); destruct (Z.le_ge_cases a b).
-  rewrite eformat1, eformat1 in H. apply pair_equal_spec in H. left; auto. simpl; auto. simpl; auto. simpl; auto.
-  rewrite eformat1, eformat2 in H. simpl in H. apply pair_equal_spec in H. right; auto. simpl; auto. simpl; auto.
-  rewrite eformat2, eformat1 in H. simpl in H. apply pair_equal_spec in H. right; split; apply H. simpl; auto. simpl; auto.
-  rewrite eformat2, eformat2 in H. simpl in H. apply pair_equal_spec in H. left; split; apply H. simpl; auto. simpl; auto.
-Qed.
-
-Lemma eformat_symm:
-  forall u v, eformat (u,v) = eformat (v,u).
-Proof.
-  intros. destruct (Z.lt_trichotomy u v).
-  rewrite eformat1. rewrite eformat2. simpl; auto. simpl; lia. simpl; lia.
-  destruct H.
-  rewrite eformat1. rewrite eformat2. simpl; auto. simpl; lia. simpl; lia.
-  rewrite eformat2'. rewrite eformat1. simpl; auto. simpl; lia. simpl; lia.
-Qed.
 
 End MathPrimGraph.
