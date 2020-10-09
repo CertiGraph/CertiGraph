@@ -13,8 +13,5 @@ Require Export CertiGraph.lib.find_lemmas.
 Require Export CertiGraph.lib.Coqlib.
 Require Export CertiGraph.lib.EquivDec_ext.
 Require Export CertiGraph.graph.graph_model.
-Require Export CertiGraph.graph.MathAdjMatGraph.
 Require Export CertiGraph.graph.path_lemmas.
 Require Export CertiGraph.graph.path_cost.
-
-Ltac ulia := trivial; fold V in *; rep_lia.
