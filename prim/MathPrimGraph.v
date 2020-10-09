@@ -6,25 +6,7 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
 Require Export CertiGraph.graph.undirected_graph.
-Require Export CertiGraph.graph.MathAdjMatGraph.
-
-(* 
-Anshuman, Oct 7:
-priq/priq_arr_utils is Imported here and Exported out. 
-It is needed by spatial_undirected_matrix and verif_prim.
-
-priq/priq_arr_utils can be split into two parts, 
-(a) the pure part
-(b) the part that is specific to Prim
-
-(a) should be lifted to graph/ and (b) may need to call (a).
-
-Then this file should probably also be split into two parts, 
-(c), which calls (a)
-(d) which calls (b) and (c)
-
-(c) should be lifted to graph/ as graph/MathUAdjMatGraph.v
-*)
+Require Export CertiGraph.graph.MathUAdjMatGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
@@ -41,39 +23,38 @@ Section MathPrimGraph.
 
 Context {size: Z} {inf: Z}.
 
-Definition PrimLG := AdjMatLG.
+Definition PrimLG := UAdjMatLG.
 
 Class SoundPrim (g: PrimLG) := {
-  sadjmat: @SoundAdjMat size inf g;  (* c *)
-  ese: forall e, evalid g e -> strong_evalid g e;  (* d *)
-  sib: forall e, evalid g e -> elabel g e < inf;   (* d *)
-  uer: forall e, evalid g e -> src g e <= dst g e; (* c *)
+  suadjmat: @SoundUAdjMat size inf g;
+  ese: forall e, evalid g e -> strong_evalid g e;
+  sib: forall e, evalid g e -> elabel g e < inf;
 }.
 
 Definition PrimGG := (GeneralGraph V E unit Z unit (fun g => SoundPrim g)).
 
 (* Some handy coercions: *)
-Identity Coercion AdjMatLG_PrimLG: PrimLG >-> AdjMatLG.
-Identity Coercion LabeledGraph_AdjMatLG: AdjMatLG >-> LabeledGraph.
+Identity Coercion UAdjMatLG_PrimLG: PrimLG >-> UAdjMatLG.
 
 Definition SoundPrim_PrimGG (g: PrimGG) := (@sound_gg _ _ _ _ _ _ _ _ g).
 
-(* We can always drag out SoundAdjMat *)
-Definition SoundAdjMat_PrimGG (g: PrimGG) :=
-  @sadjmat g (SoundPrim_PrimGG g).
+(* We can always drag out SoundUAdjMat *)
+Definition SoundUAdjMat_PrimGG (g: PrimGG) :=
+  @suadjmat g (SoundPrim_PrimGG g).
 
-(* A PrimGG can be weakened into an AdjMatGG *)
-Definition AdjMatGG_PrimGG (g: PrimGG) : AdjMatGG :=
-  Build_GeneralGraph unit Z unit SoundAdjMat g (SoundAdjMat_PrimGG g).
+(* A PrimGG can be weakened into a UAdjMatGG *)
+Definition UAdjMatGG_PrimGG (g: PrimGG) : UAdjMatGG :=
+  Build_GeneralGraph unit Z unit SoundUAdjMat g (SoundUAdjMat_PrimGG g).
 
-Coercion AdjMatGG_PrimGG: PrimGG >-> AdjMatGG.
+Coercion UAdjMatGG_PrimGG: PrimGG >-> UAdjMatGG.
 
-(* Great! So now when we want to access an AdjMat
-   plugin, we can simply use the AdjMat gett  er 
-   and pass it a DijkGG. The coercion will be seamless. 
+(* Great! So now when we want to access an 
+   AdjMat or UAdjMat plugin, we can simply use the 
+   AdjMat or UAdjMat getter and pass it a PrimGG. 
+   The coercion will be seamless. 
  *)
 
-(* For the three Prim-specific plugins, we create getters: *)
+(* For the two Prim-specific plugins, we create getters: *)
 
 Definition evalid_strong_evalid (g: PrimGG) :=
   @ese g (SoundPrim_PrimGG g).
@@ -81,12 +62,9 @@ Definition evalid_strong_evalid (g: PrimGG) :=
 Definition strong_inf_bound (g: PrimGG) :=
   @sib g (SoundPrim_PrimGG g).
 
-Definition undirected_edge_rep (g: PrimGG) :=
-  @uer g (SoundPrim_PrimGG g).
-
 (* We often need to know that a PrimGG
    is a FiniteGraph *)
-Instance Finite_MatrixUPGraph (g: PrimGG):
+Instance Finite_PrimGG (g: PrimGG):
   FiniteGraph g.
 Proof. apply (finGraph g). Qed.
 
@@ -178,17 +156,17 @@ Section EDGELESS_MUGRAPH.
 Context {inf_bound: 0 <= inf <= Int.max_signed}.
 Context {size_bound: 0 < size <= Int.max_signed}.
 
-Definition edgeless_lgraph : AdjMatLG :=
+Definition edgeless_lgraph : UAdjMatLG :=
   @Build_LabeledGraph V E V_EqDec E_EqDec unit Z unit
     (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
     (fun v => tt) (fun e => inf) tt. 
 
-Instance AdjMatUSound_edgeless:
+Instance SoundPrim_edgeless:
   SoundPrim edgeless_lgraph.
 Proof. 
 constructor.
 all: simpl; intros; try contradiction.
-constructor.
+constructor. constructor.
 auto. auto. 
 all: simpl; intros; try auto; try contradiction.
 split; intros; auto.
@@ -207,7 +185,7 @@ Qed.
 
 Definition edgeless_graph: PrimGG :=
   @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
-    edgeless_lgraph (AdjMatUSound_edgeless).
+    edgeless_lgraph SoundPrim_edgeless.
 
 Lemma edgeless_graph_evalid:
   forall e, ~ evalid edgeless_graph e.
@@ -286,26 +264,16 @@ Definition PrimGG_adde':=
 Instance Fin_PrimGG_adde':
   FiniteGraph (PrimGG_adde').
 Proof.
-constructor; unfold EnumEnsembles.Enumerable; simpl.
-(*vertices*)
-exists (VList g). split. apply NoDup_VList. apply VList_vvalid.
-(*edge*)
-unfold addValidFunc. destruct (in_dec E_EqDec (u,v) (EList g)). 
-(*case e already inside*)
-exists (EList g). split. apply NoDup_EList. intros; split; intros. left. apply EList_evalid in H; auto.
-destruct H. apply EList_evalid; auto. rewrite H; auto.
-(*case e not inside*)
-exists ((u,v)::(EList g)). split. apply NoDup_cons. auto. apply NoDup_EList.
-intros; split; intros.
-destruct H. right; rewrite H; auto. left; rewrite <- EList_evalid; apply H.
-destruct H. rewrite <- EList_evalid in H. apply in_cons. apply H.
-rewrite H. simpl. left; auto.
+  unfold PrimGG_adde'.
+  unfold labeledgraph_add_edge.
+  apply pregraph_add_edge_finite.
+  apply Finite_PrimGG.
 Qed.
 
-Instance AdjMatUSound_adde':
+Instance SoundPrim_adde':
   SoundPrim PrimGG_adde'.
 Proof.
-constructor; simpl. constructor; simpl.
+constructor; simpl. constructor; simpl. constructor; simpl.
 +apply (size_representable g).
 +apply (inf_representable g).
 +apply (vvalid_meaning g).
@@ -333,21 +301,33 @@ constructor; simpl. constructor; simpl.
   apply (edge_dst_snd g e).
 +apply Fin_PrimGG_adde'.
 +unfold addValidFunc, updateEdgeFunc, equiv_dec; intros.
-  destruct (E_EqDec e (u,v)). hnf in e0; subst e. apply add_edge_strong_evalid; auto.
-  unfold complement, equiv in c. destruct H. apply add_edge_preserves_strong_evalid.
-  unfold not; intros. symmetry in H0; contradiction. apply evalid_strong_evalid; auto.
-  contradiction.
-+unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
-  lia. unfold complement, equiv in c. destruct H. apply strong_inf_bound; auto.
-  symmetry in H; contradiction.
-+unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
-  lia. destruct H. apply (undirected_edge_rep g e); auto.
-  unfold complement, equiv in c. symmetry in H; contradiction.
+  destruct (E_EqDec (u,v) e). hnf in e0; subst e. trivial. 
+  unfold complement, equiv in c. destruct H.
+  apply (undirected_edge_rep g e); auto.
+  exfalso. apply c.
+  symmetry. trivial.
++unfold addValidFunc, update_elabel, equiv_dec; intros.
+ destruct (E_EqDec (u,v) e); destruct H.
+- replace e with (u, v).
+  apply add_edge_strong_evalid; trivial.
+- subst e.
+  apply add_edge_strong_evalid; trivial.
+- apply add_edge_preserves_strong_evalid; trivial.
+  apply evalid_strong_evalid; trivial.
+- exfalso. apply c. subst e. reflexivity.
+  + unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. unfold update_elabel.
+  unfold equiv_dec.
+  destruct (E_EqDec (u,v) e). lia.
+  destruct H.
+- apply strong_inf_bound; trivial.
+- exfalso.
+  replace (u,v) with e in c.
+  apply c. apply equiv_reflexive.
 Qed.
 
 Definition PrimGG_adde: PrimGG :=
   @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
-    PrimGG_adde' (AdjMatUSound_adde').
+    PrimGG_adde' (SoundPrim_adde').
 
 Lemma adde_vvalid:
   vvalid g v <-> vvalid PrimGG_adde v.
@@ -489,10 +469,10 @@ exists (remove E_EqDec e (EList g)). split. apply nodup_remove_nodup. apply NoDu
 intros. rewrite remove_In_iff, EList_evalid; auto. split; auto.
 Qed.
 
-Instance AdjMatUSound_eremove':
+Instance SoundPrim_eremove':
   SoundPrim PrimGG_eremove'.
 Proof.
-constructor; simpl. constructor; simpl.
+constructor; simpl. constructor; simpl. constructor; simpl.
 ++apply (size_representable g).
 ++apply (inf_representable g).
 ++apply (vvalid_meaning g).
@@ -508,16 +488,22 @@ constructor; simpl. constructor; simpl.
 ++apply (edge_src_fst g).
 ++apply (edge_dst_snd g).
 ++apply Fin_PrimGG_eremove'.
-++unfold removeValidFunc; intros. destruct H. apply remove_edge_preserves_strong_evalid; split.
-  apply evalid_strong_evalid; auto. auto.
-++unfold removeValidFunc; intros. destruct H. destruct (E_EqDec e0 e).
-  hnf in e1; contradiction. apply strong_inf_bound; auto.
-++unfold removeValidFunc; intros. destruct H. apply undirected_edge_rep; auto.
+++unfold removeValidFunc; intros. destruct H.
+apply (undirected_edge_rep g); trivial.
+++unfold removeValidFunc; intros. destruct H.
+  apply remove_edge_preserves_strong_evalid.
+  split.
+  apply evalid_strong_evalid; trivial.
+  intro. apply H0. symmetry. trivial.
+++unfold removeValidFunc; intros. destruct H.
+  destruct (E_EqDec e0 e).
+-- exfalso. apply H0. apply e1.
+-- apply strong_inf_bound; trivial.
 Qed.
 
 Definition PrimGG_eremove: PrimGG :=
   @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
-    PrimGG_eremove' (AdjMatUSound_eremove').
+    PrimGG_eremove' (SoundPrim_eremove').
 
 Lemma eremove_EList:
   forall l, Permutation (e::l) (EList g) -> Permutation l (EList PrimGG_eremove).

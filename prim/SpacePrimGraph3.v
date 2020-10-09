@@ -116,13 +116,13 @@ destruct H0; destruct H0. assert (x = (u,v)). {
   rewrite (edge_dst_snd g) in H2. rewrite <- H0, <- H2. destruct x; simpl; auto.
 } subst x.
 rewrite eformat1; auto. simpl.
-rewrite <- H0. rewrite <- H2 at 2. apply undirected_edge_rep; auto.
+rewrite <- H0. rewrite <- H2 at 2. apply (undirected_edge_rep g); auto.
 assert (x = (v,u)). {
   rewrite (edge_src_fst g) in H0; rewrite (edge_dst_snd g) in H2.
   rewrite <- H0, <- H2. destruct x; simpl; auto.
 } subst x.
 rewrite eformat2. simpl. auto. simpl. rewrite <- H0. rewrite <- H2 at 2.
-apply undirected_edge_rep; auto.
+apply (undirected_edge_rep g); auto.
 +intros. destruct (Z.lt_trichotomy u v).
 rewrite eformat1 in H. 2: simpl; lia.
 assert (evalid g (u,v)). auto.

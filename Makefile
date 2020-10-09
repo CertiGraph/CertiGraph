@@ -43,7 +43,8 @@ GRAPH_FILES = \
   list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
   graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v \
   MathAdjMatGraph.v SpaceAdjMatGraph1.v SpaceAdjMatGraph2.v SpaceAdjMatGraph3.v \
-  path_cost.v 
+  path_cost.v \
+  MathUAdjMatGraph.v
 
   # 1 = noncontiguous
   # 2 = contiguous 1-d
