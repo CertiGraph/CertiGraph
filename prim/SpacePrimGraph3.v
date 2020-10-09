@@ -1,8 +1,6 @@
-Require Import VST.floyd.proofauto.
-Require Import CertiGraph.graph.graph_model.
-Require Export CertiGraph.graph.SpaceUAdjMatGraph3.
+Require Import CertiGraph.prim.prim_env.
 Require Import CertiGraph.prim.MathPrimGraph.
-Require Import CertiGraph.lib.List_ext.
+Require Export CertiGraph.graph.SpaceUAdjMatGraph3.
 
 Local Open Scope logic.
 
