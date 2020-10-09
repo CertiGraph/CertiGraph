@@ -1,65 +1,18 @@
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.graph.graph_model.
-Require Export CertiGraph.graph.SpaceAdjMatGraph3.
+Require Export CertiGraph.graph.SpaceUAdjMatGraph3.
 Require Import CertiGraph.prim.MathPrimGraph.
 Require Import CertiGraph.lib.List_ext.
-
-(*
-  Anshuman, Oct 7:
-  This file calls prim/MatrixUGraph, 
-  part of which is due to be lifted to graph/
-
-  When that happens, part of this file 
-  should also be lifted to graph/
- *)
 
 Local Open Scope logic.
 
 Section SpacePrimGraph3.
 
-  Context {size : Z}.
-  Context {inf : Z}.
-  Context {size_rep': 0 < size <= Int.max_signed}.
-  Context {inf_rep: 0 <= inf <= Int.max_signed}.
-
-
-Definition graph_to_symm_mat g :=
-  @graph_to_mat size g eformat.
-
-Lemma graph_to_mat_eq:
-  forall (g: AdjMatLG) i j, 0 <= i < size -> 0 <= j < size ->
-    (Znth i (Znth j (graph_to_symm_mat g))) = elabel g (eformat (i,j)).
-Proof.
-  intros.
-  symmetry. rewrite eformat_symm.
-  apply elabel_Znth_graph_to_mat; lia.
-Qed.
-
-Lemma graph_to_mat_symmetric:
-  forall (g: AdjMatLG) i j,
-    0 <= i < size -> 0 <= j < size ->
-    (Znth i (Znth j (graph_to_symm_mat g))) =
-    (Znth j (Znth i (graph_to_symm_mat g))).
-Proof.
-  intros. repeat rewrite graph_to_mat_eq; trivial.
-  f_equal. apply eformat_symm.
-Qed.
-
-Lemma graph_to_mat_inf:
-  forall (g: @AdjMatGG size inf) u v,
-    0 <= u < v ->
-    v < size ->
-    ~ evalid g (u,v) ->
-    Znth v (Znth u (graph_to_symm_mat g)) =
-    inf.
-Proof.
-  intros. unfold graph_to_symm_mat.
-  rewrite <- elabel_Znth_graph_to_mat; try lia.
-  rewrite eformat1.
-  apply (MathAdjMatGraph.invalid_edge_weight); auto.
-  simpl; lia.
-Qed.
-
+Context {size : Z}.
+Context {inf : Z}.
+Context {size_rep': 0 < size <= Int.max_signed}.
+Context {inf_rep: 0 <= inf <= Int.max_signed}.
+  
 Definition G := @PrimGG size inf.
 Identity Coercion PrimGG_G: G >-> PrimGG.
 Definition edgeless_graph' := @edgeless_graph size inf inf_rep size_rep'.
@@ -77,71 +30,10 @@ Proof.
 Admitted.
 
 Lemma edgeless_to_symm_mat:
-  graph_to_symm_mat edgeless_graph' =
+  (@graph_to_symm_mat size edgeless_graph') =
   list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) inf).
 Proof.
   simpl. repeat rewrite edgeless_vert_rep; simpl. auto.
 Admitted.
-
-Lemma eformat_evalid_vvalid:
-forall (g: G) u v, evalid g (eformat (u,v)) -> vvalid g u /\ vvalid g v.
-Proof.
-intros. apply evalid_strong_evalid in H.
-destruct (Z.lt_trichotomy u v).
-rewrite eformat1 in H. destruct H.
-rewrite (edge_src_fst g), (edge_dst_snd g) in H1; auto. simpl; lia.
-destruct H0.
-subst u. rewrite eformat1 in H. destruct H.
-rewrite (edge_src_fst g), (edge_dst_snd g) in H0; auto. simpl; lia.
-rewrite eformat2 in H. simpl in H; destruct H.
-rewrite (edge_src_fst g), (edge_dst_snd g) in H1; auto. simpl in H1.
-split; apply H1. simpl; lia.
-Qed.
-
-Lemma eformat_adj': forall (g: G) u v, evalid g (eformat (u,v)) -> adj_edge g (eformat (u,v)) u v.
-Proof.
-intros. split. apply evalid_strong_evalid; auto.
-destruct (Z.le_ge_cases u v).
-rewrite eformat1 in *. left. rewrite (edge_src_fst g), (edge_dst_snd g); auto. auto. auto.
-rewrite eformat2 in *. right. rewrite (edge_src_fst g), (edge_dst_snd g); auto. auto. auto.
-Qed.
-
-Lemma eformat_adj: forall (g: G) u v, adjacent g u v <-> evalid g (eformat (u,v)).
-Proof.
-intros. split. intros.
-+
-destruct H. destruct H. destruct H.
-destruct H0; destruct H0. assert (x = (u,v)). {
-  rewrite (edge_src_fst g) in H0.
-  rewrite (edge_dst_snd g) in H2. rewrite <- H0, <- H2. destruct x; simpl; auto.
-} subst x.
-rewrite eformat1; auto. simpl.
-rewrite <- H0. rewrite <- H2 at 2. apply (undirected_edge_rep g); auto.
-assert (x = (v,u)). {
-  rewrite (edge_src_fst g) in H0; rewrite (edge_dst_snd g) in H2.
-  rewrite <- H0, <- H2. destruct x; simpl; auto.
-} subst x.
-rewrite eformat2. simpl. auto. simpl. rewrite <- H0. rewrite <- H2 at 2.
-apply (undirected_edge_rep g); auto.
-+intros. destruct (Z.lt_trichotomy u v).
-rewrite eformat1 in H. 2: simpl; lia.
-assert (evalid g (u,v)). auto.
-exists (u,v). split. apply evalid_strong_evalid; auto. left.
-rewrite (edge_src_fst g), (edge_dst_snd g); auto.
-(*equal, repeat*)
-destruct H0. rewrite eformat1 in H. 2: simpl; lia.
-assert (evalid g (u,v)). auto.
-exists (u,v). split. apply evalid_strong_evalid; auto. left.
-rewrite (edge_src_fst g), (edge_dst_snd g); auto.
-rewrite eformat2 in H. 2: simpl; lia. simpl in H.
-assert (evalid g (v,u)). auto.
-exists (v,u). split. apply evalid_strong_evalid; auto.
-rewrite (edge_src_fst g), (edge_dst_snd g); auto.
-Qed.
-
-Corollary eformat_adj_elabel: forall (g: G) u v, adjacent g u v <-> elabel g (eformat (u,v)) < inf.
-Proof.
-intros. rewrite eformat_adj. apply evalid_inf_iff.
-Qed.
 
 End SpacePrimGraph3.
