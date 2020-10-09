@@ -5,7 +5,6 @@ Require Export CertiGraph.lib.find_lemmas.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
-Require Export CertiGraph.graph.undirected_graph.
 Require Export CertiGraph.graph.MathUAdjMatGraph.
 
 Local Open Scope logic.
