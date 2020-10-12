@@ -99,9 +99,9 @@ PRIM_FILES = \
   noroot_prim3.v noroot_prim_spec3.v verif_noroot_prim3.v 
 
 DIJKSTRA_FILES = \
-  dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \
-  dijkstra2.v SpaceDijkGraph2.v dijkstra_spec2.v verif_dijkstra2.v \
-  dijkstra3.v SpaceDijkGraph3.v dijkstra_spec3.v verif_dijkstra3.v \
+  dijkstra1.v dijkstra_spec1.v verif_dijkstra1.v \
+  dijkstra2.v dijkstra_spec2.v verif_dijkstra2.v \
+  dijkstra3.v dijkstra_spec3.v verif_dijkstra3.v \
   MathDijkGraph.v dijkstra_env.v dijkstra_constants.v \
   dijkstra_math_proof.v dijkstra_spec_pure.v 
   # 1 = noncontiguous
