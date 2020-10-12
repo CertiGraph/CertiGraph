@@ -2,9 +2,7 @@ Require Import VST.floyd.proofauto.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
 Require Import CertiGraph.graph.FiniteGraph.
-Require Import VST.veric.SeparationLogic.
 Require Import CertiGraph.kruskal.env_kruskal_edgelist.
-Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.graph.undirected_graph.
 
 Local Open Scope logic.

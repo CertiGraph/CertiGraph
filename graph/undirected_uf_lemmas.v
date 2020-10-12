@@ -1,6 +1,6 @@
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
-(*for ufgraph *)
+(* for ufgraph *)
 Require Import CertiGraph.graph.path_lemmas.
 (*for unionfind*)
 Require Import CertiGraph.graph.UnionFind.
@@ -149,7 +149,8 @@ Proof.
       intros.
       simpl in H2. inversion H2; subst a; clear H2.
       apply adjacent_ufroot_same in H.
-      apply (ufroot_same_trans _ (liGraph g) _ z); trivial.       apply IHp. trivial.
+      apply (ufroot_same_trans _ (liGraph g) _ z); trivial.
+      apply IHp. trivial.
 Qed.
 
 Lemma ufroot_same_connected:
