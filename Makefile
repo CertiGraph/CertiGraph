@@ -95,8 +95,9 @@ KRUSKAL_FILES = \
 PRIM_FILES = \
   prim_env.v MathPrimGraph.v prim_constants.v \
   SpacePrimGraph3.v \
-  prim3.v prim_spec3.v verif_prim3.v \
-  noroot_prim3.v noroot_prim_spec3.v verif_noroot_prim3.v 
+  prim3.v prim_spec3.v \
+  noroot_prim3.v noroot_prim_spec3.v \
+  verif_prim3.v verif_noroot_prim3.v 
 
 DIJKSTRA_FILES = \
   dijkstra1.v dijkstra_spec1.v verif_dijkstra1.v \

@@ -108,7 +108,9 @@ Qed.
 
 Lemma body_initialise_matrix: semax_body Vprog Gprog f_initialise_matrix initialise_matrix_spec.
 Proof.
-start_function.
+start_function. rename H3 into Hptrofs1.
+assert (Hptrofs2: 4*size <= Ptrofs.max_signed). assert (1 <= size) by lia. replace (4*size) with (1*(4*size)) by lia.
+apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia.
 assert (HZlength_nat_inc_list: size = Zlength (nat_inc_list (Datatypes.length old_contents))).
 rewrite nat_inc_list_Zlength. rewrite <- Zlength_correct. lia.
 forward_for_simple_bound size
@@ -127,7 +129,9 @@ rewrite H. entailer!.
 replace (@list_rep size CompSpecs Tsh arr old_contents 0) with (iter_sepcon.iter_sepcon (@list_rep size CompSpecs Tsh arr old_contents) [0]).
 2: { simpl. rewrite sepcon_emp. auto. }
 rewrite <- iter_sepcon.iter_sepcon_app.
-(*ok this is not good, make a generic scalable lemma*) simpl. entailer!. admit.
+replace ([0] ++ sublist 1 size (nat_inc_list (Z.to_nat size))) with (sublist 0 size (nat_inc_list (Z.to_nat size))). auto.
+rewrite (sublist_split 0 1). rewrite (sublist_one 0). rewrite nat_inc_list_i. auto.
+rewrite Z2Nat.id; lia. lia. rewrite nat_inc_list_Zlength; lia. lia. lia. rewrite nat_inc_list_Zlength; lia.
 (*inner loop*)
 replace (sublist i size (nat_inc_list (Z.to_nat (Zlength old_contents))))
   with ([i]++sublist (i+1) size (nat_inc_list (Z.to_nat (Zlength old_contents)))).
@@ -166,28 +170,8 @@ assert_PROP(force_val (sem_add_ptr_int tint Signed (force_val (sem_add_ptr_int (
     auto.
     rewrite Z.add_0_l.
     all: split; try rep_lia.
-    (* AM, Oct 7: 
-
-       When you unfold the value of size,
-       you miss an opportunity to learn 
-       about the required bounds of size.
-       
-       I strongly suggest keeping size and inf
-       Opaque unless absolutely necessary 
-       (i.e. when the VST proof spits out
-       an 8 at you and want to 
-       fold it back into "size").
-
-       Apart from that, use issues like this
-       to learn what you need from your size
-       and add them to your procondition
-       in prim_spec3. Once they are in, 
-       VST will automatically solve them
-       and these proof obligations will 
-       not even be presented to you.
-     *)
-    admit.
-    admit.
+    set (k:= Ptrofs.max_signed) in *; compute in k; subst k. apply (Z.le_trans _ (size * (4 * size))).
+    apply Z.mul_le_mono_nonneg_r. lia. lia. lia.
   - auto.
 }
 (*g[i][j] = a*)
@@ -232,13 +216,13 @@ rewrite Z2Nat.id in H3; auto.
 all: try lia.
 all: try rewrite <- ZtoNat_Zlength; try lia.
 rewrite Zlength_list_repeat; lia.
-Admitted.
+Qed.
 
 (******************PRIM'S***************)
 
 Lemma body_prim: semax_body Vprog Gprog f_prim prim_spec.
 Proof.
-start_function. rename H into Hprecon_1.    
+start_function. rename H into Hprecon_1. rename H0 into Hprecon_2.
 assert (inf_repable: repable_signed inf). {
   red. apply (inf_representable g).
 }
@@ -279,12 +263,11 @@ assert (HZlength_starting_keys: Zlength starting_keys = size). {
 unfold repable_signed in inf_repable.
 (*push all vertices into priq*)
 forward_call(tt).
-1: admit.
-(* AM, Oct 7:
-   Another chance to add constraints to
-   the precondition *)
-  (* unfold size; compute; split3; trivial. *)
-
+split; try lia. split. apply (Z.le_trans _ 0).
+pose proof Int.min_signed_neg; lia. lia.
+rewrite Z.mul_comm. apply (Z.le_trans _ (size * (4*size))).
+apply (Z.le_trans _ (1*(4*size))). lia. apply Z.mul_le_mono_nonneg_r; lia.
+set (k:=Int.max_signed); compute in k; subst k. set (k:=Ptrofs.max_signed) in *; compute in k; subst k. lia.
 rewrite <- size_eq in *.
 Intro priq_ptr.
 remember (pointer_val_val priq_ptr) as v_pq.
@@ -517,14 +500,7 @@ break: (
       (fold_right Z.min (hd 0 (upd_Znth r (list_repeat (Z.to_nat size) inf) 0))
          (upd_Znth r (list_repeat (Z.to_nat size) inf) 0)) 0). {
     intros. rewrite find_src. auto. simpl; auto.
-    (* AM: 
-       You need to add this to precon.
-       In Dijkstra I also need inf to 
-       be nonzero, so I don't mind
-       adding this all the way at the top
-       in graph/MathAdjMatGraph.
-     *)
-    admit.
+    rewrite inf_eq; lia. (*does find_src need 0<inf any longer*)
     lia.
   }
   (*Hinv_12 (nil <> nil) seems to be missing, autoresolved?*)
@@ -545,9 +521,7 @@ break: (
   assert (Hinv_15: exists M, minimum_spanning_forest M g /\ is_partial_lgraph elg M). {
     destruct (exists_msf g) as [M ?]. exists M; split. auto.
     subst elg. apply edgeless_partial_lgraph.
-  }
-
-                                                         (*fix up the SEP*)
+  }                                                      (*fix up the SEP*)
   replace (map (fun x : V => if in_dec V_EqDec x [] then Vint (Int.repr 1) else Vint (Int.repr 0)) (nat_inc_list (Z.to_nat size)))
     with (map (fun x : Z => Vint (Int.repr x)) (list_repeat (Z.to_nat size) 0)). 2: {
     apply list_eq_Znth. repeat rewrite Zlength_map. rewrite Zlength_list_repeat by lia. rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
@@ -604,18 +578,8 @@ break: (
   2: { rewrite list_map_compose. auto. }
   forward_call (v_pq, pq_state).
   1: { repeat split; trivial.
-       admit.
-       (* AM, Oct 7:
-          You need to add this to the 
-          soundness condition of Prim.
-          Not to the soundness condition of
-          all Undirected Matrices.
-          I have done this in 
-          dijkstra/MathDijkGraph, which 
-          you can study for inspiration.
-          The plugin there is called
-          inf_further_restricted.
-        *)
+        rewrite inf_eq. set (k:=Int.max_signed); compute in k; subst k. lia.
+      (*I'm dealing with this with inf_eq, to keep Math more versatile*)
   }
   forward_if.
 
@@ -626,8 +590,7 @@ break: (
   }
   forward_call (v_pq, pq_state).
   1: { repeat split; trivial.
-       (* same as above *)
-       admit.
+        rewrite inf_eq. set (k:=Int.max_signed); compute in k; subst k. lia.
   }
   Intros u. rename H2 into Hu.
   (* u is the minimally chosen item from the
@@ -1962,8 +1925,9 @@ Exists mst fmst parents.
 Transparent size.
 entailer!.
 Global Opaque size.
-               
-(*Should we bother with filling a matrix for it? The original Prim doesn't bother*) 
-Admitted.
+}
+}
+
+Qed.
 
 End PrimProof.
