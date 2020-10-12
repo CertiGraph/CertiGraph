@@ -3,7 +3,6 @@ Require Import CertiGraph.unionfind.env_unionfind_arr.
 Require Export CertiGraph.unionfind.uf_arr_specs.
 
 (* Kruskal's imports (already made minimal *)
-Require Import CertiGraph.graph.undirected_graph.
 Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
 Require Import CertiGraph.kruskal.env_kruskal_edgelist.
 Require Import CertiGraph.kruskal.spatial_wedgearray_graph.
