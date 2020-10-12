@@ -1,4 +1,9 @@
-Require Import CertiGraph.prim.prim_env.
+Require Import VST.floyd.proofauto.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.graph_relation.
 Require Export CertiGraph.graph.MathUAdjMatGraph.
 
 Local Open Scope logic.
@@ -16,28 +21,13 @@ Section MathPrimGraph.
 
 Context {size: Z} {inf: Z}.
 
-Definition PrimLG := UAdjMatLG.
-
-Class SoundPrim (g: PrimLG) := {
-  suadjmat: @SoundUAdjMat size inf g;
-}.
-
-Definition PrimGG := (GeneralGraph V E unit Z unit (fun g => SoundPrim g)).
+Definition PrimGG := (@UAdjMatGG size inf).
 
 (* Some handy coercions: *)
-Identity Coercion UAdjMatLG_PrimLG: PrimLG >-> UAdjMatLG.
-
-Definition SoundPrim_PrimGG (g: PrimGG) := (@sound_gg _ _ _ _ _ _ _ _ g).
+Identity Coercion UAdjMatGG_PrimGG: PrimGG >-> UAdjMatGG.
 
 (* We can always drag out SoundUAdjMat *)
-Definition SoundUAdjMat_PrimGG (g: PrimGG) :=
-  @suadjmat g (SoundPrim_PrimGG g).
-
-(* A PrimGG can be weakened into a UAdjMatGG *)
-Definition UAdjMatGG_PrimGG (g: PrimGG) : UAdjMatGG :=
-  Build_GeneralGraph unit Z unit SoundUAdjMat g (SoundUAdjMat_PrimGG g).
-
-Coercion UAdjMatGG_PrimGG: PrimGG >-> UAdjMatGG.
+Definition SoundUAdjMat_PrimGG (g: PrimGG) := (@sound_gg _ _ _ _ _ _ _ _ g).
 
 (* Great! So now when we want to access an 
    AdjMat or UAdjMat plugin, we can simply use the 
@@ -208,11 +198,11 @@ Definition edgeless_lgraph : UAdjMatLG :=
     (fun v => tt) (fun e => inf) tt. 
 
 Instance SoundPrim_edgeless:
-  SoundPrim edgeless_lgraph.
+  (@SoundUAdjMat size inf) edgeless_lgraph.
 Proof. 
 constructor.
 all: simpl; intros; try contradiction.
-constructor. constructor.
+constructor. 
 auto. auto. 
 all: simpl; intros; try auto; try contradiction.
 split; intros; auto.
@@ -231,7 +221,7 @@ exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
 Qed.
 
 Definition edgeless_graph: PrimGG :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit (@SoundUAdjMat size inf)
     edgeless_lgraph SoundPrim_edgeless.
 
 Lemma edgeless_graph_evalid:
@@ -318,9 +308,9 @@ Proof.
 Qed.
 
 Instance SoundPrim_adde':
-  SoundPrim PrimGG_adde'.
+  (@SoundUAdjMat size inf) PrimGG_adde'.
 Proof.
-constructor; simpl. constructor; simpl. constructor; simpl.
+constructor; simpl. constructor; simpl.
 +apply (size_representable g).
 +apply (inf_representable g).
 +apply (vvalid_meaning g).
@@ -366,7 +356,7 @@ constructor; simpl. constructor; simpl. constructor; simpl.
 Qed.
 
 Definition PrimGG_adde: PrimGG :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundUAdjMat
     PrimGG_adde' (SoundPrim_adde').
 
 Lemma adde_vvalid:
@@ -510,9 +500,9 @@ intros. rewrite remove_In_iff, EList_evalid; auto. split; auto.
 Qed.
 
 Instance SoundPrim_eremove':
-  SoundPrim PrimGG_eremove'.
+  (@SoundUAdjMat size inf) PrimGG_eremove'.
 Proof.
-constructor; simpl. constructor; simpl. constructor; simpl.
+constructor; simpl. constructor; simpl.
 ++apply (size_representable g).
 ++apply (inf_representable g).
 ++apply (vvalid_meaning g).
@@ -541,7 +531,7 @@ apply (undirected_edge_rep g); trivial.
 Qed.
 
 Definition PrimGG_eremove: PrimGG :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundUAdjMat
     PrimGG_eremove' (SoundPrim_eremove').
 
 Lemma eremove_EList:
