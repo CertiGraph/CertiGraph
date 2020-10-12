@@ -62,7 +62,8 @@ Definition initialise_matrix_spec :=
             Zlength old_contents = size;
             forall row, In row old_contents -> Zlength row = size;
             repable_signed a;
-            0 < size <= Int.max_signed
+            0 < size <= Int.max_signed;
+            size * (4 * size) <= Ptrofs.max_signed (*you can alloc the entire matrix. Can derive above from here*)
           )
      PARAMS ( arr ; Vint (Int.repr a) )
      GLOBALS ()
@@ -76,7 +77,8 @@ Definition prim_spec :=
   DECLARE _prim
   WITH g: G, garbage: list V, gptr : pointer_val, parent_ptr : pointer_val
   PRE [tptr (tarray tint size), tptr tint]
-     PROP ( writable_share Tsh
+     PROP ( writable_share Tsh;
+            size * (4 * size) <= Ptrofs.max_signed
           )
      PARAMS ( pointer_val_val gptr; pointer_val_val parent_ptr)
      GLOBALS ()
