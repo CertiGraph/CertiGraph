@@ -1228,7 +1228,7 @@ break: (
         Then do a swap
       *)
       assert (connected M (Znth u parents) u). apply Hmsf_M. apply adjacent_connected. exists a.
-        split. apply evalid_strong_evalid; auto.
+        split. apply (evalid_strong_evalid g); auto.
         rewrite (edge_src_fst g), (edge_dst_snd g).
         unfold a; destruct (Z.le_ge_cases u (Znth u parents)). rewrite eformat1 by (simpl; auto).
         simpl. right. auto.
@@ -1662,7 +1662,7 @@ break: (
           destruct (in_dec V_EqDec u popped_vertices). contradiction. auto.
         assert (Znth u keys <= Znth v2 keys). rewrite <- H15, <- H16. apply Hu_min; lia.
         assert (Znth v2 keys < inf). rewrite Hinv_5 by lia.
-          apply strong_inf_bound. apply Hinv_7; lia.
+          apply (evalid_meaning g). apply Hinv_7; lia.
         (*now so Znth u keys = inf*)
         destruct popped_vertices. contradiction.
         assert( Znth u keys = elabel g (eformat (u,Znth u parents))). rewrite Hinv_5 by lia. auto.
@@ -1704,7 +1704,7 @@ break: (
           destruct (in_dec V_EqDec u popped_vertices). contradiction. auto.
         assert (Znth u keys <= Znth v2 keys). rewrite <- H15, <- H16. apply Hu_min; lia.
         assert (Znth v2 keys < inf). rewrite Hinv_5 by lia.
-          apply strong_inf_bound. apply Hinv_7; lia.
+          apply (evalid_meaning g). apply Hinv_7; lia.
         (*now so Znth u keys = inf*)
         destruct popped_vertices. contradiction.
         assert( Znth u keys = elabel g (eformat (u,Znth u parents))). rewrite Hinv_5 by lia. auto.
