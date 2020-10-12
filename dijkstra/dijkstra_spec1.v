@@ -33,7 +33,7 @@ Section DijkstraSpec.
          i : V
     PRE [tptr (tptr tint), tint, tint]
       PROP (0 <= i < size;
-          0 <= u < size)
+            0 <= u < size)
       PARAMS (pointer_val_val graph_ptr;
            Vint (Int.repr u);
            Vint (Int.repr i))

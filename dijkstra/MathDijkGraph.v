@@ -171,9 +171,8 @@ Section MathDijkGraph.
       [rewrite (evalid_meaning g) |
        rewrite (edge_src_fst g) |
        rewrite (edge_dst_snd g)]; trivial.
-    split.
-    - apply edge_representable.
-    - intro. simpl in H2. lia. 
+    split; trivial.
+    apply edge_representable.
   Qed.
   
 End MathDijkGraph.
