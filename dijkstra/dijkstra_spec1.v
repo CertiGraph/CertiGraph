@@ -1,3 +1,4 @@
+Require Import CertiGraph.graph.SpaceAdjMatGraph1.
 Require Import CertiGraph.dijkstra.dijkstra_env.
 
 (* A separate file with the underlying PQ spec-ed out *)
@@ -5,7 +6,6 @@ Require Export CertiGraph.priq.priq_arr_specs.
 
 (* Dijkstra-specific stuff *)
 Require Import CertiGraph.dijkstra.MathDijkGraph.
-Require Import CertiGraph.dijkstra.SpaceDijkGraph1.
 Require Export CertiGraph.dijkstra.dijkstra_spec_pure.
 
 (* The first moment we become implementation-specific *)
@@ -38,11 +38,13 @@ Section DijkstraSpec.
            Vint (Int.repr u);
            Vint (Int.repr i))
       GLOBALS ()
-      SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses)
+      SEP (@SpaceAdjMatGraph size CompSpecs sh id g 
+                             (pointer_val_val graph_ptr) addresses)
     POST [tint]
       PROP ()
       RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_mat size g id))))) 
-      SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses).    
+      SEP (@SpaceAdjMatGraph size CompSpecs sh id g 
+                             (pointer_val_val graph_ptr) addresses).    
   
   Definition dijkstra_spec :=
     DECLARE _dijkstra
@@ -63,7 +65,8 @@ Section DijkstraSpec.
              Vint (Int.repr size);
              Vint (Int.repr inf))
       GLOBALS ()
-      SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
+      SEP (@SpaceAdjMatGraph size CompSpecs sh id g 
+                             (pointer_val_val graph_ptr) addresses;
           data_at_ Tsh (tarray tint size) (pointer_val_val dist_ptr);
           data_at_ Tsh (tarray tint size) (pointer_val_val prev_ptr))
     POST [tvoid]
@@ -74,7 +77,8 @@ Section DijkstraSpec.
                vvalid g dst ->
                @inv_popped size inf g src popped prev dist dst)
       LOCAL ()
-      SEP (DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
+      SEP (@SpaceAdjMatGraph size CompSpecs sh id g 
+                             (pointer_val_val graph_ptr) addresses;
           data_at Tsh (tarray tint size) (map Vint (map Int.repr prev)) (pointer_val_val prev_ptr);
           data_at Tsh (tarray tint size) (map Vint (map Int.repr dist)) (pointer_val_val dist_ptr)).
 
