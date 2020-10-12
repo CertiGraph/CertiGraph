@@ -87,13 +87,13 @@ Section MathDijkGraph.
     intros.
     pose proof (inf_further_restricted g).
     pose proof (size_representable g).
-    split.
-    - apply Z.le_lt_trans with (m := Int.max_signed / size);
-        [|lia].
-      apply Z.div_pos; [|lia]. compute; inversion 1.
+    split. 
+    - apply Z.le_lt_trans with
+          (m := Int.max_signed / size);
+        [apply Z.div_pos|]; rep_lia.
     - destruct H as [_ ?].
-      apply Z.le_lt_trans
-        with (m := Int.max_signed - Int.max_signed/size); trivial.
+      apply Z.le_lt_trans with
+          (m := Int.max_signed - Int.max_signed/size); trivial.
       assert (0 < Int.max_signed / size). {
         apply Z.div_str_pos; trivial.
       }
@@ -144,9 +144,8 @@ Section MathDijkGraph.
     pose proof (invalid_edge_weight g e).
     pose proof (edge_cost_pos g e).
     destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
-    - specialize (H e0).
-      split; trivial.
-      1: apply Z.le_trans with (m := 0); trivial; rep_lia.
+    - specialize (H e0). 
+      split; trivial. rep_lia.
       apply Z.le_trans with (m := (Int.max_signed / size)); trivial.
       apply H.
       pose proof (size_representable g).
@@ -154,9 +153,7 @@ Section MathDijkGraph.
     - rewrite H0 in n.
       replace (elabel g e) with inf by trivial.
       pose proof (inf_representable g).
-      split; [|lia].
-      apply Z.le_trans with (m := 0); [|lia].
-      compute; inversion 1.
+      split; rep_lia.
   Qed.
 
   Lemma strong_evalid_dijk:
