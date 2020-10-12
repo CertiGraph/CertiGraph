@@ -1,15 +1,10 @@
-Require Import VST.floyd.proofauto.
-Require Import VST.msl.iter_sepcon.
-Require Import CertiGraph.lib.List_ext.
-Require Import CertiGraph.floyd_ext.share.
-Require Import CertiGraph.graph.graph_model.
-Require Import CertiGraph.graph.graph_relation.
-Require Import CertiGraph.prim.MathPrimGraph. 
-Require Import CertiGraph.prim.SpacePrimGraph3.
-Require Import CertiGraph.prim.prim_spec3.
+Require Import CertiGraph.prim.prim_env.
 Require Export CertiGraph.lib.find_lemmas.
 Require Export CertiGraph.priq.is_empty_lemmas.
+Require Import CertiGraph.prim.MathPrimGraph. 
 Require Import CertiGraph.prim.prim_constants.
+Require Import CertiGraph.prim.SpacePrimGraph3.
+Require Import CertiGraph.prim.prim_spec3.
 
 Local Open Scope Z.
 

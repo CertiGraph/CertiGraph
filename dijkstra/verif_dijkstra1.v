@@ -1,8 +1,8 @@
+Require Import CertiGraph.graph.SpaceAdjMatGraph1.
 Require Export CertiGraph.priq.is_empty_lemmas.
 Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
-Require Import CertiGraph.dijkstra.SpaceDijkGraph1.
 Require Import CertiGraph.dijkstra.dijkstra_spec1.
 
 Local Open Scope Z_scope.
@@ -44,7 +44,8 @@ Section DijkstraProof.
                 ((list_repeat (Z.to_nat i) (Vint (Int.repr inf)))
                    ++ (list_repeat (Z.to_nat (size-i))
                                    Vundef)) (pointer_val_val dist);
-        DijkGraph sh CompSpecs g (pointer_val_val arr) size addresses;
+        @SpaceAdjMatGraph size CompSpecs sh id
+                          g (pointer_val_val arr) addresses;
         free_tok (pointer_val_val v_pq) (sizeof tint * size)).
   
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src
@@ -99,7 +100,8 @@ Section DijkstraProof.
                      (tarray tint size)
                      (map Vint (map Int.repr dist))
                      (pointer_val_val dist_ptr);
-             DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
+             @SpaceAdjMatGraph size CompSpecs sh id
+                               g (pointer_val_val graph_ptr) addresses;
              free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
   Definition dijk_forloop_break_inv (g: @DijkGG size inf) sh
@@ -127,7 +129,8 @@ Section DijkstraProof.
                      (tarray tint size)
                      (map Vint (map Int.repr dist))
                      (pointer_val_val dist_ptr);
-             DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
+             @SpaceAdjMatGraph size CompSpecs sh id
+                               g (pointer_val_val graph_ptr) addresses;
              free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
   Definition dijk_inner_forloop_inv (g: @DijkGG size inf) sh
@@ -228,14 +231,14 @@ Section DijkstraProof.
                      (tarray tint size)
                      (map Vint (map Int.repr dist'))
                      (pointer_val_val dist_ptr);
-             DijkGraph sh CompSpecs g (pointer_val_val graph_ptr) size addresses;
+             @SpaceAdjMatGraph size CompSpecs sh id 
+                               g (pointer_val_val graph_ptr) addresses;
              free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
 
   Lemma body_getCell: semax_body Vprog (@Gprog size inf Z_EqDec) f_getCell (@getCell_spec size inf).
   Proof.
     start_function.
-    unfold DijkGraph.
     rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
     assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
       unfold graph_to_mat, vert_to_list.
@@ -249,8 +252,7 @@ Section DijkstraProof.
     Intros.
     freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
     unfold list_rep.
-    forward. forward. forward.
-    thaw FR. unfold DijkGraph.
+    forward. forward. forward. thaw FR.
     rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
     entailer!.
   Qed.
@@ -553,7 +555,7 @@ Section DijkstraProof.
               apply (vvalid_meaning g); trivial.
             }
 
-            rewrite <- elabel_Znth_graph_to_mat in Heqcost; trivial.
+            rewrite <- elabel_Znth_graph_to_mat in Heqcost; try ulia.
 
             forward_if.
             ++ rename H27 into Htemp.
@@ -646,7 +648,7 @@ Section DijkstraProof.
                   symmetry in H8.
 
                   remember (Znth u dist' + elabel g (u, i)) as newcost.
-                  fold V in *.
+                  fold V in *. simpl id in *.
                   rewrite <- Heqnewcost in *.
 
                   assert (u <> i) by (intro; subst; lia).
@@ -659,8 +661,7 @@ Section DijkstraProof.
                   (* 13 goals, where the 13th is 
                    3 range-based goals together *)
                   --- apply inv_popped_newcost; ulia.
-                  --- apply inv_unpopped_newcost with (priq0 := priq');
-                        ulia.
+                  --- apply inv_unpopped_newcost with (priq0 := priq'); ulia. 
                   --- now apply inv_unpopped_weak_newcost.
                   --- apply inv_unseen_newcost; ulia.
                   --- apply inv_unseen_weak_newcost; ulia. 
@@ -732,7 +733,7 @@ Section DijkstraProof.
                      assert (0 <= u < size) by lia.
                      rewrite path_cost_glue_one_step.
                      destruct H37 as [_ [_ [_ [? _]]]].
-                     ulia.
+                     simpl id in *. ulia.
                  --- intros.
                      assert (i <= dst < size) by lia.
                      apply H_inv_unseen_weak; trivial.
@@ -795,7 +796,7 @@ Section DijkstraProof.
                             simpl in H23. apply H23.
                             lia.
                           }
-                          ulia.
+                          simpl id in *. ulia.
                      }
                      apply H39; trivial.
                  --- apply H_inv_unpopped; lia.
@@ -819,7 +820,7 @@ Section DijkstraProof.
                  rewrite path_cost_glue_one_step.
                  destruct H34 as [? _].
                  pose proof (path_cost_pos _ _ H34).
-                 ulia.
+                 simpl id in *. ulia.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
@@ -850,7 +851,7 @@ Section DijkstraProof.
         Intros prev priq dist popped.
         freeze FR := (data_at _ _ _ (pointer_val_val prev_ptr))
                        (data_at _ _ _ (pointer_val_val dist_ptr))
-                       (DijkGraph _ _ _ _ _ _).
+                       (SpaceAdjMatGraph _ _ _ _ _).
         forward_call (Tsh, priq_ptr, size, priq).
         entailer!.
         thaw FR.
