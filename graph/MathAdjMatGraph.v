@@ -58,7 +58,9 @@ Section Mathematical_AdjMat_Model.
     em: (* evalid_meaning *)
       forall e, evalid g e <-> 
                 Int.min_signed <= elabel g e <= Int.max_signed /\
-                elabel g e <> inf;
+                elabel g e < inf;
+    ese: (* evalid_strong_evalid *)
+      forall e, evalid g e -> strong_evalid g e;
     iew: (* invalid_edge_weight *)
       forall e, ~ evalid g e <-> elabel g e = inf;
     esf: (* edge_src_fst *)
@@ -94,6 +96,9 @@ Section Mathematical_AdjMat_Model.
 
   Definition evalid_meaning (g: AdjMatGG) :=
     @em g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+
+  Definition evalid_strong_evalid (g: AdjMatGG) :=
+    @ese g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
   Definition invalid_edge_weight (g: AdjMatGG) :=
     @iew g ((@sound_gg _ _ _ _ _ _ _ _ g)).
