@@ -1,10 +1,4 @@
-Require Import VST.floyd.proofauto.
-Require Import CertiGraph.lib.EquivDec_ext.
-Require Import CertiGraph.lib.List_ext.
-Require Export CertiGraph.lib.find_lemmas.
-Require Import CertiGraph.graph.graph_model.
-Require Import CertiGraph.graph.graph_gen.
-Require Import CertiGraph.graph.graph_relation.
+Require Import CertiGraph.prim.prim_env.
 Require Export CertiGraph.graph.MathUAdjMatGraph.
 
 Local Open Scope logic.

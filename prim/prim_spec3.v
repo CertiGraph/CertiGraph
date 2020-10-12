@@ -1,11 +1,9 @@
-Require Import CertiGraph.floyd_ext.share.
+Require Import CertiGraph.prim.prim_env.
 Require Export CertiGraph.priq.priq_arr_specs.
-Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.prim.MathPrimGraph.
-Require Export CertiGraph.prim.prim3.
 Require Import CertiGraph.prim.prim_constants.
 Require Import CertiGraph.prim.SpacePrimGraph3.
-Require Import CertiGraph.lib.List_ext.
+Require Export CertiGraph.prim.prim3.
 
 Local Open Scope Z_scope.
 

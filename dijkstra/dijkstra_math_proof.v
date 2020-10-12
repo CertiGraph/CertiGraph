@@ -4,6 +4,8 @@ Require Import CertiGraph.dijkstra.dijkstra_spec_pure.
 
 Local Open Scope Z_scope.
 
+Ltac ulia := trivial; fold V in *; rep_lia.
+
 Section DijkstraMathLemmas.
 
   Context {size : Z}.
