@@ -25,15 +25,27 @@ Lemma edgeless_vert_rep:
     (@vert_to_list size edgeless_graph' eformat v) =
     list_repeat (Z.to_nat size) inf.
 Proof.
-  intros. simpl. auto.
-  (*should try to find a better scalable way*)
-Admitted.
+  unfold vert_to_list; intros. rewrite map_map. apply list_eq_Znth.
++rewrite Zlength_map, nat_inc_list_Zlength, Zlength_list_repeat'; auto.
++intros. rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id in H0. 2: lia.
+rewrite Znth_list_repeat_inrange by auto.
+rewrite Znth_map, nat_inc_list_i. simpl; auto.
+rewrite Z2Nat.id; lia.
+rewrite nat_inc_list_Zlength.
+rewrite Z2Nat.id; lia.
+Qed.
 
 Lemma edgeless_to_symm_mat:
   (@graph_to_symm_mat size edgeless_graph') =
   list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) inf).
 Proof.
-  simpl. repeat rewrite edgeless_vert_rep; simpl. auto.
-Admitted.
+  unfold graph_to_symm_mat, graph_to_mat. apply list_eq_Znth.
++rewrite Zlength_map, nat_inc_list_Zlength, Zlength_list_repeat'; auto.
++intros. rewrite Zlength_map, nat_inc_list_Zlength, Z2Nat.id in H by lia.
+rewrite Znth_list_repeat_inrange by lia.
+rewrite Znth_map. rewrite nat_inc_list_i. apply edgeless_vert_rep; lia.
+rewrite Z2Nat.id by lia; lia.
+rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
+Qed.
 
 End SpacePrimGraph3.
