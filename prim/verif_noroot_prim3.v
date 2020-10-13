@@ -690,23 +690,18 @@ break: (
    forward_call (g, gptr, addresses, u, i).
    Global Opaque size.
    forward.
-   assert (1 = 1) by trivial.
-   assert (1 = 1) by trivial.
-   assert (1 = 1) by trivial.
-   (* AM: Just don't want to renumber all the hypotheses going forth 
-    *)
    forward_if.
     -(*g[u][i] < ...*)
       (*implies adjacency*)
-    rewrite graph_to_mat_eq in H10; try lia. rewrite eformat_symm in H10.
-    rewrite Int.signed_repr in H10. rewrite Int.signed_repr in H10.
+    rewrite graph_to_mat_eq in H7; try lia. rewrite eformat_symm in H7.
+    rewrite Int.signed_repr in H7. rewrite Int.signed_repr in H7.
     2: { assert (Int.min_signed <= Znth i keys' <= inf). apply Hinv2_4; lia.
-      set (k:=Int.max_signed); compute in k; subst k. rewrite inf_eq in H11; lia. }
+      set (k:=Int.max_signed); compute in k; subst k. rewrite inf_eq in H8; lia. }
     2: { apply weight_representable. }
     assert (Hadj_ui: adjacent g u i). {
       rewrite eformat_adj_elabel.
       assert (Znth i keys' <= inf). apply Hinv2_4. lia.
-      (*can't lia here for some reason*) apply (Z.lt_le_trans _ (Znth i keys')); auto.
+      apply (Z.lt_le_trans _ (Znth i keys')); auto.
     }
     forward. forward. forward. entailer!.
     rewrite upd_Znth_same. simpl. auto. rewrite Zlength_map. rewrite HZlength_keys'. auto.
@@ -725,7 +720,7 @@ break: (
     rewrite (@SpaceAdjMatGraph_unfold' _ _ _ _ _ addresses u). unfold list_rep.
     rewrite list_map_compose. repeat rewrite (upd_Znth_map (fun x => Vint (Int.repr x))).
     2: lia. 
-    clear H0 H5 H7 H8.
+    clear H0 H5.
     assert (Hx1: forall v : Z, 0 <= v < i + 1 ->
       ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
       Znth v (upd_Znth i parents' u) = Znth v parents /\
@@ -733,8 +728,8 @@ break: (
       Znth v (upd_Znth i pq_state' (Znth i (Znth u (@graph_to_symm_mat size g)))) =
       Znth v upd_pq_state). {
       intros. destruct (Z.lt_trichotomy v i). repeat rewrite upd_Znth_diff; try lia. apply Hinv2_1. lia. apply H5.
-      destruct H7. subst v. destruct H5; contradiction. lia.
-    } (*71s to 60s*)
+      destruct H8. subst v. destruct H5; contradiction. lia.
+    }
     assert (Hx2: forall v : Z,
     0 <= v < i + 1 ->
     adjacent g u v ->
@@ -747,15 +742,15 @@ break: (
     Z.min (elabel g (eformat (u, v))) (Znth v upd_pq_state)). {
       intros. destruct (Z.lt_trichotomy v i).
         (*v<i*) repeat rewrite upd_Znth_diff; try lia. apply Hinv2_2. lia. auto. auto.
-        destruct H8.
+        destruct H9.
         (*v=i*) subst v. repeat rewrite upd_Znth_same; try lia.
         (*i not in popped, so must be in unpopped, which means upd_pq_state = pq_state = keys*)
         assert (Znth i upd_pq_state = Znth i keys').
           unfold upd_pq_state. rewrite upd_Znth_diff. 2: replace (Zlength pq_state) with size; lia. 2: replace (Zlength pq_state) with size; lia.
           replace (Znth i keys') with (Znth i keys). rewrite Hinv_6.
-          destruct (in_dec V_EqDec i popped_vertices). exfalso; apply H7. apply in_or_app; left; auto. auto. lia.
-          symmetry. apply Hinv2_3. lia. unfold not; intros. apply H7. apply in_or_app; right; subst i; left; auto.
-        rewrite H8. split3.
+          destruct (in_dec V_EqDec i popped_vertices). exfalso; apply H8. apply in_or_app; left; auto. auto. lia.
+          symmetry. apply Hinv2_3. lia. unfold not; intros. apply H8. apply in_or_app; right; subst i; left; auto.
+        rewrite H9. split3.
         rewrite <- (@graph_to_mat_eq size); try lia. destruct (Znth u (Znth i (@graph_to_symm_mat size g)) <? Znth i keys') eqn:bool.
         auto. rewrite graph_to_mat_eq in bool; try lia. rewrite Z.ltb_nlt in bool. contradiction.
         rewrite graph_to_mat_eq; try lia. rewrite eformat_symm. rewrite Zlt_Zmin; auto.
@@ -789,7 +784,7 @@ break: (
           ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
           Znth v parents' = Znth v parents /\
           Znth v keys' = Znth v keys /\ Znth v pq_state' = Znth v upd_pq_state). {
-      intros. destruct (Z.lt_trichotomy v i). apply Hinv2_1; auto. lia. destruct H13.
+      intros. destruct (Z.lt_trichotomy v i). apply Hinv2_1; auto. lia. destruct H10.
       subst v. apply Hinv2_3. lia. lia.
     } (*60s to 53s*)
     assert (Hx2: forall v : Z,
@@ -802,21 +797,21 @@ break: (
       Znth v pq_state' = Z.min (elabel g (eformat (u, v))) (Znth v upd_pq_state)). {
       intros. destruct (Z.lt_trichotomy v i).
       (*v < i*) apply Hinv2_2. lia. auto. auto.
-      destruct H14.
+      destruct H11.
       (*v = i*) subst v. rewrite <- (@graph_to_mat_eq size); try lia.
       assert (Znth i upd_pq_state = Znth i keys'). {
         unfold upd_pq_state. rewrite upd_Znth_diff. 2: replace (Zlength pq_state) with size; lia.  2: replace (Zlength pq_state) with size; lia.
         replace (Znth i keys') with (Znth i keys). rewrite Hinv_6.
-        destruct (in_dec V_EqDec i popped_vertices). exfalso. apply H13. apply in_or_app; left; auto.
-        auto. lia. symmetry. apply Hinv2_3. lia. unfold not; intros. apply H13. apply in_or_app; right; subst i; left; auto.
-      } rewrite H14. rewrite graph_to_mat_symmetric; try lia.
-      rewrite !Int.signed_repr in H10. split3.
+        destruct (in_dec V_EqDec i popped_vertices). exfalso. apply H10. apply in_or_app; left; auto.
+        auto. lia. symmetry. apply Hinv2_3. lia. unfold not; intros. apply H10. apply in_or_app; right; subst i; left; auto.
+      } rewrite H11. rewrite graph_to_mat_symmetric; try lia.
+      rewrite !Int.signed_repr in H7. split3.
       destruct (Znth i (Znth u (@graph_to_symm_mat size g)) <? Znth i keys') eqn:bool.
       rewrite Z.ltb_lt in bool. lia.
       apply Hinv2_3. lia.
       rewrite Z.min_r; lia.
-      replace (Znth i pq_state') with (Znth i upd_pq_state). rewrite H14. rewrite Z.min_r; lia. symmetry; apply Hinv2_3; lia.
-      assert (Int.min_signed <= Znth i keys' <= inf). apply Hinv2_4. lia. pose proof (inf_repable); unfold repable_signed in H16; lia.
+      replace (Znth i pq_state') with (Znth i upd_pq_state). rewrite H11. rewrite Z.min_r; lia. symmetry; apply Hinv2_3; lia.
+      assert (Int.min_signed <= Znth i keys' <= inf). apply Hinv2_4. lia. pose proof (inf_repable); unfold repable_signed in H13; lia.
       rewrite graph_to_mat_eq; try lia. apply weight_representable.
       (*v > i*) lia.
     } (*53s to 30s*)
