@@ -22,7 +22,7 @@ Require Import CertiGraph.graph.reachable_computable.
 Require Export CertiGraph.graph.FiniteGraph.
 Require Export CertiGraph.graph.MathGraph.
 Require Export CertiGraph.graph.LstGraph.
-Require Import CertiGraph.msl_application.UnionFindGraph.
+Require Export CertiGraph.msl_application.UnionFindGraph.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.

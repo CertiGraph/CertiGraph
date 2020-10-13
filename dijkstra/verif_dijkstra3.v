@@ -574,11 +574,7 @@ Section DijkstraProof.
                  rewrite Heqcost in *.
                  apply (valid_edge_bounds g).
                  rewrite (evalid_meaning g). split; trivial.
-                 intro.
                  rewrite Int.signed_repr in Htemp; trivial.
-                 rewrite <- H28 in Htemp.
-                 apply Zlt_not_le in Htemp.
-                 apply Htemp; reflexivity. (* lemma-fy *)
                }
                clear Htemp.
                assert (H_ui_valid: evalid g (u,i)). {

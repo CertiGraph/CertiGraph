@@ -396,7 +396,6 @@ Section DijkstraMathLemmas.
     intros.
     rewrite (evalid_meaning g); split.
     1: apply edge_representable.
-    apply not_eq_sym, Zaux.Zgt_not_eq.
     destruct H0.
     apply Z.le_lt_trans with (m := Int.max_signed / size);
       trivial.
@@ -552,8 +551,7 @@ Section DijkstraMathLemmas.
         exists (fst p2mom, snd p2mom +:: (mom, u)).              
         assert (Hg: evalid g (mom, u)). {
           rewrite (evalid_meaning g); split.
-          apply edge_representable.
-          apply not_eq_sym, Zaux.Zgt_not_eq; trivial.
+          apply edge_representable. trivial.
         }
         assert (strong_evalid g (mom, u)). {
           split3; trivial.
@@ -834,11 +832,7 @@ Section DijkstraMathLemmas.
     
     assert (evalid g (mom, dst)). {
       rewrite (evalid_meaning g). split.
-      apply (edge_representable).
-      intro. 
-      rewrite <- H11 in H7. 
-      apply Zlt_not_le in H7.
-      apply H7; reflexivity.
+      apply (edge_representable). trivial.
     }
     
     assert (Znth mom dist < inf) by

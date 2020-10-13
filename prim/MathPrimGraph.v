@@ -1,4 +1,9 @@
-Require Import CertiGraph.prim.prim_env.
+Require Import VST.floyd.proofauto.
+Require Import CertiGraph.lib.EquivDec_ext.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.graph.graph_relation.
 Require Export CertiGraph.graph.MathUAdjMatGraph.
 
 Local Open Scope logic.
@@ -16,44 +21,19 @@ Section MathPrimGraph.
 
 Context {size: Z} {inf: Z}.
 
-Definition PrimLG := UAdjMatLG.
-
-Class SoundPrim (g: PrimLG) := {
-  suadjmat: @SoundUAdjMat size inf g;
-  ese: forall e, evalid g e -> strong_evalid g e;
-  sib: forall e, evalid g e -> elabel g e < inf;
-}.
-
-Definition PrimGG := (GeneralGraph V E unit Z unit (fun g => SoundPrim g)).
+Definition PrimGG := (@UAdjMatGG size inf).
 
 (* Some handy coercions: *)
-Identity Coercion UAdjMatLG_PrimLG: PrimLG >-> UAdjMatLG.
-
-Definition SoundPrim_PrimGG (g: PrimGG) := (@sound_gg _ _ _ _ _ _ _ _ g).
+Identity Coercion UAdjMatGG_PrimGG: PrimGG >-> UAdjMatGG.
 
 (* We can always drag out SoundUAdjMat *)
-Definition SoundUAdjMat_PrimGG (g: PrimGG) :=
-  @suadjmat g (SoundPrim_PrimGG g).
-
-(* A PrimGG can be weakened into a UAdjMatGG *)
-Definition UAdjMatGG_PrimGG (g: PrimGG) : UAdjMatGG :=
-  Build_GeneralGraph unit Z unit SoundUAdjMat g (SoundUAdjMat_PrimGG g).
-
-Coercion UAdjMatGG_PrimGG: PrimGG >-> UAdjMatGG.
+Definition SoundUAdjMat_PrimGG (g: PrimGG) := (@sound_gg _ _ _ _ _ _ _ _ g).
 
 (* Great! So now when we want to access an 
    AdjMat or UAdjMat plugin, we can simply use the 
    AdjMat or UAdjMat getter and pass it a PrimGG. 
    The coercion will be seamless. 
  *)
-
-(* For the two Prim-specific plugins, we create getters: *)
-
-Definition evalid_strong_evalid (g: PrimGG) :=
-  @ese g (SoundPrim_PrimGG g).
-
-Definition strong_inf_bound (g: PrimGG) :=
-  @sib g (SoundPrim_PrimGG g).
 
 (* We often need to know that a PrimGG
    is a FiniteGraph *)
@@ -90,7 +70,7 @@ Qed.
 Lemma evalid_vvalid:
 forall (g: PrimGG) u v, evalid g (u,v) -> vvalid g u /\ vvalid g v.
 Proof.
-intros. apply evalid_strong_evalid in H. destruct H.
+intros. apply (evalid_strong_evalid g) in H. destruct H.
 rewrite (edge_src_fst g), (edge_dst_snd g) in H0 by auto.
 simpl in H0; auto.
 Qed.
@@ -98,14 +78,15 @@ Qed.
 Lemma evalid_adjacent:
 forall (g: PrimGG) u v, evalid g (u,v) -> adjacent g u v.
 Proof.
-intros. exists (u,v); split. apply evalid_strong_evalid; auto.
+intros. exists (u,v); split. apply (evalid_strong_evalid g); auto.
 rewrite (edge_src_fst g), (edge_dst_snd g) by auto. left; simpl; auto.
 Qed.
 
 Lemma evalid_inf_iff:
 forall (g: PrimGG) e, evalid g e <-> elabel g e < inf.
 Proof.
-intros; split; intros. apply (strong_inf_bound g); auto.
+  intros; split; intros.
+  apply (evalid_meaning g); auto.
 destruct (evalid_dec g e). 
 auto. exfalso.
 rewrite (invalid_edge_weight g) in n.
@@ -127,7 +108,7 @@ Lemma weight_inf_bound:
 forall (g: PrimGG) e, elabel g e <= inf.
 Proof.
 intros. destruct (evalid_dec g e).
-apply Z.lt_le_incl. apply (strong_inf_bound g e). auto.
+apply Z.lt_le_incl. apply (evalid_meaning  g e). auto.
 apply (invalid_edge_weight g) in n.
 replace (elabel g e) with inf in * by trivial. lia.
 Qed.
@@ -145,7 +126,7 @@ Qed.
 Lemma eformat_evalid_vvalid:
 forall (g: PrimGG) u v, evalid g (eformat (u,v)) -> vvalid g u /\ vvalid g v.
 Proof.
-intros. apply evalid_strong_evalid in H.
+intros. apply (evalid_strong_evalid g) in H.
 destruct (Z.lt_trichotomy u v).
 rewrite eformat1 in H. destruct H.
 rewrite (edge_src_fst g), (edge_dst_snd g) in H1; auto. simpl; lia.
@@ -185,16 +166,16 @@ apply (undirected_edge_rep g); auto.
 +intros. destruct (Z.lt_trichotomy u v).
 rewrite eformat1 in H. 2: simpl; lia.
 assert (evalid g (u,v)). auto.
-exists (u,v). split. apply evalid_strong_evalid; auto. left.
+exists (u,v). split. apply (evalid_strong_evalid g); auto. left.
 rewrite (edge_src_fst g), (edge_dst_snd g); auto.
 (*equal, repeat*)
 destruct H0. rewrite eformat1 in H. 2: simpl; lia.
 assert (evalid g (u,v)). auto.
-exists (u,v). split. apply evalid_strong_evalid; auto. left.
+exists (u,v). split. apply (evalid_strong_evalid g); auto. left.
 rewrite (edge_src_fst g), (edge_dst_snd g); auto.
 rewrite eformat2 in H. 2: simpl; lia. simpl in H.
 assert (evalid g (v,u)). auto.
-exists (v,u). split. apply evalid_strong_evalid; auto.
+exists (v,u). split. apply (evalid_strong_evalid g); auto.
 rewrite (edge_src_fst g), (edge_dst_snd g); auto.
 Qed.
 
@@ -216,15 +197,16 @@ Definition edgeless_lgraph : UAdjMatLG :=
     (fun v => tt) (fun e => inf) tt. 
 
 Instance SoundPrim_edgeless:
-  SoundPrim edgeless_lgraph.
+  (@SoundUAdjMat size inf) edgeless_lgraph.
 Proof. 
 constructor.
 all: simpl; intros; try contradiction.
-constructor. constructor.
+constructor. 
 auto. auto. 
 all: simpl; intros; try auto; try contradiction.
 split; intros; auto.
-split; intros. contradiction. destruct H. contradiction.
+split; intros. contradiction. destruct H.
+apply Zaux.Zgt_not_eq in H0. contradiction.
 split; intros; auto.
 constructor; unfold EnumEnsembles.Enumerable.
 (*vertices*)
@@ -238,7 +220,7 @@ exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
 Qed.
 
 Definition edgeless_graph: PrimGG :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit (@SoundUAdjMat size inf)
     edgeless_lgraph SoundPrim_edgeless.
 
 Lemma edgeless_graph_evalid:
@@ -325,9 +307,9 @@ Proof.
 Qed.
 
 Instance SoundPrim_adde':
-  SoundPrim PrimGG_adde'.
+  (@SoundUAdjMat size inf) PrimGG_adde'.
 Proof.
-constructor; simpl. constructor; simpl. constructor; simpl.
+constructor; simpl. constructor; simpl.
 +apply (size_representable g).
 +apply (inf_representable g).
 +apply (vvalid_meaning g).
@@ -341,13 +323,23 @@ constructor; simpl. constructor; simpl. constructor; simpl.
   unfold equiv_dec in H; destruct (E_EqDec (u,v)).
   hnf in e0; subst e. right; auto.
   left. apply (evalid_meaning g). auto.
-+unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e).
-  split; intros. exfalso; apply H. right. hnf in e0. subst e; auto. lia.
-  unfold complement, equiv in c. split; intros.
-  apply (invalid_edge_weight g). unfold not; intros; apply H. left; auto.
-  apply (invalid_edge_weight g) in H. unfold not; intros.
-  destruct H0. contradiction. symmetry in H0; contradiction.
-+unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
++unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e);  destruct H.
+ hnf in e0. subst e.
+ apply add_edge_strong_evalid; trivial.
+ hnf in e0. subst e.
+ apply add_edge_strong_evalid; trivial.
+ apply add_edge_preserves_strong_evalid; trivial.
+ apply (evalid_strong_evalid g); trivial.
+ hnf in c. exfalso. apply c. hnf. auto. 
++ split; intros; unfold update_elabel, equiv_dec in *; destruct (E_EqDec (u,v) e).
+- exfalso. apply H. right. hnf in e0. auto.
+- apply Decidable.not_or in H. destruct H.
+  apply (invalid_edge_weight g); trivial.
+- rewrite H in w_rep. lia.
+- apply Classical_Prop.and_not_or.
+  split. apply <- (invalid_edge_weight g); trivial.
+  auto.
++ unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
   unfold equiv in e0; subst e. simpl; auto.
   apply (edge_src_fst g e).
 +unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
@@ -360,27 +352,10 @@ constructor; simpl. constructor; simpl. constructor; simpl.
   apply (undirected_edge_rep g e); auto.
   exfalso. apply c.
   symmetry. trivial.
-+unfold addValidFunc, update_elabel, equiv_dec; intros.
- destruct (E_EqDec (u,v) e); destruct H.
-- replace e with (u, v).
-  apply add_edge_strong_evalid; trivial.
-- subst e.
-  apply add_edge_strong_evalid; trivial.
-- apply add_edge_preserves_strong_evalid; trivial.
-  apply evalid_strong_evalid; trivial.
-- exfalso. apply c. subst e. reflexivity.
-  + unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. unfold update_elabel.
-  unfold equiv_dec.
-  destruct (E_EqDec (u,v) e). lia.
-  destruct H.
-- apply strong_inf_bound; trivial.
-- exfalso.
-  replace (u,v) with e in c.
-  apply c. apply equiv_reflexive.
 Qed.
 
 Definition PrimGG_adde: PrimGG :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundUAdjMat
     PrimGG_adde' (SoundPrim_adde').
 
 Lemma adde_vvalid:
@@ -524,39 +499,38 @@ intros. rewrite remove_In_iff, EList_evalid; auto. split; auto.
 Qed.
 
 Instance SoundPrim_eremove':
-  SoundPrim PrimGG_eremove'.
+  (@SoundUAdjMat size inf) PrimGG_eremove'.
 Proof.
-constructor; simpl. constructor; simpl. constructor; simpl.
+constructor; simpl. constructor; simpl.
 ++apply (size_representable g).
 ++apply (inf_representable g).
 ++apply (vvalid_meaning g).
 ++unfold removeValidFunc; split; intros; destruct (E_EqDec e0 e).
   destruct H. hnf in e1. contradiction.
   apply (evalid_meaning g). apply H.
-  destruct H. contradiction.
+  destruct H. apply Zaux.Zgt_not_eq in H0. contradiction.
   apply (evalid_meaning g) in H; auto.
-++unfold removeValidFunc; split; intros;destruct (E_EqDec e0 e).
-  auto. apply (invalid_edge_weight g). unfold not; intros; apply H. split; auto.
-  unfold not; intros; destruct H0. hnf in e1; contradiction.
-  unfold not; intros. apply (invalid_edge_weight g) in H; apply H; apply H0.
+++ intros. red in H. destruct H.
+   apply remove_edge_preserves_strong_evalid; split; auto.
+   apply (evalid_strong_evalid g); trivial.
+++unfold removeValidFunc; split; intros; destruct (E_EqDec e0 e); trivial.
+  ** apply Classical_Prop.not_and_or in H.
+     destruct H.
+     apply (invalid_edge_weight g); trivial.
+     exfalso. apply H. apply c.
+  ** apply Classical_Prop.or_not_and. right.
+     unfold not. intro. apply H0. apply e1.
+  ** apply Classical_Prop.or_not_and. left.
+     apply <- (invalid_edge_weight g); trivial.
 ++apply (edge_src_fst g).
 ++apply (edge_dst_snd g).
 ++apply Fin_PrimGG_eremove'.
 ++unfold removeValidFunc; intros. destruct H.
 apply (undirected_edge_rep g); trivial.
-++unfold removeValidFunc; intros. destruct H.
-  apply remove_edge_preserves_strong_evalid.
-  split.
-  apply evalid_strong_evalid; trivial.
-  intro. apply H0. symmetry. trivial.
-++unfold removeValidFunc; intros. destruct H.
-  destruct (E_EqDec e0 e).
--- exfalso. apply H0. apply e1.
--- apply strong_inf_bound; trivial.
 Qed.
 
 Definition PrimGG_eremove: PrimGG :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
+  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundUAdjMat
     PrimGG_eremove' (SoundPrim_eremove').
 
 Lemma eremove_EList:
@@ -624,8 +598,8 @@ assert (fits_upath t2 l p).
 apply (fits_upath_transfer' p l t1 t2) in H7; auto.
   intros; split; intros. apply H. auto. rewrite vert_bound in *; auto.
   intros. apply H. apply (fits_upath_evalid t1 p l); auto.
-  intros. apply H. auto. apply evalid_strong_evalid; auto.
-  intros. apply H. auto. apply evalid_strong_evalid; auto.
+  intros. apply H. auto. apply (evalid_strong_evalid t1); auto.
+  intros. apply H. auto. apply (evalid_strong_evalid t1); auto.
 assert (p = (src t2 x :: dst t2 x :: nil)). assert (unique_simple_upath t2). apply H1.
 unfold unique_simple_upath in H10. apply (H10 (src t2 x) (dst t2 x)).
 split. apply valid_upath_exists_list_edges'. exists l; auto. apply H6.
@@ -705,7 +679,7 @@ contradiction.
 set (u:=src g a). set (v:=dst g a).
 assert (connected g u v). apply adjacent_connected. exists a.
 unfold u; unfold v; apply strong_evalid_adj_edge.
-apply evalid_strong_evalid. rewrite <- EList_evalid, <- H. left; auto.
+apply (evalid_strong_evalid g). rewrite <- EList_evalid, <- H. left; auto.
 set (remove_a:=(@PrimGG_eremove g a)).
 assert (Ha_evalid: evalid g a). { rewrite <- EList_evalid. apply (Permutation_in (l:=(a::l))).
   apply H. left; auto. }
@@ -783,7 +757,7 @@ assert (vvalid g u /\ vvalid g v). apply connected_vvalid in H0; auto. destruct 
 assert (u <= v). apply (undirected_edge_rep g). auto.
 set (w:= elabel g a).
 assert (Int.min_signed <= w < inf). unfold w. split.
-pose proof (weight_representable g a). apply H6. apply (strong_inf_bound g). auto.
+pose proof (weight_representable g a). apply H6. apply (evalid_meaning g). auto.
 rewrite vert_bound in H3, H4. rewrite <- (vert_bound t) in H3, H4.
 assert (Ha: a = (u,v)). unfold u, v; apply evalid_form; auto. rewrite Ha in *.
 set (adde_a:=@PrimGG_adde t u v H3 H4 H5 w H6).

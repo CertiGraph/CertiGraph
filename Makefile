@@ -45,7 +45,6 @@ GRAPH_FILES = \
   MathAdjMatGraph.v SpaceAdjMatGraph1.v SpaceAdjMatGraph2.v SpaceAdjMatGraph3.v \
   path_cost.v \
   MathUAdjMatGraph.v SpaceUAdjMatGraph1.v SpaceUAdjMatGraph2.v SpaceUAdjMatGraph3.v
-
   # 1 = noncontiguous
   # 2 = contiguous 1-d
   # 3 = contiguous 2-d
