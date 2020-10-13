@@ -6,7 +6,6 @@ Require Import CertiGraph.graph.subgraph2.
 Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.graph.reachable_computable.
 Require Import CertiGraph.graph.UnionFind.
-Require Import CertiGraph.msl_application.UnionFindGraph.
 Require Import CertiGraph.msl_application.ArrayGraph.
 Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.unionfind.spatial_array_graph.

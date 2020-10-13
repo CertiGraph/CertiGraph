@@ -7,14 +7,11 @@ Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.path_lemmas.
 Require Import CertiGraph.graph.graph_relation.
 (*for unionfind*)
-Require Import CertiGraph.graph.UnionFind.
-Require Import CertiGraph.msl_application.UnionFindGraph.
 Require Import CertiGraph.msl_application.ArrayGraph.
 Require Import CertiGraph.unionfind.env_unionfind_arr.
 (*edgelist*)
-Require Import CertiGraph.graph.undirected_graph.
 Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
-Require Import CertiGraph.kruskal.env_kruskal_edgelist.
+(* Require Import CertiGraph.kruskal.env_kruskal_edgelist. *)
 Require Import CertiGraph.kruskal.spatial_wedgearray_graph.
 Require Import CertiGraph.kruskal.kruskal_specs.
 Require Import CertiGraph.graph.undirected_uf_lemmas.

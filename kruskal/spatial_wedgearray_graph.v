@@ -3,7 +3,6 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
 Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.kruskal.env_kruskal_edgelist.
-Require Import CertiGraph.graph.undirected_graph.
 
 Local Open Scope logic.
 
