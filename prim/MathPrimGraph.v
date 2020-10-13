@@ -203,8 +203,7 @@ Proof.
 intros. rewrite eformat_adj. apply evalid_inf_iff.
 Qed.
 
-
-(****************Edgeless graph again*****************)
+(****************Edgeless graph*****************)
 
 Section EDGELESS_MUGRAPH.
 
@@ -958,11 +957,6 @@ apply H0. apply H2.
 Qed.
 
 (*MOVE TO APPROPRIATE PLACES*)
-Lemma adjacent_dec:
-forall (g: PrimGG) u v, adjacent g u v \/ ~ adjacent g u v.
-Proof.
-intros. tauto.
-Qed.
 
 (*ideally generalise in_dec to any decidable function, and don't need NoDup*)
 Lemma filter_list_Permutation:
@@ -1143,6 +1137,5 @@ Proof.
 intros. unfold sublist. rewrite skipn_0. rewrite firstn_same. auto.
 rewrite <- ZtoNat_Zlength. lia.
 Qed.
-
 
 End MathPrimGraph.
