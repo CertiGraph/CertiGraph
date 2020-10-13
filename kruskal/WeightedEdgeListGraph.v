@@ -5,7 +5,7 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.FiniteGraph.
-Require Import CertiGraph.graph.undirected_graph.
+Require Export CertiGraph.graph.undirected_graph.
 
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 Coercion lg_gg: GeneralGraph >-> LabeledGraph. 

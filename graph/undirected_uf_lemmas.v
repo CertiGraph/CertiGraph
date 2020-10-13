@@ -3,7 +3,7 @@ Require Import CertiGraph.graph.graph_model.
 (* for ufgraph *)
 Require Import CertiGraph.graph.path_lemmas.
 (*for unionfind*)
-Require Import CertiGraph.graph.UnionFind.
+Require Export CertiGraph.graph.UnionFind.
 Require Import CertiGraph.msl_application.ArrayGraph.
 Require Import CertiGraph.unionfind.env_unionfind_arr.
 (*spanning tree definition*)

@@ -4,7 +4,7 @@ Require Export CertiGraph.unionfind.uf_arr_specs.
 
 (* Kruskal's imports (already made minimal *)
 Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
-Require Import CertiGraph.kruskal.env_kruskal_edgelist.
+Require Export CertiGraph.kruskal.env_kruskal_edgelist.
 Require Import CertiGraph.kruskal.spatial_wedgearray_graph.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.floyd_ext.share.
