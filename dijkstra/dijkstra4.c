@@ -5,13 +5,12 @@
 #include "../priq/priq_arr.h"
 
 #define SIZE 8  // number of vertices
-#define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
-#define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
 #define INF  1879048192 // INT_MAX - INT_MAX/SIZE
 
 extern void * mallocN (int n);
 extern void freeN (void *p);
- 
+
+
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
 /*  from a single source to all possible destinations */
@@ -22,27 +21,83 @@ extern void freeN (void *p);
 /* Setting up a random problem */
 /* *************************** */
 
-void setup (int graph[SIZE][SIZE]) {
-    srand((unsigned int) time(NULL));
-    int i, j;
-    for (i = 0; i < SIZE; i++) {
-        for (j = 0; j <= SIZE; j++) {
-            int random = rand() % (CONN * INFL); // 1 / CONN of these will be greater than INFL
-            graph[i][j] = (i==j) ? 0 : (random > INFL) ? INF : 1 + random; // so the rest will be INF
+
+// from https://www.geeksforgeeks.org/graph-and-its-representations/
+ 
+struct AdjListNode 
+{ 
+    int dst; 
+    int weight;
+    struct AdjListNode* next; 
+};
+
+struct AdjList 
+{ 
+    struct AdjListNode *head;  
+};
+
+struct Graph 
+{ 
+    int size; 
+    struct AdjList* array; 
+};
+
+struct AdjListNode* newAdjListNode (int dst, int weight) 
+{ 
+    struct AdjListNode* newNode = (struct AdjListNode*) mallocN(sizeof(struct AdjListNode)); 
+    newNode->dst = dst; 
+    newNode->weight = weight; 
+    newNode->next = NULL; 
+    return newNode; 
+} 
+
+struct Graph* createGraph(int size) 
+{ 
+    int i; 
+    struct Graph* graph = (struct Graph*) mallocN(sizeof(struct Graph)); 
+    graph->size = size; 
+    graph->array = (struct AdjList*) mallocN(size * sizeof(struct AdjList)); 
+    for (i = 0; i < size; ++i) {
+        graph->array[i].head = NULL;   
+    }
+    return graph; 
+}  
+
+void addEdge(struct Graph* graph, int src, int dst, int weight) 
+{ 
+    struct AdjListNode* newNode = newAdjListNode(dst, weight); 
+    newNode->next = graph->array[src].head; 
+    graph->array[src].head = newNode; 
+} 
+
+void printGraph(struct Graph* graph) 
+{ 
+    int v; 
+    for (v = 0; v < graph->size; ++v) 
+    { 
+        struct AdjListNode* pCrawl = graph->array[v].head; 
+        printf("\n %d -->", v); 
+        while (pCrawl) 
+        { 
+            printf(" %d@%d", pCrawl->dst, pCrawl->weight); 
+            pCrawl = pCrawl->next; 
+        } 
+        printf("\n"); 
+    } 
+} 
+
+void setup(struct Graph* graph) {
+    int i;
+    for (i = 0; i < SIZE; i++) {  // we will fill up vertex i's out-edges
+        int n = rand() % SIZE;    // how many out-edges will i have?
+        while (n > 0) {
+            // whom to point to? (currently allowing SELF; I may disallow later)
+            // at what cost?
+            addEdge(graph, i, rand() % SIZE, rand() % 100); 
+            n--;
         }
-    }
-}
-
-
-void print_graph (int graph[SIZE][SIZE], int src) {
-    int i, j;
-    for (i = 0; i < SIZE; i++) {
-        for (j = 0; j < SIZE; j++)
-            graph[i][j] == INF ? printf("-\t"): printf("%d\t", graph[i][j]);
-        printf ("\n");
-    }
-    printf("Size: %d\nSource: %d\n\n", SIZE, src);
-}
+    }  
+} 
 
 
 /* ******** */
@@ -68,13 +123,10 @@ void getPaths (int src, int* dist, int* prev) {
     printf("\nThe rest are unreachable.\n");
 }
 
-int getCell (int graph[SIZE][SIZE], int u, int i) {
-    return graph[u][i];
-}
-
-void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
+void dijkstra (struct Graph* graph, int src, int *dist, int *prev) {
     int* pq = init(SIZE);
-    int i, j, u, cost;
+    int i, u, cost;
+    struct AdjListNode* neighbor = NULL;
     for (i = 0; i < SIZE; i++) {
         dist[i] = INF;  // Best-known distance from src to i
         prev[i] = INF;  // Last vertex visited before i
@@ -85,15 +137,16 @@ void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
     adjustWeight(src, 0, pq); // special values for src
     while (!pq_emp(SIZE, INF, pq)) {
         u = popMin(SIZE, INF, pq);  // src -> u is optimal. relax u's neighbors, then done with u.
-        for (i = 0; i < SIZE; i++) {
-            cost = getCell(graph, u, i); 
-            if (cost < INF) { // i.e. node i is a neighbor of mine
-                if (dist[i] > dist[u] + cost) {  // if we can improve the best-known dist from src to i
-                    dist[i] = dist[u] + cost;  // improve it
-                    prev[i] = u;  // note that we got there via 'u'
-                    adjustWeight(i, dist[i], pq); // and stash the improvement in the PQ
-                }
+        neighbor = graph->array[u].head; 
+        while (neighbor) { 
+            i = neighbor->dst;
+            cost = neighbor->weight;
+            if (dist[i] > dist[u] + cost) {  // if we can improve the best-known dist from src to i
+                dist[i] = dist[u] + cost;  // improve it
+                prev[i] = u;  // note that we got there via 'u'
+                adjustWeight(i, dist[i], pq); // and stash the improvement in the PQ
             }
+            neighbor = neighbor->next; 
         }
     }
     freePQ(pq);
@@ -104,14 +157,14 @@ int main(int argc, const char * argv[])
 {
     srand((unsigned int) time(NULL));
     int src = rand() % SIZE;
-    int graph[SIZE][SIZE];
+    struct Graph* graph = createGraph(SIZE); 
     setup(graph);
-    print_graph(graph, src);
+    printGraph(graph);
     int* prev = mallocN (SIZE * sizeof *prev);
     int* dist = mallocN (SIZE * sizeof *dist);
     dijkstra(graph, src, dist, prev);
     getPaths(src, dist, prev);
-    free(prev);
-    free(dist);
-    return 0;
+    freeN(prev);
+    freeN(dist); 
+    return 0; 
 }
