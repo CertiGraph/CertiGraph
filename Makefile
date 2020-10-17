@@ -7,7 +7,7 @@ COQC=$(COQBIN)coqc -w -overriding-logical-loadpath
 COQDEP=$(COQBIN)coqdep
 
 DIRS = lib msl_ext msl_application graph heap_model_direct
-INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert
+INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert -Q $(COMPCERT_DIR)/flocq Flocq
 INCLUDE_VST = -Q $(VST_DIR) VST
 INCLUDE_CERTIGRAPH = $(foreach d, $(DIRS), -Q $(d) CertiGraph.$(d)) -Q "." CertiGraph
 NORMAL_FLAG = $(INCLUDE_CERTIGRAPH) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
@@ -96,7 +96,7 @@ PRIM_FILES = \
   noroot_prim.v specs_noroot_prim.v verif_noroot_prim.v \
   MatrixUGraph3.v prim3.v prim_spec3.v spatial_undirected_matrix3.v verif_prim3.v \
   noroot_prim3.v noroot_prim3_spec.v verif_noroot_prim3.v prim_constants.v
-#prim1.v prim_spec1.v spatial_undirected_matrix1.v verif_prim1.v \  
+#prim1.v prim_spec1.v spatial_undirected_matrix1.v verif_prim1.v
 
 DIJKSTRA_FILES = \
   dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \

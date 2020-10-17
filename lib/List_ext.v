@@ -27,7 +27,7 @@ Qed.
 
 Lemma list_decidable_prop_reduced_list: forall {A : Type} (P Q : A -> Prop) (l: list A),
   (forall a, Q a \/ ~Q a) ->
-  (forall a, In a l <-> P a) -> 
+  (forall a, In a l <-> P a) ->
   (exists l', (forall a, In a l' <-> P a /\ Q a)).
 Proof.
   intros.
@@ -590,11 +590,11 @@ Proof.
   pose proof (spec_or_list_split l P Q H H0).
   destruct H2 as [lp [lq [? [? [? [? ?]]]]]].
   exists lp, lq. split5; auto.
-  + firstorder.
-  + firstorder.
-  + apply NoDup_Permutation; auto.
-    - apply NoDup_app_inv; auto. firstorder.
-    - intro; rewrite in_app_iff. firstorder.
+  - firstorder. assert (In x l). { rewrite H0. left; auto. } firstorder.
+  - firstorder. assert (In x l). { rewrite H0. right; auto. } firstorder.
+  - apply NoDup_Permutation; auto.
+    + apply NoDup_app_inv; auto. firstorder.
+    + intro; rewrite in_app_iff. firstorder.
 Qed.
 
 Fixpoint select {A: Type} {P: A -> Prop} (dec_p: forall x, Decidable (P x)) (l: list A) : list A :=
@@ -1734,8 +1734,8 @@ Proof.
   apply Zlt_succ_le in H0. apply Zle_lt_or_eq in H0. destruct H0.
   - rewrite app_Znth1. apply IHn. lia.
     now rewrite nat_inc_list_Zlength.
-  - rewrite app_Znth2 by (rewrite nat_inc_list_Zlength; lia). 
-    rewrite H0. rewrite nat_inc_list_Zlength. simpl. 
+  - rewrite app_Znth2 by (rewrite nat_inc_list_Zlength; lia).
+    rewrite H0. rewrite nat_inc_list_Zlength. simpl.
     replace (Z.of_nat n - Z.of_nat n) with 0 by lia.
     rewrite Znth_0_cons; trivial.
 Qed.
@@ -1770,7 +1770,7 @@ Proof.
        try rewrite nat_inc_list_Zlength; lia.
   }
   intros. rewrite nat_inc_list_i.
-  2: { rewrite Zlength_sublist in H1; 
+  2: { rewrite Zlength_sublist in H1;
        try rewrite nat_inc_list_Zlength; lia.
   }
   rewrite <- Z.sub_0_r at 1.
