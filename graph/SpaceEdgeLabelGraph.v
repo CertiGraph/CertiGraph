@@ -92,14 +92,18 @@ Section Spatial_Edge_Labeled_Graph_Model_1.
   Lemma elabel_Znth_graph_to_mat:
     forall (g: @EdgeLabGG size) (f: E -> E) src dst out,
       0 <= size ->
-      vvalid g src ->
       evalid g (src, dst, out) ->
       elabel g (f (src, dst, out)) =
       Znth out (Znth src (graph_to_mat g f)).
   Proof.
     intros.
-    rewrite (vvalid_meaning g) in H0.
-    rewrite (evalid_meaning g) in H1; destruct H1 as [_ [ ??]].
+    assert (vvalid g src). {
+      apply (evalid_strong_evalid g) in H0.
+      destruct H0 as [_ [? _]].
+      rewrite edge_src_fst in H0; apply H0.
+    }
+    rewrite (vvalid_meaning g) in H1.
+    rewrite (evalid_meaning g) in H0; destruct H0 as [_ [ ??]].
     unfold graph_to_mat.
     rewrite Znth_map, nat_inc_list_i.
     unfold vert_to_list. rewrite Znth_map.
