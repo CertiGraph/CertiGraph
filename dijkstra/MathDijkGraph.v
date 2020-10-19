@@ -43,7 +43,7 @@ Section MathDijkGraph.
     }.
 
   (* And here is the GeneralGraph that we will use *)
-  Definition DijkGG := (GeneralGraph V E unit Z unit (fun g => SoundDijk g)).
+  Definition DijkGG := (GeneralGraph V E DV DE DG (fun g => SoundDijk g)).
 
   (* Some handy coercions: *)
   Identity Coercion AdjMatLG_DijkLG: DijkLG >-> AdjMatLG.
@@ -58,7 +58,7 @@ Section MathDijkGraph.
 
   (* A DijkGG can be weakened into an AdjMatGG *)
   Definition AdjMatGG_DijkGG (g: DijkGG) : AdjMatGG :=
-    Build_GeneralGraph unit Z unit SoundAdjMat g (SoundAdjMat_DijkGG g).
+    Build_GeneralGraph DV DE DG SoundAdjMat g (SoundAdjMat_DijkGG g).
 
   Coercion AdjMatGG_DijkGG: DijkGG >-> AdjMatGG.
 

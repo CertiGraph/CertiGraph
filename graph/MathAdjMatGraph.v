@@ -19,15 +19,10 @@ Section Mathematical_AdjMat_Model.
      we want easy AdjMat representation. *)
   Definition V : Type := Z.
   Definition E : Type := V * V.
-(*
   Definition DV: Type := unit.
   Definition DE : Type := Z.
   Definition DG: Type := unit.
- *)
-  (* These are piped directly into the definition of 
-     AdjMatLG below to save annoying unfolds later on 
-   *)
-  
+
   Instance V_EqDec : EqDec V eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
   Instance E_EqDec: EqDec E eq.
   Proof. apply (prod_eqdec V_EqDec V_EqDec). Defined.
@@ -39,7 +34,7 @@ Section Mathematical_AdjMat_Model.
    *)
   
   (* This is the basic LabeledGraph for all our AdjMat representations. *)
-  Definition AdjMatLG := (@LabeledGraph V E _ _ unit Z unit).
+  Definition AdjMatLG := (@LabeledGraph V E _ _ DV DE DG).
   (* We need some further restrictions, which we will place 
      in the GeneralGraph's soundness condition.  
    *)
@@ -72,7 +67,7 @@ Section Mathematical_AdjMat_Model.
     }.
   
   (* Academic example of how to instantiate the above *)
-  Definition AdjMatGG := (GeneralGraph V E unit Z unit (fun g => SoundAdjMat g)).
+  Definition AdjMatGG := (GeneralGraph V E DV DE DG (fun g => SoundAdjMat g)).
   (* In reality, clients may want to:
      1. create a new soundness condition where one of the 
         plugins is "SoundAdjMat" above
