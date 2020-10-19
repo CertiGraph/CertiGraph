@@ -192,7 +192,7 @@ Context {inf_bound: 0 <= inf <= Int.max_signed}.
 Context {size_bound: 0 < size <= Int.max_signed}.
 
 Definition edgeless_lgraph : UAdjMatLG :=
-  @Build_LabeledGraph V E V_EqDec E_EqDec unit Z unit
+  @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG
     (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
     (fun v => tt) (fun e => inf) tt. 
 
@@ -220,7 +220,7 @@ exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
 Qed.
 
 Definition edgeless_graph: PrimGG :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit (@SoundUAdjMat size inf)
+  @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG (@SoundUAdjMat size inf)
     edgeless_lgraph SoundPrim_edgeless.
 
 Lemma edgeless_graph_evalid:
@@ -355,7 +355,7 @@ constructor; simpl. constructor; simpl.
 Qed.
 
 Definition PrimGG_adde: PrimGG :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundUAdjMat
+  @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG SoundUAdjMat
     PrimGG_adde' (SoundPrim_adde').
 
 Lemma adde_vvalid:
@@ -481,7 +481,7 @@ Context {g: PrimGG}.
 Context {e: E} {evalid_e: evalid g e}.
 
 Definition PrimGG_eremove':=
-  @Build_LabeledGraph V E V_EqDec E_EqDec unit Z unit (pregraph_remove_edge g e)
+  @Build_LabeledGraph V E V_EqDec E_EqDec DV DE DG (pregraph_remove_edge g e)
   (vlabel g)
   (fun e0 => if E_EqDec e0 e then inf else elabel g e0 )
   (glabel g).
@@ -530,7 +530,7 @@ apply (undirected_edge_rep g); trivial.
 Qed.
 
 Definition PrimGG_eremove: PrimGG :=
-  @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundUAdjMat
+  @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG SoundUAdjMat
     PrimGG_eremove' (SoundPrim_eremove').
 
 Lemma eremove_EList:

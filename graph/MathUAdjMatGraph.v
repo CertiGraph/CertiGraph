@@ -23,7 +23,7 @@ Class SoundUAdjMat (g: UAdjMatLG) := {
   uer: forall e, evalid g e -> src g e <= dst g e;
 }.
 
-Definition UAdjMatGG := (GeneralGraph V E unit Z unit (fun g => SoundUAdjMat g)).
+Definition UAdjMatGG := (GeneralGraph V E DV DE DG (fun g => SoundUAdjMat g)).
 
 (* Some handy coercions: *)
 Identity Coercion AdjMatLG_UAdjMatLG: UAdjMatLG >-> AdjMatLG.
@@ -37,7 +37,7 @@ Definition SoundAdjMat_UAdjMatGG (g: UAdjMatGG) :=
 
 (* A UAdjMatGG can be weakened into an AdjMatGG *)
 Definition AdjMatGG_UAdjMatGG (g: UAdjMatGG) : AdjMatGG :=
-  Build_GeneralGraph unit Z unit SoundAdjMat g (SoundAdjMat_UAdjMatGG g).
+  Build_GeneralGraph DV DE DG SoundAdjMat g (SoundAdjMat_UAdjMatGG g).
 
 Coercion AdjMatGG_UAdjMatGG: UAdjMatGG >-> AdjMatGG.
 

@@ -4,7 +4,7 @@ Require Import CertiGraph.dijkstra.dijkstra_spec_pure.
 
 Local Open Scope Z_scope.
 
-Ltac ulia := trivial; fold V in *; rep_lia.
+Ltac ulia := trivial; unfold V, DE in *; rep_lia.
 
 Section DijkstraMathLemmas.
 
@@ -383,8 +383,7 @@ Section DijkstraMathLemmas.
       apply path_cost_path_glue_lt in H3; trivial.
       destruct H3 as [_ ?].
       rewrite path_cost_path_glue in H3; trivial.
-      rewrite one_step_path_Znth in H3.
-      lia.
+      rewrite one_step_path_Znth in H3. ulia.
   Qed.
 
   Lemma evalid_dijk:
@@ -699,7 +698,7 @@ Section DijkstraMathLemmas.
             destruct (H _ H36) as [_ [_ ?]].
             specialize (H45 H30 H44 mom' optp2mom' H35 H29 H38).
             rewrite path_cost_path_glue, one_step_path_Znth in H45.
-            destruct H38 as [_ [? [_ [Hc _]]]]. lia.
+            destruct H38 as [_ [? [_ [Hc _]]]]. ulia.
           + (* dist[child'] < inf. We use inv_unpopped *)
             destruct (H _ H36) as [_ [? _]].
             red in H45.
