@@ -91,19 +91,21 @@ Section Spatial_Edge_Labeled_Graph_Model_1.
         
   Lemma elabel_Znth_graph_to_mat:
     forall (g: @EdgeLabGG size) (f: E -> E) src dst out,
-      0 <= size ->
       evalid g (src, dst, out) ->
       elabel g (f (src, dst, out)) =
       Znth out (Znth src (graph_to_mat g f)).
   Proof.
     intros.
     assert (vvalid g src). {
-      apply (evalid_strong_evalid g) in H0.
-      destruct H0 as [_ [? _]].
-      rewrite edge_src_fst in H0; apply H0.
+      apply (evalid_strong_evalid g) in H.
+      destruct H as [_ [? _]].
+      rewrite edge_src_fst in H; apply H.
     }
-    rewrite (vvalid_meaning g) in H1.
-    rewrite (evalid_meaning g) in H0; destruct H0 as [_ [ ??]].
+    rewrite (vvalid_meaning g) in H0.
+    rewrite (evalid_meaning g) in H; destruct H as [_ [ ??]].
+    assert (0 <= size). {
+      pose proof (size_representable g). lia.
+    }
     unfold graph_to_mat.
     rewrite Znth_map, nat_inc_list_i.
     unfold vert_to_list. rewrite Znth_map.
@@ -111,7 +113,7 @@ Section Spatial_Edge_Labeled_Graph_Model_1.
     rewrite (combine_Znth
                (map (fun x : V => (src, x)) _ )
                (nat_inc_list _) _).
-    rewrite nat_inc_list_i, Znth_map, H2; trivial.
+    rewrite nat_inc_list_i, Znth_map, H1; trivial.
 
     rewrite <- Zlength_correct; trivial.
     rewrite map_length, nat_inc_list_length; trivial.
