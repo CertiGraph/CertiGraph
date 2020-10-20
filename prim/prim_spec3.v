@@ -1,8 +1,8 @@
 Require Import CertiGraph.prim.prim_env.
 Require Export CertiGraph.priq.priq_arr_specs.
-Require Import CertiGraph.prim.MathPrimGraph.
+Require Import CertiGraph.graph.MathUAdjMatGraph.
 Require Import CertiGraph.prim.prim_constants.
-Require Import CertiGraph.prim.SpacePrimGraph3.
+Require Import CertiGraph.graph.SpaceUAdjMatGraph3.
 Require Export CertiGraph.prim.prim3.
 
 Local Open Scope Z_scope.
@@ -14,7 +14,6 @@ Context {Z_EqDec : EquivDec.EqDec Z eq}.
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Global Existing Instance CompSpecs.
-
 
 Definition getCell_spec :=
   DECLARE _getCell
