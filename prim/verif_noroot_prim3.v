@@ -1,9 +1,9 @@
 Require Import CertiGraph.prim.prim_env.
 Require Export CertiGraph.lib.find_lemmas.
 Require Export CertiGraph.priq.is_empty_lemmas.
-Require Import CertiGraph.prim.MathPrimGraph. 
+Require Import CertiGraph.graph.MathUAdjMatGraph. 
 Require Import CertiGraph.prim.prim_constants.
-Require Import CertiGraph.prim.SpacePrimGraph3.
+Require Import CertiGraph.graph.SpaceUAdjMatGraph3.
 Require Import CertiGraph.prim.noroot_prim_spec3.
 
 Local Open Scope Z.
@@ -566,8 +566,6 @@ break: (
   repeat split; trivial.
   rewrite inf_eq. set (k:=Int.max_signed); compute in k; subst k. lia.
   Intros u. rename H2 into Hu.
-  (* u is the minimally chosen item from the
-     "seen but not popped" category of vertices *)
   assert (0 <= u < size). {
     rewrite Hu. rewrite <- HZlength_pq_state. apply find_range.
     apply min_in_list. apply incl_refl. destruct pq_state.
@@ -1211,7 +1209,7 @@ break: (
   Exists (adde_u).
   Exists (finGraph adde_u).
   Exists parents' keys' pq_state' (popped_vertices+::u) (remove V_EqDec u unpopped_vertices).
-  assert (HM: exists M : PrimGG, minimum_spanning_forest M g /\ is_partial_lgraph adde_u M). {
+  assert (HM: exists M : UAdjMatGG, minimum_spanning_forest M g /\ is_partial_lgraph adde_u M). {
     destruct Hinv_13 as [M [Hmsf_M Hpartial_M]]. pose proof (finGraph M).
     destruct (evalid_dec M (eformat (u, Znth u parents))).
     ****

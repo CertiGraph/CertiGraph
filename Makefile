@@ -92,8 +92,7 @@ KRUSKAL_FILES = \
   verif_kruskal_edgelist.v
 
 PRIM_FILES = \
-  prim_env.v MathPrimGraph.v prim_constants.v \
-  SpacePrimGraph3.v \
+  prim_env.v prim_constants.v \
   prim3.v prim_spec3.v \
   noroot_prim3.v noroot_prim_spec3.v \
   verif_prim3.v verif_noroot_prim3.v 

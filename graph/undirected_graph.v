@@ -726,6 +726,9 @@ split. rewrite H. apply epath_to_vpath_head. rewrite <- H. apply H0.
 rewrite epath_to_vpath_foot. rewrite H1. reflexivity. apply H0.
 Qed.
 
+
+
+
 (************(CONNECTED) COMPONENTS************)
 
 Definition component (g: PGraph) :=
@@ -1512,6 +1515,43 @@ Definition labeled_spanning_uforest (t g: LGraph) :=
   preserve_vlabel t g /\ preserve_elabel t g.
 
 (****************FINITE GRAPHS*****************)
+
+Lemma path_partition_checkpoint':
+forall (g: PGraph) {fg: FiniteGraph g} (l1 l2: list V) p l a b, Permutation (l1++l2) (VList g) ->
+  In a l1 -> In b l2 -> connected_by_path g p a b -> fits_upath g l p ->
+  exists v1 v2, In v1 p /\ In v2 p /\
+    In v1 l1 /\ In v2 l2 /\ (exists e, adj_edge g e v1 v2 /\ In e l).
+Proof.
+  induction p; intros. destruct H2. destruct H4. inversion H4.
+  destruct p. destruct H2. destruct H4. inversion H4; inversion H5; subst a. subst a0.
+  assert (~ In b l2).
+  apply (NoDup_app_not_in V l1). apply (Permutation_NoDup (l:=VList g)).
+  apply Permutation_sym; auto. apply NoDup_VList. auto. contradiction.
+  destruct l. simpl in H3; contradiction.
+  destruct H2. destruct H4. destruct H2. inversion H4. subst a0.
+  assert (In v (l1 ++ l2)). apply (Permutation_in (l:=VList g)). apply Permutation_sym; auto.
+  rewrite VList_vvalid. apply adjacent_requires_vvalid in H2; apply H2.
+  apply in_app_or in H7; destruct H7.
+  assert (exists v1 v2 : V, In v1 (v :: p) /\ In v2 (v :: p) /\
+    In v1 l1 /\ In v2 l2 /\ (exists e, adj_edge g e v1 v2 /\ In e l)). apply (IHp l v b); auto.
+  split. auto. split. simpl; auto. rewrite last_error_cons in H5. auto.
+    unfold not; intros. assert (In v (v::p)). left; auto. rewrite H8 in H9. contradiction. auto. apply H3.
+  destruct H8 as [v1 [v2 [? [? [? [? ?]]]]]]. exists v1; exists v2. split. right; auto. split. right; auto.
+  split; auto. split; auto. destruct H12 as [e0 [? ?]]. exists e0. split. auto. right; auto.
+  exists a; exists v. split. left; auto. split. right; left; auto. split; auto. split; auto.
+  destruct H3. exists e. split; auto. left; auto.
+Qed.
+
+Lemma path_partition_checkpoint:
+forall (g: PGraph) {fg: FiniteGraph g} (l1 l2: list V) p a b, Permutation (l1++l2) (VList g) ->
+  In a l1 -> In b l2 -> connected_by_path g p a b ->
+  exists v1 v2, In v1 p /\ In v2 p /\
+    In v1 l1 /\ In v2 l2 /\ adjacent g v1 v2.
+Proof.
+intros. assert (exists l, fits_upath g l p). apply connected_exists_list_edges in H2; auto. destruct H3 as [l ?].
+pose proof (path_partition_checkpoint' g l1 l2 p l a b H H0 H1 H2 H3). destruct H4 as [v1 [v2 [? [? [? [? ?]]]]]].
+exists v1; exists v2. repeat split; auto. destruct H8 as [e [? ?]]. exists e; auto.
+Qed.
 
 Definition DEList (g: LGraph) {fg: FiniteGraph g}: list DE :=
   map (elabel g) (EList g).

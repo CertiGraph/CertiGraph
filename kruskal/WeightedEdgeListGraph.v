@@ -291,14 +291,6 @@ intros; rewrite Zseq_In. unfold VList; destruct finiteV; simpl.
 destruct a. rewrite H0. rewrite edgeless_WEdgeGraph_vvalid. split; auto.
 Qed.
 
-(*Move this*)
-Lemma Permutation_Zlength:
-  forall {A: Type} (l l': list A), Permutation l l' -> Zlength l = Zlength l'.
-Proof.
-intros. assert (length l = length l'). apply Permutation_length. apply H.
-repeat rewrite Zlength_correct. rewrite H0. auto.
-Qed.
-
 Lemma edgeless_WEdgeGraph_numV:
   forall v, 0 <= v -> numV (edgeless_WEdgeGraph v) = v.
 Proof.
@@ -614,7 +606,7 @@ Qed.
 
 (***********MST stuff***********)
 
-Lemma fold_left_Zadd_diff_accum:
+(*Lemma fold_left_Zadd_diff_accum:
 forall (l: list Z) (x y: Z), x <= y -> fold_left Z.add l x <= fold_left Z.add l y.
 Proof.
 induction l; intros. simpl; auto.
@@ -637,7 +629,7 @@ apply IHl1. do 2 rewrite Zlength_cons in H. lia.
 intros. replace (Znth i l1) with (Znth (i+1) (a::l1)).
  replace (Znth i l2) with (Znth (i+1) (z::l2)). apply H0. rewrite Zlength_cons. lia.
 all: rewrite (Znth_pos_cons (i+1)) by lia; rewrite Z.add_simpl_r; auto.
-Qed.
+Qed.*)
 
 Definition sum_LE (g: FiniteWEdgeListGraph) : LE :=
   fold_left Z.add (DEList g) 0.
@@ -669,41 +661,6 @@ Lemma sum_LE_equiv:
 Proof.
 unfold sum_LE, DEList; intros. apply fold_left_comm. intros; lia.
 apply Permutation_map. auto.
-Qed.
-
-(************SOME GENERAL LIST LEMMAS, SHOULD BE MOVED*********)
-(*I can't induct directly on a graph or its EList (have to intros the graph), so relying on these*)
-
-Lemma exists_element_list:
-  forall {A B: Type} {A': Inhabitant A} {B': Inhabitant B} (P: A -> B -> Prop) (la: list A),
-    (forall a, In a la -> exists b, P a b) ->
-    (exists lb, Zlength lb = Zlength la /\ forall i, 0 <= i < Zlength la -> P (Znth i la) (Znth i lb)).
-Proof.
-induction la; intros. exists nil. split. auto. intros. rewrite Zlength_nil in H0; lia.
-assert (forall a : A, In a la -> exists b : B, P a b). intros. apply H. right; auto.
-apply IHla in H0. destruct H0 as [lb ?].
-assert (exists b : B, P a b). apply H. left; auto. destruct H1 as [b ?].
-exists (b::lb). split. do 2 rewrite Zlength_cons; lia.
-intros. rewrite Zlength_cons in H2.
-destruct (Z.lt_trichotomy 0 i).
-do 2 rewrite Znth_pos_cons by lia. apply H0. lia.
-destruct H3. subst i. do 2 rewrite Znth_0_cons. auto. lia.
-Qed.
-
-Lemma list_not_forall_exists:
-  forall {A: Type} {A': Inhabitant A} (l: list A) (P: A -> Prop), l <> nil -> (forall a, P a \/ ~ P a) -> ~ (forall a, In a l -> P a) -> (exists a, In a l /\ ~ P a).
-Proof.
-induction l; intros.
-contradiction.
-destruct (H0 a).
-assert (exists a0 : A, In a0 l /\ ~ P a0). apply IHl.
-(*if l is nil, then (forall a, ... P a) holds*)
-unfold not; intros. subst l. assert (forall a0, In a0 (a::nil) -> P a0). intros. destruct H3. subst a0. auto. contradiction. contradiction.
-auto.
-unfold not; intros.
-assert (forall a0, In a0 (a::l) -> P a0). intros. destruct H4. subst a0. auto. apply H3. auto. contradiction.
-destruct H3 as [a0 [? ?]]. exists a0. split. right; auto. auto.
-exists a. split. left; auto. auto.
 Qed.
 
 (******Back to forests*****)

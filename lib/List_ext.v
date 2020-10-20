@@ -37,6 +37,22 @@ Proof.
   apply H0 in H3. apply H1. tauto.
 Qed.
 
+Lemma list_not_forall_exists:
+  forall {A: Type} {A': Inhabitant A} (l: list A) (P: A -> Prop), l <> nil -> (forall a, P a \/ ~ P a) -> ~ (forall a, In a l -> P a) -> (exists a, In a l /\ ~ P a).
+Proof.
+induction l; intros.
+contradiction.
+destruct (H0 a).
+assert (exists a0 : A, In a0 l /\ ~ P a0). apply IHl.
+(*if l is nil, then (forall a, ... P a) holds*)
+unfold not; intros. subst l. assert (forall a0, In a0 (a::nil) -> P a0). intros. destruct H3. subst a0. auto. contradiction. contradiction.
+auto.
+unfold not; intros.
+assert (forall a0, In a0 (a::l) -> P a0). intros. destruct H4. subst a0. auto. apply H3. auto. contradiction.
+destruct H3 as [a0 [? ?]]. exists a0. split. right; auto. auto.
+exists a. split. left; auto. auto.
+Qed.
+
 Lemma Permutation_incl:
 forall {A:Type} (l1 l2: list A), Permutation l1 l2 -> incl l1 l2.
 Proof.
@@ -998,6 +1014,22 @@ Qed.
 
 Local Open Scope Z_scope.
 
+Lemma exists_element_list:
+  forall {A B: Type} {A': Inhabitant A} {B': Inhabitant B} (P: A -> B -> Prop) (la: list A),
+    (forall a, In a la -> exists b, P a b) ->
+    (exists lb, Zlength lb = Zlength la /\ forall i, 0 <= i < Zlength la -> P (Znth i la) (Znth i lb)).
+Proof.
+induction la; intros. exists nil. split. auto. intros. rewrite Zlength_nil in H0; lia.
+assert (forall a : A, In a la -> exists b : B, P a b). intros. apply H. right; auto.
+apply IHla in H0. destruct H0 as [lb ?].
+assert (exists b : B, P a b). apply H. left; auto. destruct H1 as [b ?].
+exists (b::lb). split. do 2 rewrite Zlength_cons; lia.
+intros. rewrite Zlength_cons in H2.
+destruct (Z.lt_trichotomy 0 i).
+do 2 rewrite Znth_pos_cons by lia. apply H0. lia.
+destruct H3. subst i. do 2 rewrite Znth_0_cons. auto. lia.
+Qed.
+
 Lemma fold_left_Z_mono_strict: forall {A} (f: Z -> A -> Z) (l1 l2 l3: list A) s,
     (forall a b, a < f a b) -> (forall a b1 b2, f (f a b1) b2  = f (f a b2) b1) ->
     l2 <> nil -> Permutation (l1 ++ l2) l3 -> fold_left f l1 s < fold_left f l3 s.
@@ -1033,6 +1065,121 @@ Proof.
   intros. revert init. rev_induction l; intros; simpl. 1: reflexivity.
   rewrite !fold_left_app. simpl.
   rewrite H; intros; apply H0; rewrite in_app_iff; intuition.
+Qed.
+
+Lemma fold_left_Zadd_diff_accum:
+forall (l: list Z) (x y: Z), x <= y -> fold_left Z.add l x <= fold_left Z.add l y.
+Proof.
+induction l; intros. simpl; auto.
+apply IHl. lia.
+Qed.
+
+Lemma fold_left_accum_Zadd:
+forall (l: list Z) (x y: Z), fold_left Z.add l (x+y) = (fold_left Z.add l x) + y.
+Proof.
+induction l; intros. simpl; auto.
+simpl. replace (x + y + a) with ((x+a) + y) by lia. apply (IHl (x+a) y).
+Qed.
+
+Lemma fold_left_Zadd_comp:
+forall (l1 l2: list Z), Zlength l1 = Zlength l2 -> (forall i, 0<=i<Zlength l1 -> Znth i l1 <= Znth i l2)
+  -> (forall s, fold_left Z.add l1 s <= fold_left Z.add l2 s).
+Proof.
+induction l1; intros.
+rewrite Zlength_nil in H. symmetry in H. apply Zlength_nil_inv in H. subst l2. lia.
+destruct l2. rewrite Zlength_cons in H. rewrite Zlength_nil in H. pose proof (Zlength_nonneg l1). lia.
+simpl. assert (a <= z). replace a with (Znth 0 (a::l1)). replace z with (Znth 0 (z::l2)).
+apply H0. split. lia. rewrite Zlength_cons. pose proof (Zlength_nonneg l1). lia.
+auto. auto.
+apply (Z.le_trans _ (fold_left Z.add l1 (s + z)) _).
+apply fold_left_Zadd_diff_accum. lia.
+apply IHl1. do 2 rewrite Zlength_cons in H. lia.
+intros. replace (Znth i l1) with (Znth (i+1) (a::l1)).
+ replace (Znth i l2) with (Znth (i+1) (z::l2)). apply H0. rewrite Zlength_cons. lia.
+all: rewrite (Znth_pos_cons (i+1)) by lia; rewrite Z.add_simpl_r; auto.
+Qed.
+
+Lemma exists_Zmin:
+  forall {A:Type} (l: list A) (f: A -> Z), l <> nil -> exists a, In a l /\ (forall b, In b l -> f a <= f b).
+Proof.
+induction l; intros. contradiction.
+destruct l. exists a. split. left; auto. intros. destruct H0. subst b. lia. contradiction.
+assert (exists a : A, In a (a0 :: l) /\ (forall b : A, In b (a0 :: l) -> f a <= f b)). apply IHl. unfold not; intros. inversion H0.
+destruct H0 as [a' [? ?]].
+destruct (Z.le_ge_cases (f a) (f a')).
+exists a. split. left; auto. intros. destruct H3. subst a; lia. apply H1 in H3. lia.
+exists a'. split. right; auto. intros. destruct H3. subst b; lia. apply H1 in H3; lia.
+Qed.
+
+Lemma fold_left_Zadd_map_remove:
+forall {A: Type} {EA: EquivDec.EqDec A eq} l f b,
+  In b l -> NoDup l ->
+  fold_left Z.add (map f (remove EA b l)) 0 = (fold_left Z.add (map f l) 0) - f b.
+Proof.
+induction l; intros. contradiction.
+simpl. replace (f a) with (0 + f a) by lia. rewrite fold_left_accum_Zadd.
+replace (fold_left Z.add (map f l) 0 + f a - f b) with
+  (fold_left Z.add (map f l) 0 - f b + f a) by lia.
+destruct H; destruct (EA b a). 
+++hnf in e. subst a. assert (~ In b l). apply NoDup_cons_2 in H0; auto.
+rewrite remove_not_in by auto. rewrite Z.sub_add. auto.
+++unfold RelationClasses.complement, Equivalence.equiv in c. subst a. contradiction.
+++hnf in e; subst a. apply NoDup_cons_2 in H0. contradiction.
+++simpl. replace (f a) with (0 + f a) by lia. rewrite fold_left_accum_Zadd. apply NoDup_cons_1 in H0. rewrite IHl; auto.
+Qed.
+
+Lemma sublist_of_nil:
+forall {A:Type} lo hi, sublist lo hi (nil (A:=A)) = nil.
+Proof.
+intros. unfold sublist. rewrite firstn_nil. rewrite skipn_nil. auto.
+Qed.
+
+Lemma sublist_overshoot:
+forall {A:Type} (l: list A) lo hi, Zlength l <= lo -> sublist lo hi l = nil.
+Proof.
+intros. unfold sublist.
+rewrite skipn_short; auto.
+rewrite <- ZtoNat_Zlength.
+rewrite Zlength_firstn.
+destruct (Z.lt_trichotomy 0 hi). rewrite Z.max_r by lia.
+destruct (Z.lt_trichotomy hi (Zlength l)). rewrite Z.min_l. lia. lia. destruct H1. 
+subst hi. rewrite Z.min_id. lia. rewrite Z.min_r by lia. lia.
+destruct H0. subst hi. rewrite Z.max_id. rewrite Z.min_l. lia. pose proof (Zlength_nonneg l); lia.
+rewrite Z.max_l by lia. rewrite Z.min_l. lia. pose proof (Zlength_nonneg l); lia.
+Qed.
+
+Lemma sublist_same_overshoot:
+forall {A:Type} (l: list A) hi, Zlength l <= hi -> sublist 0 hi l = l.
+Proof.
+intros. unfold sublist. rewrite skipn_0. rewrite firstn_same. auto.
+rewrite <- ZtoNat_Zlength. lia.
+Qed.
+
+Lemma list_eq_Znth:
+  forall {A:Type} {d: Inhabitant A} (l l': list A), Zlength l = Zlength l' ->
+    (forall i, 0 <= i < Zlength l -> Znth i l = Znth i l') ->
+    l = l'.
+Proof.
+induction l; intros. symmetry; apply Zlength_nil_inv. rewrite Zlength_nil in H; auto.
+destruct l'. rewrite Zlength_cons, Zlength_nil in H.
+pose proof (Zlength_nonneg (A:=A) l).
+assert (Zlength l < Z.succ (Zlength l)) by lia. lia.
+replace a with (Znth 0 (a::l)). 2: rewrite Znth_0_cons; auto.
+replace a0 with (Znth 0 (a0::l)). 2: rewrite Znth_0_cons; auto.
+rewrite (H0 0). 2: rewrite Zlength_cons; pose proof (Zlength_nonneg (A:=A) l); lia.
+rewrite (IHl l'); auto.
+apply Z.succ_inj. do 2 rewrite Zlength_cons in H. auto.
+intros. replace (Znth i l) with (Znth (i+1) (a::l)).
+replace (Znth i l') with (Znth (i+1) (a0::l')). apply H0. rewrite Zlength_cons. lia.
+replace (Znth i l') with (Znth (i+1 - 1) l'). apply Znth_pos_cons. lia. rewrite Z.add_simpl_r; auto.
+replace (Znth i l) with (Znth (i+1 - 1) l). apply Znth_pos_cons. lia. rewrite Z.add_simpl_r; auto.
+Qed.
+
+Lemma Permutation_Zlength:
+  forall {A: Type} (l l': list A), Permutation l l' -> Zlength l = Zlength l'.
+Proof.
+intros. assert (length l = length l'). apply Permutation_length. apply H.
+repeat rewrite Zlength_correct. rewrite H0. auto.
 Qed.
 
 Lemma NoDup_combine_r: forall {A B} (l1: list A) (l2: list B),
