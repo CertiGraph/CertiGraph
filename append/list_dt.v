@@ -1349,6 +1349,32 @@ intros.
   unfold lseg_cell. simpl. saturate_local. destruct H. contradiction H.
 Qed.
 
+Lemma lseg_valid_pointer:
+  forall (ls : listspec list_structid list_link list_token) sh contents p q R,
+   sepalg.nonidentity sh ->
+   field_offset cenv_cs list_link list_fields + sizeof (field_type list_link list_fields)
+   = field_offset_next cenv_cs list_link list_fields  (co_sizeof (get_co list_structid)) ->
+    R |-- valid_pointer q ->
+    R * lseg ls sh contents p q |-- valid_pointer p.
+Proof.
+intros ? ? ? ? ? ? NON_ID ? ?.
+destruct contents.
+rewrite lseg_nil_eq. normalize.
+unfold lseg; simpl.
+normalize.
+destruct al; inv H1.
+rewrite LsegGeneral.lseg_cons_eq.
+normalize.
+destruct p0 as [p z]; simpl in *.
+apply sepcon_valid_pointer2.
+apply sepcon_valid_pointer1.
+rewrite sepcon_assoc.
+apply sepcon_valid_pointer2.
+eapply derives_trans.
+apply sepcon_derives ; [ apply derives_refl | ]. cancel.
+admit.
+Admitted.
+
 End LIST.
 
 Hint Rewrite @lseg_nil_eq : norm.
