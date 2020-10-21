@@ -18,13 +18,3 @@ struct list *append (struct list *x, struct list *y) {
   }
 }
 
-struct list * append2 (struct list * x, struct list * y) {
-  struct list * * retp, * * curp;
-  retp = & x;
-  curp = & x;
-  while ( * curp != NULL ) {
-    curp = & (( * curp ) -> tail);
-  }
-  * curp = y;
-  return * retp;
-}
