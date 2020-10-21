@@ -38,6 +38,9 @@ Lemma body_append: semax_body Vprog Gprog f_append append_spec.
 Proof.
 start_function.
 forward_if.
+* apply denote_tc_test_eq_split; [|entailer!].
+  (* just need lemma lseg_valid_pointer *)
+  admit.
 *
  forward.
  Exists y.
@@ -61,6 +64,9 @@ forward_if.
                    lseg LS sh s2 y nullval))%assert.
  + Exists (@nil val) s3 x u a.  entailer.
  + entailer!.
+   apply denote_tc_test_eq_split; [|entailer!].
+   (* just need lemma lseg_valid_pointer *)
+   admit.   
  + clear u H1; rename u0 into u. clear a s3 H0. rename a0 into a.
    gather_SEP (list_cell _ _ _ _) (field_at _ _ _ _ _) (lseg _ _ _ x _) (lseg _ _ _ u _).
    replace_SEP 0 (lseg LS sh (s1a++[a]) x u * lseg LS sh s1b u nullval)%logic.
@@ -87,4 +93,4 @@ forward_if.
     simpl valinject.
     cancel.
    apply (list_append_null LS).
-Qed.
+Admitted.
