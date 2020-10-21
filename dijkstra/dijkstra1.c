@@ -26,7 +26,7 @@ void setup (int** graph, int size, int inf) {
     for (i = 0; i < size; i++) {
         for (j = 0; j <= size; j++) {
             int random = rand() % (CONN * INFL); // 1 / CONN of these will be greater than INFL
-            graph[i][j] = (i==j) ? 0 : (random > INFL) ? inf : 1 + random; // so the rest will be INF
+            graph[i][j] = (i==j) ? 0 : (random > INFL) ? inf : random; // so the rest will be INF
         }
     }
 }
