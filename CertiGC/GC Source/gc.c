@@ -173,8 +173,8 @@ void forward (value *from_start,  /* beginning of from-space */
       if(hd == 0) { /* already forwarded */
 	*p = Field(v,0);
       } else {
-	int i;
-	int sz;
+	intnat i;
+	intnat sz;
 	value *new;
         sz = Wosize_hd(hd);
 	new = *next+1;
