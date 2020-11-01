@@ -37,10 +37,10 @@ Lemma MAX_ARGS_eq: MAX_ARGS = 1024. Proof. reflexivity. Qed.
 Hint Rewrite MAX_ARGS_eq: rep_lia.
 Global Opaque MAX_ARGS.
 
-Definition WORD_SIZE: Z := 4.
-Lemma WORD_SIZE_eq: WORD_SIZE = 4. Proof. reflexivity. Qed.
-Hint Rewrite WORD_SIZE_eq: rep_lia.
-Global Opaque WORD_SIZE.
+Definition WORD_SIZE: Z := Eval cbv [Archi.ptr64] in (if Archi.ptr64 then 8 else 4).
+(* Lemma WORD_SIZE_eq: WORD_SIZE = 4. Proof. reflexivity. Qed. *)
+(* Hint Rewrite WORD_SIZE_eq: rep_lia. *)
+(* Global Opaque WORD_SIZE. *)
 
 Definition MAX_SPACE_SIZE: Z := Z.shiftl 1 29.
 Lemma MAX_SPACE_SIZE_eq: MAX_SPACE_SIZE = Z.shiftl 1 29. Proof. reflexivity. Qed.
@@ -52,10 +52,13 @@ Lemma NO_SCAN_TAG_eq: NO_SCAN_TAG = 251. Proof. reflexivity. Qed.
 Hint Rewrite NO_SCAN_TAG_eq: rep_lia.
 Global Opaque NO_SCAN_TAG.
 
-Definition SPACE_STRUCT_SIZE: Z := 12.
-Lemma SPACE_STRUCT_SIZE_eq: SPACE_STRUCT_SIZE = 12. Proof. reflexivity. Qed.
-Hint Rewrite SPACE_STRUCT_SIZE_eq: rep_lia.
-Global Opaque SPACE_STRUCT_SIZE.
+Definition SPACE_STRUCT_SIZE: Z := Eval cbv [Archi.ptr64] in (if Archi.ptr64 then 24 else 12).
+(* Lemma SPACE_STRUCT_SIZE_eq: SPACE_STRUCT_SIZE = 12. Proof. reflexivity. Qed. *)
+(* Hint Rewrite SPACE_STRUCT_SIZE_eq: rep_lia. *)
+(* Global Opaque SPACE_STRUCT_SIZE. *)
+
+Lemma four_div_WORD_SIZE: (4 | WORD_SIZE).
+Proof. first [now exists 1 | now exists 2]. Qed.
 
 Lemma MSS_eq_unsigned:
   Int.unsigned (Int.shl (Int.repr 1) (Int.repr 29)) = MAX_SPACE_SIZE.
@@ -86,14 +89,16 @@ Qed.
 Lemma MSS_max_4_signed_range: forall n,
     0 <= n < MAX_SPACE_SIZE -> Ptrofs.min_signed <= WORD_SIZE * n <= Ptrofs.max_signed.
 Proof.
-  intros. destruct H. rewrite WORD_SIZE_eq. split.
-  - transitivity 0. 2: lia. rewrite Z.le_lteq. left. apply Ptrofs.min_signed_neg.
+  intros. destruct H. split.
+  - unfold WORD_SIZE. transitivity 0. 2: lia. rewrite Z.le_lteq. left.
+    apply Ptrofs.min_signed_neg.
   - rewrite Z.lt_le_pred in H0. rewrite Z.le_lteq. left.
-    apply Z.le_lt_trans with (4 * Z.pred MAX_SPACE_SIZE). 1: lia.
+    apply Z.le_lt_trans with (WORD_SIZE * Z.pred MAX_SPACE_SIZE).
+    unfold WORD_SIZE. 1: lia.
     rewrite Z.mul_pred_r, MAX_SPACE_SIZE_eq.
     unfold Ptrofs.max_signed, Ptrofs.half_modulus, Ptrofs.modulus, Ptrofs.wordsize,
-    Wordsize_Ptrofs.wordsize. destruct Archi.ptr64 eqn:? .
-    inversion Heqb. simpl. lia.
+    Wordsize_Ptrofs.wordsize.
+    destruct Archi.ptr64 eqn:?; first [now inversion Heqb | simpl; lia].
 Qed.
 
 Definition VType: Type := nat * nat.
@@ -125,9 +130,14 @@ Definition raw_field: Type := option (Z + GC_Pointer).
 
 Instance raw_field_inhabitant: Inhabitant raw_field := None.
 
-Definition odd_Z2val (x: Z) : val := Vint (Int.repr (2 * x + 1)%Z).
+Definition odd_Z2val (x: Z) : val :=
+  Eval cbv delta [Archi.ptr64] match
+         in (if Archi.ptr64 then Vlong (Int64.repr (2 * x + 1)%Z)
+              else Vint (Int.repr (2 * x + 1)%Z)).
 
-Definition Z2val (x: Z) : val := Vint (Int.repr x).
+Definition Z2val (x: Z) : val :=
+  Eval cbv delta [Archi.ptr64] match
+         in if Archi.ptr64 then Vlong (Int64.repr x) else Vint (Int.repr x).
 
 Definition GC_Pointer2val (x: GC_Pointer) : val :=
   match x with | GCPtr b z => Vptr b z end.
@@ -141,7 +151,7 @@ Record raw_vertex_block : Type :=
     raw_tag: Z;
     raw_tag_range: 0 <= raw_tag < 256;
     raw_color_range: 0 <= raw_color < 4;
-    raw_fields_range: 0 < Zlength raw_fields < two_power_nat 22;
+    raw_fields_range: 0 < Zlength raw_fields < two_p (WORD_SIZE * 8 - 10);
     tag_no_scan: NO_SCAN_TAG <= raw_tag -> ~ In None raw_fields;
     (* what's up with this? why can raw_f be None at all? *)
   }.
@@ -263,33 +273,33 @@ Proof.
   destruct (space_order sp). pose proof (total_space_tight_range sp). lia.
 Qed.
 
-Lemma signed_range_repable_signed: forall z,
-    Ptrofs.min_signed <= z <= Ptrofs.max_signed <-> repable_signed z.
-Proof.
-  intros. unfold repable_signed.
-  replace Ptrofs.max_signed with Int.max_signed by (vm_compute; reflexivity).
-  replace Ptrofs.min_signed with Int.min_signed by (vm_compute; reflexivity).
-  reflexivity.
-Qed.
+(* Lemma signed_range_repable_signed: forall z, *)
+(*     Ptrofs.min_signed <= z <= Ptrofs.max_signed <-> repable_signed z. *)
+(* Proof. *)
+(*   intros. unfold repable_signed. *)
+(*   replace Ptrofs.max_signed with Int.max_signed by (vm_compute; reflexivity). *)
+(*   replace Ptrofs.min_signed with Int.min_signed by (vm_compute; reflexivity). *)
+(*   reflexivity. *)
+(* Qed. *)
 
-Lemma used_space_repable_signed: forall sp, repable_signed (used_space sp).
-Proof.
-  intros. rewrite <- signed_range_repable_signed.
-  pose proof (used_space_signed_range sp). rep_lia.
-Qed.
+(* Lemma used_space_repable_signed: forall sp, repable_signed (used_space sp). *)
+(* Proof. *)
+(*   intros. rewrite <- signed_range_repable_signed. *)
+(*   pose proof (used_space_signed_range sp). rep_lia. *)
+(* Qed. *)
 
-Lemma total_space_repable_signed: forall sp, repable_signed (total_space sp).
-Proof.
-  intros. rewrite <- signed_range_repable_signed.
-  pose proof (total_space_signed_range sp). rep_lia.
-Qed.
+(* Lemma total_space_repable_signed: forall sp, repable_signed (total_space sp). *)
+(* Proof. *)
+(*   intros. rewrite <- signed_range_repable_signed. *)
+(*   pose proof (total_space_signed_range sp). rep_lia. *)
+(* Qed. *)
 
-Lemma rest_space_repable_signed: forall sp,
-    repable_signed (total_space sp - used_space sp).
-Proof.
-  intros. rewrite <- signed_range_repable_signed.
-  pose proof (rest_space_signed_range sp). rep_lia.
-Qed.
+(* Lemma rest_space_repable_signed: forall sp, *)
+(*     repable_signed (total_space sp - used_space sp). *)
+(* Proof. *)
+(*   intros. rewrite <- signed_range_repable_signed. *)
+(*   pose proof (rest_space_signed_range sp). rep_lia. *)
+(* Qed. *)
 
 Record heap: Type :=
   {
@@ -766,18 +776,17 @@ Proof.
   pose proof (proj1 (raw_fields_range (vlabel g v))). lia.
 Qed.
 
-Lemma make_header_range: forall g v, 0 <= make_header g v < two_power_nat 32.
+Lemma make_header_range: forall g v, 0 <= make_header g v < two_p (WORD_SIZE * 8).
 Proof.
   intros. unfold make_header. destruct (raw_mark (vlabel g v)).
-  - pose proof (two_power_nat_pos 32). lia.
+  - pose proof (two_p_gt_ZERO (WORD_SIZE * 8)). unfold WORD_SIZE in *; lia.
   - pose proof (raw_tag_range (vlabel g v)). pose proof (raw_color_range (vlabel g v)).
     pose proof (raw_fields_range (vlabel g v)). remember (raw_tag (vlabel g v)) as z1.
     clear Heqz1. remember (raw_color (vlabel g v)) as z2. clear Heqz2.
     remember (Zlength (raw_fields (vlabel g v))) as z3. clear Heqz3.
     assert (0 <= 8) by lia. apply (Zbits.Zshiftl_mul_two_p z2) in H2. rewrite H2.
     clear H2. assert (0 <= 10) by lia. apply (Zbits.Zshiftl_mul_two_p z3) in H2.
-    rewrite H2. clear H2. rewrite two_power_nat_two_p in *. simpl Z.of_nat in *.
-    assert (two_p 10 > 0) by (apply two_p_gt_ZERO; lia).
+    rewrite H2. clear H2. assert (two_p 10 > 0) by (apply two_p_gt_ZERO; lia).
     assert (two_p 8 > 0) by (apply two_p_gt_ZERO; lia). split.
     + assert (0 <= z2 * two_p 8) by (apply Z.mul_nonneg_nonneg; lia).
       assert (0 <= z3 * two_p 10) by (apply Z.mul_nonneg_nonneg; lia). lia.
@@ -785,29 +794,47 @@ Proof.
       change 256 with (two_p 8) in H. change 4 with (two_p 2) in H0.
       assert (z1 <= two_p 8 - 1) by lia. clear H.
       assert (z2 <= two_p 2 - 1) by lia. clear H0.
-      assert (z3 <= two_p 22 - 1) by lia. clear H1.
+      assert (z3 <= two_p (WORD_SIZE * 8 - 10) - 1) by lia. clear H1.
       apply Z.mul_le_mono_nonneg_r with (p := two_p 8) in H. 2: lia.
       apply Z.mul_le_mono_nonneg_r with (p := two_p 10) in H0. 2: lia.
-      rewrite Z.mul_sub_distr_r in H, H0.
-      rewrite <- two_p_is_exp in H, H0 by lia. simpl Z.add in H, H0. lia.
+      rewrite Z.mul_sub_distr_r in H, H0. rewrite Z.mul_1_l in H, H0.
+      assert (0 <= WORD_SIZE * 8 - 10) by (unfold WORD_SIZE; lia).
+      rewrite <- two_p_is_exp in H, H0 by lia. simpl Z.add in H, H0. clear H1.
+      Opaque two_p. simpl. Transparent two_p. lia.
 Qed.
 
 Lemma make_header_int_rep_mark_iff: forall g v,
-    Int.repr (make_header g v) = Int.repr 0 <-> raw_mark (vlabel g v) = true.
+    (if Archi.ptr64 then Int64.repr (make_header g v) = Int64.repr 0
+     else Int.repr (make_header g v) = Int.repr 0) <->
+    raw_mark (vlabel g v) = true.
 Proof.
   intros. rewrite <- make_header_mark_iff. split; intros; [|rewrite H; reflexivity].
-  Transparent Int.repr. inversion H. Opaque Int.repr. clear H. rewrite H1.
-  rewrite Int.Z_mod_modulus_eq, Z.mod_small in H1 by apply make_header_range.
-  assumption.
+  cbv delta [Archi.ptr64] in H. simpl in H. Transparent Int.repr Int64.repr.
+  inversion H. Opaque Int64.repr Int.repr. clear H. rewrite H1.
+  match goal with
+  | H : Int64.Z_mod_modulus _ = _ |- _ => rewrite Int64.Z_mod_modulus_eq in H
+  | H : Int.Z_mod_modulus _ = _ |- _ => rewrite Int.Z_mod_modulus_eq in H
+  end.
+  rewrite Z.mod_small in H1; auto. apply make_header_range.
 Qed.
 
 Lemma make_header_Wosize: forall g v,
     raw_mark (vlabel g v) = false ->
-    Int.shru (Int.repr (make_header g v)) (Int.repr 10) =
-    Int.repr (Zlength (raw_fields (vlabel g v))).
+    if Archi.ptr64 then
+      Int64.shru (Int64.repr (make_header g v)) (Int64.repr 10) =
+      Int64.repr (Zlength (raw_fields (vlabel g v)))
+    else
+      Int.shru (Int.repr (make_header g v)) (Int.repr 10) =
+      Int.repr (Zlength (raw_fields (vlabel g v))).
 Proof.
-  intros. rewrite Int.shru_div_two_p, !Int.unsigned_repr.
-  - f_equal. unfold make_header. remember (vlabel g v). clear Heqr.
+  intros. cbv delta [Archi.ptr64]. simpl.
+  match goal with
+  | |- Int64.shru _ _ = Int64.repr _ =>
+    rewrite Int64.shru_div_two_p, !Int64.unsigned_repr
+  | |- Int.shru _ _ = Int.repr _ => rewrite Int.shru_div_two_p, !Int.unsigned_repr
+  end.
+  - f_equal. unfold make_header.
+    remember (vlabel g v). clear Heqr.
     rewrite H, !Zbits.Zshiftl_mul_two_p by lia. rewrite Z.div_add. 2: compute; lia.
     pose proof (raw_tag_range r). pose proof (raw_color_range r).
     cut ((raw_tag r + raw_color r * two_p 8) / two_p 10 = 0). 1: intros; lia.
@@ -817,11 +844,15 @@ Proof.
     assert (two_p 8 > 0) by (apply two_p_gt_ZERO; lia). split.
     + assert (0 <= raw_color r * two_p 8) by (apply Z.mul_nonneg_nonneg; lia). lia.
     + apply Z.mul_le_mono_nonneg_r with (p := two_p 8) in H3. 2: lia.
-      rewrite Z.mul_sub_distr_r, <- two_p_is_exp in H3 by lia. simpl Z.add in H3.
-      lia.
+      rewrite Z.mul_sub_distr_r, <- two_p_is_exp in H3 by lia. simpl Z.add in H3. lia.
   - rep_lia.
-  - pose proof (make_header_range g v). unfold Int.max_unsigned, Int.modulus.
-    rep_lia.
+  - pose proof (make_header_range g v). unfold WORD_SIZE in *.
+    match goal with
+    | |- context [Int64.max_unsigned] =>
+      unfold Int64.max_unsigned, Int64.modulus, Int64.wordsize, Wordsize_64.wordsize
+    | |- context [Int.max_unsigned] =>
+      unfold Int.max_unsigned, Int.modulus, Int.wordsize, Wordsize_32.wordsize
+    end. simpl Z.mul in H0. rewrite two_power_nat_two_p. simpl Z.of_nat. lia.
 Qed.
 
 Definition field_t: Type := Z + GC_Pointer + EType.
@@ -1693,9 +1724,9 @@ Lemma graph_thread_v_in_range: forall g t_info v,
 Proof.
   intros. red. unfold vertex_address. exists (WORD_SIZE * vertex_offset g v).
   split. 2: reflexivity. unfold gen_size. destruct H0. remember (vgeneration v). split.
-  - unfold vertex_offset.
+  - unfold vertex_offset. unfold WORD_SIZE.
     pose proof (pvs_ge_zero g (vgeneration v) (vindex v)). rep_lia.
-  - apply Zmult_lt_compat_l. 1: rep_lia.
+  - unfold WORD_SIZE. apply Zmult_lt_compat_l. 1: rep_lia.
     apply Z.lt_le_trans with (used_space (nth_space t_info n)).
     2: apply (proj2 (space_order (nth_space t_info n))).
     destruct (gt_gs_compatible _ _ H _ H0) as [? [? ?]].
@@ -3683,24 +3714,55 @@ Proof.
   - eapply svfl_gen_unmarked; eauto.
 Qed.
 
-Lemma make_header_tag: forall g v,
-    raw_mark (vlabel g v) = false ->
-    Int.and (Int.repr (make_header g v)) (Int.repr 255) =
-    Int.repr (raw_tag (vlabel g v)).
+Lemma make_header_tag_prep64: forall z,
+    0 <= z < two_p (8 * 8) ->
+    Int64.and (Int64.repr z) (Int64.repr 255) =
+    Int64.sub (Int64.repr z)
+              (Int64.mul (Int64.repr (z / two_p 8)) (Int64.repr (two_p 8))).
+Proof.
+  intros. replace (Int64.repr 255) with (Int64.sub (Int64.repr 256) Int64.one) by
+      now vm_compute.
+  rewrite <- (Int64.modu_and _ _ (Int64.repr 8)) by now vm_compute.
+  rewrite Int64.modu_divu by (vm_compute; intro S; inversion S).
+  rewrite (Int64.divu_pow2 _ _ (Int64.repr 8)) by now vm_compute.
+  rewrite (Int64.mul_pow2 _ _ (Int64.repr 8)) by now vm_compute.
+  rewrite Int64.shru_div_two_p, !Int64.unsigned_repr; [| rep_lia | ].
+  - rewrite Int64.shl_mul_two_p, Int64.unsigned_repr by rep_lia. easy.
+  - simpl Z.mul in H. unfold Int64.max_unsigned, Int64.modulus.
+    unfold Int64.wordsize, Wordsize_64.wordsize. rewrite two_power_nat_two_p.
+    simpl Z.of_nat. lia.
+Qed.
+
+Lemma make_header_tag_prep32: forall z,
+    0 <= z < two_p (4 * 8) ->
+    Int.and (Int.repr z) (Int.repr 255) =
+    Int.sub (Int.repr z)
+              (Int.mul (Int.repr (z / two_p 8)) (Int.repr (two_p 8))).
 Proof.
   intros. replace (Int.repr 255) with (Int.sub (Int.repr 256) Int.one) by
-      (vm_compute; reflexivity).
-  assert (Int.is_power2 (Int.repr 256) = Some (Int.repr 8)) by
-      (vm_compute; reflexivity).
-  rewrite <- (Int.modu_and _ _ (Int.repr 8)) by assumption.
+      now vm_compute.
+  rewrite <- (Int.modu_and _ _ (Int.repr 8)) by now vm_compute.
   rewrite Int.modu_divu by (vm_compute; intro S; inversion S).
-  rewrite (Int.divu_pow2 _ _ (Int.repr 8)) by assumption.
-  rewrite (Int.mul_pow2 _ _ (Int.repr 8)) by assumption.
-  assert (0 <= make_header g v <= Int.max_unsigned). {
-    pose proof (make_header_range g v). unfold Int.max_unsigned, Int.modulus.
-    rep_lia. }
-  rewrite Int.shru_div_two_p, !Int.unsigned_repr; [| rep_lia | assumption].
-  rewrite Int.shl_mul_two_p, Int.unsigned_repr by rep_lia.
+  rewrite (Int.divu_pow2 _ _ (Int.repr 8)) by now vm_compute.
+  rewrite (Int.mul_pow2 _ _ (Int.repr 8)) by now vm_compute.
+  rewrite Int.shru_div_two_p, !Int.unsigned_repr; [| rep_lia | ].
+  - rewrite Int.shl_mul_two_p, Int.unsigned_repr by rep_lia. easy.
+  - simpl Z.mul in H. unfold Int.max_unsigned, Int.modulus.
+    unfold Int.wordsize, Wordsize_32.wordsize. rewrite two_power_nat_two_p.
+    simpl Z.of_nat. lia.
+Qed.
+
+Lemma make_header_tag: forall g v,
+    raw_mark (vlabel g v) = false ->
+    if Archi.ptr64 then
+        Int64.and (Int64.repr (make_header g v)) (Int64.repr 255) =
+        Int64.repr (raw_tag (vlabel g v))
+    else Int.and (Int.repr (make_header g v)) (Int.repr 255) =
+         Int.repr (raw_tag (vlabel g v)).
+Proof.
+  intros. cbv delta [Archi.ptr64]. simpl.
+  first [rewrite make_header_tag_prep32 | rewrite make_header_tag_prep64].
+  2: apply make_header_range.
   unfold make_header in *. remember (vlabel g v). clear Heqr.
   rewrite H, !Zbits.Zshiftl_mul_two_p in * by lia. rewrite <- Z.add_assoc.
   replace (raw_color r * two_p 8 + Zlength (raw_fields r) * two_p 10)
@@ -3708,8 +3770,9 @@ Proof.
       (rewrite Z.mul_add_distr_r, <- Z.mul_assoc, <- two_p_is_exp by lia;
        reflexivity). rewrite Z.div_add by (vm_compute; intros S; inversion S).
   assert (raw_tag r / two_p 8 = 0) by (apply Z.div_small, raw_tag_range).
-  rewrite H2, Z.add_0_l, mul_repr, sub_repr,
-  <- Z.add_sub_assoc, Z.sub_diag, Z.add_0_r. reflexivity.
+  rewrite H0, Z.add_0_l.
+  first [rewrite mul_repr, sub_repr | rewrite mul64_repr, sub64_repr].
+  now rewrite <- Z.add_sub_assoc, Z.sub_diag, Z.add_0_r.
 Qed.
 
 Lemma svfl_vertex_address: forall from to v l g g',
@@ -5771,4 +5834,18 @@ Proof.
   destruct (Nat.eq_dec n i).
   - subst. assumption.
   - specialize (H (S n)). simpl in H. apply H; auto.
+Qed.
+
+Lemma Int64_eq_false: forall x y : int64, Int64.eq x y = false -> x <> y.
+Proof.
+  intros. destruct x, y. unfold Int64.eq in H. simpl in H.
+  destruct (zeq intval intval0). 1: inversion H. intro. inversion H0. easy.
+Qed.
+
+Lemma raw_fields_range2: forall r,
+    Zlength (raw_fields r) <= if Archi.ptr64 then Int64.max_signed else Int.max_signed.
+Proof.
+  intros. pose proof (raw_fields_range r). remember (Zlength (raw_fields r)).
+  clear Heqz. cbv delta[Archi.ptr64]. simpl. rewrite <- Z.lt_succ_r. destruct H.
+  transitivity (two_p (WORD_SIZE * 8 - 10)); auto. now vm_compute.
 Qed.
