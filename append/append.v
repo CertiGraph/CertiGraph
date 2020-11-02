@@ -8,10 +8,10 @@ Module Info.
   Definition build_tag := ""%string.
   Definition arch := "x86"%string.
   Definition model := "32sse2"%string.
-  Definition abi := "macosx"%string.
+  Definition abi := "standard"%string.
   Definition bitsize := 32.
   Definition big_endian := false.
-  Definition source_file := "append.c"%string.
+  Definition source_file := "progs/append.c"%string.
   Definition normalized := true.
 End Info.
 
@@ -67,20 +67,14 @@ Definition ___compcert_va_float64 : ident := 21%positive.
 Definition ___compcert_va_int32 : ident := 19%positive.
 Definition ___compcert_va_int64 : ident := 20%positive.
 Definition _append : ident := 59%positive.
-Definition _append2 : ident := 62%positive.
-Definition _curp : ident := 61%positive.
 Definition _head : ident := 1%positive.
 Definition _list : ident := 2%positive.
-Definition _main : ident := 63%positive.
-Definition _retp : ident := 60%positive.
+Definition _main : ident := 60%positive.
 Definition _t : ident := 57%positive.
 Definition _tail : ident := 3%positive.
 Definition _u : ident := 58%positive.
 Definition _x : ident := 55%positive.
 Definition _y : ident := 56%positive.
-Definition _t'1 : ident := 64%positive.
-Definition _t'2 : ident := 65%positive.
-Definition _t'3 : ident := 66%positive.
 
 Definition f_append := {|
   fn_return := (tptr (Tstruct _list noattr));
@@ -119,66 +113,6 @@ Definition f_append := {|
                 (Tstruct _list noattr)) _tail (tptr (Tstruct _list noattr)))
             (Etempvar _y (tptr (Tstruct _list noattr))))
           (Sreturn (Some (Etempvar _x (tptr (Tstruct _list noattr))))))))))
-|}.
-
-Definition f_append2 := {|
-  fn_return := (tptr (Tstruct _list noattr));
-  fn_callconv := cc_default;
-  fn_params := ((_x, (tptr (Tstruct _list noattr))) ::
-                (_y, (tptr (Tstruct _list noattr))) :: nil);
-  fn_vars := ((_x, (tptr (Tstruct _list noattr))) :: nil);
-  fn_temps := ((_retp, (tptr (tptr (Tstruct _list noattr)))) ::
-               (_curp, (tptr (tptr (Tstruct _list noattr)))) ::
-               (_t'3, (tptr (Tstruct _list noattr))) ::
-               (_t'2, (tptr (Tstruct _list noattr))) ::
-               (_t'1, (tptr (Tstruct _list noattr))) :: nil);
-  fn_body :=
-(Ssequence
-  (Sassign (Evar _x (tptr (Tstruct _list noattr)))
-    (Etempvar _x (tptr (Tstruct _list noattr))))
-  (Ssequence
-    (Sset _retp
-      (Eaddrof (Evar _x (tptr (Tstruct _list noattr)))
-        (tptr (tptr (Tstruct _list noattr)))))
-    (Ssequence
-      (Sset _curp
-        (Eaddrof (Evar _x (tptr (Tstruct _list noattr)))
-          (tptr (tptr (Tstruct _list noattr)))))
-      (Ssequence
-        (Sloop
-          (Ssequence
-            (Ssequence
-              (Sset _t'3
-                (Ederef (Etempvar _curp (tptr (tptr (Tstruct _list noattr))))
-                  (tptr (Tstruct _list noattr))))
-              (Sifthenelse (Ebinop One
-                             (Etempvar _t'3 (tptr (Tstruct _list noattr)))
-                             (Ecast (Econst_int (Int.repr 0) tint)
-                               (tptr tvoid)) tint)
-                Sskip
-                Sbreak))
-            (Ssequence
-              (Sset _t'2
-                (Ederef (Etempvar _curp (tptr (tptr (Tstruct _list noattr))))
-                  (tptr (Tstruct _list noattr))))
-              (Sset _curp
-                (Eaddrof
-                  (Efield
-                    (Ederef (Etempvar _t'2 (tptr (Tstruct _list noattr)))
-                      (Tstruct _list noattr)) _tail
-                    (tptr (Tstruct _list noattr)))
-                  (tptr (tptr (Tstruct _list noattr)))))))
-          Sskip)
-        (Ssequence
-          (Sassign
-            (Ederef (Etempvar _curp (tptr (tptr (Tstruct _list noattr))))
-              (tptr (Tstruct _list noattr)))
-            (Etempvar _y (tptr (Tstruct _list noattr))))
-          (Ssequence
-            (Sset _t'1
-              (Ederef (Etempvar _retp (tptr (tptr (Tstruct _list noattr))))
-                (tptr (Tstruct _list noattr))))
-            (Sreturn (Some (Etempvar _t'1 (tptr (Tstruct _list noattr)))))))))))
 |}.
 
 Definition composites : list composite_definition :=
@@ -431,11 +365,10 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
- (_append, Gfun(Internal f_append)) ::
- (_append2, Gfun(Internal f_append2)) :: nil).
+ (_append, Gfun(Internal f_append)) :: nil).
 
 Definition public_idents : list ident :=
-(_append2 :: _append :: ___builtin_debug :: ___builtin_write32_reversed ::
+(_append :: ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
  ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
