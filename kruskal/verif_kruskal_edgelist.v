@@ -17,26 +17,6 @@ Require Import CertiGraph.graph.undirected_uf_lemmas.
 
 Local Open Scope Z_scope.
 
-(* Belongs in UF land, but is currently proved using 
-   a "connected" lemma. 
-   If I can prove this without using a connected lemma,
-   I can move this to UF land 
-*)
-Lemma uf_equiv_ufroot_same:
-  forall (g1 g2: UFGraph) u v,
-    uf_equiv g1 g2 ->
-    ufroot_same g1 u v <-> ufroot_same g2 u v.
-Proof.
-intros. do 2 rewrite <- connected_ufroot_same_iff. apply uf_equiv_connected. auto.
-Qed.
-
-(* General helpers that were used in this verification *)
-Lemma Forall_permutation: forall {A: Type} (al bl: list A) f, Forall f al -> Permutation al bl -> Forall f bl.
-Proof.
-intros. rewrite Forall_forall in *; intros.
-apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
-Qed.
-
 Lemma data_at_singleton_array_eq':
   forall (sh : Share.t) (t : type) (v : reptype t) (p : val), 
   data_at sh (Tarray t 1 noattr) [v] p = data_at sh t v p.
@@ -45,10 +25,6 @@ intros. apply data_at_singleton_array_eq. auto.
 Qed.
 
 (*************************************************************)
-
-Lemma connected_dec:
-forall (g: FiniteWEdgeListGraph) u v, connected g u v \/ ~ connected g u v.
-Proof. intros. tauto. Qed.
 
 (*Moved this here because:
 -universe inconsistency, proof is too long and I'm too tired to track it down

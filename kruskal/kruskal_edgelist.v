@@ -92,15 +92,15 @@ Definition _i : ident := 59%positive.
 Definition _init_empty_graph : ident := 86%positive.
 Definition _j : ident := 101%positive.
 Definition _kruskal : ident := 110%positive.
+Definition _length : ident := 100%positive.
 Definition _lo : ident := 95%positive.
 Definition _main : ident := 74%positive.
 Definition _makeSet : ident := 72%positive.
 Definition _mallocK : ident := 83%positive.
 Definition _mallocN : ident := 56%positive.
-Definition _min_index : ident := 98%positive.
-Definition _min_value : ident := 97%positive.
+Definition _min_index : ident := 97%positive.
+Definition _min_value : ident := 98%positive.
 Definition _mst : ident := 107%positive.
-Definition _n : ident := 100%positive.
 Definition _p : ident := 61%positive.
 Definition _p0 : ident := 60%positive.
 Definition _parent : ident := 1%positive.
@@ -315,13 +315,18 @@ Definition f_yucky_find_min := {|
   fn_params := ((_a, (tptr (Tstruct _edge noattr))) :: (_lo, tint) ::
                 (_hi, tint) :: nil);
   fn_vars := nil;
-  fn_temps := ((_min_value, tint) :: (_min_index, tint) :: (_i, tint) ::
+  fn_temps := ((_min_index, tint) :: (_min_value, tint) :: (_i, tint) ::
                (_w, tint) :: nil);
   fn_body :=
 (Ssequence
-  (Sset _min_value (Econst_int (Int.repr 2147483647) tint))
+  (Sset _min_index (Etempvar _lo tint))
   (Ssequence
-    (Sset _min_index (Etempvar _lo tint))
+    (Sset _min_value
+      (Efield
+        (Ederef
+          (Ebinop Oadd (Etempvar _a (tptr (Tstruct _edge noattr)))
+            (Etempvar _lo tint) (tptr (Tstruct _edge noattr)))
+          (Tstruct _edge noattr)) _weight tint))
     (Ssequence
       (Ssequence
         (Sset _i (Etempvar _lo tint))
@@ -353,39 +358,46 @@ Definition f_yucky_find_min := {|
 Definition f_sort_edges := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_a, (tptr (Tstruct _edge noattr))) :: (_n, tint) :: nil);
+  fn_params := ((_a, (tptr (Tstruct _edge noattr))) :: (_length, tint) ::
+                nil);
   fn_vars := nil;
   fn_temps := ((_i, tint) :: (_j, tint) :: (_t'1, tint) :: nil);
   fn_body :=
 (Ssequence
-  (Sset _i (Econst_int (Int.repr 0) tint))
   (Ssequence
-    (Swhile
-      (Ebinop Ole (Etempvar _i tint) (Etempvar _n tint) tint)
+    (Sset _i (Econst_int (Int.repr 0) tint))
+    (Sloop
       (Ssequence
+        (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                       (Ebinop Osub (Etempvar _length tint)
+                         (Econst_int (Int.repr 1) tint) tint) tint)
+          Sskip
+          Sbreak)
         (Ssequence
-          (Scall (Some _t'1)
-            (Evar _yucky_find_min (Tfunction
+          (Ssequence
+            (Scall (Some _t'1)
+              (Evar _yucky_find_min (Tfunction
+                                      (Tcons (tptr (Tstruct _edge noattr))
+                                        (Tcons tint (Tcons tint Tnil))) tint
+                                      cc_default))
+              ((Etempvar _a (tptr (Tstruct _edge noattr))) ::
+               (Etempvar _i tint) :: (Etempvar _length tint) :: nil))
+            (Sset _j (Etempvar _t'1 tint)))
+          (Sifthenelse (Ebinop Olt (Etempvar _i tint) (Etempvar _j tint)
+                         tint)
+            (Scall None
+              (Evar _swap_edges (Tfunction
+                                  (Tcons (tptr (Tstruct _edge noattr))
                                     (Tcons (tptr (Tstruct _edge noattr))
-                                      (Tcons tint (Tcons tint Tnil))) tint
-                                    cc_default))
-            ((Etempvar _a (tptr (Tstruct _edge noattr))) ::
-             (Etempvar _i tint) :: (Etempvar _n tint) :: nil))
-          (Sset _j (Etempvar _t'1 tint)))
-        (Ssequence
-          (Scall None
-            (Evar _swap_edges (Tfunction
-                                (Tcons (tptr (Tstruct _edge noattr))
-                                  (Tcons (tptr (Tstruct _edge noattr)) Tnil))
-                                tvoid cc_default))
-            ((Ebinop Oadd (Etempvar _a (tptr (Tstruct _edge noattr)))
-               (Etempvar _i tint) (tptr (Tstruct _edge noattr))) ::
-             (Ebinop Oadd (Etempvar _a (tptr (Tstruct _edge noattr)))
-               (Etempvar _j tint) (tptr (Tstruct _edge noattr))) :: nil))
-          (Sset _i
-            (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint)
-              tint)))))
-    (Sreturn None)))
+                                      Tnil)) tvoid cc_default))
+              ((Ebinop Oadd (Etempvar _a (tptr (Tstruct _edge noattr)))
+                 (Etempvar _i tint) (tptr (Tstruct _edge noattr))) ::
+               (Ebinop Oadd (Etempvar _a (tptr (Tstruct _edge noattr)))
+                 (Etempvar _j tint) (tptr (Tstruct _edge noattr))) :: nil))
+            Sskip)))
+      (Sset _i
+        (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint) tint))))
+  (Sreturn None))
 |}.
 
 Definition f_free_graph := {|

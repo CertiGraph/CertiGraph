@@ -1,5 +1,4 @@
 #include "../unionfind/unionfind_arr.h"
-#define INT_MAX 2147483647
 
 static const int MAX_EDGES = 8;
 
@@ -44,9 +43,9 @@ void swap_edges(struct edge *a, struct edge *b) {
 }
 
 /*********************SORTING***********************/
-int yucky_find_min(struct edge* a, int lo, int hi) {
-  int min_value = INT_MAX;
-  int min_index = lo;
+int yucky_find_min(struct edge* a, int lo, int hi) { //hi is OOB
+  int min_index=lo;
+  int min_value=a[lo].weight;
   for (int i = lo; i < hi; ++i) {
     int w = a[i].weight;
     if (w <= min_value) {
@@ -57,13 +56,13 @@ int yucky_find_min(struct edge* a, int lo, int hi) {
   return min_index;
 }
 
-void sort_edges(struct edge* a, int n) {
+void sort_edges(struct edge* a, int length) {
   //selection sort
-  int i = 0;
-  while (i <= n) {
-    int j = yucky_find_min(a, i, n);
-    swap_edges(a+i,a+j);
-    ++i;
+  for (int i = 0; i < length-1; ++i) { //don't need to swap the last edge
+    int j = yucky_find_min(a, i, length);
+    if (i < j) {
+        swap_edges(a+i,a+j);
+    }
   }
   return;
 }
