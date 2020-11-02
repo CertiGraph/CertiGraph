@@ -59,6 +59,39 @@ Definition init_empty_graph_spec :=
           data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges MAX_EDGES) (pointer_val_val eptr)
          ).
 
+Definition swap_edges_spec :=
+ DECLARE _swap_edges
+  WITH sh: share, a : reptype t_struct_edge, b: reptype t_struct_edge, a_ptr: val, b_ptr: val
+  PRE [tptr t_struct_edge, tptr t_struct_edge]
+    PROP (readable_share sh; writable_share sh; def_wedgerep a; def_wedgerep b)
+    PARAMS (a_ptr; b_ptr)
+    GLOBALS ()
+    SEP (data_at sh t_struct_edge a a_ptr; data_at sh t_struct_edge b b_ptr)
+  POST [ tvoid ]
+    PROP ()
+    LOCAL ()
+    SEP (data_at sh t_struct_edge b a_ptr; data_at sh t_struct_edge a b_ptr).
+
+Definition yucky_find_min_spec :=
+ DECLARE _yucky_find_min
+  WITH sh: share, a: val, al: list (reptype t_struct_edge), lo :Z, hi: Z
+  PRE [tptr t_struct_edge, tint, tint]
+    PROP (readable_share sh; writable_share sh;
+      	  Forall def_wedgerep al;
+          0 <= lo < hi;
+          hi <= Zlength al <= Int.max_signed
+         )
+    PARAMS(a; Vint (Int.repr lo); Vint (Int.repr hi))
+    GLOBALS ()
+    SEP(data_at sh (tarray t_struct_edge (Zlength al)) al a)
+  POST [ tint ]
+    EX min: Z,
+    PROP (lo <= min < hi;
+          forall i, lo <= i < hi -> wedge_le (Znth min al) (Znth i al)
+         )
+    LOCAL (temp ret_temp (Vint (Int.repr min)))
+    SEP(data_at sh (tarray t_struct_edge (Zlength al)) al a).
+
 Definition sort_edges_spec :=
  DECLARE _sort_edges
   WITH sh: share, a: val, al: list (reptype t_struct_edge)
@@ -125,5 +158,5 @@ Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Definition Gprog : funspecs :=
   ltac:(with_library prog
       [makeSet_spec; find_spec; union_spec; freeSet_spec;
-      mallocK_spec; fill_edge_spec; init_empty_graph_spec; sort_edges_spec; kruskal_spec
+      mallocK_spec; fill_edge_spec; swap_edges_spec; init_empty_graph_spec; yucky_find_min_spec; sort_edges_spec; kruskal_spec
   ]).
