@@ -258,10 +258,7 @@ Definition f_setup := {|
                         (Sset _t'4 (Ecast (Etempvar _inf tint) tint))
                         (Sset _t'3 (Ecast (Etempvar _t'4 tint) tint)))
                       (Ssequence
-                        (Sset _t'4
-                          (Ecast
-                            (Ebinop Oadd (Econst_int (Int.repr 1) tint)
-                              (Etempvar _random tint) tint) tint))
+                        (Sset _t'4 (Ecast (Etempvar _random tint) tint))
                         (Sset _t'3 (Ecast (Etempvar _t'4 tint) tint)))))
                   (Ssequence
                     (Sset _t'5

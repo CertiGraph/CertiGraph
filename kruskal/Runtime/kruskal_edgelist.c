@@ -44,24 +44,29 @@ void swap_edges(struct edge *a, struct edge *b) {
 	b->weight = tmp.weight; b->src = tmp.src; b->dst = tmp.dst;
 }
 
-void sort_edges(struct edge* a, int m, int n) {
-  int i, j;
-  struct edge pivot;
-
-  if (m < n) {
-    pivot.weight = a[n].weight; pivot.src = a[n].src; pivot.dst = a[n].dst;	//copy everything to avoid headaches in proof
-    i = m; j = n;
-    while (i <= j) {
-      while (a[i].weight < pivot.weight) i++;
-      while (a[j].weight > pivot.weight) j--;
-      if (i <= j) {
-	swap_edges(a+i,a+j);
-        i++; j--;
-      }
+/*********************SORTING***********************/
+int yucky_find_min(struct edge* a, int lo, int hi) { //hi is OOB
+  int min_index=lo;
+  int min_value=a[lo].weight;
+  for (int i = lo; i < hi; ++i) {
+    int w = a[i].weight;
+    if (w <= min_value) {
+      min_value = w;
+      min_index = i;
     }
-    sort_edges(a, m, j);
-    sort_edges(a, i, n);
   }
+  return min_index;
+}
+
+void sort_edges(struct edge* a, int length) {
+  //selection sort
+  for (int i = 0; i < length-1; ++i) { //don't need to swap the last edge
+    int j = yucky_find_min(a, i, length);
+    if (i < j) {
+        swap_edges(a+i,a+j);
+    }
+  }
+  return;
 }
 
 void free_graph(struct graph * graph) {
@@ -78,7 +83,7 @@ struct graph *kruskal(struct graph *graph) {
     //"add" all vertices
     mst->V = graph_V;
 
-    sort_edges(graph->edge_list, 0, graph_E-1); //because the new sort_spec now gives the length of the list instead of the index of the last element
+    sort_edges(graph->edge_list, graph_E); //because the new sort_spec now gives the length of the list instead of the index of the last element
 
     for (int i = 0; i < graph_E; ++i) {
         //extract the data

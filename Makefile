@@ -90,7 +90,7 @@ CERTIGC_FILES = \
 KRUSKAL_FILES = \
   WeightedEdgeListGraph.v \
   kruskal_edgelist.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_specs.v \
-  verif_kruskal_edgelist.v
+  verif_sort.v verif_kruskal_edgelist.v
 
 PRIM_FILES = \
   prim_env.v prim_constants.v \
@@ -111,6 +111,9 @@ DIJKSTRA_FILES = \
 PRIQ_FILES = \
   priq_arr.v priq_arr_specs.v is_empty_lemmas.v verif_priq_arr.v 
 
+APPEND_FILES = \
+  append.v list_dt.v verif_append.v 
+
 CLIGHT_FILES = mark/mark_bi.v dispose/dispose_bi.v copy/copy_bi.v summatrix/summatrix.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
@@ -129,6 +132,7 @@ NORMAL_FILES = \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
   $(PRIQ_FILES:%.v=priq/%.v) \
+  $(APPEND_FILES:%.v=append/%.v) \
   $(PRIM_FILES:%.v=prim/%.v) \
   $(UNION_FIND_FILES:%.v=unionfind/%.v) \
   $(COPY_FILES:%.v=copy/%.v) \
