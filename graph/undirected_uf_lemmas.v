@@ -174,3 +174,11 @@ Proof.
   apply connected_ufroot_same; trivial.
   apply ufroot_same_connected; trivial.
 Qed.
+
+Lemma uf_equiv_ufroot_same:
+  forall (g1 g2: UFGraph) u v,
+    uf_equiv g1 g2 ->
+    ufroot_same g1 u v <-> ufroot_same g2 u v.
+Proof.
+intros. do 2 rewrite <- connected_ufroot_same_iff. apply uf_equiv_connected. auto.
+Qed.
