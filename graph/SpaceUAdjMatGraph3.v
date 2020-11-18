@@ -88,7 +88,4 @@ rewrite Z2Nat.id by lia; lia.
 rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
 Qed.
 
-Definition G := @UAdjMatGG size inf.
-Identity Coercion UAdjMatGG_G: G >-> UAdjMatGG.
-
 End Spatial_UAdjMat_Model_3.

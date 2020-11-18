@@ -2,8 +2,8 @@ Require Import CertiGraph.prim.prim_env.
 Require Export CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.graph.MathUAdjMatGraph.
 Require Import CertiGraph.prim.prim_constants.
-Require Import CertiGraph.graph.SpaceUAdjMatGraph3.
-Require Export CertiGraph.prim.prim3.
+Require Import CertiGraph.graph.SpaceUAdjMatGraph2.
+Require Export CertiGraph.prim.prim2.
 
 Local Open Scope Z_scope.
 
@@ -25,18 +25,20 @@ Definition getCell_spec :=
        addresses: list val,
        u: V,
        i : V
-  PRE [tptr (tarray tint size), tint, tint]
+  PRE [tptr tint, tint, tint]
     PROP (0 <= i < size;
-          0 <= u < size)
+         0 <= u < size;
+         Forall (fun list => Zlength list = size) (@graph_to_mat size g eformat);
+         (size * size <= Int.max_signed))
     PARAMS (pointer_val_val graph_ptr;
            Vint (Int.repr u);
            Vint (Int.repr i))
     GLOBALS ()
-    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val graph_ptr))
+    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_list size g eformat) (pointer_val_val graph_ptr))
   POST [tint]
     PROP ()
     RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_symm_mat size g))))) 
-    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val graph_ptr)).    
+    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_list size g eformat) (pointer_val_val graph_ptr)).
 
 Definition initialise_list_spec :=
   DECLARE _initialise_list
@@ -57,11 +59,10 @@ Definition initialise_list_spec :=
 
 Definition initialise_matrix_spec :=
   DECLARE _initialise_matrix
-  WITH arr : val, old_contents: list (list Z), a: Z
-  PRE [tptr (tarray tint size), tint]
+  WITH arr : val, old_contents: list Z, a: Z
+  PRE [tptr tint, tint]
      PROP ( writable_share Tsh;
-            Zlength old_contents = size;
-            forall row, In row old_contents -> Zlength row = size;
+            Zlength old_contents = Z.mul size size;
             repable_signed a;
             0 < size <= Int.max_signed; (*this is not enough for malloc, requires*)
             size * (4 * size) <= Ptrofs.max_signed (*you can alloc the entire matrix. Can derive above from here*)
@@ -72,19 +73,19 @@ Definition initialise_matrix_spec :=
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) a)) arr).
+     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (list_repeat (Z.to_nat (Z.mul size size)) a) arr).
 
 Definition prim_spec :=
   DECLARE _prim
   WITH g: G, garbage: list V, gptr : pointer_val, r: Z, parent_ptr : pointer_val
-  PRE [tptr (tarray tint size), tint, tptr tint]
+  PRE [tptr tint, tint, tptr tint]
      PROP ( writable_share Tsh;
             vvalid g r;
             size * (4 * size) <= Ptrofs.max_signed
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()
-     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val gptr); 
+     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_list size g eformat) (pointer_val_val gptr); 
           data_at Tsh (tarray tint size) (map (fun x => Vint (Int.repr x)) garbage) (pointer_val_val parent_ptr)
          )
   POST [ tvoid ]
@@ -97,7 +98,7 @@ Definition prim_spec :=
               (filter (fun v => Znth v parents <? size) (nat_inc_list (Z.to_nat size))))
           )
      RETURN ()
-     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val gptr);
+     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_list size g eformat) (pointer_val_val gptr);
           data_at Tsh (tarray tint size) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr)
          ).
 

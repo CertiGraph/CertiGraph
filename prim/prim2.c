@@ -2,13 +2,14 @@
 
 #define SIZE 8
 #define INF 2147483646 // INT_MAX - 1
+#define graph(i, j) (graph[(i) * SIZE + (j)])
 
 //I feel like we should store the matrix in a struct. That way SIZE can be preserved yet it can be moved around with ease
 
-int check_symmetric_matrix(int graph[SIZE][SIZE]) {
+int check_symmetric_matrix(int graph[SIZE*SIZE]) {
     for (int i = 0; i < SIZE; ++i) {
         for (int j = 0; j < i; ++j) {
-            if (graph[i][j] != graph[j][i]) {
+            if (graph(i,j) != graph(j,i)) {
                 return 0;
             }
         }
@@ -16,11 +17,10 @@ int check_symmetric_matrix(int graph[SIZE][SIZE]) {
     return 1;
 }
 
-void initialise_matrix(int graph[SIZE][SIZE], int a) {
-    for (int i = 0; i < SIZE; ++i) {
-        for (int j = 0; j < SIZE; ++j) {
-            graph[i][j] = a;
-        }
+//never used?
+void initialise_matrix(int graph[SIZE*SIZE], int a) {
+    for (int i = 0; i < SIZE*SIZE; ++i) {
+        graph[i] = a;
     }
 }
 
@@ -30,8 +30,8 @@ void initialise_list(int list[SIZE], int a) {
     }
 }
 
-int getCell (int graph[SIZE][SIZE], int u, int i) {
-    return graph[u][i];
+int getCell (int graph[SIZE*SIZE], int u, int i) {
+    return graph(u,i);
 }
 
 /*
@@ -42,7 +42,7 @@ IMPORTANT: The soundness of the graph depends on declaring evalid g (u,v) -> u <
     otherwise algorithm doesn't preserve whether (u,v) or (v,u) is in graph
 It's not even clear in a conventional adjacency matrix anyway, because an undirected adjmatrix is symmetrical ("nice" graphs)
 */
-void prim(int graph[SIZE][SIZE], int r, int parent[SIZE]) {
+void prim(int graph[SIZE*SIZE], int r, int parent[SIZE]) {
     //This should ideally be replaced by a pq-specific "find_item_in_queue", but depending on the pq may be O(logn)
     int cost;
     int key[SIZE];

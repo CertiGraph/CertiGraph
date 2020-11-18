@@ -319,7 +319,7 @@ pose proof (finGraph g) as fg.
 (*whew! all setup done!*)
 (*now for the pq loop*)
 forward_loop (
-  EX mst':@G size inf,
+  EX mst': G,
   EX fmst': FiniteGraph mst',
   EX parents: list V,
   EX keys: list Z, (*can give a concrete definition in SEP, but it leads to shenanigans during entailer*)
@@ -374,7 +374,7 @@ forward_loop (
     )
   )
 break: (
-  EX mst:@G size inf,
+  EX mst: G,
   EX fmst: FiniteGraph mst,
   EX popped_vertices: list V,
   EX parents: list V,
