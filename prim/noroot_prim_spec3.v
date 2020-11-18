@@ -15,10 +15,12 @@ Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Global Existing Instance CompSpecs.
 
+Definition G := @UAdjMatGG size inf.
+Identity Coercion UAdjMatGG_G: G >-> UAdjMatGG.
 
 Definition getCell_spec :=
   DECLARE _getCell
-  WITH g: @G size inf,
+  WITH g: G,
        graph_ptr: pointer_val,
        addresses: list val,
        u: V,

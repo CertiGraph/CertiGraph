@@ -11,7 +11,7 @@
 #define graph(i, j) (graph[(i) * SIZE + (j)])
 
 extern void * mallocN (int n);
-extern void free (void *p);
+extern void freeN (void *p);
  
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
