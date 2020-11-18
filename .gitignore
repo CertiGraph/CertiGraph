@@ -33,3 +33,5 @@ poster.run.xml
 *.numbers
 .\#*
 *.key
+sumlist.c
+sumlist.v
