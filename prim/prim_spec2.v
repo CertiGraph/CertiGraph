@@ -81,7 +81,8 @@ Definition prim_spec :=
   PRE [tptr tint, tint, tptr tint]
      PROP ( writable_share Tsh;
             vvalid g r;
-            size * (4 * size) <= Ptrofs.max_signed
+            size * (4 * size) <= Ptrofs.max_signed;
+            Forall (fun list => Zlength list = size) (@graph_to_mat size g eformat)
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()

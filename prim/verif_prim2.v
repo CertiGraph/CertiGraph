@@ -33,6 +33,14 @@ Qed.
   Proof.
     start_function.
     assert (size * 4 <= Int.max_signed) by admit.
+    (* This is "size further restricted" in Dijkstra.
+       I don't want to unfold size; I want to add the mathematical
+       restriction. 
+       Question for WX: do you mind if I swim up 
+       "size further restricted" from Dijkstra's soundness
+       to MathAdjMat's soundness?
+       That way you will inherit it here as well.
+     *)
     rename H2 into Hsz.
     unfold SpaceAdjMatGraph, SpaceAdjMatGraph'.
     rewrite <- size_eq.
@@ -83,7 +91,7 @@ Qed.
 
 Lemma body_prim: semax_body Vprog Gprog f_prim prim_spec.
 Proof.
-start_function. rename H into Hprecon_1. rename H0 into Hprecon_2.
+start_function. rename H into Hprecon_1. rename H0 into Hprecon_2. rename H1 into Hprecon_3.
 assert (inf_repable: repable_signed inf). { red. apply (inf_representable g). }
 assert (Hsz: 0 < size <= Int.max_signed). { apply (size_representable g). }
 assert (Hsz2: size <= Int.max_signed). { lia. }
@@ -563,10 +571,6 @@ break: (
    }
    Transparent size.
    forward_call (g, gptr, addresses, u, i).
-   split3; trivial. split; trivial.
-   admit. (* add *)
-
-   
    Global Opaque size.
    forward.
   forward_if.
@@ -1753,6 +1757,6 @@ Transparent size.
 entailer!.
 Global Opaque size.
 }
-Admitted.
+Qed.
 
 End PrimProof.
