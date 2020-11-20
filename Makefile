@@ -94,10 +94,10 @@ KRUSKAL_FILES = \
 
 PRIM_FILES = \
   prim_env.v prim_constants.v \
-  prim3.v prim_spec3.v \
-  prim2.v prim_spec2.v \
-  noroot_prim3.v noroot_prim_spec3.v \
-  verif_prim2.v verif_prim3.v verif_noroot_prim3.v 
+  prim1.v prim_spec1.v verif_prim1.v \
+  prim2.v prim_spec2.v verif_prim2.v \
+  prim3.v prim_spec3.v verif_prim3.v \
+  noroot_prim3.v noroot_prim_spec3.v verif_noroot_prim3.v 
 
 DIJKSTRA_FILES = \
   dijkstra1.v dijkstra_spec1.v verif_dijkstra1.v \
@@ -160,7 +160,7 @@ VST_CRITICAL_FILES = \
   progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
 
 # clightgen:
-#	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim2.c prim/prim3.c prim/noroot_prim3.c dijkstra/dijkstra1.c dijkstra/dijkstra2.c dijkstra/dijkstra3.c
+#	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim1.c prim/prim2.c prim/prim3.c prim/noroot_prim3.c dijkstra/dijkstra1.c dijkstra/dijkstra2.c dijkstra/dijkstra3.c
 #	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c 
 
 .PHONY: vstandme7
@@ -174,7 +174,7 @@ vstandme3:
 .PHONY: mst
 mst:
 	make priq/verif_priq_arr.vo \
-	prim/verif_prim2.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo \
+	prim/verif_prim1.vo prim/verif_prim2.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo \
 	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
 	kruskal/verif_kruskal_edgelist.vo -kj7
 
