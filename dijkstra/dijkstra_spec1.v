@@ -4,7 +4,7 @@ Require Import CertiGraph.dijkstra.dijkstra_env.
 (* A separate file with the underlying PQ spec-ed out *)
 Require Export CertiGraph.priq.priq_arr_specs.
 
-(* Dijkstra-specific stuff *)
+(* Dijkstra-specific imports *)
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Export CertiGraph.dijkstra.dijkstra_spec_pure.
 

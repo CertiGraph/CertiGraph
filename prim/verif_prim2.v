@@ -32,36 +32,22 @@ Qed.
   Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
   Proof.
     start_function.
-    assert (size * 4 <= Int.max_signed) by admit.
-    (* This is "size further restricted" in Dijkstra.
-       I don't want to unfold size; I want to add the mathematical
-       restriction. 
-       Question for WX: do you mind if I swim up 
-       "size further restricted" from Dijkstra's soundness
-       to MathAdjMat's soundness?
-       That way you will inherit it here as well.
-     *)
-    rename H2 into Hsz.
-    unfold SpaceAdjMatGraph, SpaceAdjMatGraph'.
-    rewrite <- size_eq.
-    assert (0 <= u * size + i < size * size). {
-      split.
-      - apply Z.add_nonneg_nonneg; try lia.
-        apply Z.mul_nonneg_nonneg; try lia.
-      - replace size with (size - 1 + 1) at 2 by lia.
-        rewrite Z.mul_add_distr_r, Z.mul_1_l.
-        apply Z.add_le_lt_mono; try lia.
-        apply Zmult_le_compat_r; lia.
+    unfold SpaceAdjMatGraph'.
+    assert (0 <= size) by lia.
+    assert ((0 <= u * 8 + i < Zlength (map Int.repr (@graph_to_list size g eformat)))). {
+      rewrite Zlength_map, (graph_to_list_Zlength _ _ size); trivial.
+      rewrite <- size_eq.
+      split; [lia|].
+      replace size with (size - 1 + 1) at 2 by lia.
+      rewrite Z.mul_add_distr_r, Z.mul_1_l.
+      apply Z.add_le_lt_mono; try lia.
+      apply Zmult_le_compat_r; lia.
     }
-    assert (0 <= u * size + i <
-            Zlength (map Int.repr (@graph_to_list size g eformat))). {
-      rewrite Zlength_map, (graph_to_list_Zlength _ _ size); try lia.
-      trivial.
-    } 
+    rewrite Zlength_map, (graph_to_list_Zlength _ _ size) in H4; trivial.
     forward. forward. entailer!. f_equal. f_equal.
-    apply graph_to_list_to_mat; try lia; trivial.
-Admitted.
-  
+    apply graph_to_list_to_mat; trivial; lia.
+  Qed.
+
 Lemma body_initialise_list: semax_body Vprog Gprog f_initialise_list initialise_list_spec.
 Proof.
 start_function.
