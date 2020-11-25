@@ -113,7 +113,7 @@ Section MathDijkGraph.
     - apply H; trivial.
     - rewrite H0 in n.
       replace (elabel g e) with inf by trivial.
-      apply (@inf_representable _ _ g).
+      pose proof (@inf_representable _ _ g). lia.
   Qed.
 
   Lemma div_pos_le:

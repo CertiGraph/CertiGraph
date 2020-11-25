@@ -197,40 +197,40 @@ Qed.
 
 Lemma body_prim: semax_body Vprog (@Gprog size inf Z_EqDec) f_prim (@prim_spec size inf).
 Proof.
-start_function. rename H into Hprecon_1. rename H0 into Hprecon_2.
+  start_function. rename H into Hprecon_1. rename H0 into Hprecon_2.
+  pose proof (inf_representable g).
+  rename H into inf_repr.
 assert (inf_repable: repable_signed inf). {
-  pose proof (inf_representable g). rep_lia.
+  rep_lia.
 }
-assert (Hsz: 0 < size <= Int.max_signed). { apply (size_representable g). }
-assert (Hsz2: size <= Int.max_signed). { lia. }
-assert (size_repable: repable_signed size). { unfold repable_signed. rep_lia. }
+assert (Hsz: 0 < size <= Int.max_signed). {
+  apply (size_representable g). }
+assert (Hsz2: size <= Int.max_signed). {
+  lia. }
+assert (size_repable: repable_signed size). {
+  unfold repable_signed. rep_lia. }
+assert (H_size4_rep: Int.min_signed <= size * 4 <= Int.max_signed). {
+  split; [rep_lia|].
+  apply Z.le_trans with (m := size * (4 * size)); trivial.
+  rewrite Z.mul_comm, (Z.mul_comm _ (4 * size)).
+  apply Z.le_mul_diag_r; lia.
+}
+assert (H_size4_rep': 4 <= size * 4 <= Int.max_unsigned). {
+  split; [lia|].
+  apply Z.le_trans with (m := Int.max_signed).
+  2: compute; inversion 1.
+  apply Z.le_trans with (m := size * (4 * size)); trivial.
+  rewrite Z.mul_comm, (Z.mul_comm _ (4 * size)).
+  apply Z.le_mul_diag_r; lia.
+} 
+  
 (*replace all data_at_ with data_at Vundef*)
 repeat rewrite data_at__tarray. set (k:=default_val tint); compute in k; subst k.
 (*populate key with inf*)
 
 unfold V in *.
-forward_call (size * (sizeof tint)). (* check that the call is ok *)
-
-1: { (* why am I being asked this? *)
-  replace Ptrofs.max_signed with Int.max_signed in * by (now compute).
-  rewrite Zlength_map in *.
-  remember (Zlength garbage) as size in *.
-  split; [rep_lia|].
-  apply Z.le_trans with (m := size * (4 * size)); trivial.
-  rewrite Z.mul_comm.
-  rewrite (Z.mul_comm _ (4 * size)).
-  apply Z.le_mul_diag_r. lia. lia.
-}
-1: { simpl. split; [lia|].
-  replace Ptrofs.max_signed with Int.max_signed in * by (now compute).
-  apply Z.le_trans with (m := Int.max_signed).
-  2: compute; inversion 1.
-  apply Z.le_trans with (m := size * (4 * size)); trivial.
-  rewrite Z.mul_comm.
-  rewrite (Z.mul_comm _ (4 * size)).
-  apply Z.le_mul_diag_r. lia. lia.
-} 
-
+forward_call (size * 4). (* check that the call is ok *)
+  
 Intros key.
 remember (pointer_val_val key) as v_key.
 rename H into Ha.
@@ -250,7 +250,6 @@ forward_call (pointer_val_val parent_ptr, (map (fun x : Z => Vint (Int.repr x)) 
 clear H garbage.
 
 forward_call (size * 4).
-admit. admit.
 Intros out.
 remember (pointer_val_val out) as v_out.
 rename H into Hb.
@@ -284,11 +283,7 @@ assert (HZlength_starting_keys: Zlength starting_keys = size). {
 unfold repable_signed in inf_repable.
 (*push all vertices into priq*)
 forward_call(tt).
-split; try lia. split. apply (Z.le_trans _ 0).
-pose proof Int.min_signed_neg; lia. lia.
-rewrite Z.mul_comm. apply (Z.le_trans _ (size * (4*size))).
-apply (Z.le_trans _ (1*(4*size))). lia. apply Z.mul_le_mono_nonneg_r; lia.
-set (k:=Int.max_signed); compute in k; subst k. set (k:=Ptrofs.max_signed) in *; compute in k; subst k. lia.
+split; lia. 
 Intro priq_ptr.
 remember (pointer_val_val priq_ptr) as v_pq.
 rewrite <- Heqv_out.
@@ -333,7 +328,7 @@ assert (Znth i starting_keys = Vint (Int.repr (Znth i (upd_Znth r (list_repeat (
 forward_call (v_pq, i, Znth i (upd_Znth r (list_repeat (Z.to_nat size) inf) 0), sublist 0 i starting_keys ++ sublist i size (list_repeat (Z.to_nat size) Vundef)).
 split. auto. unfold weight_inrange_priq.
 destruct (Z.eq_dec i r). subst i. rewrite upd_Znth_same. split. pose proof Int.min_signed_neg; lia.
-apply (@inf_representable size _ g).
+pose proof (inf_representable g); lia.
 rewrite Zlength_list_repeat; lia.
 rewrite upd_Znth_diff, Znth_list_repeat_inrange. rep_lia.
 lia. rewrite Zlength_list_repeat; lia. rewrite Zlength_list_repeat; lia. auto.
@@ -534,13 +529,7 @@ break: (
     r = find (upd_Znth r (list_repeat (Z.to_nat size) inf) 0)
       (fold_right Z.min (hd 0 (upd_Znth r (list_repeat (Z.to_nat size) inf) 0))
          (upd_Znth r (list_repeat (Z.to_nat size) inf) 0)) 0). {
-    intros. rewrite find_src. auto. simpl; auto.
-    admit.
-    (* this not in your setup. 
-       I need it for Dijkstra as well, so I will add it to 
-       the general setup for all AdjMats
-     *)
-    lia.
+    intros. rewrite find_src; lia. 
   }
   (*Hinv_12 (nil <> nil) seems to be missing, autoresolved?*)
   assert (Hinv_13: forall u v : V, In u (VList g) -> ~ adjacent elg u v). {
@@ -627,12 +616,7 @@ break: (
     with (data_at Tsh (tarray tint size) (map Vint (map Int.repr pq_state)) v_pq).
   2: { rewrite list_map_compose. auto. }
   forward_call (v_pq, pq_state).
-  1: { repeat split; trivial.
-       lia.
-       apply (inf_representable g).
-       lia. admit.
-       (* need to add to settings *)
-  }
+  1: repeat split; trivial; lia. 
   forward_if.
 
   (*PROCEED WITH LOOP*) {
@@ -641,12 +625,7 @@ break: (
     rewrite H1 in H0; simpl in H0; now inversion H0.
   }
   forward_call (v_pq, pq_state).
-  1: { repeat split; trivial.
-       lia.
-       apply (inf_representable g). lia.
-       admit.
-       (* add to settings *)
-  }
+  1: repeat split; trivial; lia.
   Intros u. rename H2 into Hu.
   assert (0 <= u < size). {
     rewrite Hu. rewrite <- HZlength_pq_state. apply find_range.
@@ -749,8 +728,7 @@ break: (
     Exists parents. Exists keys. Exists upd_pq_state. entailer!.
     remember (Zlength parents) as size.
     (*in this case, proving the PROPs beforehand did not improve the timing*)
-    intros. rewrite Hinv_5 by lia. destruct (V_EqDec v r). auto. split. rep_lia.
-    apply (inf_representable g).
+    intros. rewrite Hinv_5 by lia. destruct (V_EqDec v r). auto. split; rep_lia.
     pose proof (weight_representable g (eformat (v, Znth v parents))).
     split; try rep_lia. apply weight_inf_bound.
   }
@@ -913,13 +891,12 @@ break: (
       rewrite graph_to_mat_symmetric; try lia.
       rewrite !Int.signed_repr in H7. split3.
       destruct (Znth i (Znth u (@graph_to_symm_mat size g)) <? Znth i keys') eqn:bool.
-      rewrite Z.ltb_lt in bool.
-      admit. 
+      rewrite Z.ltb_lt in bool. unfold V in *. lia.
       apply Hinv2_3. lia.
-      rewrite Z.min_r; try lia. admit. 
-      replace (Znth i pq_state') with (Znth i upd_pq_state). rewrite H11. rewrite Z.min_r; try lia.
-      admit.
-
+      unfold V in *.
+      rewrite Z.min_r; try lia. 
+      replace (Znth i pq_state') with (Znth i upd_pq_state). rewrite H11.
+      unfold V in *. rewrite Z.min_r; try lia.
       symmetry; apply Hinv2_3; lia.
       assert (Int.min_signed <= Znth i keys' <= inf). apply Hinv2_4. lia. pose proof (inf_repable); unfold repable_signed in H13; lia.
       rewrite graph_to_mat_eq; try lia. apply weight_representable.
@@ -1802,8 +1779,7 @@ break: (
           destruct (in_dec V_EqDec u popped_vertices). contradiction. auto.
         assert (Znth u keys <= Znth v2 keys). rewrite <- H15, <- H16. apply Hu_min; lia.
         assert (Znth v2 keys < inf). rewrite Hinv_5 by lia. destruct (V_EqDec v2 r).
-        admit.
-        (* add to settings *)
+        lia.
         apply (evalid_meaning g). apply Hinv_7; lia.
         (*now so Znth u keys = inf*)
         destruct popped_vertices. contradiction.
@@ -1854,9 +1830,8 @@ break: (
           destruct (in_dec V_EqDec u popped_vertices). contradiction. auto.
         assert (Znth u keys <= Znth v2 keys). rewrite <- H15, <- H16. apply Hu_min; lia.
         assert (Znth v2 keys < inf). rewrite Hinv_5 by lia. destruct (V_EqDec v2 r).
-        admit. (* add to settings *)
-
-          apply (evalid_meaning g). apply Hinv_7; lia.
+        lia.
+        apply (evalid_meaning g). apply Hinv_7; lia.
         (*now so Znth u keys = inf*)
         destruct popped_vertices. contradiction.
         (*case u=r, then Znth v2 pq_state = Znth v2 keys should be = inf, lia. Easiest way to solve this is to hack Hinv_11*)
@@ -1904,8 +1879,7 @@ break: (
       destruct (in_dec V_EqDec x popped_vertices). auto. exfalso. rewrite Hinv_5 in H2.
       assert (Znth x pq_state > inf). apply H0. apply Znth_In. unfold V in *. rewrite HZlength_pq_state. auto. 2: auto.
       destruct (V_EqDec x r).
-      admit.
-      (*rewrite inf_eq in H3; lia. *)
+      lia.
       rewrite H2 in H3. pose proof (weight_inf_bound g (eformat (x, Znth x parents))).
       apply Zgt_not_le in H3. contradiction.
     }
