@@ -221,7 +221,7 @@ Qed.
 Lemma body_prim: semax_body Vprog Gprog f_prim prim_spec.
 Proof.
 start_function. rename H into Hprecon_1. rename H0 into Hprecon_2.
-assert (inf_repable: repable_signed inf). { red. apply (inf_representable g). }
+assert (inf_repable: repable_signed inf). { red. pose proof (inf_representable g). rep_lia. }
 assert (Hsz: 0 < size <= Int.max_signed). { apply (size_representable g). }
 assert (Hsz2: size <= Int.max_signed). { lia. }
 assert (size_repable: repable_signed size). { unfold repable_signed. rep_lia. }
@@ -423,7 +423,7 @@ break: (
   remember (@edgeless_graph'
             size inf
             Hsz
-            inf_repable) as elg. 
+            (inf_representable g)) as elg. 
   Exists elg.
   pose proof (finGraph elg) as fe. Exists fe.
   Exists (list_repeat (Z.to_nat size) size).
@@ -477,7 +477,7 @@ break: (
     (*because I've trouble using edgeless_graph_EList*) apply NoDup_Permutation. apply NoDup_EList. apply NoDup_nil.
     intros. rewrite EList_evalid. split; intros.
     subst elg.
-    pose proof (@edgeless_graph_evalid size inf inf_repable Hsz x); contradiction. contradiction.
+    pose proof (@edgeless_graph_evalid size inf (inf_representable g) Hsz x); contradiction. contradiction.
   }
   assert (Hr1: forall u v : V, In u (nil (A:=V)) -> In v (nil (A:=V)) -> connected g u v <-> connected elg u v). {
     intros. contradiction.
@@ -493,7 +493,7 @@ break: (
   (*Hinv_12 (nil <> nil) seems to be missing, autoresolved?*)
   assert (Hinv_13: forall u v : V, In u (VList g) -> ~ adjacent elg u v). {
     unfold not; intros. destruct H0 as [e [? ?]]. destruct H0.
-    subst elg. pose proof (@edgeless_graph_evalid size inf inf_repable Hsz e); contradiction.
+    subst elg. pose proof (@edgeless_graph_evalid size inf (inf_representable g) Hsz e); contradiction.
   }
   assert (Hinv_14: forall v u1 u2 : V,
     In v (nil (A:=V)) ->
