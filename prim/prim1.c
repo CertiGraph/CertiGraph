@@ -74,5 +74,7 @@ void prim(int** graph, int size, int inf, int r, int* parent) {
         }
     }
     freePQ(pq);
+    freeN(out);
+    freeN(key);
     return;
 }

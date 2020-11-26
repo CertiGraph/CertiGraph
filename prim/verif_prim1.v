@@ -779,10 +779,9 @@ break: (
     forward. forward. forward. entailer!.
     rewrite upd_Znth_same. simpl. auto. rewrite Zlength_map. rewrite HZlength_keys'. auto.
     rewrite upd_Znth_same. 2: { simpl. auto. rewrite Zlength_map. rewrite HZlength_keys'. auto. }
-    forward_call (v_pq, i, Znth i (Znth u (@graph_to_symm_mat size g)), pq_state').
     replace (map (fun x : Z => Vint (Int.repr x)) pq_state') with (map Vint (map Int.repr pq_state')).
-    entailer!. admit.
-    rewrite list_map_compose. auto.
+    2: rewrite list_map_compose; auto.
+    forward_call (v_pq, i, Znth i (Znth u (@graph_to_symm_mat size g)), pq_state').
     split. lia.
     unfold weight_inrange_priq.
     rewrite graph_to_mat_eq. split.
@@ -791,12 +790,7 @@ break: (
     Exists (upd_Znth i parents' u).
     Exists (upd_Znth i keys' (Znth i (Znth u (@graph_to_symm_mat size g)))).
     Exists (upd_Znth i pq_state' (Znth i (Znth u (@graph_to_symm_mat size g)))).
-    rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u).
-    unfold list_rep.
     rewrite list_map_compose. repeat rewrite (upd_Znth_map (fun x => Vint (Int.repr x))). 
-    2: { unfold graph_to_symm_mat.
-         rewrite graph_to_mat_Zlength. lia. lia.
-    }
     clear H0 H5.
     assert (Hx1: forall v : Z, 0 <= v < i + 1 ->
       ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
@@ -850,18 +844,9 @@ break: (
       rewrite upd_Znth_diff. apply Hinv2_4. auto. rewrite HZlength_keys'; lia.
       rewrite HZlength_keys'; lia. auto.
     } (*entailer unable to solve but no change to timing*)
-    unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; trivial.
     time "inner loop update-because-lt-postcon (orig 71 seconds)" entailer!.
-    admit. lia. lia.
     -forward. (*nothing changed*)
     Exists parents'. Exists keys'. Exists pq_state'.
-    rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u).
-
-    
-
-    2: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia.
-    2: lia. 
-    unfold list_rep.
     assert (Hx1: forall v : Z,
           0 <= v < i + 1 ->
           ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
@@ -909,7 +894,6 @@ break: (
       intros. apply Hinv2_3. lia.
     } (*entailer unable to solve but no change to timing*)
     time "inner loop no-update-because-not-lt-postcon (originally 60s)" entailer!.
-    admit.
     
   +(*nothing changed because out of pq*)
   assert (In i (popped_vertices+::u)). {
@@ -1961,24 +1945,35 @@ split; intros; destruct H1; split; auto.
 apply (Permutation_in (l':=VList mst)) in H1. 2: auto. rewrite VList_vvalid, vert_bound in H1. lia.
 apply (Permutation_in (l:=VList mst)). apply Permutation_sym; auto. rewrite VList_vvalid, vert_bound; lia.
 }
-freeze FR := (data_at _ _ _ v_out)
+repeat rewrite Heqv_pq, Heqv_out, Heqv_key.
+freeze FR := (data_at _ _ _ (pointer_val_val out))
                (data_at _ _ _ (pointer_val_val parent_ptr))
-               (data_at _ _ _ v_key)
-               (SpaceAdjMatGraph' _ _ _ _).
-        forward_call (Tsh, priq_ptr, size, (list_repeat (Z.to_nat size) (inf + 1))).
+               (data_at _ _ _ (pointer_val_val key))
+               (SpaceAdjMatGraph' _ _ _ _)
+               (free_tok (pointer_val_val out) _)
+               (free_tok (pointer_val_val key) _).
+forward_call (Tsh, priq_ptr, size, (list_repeat (Z.to_nat size) (inf + 1))).
+rewrite map_map, map_list_repeat.
 entailer!.
-thaw FR. admit.
-forward.
-Exists mst fmst parents.
+thaw FR.
+freeze FR := (data_at _ _ _ (pointer_val_val parent_ptr))
+               (data_at _ _ _ (pointer_val_val key))
+               (SpaceAdjMatGraph' _ _ _ _)
+               (free_tok (pointer_val_val key) _).
+forward_call (Tsh, out, size, (list_repeat (Z.to_nat size) 1)).
+rewrite map_map, map_list_repeat, Z.mul_comm. simpl. entailer!.
+thaw FR.
+freeze FR := (data_at _ _ _ (pointer_val_val parent_ptr))
+               (SpaceAdjMatGraph' _ _ _ _).
+rewrite <- map_map.
+forward_call (Tsh, key, size, keys).
+rewrite Z.mul_comm. simpl. entailer!.
+forward. 
+Exists mst fmst parents. thaw FR.
 Transparent size.
 entailer!.
 Global Opaque size.
-admit.
 }
-Unshelve.
-admit.
-Unshelve.
-admit.
-Admitted.
+Qed.
 
 End PrimProof.

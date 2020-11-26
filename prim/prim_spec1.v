@@ -117,6 +117,20 @@ Definition mallocN_spec {CS: compspecs} :=
   SEP (data_at_ Tsh (tarray tint (n / sizeof tint)) (pointer_val_val v) *
        free_tok (pointer_val_val v) n).
 
+Definition freeN_spec {CS: compspecs} :=
+  DECLARE _freeN
+  WITH sh: share, p: pointer_val, n: Z, contents: list Z
+    PRE [tptr tvoid]
+    PROP ()
+    PARAMS (pointer_val_val p)
+    GLOBALS ()
+    SEP (data_at sh (tarray tint n)
+                 (map Vint (map Int.repr contents))
+                 (pointer_val_val p) *
+        free_tok (pointer_val_val p) (sizeof tint * n))
+  POST [tvoid]
+    PROP () LOCAL () SEP (emp).
+
 
 Definition Gprog: funspecs :=
   ltac:(with_library prog
@@ -127,6 +141,7 @@ Definition Gprog: funspecs :=
                      (@init_spec size _);
                      freePQ_spec;
                      mallocN_spec;
+                     freeN_spec;
                      getCell_spec;
                      initialise_list_spec;
                      initialise_matrix_spec;

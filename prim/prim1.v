@@ -463,7 +463,17 @@ Definition f_prim := {|
                       (Evar _freePQ (Tfunction (Tcons (tptr tvoid) Tnil)
                                       tvoid cc_default))
                       ((Etempvar _pq (tptr tint)) :: nil))
-                    (Sreturn None)))))))))))
+                    (Ssequence
+                      (Scall None
+                        (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil)
+                                       tvoid cc_default))
+                        ((Etempvar _out (tptr tint)) :: nil))
+                      (Ssequence
+                        (Scall None
+                          (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil)
+                                         tvoid cc_default))
+                          ((Etempvar _key (tptr tint)) :: nil))
+                        (Sreturn None)))))))))))))
 |}.
 
 Definition composites : list composite_definition :=
@@ -746,6 +756,10 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "mallocN"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
+ (_freeN,
+   Gfun(External (EF_external "freeN"
+                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
+     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_check_symmetric_matrix, Gfun(Internal f_check_symmetric_matrix)) ::
  (_initialise_matrix, Gfun(Internal f_initialise_matrix)) ::
  (_initialise_list, Gfun(Internal f_initialise_list)) ::
@@ -754,7 +768,7 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_prim :: _getCell :: _initialise_list :: _initialise_matrix ::
- _check_symmetric_matrix :: _mallocN :: _freePQ :: _pq_emp ::
+ _check_symmetric_matrix :: _freeN :: _mallocN :: _freePQ :: _pq_emp ::
  _adjustWeight :: _popMin :: _push :: _init :: ___builtin_debug ::
  ___builtin_write32_reversed :: ___builtin_write16_reversed ::
  ___builtin_read32_reversed :: ___builtin_read16_reversed ::
