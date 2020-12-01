@@ -201,7 +201,7 @@ void forward_roots (value *from_start,  /* beginning of from-space */
 		    struct thread_info *ti) /* where's the args array? */
 /* Forward each live root in the args array */
  {
-   value *args; int n; uintnat i;
+   value *args; uintnat n; uintnat i;
    const uintnat *roots = fi+2;
    n = fi[1];
    args = ti->args;

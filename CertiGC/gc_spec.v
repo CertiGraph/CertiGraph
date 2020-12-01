@@ -233,7 +233,7 @@ Definition forward_roots_spec :=
   PRE [tptr int_or_ptr_type,
        tptr int_or_ptr_type,
        tptr (tptr int_or_ptr_type),
-       tptr tuint,
+       tptr (if Archi.ptr64 then tulong else tuint),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
