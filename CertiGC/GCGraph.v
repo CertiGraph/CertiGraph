@@ -37,10 +37,10 @@ Lemma MAX_ARGS_eq: MAX_ARGS = 1024. Proof. reflexivity. Qed.
 Hint Rewrite MAX_ARGS_eq: rep_lia.
 Global Opaque MAX_ARGS.
 
-Definition WORD_SIZE: Z := Eval cbv [Archi.ptr64] in (if Archi.ptr64 then 8 else 4).
-(* Lemma WORD_SIZE_eq: WORD_SIZE = 4. Proof. reflexivity. Qed. *)
-(* Hint Rewrite WORD_SIZE_eq: rep_lia. *)
-(* Global Opaque WORD_SIZE. *)
+Definition WORD_SIZE: Z := Eval cbv [Archi.ptr64] in if Archi.ptr64 then 8 else 4.
+
+Definition MAX_UINT: Z := Eval cbv [Archi.ptr64] in
+      if Archi.ptr64 then Int64.max_unsigned else Int.max_unsigned.
 
 Definition MAX_SPACE_SIZE: Z := Z.shiftl 1 29.
 Lemma MAX_SPACE_SIZE_eq: MAX_SPACE_SIZE = Z.shiftl 1 29. Proof. reflexivity. Qed.
@@ -52,10 +52,8 @@ Lemma NO_SCAN_TAG_eq: NO_SCAN_TAG = 251. Proof. reflexivity. Qed.
 Hint Rewrite NO_SCAN_TAG_eq: rep_lia.
 Global Opaque NO_SCAN_TAG.
 
-Definition SPACE_STRUCT_SIZE: Z := Eval cbv [Archi.ptr64] in (if Archi.ptr64 then 24 else 12).
-(* Lemma SPACE_STRUCT_SIZE_eq: SPACE_STRUCT_SIZE = 12. Proof. reflexivity. Qed. *)
-(* Hint Rewrite SPACE_STRUCT_SIZE_eq: rep_lia. *)
-(* Global Opaque SPACE_STRUCT_SIZE. *)
+Definition SPACE_STRUCT_SIZE: Z :=
+  Eval cbv [Archi.ptr64] in if Archi.ptr64 then 24 else 12.
 
 Lemma four_div_WORD_SIZE: (4 | WORD_SIZE).
 Proof. first [now exists 1 | now exists 2]. Qed.
@@ -485,8 +483,8 @@ Record fun_info : Type :=
     fun_word_size: Z;
     live_roots_indices: list Z;
     fi_index_range: forall i, In i live_roots_indices -> (0 <= i < MAX_ARGS)%Z;
-    lri_range: (Zlength (live_roots_indices) <= Int.max_unsigned - 2)%Z;
-    word_size_range: (0 <= fun_word_size <= Int.max_unsigned)%Z;
+    lri_range: (Zlength (live_roots_indices) <= MAX_UINT - 2)%Z;
+    word_size_range: (0 <= fun_word_size <= MAX_UINT)%Z;
   }.
 
 Definition vertex_offset (g: LGraph) (v: VType): Z :=
@@ -5848,4 +5846,12 @@ Proof.
   intros. pose proof (raw_fields_range r). remember (Zlength (raw_fields r)).
   clear Heqz. cbv delta[Archi.ptr64]. simpl. rewrite <- Z.lt_succ_r. destruct H.
   transitivity (two_p (WORD_SIZE * 8 - 10)); auto. now vm_compute.
+Qed.
+
+Lemma Int64_ltu_false: forall x y,
+    0 <= x <= Int64.max_unsigned -> 0 <= y <= Int64.max_unsigned ->
+    Int64.ltu (Int64.repr x) (Int64.repr y) = false -> x >= y.
+Proof.
+  intros. unfold Int64.ltu in H1. rewrite !Int64.unsigned_repr in H1; auto.
+  if_tac in H1; auto. inversion H1.
 Qed.
