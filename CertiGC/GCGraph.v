@@ -5849,7 +5849,7 @@ Proof.
 Qed.
 
 Lemma Int64_ltu_false: forall x y,
-    0 <= x <= Int64.max_unsigned -> 0 <= y <= Int64.max_unsigned ->
+    0 <= y <= Int64.max_unsigned -> 0 <= x <= Int64.max_unsigned ->
     Int64.ltu (Int64.repr x) (Int64.repr y) = false -> x >= y.
 Proof.
   intros. unfold Int64.ltu in H1. rewrite !Int64.unsigned_repr in H1; auto.
