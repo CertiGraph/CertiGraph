@@ -1,8 +1,9 @@
-#include <stdlib.h>
+/* #include <stdlib.h> */
 #include <stdio.h>
 #include <assert.h>
 #include "config.h"
 #include "gc.h"
+#include "mem.h"
 
 /* The following 5 functions should (in practice) compile correctly in CompCert,
    but the CompCert correctness specification does not _require_ that
