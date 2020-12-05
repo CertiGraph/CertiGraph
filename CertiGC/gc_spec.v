@@ -307,7 +307,7 @@ Definition do_generation_spec :=
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [tptr space_type,
        tptr space_type,
-       tptr tuint,
+       tptr (if Archi.ptr64 then tulong else tuint),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
@@ -337,11 +337,11 @@ Definition do_generation_spec :=
 Definition create_space_spec :=
   DECLARE _create_space
   WITH sh: share, s: val, n: Z, gv: globals, rsh: share
-  PRE [tptr space_type, tuint]
+  PRE [tptr space_type, if Archi.ptr64 then tulong else tuint]
     PROP (writable_share sh;
           readable_share rsh;
           0 <= n < MAX_SPACE_SIZE)
-    PARAMS (s; Vint (Int.repr n))
+    PARAMS (s; if Archi.ptr64 then Vlong (Int64.repr n) else Vint (Int.repr n))
     GLOBALS (gv)
     SEP (mem_mgr gv; all_string_constants rsh gv; data_at_ sh space_type s)
   POST [tvoid]

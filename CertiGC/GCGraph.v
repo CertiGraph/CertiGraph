@@ -271,33 +271,52 @@ Proof.
   destruct (space_order sp). pose proof (total_space_tight_range sp). lia.
 Qed.
 
-(* Lemma signed_range_repable_signed: forall z, *)
-(*     Ptrofs.min_signed <= z <= Ptrofs.max_signed <-> repable_signed z. *)
-(* Proof. *)
-(*   intros. unfold repable_signed. *)
-(*   replace Ptrofs.max_signed with Int.max_signed by (vm_compute; reflexivity). *)
-(*   replace Ptrofs.min_signed with Int.min_signed by (vm_compute; reflexivity). *)
-(*   reflexivity. *)
-(* Qed. *)
+Definition range_signed (z: Z) :=
+  (if Archi.ptr64 then Int64.min_signed else Int.min_signed) <= z <=
+  (if Archi.ptr64 then Int64.max_signed else Int.max_signed).
 
-(* Lemma used_space_repable_signed: forall sp, repable_signed (used_space sp). *)
-(* Proof. *)
-(*   intros. rewrite <- signed_range_repable_signed. *)
-(*   pose proof (used_space_signed_range sp). rep_lia. *)
-(* Qed. *)
+Lemma signed_range_repable_signed: forall z,
+    Ptrofs.min_signed <= z <= Ptrofs.max_signed <-> range_signed z.
+Proof.
+  intros. unfold range_signed.
+  replace Ptrofs.max_signed with
+      (if Archi.ptr64 then Int64.max_signed else Int.max_signed) by
+      (vm_compute; reflexivity).
+  replace Ptrofs.min_signed with
+      (if Archi.ptr64 then Int64.min_signed else Int.min_signed) by
+      (vm_compute; reflexivity).
+  reflexivity.
+Qed.
 
-(* Lemma total_space_repable_signed: forall sp, repable_signed (total_space sp). *)
-(* Proof. *)
-(*   intros. rewrite <- signed_range_repable_signed. *)
-(*   pose proof (total_space_signed_range sp). rep_lia. *)
-(* Qed. *)
+Lemma used_space_repable_signed: forall sp, range_signed (used_space sp).
+Proof.
+  intros. rewrite <- signed_range_repable_signed.
+  pose proof (used_space_signed_range sp). unfold WORD_SIZE in H. rep_lia.
+Qed.
 
-(* Lemma rest_space_repable_signed: forall sp, *)
-(*     repable_signed (total_space sp - used_space sp). *)
-(* Proof. *)
-(*   intros. rewrite <- signed_range_repable_signed. *)
-(*   pose proof (rest_space_signed_range sp). rep_lia. *)
-(* Qed. *)
+Lemma total_space_repable_signed: forall sp, range_signed (total_space sp).
+Proof.
+  intros. rewrite <- signed_range_repable_signed.
+  pose proof (total_space_signed_range sp). unfold WORD_SIZE in H. rep_lia.
+Qed.
+
+Lemma rest_space_repable_signed: forall sp,
+    range_signed (total_space sp - used_space sp).
+Proof.
+  intros. rewrite <- signed_range_repable_signed.
+  pose proof (rest_space_signed_range sp). unfold WORD_SIZE in H. rep_lia.
+Qed.
+
+Definition repable64_signed (z: Z) :=
+  Int64.min_signed <= z <= Int64.max_signed.
+  
+Lemma lt64_repr: forall i j,
+    repable64_signed i -> repable64_signed j ->
+    Int64.lt (Int64.repr i) (Int64.repr j) = true -> i < j.
+Proof.
+  intros. unfold Int64.lt in H1. if_tac in H1. 2: inversion H1.
+  rewrite !Int64.signed_repr in H2; auto.
+Qed.
 
 Record heap: Type :=
   {
