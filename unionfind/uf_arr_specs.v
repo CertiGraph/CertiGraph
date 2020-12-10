@@ -1,3 +1,4 @@
+Require Import VST.floyd.library.
 Require Import CertiGraph.unionfind.env_unionfind_arr.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.UnionFind.
@@ -27,6 +28,23 @@ Definition mallocN_spec :=
      LOCAL (temp ret_temp (pointer_val_val v))
      SEP (memory_block sh n (pointer_val_val v)).
 
+(*
+Definition malloc_spec {cs: compspecs} (t: type):= 
+   DECLARE _mallocN
+   WITH gv:globals
+   PRE [ size_t ]
+       PROP (0 <= sizeof t <= Ptrofs.max_unsigned - 12; (* - (WA+WORD) in the verified malloc, which is 12*)
+             complete_legal_cosu_type t = true;
+             natural_aligned natural_alignment t = true)
+       PARAMS ((* _nbytes *) (Vptrofs (Ptrofs.repr (sizeof t)))) GLOBALS (gv)
+       SEP ( mem_mgr gv )
+   POST [ tptr tvoid ] EX p:_,
+       PROP ()
+       LOCAL (temp ret_temp p)
+       SEP ( mem_mgr gv;
+             if eq_dec p nullval then emp
+             else (malloc_token Ews t p * data_at_ Ews t p)).
+*)
 (*Basically collapses everything into the mpred defined by SAG_VST
 takes in a lst of rank-parent pairs(from where? g?)
   which is converted into the Cdata structures
@@ -39,17 +57,22 @@ Definition whole_graph sh g x :=
 
 Definition makeSet_spec :=
   DECLARE _makeSet
-  WITH sh: wshare, V: Z
+  WITH (*gv:globals,*) sh: wshare, V: Z
     PRE [tint]
       PROP (0 < V <= Int.max_signed / 8)
       PARAMS (Vint (Int.repr V))
       GLOBALS ()
-      SEP ()
+      SEP ((*mem_mgr gv*))
     POST [tptr vertex_type]
       EX rt: pointer_val, (*creates a graph where*)
       PROP (forall i: Z, 0 <= i < V -> vvalid (makeSet_discrete_Graph (Z.to_nat V)) i) (*anything between 0 and V is a vertex*)
       LOCAL (temp ret_temp (pointer_val_val rt))
-      SEP (whole_graph sh (makeSet_discrete_Graph (Z.to_nat V)) rt). (*representation in heap...*)
+      SEP ((*mem_mgr gv;*)
+
+          (*if eq_dec p nullval then emp
+             else (malloc_token Ews t p * data_at_ Ews t p)*)
+
+           whole_graph sh (makeSet_discrete_Graph (Z.to_nat V)) rt). (*representation in heap...*)
 
 Definition freeSet_spec :=
   DECLARE _freeSet

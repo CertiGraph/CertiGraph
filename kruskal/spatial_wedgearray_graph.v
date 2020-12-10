@@ -44,55 +44,56 @@ apply IHl. intros. apply H. right; auto. right; auto. auto. apply NoDup_cons_iff
 Qed.
 
 Lemma sound_wedge_to_cdata_inj:
-forall (g: FiniteWEdgeListGraph), sound_weighted_edge_graph g ->
+forall size (g: @EdgeListGG size),
 (forall x y : LE * EType,
 In x (graph_to_wedgelist g) ->
 In y (graph_to_wedgelist g) -> wedge_to_cdata x = wedge_to_cdata y -> x = y).
 Proof.
-intros. unfold graph_to_wedgelist in H0, H1. apply list_in_map_inv in H0. destruct H0.
-apply list_in_map_inv in H1. destruct H1. destruct H0. destruct H1. unfold edge_to_wedge in H0. unfold edge_to_wedge in H1.
+intros. unfold graph_to_wedgelist in H, H0. apply list_in_map_inv in H. destruct H.
+apply list_in_map_inv in H0. destruct H0. destruct H. destruct H0. unfold edge_to_wedge in H. unfold edge_to_wedge in H0.
 subst x. subst y.
-destruct H as [? [? [? [? ?]]]].
-apply EList_evalid in H3. apply EList_evalid in H4.
-assert (Hvvalid_x0: vvalid g (fst x0) /\ vvalid g (snd x0)).
-rewrite <- H5; auto. rewrite <- H6; auto.
+apply EList_evalid in H2. apply EList_evalid in H3.
+assert (Hvvalid_x0: vvalid g (fst x0) /\ vvalid g (snd x0)). {
+  rewrite <- (src_fst g), <- (dst_snd g) by auto. apply edge_valid; auto.
+}
 destruct Hvvalid_x0 as [Hx0_1 Hx0_2].
-assert (Hvvalid_x1: vvalid g (fst x1) /\ vvalid g (snd x1)).
-rewrite <- H5; auto. rewrite <- H6; auto.
+assert (Hvvalid_x1: vvalid g (fst x1) /\ vvalid g (snd x1)). {
+  rewrite <- (src_fst g), <- (dst_snd g) by auto. apply edge_valid; auto.
+}
 destruct Hvvalid_x1 as [Hx1_1 Hx1_2].
-unfold wedge_to_cdata in H2; simpl in H2.
-apply pair_equal_spec in H2. destruct H2. apply pair_equal_spec in H7. destruct H7.
-apply Vint_injective in H2. apply Vint_injective in H7. apply Vint_injective in H8.
-apply repr_inj_signed in H2. rewrite H2.
-2: unfold repable_signed; apply H1; auto.
-2: unfold repable_signed; apply H1; auto.
+unfold wedge_to_cdata in H1; simpl in H1.
+apply pair_equal_spec in H1. destruct H1. apply pair_equal_spec in H0. destruct H0.
+apply Vint_injective in H. apply Vint_injective in H0. apply Vint_injective in H1.
+apply repr_inj_signed in H. rewrite H.
+2: unfold repable_signed; apply (weight_valid g); auto.
+2: unfold repable_signed; apply (weight_valid g); auto.
 replace x0 with (fst x0, snd x0). 2: destruct x0; auto.
 replace x1 with (fst x1, snd x1). 2: destruct x1; auto.
-apply repr_inj_signed in H7. rewrite H7.
-apply repr_inj_signed in H8. rewrite H8. auto.
-all: unfold repable_signed; set (q:=Int.min_signed); compute in q; subst q.
-apply H in Hx0_2. lia.
-apply H in Hx1_2. lia.
-apply H in Hx0_1. lia.
-apply H in Hx1_1. lia.
+apply repr_inj_signed in H0. rewrite H0.
+apply repr_inj_signed in H1. rewrite H1. auto.
+all: unfold repable_signed.
+apply (@vertex_representable size) in Hx0_2. lia. apply (size_bound g).
+apply (@vertex_representable size) in Hx1_2. lia. apply (size_bound g).
+apply (@vertex_representable size) in Hx0_1. lia. apply (size_bound g).
+apply (@vertex_representable size) in Hx1_1. lia. apply (size_bound g).
 Qed.
 
 Lemma wedge_to_cdata_NoDup:
-forall (g: FiniteWEdgeListGraph), sound_weighted_edge_graph g ->
+forall size (g: @EdgeListGG size),
   NoDup (map wedge_to_cdata (graph_to_wedgelist g)).
 Proof.
 intros. pose proof (NoDup_g2wedgelist g). apply list_inj_map_NoDup. 2: auto.
-apply sound_wedge_to_cdata_inj. auto.
+apply sound_wedge_to_cdata_inj.
 Qed.
 
-Definition c_connected_by_path (g: FiniteWEdgeListGraph) p u v :=
+Definition c_connected_by_path size (g: @EdgeListGG size) p u v :=
 match u, v with
 | Vint u', Vint v' => connected_by_path g p (Int.signed u') (Int.signed v')
 | _, _ => False
 end.
 
 Lemma def_wedgerep_map_w2c:
-  forall g,
+  forall size (g: @EdgeListGG size),
     Forall def_wedgerep (map wedge_to_cdata (graph_to_wedgelist g)).
 Proof.
   intros.

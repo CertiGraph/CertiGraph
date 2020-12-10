@@ -109,34 +109,35 @@ Definition sort_edges_spec :=
     LOCAL ()
     SEP(data_at sh (tarray t_struct_edge (Zlength bl)) bl a).
 
+Section kruskal_spec.
+
+Context {size: Z}.
+
 Definition kruskal_spec :=
   DECLARE _kruskal
-  WITH gv: globals, sh: wshare, g: FiniteWEdgeListGraph, orig_gptr : pointer_val, orig_eptr : pointer_val,
+  WITH gv: globals, sh: wshare, g: (@EdgeListGG size), orig_gptr : pointer_val, orig_eptr : pointer_val,
        glist: list (LE*EType)
   PRE [tptr t_wedgearray_graph]
-  PROP (sound_weighted_edge_graph g;
-        forall v, 0 <= v < (numV g) <-> vvalid g v;
-        numE g <= MAX_EDGES;
-        0 < numV g <= Int.max_signed / 8;
+  PROP (numE g <= MAX_EDGES;
+        0 < size <= Int.max_signed / 8;
         Permutation (graph_to_wedgelist g) glist
        )
    PARAMS ((pointer_val_val orig_gptr))
    GLOBALS (gv)
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
         (**original graph*)
-          data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
+          data_at sh (t_wedgearray_graph) (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
           data_at sh (tarray t_struct_edge MAX_EDGES)
             (map wedge_to_cdata glist ++ (Vundef_cwedges (MAX_EDGES - numE g))) (pointer_val_val orig_eptr)
         )
   POST [tptr t_wedgearray_graph]
    EX msf_gptr msf_eptr: pointer_val,
-   EX msf: FiniteWEdgeListGraph,
+   EX msf: (@EdgeListGG size),
    EX msflist: list (LE*EType),
    EX glist': list (LE*EType),
    PROP (
         Permutation (graph_to_wedgelist g) glist';
       	(*forall i j, 0 <= i -> i <= j -> j < Zlength glist' -> wedge_le (wedge_to_cdata (Znth i glist')) (wedge_to_cdata (Znth j glist'));*)
-        sound_weighted_edge_graph msf;
         (numE msf) <= MAX_EDGES;
         Permutation msflist (graph_to_wedgelist msf);
         minimum_spanning_forest msf g
@@ -144,11 +145,11 @@ Definition kruskal_spec :=
    LOCAL (temp ret_temp (pointer_val_val msf_gptr))
    SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
         (*original graph*)
-          data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV g)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
+          data_at sh (t_wedgearray_graph) (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
           data_at sh (tarray t_struct_edge MAX_EDGES)
             (map wedge_to_cdata glist' ++ (Vundef_cwedges (MAX_EDGES - numE g))) (pointer_val_val orig_eptr);
         (*mst*)
-          data_at sh (t_wedgearray_graph) (Vint (Int.repr (numV msf)), (Vint (Int.repr (numE msf)), pointer_val_val msf_eptr)) (pointer_val_val msf_gptr);
+          data_at sh (t_wedgearray_graph) (Vint (Int.repr size), (Vint (Int.repr (numE msf)), pointer_val_val msf_eptr)) (pointer_val_val msf_gptr);
           data_at sh (tarray t_struct_edge MAX_EDGES)
             (map wedge_to_cdata msflist ++ (Vundef_cwedges (MAX_EDGES - numE msf))) (pointer_val_val msf_eptr)
         ).
@@ -160,3 +161,5 @@ Definition Gprog : funspecs :=
       [makeSet_spec; find_spec; union_spec; freeSet_spec;
       mallocK_spec; fill_edge_spec; swap_edges_spec; init_empty_graph_spec; yucky_find_min_spec; sort_edges_spec; kruskal_spec
   ]).
+
+End kruskal_spec.
