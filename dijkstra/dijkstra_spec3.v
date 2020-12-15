@@ -54,17 +54,16 @@ Section DijkstraSpec.
          prev_ptr : pointer_val,
          src : V
     PRE [tptr (tarray tint size), tint, tptr tint, tptr tint]
-    
       PROP (0 <= src < size;
-           Forall (fun list => Zlength list = size) (@graph_to_mat size g id))
+            Forall (fun list => Zlength list = size) (@graph_to_mat size g id))
       PARAMS (pointer_val_val graph_ptr;
-             Vint (Int.repr src);
-             pointer_val_val dist_ptr;
-             pointer_val_val prev_ptr)
+              Vint (Int.repr src);
+              pointer_val_val dist_ptr;
+              pointer_val_val prev_ptr)
       GLOBALS ()
       SEP (@SpaceAdjMatGraph size CompSpecs sh id g (pointer_val_val graph_ptr);
-          data_at_ Tsh (tarray tint size) (pointer_val_val dist_ptr);
-          data_at_ Tsh (tarray tint size) (pointer_val_val prev_ptr))
+           data_at_ Tsh (tarray tint size) (pointer_val_val dist_ptr);
+           data_at_ Tsh (tarray tint size) (pointer_val_val prev_ptr))
     POST [tvoid]
       EX prev: list V,
       EX dist: list V,
