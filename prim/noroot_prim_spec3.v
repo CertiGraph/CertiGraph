@@ -36,7 +36,7 @@ Definition getCell_spec :=
   POST [tint]
     PROP ()
     RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_symm_mat size g))))) 
-    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val graph_ptr)).    
+    SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val graph_ptr)).
 
 Definition initialise_list_spec :=
   DECLARE _initialise_list

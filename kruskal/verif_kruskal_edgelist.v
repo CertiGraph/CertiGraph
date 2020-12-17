@@ -660,32 +660,39 @@ Qed.
 Lemma body_init_empty_graph: semax_body Vprog (@Gprog size) f_init_empty_graph init_empty_graph_spec.
 Proof.
 start_function.
-forward_call (sh, sizeof t_wedgearray_graph).
-set (j := Int.max_unsigned) in *; compute in j; subst j. simpl; lia.
+forward_call (gv, sh, sizeof t_wedgearray_graph).
+split. auto.
+(*set (j := Int.max_unsigned) in *; compute in j; subst j.*) simpl; lia.
 Intros gptr.
-assert (memory_block sh (sizeof t_wedgearray_graph) (pointer_val_val gptr) =
-        data_at_ sh (t_wedgearray_graph) (pointer_val_val gptr)). {
+assert (memory_block sh (sizeof t_wedgearray_graph) gptr =
+        data_at_ sh (t_wedgearray_graph) gptr). {
   rewrite <- memory_block_data_at_; auto.
-} rewrite H0. clear H0.
-assert (data_at_ sh t_wedgearray_graph (pointer_val_val gptr) =
-        data_at sh t_wedgearray_graph (Vundef,(Vundef,Vundef)) (pointer_val_val gptr)). {
+}
+rewrite H0. clear H0.
+assert (data_at_ sh t_wedgearray_graph gptr =
+        data_at sh t_wedgearray_graph (Vundef,(Vundef,Vundef)) gptr). {
   unfold data_at_, field_at_, data_at.
   assert (default_val (nested_field_type t_wedgearray_graph []) = (Vundef,(Vundef,Vundef))) by reflexivity.
   rewrite H0. auto.
 } rewrite H0. clear H0. (*that was easier than I thought :]*)
+assert_PROP (isptr gptr). entailer!.
+rename H0 into Hgptr. destruct gptr; inversion Hgptr. set (gptr:=ValidPointer b i).
 forward.
-forward_call (sh, MAX_EDGES*(sizeof t_struct_edge)).
-set (j := Int.max_unsigned) in *; compute in j; subst j. simpl; lia.
+forward_call (gv, sh, MAX_EDGES*(sizeof t_struct_edge)).
+split. auto.
+(*set (j := Int.max_unsigned) in *; compute in j; subst j.*) simpl; lia.
 Intros eptr.
-assert (memory_block sh (MAX_EDGES * (sizeof t_struct_edge)) (pointer_val_val eptr) = data_at_ sh (tarray t_struct_edge MAX_EDGES) (pointer_val_val eptr)). {
-  assert (memory_block sh (MAX_EDGES*(sizeof t_struct_edge)) (pointer_val_val eptr) = memory_block sh (sizeof (tarray t_struct_edge MAX_EDGES)) (pointer_val_val eptr)). {
+assert (memory_block sh (MAX_EDGES * (sizeof t_struct_edge)) eptr = data_at_ sh (tarray t_struct_edge MAX_EDGES) eptr). {
+  assert (memory_block sh (MAX_EDGES*(sizeof t_struct_edge)) eptr = memory_block sh (sizeof (tarray t_struct_edge MAX_EDGES)) eptr). {
     simpl. auto.
   } rewrite <- memory_block_data_at_; auto.
 } rewrite H1. clear H1.
-assert (data_at_ sh (tarray t_struct_edge MAX_EDGES) (pointer_val_val eptr) = data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges MAX_EDGES) (pointer_val_val eptr)). {
+assert (data_at_ sh (tarray t_struct_edge MAX_EDGES) eptr = data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges MAX_EDGES) eptr). {
   unfold data_at_, field_at_, data_at. assert (default_val (nested_field_type (tarray t_struct_edge MAX_EDGES) []) = list_repeat (Z.to_nat MAX_EDGES) (Vundef, (Vundef, Vundef))) by reflexivity.
   rewrite H1. auto.
 } rewrite H1. clear H1.
+assert_PROP (isptr eptr). entailer!.
+rename H0 into Heptr. destruct eptr; inversion Heptr. set (eptr:=ValidPointer b0 i0).
 forward.
 forward.
 forward.
