@@ -7,7 +7,7 @@ Local Open Scope Z.
 
 Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 
-Definition MAX_EDGES:= 8.
+Definition MAX_EDGES:= 8. (*We can malloc, but it's not quite relevant*)
 Definition t_struct_edge := Tstruct _edge noattr.
 Definition t_wedgearray_graph := Tstruct _graph noattr.
 Definition wedgerep := reptype t_struct_edge.
