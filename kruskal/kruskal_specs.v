@@ -8,25 +8,30 @@ Require Export CertiGraph.kruskal.env_kruskal_edgelist.
 Require Import CertiGraph.kruskal.spatial_wedgearray_graph.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.floyd_ext.share.
+Require Import VST.floyd.library.
 
 Local Open Scope Z_scope.
 
 (* KRUSKAL SPECS *)
 
 (*Taken from VST's queue*)
+Parameter malloc_token': share -> Z -> val -> mpred.
+
 Definition mallocK_spec :=
  DECLARE _mallocK
-  WITH sh: wshare, n: Z
+  WITH gv: globals, sh: share, n: Z
   PRE [tint]
-     PROP (4 <= n <= Int.max_unsigned)
-     PARAMS (Vint (Int.repr n))
-     GLOBALS ()
-     SEP ()
+     PROP (writable_share sh;
+           4 <= n <= Ptrofs.max_unsigned - 12 (*we don't want to malloc 0. The 12 is just some constant from the verified malloc*)
+          )
+     PARAMS (Vptrofs (Ptrofs.repr n))
+     GLOBALS (gv)
+     SEP (mem_mgr gv)
   POST [ tptr tvoid ]
-     EX v: pointer_val,
-     PROP (malloc_compatible n (pointer_val_val v))
-     LOCAL (temp ret_temp (pointer_val_val v))
-     SEP (memory_block sh n (pointer_val_val v)).
+     EX v: _,
+     PROP (malloc_compatible n v)
+     LOCAL (temp ret_temp v)
+     SEP (mem_mgr gv; malloc_token' sh n v; memory_block sh n v).
 
 Definition fill_edge_spec :=
   DECLARE _fill_edge
@@ -43,17 +48,20 @@ Definition fill_edge_spec :=
 
 Definition init_empty_graph_spec :=
   DECLARE _init_empty_graph
-  WITH gv: globals, sh: wshare
+  WITH gv: globals, sh: share
   PRE []
-     PROP ()
+     PROP (writable_share sh)
      PARAMS ()
      GLOBALS (gv)
-     SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES))
+     SEP (mem_mgr gv; data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES))
   POST [ tptr t_wedgearray_graph ]
      EX gptr eptr: pointer_val,
      PROP ()
      LOCAL (temp ret_temp (pointer_val_val gptr))
      SEP ( (*explicit graph rep*)
+          mem_mgr gv;
+          malloc_token' sh (MAX_EDGES * sizeof t_struct_edge) (pointer_val_val eptr);
+          malloc_token' sh (sizeof t_wedgearray_graph) (pointer_val_val gptr);
           data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
           data_at sh (t_wedgearray_graph) (Vint (Int.repr 0), (Vint (Int.repr 0), pointer_val_val eptr)) (pointer_val_val gptr);
           data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges MAX_EDGES) (pointer_val_val eptr)
@@ -148,7 +156,9 @@ Definition kruskal_spec :=
           data_at sh (t_wedgearray_graph) (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
           data_at sh (tarray t_struct_edge MAX_EDGES)
             (map wedge_to_cdata glist' ++ (Vundef_cwedges (MAX_EDGES - numE g))) (pointer_val_val orig_eptr);
-        (*mst*)
+        (*msf*)
+          malloc_token' sh (MAX_EDGES * sizeof t_struct_edge) (pointer_val_val msf_eptr);
+          malloc_token' sh (sizeof t_wedgearray_graph) (pointer_val_val msf_gptr);
           data_at sh (t_wedgearray_graph) (Vint (Int.repr size), (Vint (Int.repr (numE msf)), pointer_val_val msf_eptr)) (pointer_val_val msf_gptr);
           data_at sh (tarray t_struct_edge MAX_EDGES)
             (map wedge_to_cdata msflist ++ (Vundef_cwedges (MAX_EDGES - numE msf))) (pointer_val_val msf_eptr)

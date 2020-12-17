@@ -11,6 +11,7 @@ Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.unionfind.spatial_array_graph.
 Require Import Coq.Lists.List.
 Require Import CertiGraph.unionfind.uf_arr_specs.
+Require Import VST.floyd.library.
 
 Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
@@ -100,7 +101,7 @@ Qed.
 
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
-  start_function. forward_call (sh, Z.mul V 8).
+  start_function. (*forward_call (sh, Z.mul V 8, gv).*) forward_call (sh, Z.mul V 8).
   - assert (Int.min_signed <= 8 <= Int.max_signed) by rep_lia.
     assert (Int.min_signed <= V <= Int.max_signed). {
       split; rewrite Z.le_lteq; left.
@@ -108,7 +109,7 @@ Proof.
       - apply Z.le_lt_trans with (Int.max_signed / 8); [intuition | apply Z.div_lt; lia].
     } rewrite !Int.signed_repr; auto. split. 1: lia.
     assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
-  - split. 1: lia. assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
+  - split. auto. assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
   - Intros rt.
     assert (memory_block sh (V * 8) (pointer_val_val rt) = data_at_ sh (tarray vertex_type V) (pointer_val_val rt)). {
       assert (memory_block sh (V * 8) (pointer_val_val rt) = memory_block sh (sizeof (tarray vertex_type V)) (pointer_val_val rt)). {
