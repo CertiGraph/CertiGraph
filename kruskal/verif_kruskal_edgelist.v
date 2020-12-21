@@ -1,4 +1,5 @@
 Require Import VST.floyd.proofauto.
+Require Import VST.floyd.library.
 Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
@@ -708,11 +709,10 @@ Proof.
   pose proof (size_bound g) as size_bound.
   forward. forward.
   (*call MakeSet*)
-  forward_call (sh, size). Intros subsetsPtr.
+  forward_call (gv, sh, size). Intros subsetsPtr.
   (*malloc mst*)
   forward_call (gv, sh). Intros mst.
-  destruct mst as [gptr eptr].
-  simpl fst in *. simpl snd in *.
+  destruct mst as [gptr eptr]. simpl fst in *. simpl snd in *.
   forward. forward.
   assert (Hdef_g: Forall def_wedgerep (map wedge_to_cdata (graph_to_wedgelist g))) by (apply def_wedgerep_map_w2c).
   assert (Hperm_glist: Permutation (map wedge_to_cdata (graph_to_wedgelist g)) (map wedge_to_cdata glist)). apply Permutation_map. auto.
@@ -730,7 +730,7 @@ Proof.
     2: auto. 2: apply Vundef_cwedges_Zlength; lia. Intros.
   rewrite <- HZlength_glist.
   (******************************SORT******************************)
-  forward_call ((wshare_share sh), 
+  forward_call ((*wshare_share sh*) sh, 
                 pointer_val_val orig_eptr,
                 (map wedge_to_cdata glist)).
   - split3; [| |split]; trivial.
@@ -773,14 +773,16 @@ Proof.
           temp _subsets (pointer_val_val subsetsPtr);
           temp _mst (pointer_val_val gptr))
    SEP (
-        (*the irritating global haha*)
         data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
+        mem_mgr gv;
         (*orig graph with sorted edgelist*)
         data_at sh (tarray t_struct_edge (numE g)) sorted (pointer_val_val orig_eptr);
         data_at sh t_wedgearray_graph (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
         data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (Vundef_cwedges (MAX_EDGES - numE g))
            (field_address0 (tarray t_struct_edge MAX_EDGES) [ArraySubsc (numE g)] (pointer_val_val orig_eptr));
         (*msf'*)
+        malloc_token' sh (MAX_EDGES * sizeof t_struct_edge) (pointer_val_val eptr);
+        malloc_token' sh (sizeof t_wedgearray_graph) (pointer_val_val gptr);
         data_at sh t_wedgearray_graph (Vint (Int.repr (size)), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr);
         data_at sh (tarray t_struct_edge MAX_EDGES)
           (map wedge_to_cdata msflist ++ (Vundef_cwedges (MAX_EDGES - numE msf'))) (pointer_val_val eptr);
@@ -848,9 +850,6 @@ Proof.
   assert (forall x : reptype t_struct_edge, In x (map wedge_to_cdata []) -> exists j : Z, 0 <= j < 0 /\ x = Znth j sorted). {
     intros; contradiction.
   }
-  (*assert (forall v : VType, vvalid (@edgeless_GG size size_bound) v <-> vvalid g v). {
-    intros. rewrite <- H0. simpl; split; auto.
-  }*)
   time "loop precon (originally 187 seconds)" entailer!.
   + (******LOOP BODY******)
   Intros.
@@ -912,7 +911,7 @@ Proof.
   Intros u_root. destruct u_root as [subsetsGraph_u u_root].
   simpl fst.
   (*find v*)
-  forward_call (sh, subsetsGraph_u, subsetsPtr, v).
+  forward_call (sh, subsetsGraph_u, subsetsPtr, v). split. auto.
   destruct H3 as [? _]; rewrite <- H3. apply Hvvalid_subsetsGraph'_v.
   Intros v_root. destruct v_root as [subsetsGraph_uv v_root].
   simpl fst in *. simpl snd in *.
@@ -986,63 +985,6 @@ Proof.
     forward_call (sh, a, fst (Znth i sorted), fst (snd (Znth i sorted)), snd (snd (Znth i sorted)), (Vundef, (Vundef, Vundef))).
     replace (fst (Znth i sorted), (fst (snd (Znth i sorted)), snd (snd (Znth i sorted)))) with (Znth i sorted).
     2: rewrite (surjective_pairing (Znth i sorted)); rewrite (surjective_pairing (snd (Znth i sorted))); auto.
-    (*refold. UGLY*)
-    unfold SEPx. simpl. rewrite sepcon_comm. repeat rewrite <- sepcon_assoc. repeat rewrite sepcon_emp. repeat rewrite sepcon_assoc.
-    rewrite (sepcon_comm _ (data_at sh t_struct_edge (Znth i sorted) a)).
-    rewrite <- (data_at_singleton_array_eq' sh t_struct_edge).
-    rewrite <- (split2_data_at_Tarray_app 1 (MAX_EDGES - numE msf') sh t_struct_edge
-          [Znth i sorted] (Vundef_cwedges (MAX_EDGES - (numE msf' + 1))) a).
-    2: { rewrite Zlength_cons. rewrite Zlength_nil. auto. }
-    2: { rewrite Vundef_cwedges_Zlength by lia. lia. }
-    unfold a.
-    rewrite <- (split2_data_at_Tarray_app (numE msf') MAX_EDGES sh t_struct_edge
-      (map wedge_to_cdata msflist) ([Znth i sorted] ++ Vundef_cwedges (MAX_EDGES - (numE msf' + 1)))
-      (pointer_val_val eptr)).
-    2: { rewrite Zlength_map. apply HZlength_msflist. }
-    2: { rewrite Zlength_app. rewrite Zlength_cons; rewrite Zlength_nil. rewrite Vundef_cwedges_Zlength by lia. lia. }
-    repeat rewrite sepcon_assoc.
-    (*aligned, now have to 'fold' it back*)
-    assert (Htmp:
-    (whole_graph sh subsetsGraph_uv subsetsPtr *
-      (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES) *
-        (data_at sh (tarray t_struct_edge (numE g)) sorted (pointer_val_val orig_eptr) *
-          (data_at sh t_wedgearray_graph (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr) *
-            (data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (Vundef_cwedges (MAX_EDGES - numE g))
-               (field_address0 (tarray t_struct_edge MAX_EDGES) [ArraySubsc (numE g)] (pointer_val_val orig_eptr)) *
-             (data_at sh t_wedgearray_graph (Vint (Int.repr (size)), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr) *
-              data_at sh (tarray t_struct_edge MAX_EDGES) (map wedge_to_cdata msflist ++
-                 [Znth i sorted] ++ Vundef_cwedges (MAX_EDGES - (numE msf' + 1))) (pointer_val_val eptr)
-              ))))))%logic
-    = fold_right_sepcon [
-      whole_graph sh subsetsGraph_uv subsetsPtr;
-      data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-      data_at sh (tarray t_struct_edge (numE g)) sorted (pointer_val_val orig_eptr);
-      data_at sh t_wedgearray_graph (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
-      data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (Vundef_cwedges (MAX_EDGES - numE g))
-        (field_address0 (tarray t_struct_edge MAX_EDGES) [ArraySubsc (numE g)] (pointer_val_val orig_eptr));
-      data_at sh t_wedgearray_graph (Vint (Int.repr (size)), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr);
-      data_at sh (tarray t_struct_edge MAX_EDGES) (map wedge_to_cdata msflist ++
-                   [Znth i sorted] ++ Vundef_cwedges (MAX_EDGES - (numE msf' + 1))) (pointer_val_val eptr)
-      ]). simpl. rewrite sepcon_emp. reflexivity. rewrite Htmp; clear Htmp.
-      fold (SEPx (A:=environ) [
-      whole_graph sh subsetsGraph_uv subsetsPtr;
-      data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
-      data_at sh (tarray t_struct_edge (numE g)) sorted (pointer_val_val orig_eptr);
-      data_at sh t_wedgearray_graph (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
-      data_at sh (tarray t_struct_edge (MAX_EDGES - numE g)) (Vundef_cwedges (MAX_EDGES - numE g))
-        (field_address0 (tarray t_struct_edge MAX_EDGES) [ArraySubsc (numE g)] (pointer_val_val orig_eptr));
-      data_at sh t_wedgearray_graph (Vint (Int.repr (size)), (Vint (Int.repr (numE msf')), pointer_val_val eptr)) (pointer_val_val gptr);
-      data_at sh (tarray t_struct_edge MAX_EDGES) (map wedge_to_cdata msflist ++
-                 [Znth i sorted] ++ Vundef_cwedges (MAX_EDGES - (numE msf' + 1))) (pointer_val_val eptr)
-    ]).
-  replace (map wedge_to_cdata msflist ++
-                 [Znth i sorted] ++ Vundef_cwedges (MAX_EDGES - (numE msf' + 1)))
-  with (map wedge_to_cdata (msflist+::(w,(u,v))) ++ Vundef_cwedges (MAX_EDGES - (numE msf' + 1))).
-  2: { rewrite Heq_i. rewrite map_app. rewrite <- app_assoc. reflexivity. }
-  (*done with the SEP manipulation*)
-  forward. forward.
-
-  (*before we union, show that u-v doesn't exist in msf'*)
   assert (HsubsetsGraph'_ufroot_uv: ~ ufroot_same subsetsGraph' u v). {
     unfold not; intros Htmp. destruct Htmp as [x [? ?]].
     assert (u_root = x). apply (uf_root_unique _ (liGraph subsetsGraph') u u_root x); auto.
@@ -1058,8 +1000,8 @@ Proof.
       rewrite (src_fst msf'), (dst_snd msf'); auto.
     } contradiction.
   }
+  forward. forward.
   forward_call (sh, subsetsGraph_uv, subsetsPtr, u, v). (*union*)
-  (*postcon*)
   Intros uv_union.
   rewrite (vertex_valid g) in Hvvalid_g_u.
   rewrite (vertex_valid g) in Hvvalid_g_v.
@@ -1072,7 +1014,6 @@ Proof.
   2: { symmetry; apply adde_numE. apply H_msf'_uv. }
   replace (Int.add (Int.repr (numE msf')) (Int.repr 1)) with (Int.repr (numE msf' + 1)).
   2: { symmetry; apply add_repr. }
-  (*ok!*)
   subst w. set (w:=elabel g (u,v)).
   assert (Hpartial: is_partial_lgraph adde g). {
     split3. split3.
@@ -1383,6 +1324,20 @@ Proof.
     lia.
   }
   time "if-branch postcon (originally 331.069 secs):" entailer!.
+  replace (numE adde) with (numE msf' + 1). 2: { unfold adde. symmetry; apply adde_numE. auto. }
+  replace (map wedge_to_cdata (msflist +:: (w, (u, v)))) with ((map wedge_to_cdata msflist) ++ [Znth i sorted]).
+  2: { rewrite map_app. simpl. rewrite Heq_i; auto. } rewrite <- app_assoc.
+  rewrite (split2_data_at_Tarray_app (numE msf') MAX_EDGES sh t_struct_edge
+      (map wedge_to_cdata msflist) ([Znth i sorted] ++ Vundef_cwedges (MAX_EDGES - (numE msf' + 1)))).
+  2: { rewrite Zlength_map. rewrite (Permutation_Zlength _ _ Hinv4).
+        rewrite g2wedgelist_numE. auto. }
+  2: { unfold Vundef_cwedges; simpl. rewrite Zlength_cons, Zlength_list_repeat by lia. lia. }
+  rewrite (split2_data_at_Tarray_app 1 (MAX_EDGES - numE msf') sh t_struct_edge
+      ([Znth i sorted]) (Vundef_cwedges (MAX_EDGES - (numE msf' + 1)))).
+  2: { simpl; auto. }
+  2: { unfold Vundef_cwedges; simpl. rewrite Zlength_list_repeat by lia. lia. }
+  rewrite (data_at_singleton_array_eq' sh t_struct_edge (Znth i sorted)).
+  entailer!.
  --- (* no, don't add this edge *)
   forward.
   Exists msf' msflist subsetsGraph_uv.
@@ -1483,7 +1438,7 @@ Proof.
       apply (is_partial_lgraph_connected msf g); auto.
     }
     (*everything we want from unionfind is done. We can free and clear it*)
-    clear H2 H3. forward_call ((wshare_share sh), subsetsPtr, subsetsGraph').
+    clear H2 H3. forward_call (sh, subsetsPtr, subsetsGraph').
 
     (* In hindsight, this wouldn't be needed with better definitions. But let's just soldier on
        Don't put this up on top, I worry about the effect of VST attempting to yank a value out

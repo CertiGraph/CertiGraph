@@ -92,9 +92,9 @@ Definition freeSet_spec :=
 
 Definition find_spec :=
   DECLARE _find
-  WITH sh: wshare, g: UFGraph, subsets: pointer_val, i: Z
+  WITH sh: share, g: UFGraph, subsets: pointer_val, i: Z
     PRE [tptr vertex_type, tint]
-      PROP (vvalid g i)
+      PROP (writable_share sh; vvalid g i)
       PARAMS (pointer_val_val subsets; Vint (Int.repr i))
       GLOBALS ()
       SEP (whole_graph sh g subsets)
@@ -106,9 +106,9 @@ Definition find_spec :=
 
 Definition union_spec :=
  DECLARE _Union
-  WITH sh: wshare, g: UFGraph, subsets: pointer_val, x: Z, y: Z
+  WITH sh: share, g: UFGraph, subsets: pointer_val, x: Z, y: Z
   PRE [tptr vertex_type, tint, tint]
-          PROP  (vvalid g x; vvalid g y)
+          PROP  (writable_share sh; vvalid g x; vvalid g y)
           PARAMS (pointer_val_val subsets; Vint (Int.repr x); Vint (Int.repr y))
           GLOBALS ()
           SEP   (whole_graph sh g subsets)

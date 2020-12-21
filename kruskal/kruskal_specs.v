@@ -35,9 +35,9 @@ Definition mallocK_spec :=
 
 Definition fill_edge_spec :=
   DECLARE _fill_edge
-  WITH sh: wshare, ptr: val, w: val, u: val, v: val, rubbish: reptype t_struct_edge
+  WITH sh: share, ptr: val, w: val, u: val, v: val, rubbish: reptype t_struct_edge
   PRE [tptr t_struct_edge, tint, tint, tint]
-    PROP (def_wedgerep (w,(u,v)))
+    PROP (writable_share sh; def_wedgerep (w,(u,v)))
     PARAMS (ptr; w; u; v)
     GLOBALS ()
     SEP (data_at sh t_struct_edge rubbish ptr)
@@ -123,20 +123,22 @@ Context {size: Z}.
 
 Definition kruskal_spec :=
   DECLARE _kruskal
-  WITH gv: globals, sh: wshare, g: (@EdgeListGG size), orig_gptr : pointer_val, orig_eptr : pointer_val,
+  WITH gv: globals, sh: share, g: (@EdgeListGG size), orig_gptr : pointer_val, orig_eptr : pointer_val,
        glist: list (LE*EType)
   PRE [tptr t_wedgearray_graph]
-  PROP (numE g <= MAX_EDGES;
+  PROP (writable_share sh; readable_share sh;
+        numE g <= MAX_EDGES;
         0 < size <= Int.max_signed / 8;
         Permutation (graph_to_wedgelist g) glist
        )
    PARAMS ((pointer_val_val orig_gptr))
    GLOBALS (gv)
-   SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
+   SEP (mem_mgr gv;
+        data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
         (**original graph*)
-          data_at sh (t_wedgearray_graph) (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
-          data_at sh (tarray t_struct_edge MAX_EDGES)
-            (map wedge_to_cdata glist ++ (Vundef_cwedges (MAX_EDGES - numE g))) (pointer_val_val orig_eptr)
+        data_at sh (t_wedgearray_graph) (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
+        data_at sh (tarray t_struct_edge MAX_EDGES)
+          (map wedge_to_cdata glist ++ (Vundef_cwedges (MAX_EDGES - numE g))) (pointer_val_val orig_eptr)
         )
   POST [tptr t_wedgearray_graph]
    EX msf_gptr msf_eptr: pointer_val,
@@ -151,7 +153,8 @@ Definition kruskal_spec :=
         minimum_spanning_forest msf g
         )
    LOCAL (temp ret_temp (pointer_val_val msf_gptr))
-   SEP (data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
+   SEP (mem_mgr gv;
+        data_at sh tint (Vint (Int.repr MAX_EDGES)) (gv _MAX_EDGES);
         (*original graph*)
           data_at sh (t_wedgearray_graph) (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
           data_at sh (tarray t_struct_edge MAX_EDGES)
