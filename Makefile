@@ -90,7 +90,7 @@ CERTIGC_FILES = \
 KRUSKAL_FILES = \
   WeightedEdgeListGraph.v \
   kruskal_edgelist.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_specs.v \
-#  verif_sort.v verif_kruskal_edgelist.v
+  verif_sort.v verif_kruskal_edgelist.v
 
 PRIM_FILES = \
   prim_env.v prim_constants.v \
