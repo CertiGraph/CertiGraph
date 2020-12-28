@@ -36,7 +36,6 @@ Textbook discussions of Prim's algorithm are often limited to the case where the
 \newline\newline
 We observed that our code is able to return a minimum spanning forest when the input graph is disconnected \textit{in a single run}. The reason for this is: We treat a vertex of weight \texttt{INF} and a vertex's membership in the priority queue as \textit{separate} matters. A vertex can be in the priority queue with weight \texttt{INF}, represented by \texttt{key[u] = INF}, and this indicates that \texttt{u} is \textit{not} connected to any previously popped vertex; otherwise its weight would have been previously lowered. However, our priority queue does not care for its items having specific weights, only that the item it pops is always minimum weight. This means that, in our proof which makes no assumptions about the input graph's connectedness, there is a scenario where the priority queue can return a \texttt{u} with weight \texttt{INF}.
 
-\newline
 \begin{center}
 \begin{tikzpicture} [auto, node distance =2 cm and 2cm ,on grid, semithick, state/.style ={circle}]
 \node[state] (V0) {$V0=r$};
