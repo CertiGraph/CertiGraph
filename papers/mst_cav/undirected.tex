@@ -9,17 +9,17 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 }.
 \end{lstlisting}
 In CertiGraph, every graph has the four following basic functions: $vvalid$ which determines which vertices are valid in the graph; $evalid$ which determines which edges are valid in the graph, and two functions $src$ and $dst$ to map each edge to vertices. For example, an edge $e$ in graph $g$ pointing from vertex $u$ to $v$ will have $src$ $g$ $e$ $=$ $u$ and $dst$ $g$ $e$ $=$ $v$. What these functions actually are, is defined during the actual construction of a graph.
-\newline\newline
+
 As a result of this definition, the graphs defined in our library are effectively directed - each valid edge in the graph has a clear direction defined by the $src$ and $dst$ functions. This makes sense in most use cases, especially when reasoning about C pointers.
-\newline\newline
+
 The issue is how then to reason about undirected graphs in a library whose graphs are directed by design. Undirected graphs are generally treated as a separate kind of graph from directed graphs. Thus, the most naive idea is to consider undirected edges as a separate category from directed edges, by introducing a new \texttt{Ensemble} for undirected edges. This has the benefit of reasoning with multigraphs that contains both directed and undirected edges. However, as most of our graphs are either directed or undirected, it will be unwieldy for a graph to have to maintain ensembles of both kinds of edges when it will never use one kind. Furthermore, it requires us to recreate many fundamental operations for manipulating edges, ignoring the already robust suite of lemmas we have for $evalid$, $src$ and $dst$.
-\newline\newline
+
 Instead, we decided to rely on the observation that \textit{every directed graph can be treated as an undirected graph} by simply ignoring the directions of the edges. That is, we can assert that a graph in our library, directed by default, holds certain undirected graph properties. This is backed by our observation that undirected graph properties are largely mathematical in nature and, depending on the representation, have few to no spatial requirements in separation logic. Furthermore, there is no overlap in their properties - claiming that directed graph holds an undirected graph property by ignoring the direction of its edges, does not affect its directed properties. It also allows us to use our rich set of directed-graph lemmas about the addition and removal of edges.
 
 \subsection{Undirected graph properties}
 
 Here we give a quick explanation of the main undirected definitions and properties we're interested in. Our definitions are largely based on CLRS~\cite{clrs}.
-\newline\newline
+
 Let $g$ be a graph. A valid edge $e$ in $g$ is an adjacent edge (or \textit{adj\_edge} for short) of valid vertices $u$ and $v$ if those are its $src$ and $dst$. $u$ and $v$ are \textit{adjacent} if such an edge exists in $g$.
 \begin{lstlisting}
 Definition adj_edge (g: PreGraph V E) (e: E) (u v: V) :=
@@ -30,7 +30,7 @@ Definition adjacent (g: PreGraph V E) (u v: V) :=
 	exists e: E, adj_edge g e u v.
 \end{lstlisting}
 A similar approach is proposed in Halsbeck~\cite{DBLP:journals/afp/HaslbeckLB19}.
-\newline\newline
+
 A valid undirected path, or \textit{upath}, in $g$ is a list of vertices such that each vertex in the list is adjacent with the subsequent vertex. An empty path, $nil$, is by default a valid $upath$. A singleton path $[v]$ is also a valid $upath$ if $v$ is a valid vertex.
 \begin{lstlisting}
 Fixpoint valid_upath (g: PreGraph V E) (p: upath) : Prop :=
@@ -50,7 +50,7 @@ Definition connected (g: PreGraph V E) (n : V) :=
 	fun n' => exists p, connected_by_path g p n n'.
 \end{lstlisting}
 An undirected cycle, or $ucycle$, is a $upath$ whose first and last vertices are the same. A $simple$ $upath$ is a valid $upath$ that has no duplicate vertices - no vertex is visited twice. A $simple$ $ucycle$ is a cycle whose tail has no duplicate vertices - the only "duplicates" in the cycle are the first and last vertices.
-\newline\newline
+
 Note that the definition of path varies between textbooks and papers. For example, \textit{Discrete Mathematics and its Applications}~\cite{rozen} define paths as a sequence of edges with an implicit sequence of vertices, whereas CLRS, which we have followed, defines it as a sequence of vertices with an implicit sequence of edges.
 
 \subsection{Defining forests before trees}
@@ -62,7 +62,7 @@ Definition uforest g:=
 	(forall p l, $\neg$ simple_ucycle g p l).
 \end{lstlisting}
 Our definition contains two propositions. The first constrains a forest to have no excess, "dangling" edges. Although our graph library needs to reason about such edges, we do not want to tolerate them in our forests. The second is the key "no simple undirected cycles".
-\begin{center}
+\begin{figure}[H]
 	\begin{tikzpicture} [auto, node distance =1.5 cm and 1.5cm ,on grid, semithick, state/.style ={ circle}]
 		\node[state] (V0) {$V0$};
 		\node[state] (V1) [right=of V0] {$V1$};
@@ -75,10 +75,9 @@ Our definition contains two propositions. The first constrains a forest to have 
 		\path (V0) edge node[left=0.15 cm] {$-1$} (?1);
 		\path (?2) edge node[above right=0.15 cm] {$2$} (?3);
 	\end{tikzpicture}
-	\newline
-	The above is not a forest, due to the "dangling" edges (? being a placeholder for invalid vertices)
-\end{center}
-We also highlight a difference in our definition compared to mathematical textbooks. Prim's and Kruskal's algorithms are presented as minimum-spanning \textit{tree} algorithms, and often have the implicit assumption that the graph is fully connected. They may or may not discuss forests - CLRS does not, while \textit{Discrete Mathematics} informally defines forests as ``containing no simple circuits that are not necessarily connected [...] and have the property that each of their connected components is a tree." In short, these sources define forests from ``bottom-up" using trees. Our ``top-down" definition instead recognises forests as acyclic graphs, and trees as a special case of forests where every vertex is connected to each other. This approach was also followed by Lammich et al~\cite{DBLP:journals/afp/LammichN19}.
+	\caption{The above is not a forest, due to the "dangling" edges (? being a placeholder for invalid vertices)}
+\end{figure}
+We also highlight a difference in our definition compared to mathematical textbooks. Prim's and Kruskal's algorithms are presented as minimum-spanning \textit{tree} algorithms, and often have the implicit assumption that the graph is fully connected. They may or may not discuss forests - CLRS does not, while \textit{Discrete Mathematics} informally defines forests as ``containing no simple circuits that are not necessarily connected [...] and have the property that each of their connected components is a tree." In short, these sources define forests from ``bottom-up" using trees. Our ``top-down" definition instead recognises forests as acyclic graphs, and trees as a special case of forests where every vertex is connected to each other. This definition was also used by Lammich et al~\cite{DBLP:journals/afp/LammichN19}.
 \begin{lstlisting}
 Definition connected_graph (g: PGraph) :=
 	forall u v, vvalid g u -> vvalid g v -> connected g u v.

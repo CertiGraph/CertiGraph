@@ -40,6 +40,10 @@ proposes casting certain computations to \texttt{long} to avoid them in~C.  Howe
 \emph{et al.} do not give a
 nontrivial bound on the input edge weights, leaving users in the fog for exactly when the algorithm works.
 
+\paragraph{Prim's and disconnected graphs in algorithms textbooks.} CLRS does not mention the case of disconnected graphs. \textit{Discrete Mathematics and Its Applications}~\cite{rozen} leaves it as an exercise to the reader. \textit{The Algorithm Design Manual, Second Edition}~\cite{DBLP:books/daglib/0022194} suggests Boruvka’s algorithm, and a combination with Prim's for complexity. \textit{Graph Algorithms in the Language of Linear Algebra}~\cite{kepnergilbert} recommends running Prim's on each component of the disconnected graph.
+
+We observe that \textit{Algorithms in a Nutshell}~\cite{heineman2008algorithms} provides a C++ example that aligns with our C implementation. They push their version of \texttt{INF} into the priority queue during the setup, and do not perform any explicit rejections of \texttt{INF}, simply popping from the priority queue at the \texttt{EXTRACT-MIN} step. However, they do not discuss minimum spanning forests, hence this observation is not recorded.
+
 %In a related vein, Paulin and Filli\^atre verified Floyd's algorithm in Coq~\cite{paulin}
 
 %@misc{paulin,
