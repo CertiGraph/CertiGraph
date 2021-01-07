@@ -3,6 +3,7 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{float}
+\usepackage{fancyvrb}
 %% The amsthm package provides extended theorem environments
 
 % \usepackage{amsthm}
@@ -129,7 +130,7 @@
 	Shengyi Wang\inst{2} \and 
 	Aquinas Hobor\inst{1,3}}
 
-	\authorrunning{A. Mohan et al.}
+	%\authorrunning{A. Mohan et al.}
 % First names are abbreviated in the running head.
 % If there are more than two authors, 'et al.' is used.
 	
@@ -172,9 +173,9 @@
 	
 	\begin{abstract}
 		\vspace{-1.2em}
-		We extend our research group's previous work on verifying C graph implementations
-		with verified versions of Dijkstra's, Prim's and Kruskal's classical algorithms.
-		We prove functional correctness of C implementations of these algorithms, and expand the previous graph library to reason about undirected graph properties and common spatial representations.
+		This paper provides proof-verified C graph implementations
+		of Dijkstra's, Prim's and Kruskal's classical algorithms.
+		We prove functional correctness of these implementations, and improve Wang et al\cite{DBLP:journals/pacmpl/WangCMH19}'s CertiGraph platform to reason about undirected graph properties and common spatial representations.
 		
 		In particular, we encounter and explain an overflow issue in Dijkstra’s algorithm. The precise bound in the relevant precondition is nontrivial: we show that the intuitive guess fails and provide a workable refinement. We also make an observation of Prim's algorithm that contradicts the common consensus that the basic algorithm cannot work on disconnected graphs - our implementation is able to compute minimum spanning forests without finding components first.
 		
