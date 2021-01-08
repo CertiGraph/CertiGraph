@@ -65,6 +65,26 @@ unsigned int insert_nc(PQ *pq, int priority, void* data) {
   return key;
 }
 
+void decrease_pri(PQ *pq, int key, int pri) {
+  unsigned int* table = pq->key_table;
+  Item* cells = pq->heap_cells;
+  unsigned int target = table[key];
+  cells[target].priority = pri;
+  swim(target, cells, table);
+}
+
+void edit_pri(PQ *pq, int key, int newpri) {
+  unsigned int* table = pq->key_table;
+  Item* cells = pq->heap_cells;
+  unsigned int target = table[key];
+  int oldpri = cells[target].priority;
+
+  cells[target].priority = newpri;
+  if (newpri <= oldpri) swim(target, cells, table); 
+     // potentially unnecessary swimming in case of equality
+  else sink (target, cells, table);
+}
+
 void remove_min_nc(PQ *pq, Item* item) {
   unsigned int fa = pq->first_available - 1;
   Item* cells = pq->heap_cells;
@@ -92,11 +112,18 @@ Item* remove_min(PQ *pq) {
 }
 
 PQ* make() { /* could take a size parameter I suppose... */
-  Item* arr = (Item*) mallocN(sizeof(Item) * INITIAL_SIZE);
   PQ *pq = (PQ*) mallocN(sizeof(PQ));
+  unsigned int* table = (unsigned int*) mallocN (sizeof(unsigned int) * INITIAL_SIZE);
+  Item* arr = (Item*) mallocN(sizeof(Item) * INITIAL_SIZE);
+  int i; 
+  for (i = 0; i < INITIAL_SIZE; i++)
+    arr[i].key = i;
+
   pq->capacity = INITIAL_SIZE;
   pq->first_available = 0;
   pq->heap_cells = arr;
+  pq->key_table = table;
+
   return pq;
 }
 
