@@ -1,9 +1,9 @@
 Require Import RelationClasses.
 Require Import VST.floyd.proofauto.
-Require Import CertiGraph.sample_mark.binary_heap_model.
-Require Import CertiGraph.sample_mark.binary_heap_Zmodel.
-Require Import CertiGraph.sample_mark.binary_heap_pro.
-Require Import CertiGraph.sample_mark.env_binary_heap_pro.
+Require Import CertiGraph.binheap.binary_heap_model.
+Require Import CertiGraph.binheap.binary_heap_Zmodel.
+Require Import CertiGraph.binheap.binary_heap_pro.
+Require Import CertiGraph.binheap.env_binary_heap_pro.
 
 Set Nested Proofs Allowed.
 
@@ -222,7 +222,8 @@ Proof.
           transitivity (Znth (Zleft_child k') arr_contents'). trivial.
           destruct (cmp_linear (Znth (Zleft_child k') arr_contents') (Znth (Zright_child k') arr_contents')); auto.
           contradiction. }
-      { forward.  entailer!. unfold cmp_rel in H0. congruence. }
+      { forward.  entailer!. unfold cmp_rel in H0.
+        subst j'. congruence. }
     forward_call (k', j', arr, arr_contents', lookup, lookup_contents').
       { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct b; lia. }
     Intros lookup_contents''.
@@ -500,6 +501,8 @@ Search Znth cons.
 rewrite Znth_pos_cons in Hz. 2: lia. replace (i0 + 1 - 1) with i0 in Hz by lia.
 specialize (H5 0 H18). rewrite Znth_0_cons in H5. simpl in H5.
 specialize (H4 (i0 + 1)).
+
+(*
 rewrite H4 in Hz.
 rewrite <- H19 in Hz.
 
@@ -512,14 +515,16 @@ Search lookup_contents'.
 specialize 
 Search Znth 0.
 
- rewrite Znth_0.
+ rewrite Znth_0. 
+*)
 
-    admit.
+    admit. admit.
   * (* main line: heap still has items in it *)
     destruct l0; inversion H. subst h0.
-    deadvars!.
-    assert (Zlength (h :: l) = Zlength (root :: l0)). { rewrite H5, Zlength_app, Zlength_one, Zlength_cons. lia. }
-    rewrite H3, Zexchange_head_foot. rewrite harray_split.
+    assert (Zlength (h :: l) = Zlength (root :: l0)).
+    { rewrite H8, Zlength_app, Zlength_one, Zlength_cons. lia. }
+    rewrite H6, Zexchange_head_foot.
+    (* rewrite harray_split.
     forward_call (0, arr, (foot :: l0), Zlength (foot :: l0)). entailer!.
       { split. rewrite Zlength_cons. generalize (Zlength_nonneg l0). lia.
         split; trivial. split. rep_lia.
@@ -553,7 +558,8 @@ Search Znth 0.
     rewrite Zlength_cons.
     rewrite H3, H11. cancel.
 Time Qed.
-*)
+     *)
+    Admitted.
 
 Lemma body_less: semax_body Vprog Gprog f_less less_spec.
 Proof.
@@ -629,9 +635,8 @@ Proof.
     + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
       (* BUG?  So ugly... is there no easier way? *)
       (* BUG?  These "replace"s are very slow... *)
-      replace (let (x, _) := heap_item_rep _ in x) with (fst (heap_item_rep (Znth j arr_contents))) in H5 by trivial.
-      replace (let (x, _) := let (_, y) := heap_item_rep _ in y in x) with (fst (snd (heap_item_rep (Znth k arr_contents)))) in H5 by trivial.
-      replace (let (_, y) := let (_, y) := heap_item_rep _ in y in y) with (snd (snd (heap_item_rep (Znth j arr_contents)))) in H5 by trivial.
+      rewrite (surjective_pairing (heap_item_rep (Znth k arr_contents))) in H5.
+      rewrite (surjective_pairing (snd (heap_item_rep (Znth k arr_contents)))) in H5.
       (* BUG? here is where I need to repack the unpacked rep... *)
       rewrite heap_item_rep_morph, upd_Znth_map in H5.
       apply Forall_map in H5.
