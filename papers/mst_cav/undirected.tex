@@ -24,7 +24,8 @@ Let $g$ be a graph. A valid edge $e$ in $g$ is an adjacent edge (or \textit{adj\
 \begin{lstlisting}
 Definition adj_edge (g: PreGraph V E) (e: E) (u v: V) :=
 	strong_evalid g e /\
-	((src g e = u /\ dst g e = v) \/ (src g e = v /\ dst g e = u)).
+	((src g e = u /\ dst g e = v) \/
+	 (src g e = v /\ dst g e = u)).
 
 Definition adjacent (g: PreGraph V E) (u v: V) :=
 	exists e: E, adj_edge g e u v.
@@ -42,7 +43,7 @@ end.
 \end{lstlisting}
 Two vertices $u$ and $v$ are \textit{connected by p} if $p$ is a valid $upath$ in $g$ with the head vertex $u$ and last vertex $v$. They are \textit{connected} if such a $upath$ exists. By the above, every valid vertex in $g$ is trivially connected to itself.
 \begin{lstlisting}
-Definition connected_by_path (g: PreGraph V E) (p: upath) (n : V) :=
+Definition connected_by_path g (p: upath) (n : V) :=
 	fun n' => valid_upath g p /\
 		hd_error p = Some n /\ last_error p = Some n'.
 
