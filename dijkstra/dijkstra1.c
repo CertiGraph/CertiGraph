@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <assert.h>
 #include <limits.h>
 #include <stdio.h>  
 #include <time.h>
@@ -71,17 +72,30 @@ int getCell (int **graph, int u, int i) {
 
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     int* pq = init(size);
+    int keys[size];
+    PQ* pq1 = make(); //// Fancier PQ
     int i, j, u, cost;
+    int v;
     for (i = 0; i < size; i++) {
         dist[i] = inf;  // Best-known distance from src to i
         prev[i] = inf;  // Last vertex visited before i
-        push(i, inf, pq);  // Everybody goes in the queue  
+        push(i, inf, pq);  // Everybody goes in the queue
+        keys[i] = insert(pq1, inf, &i); //// Insert + store key locally. the vertex number is void-*-ed
     }
     dist[src] = 0;
     prev[src] = src;
     adjustWeight(src, 0, pq); // special values for src
+    edit_pri(pq1, keys[0], 0); //// Fancier value-edit
+    //// sanity check for "size" method:
+    //// when pq is emp, size of pq1 is zero. when pq is not emp, size of pq1 is nonzero
+    assert ((pq_emp(size, inf, pq) && (pq_size(pq1)==0)) ||
+               (!pq_emp(size, inf, pq) && (pq_size(pq1)>0))); 
     while (!pq_emp(size, inf, pq)) {
+        //// sanity check for popMin
         u = popMin(size, inf, pq);  // src -> u is optimal. relax u's neighbors, then done with u.
+        v = *((int *)(remove_min(pq1)->data));
+        printf("Mins: pq says %d, pq1 says %d\n", u, v);
+        // assert (u == v);
         for (i = 0; i < size; i++) {
             cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine
@@ -89,6 +103,7 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
                     dist[i] = dist[u] + cost;  // improve it
                     prev[i] = u;  // note that we got there via 'u'
                     adjustWeight(i, dist[i], pq); // and stash the improvement in the PQ
+                    edit_pri(pq1, keys[i], dist[i]); //// Fancier value-edit
                 }
             }
         }
@@ -103,7 +118,7 @@ int main(int argc, const char * argv[])
 {
     int i;
     srand((unsigned int) time(NULL));
-    const int size = 1 + rand() % 20; // cannot allow size = 0. upper limit?
+    const int size = 8; //1 + rand() % 20; // cannot allow size = 0. upper limit?
     const int inf = INT_MAX - INT_MAX/size;
     int src = rand() % size; 
 

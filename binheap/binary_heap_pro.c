@@ -23,7 +23,7 @@ void exch(unsigned int j, unsigned int k, Item arr[], unsigned int lookup[]) {
   lookup[key1] = k;
 }
 
-unsigned int size(PQ *pq) {
+unsigned int pq_size(PQ *pq) {
   return pq->first_available;
 }
 
