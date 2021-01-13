@@ -66,6 +66,7 @@ Definition ___compcert_va_composite : ident := 26%positive.
 Definition ___compcert_va_float64 : ident := 25%positive.
 Definition ___compcert_va_int32 : ident := 23%positive.
 Definition ___compcert_va_int64 : ident := 24%positive.
+Definition _active : ident := 81%positive.
 Definition _arr : ident := 63%positive.
 Definition _build_heap : ident := 76%positive.
 Definition _capacity : ident := 4%positive.
@@ -74,6 +75,7 @@ Definition _exch : ident := 64%positive.
 Definition _first_available : ident := 5%positive.
 Definition _freeN : ident := 60%positive.
 Definition _heap_cells : ident := 6%positive.
+Definition _heap_sort : ident := 82%positive.
 Definition _heapify : ident := 80%positive.
 Definition _insert : ident := 77%positive.
 Definition _insert_nc : ident := 71%positive.
@@ -81,11 +83,11 @@ Definition _item : ident := 72%positive.
 Definition _j : ident := 61%positive.
 Definition _k : ident := 62%positive.
 Definition _less : ident := 67%positive.
-Definition _main : ident := 82%positive.
+Definition _main : ident := 84%positive.
 Definition _make : ident := 79%positive.
 Definition _mallocN : ident := 59%positive.
 Definition _pq : ident := 65%positive.
-Definition _pq_free : ident := 81%positive.
+Definition _pq_free : ident := 83%positive.
 Definition _priority : ident := 1%positive.
 Definition _remove_min : ident := 78%positive.
 Definition _remove_min_nc : ident := 73%positive.
@@ -97,17 +99,17 @@ Definition _structItem : ident := 3%positive.
 Definition _structPQ : ident := 7%positive.
 Definition _swim : ident := 68%positive.
 Definition _x : ident := 70%positive.
-Definition _t'1 : ident := 83%positive.
-Definition _t'10 : ident := 92%positive.
-Definition _t'11 : ident := 93%positive.
-Definition _t'2 : ident := 84%positive.
-Definition _t'3 : ident := 85%positive.
-Definition _t'4 : ident := 86%positive.
-Definition _t'5 : ident := 87%positive.
-Definition _t'6 : ident := 88%positive.
-Definition _t'7 : ident := 89%positive.
-Definition _t'8 : ident := 90%positive.
-Definition _t'9 : ident := 91%positive.
+Definition _t'1 : ident := 85%positive.
+Definition _t'10 : ident := 94%positive.
+Definition _t'11 : ident := 95%positive.
+Definition _t'2 : ident := 86%positive.
+Definition _t'3 : ident := 87%positive.
+Definition _t'4 : ident := 88%positive.
+Definition _t'5 : ident := 89%positive.
+Definition _t'6 : ident := 90%positive.
+Definition _t'7 : ident := 91%positive.
+Definition _t'8 : ident := 92%positive.
+Definition _t'9 : ident := 93%positive.
 
 Definition f_exch := {|
   fn_return := tvoid;
@@ -767,6 +769,49 @@ Definition f_heapify := {|
           (Sreturn (Some (Etempvar _pq (tptr (Tstruct _structPQ noattr))))))))))
 |}.
 
+Definition f_heap_sort := {|
+  fn_return := tvoid;
+  fn_callconv := cc_default;
+  fn_params := ((_arr, (tptr (Tstruct _structItem noattr))) ::
+                (_size__1, tuint) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_active, tuint) :: nil);
+  fn_body :=
+(Ssequence
+  (Scall None
+    (Evar _build_heap (Tfunction
+                        (Tcons (tptr (Tstruct _structItem noattr))
+                          (Tcons tuint Tnil)) tvoid cc_default))
+    ((Etempvar _arr (tptr (Tstruct _structItem noattr))) ::
+     (Etempvar _size__1 tuint) :: nil))
+  (Ssequence
+    (Sset _active (Etempvar _size__1 tuint))
+    (Swhile
+      (Ebinop Ogt (Etempvar _active tuint) (Econst_int (Int.repr 0) tint)
+        tint)
+      (Ssequence
+        (Sset _active
+          (Ebinop Osub (Etempvar _active tuint)
+            (Econst_int (Int.repr 1) tint) tuint))
+        (Ssequence
+          (Scall None
+            (Evar _exch (Tfunction
+                          (Tcons tuint
+                            (Tcons tuint
+                              (Tcons (tptr (Tstruct _structItem noattr))
+                                Tnil))) tvoid cc_default))
+            ((Econst_int (Int.repr 0) tuint) :: (Etempvar _active tuint) ::
+             (Etempvar _arr (tptr (Tstruct _structItem noattr))) :: nil))
+          (Scall None
+            (Evar _sink (Tfunction
+                          (Tcons tuint
+                            (Tcons (tptr (Tstruct _structItem noattr))
+                              (Tcons tuint Tnil))) tvoid cc_default))
+            ((Econst_int (Int.repr 0) tuint) ::
+             (Etempvar _arr (tptr (Tstruct _structItem noattr))) ::
+             (Etempvar _active tuint) :: nil)))))))
+|}.
+
 Definition f_pq_free := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
@@ -1060,12 +1105,13 @@ Definition global_definitions : list (ident * globdef fundef type) :=
  (_insert, Gfun(Internal f_insert)) ::
  (_remove_min, Gfun(Internal f_remove_min)) ::
  (_make, Gfun(Internal f_make)) :: (_heapify, Gfun(Internal f_heapify)) ::
+ (_heap_sort, Gfun(Internal f_heap_sort)) ::
  (_pq_free, Gfun(Internal f_pq_free)) :: nil).
 
 Definition public_idents : list ident :=
-(_pq_free :: _heapify :: _make :: _remove_min :: _insert :: _build_heap ::
- _remove_min_nc :: _insert_nc :: _sink :: _swim :: _less :: _capacity ::
- _size :: _exch :: _freeN :: _mallocN :: ___builtin_debug ::
+(_pq_free :: _heap_sort :: _heapify :: _make :: _remove_min :: _insert ::
+ _build_heap :: _remove_min_nc :: _insert_nc :: _sink :: _swim :: _less ::
+ _capacity :: _size :: _exch :: _freeN :: _mallocN :: ___builtin_debug ::
  ___builtin_write32_reversed :: ___builtin_write16_reversed ::
  ___builtin_read32_reversed :: ___builtin_read16_reversed ::
  ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
