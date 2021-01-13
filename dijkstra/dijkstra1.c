@@ -72,6 +72,8 @@ int getCell (int **graph, int u, int i) {
 
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     int* pq = init(size);
+    int* i_ptr; 
+    Item* pq1_min;
     int keys[size];
     PQ* pq1 = make(); //// Fancier PQ
     int i, j, u, cost;
@@ -80,12 +82,15 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
         dist[i] = inf;  // Best-known distance from src to i
         prev[i] = inf;  // Last vertex visited before i
         push(i, inf, pq);  // Everybody goes in the queue
-        keys[i] = insert(pq1, inf, &i); //// Insert + store key locally. the vertex number is void-*-ed
+        //// boxing the data up...
+        i_ptr = (int *) malloc (sizeof (int));
+        i_ptr[0]=i;
+        keys[i] = insert(pq1, inf, (void *)i_ptr); //// Insert, plus store key locally
     }
     dist[src] = 0;
     prev[src] = src;
     adjustWeight(src, 0, pq); // special values for src
-    edit_pri(pq1, keys[0], 0); //// Fancier value-edit
+    edit_pri(pq1, keys[src], 0); //// Fancier value-edit
     //// sanity check for "size" method:
     //// when pq is emp, size of pq1 is zero. when pq is not emp, size of pq1 is nonzero
     assert ((pq_emp(size, inf, pq) && (pq_size(pq1)==0)) ||
@@ -93,9 +98,10 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     while (!pq_emp(size, inf, pq)) {
         //// sanity check for popMin
         u = popMin(size, inf, pq);  // src -> u is optimal. relax u's neighbors, then done with u.
-        v = *((int *)(remove_min(pq1)->data));
-        printf("Mins: pq says %d, pq1 says %d\n", u, v);
-        // assert (u == v);
+        pq1_min = remove_min(pq1);
+        v = *((int *)(pq1_min->data));
+        printf("Mins: pq says %d @ %d, pq1 says %d @ %d\n", u, dist[u], v, pq1_min->priority);
+        assert (dist[u] == pq1_min->priority);
         for (i = 0; i < size; i++) {
             cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine
