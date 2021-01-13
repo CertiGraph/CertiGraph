@@ -71,7 +71,7 @@ int getCell (int **graph, int u, int i) {
 
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     int* i_ptr; 
-    int keys[size];
+    int* keys = malloc (size * sizeof (int));
     PQ* pq = make(size); 
     int i, j, u, cost;
     for (i = 0; i < size; i++) {
@@ -95,7 +95,8 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
             }
         }
     }
-//    freePQ (pq);
+    free_pq (pq);
+    free(keys);
     return;
 }
 
