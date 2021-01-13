@@ -107,6 +107,19 @@ PQ* heapify(Item* arr, unsigned int size) {
   return pq;
 }
 
+// Note, this will result in a reverse sorted list since we have a min-heap rather than a max-heap.
+void heap_sort(Item* arr, unsigned int size) {
+  // build the heap
+  build_heap(arr,size);
+
+  unsigned int active = size;
+  while (active > 0) {
+    active--;
+    exch(ROOT_IDX, active, arr);
+    sink(ROOT_IDX, arr, active);
+  }
+} 
+
 void pq_free(PQ *pq) {
   freeN(pq->heap_cells);
   freeN(pq);
