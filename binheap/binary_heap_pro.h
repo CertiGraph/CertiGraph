@@ -28,6 +28,7 @@ unsigned int capacity(PQ *pq);
 unsigned int pq_size(PQ *pq);
 
 PQ* make();
+void free_pq (PQ *pq);
 /*
  void insert(PQ *pq, Item *x);
  Item* remove_min(PQ *pq);
