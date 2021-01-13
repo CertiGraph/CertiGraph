@@ -11,7 +11,7 @@ Module Info.
   Definition abi := "macosx"%string.
   Definition bitsize := 32.
   Definition big_endian := false.
-  Definition source_file := "binary_heap.c"%string.
+  Definition source_file := "binheap/binary_heap.c"%string.
   Definition normalized := true.
 End Info.
 
@@ -66,42 +66,48 @@ Definition ___compcert_va_composite : ident := 26%positive.
 Definition ___compcert_va_float64 : ident := 25%positive.
 Definition ___compcert_va_int32 : ident := 23%positive.
 Definition ___compcert_va_int64 : ident := 24%positive.
-Definition _arr : ident := 62%positive.
+Definition _arr : ident := 63%positive.
+Definition _build_heap : ident := 76%positive.
 Definition _capacity : ident := 4%positive.
 Definition _data : ident := 2%positive.
-Definition _exch : ident := 63%positive.
+Definition _exch : ident := 64%positive.
 Definition _first_available : ident := 5%positive.
+Definition _freeN : ident := 60%positive.
 Definition _heap_cells : ident := 6%positive.
-Definition _insert : ident := 73%positive.
-Definition _insert_nc : ident := 70%positive.
-Definition _item : ident := 71%positive.
-Definition _j : ident := 60%positive.
-Definition _k : ident := 61%positive.
-Definition _less : ident := 66%positive.
-Definition _main : ident := 76%positive.
-Definition _make : ident := 75%positive.
+Definition _heapify : ident := 80%positive.
+Definition _insert : ident := 77%positive.
+Definition _insert_nc : ident := 71%positive.
+Definition _item : ident := 72%positive.
+Definition _j : ident := 61%positive.
+Definition _k : ident := 62%positive.
+Definition _less : ident := 67%positive.
+Definition _main : ident := 82%positive.
+Definition _make : ident := 79%positive.
 Definition _mallocN : ident := 59%positive.
-Definition _pq : ident := 64%positive.
+Definition _pq : ident := 65%positive.
+Definition _pq_free : ident := 81%positive.
 Definition _priority : ident := 1%positive.
-Definition _remove_min : ident := 74%positive.
-Definition _remove_min_nc : ident := 72%positive.
-Definition _sink : ident := 68%positive.
-Definition _size : ident := 65%positive.
+Definition _remove_min : ident := 78%positive.
+Definition _remove_min_nc : ident := 73%positive.
+Definition _sink : ident := 69%positive.
+Definition _size : ident := 66%positive.
+Definition _size__1 : ident := 74%positive.
+Definition _start : ident := 75%positive.
 Definition _structItem : ident := 3%positive.
 Definition _structPQ : ident := 7%positive.
-Definition _swim : ident := 67%positive.
-Definition _x : ident := 69%positive.
-Definition _t'1 : ident := 77%positive.
-Definition _t'10 : ident := 86%positive.
-Definition _t'11 : ident := 87%positive.
-Definition _t'2 : ident := 78%positive.
-Definition _t'3 : ident := 79%positive.
-Definition _t'4 : ident := 80%positive.
-Definition _t'5 : ident := 81%positive.
-Definition _t'6 : ident := 82%positive.
-Definition _t'7 : ident := 83%positive.
-Definition _t'8 : ident := 84%positive.
-Definition _t'9 : ident := 85%positive.
+Definition _swim : ident := 68%positive.
+Definition _x : ident := 70%positive.
+Definition _t'1 : ident := 83%positive.
+Definition _t'10 : ident := 92%positive.
+Definition _t'11 : ident := 93%positive.
+Definition _t'2 : ident := 84%positive.
+Definition _t'3 : ident := 85%positive.
+Definition _t'4 : ident := 86%positive.
+Definition _t'5 : ident := 87%positive.
+Definition _t'6 : ident := 88%positive.
+Definition _t'7 : ident := 89%positive.
+Definition _t'8 : ident := 90%positive.
+Definition _t'9 : ident := 91%positive.
 
 Definition f_exch := {|
   fn_return := tvoid;
@@ -566,6 +572,38 @@ Definition f_remove_min_nc := {|
                (Etempvar _t'2 tuint) :: nil))))))))
 |}.
 
+Definition f_build_heap := {|
+  fn_return := tvoid;
+  fn_callconv := cc_default;
+  fn_params := ((_arr, (tptr (Tstruct _structItem noattr))) ::
+                (_size__1, tuint) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_start, tuint) :: nil);
+  fn_body :=
+(Ssequence
+  (Sset _start
+    (Ebinop Odiv
+      (Ebinop Osub (Etempvar _size__1 tuint) (Econst_int (Int.repr 1) tuint)
+        tuint) (Econst_int (Int.repr 2) tuint) tuint))
+  (Sloop
+    (Ssequence
+      (Scall None
+        (Evar _sink (Tfunction
+                      (Tcons tuint
+                        (Tcons (tptr (Tstruct _structItem noattr))
+                          (Tcons tuint Tnil))) tvoid cc_default))
+        ((Etempvar _start tuint) ::
+         (Etempvar _arr (tptr (Tstruct _structItem noattr))) ::
+         (Etempvar _size__1 tuint) :: nil))
+      (Sset _start
+        (Ebinop Osub (Etempvar _start tuint) (Econst_int (Int.repr 1) tint)
+          tuint)))
+    (Sifthenelse (Ebinop Ogt (Etempvar _start tuint)
+                   (Econst_int (Int.repr 0) tint) tint)
+      Sskip
+      Sbreak)))
+|}.
+
 Definition f_insert := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
@@ -638,7 +676,7 @@ Definition f_remove_min := {|
 Definition f_make := {|
   fn_return := (tptr (Tstruct _structPQ noattr));
   fn_callconv := cc_default;
-  fn_params := nil;
+  fn_params := ((_size__1, tuint) :: nil);
   fn_vars := nil;
   fn_temps := ((_arr, (tptr (Tstruct _structItem noattr))) ::
                (_pq, (tptr (Tstruct _structPQ noattr))) ::
@@ -649,7 +687,7 @@ Definition f_make := {|
     (Scall (Some _t'1)
       (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
       ((Ebinop Omul (Esizeof (Tstruct _structItem noattr) tuint)
-         (Econst_int (Int.repr 8) tint) tuint) :: nil))
+         (Etempvar _size__1 tuint) tuint) :: nil))
     (Sset _arr
       (Ecast (Etempvar _t'1 (tptr tvoid))
         (tptr (Tstruct _structItem noattr)))))
@@ -666,7 +704,7 @@ Definition f_make := {|
         (Efield
           (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
             (Tstruct _structPQ noattr)) _capacity tuint)
-        (Econst_int (Int.repr 8) tint))
+        (Etempvar _size__1 tuint))
       (Ssequence
         (Sassign
           (Efield
@@ -681,6 +719,74 @@ Definition f_make := {|
               (tptr (Tstruct _structItem noattr)))
             (Etempvar _arr (tptr (Tstruct _structItem noattr))))
           (Sreturn (Some (Etempvar _pq (tptr (Tstruct _structPQ noattr))))))))))
+|}.
+
+Definition f_heapify := {|
+  fn_return := (tptr (Tstruct _structPQ noattr));
+  fn_callconv := cc_default;
+  fn_params := ((_arr, (tptr (Tstruct _structItem noattr))) ::
+                (_size__1, tuint) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_pq, (tptr (Tstruct _structPQ noattr))) ::
+               (_t'1, (tptr tvoid)) :: nil);
+  fn_body :=
+(Ssequence
+  (Scall None
+    (Evar _build_heap (Tfunction
+                        (Tcons (tptr (Tstruct _structItem noattr))
+                          (Tcons tuint Tnil)) tvoid cc_default))
+    ((Etempvar _arr (tptr (Tstruct _structItem noattr))) ::
+     (Etempvar _size__1 tuint) :: nil))
+  (Ssequence
+    (Ssequence
+      (Scall (Some _t'1)
+        (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
+        ((Esizeof (Tstruct _structPQ noattr) tuint) :: nil))
+      (Sset _pq
+        (Ecast (Etempvar _t'1 (tptr tvoid))
+          (tptr (Tstruct _structPQ noattr)))))
+    (Ssequence
+      (Sassign
+        (Efield
+          (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+            (Tstruct _structPQ noattr)) _capacity tuint)
+        (Etempvar _size__1 tuint))
+      (Ssequence
+        (Sassign
+          (Efield
+            (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+              (Tstruct _structPQ noattr)) _first_available tuint)
+          (Etempvar _size__1 tuint))
+        (Ssequence
+          (Sassign
+            (Efield
+              (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+                (Tstruct _structPQ noattr)) _heap_cells
+              (tptr (Tstruct _structItem noattr)))
+            (Etempvar _arr (tptr (Tstruct _structItem noattr))))
+          (Sreturn (Some (Etempvar _pq (tptr (Tstruct _structPQ noattr))))))))))
+|}.
+
+Definition f_pq_free := {|
+  fn_return := tvoid;
+  fn_callconv := cc_default;
+  fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_t'1, (tptr (Tstruct _structItem noattr))) :: nil);
+  fn_body :=
+(Ssequence
+  (Ssequence
+    (Sset _t'1
+      (Efield
+        (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+          (Tstruct _structPQ noattr)) _heap_cells
+        (tptr (Tstruct _structItem noattr))))
+    (Scall None
+      (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
+      ((Etempvar _t'1 (tptr (Tstruct _structItem noattr))) :: nil)))
+  (Scall None
+    (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
+    ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) :: nil)))
 |}.
 
 Definition composites : list composite_definition :=
@@ -941,36 +1047,42 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "mallocN"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
+ (_freeN,
+   Gfun(External (EF_external "freeN"
+                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
+     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_exch, Gfun(Internal f_exch)) :: (_size, Gfun(Internal f_size)) ::
  (_capacity, Gfun(Internal f_capacity)) :: (_less, Gfun(Internal f_less)) ::
  (_swim, Gfun(Internal f_swim)) :: (_sink, Gfun(Internal f_sink)) ::
  (_insert_nc, Gfun(Internal f_insert_nc)) ::
  (_remove_min_nc, Gfun(Internal f_remove_min_nc)) ::
+ (_build_heap, Gfun(Internal f_build_heap)) ::
  (_insert, Gfun(Internal f_insert)) ::
  (_remove_min, Gfun(Internal f_remove_min)) ::
- (_make, Gfun(Internal f_make)) :: nil).
+ (_make, Gfun(Internal f_make)) :: (_heapify, Gfun(Internal f_heapify)) ::
+ (_pq_free, Gfun(Internal f_pq_free)) :: nil).
 
 Definition public_idents : list ident :=
-(_make :: _remove_min :: _insert :: _remove_min_nc :: _insert_nc :: _sink ::
- _swim :: _less :: _capacity :: _size :: _exch :: _mallocN ::
- ___builtin_debug :: ___builtin_write32_reversed ::
- ___builtin_write16_reversed :: ___builtin_read32_reversed ::
- ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
- ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
- ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
- ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
- ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
- ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
- ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
- ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
- ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
- ___compcert_va_composite :: ___compcert_va_float64 ::
- ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
- ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
- ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
- ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
- ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
- ___builtin_bswap :: ___builtin_bswap64 :: nil).
+(_pq_free :: _heapify :: _make :: _remove_min :: _insert :: _build_heap ::
+ _remove_min_nc :: _insert_nc :: _sink :: _swim :: _less :: _capacity ::
+ _size :: _exch :: _freeN :: _mallocN :: ___builtin_debug ::
+ ___builtin_write32_reversed :: ___builtin_write16_reversed ::
+ ___builtin_read32_reversed :: ___builtin_read16_reversed ::
+ ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
+ ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
+ ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
+ ___builtin_clzl :: ___builtin_clz :: ___compcert_i64_umulh ::
+ ___compcert_i64_smulh :: ___compcert_i64_sar :: ___compcert_i64_shr ::
+ ___compcert_i64_shl :: ___compcert_i64_umod :: ___compcert_i64_smod ::
+ ___compcert_i64_udiv :: ___compcert_i64_sdiv :: ___compcert_i64_utof ::
+ ___compcert_i64_stof :: ___compcert_i64_utod :: ___compcert_i64_stod ::
+ ___compcert_i64_dtou :: ___compcert_i64_dtos :: ___compcert_va_composite ::
+ ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
+ ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
+ ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
+ ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
+ ___builtin_fsqrt :: ___builtin_fabs :: ___builtin_bswap16 ::
+ ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.
