@@ -27,7 +27,8 @@ void edit_pri(PQ *pq, int key, int newpri);
 unsigned int capacity(PQ *pq);
 unsigned int pq_size(PQ *pq);
 
-PQ* make();
+PQ* make(unsigned int size);
+void free_pq (PQ *pq);
 /*
  void insert(PQ *pq, Item *x);
  Item* remove_min(PQ *pq);
