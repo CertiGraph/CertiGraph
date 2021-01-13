@@ -176,8 +176,8 @@ vstandme3:
 mst:
 	make priq/verif_priq_arr.vo \
 	prim/verif_prim1.vo prim/verif_prim2.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo \
-	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo -kj7
-#	kruskal/verif_kruskal_edgelist.vo 
+	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
+	kruskal/verif_sort.v kruskal/verif_kruskal_edgelist.vo -kj7
 
 .depend depend:
 	@echo 'coqdep ... >.depend'

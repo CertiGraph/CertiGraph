@@ -6,7 +6,11 @@ Require Import CertiGraph.unionfind.env_unionfind_arr. (*something here massages
 Require Import CertiGraph.kruskal.spatial_wedgearray_graph.
 Require Import CertiGraph.kruskal.kruskal_specs.
 
-Lemma body_swap_edges: semax_body Vprog Gprog f_swap_edges swap_edges_spec.
+Section VerifKrusSort.
+  
+Context {size: Z}.
+
+Lemma body_swap_edges: semax_body Vprog (@Gprog size) f_swap_edges swap_edges_spec.
 Proof.
 start_function.
 (* don't destruct a and b, or def_wedgerep.
@@ -32,7 +36,7 @@ destruct a. destruct c. auto.
 destruct b. destruct c. auto.
 Qed.
 
-Lemma body_yucky_find_min: semax_body Vprog Gprog f_yucky_find_min yucky_find_min_spec.
+Lemma body_yucky_find_min: semax_body Vprog (@Gprog size) f_yucky_find_min yucky_find_min_spec.
 Proof.
 start_function.
 forward. forward. entailer!.
@@ -92,7 +96,7 @@ Proof.
 intros. apply data_at_singleton_array_eq. auto.
 Qed.
 
-Lemma body_sort_edges: semax_body Vprog Gprog f_sort_edges sort_edges_spec.
+Lemma body_sort_edges: semax_body Vprog (@Gprog size) f_sort_edges sort_edges_spec.
 Proof.
 start_function.
 forward_loop
@@ -369,3 +373,5 @@ rewrite H2. auto.
 Intros bl. forward. Exists bl. entailer!.
 apply Permutation_sym; auto.
 Qed.
+
+End VerifKrusSort.
