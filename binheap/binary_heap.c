@@ -1,5 +1,6 @@
 #include "binary_heap.h"
 extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
+extern void freeN (void* p); /* Maybe there are better choices for allocators? */
 
 #define ROOT_IDX       0u
 #define LEFT_CHILD(x)  (2u * x) + 1u
@@ -62,6 +63,16 @@ void remove_min_nc(PQ *pq, Item* item) {
 
 /* Everything above here has been verified. */
 
+void build_heap(Item arr[], unsigned int size) {
+  unsigned int start = PARENT(size);
+  do {
+    sink(start, arr, size);
+    start--;
+  } while (start > 0);
+}
+
+
+
 void insert(PQ *pq, Item *x) {
   if (pq->first_available == pq->capacity) return; /* Hrm, maybe should signal error or grow heap or whatever... */
   insert_nc(pq, x);
@@ -74,16 +85,30 @@ Item* remove_min(PQ *pq) {
   return item;
 }
 
-PQ* make() { /* could take a size parameter I suppose... */
-  Item* arr = (Item*) mallocN(sizeof(Item) * INITIAL_SIZE);
+
+PQ* make(unsigned int size) { /* could take a size parameter I suppose... */
+  Item* arr = (Item*) mallocN(sizeof(Item) * size);
   PQ *pq = (PQ*) mallocN(sizeof(PQ));
-  pq->capacity = INITIAL_SIZE;
+  pq->capacity = size;
   pq->first_available = 0;
   pq->heap_cells = arr;
   return pq;
 }
 
-/* could imagine adding some additonal functions:
-     heapify
-     ?
-*/
+PQ* heapify(Item* arr, unsigned int size) {
+  // First, build the heap within the array
+  build_heap(arr,size);
+
+  // Now, malloc the structure
+  PQ *pq = (PQ*) mallocN(sizeof(PQ));
+  pq->capacity = size;
+  pq->first_available = size;
+  pq->heap_cells = arr;
+  return pq;
+}
+
+void pq_free(PQ *pq) {
+  freeN(pq->heap_cells);
+  freeN(pq);
+}
+
