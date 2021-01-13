@@ -3,12 +3,13 @@
 #include <stdio.h>  
 #include <time.h>
 #include "../priq/priq_arr.h"
+#include "../binheap/binary_heap_pro.h"
 
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
  
-extern void * mallocN (int n);
-extern void freeN (void *p);
+// extern void * mallocN (int n);
+// extern void freeN (void *p);
 
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
@@ -107,15 +108,15 @@ int main(int argc, const char * argv[])
     int src = rand() % size; 
 
     int** graph;
-    graph = mallocN (size * sizeof *graph);
+    graph = malloc (size * sizeof *graph);
     for (i = 0; i < size; i++) {
-        graph[i] = mallocN (size * sizeof *graph[i]);
+        graph[i] = malloc (size * sizeof *graph[i]);
     }
     setup(graph, size, inf);
     print_graph(graph, size, inf, src);
     
-    int* prev = mallocN (size * sizeof *prev);
-    int* dist = mallocN (size * sizeof *dist);
+    int* prev = malloc (size * sizeof *prev);
+    int* dist = malloc (size * sizeof *dist);
     
     dijkstra(graph, src, dist, prev, size, inf);
     getPaths(src, dist, prev, size, inf);
