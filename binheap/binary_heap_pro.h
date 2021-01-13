@@ -20,8 +20,12 @@ typedef struct structPQ {
 void remove_min_nc(PQ *pq, Item *item);
 unsigned int insert_nc(PQ *pq, int priority, void* data);
 
+unsigned int insert(PQ *pq, int priority, void* data);
+Item* remove_min(PQ *pq);
+void edit_pri(PQ *pq, int key, int newpri);
+
 unsigned int capacity(PQ *pq);
-unsigned int size(PQ *pq);
+unsigned int pq_size(PQ *pq);
 
 PQ* make();
 /*
