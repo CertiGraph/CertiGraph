@@ -3,7 +3,6 @@
 #include <limits.h>
 #include <stdio.h>  
 #include <time.h>
-#include "../priq/priq_arr.h"
 #include "../binheap/binary_heap_pro.h"
 
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
@@ -71,50 +70,34 @@ int getCell (int **graph, int u, int i) {
 }
 
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
-    int* pq = init(size);
     int* i_ptr; 
-    Item* pq1_min;
     int keys[size];
-    PQ* pq1 = make(); //// Fancier PQ
+    PQ* pq = make();
     int i, j, u, cost;
-    int v;
     for (i = 0; i < size; i++) {
         dist[i] = inf;  // Best-known distance from src to i
         prev[i] = inf;  // Last vertex visited before i
-        push(i, inf, pq);  // Everybody goes in the queue
-        //// boxing the data up...
-        i_ptr = (int *) malloc (sizeof (int));
+        i_ptr = (int *) malloc (sizeof (int)); // boxing the data up...
         i_ptr[0]=i;
-        keys[i] = insert(pq1, inf, (void *)i_ptr); //// Insert, plus store key locally
+        keys[i] = insert(pq, inf, (void *)i_ptr); // Insert everyone, plus store keys locally
     }
     dist[src] = 0;
     prev[src] = src;
-    adjustWeight(src, 0, pq); // special values for src
-    edit_pri(pq1, keys[src], 0); //// Fancier value-edit
-    //// sanity check for "size" method:
-    //// when pq is emp, size of pq1 is zero. when pq is not emp, size of pq1 is nonzero
-    assert ((pq_emp(size, inf, pq) && (pq_size(pq1)==0)) ||
-               (!pq_emp(size, inf, pq) && (pq_size(pq1)>0))); 
-    while (!pq_emp(size, inf, pq)) {
-        //// sanity check for popMin
-        u = popMin(size, inf, pq);  // src -> u is optimal. relax u's neighbors, then done with u.
-        pq1_min = remove_min(pq1);
-        v = *((int *)(pq1_min->data));
-        printf("Mins: pq says %d @ %d, pq1 says %d @ %d\n", u, dist[u], v, pq1_min->priority);
-        assert (dist[u] == pq1_min->priority);
+    edit_pri(pq, keys[src], 0); // special value for src
+    while (pq_size(pq) > 0) {
+        u = *((int *)(remove_min(pq)->data)); // src -> u is optimal. relax u's neighbors, then done with u.
         for (i = 0; i < size; i++) {
             cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine
                 if (dist[i] > dist[u] + cost) {  // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + cost;  // improve it
                     prev[i] = u;  // note that we got there via 'u'
-                    adjustWeight(i, dist[i], pq); // and stash the improvement in the PQ
-                    edit_pri(pq1, keys[i], dist[i]); //// Fancier value-edit
+                    edit_pri(pq, keys[i], dist[i]); // and stash the improvement in the PQ
                 }
             }
         }
     }
-    freePQ (pq);
+//    freePQ (pq);
     return;
 }
 
