@@ -112,15 +112,15 @@ Item* remove_min(PQ *pq) {
   return item;
 }
 
-PQ* make() { /* could take a size parameter I suppose... */
+PQ* make(unsigned int size) { /* could take a size parameter I suppose... */
   PQ *pq = (PQ*) malloc(sizeof(PQ));
-  unsigned int* table = (unsigned int*) malloc (sizeof(unsigned int) * INITIAL_SIZE);
-  Item* arr = (Item*) malloc(sizeof(Item) * INITIAL_SIZE);
+  unsigned int* table = (unsigned int*) malloc (sizeof(unsigned int) * size);
+  Item* arr = (Item*) malloc(sizeof(Item) * size);
   int i; 
-  for (i = 0; i < INITIAL_SIZE; i++)
+  for (i = 0; i < size; i++)
     arr[i].key = i;
 
-  pq->capacity = INITIAL_SIZE;
+  pq->capacity = size;
   pq->first_available = 0;
   pq->heap_cells = arr;
   pq->key_table = table;

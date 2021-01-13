@@ -72,20 +72,18 @@ int getCell (int **graph, int u, int i) {
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     int* i_ptr; 
     int keys[size];
-    PQ* pq = make();
+    PQ* pq = make(size); 
     int i, j, u, cost;
     for (i = 0; i < size; i++) {
         dist[i] = inf;  // Best-known distance from src to i
         prev[i] = inf;  // Last vertex visited before i
-        i_ptr = (int *) malloc (sizeof (int)); // boxing the data up...
-        i_ptr[0]=i;
-        keys[i] = insert(pq, inf, (void *)i_ptr); // Insert everyone, plus store keys locally
+        keys[i] = insert(pq, inf, (void *)i); // Insert everyone, plus store keys locally
     }
     dist[src] = 0;
     prev[src] = src;
     edit_pri(pq, keys[src], 0); // special value for src
     while (pq_size(pq) > 0) {
-        u = *((int *)(remove_min(pq)->data)); // src -> u is optimal. relax u's neighbors, then done with u.
+        u = (int)(remove_min(pq)->data); // src -> u is optimal. relax u's neighbors, then done with u.
         for (i = 0; i < size; i++) {
             cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine
