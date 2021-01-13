@@ -1,7 +1,7 @@
 #ifndef __BINARY_HEAP_PRO_H__
 #define __BINARY_HEAP_PRO_H__
 
-#define INITIAL_SIZE 8 /* Probably should be a power of 2, no more than max_int / 2 - 1? */
+// #define INITIAL_SIZE 8 /* Probably should be a power of 2, no more than max_int / 2 - 1? */
 #define MAX_SIZE (1 << 29) /* for 32-bit machine, is this the best we can do? */
 
 typedef struct structItem {
