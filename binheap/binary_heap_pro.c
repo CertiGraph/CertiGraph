@@ -128,6 +128,12 @@ PQ* make(unsigned int size) { /* could take a size parameter I suppose... */
   return pq;
 }
 
+void free_pq (PQ *pq) {
+    free(pq->key_table);
+    free(pq->heap_cells);
+    free(pq);
+}
+
 /* could imagine adding some additonal functions:
      heapify
      ?
