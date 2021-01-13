@@ -1,5 +1,6 @@
+#include <stdlib.h>
 #include "binary_heap_pro.h"
-extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
+// extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
 
 #define ROOT_IDX       0u
 #define LEFT_CHILD(x)  (2u * x) + 1u
@@ -82,7 +83,7 @@ void edit_pri(PQ *pq, int key, int newpri) {
   cells[target].priority = newpri;
   if (newpri <= oldpri) swim(target, cells, table); 
      // potentially unnecessary swimming in case of equality
-  else sink (target, cells, table);
+  else sink (target, cells, pq->first_available, table);
 }
 
 void remove_min_nc(PQ *pq, Item* item) {
@@ -106,15 +107,15 @@ unsigned int insert(PQ *pq, int priority, void* data) {
 
 Item* remove_min(PQ *pq) {
   if (pq->first_available == ROOT_IDX) return 0;
-  Item* item = (Item*) mallocN(sizeof(Item));
+  Item* item = (Item*) malloc(sizeof(Item));
   remove_min_nc(pq, item);
   return item;
 }
 
 PQ* make() { /* could take a size parameter I suppose... */
-  PQ *pq = (PQ*) mallocN(sizeof(PQ));
-  unsigned int* table = (unsigned int*) mallocN (sizeof(unsigned int) * INITIAL_SIZE);
-  Item* arr = (Item*) mallocN(sizeof(Item) * INITIAL_SIZE);
+  PQ *pq = (PQ*) malloc(sizeof(PQ));
+  unsigned int* table = (unsigned int*) malloc (sizeof(unsigned int) * INITIAL_SIZE);
+  Item* arr = (Item*) malloc(sizeof(Item) * INITIAL_SIZE);
   int i; 
   for (i = 0; i < INITIAL_SIZE; i++)
     arr[i].key = i;
