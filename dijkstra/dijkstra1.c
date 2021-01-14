@@ -100,13 +100,11 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     return;
 }
 
-
-
 int main(int argc, const char * argv[])
 {
     int i;
     srand((unsigned int) time(NULL));
-    const int size = 8; //1 + rand() % 20; // cannot allow size = 0. upper limit?
+    const int size = 1 + rand() % 20; // cannot allow size = 0. upper limit?
     const int inf = INT_MAX - INT_MAX/size;
     int src = rand() % size; 
 
