@@ -77,13 +77,13 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     for (i = 0; i < size; i++) {
         dist[i] = inf;  // Best-known distance from src to i
         prev[i] = inf;  // Last vertex visited before i
-        keys[i] = pq_insert(pq, inf, (void *)i); // Insert everyone, plus store keys locally
+        keys[i] = pq_insert(pq, inf, i); // Insert everyone, plus store keys locally
     }
     dist[src] = 0;
     prev[src] = src;
     pq_edit_priority(pq, keys[src], 0); // special value for src
     while (pq_size(pq) > 0) {
-        u = (int)(pq_remove_min(pq)->data); // src -> u is optimal. relax u's neighbors, then done with u.
+        u = pq_remove_min(pq)->data; // src -> u is optimal. relax u's neighbors, then done with u.
         for (i = 0; i < size; i++) {
             cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine
