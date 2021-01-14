@@ -904,253 +904,19 @@ Definition weak_heapOrdered (L : list A) (j : nat) : Prop :=
     (forall c, nth_error L (right_child i) = Some c -> a <<= c)) /\
   grandsOk L j root_idx.
 
-Lemma hOwhO: forall L j,
-  heapOrdered L ->
-  weak_heapOrdered L j.
-Proof.
-  split. 2: apply hO_grandsOk; auto. intros ? ? ?. apply H.
-Qed.
-
-Lemma weak_heapOrdered_root: forall r1 L,
-  heapOrdered (r1 :: L) ->
-  forall r2, weak_heapOrdered (r2 :: L) root_idx.
-Proof.
-  repeat intro. split; intros.
-  specialize (H i a).
-  destruct i. contradiction.
-  specialize (H H1). apply H. intro. lia.
-Qed.
-
-Lemma weak_heapOrdered_oob: forall i L,
-  i >= length L ->
-  weak_heapOrdered L i ->
-  heapOrdered L.
-Proof.
-  repeat intro. destruct H0. apply H0; auto. 
-  intro. subst i0. assert (i < length L) by (apply nth_error_Some; congruence). lia.
-Qed.
-
-Lemma sink1_hO: forall L j,
-  weak_heapOrdered L j ->
-  match sink1 L j with
-   | (L', None) => heapOrdered L'
-   | (L', Some j') => weak_heapOrdered L' j'
-  end.
-Proof.
-  intros. unfold sink1.
-  assert (Hy : j < left_child j) by apply left_child_inc.
-  assert (Hw : left_child j < right_child j) by apply left_child_lt_right_child.
-  case_eq (nth_error L j).
-  * case_eq (nth_error L (left_child j)).
-    + intros. assert (Hl : left_child j < length L) by (apply nth_error_Some; congruence).
-      case_eq (nth_error L (right_child j)); intros.
-      - assert (Hr: right_child j < length L) by (apply nth_error_Some; congruence).
-        case (a1 <<=? a). 2: (destruct (Aleq_linear a1 a); try contradiction; intros _).
-        ** case (a0 <<=? a1). 2: (destruct (Aleq_linear a0 a1); try contradiction; intros _).
-           ++ repeat intro. case (eq_nat_dec i j).
-              -- intro. subst j. rewrite H0, H2. rewrite H1 in H3. inversion H3. subst a4. clear H3.
-                 split; inversion 1; subst; auto.
-                 transitivity a1; auto.
-              -- intro. destruct H. apply H; auto.
-           ++ split; intros.
-              -- case (eq_nat_dec i j); intro.
-                 *** subst j.
-                     rewrite nth_error_exchange in H5; try lia.
-                     rewrite nth_error_exchange'; try lia.
-                     rewrite nth_error_exchange''; try lia.
-                     rewrite H1, H0.
-                     rewrite H2 in H5. inversion H5. subst a3. clear H5.
-                     split; inversion 1; subst; auto.
-                 *** rewrite nth_error_exchange'' in H5; auto.
-                     assert (right_child i <> right_child j) by (intro Hq; apply right_child_inj in Hq; auto).
-                     destruct H. case (eq_nat_dec j (right_child i)); intro.
-                     +++ subst j. rewrite nth_error_exchange; try lia.
-                         rewrite H2. split.
-                         --- intro. rewrite nth_error_exchange''.
-                             intro. specialize (H i a3 n H5). apply H in H8. trivial.
-                             generalize (left_child_lt_right_child i). lia.
-                             intro. eapply left_child_neq_right_child; eauto.
-                         --- inversion 1. subst c. clear H8.
-                             apply H7 with (right_child (right_child i)); auto.
-                             generalize (right_child_root i). unfold root_idx. lia.
-                             rewrite parent_right_child. unfold root_idx. lia.
-                             rewrite parent_right_child; auto.
-                             rewrite parent_right_child; auto.
-                     +++ split. 2: rewrite nth_error_exchange''; auto; apply H; auto.
-                         case (eq_nat_dec j (left_child i)); intro.
-                         --- subst j. rewrite nth_error_exchange; try lia.
-                             rewrite H2. inversion 1. subst b. clear H8.
-                             eapply H7. 4: apply H2.
-                             generalize (left_child_root i); unfold root_idx; lia.
-                             unfold root_idx; lia.
-                             rewrite parent_right_child. trivial.
-                             rewrite parent_left_child. trivial.
-                         --- rewrite nth_error_exchange''; auto.
-                             apply H; auto.
-                             generalize (left_child_neq_right_child i j). lia.
-              -- repeat intro.
-                 rewrite parent_right_child in H8. rewrite nth_error_exchange in H8; try lia.
-                 rewrite H2 in H8. inversion H8. subst a3. clear H8.
-                 assert (parent gs < gs). { apply parent_dec. unfold root_idx. assert (gs = 0 \/ gs > 0) by lia. 
-                   destruct H8; trivial. subst gs. change 0 with root_idx in H6. rewrite parent_root in H6.
-                   generalize (right_child_root j). lia. }
-                 rewrite nth_error_exchange'' in H7; try lia.
-                 destruct H.
-                 assert (right_child j <> j) by lia.
-                 specialize (H _ _ H10 H2). destruct H.
-                 rewrite <- H6 in *.
-                 destruct (even_or_odd gs).
-                 apply H11. rewrite right_child_parent_even; auto. generalize (left_child_root j); intro. lia.
-                 apply H. rewrite left_child_parent_odd; auto.
-        ** case (a0 <<=? a). 2: (destruct (Aleq_linear a0 a); try contradiction; intros _).
-           ++ repeat intro. case (eq_nat_dec i j).
-              -- intro. subst j. rewrite H0, H2. rewrite H1 in H4. inversion H4. subst a3. clear H4.
-                 split; inversion 1; subst; auto.
-                 transitivity a; auto.
-              -- intro. destruct H. apply H; auto.
-           ++ intros. split; intros.
-              -- case (eq_nat_dec i j); intro.
-                 *** subst j.
-                     rewrite nth_error_exchange in H6; try lia.
-                     rewrite nth_error_exchange'; try lia.
-                     rewrite nth_error_exchange''; try lia.
-                     rewrite H1, H2.
-                     rewrite H0 in H6. inversion H6. subst a2. clear H6.
-                     split; inversion 1; subst; auto.
-                 *** rewrite nth_error_exchange'' in H6; auto.
-                     assert (left_child i <> left_child j) by (intro Hq; apply left_child_inj in Hq; auto).
-                     destruct H. case (eq_nat_dec j (left_child i)); intro.
-                     +++ subst j. rewrite nth_error_exchange; try lia.
-                         rewrite H0. split.
-                         --- inversion 1. subst b. clear H9.
-                             apply H8 with (left_child (left_child i)); auto.
-                             generalize (left_child_root i). lia.
-                             unfold root_idx; lia.
-                             apply parent_left_child.
-                             rewrite parent_left_child; auto.
-                         --- intro. rewrite nth_error_exchange''.
-                             intro. eapply H; eauto.
-                             generalize (left_child_lt_right_child i). lia.
-                             apply left_child_neq_right_child.
-                     +++ rewrite nth_error_exchange''; auto. split.
-                         apply H; auto.
-                         case (eq_nat_dec j (right_child i)); intro.
-                         --- subst j. rewrite nth_error_exchange; try lia.
-                             rewrite H0. inversion 1. subst c. clear H9.
-                             eapply H8. 4: apply H0.
-                             generalize (right_child_root i); lia.
-                             unfold root_idx; lia.
-                             rewrite parent_left_child. trivial.
-                             rewrite parent_right_child. trivial.
-                         --- rewrite nth_error_exchange''; auto.
-                             apply H; auto.
-                             apply left_child_neq_right_child.
-              -- repeat intro.
-                 rewrite parent_left_child in H9. rewrite nth_error_exchange in H9; try lia.
-                 rewrite H0 in H9. inversion H9. subst a2. clear H9.
-                 assert (parent gs < gs). { apply parent_dec. unfold root_idx. assert (gs = 0 \/ gs > 0) by lia. 
-                   destruct H9; trivial. subst gs. change 0 with root_idx in H7. rewrite parent_root in H7.
-                   generalize (left_child_root j). lia. }
-                 rewrite nth_error_exchange'' in H8; try lia.
-                 destruct H.
-                 assert (left_child j <> j) by lia.
-                 specialize (H _ _ H11 H0). destruct H.
-                 rewrite <- H7 in *.
-                 destruct (even_or_odd gs).
-                 apply H12. rewrite right_child_parent_even; auto. generalize (left_child_root j); intro. lia.
-                 apply H. rewrite left_child_parent_odd; auto.
-      - assert (Hr: right_child j >= length L) by (apply nth_error_None in H2; auto).
-        case (a0 <<=? a); repeat intro.
-        ** case (eq_nat_dec i j); intro.
-           ++ subst j. rewrite H1 in H3. inversion H3. subst a2. clear H3.
-              rewrite H0, H2.
-              split; inversion 1. subst b. trivial.
-           ++ destruct H. apply H; auto.
-        ** split; intros. case (eq_nat_dec i j); intro.
-           ++ subst j.
-              rewrite nth_error_exchange in H4; try lia.
-              rewrite nth_error_exchange'; try lia.
-              rewrite nth_error_exchange_oob; try lia.
-              rewrite H1. rewrite H0 in H4. inversion H4. subst a1. clear H4.
-              split; intros; inversion H4. subst a0. destruct (Aleq_linear a b); trivial.
-              contradiction.
-           ++ rewrite nth_error_exchange'' in H4; auto.
-              assert (left_child i <> left_child j) by (intro Hq; apply left_child_inj in Hq; auto).
-              assert (left_child j <> right_child i) by apply left_child_neq_right_child.
-              destruct H. specialize (H _ _ n0 H4).
-              split.
-              -- case (eq_nat_dec j (left_child i)); intro.
-                 *** subst j. rewrite nth_error_exchange; try lia. rewrite H0. inversion 1. subst b. clear H8.
-                     assert (left_child i <> root_idx) by (generalize (left_child_root i); lia).
-                     assert (parent (left_child i) >= root_idx) by (unfold root_idx; lia).
-                     apply (H7 H8 H9 (left_child (left_child i))); try rewrite parent_left_child; auto.
-                 *** rewrite nth_error_exchange''; auto. destruct H. apply H.
-              -- case (eq_nat_dec j (right_child i)); intro.
-                 *** subst j. rewrite nth_error_exchange; try lia. rewrite H0. inversion 1. subst c. clear H8.
-                     assert (right_child i <> root_idx) by (generalize (right_child_root i); lia).
-                     assert (parent (right_child i) >= root_idx) by (unfold root_idx; lia).
-                     eapply (H7 H8 H9 (left_child (right_child i))).
-                     rewrite parent_left_child. trivial. trivial. rewrite parent_right_child. trivial.
-                 *** rewrite nth_error_exchange''; auto. destruct H. apply H8.
-           ++ repeat intro.
-              rewrite parent_left_child in H7. rewrite nth_error_exchange in H7; try lia.
-              rewrite H0 in H7. inversion H7. subst a1. clear H7.
-              assert (parent gs < gs). { apply parent_dec. unfold root_idx. assert (gs = 0 \/ gs > 0) by lia.
-                   destruct H7; trivial. subst gs. change 0 with root_idx in H5. rewrite parent_root in H5.
-                   generalize (left_child_root j). lia. }
-              rewrite nth_error_exchange'' in H6; try lia.
-              assert (left_child j <> j) by lia.
-              destruct H. specialize (H _ _ H8 H0). destruct H.
-              rewrite <- H5 in *.
-              destruct (even_or_odd gs).
-              apply H10. rewrite right_child_parent_even; auto. generalize (left_child_root j); intro. lia.
-              apply H. rewrite left_child_parent_odd; auto.
-    + repeat intro. case (eq_nat_dec i j); intro. 2: eapply H; auto.
-      subst j. rewrite H1 in H2; inversion H2. subst a0. clear H2.
-      split; intros. rewrite H0 in H2; inversion H2.
-      apply nth_error_None in H0.
-      assert (right_child i < length L) by (apply nth_error_Some; congruence).
-      lia.
-  * repeat intro. assert (i <> j). intro. subst. rewrite H0 in H1. discriminate. destruct H. eapply H; trivial.
-Qed.
-
-Lemma sink_hO: forall L j,
-  weak_heapOrdered L j ->
-  heapOrdered (sink (L, j)).
-Proof.
-  intros L j whO. remember (L, j) as Lj. assert (match Lj with (L, j) => weak_heapOrdered L j end). rewrite HeqLj. trivial. revert H. clear -Apo Aleq_linear.
-  apply sink_ind; intros.
-  generalize (sink1_hO L j H).
-  rewrite e0. trivial.
-  generalize (sink1_hO L j H0).
-  rewrite e0.
-  apply H.
-Qed.
-
-Lemma remove_min_hO: forall L,
-  heapOrdered L ->
-  match remove_min L with
-   | (L', _) => heapOrdered L'
-  end.
-Proof.
-  intros. unfold remove_min.
-  destruct L. apply heapOrdered_empty.
-  generalize (foot_split_spec _ L).
-  destruct (foot_split L). destruct o; intros; subst.
-  rewrite app_comm_cons in H.
-  apply heapOrdered_cutfoot in H.
-  apply sink_hO.
-  apply weak_heapOrdered_root with a. trivial.
-  apply heapOrdered_empty.
-Qed.
-
-(* facts about sink relative to bottom-up heapify *)
-
+(* The following two versions are to support bottom-up heapify *)
 Definition heapOrdered_bounded (L : list A) (k : nat) : Prop :=
   forall i a, i >= k ->
     nth_error L i = Some a ->
     (forall b, nth_error L (left_child i) = Some b -> a <<= b) /\
     (forall c, nth_error L (right_child i) = Some c -> a <<= c).
+
+Definition weak_heapOrdered_bounded (L : list A) (k : nat) (j : nat) : Prop :=
+  (forall i a, i >= k -> i <> j -> 
+    nth_error L i = Some a ->
+    (forall b, nth_error L (left_child i) = Some b -> a <<= b) /\
+    (forall c, nth_error L (right_child i) = Some c -> a <<= c)) /\
+  (grandsOk L j k).
 
 Lemma heapOrdered_bounded_root_heapOrdered: forall L,
   heapOrdered_bounded L root_idx <-> heapOrdered L.
@@ -1158,6 +924,59 @@ Proof.
   split. split; intros; assert (i >= root_idx) by (unfold root_idx; lia); destruct (H i a H2 H0); auto.
   repeat intro. apply H. trivial.
 Qed.
+
+Lemma weak_heapOrdered_bounded_root_weak_heapOrdered: forall L j,
+  weak_heapOrdered_bounded L root_idx j <-> weak_heapOrdered L j.
+Proof.
+  split; intros [? ?]; split; auto.
+  intros. apply H; auto. unfold root_idx; lia.
+Qed.
+
+Lemma hOwhO: forall L j,
+  heapOrdered L ->
+  weak_heapOrdered L j.
+Proof.
+  split. 2: apply hO_grandsOk; auto. intros ? ? ?. apply H.
+Qed.
+
+Lemma weak_heapOrdered_bounded_root: forall r1 L b,
+  heapOrdered_bounded (r1 :: L) b ->
+  forall r2, weak_heapOrdered_bounded (r2 :: L) b root_idx.
+Proof.
+  repeat intro. split; intros.
+  specialize (H i a H0).
+  destruct i. contradiction.
+  specialize (H H2). apply H. intro. lia.
+Qed.
+
+Lemma weak_heapOrdered_bounded_oob: forall i L b,
+  i >= length L ->
+  weak_heapOrdered_bounded L b i ->
+  heapOrdered_bounded L b.
+Proof.
+  repeat intro. destruct H0. apply H0; auto. 
+  intro. subst i0. assert (i < length L) by (apply nth_error_Some; congruence). lia.
+Qed.
+
+Lemma weak_heapOrdered_root: forall r1 L,
+  heapOrdered (r1 :: L) ->
+  forall r2, weak_heapOrdered (r2 :: L) root_idx.
+Proof.
+  intros. apply weak_heapOrdered_bounded_root_weak_heapOrdered.
+  apply heapOrdered_bounded_root_heapOrdered in H.
+  apply weak_heapOrdered_bounded_root with r1. trivial.
+Qed.
+
+Lemma weak_heapOrdered_oob: forall i L,
+  i >= length L ->
+  weak_heapOrdered L i ->
+  heapOrdered L.
+Proof.
+  intros. apply weak_heapOrdered_bounded_root_weak_heapOrdered in H0.
+  apply heapOrdered_bounded_root_heapOrdered. apply weak_heapOrdered_bounded_oob in H0; auto.
+Qed.
+
+(* facts about sink relative to bottom-up heapify *)
 
 Lemma heapOrdered_bounded_half: forall L,
   heapOrdered_bounded L (1 + parent (length L)).
@@ -1184,13 +1003,6 @@ Proof.
       lia.
 Qed.
 
-Definition weak_heapOrdered_bounded (L : list A) (k : nat) (j : nat) : Prop :=
-  (forall i a, i >= k -> i <> j -> 
-    nth_error L i = Some a ->
-    (forall b, nth_error L (left_child i) = Some b -> a <<= b) /\
-    (forall c, nth_error L (right_child i) = Some c -> a <<= c)) /\
-  (grandsOk L j k).
-
 Lemma hObU_whObU_pred: forall L k,
   heapOrdered_bounded L (1 + k) <->
   weak_heapOrdered_bounded L k k.
@@ -1208,7 +1020,7 @@ Proof.
   intros. rewrite <- hObU_whObU_pred. apply heapOrdered_bounded_half.
 Qed.
 
-(* This proof is so similar to the one above... surely we can generalize and have only one? *)
+(* This proof is rather maddening... *)
 Lemma sink1_hObU: forall L k j,
   weak_heapOrdered_bounded L k j ->
   match sink1 L j with
@@ -1408,6 +1220,32 @@ Proof.
   rewrite e0.
   apply H.
 Qed.
+
+Lemma sink_hO: forall L j,
+  weak_heapOrdered L j ->
+  heapOrdered (sink (L, j)).
+Proof.
+  intros. rewrite <- heapOrdered_bounded_root_heapOrdered. apply sink_hO_bounded.
+  rewrite weak_heapOrdered_bounded_root_weak_heapOrdered. trivial.
+Qed.
+
+Lemma remove_min_hO: forall L,
+  heapOrdered L ->
+  match remove_min L with
+   | (L', _) => heapOrdered L'
+  end.
+Proof.
+  intros. unfold remove_min.
+  destruct L. apply heapOrdered_empty.
+  generalize (foot_split_spec _ L).
+  destruct (foot_split L). destruct o; intros; subst.
+  rewrite app_comm_cons in H.
+  apply heapOrdered_cutfoot in H.
+  apply sink_hO.
+  apply weak_heapOrdered_root with a. trivial.
+  apply heapOrdered_empty.
+Qed.
+
 
 Lemma sink_downwards_crawl: forall L k,
   weak_heapOrdered_bounded L (1 + k) (1 + k) ->
@@ -1618,7 +1456,7 @@ Qed.
 End Heap.
 
 (* Just to test it out... *)
-Compute (heapsort nat le Coq.Arith.Compare_dec.le_dec (3::1::4::1::5::9::2::6::5::3::nil)).
+(* Compute (heapsort nat le Coq.Arith.Compare_dec.le_dec (3::1::4::1::5::9::2::6::5::3::nil)). *)
 
 (*
 (* multiset, currently under experimentation... *)
