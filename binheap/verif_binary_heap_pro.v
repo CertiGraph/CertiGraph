@@ -183,8 +183,21 @@ Proof.
           free_tok (pointer_val_val pq) 16)).
   - entailer!.
   - Intros.
-    admit.
-  - admit.
+    assert_PROP
+      ((offset_val 0
+                   (force_val
+                      (sem_add_ptr_int (Tstruct _structItem noattr) Signed 
+                                       (pointer_val_val arr) (Vint (Int.repr i)))) =
+        field_address (tarray (Tstruct _structItem noattr) size) [ArraySubsc i] (pointer_val_val arr))). {
+      entailer!.
+      rewrite field_address_offset; trivial.
+      clear H6 H7. destruct H5 as [? [? [? [? ?]]]].
+      repeat split; try lia; trivial.
+      - admit.
+      - admit.
+    }
+    Fail forward.
+    (* Okay, gotta unwrap all the way to the unsigned *)
 Admitted.
 
   Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
