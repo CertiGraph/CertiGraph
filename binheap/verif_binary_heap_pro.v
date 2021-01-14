@@ -65,8 +65,8 @@ Definition sink_spec :=
       LOCAL ()
       SEP (linked_heap_array arr_contents' arr lookup_contents' lookup).
 
-Definition size_spec := 
-  DECLARE _size WITH pq : val, h : heap
+Definition pq_size_spec := 
+  DECLARE _pq_size WITH pq : val, h : heap
   PRE [tptr t_pq]
     PROP ()
     PARAMS (pq)
@@ -121,7 +121,7 @@ Definition insert_nc_spec :=
 Definition Gprog : funspecs :=
          ltac:(with_library prog [ exch_spec ; less_spec ; swim_spec ; sink_spec ; 
                                    remove_min_nc_spec ; insert_nc_spec ; 
-                                   size_spec ; capacity_spec ]).
+                                   pq_size_spec ; capacity_spec ]).
 
 Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
 Proof.
@@ -578,7 +578,7 @@ Proof.
   entailer!.
 Time Qed.
 
-Lemma body_size: semax_body Vprog Gprog f_size size_spec.
+Lemma body_size: semax_body Vprog Gprog f_pq_size pq_size_spec.
 Proof.
   start_function.
   unfold valid_pq.
