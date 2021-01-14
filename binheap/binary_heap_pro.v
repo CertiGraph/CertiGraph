@@ -66,50 +66,51 @@ Definition ___compcert_va_composite : ident := 28%positive.
 Definition ___compcert_va_float64 : ident := 27%positive.
 Definition ___compcert_va_int32 : ident := 25%positive.
 Definition ___compcert_va_int64 : ident := 26%positive.
-Definition _arr : ident := 65%positive.
+Definition _arr : ident := 66%positive.
 Definition _capacity : ident := 5%positive.
-Definition _cells : ident := 76%positive.
+Definition _cells : ident := 77%positive.
 Definition _data : ident := 3%positive.
-Definition _exch : ident := 69%positive.
-Definition _fa : ident := 75%positive.
+Definition _exch : ident := 70%positive.
+Definition _fa : ident := 76%positive.
 Definition _first_available : ident := 6%positive.
 Definition _free : ident := 62%positive.
 Definition _heap_cells : ident := 7%positive.
-Definition _i : ident := 88%positive.
-Definition _insert_nc : ident := 77%positive.
-Definition _item : ident := 83%positive.
-Definition _j : ident := 63%positive.
-Definition _k : ident := 64%positive.
+Definition _i : ident := 89%positive.
+Definition _insert_nc : ident := 78%positive.
+Definition _item : ident := 84%positive.
+Definition _j : ident := 64%positive.
+Definition _k : ident := 65%positive.
 Definition _key : ident := 1%positive.
-Definition _key1 : ident := 67%positive.
-Definition _key2 : ident := 68%positive.
+Definition _key1 : ident := 68%positive.
+Definition _key2 : ident := 69%positive.
 Definition _key_table : ident := 8%positive.
-Definition _less : ident := 72%positive.
-Definition _lookup : ident := 66%positive.
-Definition _main : ident := 91%positive.
+Definition _less : ident := 73%positive.
+Definition _lookup : ident := 67%positive.
+Definition _main : ident := 92%positive.
 Definition _malloc : ident := 61%positive.
-Definition _newpri : ident := 78%positive.
-Definition _oldpri : ident := 81%positive.
-Definition _pq : ident := 70%positive.
-Definition _pq_edit_priority : ident := 82%positive.
-Definition _pq_free : ident := 90%positive.
-Definition _pq_insert : ident := 85%positive.
-Definition _pq_make : ident := 89%positive.
-Definition _pq_remove_min : ident := 86%positive.
-Definition _pq_size : ident := 71%positive.
+Definition _mallocN : ident := 63%positive.
+Definition _newpri : ident := 79%positive.
+Definition _oldpri : ident := 82%positive.
+Definition _pq : ident := 71%positive.
+Definition _pq_edit_priority : ident := 83%positive.
+Definition _pq_free : ident := 91%positive.
+Definition _pq_insert : ident := 86%positive.
+Definition _pq_make : ident := 90%positive.
+Definition _pq_remove_min : ident := 87%positive.
+Definition _pq_size : ident := 72%positive.
 Definition _priority : ident := 2%positive.
-Definition _remove_min_nc : ident := 84%positive.
-Definition _sink : ident := 74%positive.
-Definition _size : ident := 87%positive.
+Definition _remove_min_nc : ident := 85%positive.
+Definition _sink : ident := 75%positive.
+Definition _size : ident := 88%positive.
 Definition _structItem : ident := 4%positive.
 Definition _structPQ : ident := 9%positive.
-Definition _swim : ident := 73%positive.
-Definition _table : ident := 79%positive.
-Definition _target : ident := 80%positive.
-Definition _t'1 : ident := 92%positive.
-Definition _t'2 : ident := 93%positive.
-Definition _t'3 : ident := 94%positive.
-Definition _t'4 : ident := 95%positive.
+Definition _swim : ident := 74%positive.
+Definition _table : ident := 80%positive.
+Definition _target : ident := 81%positive.
+Definition _t'1 : ident := 93%positive.
+Definition _t'2 : ident := 94%positive.
+Definition _t'3 : ident := 95%positive.
+Definition _t'4 : ident := 96%positive.
 
 Definition f_exch := {|
   fn_return := tvoid;
@@ -745,22 +746,22 @@ Definition f_pq_make := {|
 (Ssequence
   (Ssequence
     (Scall (Some _t'1)
-      (Evar _malloc (Tfunction (Tcons tuint Tnil) (tptr tvoid) cc_default))
+      (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
       ((Esizeof (Tstruct _structPQ noattr) tuint) :: nil))
     (Sset _pq
       (Ecast (Etempvar _t'1 (tptr tvoid)) (tptr (Tstruct _structPQ noattr)))))
   (Ssequence
     (Ssequence
       (Scall (Some _t'2)
-        (Evar _malloc (Tfunction (Tcons tuint Tnil) (tptr tvoid) cc_default))
+        (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
         ((Ebinop Omul (Esizeof tuint tuint) (Etempvar _size tuint) tuint) ::
          nil))
       (Sset _table (Ecast (Etempvar _t'2 (tptr tvoid)) (tptr tuint))))
     (Ssequence
       (Ssequence
         (Scall (Some _t'3)
-          (Evar _malloc (Tfunction (Tcons tuint Tnil) (tptr tvoid)
-                          cc_default))
+          (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid)
+                           cc_default))
           ((Ebinop Omul (Esizeof (Tstruct _structItem noattr) tuint)
              (Etempvar _size tuint) tuint) :: nil))
         (Sset _arr
@@ -1104,6 +1105,10 @@ Definition global_definitions : list (ident * globdef fundef type) :=
  (_malloc,
    Gfun(External EF_malloc (Tcons tuint Tnil) (tptr tvoid) cc_default)) ::
  (_free, Gfun(External EF_free (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
+ (_mallocN,
+   Gfun(External (EF_external "mallocN"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
  (_exch, Gfun(Internal f_exch)) :: (_pq_size, Gfun(Internal f_pq_size)) ::
  (_capacity, Gfun(Internal f_capacity)) :: (_less, Gfun(Internal f_less)) ::
  (_swim, Gfun(Internal f_swim)) :: (_sink, Gfun(Internal f_sink)) ::
@@ -1118,7 +1123,7 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 Definition public_idents : list ident :=
 (_pq_free :: _pq_make :: _pq_remove_min :: _pq_insert :: _remove_min_nc ::
  _pq_edit_priority :: _insert_nc :: _sink :: _swim :: _less :: _capacity ::
- _pq_size :: _exch :: _free :: _malloc :: ___builtin_debug ::
+ _pq_size :: _exch :: _mallocN :: _free :: _malloc :: ___builtin_debug ::
  ___builtin_write32_reversed :: ___builtin_write16_reversed ::
  ___builtin_read32_reversed :: ___builtin_read16_reversed ::
  ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
