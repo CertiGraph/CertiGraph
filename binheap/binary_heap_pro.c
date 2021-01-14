@@ -66,7 +66,7 @@ unsigned int insert_nc(PQ *pq, int priority, void* data) {
   return key;
 }
 
-void edit_pri(PQ *pq, int key, int newpri) {
+void pq_edit_priority(PQ *pq, int key, int newpri) {
   unsigned int* table = pq->key_table;
   Item* cells = pq->heap_cells;
   unsigned int target = table[key];
@@ -92,19 +92,19 @@ void remove_min_nc(PQ *pq, Item* item) {
   pq->first_available = fa;
 }  
 
-unsigned int insert(PQ *pq, int priority, void* data) {
+unsigned int pq_insert(PQ *pq, int priority, void* data) {
   if (pq->first_available == pq->capacity) return 0; /* Hrm, maybe should signal error or grow heap or whatever... */
   return insert_nc(pq, priority, data);
 }
 
-Item* remove_min(PQ *pq) {
+Item* pq_remove_min(PQ *pq) {
   if (pq->first_available == ROOT_IDX) return 0;
   Item* item = (Item*) malloc(sizeof(Item));
   remove_min_nc(pq, item);
   return item;
 }
 
-PQ* make(unsigned int size) { /* could take a size parameter I suppose... */
+PQ* pq_make(unsigned int size) { /* could take a size parameter I suppose... */
   PQ *pq = (PQ*) malloc(sizeof(PQ));
   unsigned int* table = (unsigned int*) malloc (sizeof(unsigned int) * size);
   Item* arr = (Item*) malloc(sizeof(Item) * size);
@@ -120,7 +120,7 @@ PQ* make(unsigned int size) { /* could take a size parameter I suppose... */
   return pq;
 }
 
-void free_pq (PQ *pq) {
+void pq_free (PQ *pq) {
     free(pq->key_table);
     free(pq->heap_cells);
     free(pq);
