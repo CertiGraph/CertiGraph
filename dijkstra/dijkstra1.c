@@ -72,30 +72,30 @@ int getCell (int **graph, int u, int i) {
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     int* i_ptr; 
     int* keys = malloc (size * sizeof (int));
-    PQ* pq = make(size); 
+    PQ* pq = pq_make(size); 
     int i, j, u, cost;
     for (i = 0; i < size; i++) {
         dist[i] = inf;  // Best-known distance from src to i
         prev[i] = inf;  // Last vertex visited before i
-        keys[i] = insert(pq, inf, (void *)i); // Insert everyone, plus store keys locally
+        keys[i] = pq_insert(pq, inf, (void *)i); // Insert everyone, plus store keys locally
     }
     dist[src] = 0;
     prev[src] = src;
-    edit_pri(pq, keys[src], 0); // special value for src
+    pq_edit_priority(pq, keys[src], 0); // special value for src
     while (pq_size(pq) > 0) {
-        u = (int)(remove_min(pq)->data); // src -> u is optimal. relax u's neighbors, then done with u.
+        u = (int)(pq_remove_min(pq)->data); // src -> u is optimal. relax u's neighbors, then done with u.
         for (i = 0; i < size; i++) {
             cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine
                 if (dist[i] > dist[u] + cost) {  // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + cost;  // improve it
                     prev[i] = u;  // note that we got there via 'u'
-                    edit_pri(pq, keys[i], dist[i]); // and stash the improvement in the PQ
+                    pq_edit_priority(pq, keys[i], dist[i]); // and stash the improvement in the PQ
                 }
             }
         }
     }
-    free_pq (pq);
+    pq_free (pq);
     free(keys);
     return;
 }
