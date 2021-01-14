@@ -10,7 +10,7 @@
 /* I'm assuming a decent compiler will inline the next two functions; if not they can be made #define macros. */
 void exch(unsigned int j, unsigned int k, Item arr[], unsigned int lookup[]) {
   int priority = arr[j].priority;
-  void* data = arr[j].data;
+  int data = arr[j].data;
   unsigned int key1 = arr[j].key;
   unsigned int key2 = arr[k].key;
   arr[j].priority = arr[k].priority;
@@ -52,7 +52,7 @@ void sink (unsigned int k, Item arr[], unsigned int first_available, unsigned in
   }
 }
 
-unsigned int insert_nc(PQ *pq, int priority, void* data) {
+unsigned int insert_nc(PQ *pq, int priority, int data) {
   unsigned int fa = pq->first_available;
   Item* cells = pq->heap_cells;
 
@@ -92,7 +92,7 @@ void remove_min_nc(PQ *pq, Item* item) {
   pq->first_available = fa;
 }  
 
-unsigned int pq_insert(PQ *pq, int priority, void* data) {
+unsigned int pq_insert(PQ *pq, int priority, int data) {
   if (pq->first_available == pq->capacity) return 0; /* Hrm, maybe should signal error or grow heap or whatever... */
   return insert_nc(pq, priority, data);
 }
