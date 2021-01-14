@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "binary_heap_pro.h"
-// extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
+extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
 
 #define ROOT_IDX       0u
 #define LEFT_CHILD(x)  (2u * x) + 1u
@@ -105,9 +105,9 @@ Item* pq_remove_min(PQ *pq) {
 }
 
 PQ* pq_make(unsigned int size) { /* could take a size parameter I suppose... */
-  PQ *pq = (PQ*) malloc(sizeof(PQ));
-  unsigned int* table = (unsigned int*) malloc (sizeof(unsigned int) * size);
-  Item* arr = (Item*) malloc(sizeof(Item) * size);
+  PQ *pq = (PQ*) mallocN(sizeof(PQ));
+  unsigned int* table = (unsigned int*) mallocN(sizeof(unsigned int) * size);
+  Item* arr = (Item*) mallocN(sizeof(Item) * size);
   int i; 
   for (i = 0; i < size; i++)
     arr[i].key = i;
