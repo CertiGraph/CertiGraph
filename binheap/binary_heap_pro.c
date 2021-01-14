@@ -66,14 +66,6 @@ unsigned int insert_nc(PQ *pq, int priority, void* data) {
   return key;
 }
 
-void decrease_pri(PQ *pq, int key, int pri) {
-  unsigned int* table = pq->key_table;
-  Item* cells = pq->heap_cells;
-  unsigned int target = table[key];
-  cells[target].priority = pri;
-  swim(target, cells, table);
-}
-
 void edit_pri(PQ *pq, int key, int newpri) {
   unsigned int* table = pq->key_table;
   Item* cells = pq->heap_cells;
