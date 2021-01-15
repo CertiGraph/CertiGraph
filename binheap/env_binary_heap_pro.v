@@ -1,4 +1,5 @@
 Require Import VST.floyd.proofauto.
+Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.binheap.binary_heap_pro.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
@@ -210,5 +211,10 @@ Definition valid_pq (pq : val) (h: heap): mpred :=
   EX arr : val, EX junk: list heap_item, EX arr2 : val, EX lookup : list Z,
     (!! heap_ordered (heap_items h)) && (!! (Zlength ((heap_items h) ++ junk) = heap_capacity h)) &&
     (!! (2 * (heap_capacity h - 1) <= Int.max_unsigned)) &&
+    (!! Permutation
+        (map heap_item_key ((heap_items h) ++ junk))
+        (nat_inc_list (Z.to_nat (heap_capacity h)))) &&
     (data_at Tsh t_pq (Vint (Int.repr (heap_capacity h)), (Vint (Int.repr (heap_size h)), (arr, arr2))) pq *
        linked_heap_array ((heap_items h) ++ junk) arr lookup arr2).
+
+

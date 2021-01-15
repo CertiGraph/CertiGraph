@@ -144,7 +144,7 @@ Definition pq_make_spec :=
     SEP ()
   POST [tptr t_pq]
     EX pq: val, EX h : heap,
-    PROP (heap_size h = size)
+    PROP (heap_capacity h = size)
     LOCAL ()
     SEP (valid_pq pq h).
 
@@ -196,8 +196,12 @@ Proof.
       - admit.
       - admit.
     }
+    
     Fail forward.
-    (* Okay, gotta unwrap all the way to the unsigned *)
+    (* Okay, gotta unwrap all the way to the unsigned.
+       I feel pretty misled by VST though...
+     *)
+    
 Admitted.
 
   Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
