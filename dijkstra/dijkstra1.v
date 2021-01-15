@@ -66,90 +66,88 @@ Definition ___compcert_va_composite : ident := 28%positive.
 Definition ___compcert_va_float64 : ident := 27%positive.
 Definition ___compcert_va_int32 : ident := 25%positive.
 Definition ___compcert_va_int64 : ident := 26%positive.
-Definition ___stringlit_1 : ident := 103%positive.
-Definition ___stringlit_2 : ident := 104%positive.
-Definition ___stringlit_3 : ident := 105%positive.
-Definition ___stringlit_4 : ident := 106%positive.
-Definition ___stringlit_5 : ident := 112%positive.
-Definition ___stringlit_6 : ident := 113%positive.
-Definition _argc : ident := 121%positive.
-Definition _argv : ident := 122%positive.
-Definition _arr : ident := 65%positive.
+Definition ___stringlit_1 : ident := 102%positive.
+Definition ___stringlit_2 : ident := 103%positive.
+Definition ___stringlit_3 : ident := 104%positive.
+Definition ___stringlit_4 : ident := 105%positive.
+Definition ___stringlit_5 : ident := 111%positive.
+Definition ___stringlit_6 : ident := 112%positive.
+Definition _argc : ident := 120%positive.
+Definition _argv : ident := 121%positive.
+Definition _arr : ident := 66%positive.
 Definition _capacity : ident := 5%positive.
-Definition _cells : ident := 76%positive.
-Definition _cost : ident := 119%positive.
-Definition _curr : ident := 108%positive.
+Definition _cells : ident := 77%positive.
+Definition _cost : ident := 118%positive.
+Definition _curr : ident := 107%positive.
 Definition _data : ident := 3%positive.
-Definition _decrease_pri : ident := 81%positive.
-Definition _dijkstra : ident := 120%positive.
-Definition _dist : ident := 111%positive.
-Definition _edit_pri : ident := 84%positive.
-Definition _exch : ident := 69%positive.
-Definition _fa : ident := 75%positive.
+Definition _dijkstra : ident := 119%positive.
+Definition _dist : ident := 110%positive.
+Definition _exch : ident := 70%positive.
+Definition _fa : ident := 76%positive.
 Definition _first_available : ident := 6%positive.
 Definition _free : ident := 62%positive.
-Definition _free_pq : ident := 92%positive.
-Definition _getCell : ident := 116%positive.
-Definition _getPaths : ident := 114%positive.
-Definition _graph : ident := 98%positive.
+Definition _getCell : ident := 115%positive.
+Definition _getPaths : ident := 113%positive.
+Definition _graph : ident := 97%positive.
 Definition _heap_cells : ident := 7%positive.
-Definition _i : ident := 90%positive.
-Definition _i_ptr : ident := 117%positive.
-Definition _inf : ident := 99%positive.
-Definition _insert : ident := 87%positive.
-Definition _insert_nc : ident := 77%positive.
-Definition _item : ident := 85%positive.
-Definition _j : ident := 63%positive.
-Definition _k : ident := 64%positive.
+Definition _i : ident := 89%positive.
+Definition _i_ptr : ident := 116%positive.
+Definition _inf : ident := 98%positive.
+Definition _insert_nc : ident := 78%positive.
+Definition _item : ident := 84%positive.
+Definition _j : ident := 64%positive.
+Definition _k : ident := 65%positive.
 Definition _key : ident := 1%positive.
-Definition _key1 : ident := 67%positive.
-Definition _key2 : ident := 68%positive.
+Definition _key1 : ident := 68%positive.
+Definition _key2 : ident := 69%positive.
 Definition _key_table : ident := 8%positive.
-Definition _keys : ident := 118%positive.
-Definition _less : ident := 72%positive.
-Definition _lookup : ident := 66%positive.
-Definition _main : ident := 93%positive.
-Definition _make : ident := 91%positive.
+Definition _keys : ident := 117%positive.
+Definition _less : ident := 73%positive.
+Definition _lookup : ident := 67%positive.
+Definition _main : ident := 92%positive.
 Definition _malloc : ident := 61%positive.
-Definition _newpri : ident := 82%positive.
-Definition _oldpri : ident := 83%positive.
-Definition _pq : ident := 70%positive.
-Definition _pq_size : ident := 71%positive.
-Definition _prev : ident := 109%positive.
-Definition _pri : ident := 78%positive.
-Definition _printPath : ident := 110%positive.
-Definition _print_graph : ident := 107%positive.
-Definition _printf : ident := 96%positive.
+Definition _mallocN : ident := 63%positive.
+Definition _newpri : ident := 79%positive.
+Definition _oldpri : ident := 82%positive.
+Definition _pq : ident := 71%positive.
+Definition _pq_edit_priority : ident := 83%positive.
+Definition _pq_free : ident := 91%positive.
+Definition _pq_insert : ident := 86%positive.
+Definition _pq_make : ident := 90%positive.
+Definition _pq_remove_min : ident := 87%positive.
+Definition _pq_size : ident := 72%positive.
+Definition _prev : ident := 108%positive.
+Definition _printPath : ident := 109%positive.
+Definition _print_graph : ident := 106%positive.
+Definition _printf : ident := 95%positive.
 Definition _priority : ident := 2%positive.
-Definition _rand : ident := 94%positive.
-Definition _random : ident := 100%positive.
-Definition _remove_min : ident := 88%positive.
-Definition _remove_min_nc : ident := 86%positive.
-Definition _setup : ident := 101%positive.
-Definition _sink : ident := 74%positive.
-Definition _size : ident := 89%positive.
-Definition _srand : ident := 95%positive.
-Definition _src : ident := 102%positive.
+Definition _rand : ident := 93%positive.
+Definition _random : ident := 99%positive.
+Definition _remove_min_nc : ident := 85%positive.
+Definition _setup : ident := 100%positive.
+Definition _sink : ident := 75%positive.
+Definition _size : ident := 88%positive.
+Definition _srand : ident := 94%positive.
+Definition _src : ident := 101%positive.
 Definition _structItem : ident := 4%positive.
 Definition _structPQ : ident := 9%positive.
-Definition _swim : ident := 73%positive.
-Definition _table : ident := 79%positive.
-Definition _target : ident := 80%positive.
-Definition _time : ident := 97%positive.
-Definition _u : ident := 115%positive.
-Definition _t'1 : ident := 123%positive.
-Definition _t'10 : ident := 132%positive.
-Definition _t'11 : ident := 133%positive.
-Definition _t'12 : ident := 134%positive.
-Definition _t'13 : ident := 135%positive.
-Definition _t'2 : ident := 124%positive.
-Definition _t'3 : ident := 125%positive.
-Definition _t'4 : ident := 126%positive.
-Definition _t'5 : ident := 127%positive.
-Definition _t'6 : ident := 128%positive.
-Definition _t'7 : ident := 129%positive.
-Definition _t'8 : ident := 130%positive.
-Definition _t'9 : ident := 131%positive.
+Definition _swim : ident := 74%positive.
+Definition _table : ident := 80%positive.
+Definition _target : ident := 81%positive.
+Definition _time : ident := 96%positive.
+Definition _u : ident := 114%positive.
+Definition _t'1 : ident := 122%positive.
+Definition _t'10 : ident := 131%positive.
+Definition _t'11 : ident := 132%positive.
+Definition _t'12 : ident := 133%positive.
+Definition _t'2 : ident := 123%positive.
+Definition _t'3 : ident := 124%positive.
+Definition _t'4 : ident := 125%positive.
+Definition _t'5 : ident := 126%positive.
+Definition _t'6 : ident := 127%positive.
+Definition _t'7 : ident := 128%positive.
+Definition _t'8 : ident := 129%positive.
+Definition _t'9 : ident := 130%positive.
 
 Definition v___stringlit_4 := {|
   gvar_info := (tarray tschar 22);
@@ -510,9 +508,9 @@ Definition f_dijkstra := {|
                (_t'5, (tptr (Tstruct _structItem noattr))) ::
                (_t'4, tuint) :: (_t'3, tuint) ::
                (_t'2, (tptr (Tstruct _structPQ noattr))) ::
-               (_t'1, (tptr tvoid)) :: (_t'13, tint) ::
-               (_t'12, (tptr tvoid)) :: (_t'11, tint) :: (_t'10, tint) ::
-               (_t'9, tint) :: (_t'8, tint) :: (_t'7, tint) :: nil);
+               (_t'1, (tptr tvoid)) :: (_t'12, tint) :: (_t'11, tint) ::
+               (_t'10, tint) :: (_t'9, tint) :: (_t'8, tint) ::
+               (_t'7, tint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
@@ -523,8 +521,8 @@ Definition f_dijkstra := {|
   (Ssequence
     (Ssequence
       (Scall (Some _t'2)
-        (Evar _make (Tfunction (Tcons tuint Tnil)
-                      (tptr (Tstruct _structPQ noattr)) cc_default))
+        (Evar _pq_make (Tfunction (Tcons tuint Tnil)
+                         (tptr (Tstruct _structPQ noattr)) cc_default))
         ((Etempvar _size tint) :: nil))
       (Sset _pq (Etempvar _t'2 (tptr (Tstruct _structPQ noattr)))))
     (Ssequence
@@ -550,13 +548,13 @@ Definition f_dijkstra := {|
                   (Etempvar _inf tint))
                 (Ssequence
                   (Scall (Some _t'3)
-                    (Evar _insert (Tfunction
-                                    (Tcons (tptr (Tstruct _structPQ noattr))
-                                      (Tcons tint (Tcons (tptr tvoid) Tnil)))
-                                    tuint cc_default))
+                    (Evar _pq_insert (Tfunction
+                                       (Tcons
+                                         (tptr (Tstruct _structPQ noattr))
+                                         (Tcons tint (Tcons tint Tnil)))
+                                       tuint cc_default))
                     ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
-                     (Etempvar _inf tint) ::
-                     (Ecast (Etempvar _i tint) (tptr tvoid)) :: nil))
+                     (Etempvar _inf tint) :: (Etempvar _i tint) :: nil))
                   (Sassign
                     (Ederef
                       (Ebinop Oadd (Etempvar _keys (tptr tint))
@@ -577,17 +575,18 @@ Definition f_dijkstra := {|
                 (tptr tint)) tint) (Etempvar _src tint))
           (Ssequence
             (Ssequence
-              (Sset _t'13
+              (Sset _t'12
                 (Ederef
                   (Ebinop Oadd (Etempvar _keys (tptr tint))
                     (Etempvar _src tint) (tptr tint)) tint))
               (Scall None
-                (Evar _edit_pri (Tfunction
-                                  (Tcons (tptr (Tstruct _structPQ noattr))
-                                    (Tcons tint (Tcons tint Tnil))) tvoid
-                                  cc_default))
+                (Evar _pq_edit_priority (Tfunction
+                                          (Tcons
+                                            (tptr (Tstruct _structPQ noattr))
+                                            (Tcons tint (Tcons tint Tnil)))
+                                          tvoid cc_default))
                 ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
-                 (Etempvar _t'13 tint) :: (Econst_int (Int.repr 0) tint) ::
+                 (Etempvar _t'12 tint) :: (Econst_int (Int.repr 0) tint) ::
                  nil)))
             (Ssequence
               (Sloop
@@ -607,22 +606,19 @@ Definition f_dijkstra := {|
                   (Ssequence
                     (Ssequence
                       (Scall (Some _t'5)
-                        (Evar _remove_min (Tfunction
-                                            (Tcons
-                                              (tptr (Tstruct _structPQ noattr))
-                                              Tnil)
-                                            (tptr (Tstruct _structItem noattr))
-                                            cc_default))
+                        (Evar _pq_remove_min (Tfunction
+                                               (Tcons
+                                                 (tptr (Tstruct _structPQ noattr))
+                                                 Tnil)
+                                               (tptr (Tstruct _structItem noattr))
+                                               cc_default))
                         ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
                          nil))
-                      (Ssequence
-                        (Sset _t'12
-                          (Efield
-                            (Ederef
-                              (Etempvar _t'5 (tptr (Tstruct _structItem noattr)))
-                              (Tstruct _structItem noattr)) _data
-                            (tptr tvoid)))
-                        (Sset _u (Ecast (Etempvar _t'12 (tptr tvoid)) tint))))
+                      (Sset _u
+                        (Efield
+                          (Ederef
+                            (Etempvar _t'5 (tptr (Tstruct _structItem noattr)))
+                            (Tstruct _structItem noattr)) _data tint)))
                     (Ssequence
                       (Sset _i (Econst_int (Int.repr 0) tint))
                       (Sloop
@@ -700,15 +696,13 @@ Definition f_dijkstra := {|
                                                   (Etempvar _i tint)
                                                   (tptr tint)) tint))
                                             (Scall None
-                                              (Evar _edit_pri (Tfunction
-                                                                (Tcons
-                                                                  (tptr (Tstruct _structPQ noattr))
-                                                                  (Tcons tint
-                                                                    (Tcons
-                                                                    tint
-                                                                    Tnil)))
-                                                                tvoid
-                                                                cc_default))
+                                              (Evar _pq_edit_priority 
+                                              (Tfunction
+                                                (Tcons
+                                                  (tptr (Tstruct _structPQ noattr))
+                                                  (Tcons tint
+                                                    (Tcons tint Tnil))) tvoid
+                                                cc_default))
                                               ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
                                                (Etempvar _t'9 tint) ::
                                                (Etempvar _t'10 tint) :: nil))))))
@@ -720,7 +714,7 @@ Definition f_dijkstra := {|
                 Sskip)
               (Ssequence
                 (Scall None
-                  (Evar _free_pq (Tfunction
+                  (Evar _pq_free (Tfunction
                                    (Tcons (tptr (Tstruct _structPQ noattr))
                                      Tnil) tvoid cc_default))
                   ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) :: nil))
@@ -739,10 +733,10 @@ Definition f_main := {|
   fn_vars := nil;
   fn_temps := ((_i, tint) :: (_size, tint) :: (_inf, tint) :: (_src, tint) ::
                (_graph, (tptr (tptr tint))) :: (_prev, (tptr tint)) ::
-               (_dist, (tptr tint)) :: (_t'6, (tptr tvoid)) ::
-               (_t'5, (tptr tvoid)) :: (_t'4, (tptr tvoid)) ::
-               (_t'3, (tptr tvoid)) :: (_t'2, tint) :: (_t'1, tint) ::
-               (_t'7, (tptr tint)) :: nil);
+               (_dist, (tptr tint)) :: (_t'7, (tptr tvoid)) ::
+               (_t'6, (tptr tvoid)) :: (_t'5, (tptr tvoid)) ::
+               (_t'4, (tptr tvoid)) :: (_t'3, tint) :: (_t'2, tint) ::
+               (_t'1, tint) :: (_t'8, (tptr tint)) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
@@ -754,7 +748,12 @@ Definition f_main := {|
         (Evar _srand (Tfunction (Tcons tuint Tnil) tvoid cc_default))
         ((Ecast (Etempvar _t'1 tint) tuint) :: nil)))
     (Ssequence
-      (Sset _size (Econst_int (Int.repr 8) tint))
+      (Ssequence
+        (Scall (Some _t'2) (Evar _rand (Tfunction Tnil tint cc_default)) nil)
+        (Sset _size
+          (Ebinop Oadd (Econst_int (Int.repr 1) tint)
+            (Ebinop Omod (Etempvar _t'2 tint) (Econst_int (Int.repr 20) tint)
+              tint) tint)))
       (Ssequence
         (Sset _inf
           (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
@@ -762,18 +761,18 @@ Definition f_main := {|
               (Etempvar _size tint) tint) tint))
         (Ssequence
           (Ssequence
-            (Scall (Some _t'2) (Evar _rand (Tfunction Tnil tint cc_default))
+            (Scall (Some _t'3) (Evar _rand (Tfunction Tnil tint cc_default))
               nil)
             (Sset _src
-              (Ebinop Omod (Etempvar _t'2 tint) (Etempvar _size tint) tint)))
+              (Ebinop Omod (Etempvar _t'3 tint) (Etempvar _size tint) tint)))
           (Ssequence
             (Ssequence
-              (Scall (Some _t'3)
+              (Scall (Some _t'4)
                 (Evar _malloc (Tfunction (Tcons tuint Tnil) (tptr tvoid)
                                 cc_default))
                 ((Ebinop Omul (Etempvar _size tint)
                    (Esizeof (tptr tint) tuint) tuint) :: nil))
-              (Sset _graph (Etempvar _t'3 (tptr tvoid))))
+              (Sset _graph (Etempvar _t'4 (tptr tvoid))))
             (Ssequence
               (Ssequence
                 (Sset _i (Econst_int (Int.repr 0) tint))
@@ -784,7 +783,7 @@ Definition f_main := {|
                       Sskip
                       Sbreak)
                     (Ssequence
-                      (Scall (Some _t'4)
+                      (Scall (Some _t'5)
                         (Evar _malloc (Tfunction (Tcons tuint Tnil)
                                         (tptr tvoid) cc_default))
                         ((Ebinop Omul (Etempvar _size tint)
@@ -793,7 +792,7 @@ Definition f_main := {|
                         (Ederef
                           (Ebinop Oadd (Etempvar _graph (tptr (tptr tint)))
                             (Etempvar _i tint) (tptr (tptr tint)))
-                          (tptr tint)) (Etempvar _t'4 (tptr tvoid)))))
+                          (tptr tint)) (Etempvar _t'5 (tptr tvoid)))))
                   (Sset _i
                     (Ebinop Oadd (Etempvar _i tint)
                       (Econst_int (Int.repr 1) tint) tint))))
@@ -817,20 +816,20 @@ Definition f_main := {|
                      (Etempvar _src tint) :: nil))
                   (Ssequence
                     (Ssequence
-                      (Scall (Some _t'5)
+                      (Scall (Some _t'6)
                         (Evar _malloc (Tfunction (Tcons tuint Tnil)
                                         (tptr tvoid) cc_default))
                         ((Ebinop Omul (Etempvar _size tint)
                            (Esizeof tint tuint) tuint) :: nil))
-                      (Sset _prev (Etempvar _t'5 (tptr tvoid))))
+                      (Sset _prev (Etempvar _t'6 (tptr tvoid))))
                     (Ssequence
                       (Ssequence
-                        (Scall (Some _t'6)
+                        (Scall (Some _t'7)
                           (Evar _malloc (Tfunction (Tcons tuint Tnil)
                                           (tptr tvoid) cc_default))
                           ((Ebinop Omul (Etempvar _size tint)
                              (Esizeof tint tuint) tuint) :: nil))
-                        (Sset _dist (Etempvar _t'6 (tptr tvoid))))
+                        (Sset _dist (Etempvar _t'7 (tptr tvoid))))
                       (Ssequence
                         (Scall None
                           (Evar _dijkstra (Tfunction
@@ -885,7 +884,7 @@ Definition f_main := {|
                                         Sskip
                                         Sbreak)
                                       (Ssequence
-                                        (Sset _t'7
+                                        (Sset _t'8
                                           (Ederef
                                             (Ebinop Oadd
                                               (Etempvar _graph (tptr (tptr tint)))
@@ -897,7 +896,7 @@ Definition f_main := {|
                                                         (Tcons (tptr tvoid)
                                                           Tnil) tvoid
                                                         cc_default))
-                                          ((Etempvar _t'7 (tptr tint)) ::
+                                          ((Etempvar _t'8 (tptr tint)) ::
                                            nil))))
                                     (Sset _i
                                       (Ebinop Oadd (Etempvar _i tint)
@@ -915,7 +914,7 @@ Definition f_main := {|
 
 Definition composites : list composite_definition :=
 (Composite _structItem Struct
-   ((_key, tuint) :: (_priority, tint) :: (_data, (tptr tvoid)) :: nil)
+   ((_key, tuint) :: (_priority, tint) :: (_data, tint) :: nil)
    noattr ::
  Composite _structPQ Struct
    ((_capacity, tuint) :: (_first_available, tuint) ::
@@ -1194,19 +1193,19 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "time"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons (tptr tint) Tnil) tint cc_default)) ::
- (_insert,
-   Gfun(External (EF_external "insert"
+ (_pq_insert,
+   Gfun(External (EF_external "pq_insert"
                    (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
                      AST.Tint cc_default))
-     (Tcons (tptr (Tstruct _structPQ noattr))
-       (Tcons tint (Tcons (tptr tvoid) Tnil))) tuint cc_default)) ::
- (_remove_min,
-   Gfun(External (EF_external "remove_min"
+     (Tcons (tptr (Tstruct _structPQ noattr)) (Tcons tint (Tcons tint Tnil)))
+     tuint cc_default)) ::
+ (_pq_remove_min,
+   Gfun(External (EF_external "pq_remove_min"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons (tptr (Tstruct _structPQ noattr)) Tnil)
      (tptr (Tstruct _structItem noattr)) cc_default)) ::
- (_edit_pri,
-   Gfun(External (EF_external "edit_pri"
+ (_pq_edit_priority,
+   Gfun(External (EF_external "pq_edit_priority"
                    (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
                      AST.Tvoid cc_default))
      (Tcons (tptr (Tstruct _structPQ noattr)) (Tcons tint (Tcons tint Tnil)))
@@ -1215,12 +1214,12 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "pq_size"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons (tptr (Tstruct _structPQ noattr)) Tnil) tuint cc_default)) ::
- (_make,
-   Gfun(External (EF_external "make"
+ (_pq_make,
+   Gfun(External (EF_external "pq_make"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons tuint Tnil) (tptr (Tstruct _structPQ noattr)) cc_default)) ::
- (_free_pq,
-   Gfun(External (EF_external "free_pq"
+ (_pq_free,
+   Gfun(External (EF_external "pq_free"
                    (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
      (Tcons (tptr (Tstruct _structPQ noattr)) Tnil) tvoid cc_default)) ::
  (_setup, Gfun(Internal f_setup)) ::
@@ -1233,9 +1232,9 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_main :: _dijkstra :: _getCell :: _getPaths :: _printPath :: _print_graph ::
- _setup :: _free_pq :: _make :: _pq_size :: _edit_pri :: _remove_min ::
- _insert :: _time :: _printf :: _srand :: _rand :: _free :: _malloc ::
- ___builtin_debug :: ___builtin_write32_reversed ::
+ _setup :: _pq_free :: _pq_make :: _pq_size :: _pq_edit_priority ::
+ _pq_remove_min :: _pq_insert :: _time :: _printf :: _srand :: _rand ::
+ _free :: _malloc :: ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
  ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::

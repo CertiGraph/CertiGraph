@@ -65,8 +65,8 @@ Definition sink_spec :=
       LOCAL ()
       SEP (linked_heap_array arr_contents' arr lookup_contents' lookup).
 
-Definition size_spec := 
-  DECLARE _size WITH pq : val, h : heap
+Definition pq_size_spec := 
+  DECLARE _pq_size WITH pq : val, h : heap
   PRE [tptr t_pq]
     PROP ()
     PARAMS (pq)
@@ -118,12 +118,89 @@ Definition insert_nc_spec :=
     LOCAL (temp ret_temp (Vint (Int.repr key)))
     SEP (valid_pq pq h').
 
+Parameter free_tok : val -> Z -> mpred.
+
+Definition mallocN_spec {CS: compspecs} :=
+  DECLARE _mallocN
+  WITH n: Z
+  PRE [tint]
+  PROP (4 <= n <= Int.max_unsigned)
+  PARAMS (Vint (Int.repr n))
+  GLOBALS ()
+  SEP ()
+  POST [ tptr tvoid ]
+  EX v: pointer_val,
+  PROP (malloc_compatible n (pointer_val_val v))
+  LOCAL (temp ret_temp (pointer_val_val v))
+  SEP (data_at_ Tsh (tarray tint (n / sizeof tint)) (pointer_val_val v) *
+       free_tok (pointer_val_val v) n).
+
+Definition pq_make_spec := 
+  DECLARE _pq_make WITH size : Z
+  PRE [tuint]
+  PROP (4 <= 12 * size <= Int.max_unsigned)
+    PARAMS (Vint (Int.repr size))
+    GLOBALS ()
+    SEP ()
+  POST [tptr t_pq]
+    EX pq: val, EX h : heap,
+    PROP (heap_size h = size)
+    LOCAL ()
+    SEP (valid_pq pq h).
+
 Definition Gprog : funspecs :=
          ltac:(with_library prog [ exch_spec ; less_spec ; swim_spec ; sink_spec ; 
                                    remove_min_nc_spec ; insert_nc_spec ; 
-                                   size_spec ; capacity_spec ]).
+                                   pq_size_spec ; capacity_spec; mallocN_spec; pq_make_spec ]).
 
-Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
+Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
+Proof.
+  start_function.
+  forward_call (sizeof(Tstruct _structPQ noattr)).
+  1: compute; split; inversion 1.
+  Intros pq.
+  forward_call (sizeof(tuint) * size).
+  1: simpl; lia.
+  Intros table.
+  forward_call ((sizeof(Tstruct _structItem noattr) * size)).
+  Intros arr.
+  simpl sizeof.
+  replace (12 * size / 4) with (3 * size).
+  replace (4 * size / 4) with size.
+  replace (16 / 4) with 4.
+  2,3,4: admit. (* easy *)
+  forward_for_simple_bound
+    size
+    (EX i : Z,
+     PROP ()
+     LOCAL (temp _arr (pointer_val_val arr);
+            temp _size (Vint (Int.repr size)))
+     SEP (data_at_ Tsh (tarray tint (3 * size)) (pointer_val_val arr) *
+          free_tok (pointer_val_val arr) (12 * size) *
+          data_at_ Tsh (tarray tint size) (pointer_val_val table) *
+          free_tok (pointer_val_val table) (4 * size) *
+          data_at_ Tsh (tarray tint 4) (pointer_val_val pq) *
+          free_tok (pointer_val_val pq) 16)).
+  - entailer!.
+  - Intros.
+    assert_PROP
+      ((offset_val 0
+                   (force_val
+                      (sem_add_ptr_int (Tstruct _structItem noattr) Signed 
+                                       (pointer_val_val arr) (Vint (Int.repr i)))) =
+        field_address (tarray (Tstruct _structItem noattr) size) [ArraySubsc i] (pointer_val_val arr))). {
+      entailer!.
+      rewrite field_address_offset; trivial.
+      clear H6 H7. destruct H5 as [? [? [? [? ?]]]].
+      repeat split; try lia; trivial.
+      - admit.
+      - admit.
+    }
+    Fail forward.
+    (* Okay, gotta unwrap all the way to the unsigned *)
+Admitted.
+
+  Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
 Proof.
   start_function.
   assert (Hc : k = Zlength arr_contents \/ 0 <= k < Zlength arr_contents) by lia. destruct Hc as [Hc | Hc].
@@ -578,7 +655,7 @@ Proof.
   entailer!.
 Time Qed.
 
-Lemma body_size: semax_body Vprog Gprog f_size size_spec.
+Lemma body_size: semax_body Vprog Gprog f_pq_size pq_size_spec.
 Proof.
   start_function.
   unfold valid_pq.
