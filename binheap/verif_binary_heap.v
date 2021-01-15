@@ -153,10 +153,13 @@ Definition Gprog : funspecs :=
                                    size_spec ; capacity_spec ; 
                                    build_heap_spec ; heapsort_spec ]).
 
-(*
 Lemma body_heapsort: semax_body Vprog Gprog f_heap_sort heapsort_spec.
 Proof.
   start_function.
+  assert_PROP (2 * (size - 2) <= Int.max_unsigned). { 
+    go_lower. unfold harray. saturate_local. apply prop_right.
+    destruct H1 as [? [? [? [? ?]]]].
+    destruct arr; try contradiction. simpl in H5. rep_lia. }
   forward_call (arr, arr_contents, size).
   Intros arr_contents'.
   forward.
@@ -164,15 +167,88 @@ Proof.
                  PROP (s = Zlength arr_contents1;
                        heap_ordered arr_contents1;
                        Sorted (Basics.flip cmp_rel) arr_contents2;
-                       Forall (forall In contents2) (
+                       Forall (fun x => HdRel (Basics.flip cmp_rel) x arr_contents2) arr_contents1;
                        Permutation arr_contents (arr_contents1 ++ arr_contents2))
                  LOCAL (temp _arr arr; temp _active (Vint (Int.repr s)))
                  SEP (harray (arr_contents1 ++ arr_contents2) arr)).
   { Exists size arr_contents' (@nil heap_item).
-    rewrite app_nil_r. entailer!. apply Permutation_Zlength. trivial. }
+    rewrite app_nil_r. entailer!. split. apply Permutation_Zlength. trivial.
+    apply Forall_forall. constructor. }
   Intros s arrc1 arrc2.
-Print HdRel.
-*)
+  generalize (Permutation_Zlength _ _ _ H8); intro.
+  rewrite Zlength_app in H9.
+  forward_if.
+  2: { assert (s = 0) by rep_lia. subst s. destruct arrc1.
+    2: rewrite Zlength_cons in H11; rep_lia.
+    rewrite app_nil_l in *. rewrite H11, Z.add_0_l in *. 
+    forward. Exists arrc2. entailer!. }
+  forward.
+  rewrite harray_split. Intros.
+  forward_call (0, s-1, arr, arrc1). rep_lia.
+  destruct arrc1. rewrite Zlength_nil in H4. lia.
+  generalize (foot_split_spec _ (h :: arrc1)). case foot_split. destruct o. 2: intros [? ?]; subst; discriminate.
+  intros. destruct l. destruct arrc1. 2: discriminate. inversion H11. subst h0. clear H11.
+  { (* Degenerate case: only one item! *)
+    rewrite Zlength_one in H4. subst s. simpl.
+    rewrite Zexchange_eq.
+    rewrite Int.sub_idem.
+    change [h] with (nil ++ [h]) at 1.
+    rewrite harray_split. Intros.
+    assert (weak_heap_ordered_top_down_bounded [] 0 0). {
+      apply weak_heapOrdered_bounded_root_weak_heapOrdered.
+      apply hOwhO.
+      apply cmp_po.
+      apply heapOrdered_empty. }
+    forward_call (0, arr, @nil heap_item, 0, 0).
+    rewrite Zlength_nil. simpl. intuition. rep_lia.
+    Intros arrcx.
+    apply Permutation_nil in H12. subst arrcx.
+    Exists 0 (@nil heap_item) (h :: arrc2). entailer!.
+    split. apply heapOrdered_empty. constructor. trivial. inversion H7. trivial.
+    rewrite <- harray_split. simpl. change (h :: arrc2) with ([h] ++ arrc2).
+    rewrite <- harray_split. apply derives_refl. }
+  (* Main line *)
+  assert (h1 = h) by (inversion H11; auto). subst h1.
+  rewrite H11 in *. clear H11 arrc1.
+  replace (s - 1) with (Zlength (h :: l)).
+  2: autorewrite with sublist in *; rep_lia.
+  rewrite Zexchange_head_foot.
+  rewrite harray_split. Intros.
+  forward_call (0, arr, (h0 :: l), s-1, 0).
+  { split. rep_lia. split. autorewrite with sublist in *. rep_lia.
+    split. rep_lia. split. intros _. rep_lia.
+    apply weak_heapOrdered_bounded_root_weak_heapOrdered.
+    eapply weak_heapOrdered_root.
+    apply heapOrdered_cutfoot in H5. apply H5. }
+  Intros arrc1. Exists (s-1) arrc1 (h :: arrc2). entailer!.
+  { split. apply Permutation_Zlength in H12. autorewrite with sublist in *. trivial.
+    split. apply heapOrdered_bounded_root_heapOrdered. apply H11.
+    split. constructor. trivial. inversion H7. trivial.
+    split.
+    * apply Forall_forall. intros. constructor.
+      symmetry in H12.
+      generalize (Permutation_in x H12 H0); intro.
+      generalize (root_minimal _ cmp_rel cmp_po _ H5 h eq_refl); intro.
+      rewrite Forall_forall in H13. apply H13.
+      rewrite <- app_comm_cons. right.
+      apply in_or_app.
+      destruct H4. subst x. right. left. trivial. auto.
+    * apply Permutation_trans with (((h :: l) ++ [h0]) ++ arrc2). trivial.
+      change (h :: arrc2) with ([h] ++ arrc2). rewrite app_assoc.
+      apply Permutation_app. 2: apply Permutation_refl.
+      apply Permutation_trans with (h :: arrc1).
+      2: apply Permutation_cons_append.
+      simpl. constructor.
+      apply Permutation_app_comm_trans. apply H12. }
+  { apply Permutation_Zlength in H12.
+    rewrite Zlength_app. rewrite H12. rewrite <- Zlength_app.
+    rewrite <- harray_split.
+    rewrite Zlength_app.
+    replace (Zlength ((h :: l) ++ [h0])) with (Zlength (arrc1 ++ [h])).
+    rewrite <- Zlength_app.
+    rewrite <- harray_split. rewrite <- app_assoc. apply derives_refl.
+    autorewrite with sublist in *. lia. }
+Qed.
 
 Lemma body_build_heap: semax_body Vprog Gprog f_build_heap build_heap_spec.
 Proof.
