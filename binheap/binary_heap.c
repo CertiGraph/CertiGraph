@@ -70,10 +70,8 @@ void build_heap(Item arr[], unsigned int size) {
   }
 }
 
-/* Everything above here has been verified. */
-
 // Note, this will result in a reverse sorted list since we have a min-heap rather than a max-heap.
-void heapsort(Item* arr, unsigned int size) {
+void heapsort_rev(Item* arr, unsigned int size) {
   // build the heap
   build_heap(arr,size);
 
@@ -84,6 +82,8 @@ void heapsort(Item* arr, unsigned int size) {
     sink(ROOT_IDX, arr, active);
   }
 } 
+
+/* Everything above here has been verified. */
 
 void insert(PQ *pq, Item *x) {
   if (pq->first_available == pq->capacity) return; /* Hrm, maybe should signal error or grow heap or whatever... */
