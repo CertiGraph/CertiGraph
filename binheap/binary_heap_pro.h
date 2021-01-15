@@ -7,7 +7,7 @@
 typedef struct structItem {
   unsigned int key; /* make const? */
   int priority;
-  void* data; /* Should this be a union of void* and int? */
+  int data; /* Should this be a union of void* and int? */
 } Item;
 
 typedef struct structPQ {
@@ -18,17 +18,17 @@ typedef struct structPQ {
 } PQ;
 
 void remove_min_nc(PQ *pq, Item *item);
-unsigned int insert_nc(PQ *pq, int priority, void* data);
+unsigned int insert_nc(PQ *pq, int priority, int data);
 
-unsigned int insert(PQ *pq, int priority, void* data);
-Item* remove_min(PQ *pq);
-void edit_pri(PQ *pq, int key, int newpri);
+unsigned int pq_insert(PQ *pq, int priority, int data);
+Item* pq_remove_min(PQ *pq);
+void pq_edit_priority(PQ *pq, int key, int newpri);
 
 unsigned int capacity(PQ *pq);
 unsigned int pq_size(PQ *pq);
 
-PQ* make(unsigned int size);
-void free_pq (PQ *pq);
+PQ* pq_make(unsigned int size);
+void pq_free (PQ *pq);
 /*
  void insert(PQ *pq, Item *x);
  Item* remove_min(PQ *pq);

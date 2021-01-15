@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "binary_heap_pro.h"
-// extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
+extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
 
 #define ROOT_IDX       0u
 #define LEFT_CHILD(x)  (2u * x) + 1u
@@ -10,7 +10,7 @@
 /* I'm assuming a decent compiler will inline the next two functions; if not they can be made #define macros. */
 void exch(unsigned int j, unsigned int k, Item arr[], unsigned int lookup[]) {
   int priority = arr[j].priority;
-  void* data = arr[j].data;
+  int data = arr[j].data;
   unsigned int key1 = arr[j].key;
   unsigned int key2 = arr[k].key;
   arr[j].priority = arr[k].priority;
@@ -52,7 +52,7 @@ void sink (unsigned int k, Item arr[], unsigned int first_available, unsigned in
   }
 }
 
-unsigned int insert_nc(PQ *pq, int priority, void* data) {
+unsigned int insert_nc(PQ *pq, int priority, int data) {
   unsigned int fa = pq->first_available;
   Item* cells = pq->heap_cells;
 
@@ -66,15 +66,7 @@ unsigned int insert_nc(PQ *pq, int priority, void* data) {
   return key;
 }
 
-void decrease_pri(PQ *pq, int key, int pri) {
-  unsigned int* table = pq->key_table;
-  Item* cells = pq->heap_cells;
-  unsigned int target = table[key];
-  cells[target].priority = pri;
-  swim(target, cells, table);
-}
-
-void edit_pri(PQ *pq, int key, int newpri) {
+void pq_edit_priority(PQ *pq, int key, int newpri) {
   unsigned int* table = pq->key_table;
   Item* cells = pq->heap_cells;
   unsigned int target = table[key];
@@ -100,22 +92,22 @@ void remove_min_nc(PQ *pq, Item* item) {
   pq->first_available = fa;
 }  
 
-unsigned int insert(PQ *pq, int priority, void* data) {
+unsigned int pq_insert(PQ *pq, int priority, int data) {
   if (pq->first_available == pq->capacity) return 0; /* Hrm, maybe should signal error or grow heap or whatever... */
   return insert_nc(pq, priority, data);
 }
 
-Item* remove_min(PQ *pq) {
+Item* pq_remove_min(PQ *pq) {
   if (pq->first_available == ROOT_IDX) return 0;
   Item* item = (Item*) malloc(sizeof(Item));
   remove_min_nc(pq, item);
   return item;
 }
 
-PQ* make(unsigned int size) { /* could take a size parameter I suppose... */
-  PQ *pq = (PQ*) malloc(sizeof(PQ));
-  unsigned int* table = (unsigned int*) malloc (sizeof(unsigned int) * size);
-  Item* arr = (Item*) malloc(sizeof(Item) * size);
+PQ* pq_make(unsigned int size) { /* could take a size parameter I suppose... */
+  PQ *pq = (PQ*) mallocN(sizeof(PQ));
+  unsigned int* table = (unsigned int*) mallocN(sizeof(unsigned int) * size);
+  Item* arr = (Item*) mallocN(sizeof(Item) * size);
   int i; 
   for (i = 0; i < size; i++)
     arr[i].key = i;
@@ -128,7 +120,7 @@ PQ* make(unsigned int size) { /* could take a size parameter I suppose... */
   return pq;
 }
 
-void free_pq (PQ *pq) {
+void pq_free (PQ *pq) {
     free(pq->key_table);
     free(pq->heap_cells);
     free(pq);
