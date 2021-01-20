@@ -14,7 +14,6 @@ Definition wedgerep := reptype t_struct_edge.
 Instance wedgerep_inhabitant : Inhabitant wedgerep :=
                                     (Vundef, (Vundef, Vundef)).
 
-
 (*Warning: reptype of a struct doesn’t destruct nicely*)
 Definition def_wedgerep (x: reptype t_struct_edge) :=
   is_int I32 Signed (fst x) /\
@@ -161,5 +160,105 @@ Proof.
 intros.
 rewrite app_Znth2 by lia. rewrite app_Znth1 by lia.
 eapply Forall_Znth; eauto. lia.
+Qed.
+
+(* For the sorting *)
+
+Require Import RelationClasses.
+Require Import CertiGraph.binheap.binary_heap_model.
+Require Import CertiGraph.binheap.binary_heap_Zmodel.
+
+Definition heap_item : Type := int * (int * int).
+(* This should be x >= y *)
+Definition cmp (x y: heap_item) := negb (Int.lt (fst x) (fst y)).
+Definition cmp_rel (a b : heap_item) : Prop :=
+  cmp a b = true.
+Lemma cmp_dec: forall a a', {cmp_rel a a'} + {~cmp_rel a a'}.
+Proof.
+  intros [? ?] [? ?]. unfold cmp_rel, cmp. simpl. case (Int.lt i i0); simpl; auto.
+Qed. 
+Instance cmp_po: PreOrder cmp_rel.
+Proof.
+  constructor. intros [? ?]. red. unfold cmp. simpl. case_eq (Int.lt i i); auto; intro. exfalso.
+  apply lt_inv in H. lia.
+  intros [? ?] [? ?] [? ?]. unfold cmp_rel, cmp. simpl. 
+  case_eq (Int.lt i i0); auto. discriminate.
+  case_eq (Int.lt i i0); auto. discriminate.
+  case_eq (Int.lt i i0); auto. discriminate. simpl.
+  intros ? _ _ _.
+  apply lt_false_inv in H.
+  intro.
+  assert (Int.lt i0 i1 = false). {
+    rewrite <- (negb_involutive (Int.lt i0 i1)). rewrite H0. trivial. }
+  apply lt_false_inv in H1.
+  case_eq (Int.lt i i1). 2: trivial. intro.
+  apply lt_inv in H2. lia.
+Qed.
+Lemma cmp_linear: forall a b,
+  cmp_rel a b \/ cmp_rel b a.
+Proof.
+  intros [? ?] [? ?]. unfold cmp_rel, cmp; simpl.
+  case_eq (Int.lt i i0); auto. intro. 
+  right.
+  case_eq (Int.lt i0 i); auto. intro. exfalso. 
+  apply lt_inv in H. apply lt_inv in H0.
+  lia.
+Qed.
+
+Definition heap_ordered := binary_heap_model.heapOrdered heap_item cmp_rel.
+Definition heap_ordered_bounded (L : list heap_item) (b : Z) := 
+  binary_heap_model.heapOrdered_bounded heap_item cmp_rel L (Z.to_nat b).
+Definition weak_heap_ordered_bottom_up (L : list heap_item) (x : Z) := 
+  binary_heap_model.weak_heapOrdered2 heap_item cmp_rel L (Z.to_nat x).
+Definition weak_heap_ordered_top_down_bounded (L : list heap_item) (b : Z) (x : Z) := 
+  binary_heap_model.weak_heapOrdered_bounded heap_item cmp_rel L (Z.to_nat b) (Z.to_nat x).
+Definition swim := binary_heap_model.swim heap_item cmp_rel cmp_dec.
+Definition sink L i := binary_heap_model.sink heap_item cmp_rel cmp_dec (L,i).
+Definition build_heap_helper L i := binary_heap_model.build_heap_helper heap_item cmp_rel cmp_dec L i.
+
+Lemma Zparent_repr: forall i,
+  0 < i <= Int.max_unsigned ->
+  Int.repr (Zparent i) = Int.divu (Int.repr (i - 1)) (Int.repr 2).
+Proof.
+  intros. unfold Int.divu. repeat rewrite Int.unsigned_repr.
+  2,3: rep_lia. rewrite Zparent_unfold. trivial. lia.
+Qed.
+
+Definition heap_item_rep (i : heap_item) : wedgerep :=
+  (Vint (fst i), (Vint (fst (snd i)), Vint (snd (snd i)))).
+
+Definition hitem (sh : share) (i : heap_item) : val -> mpred :=
+  data_at sh t_struct_edge (heap_item_rep i).
+
+Definition harray (sh : share) (contents : list heap_item) : val -> mpred :=
+  data_at sh (tarray t_struct_edge (Zlength contents)) (map heap_item_rep contents).
+
+Lemma harray_emp: forall sh arr,
+  harray sh [] arr |-- emp.
+Proof.
+  unfold harray. intros. rewrite data_at_isptr. entailer. rewrite data_at_zero_array_eq; auto.
+Qed.
+
+Lemma fold_harray': forall sh L i arr,
+  i = Zlength L ->
+  data_at sh (tarray t_struct_edge i) (map heap_item_rep L) arr = harray sh L arr.
+Proof. intros. rewrite H. reflexivity. Qed.
+
+Lemma fold_harray: forall sh L arr,
+  data_at sh (tarray t_struct_edge (Zlength L)) (map heap_item_rep L) arr = harray sh L arr.
+Proof. reflexivity. Qed.
+
+Lemma harray_split: forall sh L1 L2 ptr,
+  harray sh (L1 ++ L2) ptr = 
+  ((harray sh L1 ptr) * 
+   (harray sh L2 (field_address0 (tarray t_struct_edge (Zlength (L1 ++ L2))) [ArraySubsc (Zlength L1)] ptr)))%logic.
+Proof.
+  intros. unfold harray.
+  rewrite map_app.
+  rewrite (split2_data_at_Tarray_app (Zlength L1) (Zlength (L1 ++ L2)) sh t_struct_edge (map heap_item_rep L1) (map heap_item_rep L2)).
+  2: rewrite Zlength_map; reflexivity. 2: rewrite Zlength_app, Zlength_map; lia.
+  rewrite Zlength_app.
+  replace (Zlength L1 + Zlength L2 - Zlength L1) with (Zlength L2) by lia.
+  trivial.
 Qed.
 

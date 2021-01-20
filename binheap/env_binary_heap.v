@@ -55,12 +55,15 @@ Definition heap_permutation (h1 h2 : heap) : Prop :=
 *)
 
 Definition heap_ordered := binary_heap_model.heapOrdered heap_item cmp_rel.
+Definition heap_ordered_bounded (L : list heap_item) (b : Z) := 
+  binary_heap_model.heapOrdered_bounded heap_item cmp_rel L (Z.to_nat b).
 Definition weak_heap_ordered_bottom_up (L : list heap_item) (x : Z) := 
   binary_heap_model.weak_heapOrdered2 heap_item cmp_rel L (Z.to_nat x).
-Definition weak_heap_ordered_top_down (L : list heap_item) (x : Z) := 
-  binary_heap_model.weak_heapOrdered heap_item cmp_rel L (Z.to_nat x).
+Definition weak_heap_ordered_top_down_bounded (L : list heap_item) (b : Z) (x : Z) := 
+  binary_heap_model.weak_heapOrdered_bounded heap_item cmp_rel L (Z.to_nat b) (Z.to_nat x).
 Definition swim := binary_heap_model.swim heap_item cmp_rel cmp_dec.
 Definition sink L i := binary_heap_model.sink heap_item cmp_rel cmp_dec (L,i).
+Definition build_heap_helper L i := binary_heap_model.build_heap_helper heap_item cmp_rel cmp_dec L i.
 (* Definition insert := binary_heap_model.insert heap_item cmp_rel cmp_dec. *)
 (* Definition remove_min := binary_heap_model.remove_min heap_item cmp_rel cmp_dec. *)
 

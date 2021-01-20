@@ -2,13 +2,19 @@
 Require Import CertiGraph.unionfind.env_unionfind_arr.
 Require Export CertiGraph.unionfind.uf_arr_specs.
 
+Require Import VST.floyd.library.
+
+Require Import RelationClasses.
+Require Import CertiGraph.binheap.binary_heap_model.
+Require Import CertiGraph.binheap.binary_heap_Zmodel.
+Require Import Sorting.
+
 (* Kruskal's imports (already made minimal *)
 Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
 Require Export CertiGraph.kruskal.env_kruskal_edgelist.
 Require Import CertiGraph.kruskal.spatial_wedgearray_graph.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.floyd_ext.share.
-Require Import VST.floyd.library.
 
 Local Open Scope Z_scope.
 
@@ -67,6 +73,121 @@ Definition init_empty_graph_spec :=
           data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges MAX_EDGES) (pointer_val_val eptr)
          ).
 
+Definition exch_spec :=
+  DECLARE _exch WITH sh : share, i : Z, j : Z, arr: val, arr_contents: list heap_item
+  PRE [tuint, tuint, tptr t_struct_edge]
+    PROP (readable_share sh; writable_share sh;
+          0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents)
+    PARAMS (Vint (Int.repr i); Vint (Int.repr j); arr)
+    GLOBALS ()
+    SEP (harray sh arr_contents arr)
+  POST [tvoid]
+    PROP ()
+    LOCAL ()
+    SEP (harray sh (Zexchange arr_contents i j) arr).
+
+Definition greater_spec :=
+  DECLARE _greater WITH sh : share, i : Z, j : Z, arr: val, arr_contents: list heap_item
+  PRE [tuint, tuint, tptr t_struct_edge]
+    PROP (readable_share sh;
+          0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents)
+    PARAMS (Vint (Int.repr i); Vint (Int.repr j); arr)
+    GLOBALS ()
+    SEP (harray sh arr_contents arr)
+  POST [tint]
+    PROP ()
+    LOCAL (temp ret_temp (Val.of_bool (cmp (Znth i arr_contents) (Znth j arr_contents))))
+    SEP (harray sh arr_contents arr).
+
+Definition sink_spec :=
+  DECLARE _sink WITH sh : share, i : Z, arr: val, arr_contents: list heap_item, first_available : Z, b : Z
+  PRE [tuint, tptr t_struct_edge, tuint]
+    PROP (readable_share sh; writable_share sh;
+          0 <= i <= Zlength arr_contents; 
+          first_available = Zlength arr_contents;
+          (i = Zlength arr_contents -> (2 * i) <= Int.max_unsigned);
+          (i < Zlength arr_contents -> (2 * (first_available - 1) <= Int.max_unsigned)); (* i = fa - 1 -> (2 * i + 1) = 2 * fa - 1, must be representable *)
+          weak_heap_ordered_top_down_bounded arr_contents b i)
+    PARAMS (Vint (Int.repr i); arr; Vint (Int.repr first_available))
+    GLOBALS ()
+    SEP (harray sh arr_contents arr)
+  POST [tvoid]
+    EX arr_contents' : list heap_item,
+      PROP (heap_ordered_bounded arr_contents' b;
+            Permutation arr_contents arr_contents')
+      LOCAL ()
+      SEP (harray sh arr_contents' arr).
+
+Definition build_heap_spec :=
+  DECLARE _build_heap WITH sh : share, arr: val, arr_contents: list heap_item, size : Z
+  PRE [tptr t_struct_edge, tuint]
+    PROP (readable_share sh; writable_share sh;
+          size > 0 ; (* Required because PARENT subtracts 1u *)
+          Zlength arr_contents = size)
+    PARAMS (arr; Vint (Int.repr size))
+    GLOBALS ()
+    SEP (harray sh arr_contents arr)
+  POST [tvoid]
+  EX arr_contents' : list heap_item,
+    PROP (heap_ordered arr_contents';
+          Permutation arr_contents arr_contents')
+    LOCAL ()
+    SEP (harray sh arr_contents' arr).
+
+(*
+Definition heapsort_spec :=
+  DECLARE _heapsort WITH arr : val, arr_contents : list heap_item, size : Z
+  PRE [tptr t_struct_edge, tuint]
+    PROP (size > 0 ;
+          Zlength arr_contents = size)
+    PARAMS (arr; Vint (Int.repr size))
+    GLOBALS ()
+    SEP (harray arr_contents arr)
+  POST [tvoid]
+  EX arr_contents' : list heap_item,
+    PROP (Sorted (Basics.flip cmp_rel) arr_contents';
+          Permutation arr_contents arr_contents')
+    LOCAL ()
+    SEP (harray arr_contents' arr).
+*)
+
+(* This should be compatible with the existing Kruskal proof. *)
+Definition heapsort_spec :=
+  DECLARE _heapsort WITH sh : share, arr : val, arr_contents : list (reptype t_struct_edge)
+  PRE [tptr t_struct_edge, tint] 
+    PROP (readable_share sh; writable_share sh; 
+      	 0 <= Zlength arr_contents <= Int.max_signed;
+      	 Forall def_wedgerep arr_contents)
+    PARAMS (arr; Vint (Int.repr (Zlength arr_contents)))
+    GLOBALS ()
+    SEP (data_at sh (tarray t_struct_edge (Zlength arr_contents)) arr_contents arr)
+  POST [tvoid]
+  EX arr_contents' : list (reptype t_struct_edge),
+    PROP (Permutation arr_contents arr_contents';
+          forall i j, 0 <= i -> i <= j -> j < Zlength arr_contents' -> wedge_le (Znth i arr_contents') (Znth j arr_contents'))
+    LOCAL ()
+    SEP (data_at sh (tarray t_struct_edge (Zlength arr_contents')) arr_contents' arr).
+
+(*
+Definition sort_edges_spec :=
+ DECLARE _sort_edges
+  WITH sh: share, a: val, al: list (reptype t_struct_edge)
+  PRE [tptr t_struct_edge, tint]
+    PROP (readable_share sh; writable_share sh;
+      	 0 <= Zlength al <= Int.max_signed;
+      	 Forall def_wedgerep al)
+    PARAMS(a; Vint (Int.repr (Zlength al)))
+    GLOBALS ()
+    SEP(data_at sh (tarray t_struct_edge (Zlength al)) al a)
+  POST [ tvoid ]
+    EX bl: list (reptype t_struct_edge),
+    PROP (Permutation al bl;
+      	 forall i j, 0 <= i -> i <= j -> j < Zlength bl -> wedge_le (Znth i bl) (Znth j bl))
+    LOCAL ()
+    SEP(data_at sh (tarray t_struct_edge (Zlength bl)) bl a).
+*)
+
+(*
 Definition swap_edges_spec :=
  DECLARE _swap_edges
   WITH sh: share, a : reptype t_struct_edge, b: reptype t_struct_edge, a_ptr: val, b_ptr: val
@@ -116,6 +237,8 @@ Definition sort_edges_spec :=
       	 forall i j, 0 <= i -> i <= j -> j < Zlength bl -> wedge_le (Znth i bl) (Znth j bl))
     LOCAL ()
     SEP(data_at sh (tarray t_struct_edge (Zlength bl)) bl a).
+
+*)
 
 Section kruskal_spec.
 
@@ -171,8 +294,10 @@ Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 Definition Gprog : funspecs :=
   ltac:(with_library prog
-      [makeSet_spec; find_spec; union_spec; freeSet_spec;
-      mallocK_spec; fill_edge_spec; swap_edges_spec; init_empty_graph_spec; yucky_find_min_spec; sort_edges_spec; kruskal_spec
+      [ makeSet_spec; find_spec; union_spec; freeSet_spec;
+        mallocK_spec; fill_edge_spec;
+        exch_spec; greater_spec; sink_spec; build_heap_spec; heapsort_spec; 
+        init_empty_graph_spec; kruskal_spec
   ]).
 
 End kruskal_spec.

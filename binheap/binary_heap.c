@@ -1,6 +1,6 @@
 #include "binary_heap.h"
 extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
-extern void freeN (void* p); /* Maybe there are better choices for allocators? */
+extern void freeN (void* p); /* Maybe there are better choices for deallocators? */
 
 #define ROOT_IDX       0u
 #define LEFT_CHILD(x)  (2u * x) + 1u
@@ -17,16 +17,16 @@ void exch(unsigned int j, unsigned int k, Item arr[]) {
   arr[k].data = data;
 }
 
+int less(unsigned int j, unsigned int k, Item arr[]) {
+  return (arr[j].priority <= arr[k].priority);
+}
+
 unsigned int size(PQ *pq) {
   return pq->first_available;
 }
 
 unsigned int capacity(PQ *pq) {
   return pq->capacity;
-}
-
-int less(unsigned int j, unsigned int k, Item arr[]) {
-  return (arr[j].priority <= arr[k].priority);
 }
 
 void swim(unsigned int k, Item arr[]) {
@@ -61,17 +61,29 @@ void remove_min_nc(PQ *pq, Item* item) {
   sink(ROOT_IDX, pq->heap_cells, pq->first_available);
 }  
 
-/* Everything above here has been verified. */
-
 void build_heap(Item arr[], unsigned int size) {
   unsigned int start = PARENT(size);
-  do {
+  while(1) {
     sink(start, arr, size);
+    if (start == 0) break;
     start--;
-  } while (start > 0);
+  }
 }
 
+// Note, this will result in a reverse sorted list since we have a min-heap rather than a max-heap.
+void heapsort_rev(Item* arr, unsigned int size) {
+  // build the heap
+  build_heap(arr,size);
 
+  unsigned int active = size;
+  while (active > 1) {
+    active--;
+    exch(ROOT_IDX, active, arr);
+    sink(ROOT_IDX, arr, active);
+  }
+} 
+
+/* Everything above here has been verified. */
 
 void insert(PQ *pq, Item *x) {
   if (pq->first_available == pq->capacity) return; /* Hrm, maybe should signal error or grow heap or whatever... */
@@ -84,7 +96,6 @@ Item* remove_min(PQ *pq) {
   remove_min_nc(pq, item);
   return item;
 }
-
 
 PQ* make(unsigned int size) { /* could take a size parameter I suppose... */
   Item* arr = (Item*) mallocN(sizeof(Item) * size);
@@ -106,19 +117,6 @@ PQ* heapify(Item* arr, unsigned int size) {
   pq->heap_cells = arr;
   return pq;
 }
-
-// Note, this will result in a reverse sorted list since we have a min-heap rather than a max-heap.
-void heap_sort(Item* arr, unsigned int size) {
-  // build the heap
-  build_heap(arr,size);
-
-  unsigned int active = size;
-  while (active > 0) {
-    active--;
-    exch(ROOT_IDX, active, arr);
-    sink(ROOT_IDX, arr, active);
-  }
-} 
 
 void pq_free(PQ *pq) {
   freeN(pq->heap_cells);
