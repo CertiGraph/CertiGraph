@@ -93,6 +93,9 @@ KRUSKAL_FILES = \
   kruskal_edgelist.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_specs.v \
   verif_sort.v verif_kruskal_edgelist.v
 
+#kruskal_edgelist_sort.v env_kruskal_edgelist_sort.v spatial_wedgearray_graph_sort.v kruskal_specs_sort.v \
+
+
 PRIM_FILES = \
   prim_env.v prim_constants.v \
   prim1.v prim_spec1.v verif_prim1.v \
