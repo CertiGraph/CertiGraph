@@ -18,7 +18,7 @@ typedef struct structPQ {
 } PQ;
 
 void remove_min_nc(PQ *pq, Item *item);
-unsigned int insert_nc(PQ *pq, int priority, int data);
+unsigned int pq_insert_nc(PQ *pq, int priority, int data);
 
 unsigned int pq_insert(PQ *pq, int priority, int data);
 Item* pq_remove_min(PQ *pq);

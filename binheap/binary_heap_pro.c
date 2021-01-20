@@ -52,7 +52,7 @@ void sink (unsigned int k, Item arr[], unsigned int first_available, unsigned in
   }
 }
 
-unsigned int insert_nc(PQ *pq, int priority, int data) {
+unsigned int pq_insert_nc(PQ *pq, int priority, int data) {
   unsigned int fa = pq->first_available;
   Item* cells = pq->heap_cells;
 
@@ -70,6 +70,8 @@ void pq_edit_priority(PQ *pq, int key, int newpri) {
   unsigned int* table = pq->key_table;
   Item* cells = pq->heap_cells;
   unsigned int target = table[key];
+  if (target >= the-size-of-the-pq) return;
+  // I will now know that this key refers to a valid member of the heap
   int oldpri = cells[target].priority;
 
   cells[target].priority = newpri;
@@ -77,6 +79,8 @@ void pq_edit_priority(PQ *pq, int key, int newpri) {
      // potentially unnecessary swimming in case of equality
   else sink (target, cells, pq->first_available, table);
 }
+// post condition: either the key was in the heap and we did all this stuff,
+                   // or we did nothing
 
 void remove_min_nc(PQ *pq, Item* item) {
   unsigned int fa = pq->first_available - 1;
@@ -94,7 +98,7 @@ void remove_min_nc(PQ *pq, Item* item) {
 
 unsigned int pq_insert(PQ *pq, int priority, int data) {
   if (pq->first_available == pq->capacity) return 0; /* Hrm, maybe should signal error or grow heap or whatever... */
-  return insert_nc(pq, priority, data);
+  return pq_insert_nc(pq, priority, data);
 }
 
 Item* pq_remove_min(PQ *pq) {

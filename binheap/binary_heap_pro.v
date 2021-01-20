@@ -76,7 +76,6 @@ Definition _first_available : ident := 6%positive.
 Definition _free : ident := 62%positive.
 Definition _heap_cells : ident := 7%positive.
 Definition _i : ident := 89%positive.
-Definition _insert_nc : ident := 78%positive.
 Definition _item : ident := 84%positive.
 Definition _j : ident := 64%positive.
 Definition _k : ident := 65%positive.
@@ -95,6 +94,7 @@ Definition _pq : ident := 71%positive.
 Definition _pq_edit_priority : ident := 83%positive.
 Definition _pq_free : ident := 91%positive.
 Definition _pq_insert : ident := 86%positive.
+Definition _pq_insert_nc : ident := 78%positive.
 Definition _pq_make : ident := 90%positive.
 Definition _pq_remove_min : ident := 87%positive.
 Definition _pq_size : ident := 72%positive.
@@ -414,7 +414,7 @@ Definition f_sink := {|
           (Sset _k (Etempvar _j tuint)))))))
 |}.
 
-Definition f_insert_nc := {|
+Definition f_pq_insert_nc := {|
   fn_return := tuint;
   fn_callconv := cc_default;
   fn_params := ((_pq, (tptr (Tstruct _structPQ noattr))) ::
@@ -687,9 +687,10 @@ Definition f_pq_insert := {|
         Sskip)))
   (Ssequence
     (Scall (Some _t'1)
-      (Evar _insert_nc (Tfunction
-                         (Tcons (tptr (Tstruct _structPQ noattr))
-                           (Tcons tint (Tcons tint Tnil))) tuint cc_default))
+      (Evar _pq_insert_nc (Tfunction
+                            (Tcons (tptr (Tstruct _structPQ noattr))
+                              (Tcons tint (Tcons tint Tnil))) tuint
+                            cc_default))
       ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
        (Etempvar _priority tint) :: (Etempvar _data tint) :: nil))
     (Sreturn (Some (Etempvar _t'1 tuint)))))
@@ -1112,7 +1113,7 @@ Definition global_definitions : list (ident * globdef fundef type) :=
  (_exch, Gfun(Internal f_exch)) :: (_pq_size, Gfun(Internal f_pq_size)) ::
  (_capacity, Gfun(Internal f_capacity)) :: (_less, Gfun(Internal f_less)) ::
  (_swim, Gfun(Internal f_swim)) :: (_sink, Gfun(Internal f_sink)) ::
- (_insert_nc, Gfun(Internal f_insert_nc)) ::
+ (_pq_insert_nc, Gfun(Internal f_pq_insert_nc)) ::
  (_pq_edit_priority, Gfun(Internal f_pq_edit_priority)) ::
  (_remove_min_nc, Gfun(Internal f_remove_min_nc)) ::
  (_pq_insert, Gfun(Internal f_pq_insert)) ::
@@ -1122,25 +1123,26 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_pq_free :: _pq_make :: _pq_remove_min :: _pq_insert :: _remove_min_nc ::
- _pq_edit_priority :: _insert_nc :: _sink :: _swim :: _less :: _capacity ::
- _pq_size :: _exch :: _mallocN :: _free :: _malloc :: ___builtin_debug ::
- ___builtin_write32_reversed :: ___builtin_write16_reversed ::
- ___builtin_read32_reversed :: ___builtin_read16_reversed ::
- ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
- ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
- ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
- ___builtin_clzl :: ___builtin_clz :: ___compcert_i64_umulh ::
- ___compcert_i64_smulh :: ___compcert_i64_sar :: ___compcert_i64_shr ::
- ___compcert_i64_shl :: ___compcert_i64_umod :: ___compcert_i64_smod ::
- ___compcert_i64_udiv :: ___compcert_i64_sdiv :: ___compcert_i64_utof ::
- ___compcert_i64_stof :: ___compcert_i64_utod :: ___compcert_i64_stod ::
- ___compcert_i64_dtou :: ___compcert_i64_dtos :: ___compcert_va_composite ::
- ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
- ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
- ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
- ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
- ___builtin_fsqrt :: ___builtin_fabs :: ___builtin_bswap16 ::
- ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 :: nil).
+ _pq_edit_priority :: _pq_insert_nc :: _sink :: _swim :: _less ::
+ _capacity :: _pq_size :: _exch :: _mallocN :: _free :: _malloc ::
+ ___builtin_debug :: ___builtin_write32_reversed ::
+ ___builtin_write16_reversed :: ___builtin_read32_reversed ::
+ ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
+ ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
+ ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
+ ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
+ ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
+ ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
+ ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
+ ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
+ ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
+ ___compcert_va_composite :: ___compcert_va_float64 ::
+ ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
+ ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
+ ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
+ ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
+ ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
+ ___builtin_bswap :: ___builtin_bswap64 :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.
