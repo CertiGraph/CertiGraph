@@ -1,7 +1,7 @@
 \subsection{Speed of loop invariants}
 The recommended tactic to solve invariants and ENTAIL goals in VST is \textit{entailer!}. However, we observed that our invariants contained a significiant number of mathematical statements, encoded by VST as PROPs, that were difficult to solve with VST's \textit{entailer!} tactic. As a result, \textit{entailer!} often took a long time to solve or reduce the invariant. To overcome this, we had to pre-solve every PROP in the invariant and preformat the SEP clauses. In the most significant case, an \textit{entailer!} call that took 446 seconds and still returned a large number of unsolved PROPs, was reduced to 36 seconds at the fastest recorded. (Tested on a VirtualBox Lubuntu 18.04 machine assigned 8GB RAM and 2 processors)
 
-That the tactic could not solve many of our invariant \texttt{PROP}s by itself was expected and reasonable, as they were often complex properties of graphs. However, we were surprised that several solved \texttt{PROP}s took a significant amount of time despite being trivial at first glance.
+That the tactic could not solve many of our invariant \texttt{PROP}s by itself was expected and reasonable, as they were often complex properties of graphs specific to CertiGraph. However, we were surprised that several solved \texttt{PROP}s took a significant amount of time despite being trivial at first glance.
 \begin{lstlisting}
 assert (Hinv_10: forall u v : V,
 	In u (nil (A:=V)) -> In v (nil (A:=V)) ->
