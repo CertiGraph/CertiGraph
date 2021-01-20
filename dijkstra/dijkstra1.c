@@ -8,8 +8,8 @@
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
  
-// extern void * mallocN (int n);
-// extern void freeN (void *p);
+extern void * mallocN (int n);
+extern void freeN (void *p);
 
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
@@ -71,19 +71,21 @@ int getCell (int **graph, int u, int i) {
 
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     int* i_ptr; 
+    Item the_item;
     int* keys = malloc (size * sizeof (int));
     PQ* pq = pq_make(size); 
     int i, j, u, cost;
     for (i = 0; i < size; i++) {
         dist[i] = inf;  // Best-known distance from src to i
         prev[i] = inf;  // Last vertex visited before i
-        keys[i] = pq_insert(pq, inf, i); // Insert everyone, plus store keys locally
+        keys[i] = pq_insert_nc(pq, inf, i); // Insert everyone, plus store keys locally
     }
     dist[src] = 0;
     prev[src] = src;
     pq_edit_priority(pq, keys[src], 0); // special value for src
     while (pq_size(pq) > 0) {
-        u = pq_remove_min(pq)->data; // src -> u is optimal. relax u's neighbors, then done with u.
+        pq_remove_min_nc(pq,&the_item);
+        u = the_item.data; // src -> u is optimal. relax u's neighbors, then done with u.
         for (i = 0; i < size; i++) {
             cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine

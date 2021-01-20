@@ -93,7 +93,6 @@ Definition _heap_cells : ident := 7%positive.
 Definition _i : ident := 89%positive.
 Definition _i_ptr : ident := 116%positive.
 Definition _inf : ident := 98%positive.
-Definition _insert_nc : ident := 78%positive.
 Definition _item : ident := 84%positive.
 Definition _j : ident := 64%positive.
 Definition _k : ident := 65%positive.
@@ -113,6 +112,7 @@ Definition _pq : ident := 71%positive.
 Definition _pq_edit_priority : ident := 83%positive.
 Definition _pq_free : ident := 91%positive.
 Definition _pq_insert : ident := 86%positive.
+Definition _pq_insert_nc : ident := 78%positive.
 Definition _pq_make : ident := 90%positive.
 Definition _pq_remove_min : ident := 87%positive.
 Definition _pq_size : ident := 72%positive.
@@ -548,11 +548,11 @@ Definition f_dijkstra := {|
                   (Etempvar _inf tint))
                 (Ssequence
                   (Scall (Some _t'3)
-                    (Evar _pq_insert (Tfunction
-                                       (Tcons
-                                         (tptr (Tstruct _structPQ noattr))
-                                         (Tcons tint (Tcons tint Tnil)))
-                                       tuint cc_default))
+                    (Evar _pq_insert_nc (Tfunction
+                                          (Tcons
+                                            (tptr (Tstruct _structPQ noattr))
+                                            (Tcons tint (Tcons tint Tnil)))
+                                          tuint cc_default))
                     ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
                      (Etempvar _inf tint) :: (Etempvar _i tint) :: nil))
                   (Sassign
@@ -1193,8 +1193,8 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "time"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons (tptr tint) Tnil) tint cc_default)) ::
- (_pq_insert,
-   Gfun(External (EF_external "pq_insert"
+ (_pq_insert_nc,
+   Gfun(External (EF_external "pq_insert_nc"
                    (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
                      AST.Tint cc_default))
      (Tcons (tptr (Tstruct _structPQ noattr)) (Tcons tint (Tcons tint Tnil)))
@@ -1233,7 +1233,7 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 Definition public_idents : list ident :=
 (_main :: _dijkstra :: _getCell :: _getPaths :: _printPath :: _print_graph ::
  _setup :: _pq_free :: _pq_make :: _pq_size :: _pq_edit_priority ::
- _pq_remove_min :: _pq_insert :: _time :: _printf :: _srand :: _rand ::
+ _pq_remove_min :: _pq_insert_nc :: _time :: _printf :: _srand :: _rand ::
  _free :: _malloc :: ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
