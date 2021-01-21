@@ -145,7 +145,7 @@ Definition pq_make_spec :=
   POST [tptr t_pq]
     EX pq: val, EX h : heap,
     PROP (heap_capacity h = size)
-    LOCAL ()
+    LOCAL (temp ret_temp pq)
     SEP (valid_pq pq h). (* and the free_toks I get from mallocN *)
 
 Definition pq_free_spec := 

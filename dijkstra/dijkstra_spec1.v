@@ -94,7 +94,7 @@ Section DijkstraSpec.
                        (* freePQ_spec; *)
                        getCell_spec;
                        dijkstra_spec;
-                       
+                       mallocN_spec;
                        pq_remove_min_nc_spec;
                        pq_insert_nc_spec; 
                        pq_size_spec;

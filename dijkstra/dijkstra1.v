@@ -514,7 +514,7 @@ Definition f_dijkstra := {|
 (Ssequence
   (Ssequence
     (Scall (Some _t'1)
-      (Evar _malloc (Tfunction (Tcons tuint Tnil) (tptr tvoid) cc_default))
+      (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
       ((Ebinop Omul (Etempvar _size tint) (Esizeof tint tuint) tuint) :: nil))
     (Sset _keys (Etempvar _t'1 (tptr tvoid))))
   (Ssequence
@@ -1225,6 +1225,10 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "pq_free"
                    (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
      (Tcons (tptr (Tstruct _structPQ noattr)) Tnil) tvoid cc_default)) ::
+ (_mallocN,
+   Gfun(External (EF_external "mallocN"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
  (_setup, Gfun(Internal f_setup)) ::
  (_print_graph, Gfun(Internal f_print_graph)) ::
  (_printPath, Gfun(Internal f_printPath)) ::
@@ -1235,26 +1239,26 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_main :: _dijkstra :: _getCell :: _getPaths :: _printPath :: _print_graph ::
- _setup :: _pq_free :: _pq_make :: _pq_size :: _pq_edit_priority ::
- _pq_insert_nc :: _pq_remove_min_nc :: _time :: _printf :: _srand :: _rand ::
- _free :: _malloc :: ___builtin_debug :: ___builtin_write32_reversed ::
- ___builtin_write16_reversed :: ___builtin_read32_reversed ::
- ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
- ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
- ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
- ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
- ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
- ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
- ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
- ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
- ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
- ___compcert_va_composite :: ___compcert_va_float64 ::
- ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
- ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
- ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
- ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
- ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
- ___builtin_bswap :: ___builtin_bswap64 :: nil).
+ _setup :: _mallocN :: _pq_free :: _pq_make :: _pq_size ::
+ _pq_edit_priority :: _pq_insert_nc :: _pq_remove_min_nc :: _time ::
+ _printf :: _srand :: _rand :: _free :: _malloc :: ___builtin_debug ::
+ ___builtin_write32_reversed :: ___builtin_write16_reversed ::
+ ___builtin_read32_reversed :: ___builtin_read16_reversed ::
+ ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
+ ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
+ ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
+ ___builtin_clzl :: ___builtin_clz :: ___compcert_i64_umulh ::
+ ___compcert_i64_smulh :: ___compcert_i64_sar :: ___compcert_i64_shr ::
+ ___compcert_i64_shl :: ___compcert_i64_umod :: ___compcert_i64_smod ::
+ ___compcert_i64_udiv :: ___compcert_i64_sdiv :: ___compcert_i64_utof ::
+ ___compcert_i64_stof :: ___compcert_i64_utod :: ___compcert_i64_stod ::
+ ___compcert_i64_dtou :: ___compcert_i64_dtos :: ___compcert_va_composite ::
+ ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
+ ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
+ ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
+ ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
+ ___builtin_fsqrt :: ___builtin_fabs :: ___builtin_bswap16 ::
+ ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.
