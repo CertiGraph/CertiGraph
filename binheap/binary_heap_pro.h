@@ -17,7 +17,7 @@ typedef struct structPQ {
   unsigned int* key_table;
 } PQ;
 
-void remove_min_nc(PQ *pq, Item *item);
+void pq_remove_min_nc(PQ *pq, Item *item);
 unsigned int pq_insert_nc(PQ *pq, int priority, int data);
 
 unsigned int pq_insert(PQ *pq, int priority, int data);

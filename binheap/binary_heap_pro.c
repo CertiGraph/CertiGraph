@@ -70,7 +70,7 @@ void pq_edit_priority(PQ *pq, int key, int newpri) {
   unsigned int* table = pq->key_table;
   Item* cells = pq->heap_cells;
   unsigned int target = table[key];
-  if (target >= the-size-of-the-pq) return;
+  if (target >= pq_size(pq)) return;
   // I will now know that this key refers to a valid member of the heap
   int oldpri = cells[target].priority;
 
@@ -82,7 +82,7 @@ void pq_edit_priority(PQ *pq, int key, int newpri) {
 // post condition: either the key was in the heap and we did all this stuff,
                    // or we did nothing
 
-void remove_min_nc(PQ *pq, Item* item) {
+void pq_remove_min_nc(PQ *pq, Item* item) {
   unsigned int fa = pq->first_available - 1;
   Item* cells = pq->heap_cells;
   unsigned* lookup = pq->key_table;
@@ -104,7 +104,7 @@ unsigned int pq_insert(PQ *pq, int priority, int data) {
 Item* pq_remove_min(PQ *pq) {
   if (pq->first_available == ROOT_IDX) return 0;
   Item* item = (Item*) malloc(sizeof(Item));
-  remove_min_nc(pq, item);
+  pq_remove_min_nc(pq, item);
   return item;
 }
 

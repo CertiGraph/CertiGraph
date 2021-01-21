@@ -95,7 +95,7 @@ Section DijkstraSpec.
                        getCell_spec;
                        dijkstra_spec;
                        
-                       remove_min_nc_spec;
+                       pq_remove_min_nc_spec;
                        pq_insert_nc_spec; 
                        pq_size_spec;
                        pq_make_spec;
