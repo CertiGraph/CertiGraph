@@ -1,5 +1,5 @@
 Require Import CertiGraph.graph.SpaceAdjMatGraph1.
-Require Export CertiGraph.priq.is_empty_lemmas.
+Require Export CertiGraph.priq.is_empty_lemmas. (* *)
 Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
@@ -236,7 +236,7 @@ Section DijkstraProof.
              free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
 
-  Lemma body_getCell: semax_body Vprog (@Gprog size inf Z_EqDec) f_getCell (@getCell_spec size inf).
+  Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
   Proof.
     start_function.
     rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
@@ -254,13 +254,13 @@ Section DijkstraProof.
     unfold list_rep.
     forward. forward. forward. thaw FR.
     rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
-    entailer!.
+    cancel.
   Qed.
 
   
   (* DIJKSTRA PROOF BEGINS *)
 
-  Lemma body_dijkstra: semax_body Vprog (@Gprog size inf Z_EqDec) f_dijkstra (@dijkstra_spec size inf).
+  Lemma body_dijkstra: semax_body Vprog (@Gprog size inf) f_dijkstra (@dijkstra_spec size inf).
   Proof.
     start_function.
     pose proof (size_further_restricted g).

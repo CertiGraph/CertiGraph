@@ -89,8 +89,8 @@ Definition capacity_spec :=
     LOCAL (temp ret_temp (Vint (Int.repr (heap_capacity h))))
     SEP (valid_pq pq h).
 
-Definition remove_min_nc_spec :=
-  DECLARE _remove_min_nc WITH pq : val, h : heap, i : val, iv : heap_item
+Definition pq_remove_min_nc_spec :=
+  DECLARE _pq_remove_min_nc WITH pq : val, h : heap, i : val, iv : heap_item
   PRE [tptr t_pq, tptr t_item]
     PROP (heap_size h > 0)
     PARAMS (pq; i)
@@ -174,21 +174,11 @@ Lemma update_pri_by_key_split: forall h key newpri start xp xd rest,
     update_pri_by_key h key newpri = start ++ (key, newpri, xd) :: rest.
 Proof. Admitted.
 
-Lemma can_split: forall h key,
-    (~In (map item_key h) key) \/ exists start xp xd rest,
-      h = start ++ (key, xp, xd) :: rest.
-
-Definition a : list heap_item := [(1, Int.repr 2, Int.repr 3);
-                                 (4, Int.repr 5, Int.repr 6);
-                                 (7, Int.repr 8, Int.repr 9)].
-
-
-Compute update_pri_by_key a 4 (Int.repr 11).
-Compute update_pri_by_key a 1 (Int.repr 11).
-Compute update_pri_by_key a 7 (Int.repr 11).
-Compute update_pri_by_key a 10 (Int.repr 11).
-
-(* too operational?  *)
+Lemma can_split: forall (h: heap) (key: key_type),
+    (~In key (map heap_item_key (heap_items h))) \/
+    exists start xp xd rest,
+      (heap_items h) = start ++ (key, xp, xd) :: rest.
+Admitted.
 
 Definition pq_edit_priority_spec := 
   DECLARE _pq_edit_priority WITH pq : val, h : heap, key : Z, newpri : int
@@ -201,14 +191,14 @@ Definition pq_edit_priority_spec :=
     EX h': heap,
     PROP (Permutation (heap_items h') (update_pri_by_key (heap_items h) key newpri))
     LOCAL ()
-    SEP (valid_pq pq h'').
+    SEP (valid_pq pq h').
 
 Definition Gprog : funspecs :=
   ltac:(with_library prog [exch_spec;
                           less_spec;
                           swim_spec;
                           sink_spec; 
-                          remove_min_nc_spec;
+                          pq_remove_min_nc_spec;
                           pq_insert_nc_spec; 
                           pq_size_spec;
                           capacity_spec;
