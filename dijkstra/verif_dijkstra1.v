@@ -267,9 +267,15 @@ Section DijkstraProof.
     pose proof (inf_bounds g).
     rename H1 into Hsz.
     rename H2 into Hinf.
-    forward_call (tt).
-    1: split; [split|]; ulia.
-    Intro priq_ptr.
+    assert (Int.max_signed <= Int.max_unsigned) by now compute.
+    forward_call (size * sizeof(tint)).
+    1: simpl; lia.
+    Intro keys_pv.
+    remember (pointer_val_val keys_pv) as keys.
+    forward_call (size).
+    1: admit. (* add to precon? *)
+    Intros temp.
+    destruct temp as [pq_ptr heap]. simpl fst; simpl snd.
     forward_for_simple_bound
       size
       (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).
