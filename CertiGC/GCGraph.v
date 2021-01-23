@@ -42,10 +42,8 @@ Definition WORD_SIZE: Z := Eval cbv [Archi.ptr64] in if Archi.ptr64 then 8 else 
 Definition MAX_UINT: Z := Eval cbv [Archi.ptr64] in
       if Archi.ptr64 then Int64.max_unsigned else Int.max_unsigned.
 
-Definition MAX_SPACE_SIZE: Z := Z.shiftl 1 29.
-Lemma MAX_SPACE_SIZE_eq: MAX_SPACE_SIZE = Z.shiftl 1 29. Proof. reflexivity. Qed.
-Hint Rewrite MAX_SPACE_SIZE_eq: rep_lia.
-Global Opaque MAX_SPACE_SIZE.
+Definition MAX_SPACE_SIZE: Z := Eval cbv [Archi.ptr64] in
+      if Archi.ptr64 then Z.shiftl 1 40 else Z.shiftl 1 29.
 
 Definition NO_SCAN_TAG: Z := 251.
 Lemma NO_SCAN_TAG_eq: NO_SCAN_TAG = 251. Proof. reflexivity. Qed.
@@ -58,33 +56,37 @@ Definition SPACE_STRUCT_SIZE: Z :=
 Lemma four_div_WORD_SIZE: (4 | WORD_SIZE).
 Proof. first [now exists 1 | now exists 2]. Qed.
 
-Lemma MSS_eq_unsigned:
-  Int.unsigned (Int.shl (Int.repr 1) (Int.repr 29)) = MAX_SPACE_SIZE.
-Proof.
-  rewrite Int.shl_mul_two_p.
-  rewrite (Int.unsigned_repr 29) by (compute; split; discriminate).
-  rewrite mul_repr, MAX_SPACE_SIZE_eq. rewrite Zbits.Zshiftl_mul_two_p by lia.
-  rewrite !Z.mul_1_l, Int.unsigned_repr;
-    [reflexivity | compute; split; intro S; discriminate].
-Qed.
+(* Lemma MSS_eq_unsigned: *)
+(*   Int.unsigned (Int.shl (Int.repr 1) (Int.repr 29)) = MAX_SPACE_SIZE. *)
+(* Proof. *)
+(*   rewrite Int.shl_mul_two_p. *)
+(*   rewrite (Int.unsigned_repr 29) by (compute; split; discriminate). *)
+(*   rewrite mul_repr. unfold MAX_SPACE_SIZE. rewrite Zbits.Zshiftl_mul_two_p by lia. *)
+(*   rewrite !Z.mul_1_l, Int.unsigned_repr; *)
+(*     [lia | compute; split; intro S; discriminate]. *)
+(* Qed. *)
 
 Lemma MSS_max_unsigned_range: forall n,
-    0 <= n < MAX_SPACE_SIZE -> 0 <= n <= Int.max_unsigned.
+    0 <= n < MAX_SPACE_SIZE ->
+    0 <= n <= if Archi.ptr64 then Int64.max_unsigned else Int.max_unsigned.
 Proof.
-  intros. destruct H. split. 1: assumption. rewrite Z.lt_eq_cases. left.
-  transitivity MAX_SPACE_SIZE. 1: assumption.  rewrite MAX_SPACE_SIZE_eq.
-  compute; reflexivity.
+  intros. cbv [Archi.ptr64]. destruct H. split. 1: assumption.
+  rewrite Z.lt_eq_cases. left.
+  transitivity MAX_SPACE_SIZE. 1: assumption. unfold MAX_SPACE_SIZE.
+  vm_compute; reflexivity.
 Qed.
 
-Lemma MSS_max_4_unsigned_range: forall n,
-    0 <= n < MAX_SPACE_SIZE -> 0 <= 4 * n <= Int.max_unsigned.
+Lemma MSS_max_wordsize_unsigned_range: forall n,
+    0 <= n < MAX_SPACE_SIZE ->
+    0 <= WORD_SIZE * n <= if Archi.ptr64 then Int64.max_unsigned else Int.max_unsigned.
 Proof.
-  intros. destruct H. split. 1: lia.
-  rewrite Z.lt_eq_cases. left. transitivity (4 * MAX_SPACE_SIZE). 1: lia.
-  rewrite MAX_SPACE_SIZE_eq. compute; reflexivity.
+  intros. cbv [Archi.ptr64]. destruct H. split. 1: unfold WORD_SIZE; lia.
+  rewrite Z.lt_eq_cases. left.
+  transitivity (WORD_SIZE * MAX_SPACE_SIZE); unfold WORD_SIZE. 1: lia.
+  unfold MAX_SPACE_SIZE. vm_compute; reflexivity.
 Qed.
 
-Lemma MSS_max_4_signed_range: forall n,
+Lemma MSS_max_wordsize_signed_range: forall n,
     0 <= n < MAX_SPACE_SIZE -> Ptrofs.min_signed <= WORD_SIZE * n <= Ptrofs.max_signed.
 Proof.
   intros. destruct H. split.
@@ -93,7 +95,7 @@ Proof.
   - rewrite Z.lt_le_pred in H0. rewrite Z.le_lteq. left.
     apply Z.le_lt_trans with (WORD_SIZE * Z.pred MAX_SPACE_SIZE).
     unfold WORD_SIZE. 1: lia.
-    rewrite Z.mul_pred_r, MAX_SPACE_SIZE_eq.
+    unfold MAX_SPACE_SIZE. rewrite Z.mul_pred_r.
     unfold Ptrofs.max_signed, Ptrofs.half_modulus, Ptrofs.modulus, Ptrofs.wordsize,
     Wordsize_Ptrofs.wordsize.
     destruct Archi.ptr64 eqn:?; first [now inversion Heqb | simpl; lia].
@@ -235,7 +237,7 @@ Definition null_space: space.
 Proof.
   refine (Build_space nullval 0 0 emptyshare _ _).
   - split; apply Z.le_refl.
-  - rewrite MAX_SPACE_SIZE_eq. compute; reflexivity.
+  - unfold MAX_SPACE_SIZE. vm_compute; reflexivity.
 Defined.
 
 Instance space_inhabitant: Inhabitant space := null_space.
@@ -247,17 +249,17 @@ Proof.
   - apply space_upper_bound.
 Qed.
 
-Lemma total_space_range: forall sp, 0 <= total_space sp <= Int.max_unsigned.
+Lemma total_space_range: forall sp, 0 <= total_space sp <= (if Archi.ptr64 then Int64.max_unsigned else Int.max_unsigned).
 Proof. intros. apply MSS_max_unsigned_range, total_space_tight_range. Qed.
 
 Lemma total_space_signed_range: forall sp,
     Ptrofs.min_signed <= WORD_SIZE * total_space sp <= Ptrofs.max_signed.
-Proof. intros. apply MSS_max_4_signed_range, total_space_tight_range. Qed.
+Proof. intros. apply MSS_max_wordsize_signed_range, total_space_tight_range. Qed.
 
 Lemma used_space_signed_range: forall sp,
     Ptrofs.min_signed <= WORD_SIZE * used_space sp <= Ptrofs.max_signed.
 Proof.
-  intros. apply MSS_max_4_signed_range. destruct (space_order sp). split.
+  intros. apply MSS_max_wordsize_signed_range. destruct (space_order sp). split.
   1: assumption. apply Z.le_lt_trans with (total_space sp). 1: assumption.
   apply (proj2 (total_space_tight_range sp)).
 Qed.
@@ -267,7 +269,7 @@ Lemma rest_space_signed_range: forall sp,
     WORD_SIZE * total_space sp - WORD_SIZE * used_space sp <=
     Ptrofs.max_signed.
 Proof.
-  intros. rewrite <- Z.mul_sub_distr_l. apply MSS_max_4_signed_range.
+  intros. rewrite <- Z.mul_sub_distr_l. apply MSS_max_wordsize_signed_range.
   destruct (space_order sp). pose proof (total_space_tight_range sp). lia.
 Qed.
 
@@ -315,6 +317,14 @@ Lemma lt64_repr: forall i j,
     Int64.lt (Int64.repr i) (Int64.repr j) = true -> i < j.
 Proof.
   intros. unfold Int64.lt in H1. if_tac in H1. 2: inversion H1.
+  rewrite !Int64.signed_repr in H2; auto.
+Qed.
+
+Lemma lt64_repr_false: forall i j,
+    repable64_signed i -> repable64_signed j ->
+    Int64.lt (Int64.repr i) (Int64.repr j) = false -> i >= j.
+Proof.
+  intros. unfold Int64.lt in H1. if_tac in H1. 1: inversion H1.
   rewrite !Int64.signed_repr in H2; auto.
 Qed.
 
@@ -4546,12 +4556,14 @@ Qed.
 
 Lemma ngs_int_singed_range: forall i,
     0 <= i < MAX_SPACES ->
-    Int.min_signed <= nth_gen_size (Z.to_nat i) <= Int.max_signed.
+    (if Archi.ptr64 then Int64.min_signed else Int.min_signed) <=
+    nth_gen_size (Z.to_nat i) <=
+    (if Archi.ptr64 then Int64.max_signed else Int.max_signed).
 Proof.
   intros. apply ngs_range in H. destruct H. split.
   - transitivity 0. 2: assumption. vm_compute. intro HS; inversion HS.
   - apply Z.lt_le_incl. transitivity MAX_SPACE_SIZE. 1: assumption.
-    vm_compute. reflexivity.
+    unfold MAX_SPACE_SIZE. vm_compute. reflexivity.
 Qed.
 
 Lemma ngs_S: forall i,

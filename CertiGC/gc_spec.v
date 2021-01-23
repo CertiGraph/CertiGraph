@@ -47,9 +47,10 @@ Definition test_int_or_ptr_spec :=
    PROP()
    LOCAL(temp ret_temp
           (Vint (Int.repr (match x with
-                    | Vint _ => 1
-                    | _ => 0
-                    end))))
+                           | Vint _ => if Archi.ptr64 then 0 else 1
+                           | Vlong _ => if Archi.ptr64 then 1 else 0
+                           | _ => 0
+                           end))))
    SEP().
 
 Definition int_or_ptr_to_int_spec :=
@@ -60,7 +61,7 @@ Definition int_or_ptr_to_int_spec :=
     PARAMS (x)
     GLOBALS ()
     SEP ()
-  POST [ tint ]
+  POST [ (if Archi.ptr64 then tlong else tint) ]
     PROP() LOCAL (temp ret_temp x) SEP().
 
 Definition int_or_ptr_to_ptr_spec :=
@@ -77,7 +78,7 @@ Definition int_or_ptr_to_ptr_spec :=
 Definition int_to_int_or_ptr_spec :=
   DECLARE _int_to_int_or_ptr
   WITH x : val
-  PRE [tint]
+  PRE [ (if Archi.ptr64 then tlong else tint) ]
     PROP (valid_int_or_ptr x)
     PARAMS (x)
     GLOBALS ()
@@ -400,7 +401,7 @@ Definition resume_spec :=
   WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
        g: LGraph, t_info: thread_info, f_info: fun_info,
        roots : roots_t
-  PRE [tptr tuint,
+  PRE [tptr (if Archi.ptr64 then tulong else tuint),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           graph_thread_info_compatible g t_info;
@@ -424,7 +425,7 @@ Definition garbage_collect_spec :=
   WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
        g: LGraph, t_info: thread_info, f_info: fun_info,
        roots : roots_t, outlier: outlier_t
-  PRE [tptr tuint,
+  PRE [tptr (if Archi.ptr64 then tulong else tuint),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;

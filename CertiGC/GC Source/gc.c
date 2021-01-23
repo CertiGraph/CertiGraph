@@ -71,7 +71,15 @@ struct space {
 #endif
 
 #ifndef MAX_SPACE_SIZE
+#if SIZEOF_PTR == SIZEOF_LONG
+#define MAX_SPACE_SIZE (1ULL << 40)
+#elif SIZEOF_PTR == SIZEOF_INT
 #define MAX_SPACE_SIZE (1 << 29)
+#elif SIZEOF_PTR == 8
+#define MAX_SPACE_SIZE (1ULL << 40)
+#else
+#error "No integer type available to represent pointers"
+#endif
 #endif
 /* The restriction of max space size is required by pointer
    subtraction.  If the space is larger than this restriction, the
@@ -365,7 +373,7 @@ void garbage_collect(fun_info fi, struct thread_info *ti)
 
     /* If the next generation does not yet exist, create it */
     if (h->spaces[i+1].start==NULL) {
-      int w = h->spaces[i].limit-h->spaces[i].start;
+      intnat w = h->spaces[i].limit-h->spaces[i].start;
       create_space(h->spaces+(i+1), RATIO*w);
     }
     /* Copy all the objects in generation i, into generation i+1 */

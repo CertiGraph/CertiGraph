@@ -32,3 +32,6 @@ poster.run.xml
 \#*\#
 *.numbers
 .\#*
+*.cmi
+*.cmx
+*.cmxs
