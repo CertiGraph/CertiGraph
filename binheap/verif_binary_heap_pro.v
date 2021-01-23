@@ -3,7 +3,7 @@ Require Import VST.floyd.proofauto.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
 Require Export CertiGraph.binheap.binary_heap_pro.
-Require Import CertiGraph.binheap.env_binary_heap_pro.
+Require Export CertiGraph.binheap.env_binary_heap_pro.
 
 Set Nested Proofs Allowed.
 
