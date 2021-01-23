@@ -901,7 +901,7 @@ Definition f_forward_roots := {|
                                       {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
                       ((Evar ___stringlit_3 (tarray tschar 30)) ::
                        (Evar ___stringlit_2 (tarray tschar 5)) ::
-                       (Econst_int (Int.repr 211) tint) ::
+                       (Econst_int (Int.repr 217) tint) ::
                        (Evar ___stringlit_1 (tarray tschar 20)) :: nil))
                     (Scall None
                       (Evar _abort (Tfunction Tnil tvoid cc_default)) nil))))
@@ -1090,7 +1090,7 @@ Definition f_do_generation := {|
                                   {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
                   ((Evar ___stringlit_3 (tarray tschar 30)) ::
                    (Evar ___stringlit_2 (tarray tschar 5)) ::
-                   (Econst_int (Int.repr 252) tint) ::
+                   (Econst_int (Int.repr 258) tint) ::
                    (Evar ___stringlit_4 (tarray tschar 45)) :: nil))
                 (Scall None (Evar _abort (Tfunction Tnil tvoid cc_default))
                   nil)))))))
@@ -1480,7 +1480,7 @@ Definition f_resume := {|
                             {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
             ((Evar ___stringlit_3 (tarray tschar 30)) ::
              (Evar ___stringlit_2 (tarray tschar 5)) ::
-             (Econst_int (Int.repr 344) tint) ::
+             (Econst_int (Int.repr 350) tint) ::
              (Evar ___stringlit_10 (tarray tschar 2)) :: nil))
           (Scall None (Evar _abort (Tfunction Tnil tvoid cc_default)) nil)))
       (Ssequence
@@ -1793,7 +1793,7 @@ Definition f_garbage_collect := {|
                               {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
               ((Evar ___stringlit_3 (tarray tschar 30)) ::
                (Evar ___stringlit_2 (tarray tschar 5)) ::
-               (Econst_int (Int.repr 387) tint) ::
+               (Econst_int (Int.repr 393) tint) ::
                (Evar ___stringlit_14 (tarray tschar 2)) :: nil))
             (Scall None (Evar _abort (Tfunction Tnil tvoid cc_default)) nil)))))))
 |}.

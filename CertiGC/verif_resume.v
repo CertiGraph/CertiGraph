@@ -42,8 +42,10 @@ Proof.
                            (Int.repr (fun_word_size f_info)))) as comp.
       cbv [Archi.ptr64] in Heqcomp. rewrite <- Heqcomp in H7.
       destruct comp eqn:? ; simpl in H7. 1: inversion H7. symmetry in Heqcomp.
-      first [apply Int64_ltu_false in Heqcomp | apply ltu_repr_false in Heqcomp];
-        [lia | first [apply total_space_range | apply word_size_range]..].
+      match goal with
+      | H : Int64.ltu _ _ = false |- _ => apply ltu64_repr_false in H
+      | H : Int.ltu _ _ = false |- _ => apply ltu_repr_false in H
+      end; [lia | first [apply total_space_range | apply word_size_range]..].
     + rewrite <- Heqv in *. red in H0. rewrite H0 in H5.
       unfold previous_vertices_size in H5. simpl in H5. unfold nth_space in H5.
       rewrite H1 in H5. simpl in H5. rewrite <- H2 in H5.
