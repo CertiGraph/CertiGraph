@@ -1,5 +1,4 @@
 Require Import CertiGraph.graph.SpaceAdjMatGraph1.
-Require Export CertiGraph.priq.is_empty_lemmas. (* *)
 Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
@@ -17,22 +16,51 @@ Section DijkstraProof.
   Context {inf: Z}.
   Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
-  Definition dijk_setup_loop_inv g sh src dist prev v_pq arr addresses :=
+  Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
+  Proof.
+    start_function.
+    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
+    assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
+      unfold graph_to_mat, vert_to_list.
+      rewrite Znth_map; repeat rewrite Zlength_map.
+      all: rewrite nat_inc_list_Zlength; lia.
+    }
+    assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_mat size g id)))) by lia.
+    assert (0 <= i < Zlength (Znth u (@graph_to_mat size g id))). {
+      rewrite Zlength_map in H1. lia.
+    }
+    Intros.
+    freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
+    unfold list_rep.
+    forward. forward. forward. thaw FR.
+    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
+    cancel.
+  Qed.
+
+  
+  Definition dijk_setup_loop_inv g sh src dist prev v_pq heap keys_pv v_temp arr addresses :=
     EX i : Z,
     PROP ()
     LOCAL (temp _dist (pointer_val_val dist);
           temp _prev (pointer_val_val prev);
           temp _src (Vint (Int.repr src));
-          temp _pq (pointer_val_val v_pq);
+          temp _pq v_pq;
           temp _graph (pointer_val_val arr);
-          temp _size (Vint (Int.repr size)); 
+          temp _size (Vint (Int.repr size));
+          temp _keys (pointer_val_val keys_pv);
           temp _inf (Vint (Int.repr inf)))
-    SEP (data_at Tsh
-                 (tarray tint size)
-                 ((list_repeat (Z.to_nat i)
-                               (Vint (Int.repr inf)))
-                    ++ (list_repeat (Z.to_nat (size-i))
-                                    Vundef)) (pointer_val_val v_pq);
+    SEP (valid_pq v_pq heap;
+        data_at Tsh (tarray tint (heap_capacity heap))
+                (list_repeat (Z.to_nat (heap_capacity heap)) (default_val tint))
+                (pointer_val_val keys_pv) *
+        free_tok (pointer_val_val keys_pv) (heap_capacity heap * sizeof tint) *
+        data_at_ Tsh (Tstruct _structItem noattr) v_temp;
+(*        data_at Tsh
+                (tarray tint size)
+                ((list_repeat (Z.to_nat i)
+                              (Vint (Int.repr inf)))
+                   ++ (list_repeat (Z.to_nat (size-i))
+                                   Vundef)) v_pq; *)
         data_at Tsh
                 (tarray tint size)
                 ((list_repeat (Z.to_nat i)
@@ -45,8 +73,7 @@ Section DijkstraProof.
                    ++ (list_repeat (Z.to_nat (size-i))
                                    Vundef)) (pointer_val_val dist);
         @SpaceAdjMatGraph size CompSpecs sh id
-                          g (pointer_val_val arr) addresses;
-        free_tok (pointer_val_val v_pq) (sizeof tint * size)).
+                          g (pointer_val_val arr) addresses).
   
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
@@ -236,26 +263,6 @@ Section DijkstraProof.
              free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
 
-  Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
-  Proof.
-    start_function.
-    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
-    assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
-      unfold graph_to_mat, vert_to_list.
-      rewrite Znth_map; repeat rewrite Zlength_map.
-      all: rewrite nat_inc_list_Zlength; lia.
-    }
-    assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_mat size g id)))) by lia.
-    assert (0 <= i < Zlength (Znth u (@graph_to_mat size g id))). {
-      rewrite Zlength_map in H1. lia.
-    }
-    Intros.
-    freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
-    unfold list_rep.
-    forward. forward. forward. thaw FR.
-    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
-    cancel.
-  Qed.
 
   
   (* DIJKSTRA PROOF BEGINS *)
@@ -275,21 +282,23 @@ Section DijkstraProof.
     forward_call (size).
     1: admit. (* add to precon? *)
     Intros temp.
-    destruct temp as [pq_ptr heap]. simpl fst; simpl snd.
+    destruct temp as [priq_ptr heap]. simpl fst; simpl snd.
     forward_for_simple_bound
       size
-      (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).
+      (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr heap keys_pv v_temp_item graph_ptr addresses).
     - rewrite list_repeat_0, app_nil_l, Z.sub_0_r, data_at__tarray.
-      entailer!.
-    - forward. forward.
-      forward_call ((pointer_val_val priq_ptr), i, inf,
-                    (list_repeat (Z.to_nat i)
-                                 (Vint (Int.repr inf)) ++
-                                 list_repeat (Z.to_nat
-                                                (size - i)) Vundef)).
-      1: split; [|red]; ulia.
-      repeat rewrite upd_Znth_list_repeat; try lia.
-      entailer!.     
+      replace (size * sizeof tint / sizeof tint) with size.
+      2: { rewrite Z.div_mul; trivial; simpl; lia. }
+      entailer!. cancel.
+    - Intros. forward. forward.
+      forward_call (priq_ptr, heap, inf, Int.repr i).
+      1: admit.
+      Intro temp'. destruct temp' as [h' key].
+      forward.
+      + entailer!.
+      + repeat rewrite upd_Znth_list_repeat; try lia.
+        entailer!.
+        admit.
     - (* At this point we are done with the
        first for loop. The arrays are all set to inf. *)
       replace (size - size) with 0 by lia;

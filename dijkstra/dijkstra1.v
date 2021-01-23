@@ -134,7 +134,7 @@ Definition _structPQ : ident := 9%positive.
 Definition _swim : ident := 74%positive.
 Definition _table : ident := 80%positive.
 Definition _target : ident := 81%positive.
-Definition _the_item : ident := 117%positive.
+Definition _temp_item : ident := 117%positive.
 Definition _time : ident := 96%positive.
 Definition _u : ident := 114%positive.
 Definition _t'1 : ident := 123%positive.
@@ -501,7 +501,7 @@ Definition f_dijkstra := {|
   fn_params := ((_graph, (tptr (tptr tint))) :: (_src, tint) ::
                 (_dist, (tptr tint)) :: (_prev, (tptr tint)) ::
                 (_size, tint) :: (_inf, tint) :: nil);
-  fn_vars := ((_the_item, (Tstruct _structItem noattr)) :: nil);
+  fn_vars := ((_temp_item, (Tstruct _structItem noattr)) :: nil);
   fn_temps := ((_i_ptr, (tptr tint)) :: (_keys, (tptr tint)) ::
                (_pq, (tptr (Tstruct _structPQ noattr))) :: (_i, tint) ::
                (_j, tint) :: (_u, tint) :: (_cost, tint) :: (_t'5, tint) ::
@@ -611,11 +611,13 @@ Definition f_dijkstra := {|
                                                     (tptr (Tstruct _structItem noattr))
                                                     Tnil)) tvoid cc_default))
                       ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
-                       (Eaddrof (Evar _the_item (Tstruct _structItem noattr))
+                       (Eaddrof
+                         (Evar _temp_item (Tstruct _structItem noattr))
                          (tptr (Tstruct _structItem noattr))) :: nil))
                     (Ssequence
                       (Sset _u
-                        (Efield (Evar _the_item (Tstruct _structItem noattr))
+                        (Efield
+                          (Evar _temp_item (Tstruct _structItem noattr))
                           _data tint))
                       (Ssequence
                         (Sset _i (Econst_int (Int.repr 0) tint))

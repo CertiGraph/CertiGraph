@@ -71,7 +71,7 @@ int getCell (int **graph, int u, int i) {
 
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     int* i_ptr; 
-    Item the_item;
+    Item temp_item;
     int* keys = mallocN (size * sizeof (int));
     PQ* pq = pq_make(size); 
     int i, j, u, cost;
@@ -84,8 +84,8 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     prev[src] = src;
     pq_edit_priority(pq, keys[src], 0); // special value for src
     while (pq_size(pq) > 0) {
-        pq_remove_min_nc(pq,&the_item);
-        u = the_item.data; // src -> u is optimal. relax u's neighbors, then done with u.
+        pq_remove_min_nc(pq,&temp_item);
+        u = temp_item.data; // src -> u is optimal. relax u's neighbors, then done with u.
         for (i = 0; i < size; i++) {
             cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine
