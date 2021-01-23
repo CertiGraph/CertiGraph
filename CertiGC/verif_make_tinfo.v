@@ -9,7 +9,7 @@ Proof.
   - split; [|split]; cbv; [split; intro HS; inversion HS | reflexivity..].
   - Intros t. if_tac.
     + subst t. forward_if False.
-      2: exfalso; apply H; trivial.
+      2: exfalso; first [rewrite Int64.eq_true in H; inversion H | apply H; trivial].
       unfold all_string_constants; Intros;
         forward_call ((gv ___stringlit_9),
                       (map init_data2byte (gvar_init v___stringlit_9)), sh);
