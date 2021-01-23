@@ -299,7 +299,7 @@ Proof.
         -- Intros i g3 t_info3. forward_if (i <= z).
            ++ forward. entailer!.
               first [rewrite !Int.unsigned_repr in H34 |
-                     apply Int64_ltu_false in H34]; try lia.
+                     apply ltu64_repr_false in H34]; try lia.
               ** clear -H28 H33. simpl in H28. split. 1: lia.
                  transitivity
                    (Zlength (raw_fields (vlabel g' (to, (to_index + n)%nat))) + 1);

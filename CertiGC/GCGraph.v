@@ -5879,7 +5879,7 @@ Proof.
   transitivity (two_p (WORD_SIZE * 8 - 10)); auto. now vm_compute.
 Qed.
 
-Lemma Int64_ltu_false: forall x y,
+Lemma ltu64_repr_false: forall x y,
     0 <= y <= Int64.max_unsigned -> 0 <= x <= Int64.max_unsigned ->
     Int64.ltu (Int64.repr x) (Int64.repr y) = false -> x >= y.
 Proof.

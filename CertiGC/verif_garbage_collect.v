@@ -346,7 +346,10 @@ Proof.
           with int_or_ptr_type in H39.
         rewrite sem_sub_pp_total_space, sem_sub_pp_rest_space in H40; auto.
         simpl in H40. apply typed_true_of_bool in H40. rewrite negb_true_iff in H40.
-        first [apply lt64_repr_false in H40 | apply lt_repr_false in H40].
+        match goal with
+        | H : Int64.lt _ _ = false |- _ => apply lt64_repr_false in H
+        | H : Int.lt _ _ = false |- _ => apply lt_repr_false in H
+        end.
         2: apply rest_space_repable_signed. 2: apply total_space_repable_signed.
         assert (safe_to_copy_gen g2 (Z.to_nat i) (S (Z.to_nat i))). {
           red. destruct H27 as [? _]. destruct H36 as [_ [_ [_ [_ ?]]]].
