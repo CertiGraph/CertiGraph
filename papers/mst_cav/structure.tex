@@ -1,7 +1,7 @@
 %\subsection{Modularity of library and VST verification}
 In previous work by both VST and CertiGraph, the C functions and algorithms implemented and verified are isolated programs with little to no dependency on each other. Even the garbage collector verified by Wang et al\cite{DBLP:journals/pacmpl/WangCMH19} was independent of the other verified algorithms in the library. VST has noted the importance of having a client for a verified program, to judge whether the actual utility of the verified specifications\cite{DBLP:conf/iwmm/AppelN20}. Our work on Kruskal's algorithm is the first step in verifying code that uses \textit{previously} verified C code. To make use of Wang's verified union-find, we reorganised the internal hierarchies in his CertiGraph library, providing a clearer separation between mathematical lemmas, VST specifications and proofs.
 
-\includegraphics[scale=0.50]{structure_placeholder.jpg}
+%\includegraphics[scale=0.50]{structure_placeholder.jpg} %Please check in this file.
 
 We reorganised CertiGraph into three layers: The mathematical layer which contains ``pure Coq" mathematical models and lemmas; the spatial layer to represent graphs in Verifiable C; and the verification layer, for specifications and verifications of C code, whose ASTs were retrieved from CompCert's \textit{clightgen} utility. We further separate this third layer into specifications and verifications. This allows reuse of a previous specification by another system without being burdened by the verification, as illustrated above. The development and verification of components can then be performed in parallel.
 
