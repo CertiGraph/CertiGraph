@@ -72,7 +72,7 @@ int getCell (int **graph, int u, int i) {
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
     int* i_ptr; 
     Item the_item;
-    int* keys = malloc (size * sizeof (int));
+    int* keys = mallocN (size * sizeof (int));
     PQ* pq = pq_make(size); 
     int i, j, u, cost;
     for (i = 0; i < size; i++) {

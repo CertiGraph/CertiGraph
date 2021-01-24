@@ -1,5 +1,5 @@
 Require Import CertiGraph.graph.SpaceAdjMatGraph1.
-Require Export CertiGraph.priq.is_empty_lemmas.
+Require Export CertiGraph.priq.is_empty_lemmas. (* *)
 Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
@@ -236,7 +236,7 @@ Section DijkstraProof.
              free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
 
-  Lemma body_getCell: semax_body Vprog (@Gprog size inf Z_EqDec) f_getCell (@getCell_spec size inf).
+  Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
   Proof.
     start_function.
     rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
@@ -254,22 +254,28 @@ Section DijkstraProof.
     unfold list_rep.
     forward. forward. forward. thaw FR.
     rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
-    entailer!.
+    cancel.
   Qed.
 
   
   (* DIJKSTRA PROOF BEGINS *)
 
-  Lemma body_dijkstra: semax_body Vprog (@Gprog size inf Z_EqDec) f_dijkstra (@dijkstra_spec size inf).
+  Lemma body_dijkstra: semax_body Vprog (@Gprog size inf) f_dijkstra (@dijkstra_spec size inf).
   Proof.
     start_function.
     pose proof (size_further_restricted g).
     pose proof (inf_bounds g).
     rename H1 into Hsz.
     rename H2 into Hinf.
-    forward_call (tt).
-    1: split; [split|]; ulia.
-    Intro priq_ptr.
+    assert (Int.max_signed <= Int.max_unsigned) by now compute.
+    forward_call (size * sizeof(tint)).
+    1: simpl; lia.
+    Intro keys_pv.
+    remember (pointer_val_val keys_pv) as keys.
+    forward_call (size).
+    1: admit. (* add to precon? *)
+    Intros temp.
+    destruct temp as [pq_ptr heap]. simpl fst; simpl snd.
     forward_for_simple_bound
       size
       (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).

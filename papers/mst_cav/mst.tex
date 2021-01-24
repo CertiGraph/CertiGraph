@@ -119,8 +119,8 @@
 \renewcommand{\implies}{\Rightarrow}
 \renewcommand{\iff}{\Leftrightarrow}
 
-\title{A Machine-Checked C Implementation of Dijkstra's Shortest Path Algorithm}
-\titlerunning{A Machine-Checked C Implementation of Dijkstra's Shortest Path Algorithm}
+\title{Verified C implementations of classic textbook graph algorithms}
+%\titlerunning{A Machine-Checked C Implementation of Dijkstra's Shortest Path Algorithm}
 %optional, please use if title is longer than one line
 
 \begin{document}
@@ -173,11 +173,10 @@
 	
 	\begin{abstract}
 		\vspace{-1.2em}
-		This paper provides proof-verified C graph implementations
-		of Dijkstra's, Prim's and Kruskal's classical algorithms.
-		We prove functional correctness of these implementations, and improve Wang et al\cite{DBLP:journals/pacmpl/WangCMH19}'s CertiGraph platform to reason about undirected graph properties and common spatial representations.
+		This paper provides proof-verified graph implementations of Dijkstra's, Prim's and Kruskal's graph algorithms.
+		We prove functional correctness of our C implementations, and improve Wang et al\cite{DBLP:journals/pacmpl/WangCMH19}'s CertiGraph platform to reason about undirected graph properties and common spatial representations.
 		
-		In particular, we encounter and explain an overflow issue in Dijkstra’s algorithm. The precise bound in the relevant precondition is nontrivial: we show that the intuitive guess fails and provide a workable refinement. We also make an observation of Prim's algorithm that contradicts the common consensus that the basic algorithm cannot work on disconnected graphs - our implementation is able to compute minimum spanning forests without finding components first.
+		In particular, we encounter and explain an overflow issue in Dijkstra’s algorithm. The precise bound in the relevant precondition is nontrivial: we show that the intuitive guess fails and provide a workable refinement. We also make an observation of Prim's algorithm that contradicts the common notion that the basic algorithm cannot work on disconnected graphs - our Prim's implementation is able to compute minimum spanning forests without finding components first.
 		
 		This work fits into an ongoing exploration of verified graph-manipulating algorithms in a realistic setting.
 		
