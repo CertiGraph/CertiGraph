@@ -38,29 +38,27 @@ Section DijkstraProof.
   Qed.
 
   
-  Definition dijk_setup_loop_inv g sh src dist prev v_pq heap keys_pv v_temp arr addresses :=
+  Definition dijk_setup_loop_inv g sh src dist prev v_pq keys_ptr v_temp arr addresses :=
     EX i : Z,
-    PROP ()
+    EX h : heap,
+    EX keys: list key_type,
+    PROP (Permutation keys (nat_inc_list (Z.to_nat i)))
     LOCAL (temp _dist (pointer_val_val dist);
           temp _prev (pointer_val_val prev);
           temp _src (Vint (Int.repr src));
           temp _pq v_pq;
           temp _graph (pointer_val_val arr);
           temp _size (Vint (Int.repr size));
-          temp _keys (pointer_val_val keys_pv);
+          temp _keys (pointer_val_val keys_ptr);
           temp _inf (Vint (Int.repr inf)))
-    SEP (valid_pq v_pq heap;
-        data_at Tsh (tarray tint (heap_capacity heap))
-                (list_repeat (Z.to_nat (heap_capacity heap)) (default_val tint))
-                (pointer_val_val keys_pv) *
-        free_tok (pointer_val_val keys_pv) (heap_capacity heap * sizeof tint) *
+    SEP (valid_pq v_pq h;
         data_at_ Tsh (Tstruct _structItem noattr) v_temp;
-(*        data_at Tsh
+        data_at Tsh
                 (tarray tint size)
-                ((list_repeat (Z.to_nat i)
-                              (Vint (Int.repr inf)))
-                   ++ (list_repeat (Z.to_nat (size-i))
-                                   Vundef)) v_pq; *)
+                (map Vint (map Int.repr keys) ++
+                     (list_repeat (Z.to_nat (size-i)) Vundef))
+                (pointer_val_val keys_ptr);
+        free_tok (pointer_val_val keys_ptr) (heap_capacity h * sizeof tint);
         data_at Tsh
                 (tarray tint size)
                 ((list_repeat (Z.to_nat i)
@@ -282,45 +280,94 @@ Section DijkstraProof.
     forward_call (size).
     1: admit. (* add to precon? *)
     Intros temp.
-    destruct temp as [priq_ptr heap]. simpl fst; simpl snd.
+    destruct temp as [priq_ptr h].
+    simpl fst in *; simpl snd in *.
     forward_for_simple_bound
       size
-      (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr heap keys_pv v_temp_item graph_ptr addresses).
+      (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_pv v_temp_item graph_ptr addresses).
     - rewrite list_repeat_0, app_nil_l, Z.sub_0_r, data_at__tarray.
       replace (size * sizeof tint / sizeof tint) with size.
       2: { rewrite Z.div_mul; trivial; simpl; lia. }
-      entailer!. cancel.
-    - Intros. forward. forward.
-      forward_call (priq_ptr, heap, inf, Int.repr i).
-      1: admit.
+      rewrite  <- Heqkeys.
+      Exists h. Exists (@nil key_type).
+      entailer!.
+    - forward. forward.
+      forward_call (priq_ptr, h0, inf, Int.repr i).
+      1: { admit. }
       Intro temp'. destruct temp' as [h' key].
       forward.
-      + entailer!.
-      + repeat rewrite upd_Znth_list_repeat; try lia.
-        entailer!.
+      repeat rewrite upd_Znth_list_repeat; try lia.
+      simpl fst in *. simpl snd in *.
+      assert (Zlength keys0 = i). {
+        unfold key_type in *.
+        rewrite (Permutation_Zlength _ _ H5).
+        rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
+      }
+      rewrite upd_Znth_app2.
+      2: { repeat rewrite Zlength_map.
+           unfold key_type in *.
+           rewrite H8.
+           rewrite Zlength_list_repeat; lia.
+      }
+      replace (i - Zlength (map Vint (map Int.repr keys0))) with 0.
+      2: { repeat rewrite Zlength_map.
+           unfold key_type in *. lia.
+      }
+      replace (Z.to_nat (size - i)) with (Z.to_nat 1 + Z.to_nat (size - (i + 1)))%nat.
+      2: { admit. }
+      rewrite <- (list_repeat_app _ (Z.to_nat 1) (Z.to_nat (size - (i + 1)))).
+      simpl list_repeat at 1.
+      rewrite upd_Znth_app1.
+      2: { rewrite binary_heap_Zmodel.Zlength_one. lia. }
+      replace (upd_Znth 0 [Vundef] (Vint (Int.repr key))) with [(Vint (Int.repr key))].
+      2: { rewrite upd_Znth0. reflexivity. }
+      Exists h'.
+      Exists (keys0 ++ [key]).
+      rewrite H6.
+      entailer!.
+      +
+        (* this is interesting, and it may need to come 
+           from PQ?
+         *)
         admit.
+      + rewrite map_app, map_app, app_assoc. cancel. 
     - (* At this point we are done with the
        first for loop. The arrays are all set to inf. *)
       replace (size - size) with 0 by lia;
         rewrite list_repeat_0, <- (app_nil_end).
+      Intros h' keys'.
+      assert (Zlength keys' = size). {
+        unfold key_type in *.
+        rewrite (Permutation_Zlength _ _ H4).
+        rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
+      }
       forward. forward.
       do 2 rewrite <- map_list_repeat.
-      forward_call ((pointer_val_val priq_ptr), src, 0,
-                    (list_repeat (Z.to_nat size) inf)).
-      1: split; [|red]; ulia.
-      do 2 rewrite map_list_repeat.
-      assert (H_src_valid: vvalid g src). {
-        rewrite (vvalid_meaning g); trivial.
+      forward.
+      1: { entailer!.
+           apply Forall_Znth with (i := src) in H3.
+           2: lia.
+           rewrite <- app_nil_end.
+           repeat rewrite Znth_map.
+           apply I.
+           2: rewrite Zlength_map.
+           all: unfold key_type in *; rewrite H5; auto.
       }
-
+      rewrite <- app_nil_end.
+      repeat rewrite Znth_map.
+      3: rewrite Zlength_map.
+      2,3: unfold key_type in *; lia.
+      forward_call (priq_ptr, h', Znth src keys', Int.repr 0).
       (* Special values for src have been inserted *)
-
+      
       (* We will now enter the main while loop.
        We state the invariant just below, in PROP.
 
        VST will first ask us to first show the
        invariant at the start of the loop
        *)
+
+      (* HERE *)
       
       forward_loop
       (dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses)
