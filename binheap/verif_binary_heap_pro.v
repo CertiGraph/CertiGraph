@@ -160,25 +160,97 @@ Definition pq_free_spec :=
     LOCAL ()
     SEP (emp). 
 
-Fixpoint update_pri_by_key (h: list heap_item) (key: key_type) (newpri: priority_type) :=
-  match h with
-  | [] => []
-  | (key', pri', data') :: t =>
-    if Z.eq_dec key key'
-    then (key, newpri, data') :: t
-    else (key', pri', data') :: (update_pri_by_key t key newpri)
-  end.
+Definition update_pri_if_key (key: key_type) (newpri: priority_type) (hi : heap_item) :=
+  if Z.eq_dec key (heap_item_key hi) then (key, newpri, heap_item_payload hi) else hi.
+
+Definition update_pri_by_key (h: list heap_item) (key: key_type) (newpri: priority_type) :=
+  map (update_pri_if_key key newpri) h.
+
+Inductive Subsequence {A : Type} : list A -> list A -> Prop :=
+ | SubNil: forall L, Subsequence nil L
+ | SubIn: forall L1 L2, Subsequence L1 L2 -> forall x, Subsequence (x :: L1) (x :: L2)
+ | SubOut: forall L1 L2, Subsequence L1 L2 -> forall x, Subsequence L1 (x :: L2).
+
+Definition sub_permutation {A} (l1 l2 : list A) :=
+  exists l2', Permutation l2' l2 /\ Subsequence l1 l2'.
+
+Definition keys_valid (h : list heap_item) :=
+  NoDup (map heap_item_key h).
+
+Lemma Subsequence_In: forall A (l1 l2 : list A),
+  Subsequence l1 l2 ->
+  forall x, In x l1 -> In x l2.
+Proof.
+  induction 1; simpl; auto. contradiction.
+  destruct 1; auto.
+Qed.
+
+Lemma NoDup_Subsequence: forall A (l1 l2 : list A),
+  Subsequence l1 l2 ->
+  NoDup l2 ->
+  NoDup l1.
+Proof.
+  intros ? ? ? ?. induction H; intros.
+  * constructor.
+  * constructor. inversion H0. subst x0 l. intro. apply H3. eapply Subsequence_In; eauto.
+    apply IHSubsequence. inversion H0. trivial.
+  * inversion H0; auto.
+Qed.
+
+Lemma NoDup_sub_permutation: forall A (l1 l2 : list A),
+  sub_permutation l1 l2 ->
+  NoDup l2 ->
+  NoDup l1.
+Proof.
+  intros A l1 l2 [l2' [? ?]] ?.
+  eapply NoDup_Subsequence; eauto.
+  symmetry in H.
+  eapply Permutation_NoDup; eauto.
+Qed.
+
+Lemma keys_valid_tl: forall hi h,
+  keys_valid (hi :: h) -> keys_valid h.
+Proof. intros. eapply List_ext.NoDup_cons_1, H. Qed.
+
+Lemma update_pri_by_key_not_In: forall h key newpri,
+  ~In key (map heap_item_key h) ->
+  update_pri_by_key h key newpri = h.
+Proof.
+  induction h. reflexivity. intros.
+  simpl. unfold update_pri_if_key. case Z.eq_dec; intro. exfalso. apply H. left. auto.
+  rewrite IHh; trivial. intro. apply H. right. trivial.
+Qed.
 
 Lemma update_pri_by_key_split: forall h key newpri start xp xd rest,
-    h = start ++ (key, xp, xd) :: rest ->
-    update_pri_by_key h key newpri = start ++ (key, newpri, xd) :: rest.
-Proof. Admitted.
+  keys_valid h ->
+  h = start ++ (key, xp, xd) :: rest ->
+  update_pri_by_key h key newpri = start ++ (key, newpri, xd) :: rest.
+Proof.
+  intros h key newpri start xp xd. revert h. induction start; intros; rewrite H0.
+  * simpl in *. subst h. rewrite update_pri_by_key_not_In. f_equal.
+    unfold update_pri_if_key. case Z.eq_dec. trivial. contradiction.
+    intro. red in H. simpl in H. inversion H. contradiction.
+  * subst h. simpl in H. generalize (keys_valid_tl _ _ H); intro.
+    specialize (IHstart (start ++ (key, xp, xd) :: rest) rest H0 (eq_refl _)).
+    simpl. rewrite IHstart. f_equal.
+    unfold update_pri_if_key. case Z.eq_dec; auto. intro.
+    inversion H. subst key. rewrite map_app in H3. exfalso. apply H3.
+    apply in_or_app. right. left. trivial.
+Qed.
 
 Lemma can_split: forall (h: heap) (key: key_type),
     (~In key (map heap_item_key (heap_items h))) \/
     exists start xp xd rest,
       (heap_items h) = start ++ (key, xp, xd) :: rest.
-Admitted.
+Proof.
+  destruct h. simpl. induction l. left. intro. inversion H.
+  intro key. case (Z.eq_dec key (heap_item_key a)); intro.
+  * right. destruct a as [[? ?] ?]. unfold heap_item_key in e. simpl in e. subst k.
+    exists nil, p, p0, l. trivial.
+  * specialize (IHl key). destruct IHl. left. intro. apply H. simpl in H0. destruct H0; [symmetry in H0|]; contradiction.
+    destruct H as [start [xp [xd [rest ?]]]].
+    right. exists (a :: start), xp, xd, rest. rewrite H. trivial.
+Qed.
 
 Definition pq_edit_priority_spec := 
   DECLARE _pq_edit_priority WITH pq : val, h : heap, key : Z, newpri : int
@@ -748,7 +820,7 @@ Lemma heap_item_rep_morph: forall x y,
   (fst (heap_item_rep x), (fst (snd (heap_item_rep y)), snd (snd (heap_item_rep x)))) = 
   heap_item_rep (fst (fst x), snd (fst y), snd x).
 Proof. unfold heap_item_rep. destruct x,y; reflexivity. Qed.
-
+a
 Lemma body_exch: semax_body Vprog Gprog f_exch exch_spec.
 Proof.
   start_function.
