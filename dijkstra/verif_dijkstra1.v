@@ -160,33 +160,40 @@ Section DijkstraProof.
  *)
   
   Definition dijk_forloop_break_inv (g: @DijkGG size inf) sh
-             src dist_ptr prev_ptr priq_ptr
-             graph_ptr addresses :=
+             src dist_ptr prev_ptr keys_ptr priq_ptr
+             graph_ptr temp_item addresses :=
     EX prev: list V,
-    EX priq: list Z,
     EX dist: list Z,
     EX popped: list V,
+    EX h : heap,
+    EX keys: list key_type,
     PROP (
+
+        (* TODO replace this? 
         (* This fact comes from breaking while *)
         Forall (fun x => x >= inf) priq;
+         *)
       (* And the correctness condition is established *)
       dijkstra_correct g src popped prev dist)
-         LOCAL (temp _pq priq_ptr)
+         LOCAL (temp _pq priq_ptr;
+               temp _temp_item (pointer_val_val temp_item))
          SEP (data_at Tsh
                       (tarray tint size)
                       (map Vint (map Int.repr prev))
                       (pointer_val_val prev_ptr);
-             (data_at Tsh
-                      (tarray tint size)
-                      (map Vint (map Int.repr priq))
-                        priq_ptr);
              data_at Tsh
                      (tarray tint size)
                      (map Vint (map Int.repr dist))
                      (pointer_val_val dist_ptr);
              @SpaceAdjMatGraph size CompSpecs sh id
                                g (pointer_val_val graph_ptr) addresses;
-             free_tok priq_ptr (sizeof tint * size)).
+             valid_pq priq_ptr h;
+             data_at Tsh (tarray tint (heap_capacity h)) (map Vint (map Int.repr keys))
+                     (pointer_val_val keys_ptr);
+             data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
+                      (pointer_val_val temp_item);
+             free_tok (pointer_val_val temp_item) (sizeof (Tstruct _structItem noattr));
+             free_tok (pointer_val_val keys_ptr) (heap_capacity h * sizeof tint)).
   
   Definition dijk_inner_forloop_inv (g: @DijkGG size inf) sh
              src (priq dist prev : list Z)
@@ -420,7 +427,7 @@ Section DijkstraProof.
 
       forward_loop
       (dijk_forloop_inv g sh src dist_ptr prev_ptr keys_pv priq_ptr graph_ptr temp_item addresses)
-      break: (dijk_forloop_break_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).
+      break: (dijk_forloop_break_inv g sh src dist_ptr prev_ptr keys_pv priq_ptr graph_ptr temp_item addresses).
       + unfold dijk_forloop_inv.
         Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) src).
         Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) 0).
@@ -468,6 +475,14 @@ Section DijkstraProof.
             lia.
           }
           rewrite Int.unsigned_repr in H9 by trivial.
+          (* HELP -- massage it into a "hitem", then frame, then call *)
+          freeze FR := (data_at _ _ _ _)
+                         (data_at _ _ _ _)
+                         (data_at _ _ _ _)
+                         (free_tok _ _)
+                         (free_tok _ _)
+                         (SpaceAdjMatGraph _ _ _ _ _).
+          
           forward_call (priq_ptr,
                         h''',
                         pointer_val_val temp_item,
@@ -476,13 +491,18 @@ Section DijkstraProof.
           (* HELP -- massaging it into a "hitem" earlier should 
              discharge this automagically? *)
           Unshelve.
-          3: admit. (* this is related to the above *)
+          3: admit. (* HELP this is related to the above? *)
           1: lia.
 
-          Intros temp. destruct temp as [h'''' min_item].
+          Intros temp. destruct temp as [h'''' min_item]. 
           simpl fst in *. simpl snd in *.
 
-          (* found bug *)
+          (* HELP 
+             A bit lost... what's going on in SEP? *)
+
+          admit.
+
+          (* 
           
           (* u is the minimally chosen item from the
            "seen but not popped" category of vertices *)
@@ -939,24 +959,26 @@ Section DijkstraProof.
             unfold dijkstra_correct.
             split3; [auto | apply H16 | apply H18];
               try rewrite <- (vvalid_meaning g); trivial.
-            
+           *)
         * (* After breaking from the while loop,
            prove break's postcondition *)
-          assert (@isEmpty inf priq = Vone). {
-            destruct (@isEmptyTwoCases inf priq); trivial;
-              rewrite H12 in H11; simpl in H11; now inversion H11.
-          }
-          clear H11.
-          forward. Exists prev priq dist popped.
-          entailer!.
-          pose proof (@isEmptyMeansInf inf priq).
-          rewrite H25 in H12.
-          rewrite Forall_forall in H12 |- *.
-          intros. specialize (H12 _ H26). lia.
+          forward. Exists prev dist popped h''' keys'''.
+          assert (heap_capacity h''' = heap_capacity h) by admit.
+          (* probably provable from somewhere... *)
+          rewrite H10. entailer!.
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
-        Intros prev priq dist popped.
-        freeze FR := (data_at _ _ _ (pointer_val_val prev_ptr))
+        Intros prev dist popped h''' keys'''.
+        freeze FR := (valid_pq _ _)
+                       (data_at _ _ _ _)
+                       (data_at _ _ _ _)
+                       (data_at _ _ _ _)
+                       (SpaceAdjMatGraph _ _ _ _ _)
+                       (free_tok (pointer_val_val keys_pv) _).
+        (* TODO: add freeN... *)
+        admit.
+
+        (*freeze FR := (data_at _ _ _ (pointer_val_val prev_ptr))
                        (data_at _ _ _ (pointer_val_val dist_ptr))
                        (SpaceAdjMatGraph _ _ _ _ _).
         forward_call (Tsh, priq_ptr, size, priq).
@@ -965,6 +987,7 @@ Section DijkstraProof.
         forward.
         Exists prev dist popped. entailer!.
         intros. destruct (H2 _ H9) as [? _]; trivial.
-  Qed.
+         *)
+  Admitted.
 
 End DijkstraProof.
