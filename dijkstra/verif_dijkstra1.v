@@ -6,33 +6,6 @@ Require Import CertiGraph.dijkstra.dijkstra_spec1.
 
 Local Open Scope Z_scope.
 
-Definition hitem_ (v : val) : mpred :=
-  EX v1 v2 v3, data_at Tsh t_item (v1, (v2, v3)) v.
-
-Lemma hitem_hitem_: forall v hi,
-  hitem hi v |-- hitem_ v.
-Proof.
-  intros. unfold hitem_. simpl.
-  Exists (Vint (Int.repr (fst (fst hi)))) (Vint (snd (fst hi))) (Vint (snd hi)).
-  apply derives_refl.
-Qed.
-
-Lemma weaken_prehitem_: forall v,
-  malloc_compatible (sizeof (Tstruct _structItem noattr)) v ->
-  (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint)) v) |--
-  (hitem_ v).
-Proof.
-  intros v H.
-  apply malloc_compatible_field_compatible in H; simpl; auto. change (12 / 4) with 3.
-  Exists Vundef Vundef Vundef.
-unfold data_at_, data_at, field_at_, default_val, field_at. simpl.
-Intros.
-apply andp_right. apply prop_right. apply H.
-unfold at_offset.
-entailer!.
-admit.
-Admitted.
-
 Section DijkstraProof.
   
   (* The invariants have been dragged out of the 
