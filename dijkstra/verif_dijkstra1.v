@@ -351,7 +351,7 @@ Section DijkstraProof.
       simpl fst in *. simpl snd in *.
       assert (Zlength keys0 = i). {
         unfold key_type in *.
-        rewrite (Permutation_Zlength _ _ H5).
+        rewrite (Permutation_Zlength _ _ H6).
         rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
       }
 
@@ -359,7 +359,7 @@ Section DijkstraProof.
       rewrite upd_Znth_app2.
       2: { repeat rewrite Zlength_map.
            unfold key_type in *.
-           rewrite H8.
+           rewrite H9.
            rewrite Zlength_list_repeat; lia.
       }
       replace (i - Zlength (map Vint (map Int.repr keys0))) with 0.
@@ -395,20 +395,20 @@ Section DijkstraProof.
       Intros h' keys'.
       assert (Zlength keys' = size). {
         unfold key_type in *.
-        rewrite (Permutation_Zlength _ _ H4).
+        rewrite (Permutation_Zlength _ _ H5).
         rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
       }
       forward. forward.
       do 2 rewrite <- map_list_repeat.
       forward.
       1: { entailer!.
-           apply Forall_Znth with (i := src) in H3.
+           apply Forall_Znth with (i := src) in H4.
            2: lia.
            rewrite <- app_nil_end.
            repeat rewrite Znth_map.
            apply I.
            2: rewrite Zlength_map.
-           all: unfold key_type in *; rewrite H5; auto.
+           all: unfold key_type in *; rewrite H6; auto.
       }
       rewrite <- app_nil_end.
       repeat rewrite Znth_map.
@@ -471,10 +471,10 @@ Section DijkstraProof.
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity h''').
-            1: rewrite <- H13, Zlength_app; lia.
+            1: rewrite <- H14, Zlength_app; lia.
             lia.
           }
-          rewrite Int.unsigned_repr in H9 by trivial.
+          rewrite Int.unsigned_repr in H10 by trivial.
           (* HELP -- massage it into a "hitem", then frame, then call *)
           freeze FR := (data_at _ _ _ _)
                          (data_at _ _ _ _)
@@ -965,7 +965,7 @@ Section DijkstraProof.
           forward. Exists prev dist popped h''' keys'''.
           assert (heap_capacity h''' = heap_capacity h) by admit.
           (* TODO probably provable from somewhere... *)
-          rewrite H10. entailer!.
+          rewrite H11. entailer!.
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev dist popped h''' keys'''.
