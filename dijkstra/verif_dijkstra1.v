@@ -313,7 +313,8 @@ Section DijkstraProof.
     rename H2 into Htemp_item.
     (* HELP
        It would be awfully nice to massage temp_item 
-       into some "hitem" just about now...
+       into some "hitem" just about now.
+       I gave it a go but got stuck.
      *)
     forward_call (size * sizeof(tint)).
     1: simpl; lia.
@@ -342,8 +343,7 @@ Section DijkstraProof.
     - forward. forward.
       forward_call (priq_ptr, h0, inf, Int.repr i).
       1: { admit.
-           (* HELP -- pq_make should have an additional PROP
-            saying that heap_size = 0 *)
+           (* HELP -- needs to be added somewhere? Thoughts? *)
       }
       Intro temp'. destruct temp' as [h' key].
       forward.
@@ -497,7 +497,7 @@ Section DijkstraProof.
           Intros temp. destruct temp as [h'''' min_item]. 
           simpl fst in *. simpl snd in *.
 
-          (* HELP 
+          (* BIGHELP 
              A bit lost... what's going on in SEP? *)
 
           admit.
@@ -555,7 +555,7 @@ Section DijkstraProof.
           forward_for_simple_bound
             size
             (dijk_inner_forloop_inv
-               g sh src priq dist prev
+            g sh src priq dist prev
                dist_ptr prev_ptr priq_ptr graph_ptr addresses).
           -- (* We start the for loop as planned --
               with the old dist and prev arrays,
@@ -964,7 +964,7 @@ Section DijkstraProof.
            prove break's postcondition *)
           forward. Exists prev dist popped h''' keys'''.
           assert (heap_capacity h''' = heap_capacity h) by admit.
-          (* probably provable from somewhere... *)
+          (* TODO probably provable from somewhere... *)
           rewrite H10. entailer!.
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
