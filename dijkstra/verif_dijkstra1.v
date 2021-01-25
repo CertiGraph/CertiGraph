@@ -44,7 +44,7 @@ Section DijkstraProof.
     EX i : Z,
     EX h : heap,
     EX keys: list key_type,
-    PROP () (* Permutation keys (nat_inc_list (Z.to_nat i))) (* Aquinas: I don't see how you can prove this. *) *)
+    PROP (Permutation keys (map heap_item_key (heap_items h))) 
     LOCAL (temp _dist (pointer_val_val dist);
           temp _prev (pointer_val_val prev);
           temp _src (Vint (Int.repr src));
@@ -372,10 +372,10 @@ unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. 
       entailer!.
     - forward. forward.
       assert_PROP (heap_size h0 <= heap_capacity h0). {
-        unfold valid_pq, heap_size. go_lower. Intros arr junk arr2 lookup. rewrite Zlength_app in H14.
+        unfold valid_pq, heap_size. go_lower. Intros arr junk arr2 lookup. rewrite Zlength_app in H13.
         apply prop_right. rep_lia. }
       forward_call (priq_ptr, h0, inf, Int.repr i).
-      1: { admit. (* Aquinas: see H6.  Do we have an off-by-one issue somewhere? *)
+      1: { admit. (* Aquinas: see H5.  Do we have an off-by-one issue somewhere? *)
            (* HELP -- needs to be added somewhere? Thoughts? *)
       }
       Intro temp'. destruct temp' as [h' key].
@@ -383,15 +383,16 @@ unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. 
       repeat rewrite upd_Znth_list_repeat; try lia.
       simpl fst in *. simpl snd in *.
       assert (Zlength keys0 = i). {
-        unfold key_type in *.
-        rewrite (Permutation_Zlength _ _ H5).
-        rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
+        (* unfold key_type in *. *)
+        (* rewrite (Permutation_Zlength _ _ H4). *)
+        (* rewrite nat_inc_list_Zlength, Z2Nat.id; lia. *)
+        admit.
       }
       (* A number of tweaks to the keys array in SEP... *)
       rewrite upd_Znth_app2.
       2: { repeat rewrite Zlength_map.
            unfold key_type in *.
-           rewrite H9.
+           rewrite H8.
            rewrite Zlength_list_repeat; lia.
       }
       replace (i - Zlength (map Vint (map Int.repr keys0))) with 0.
@@ -419,7 +420,6 @@ unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. 
            Should I say that, or something more general?
          *)
         admit.
-      + rewrite map_app, map_app, app_assoc; cancel. 
     - (* At this point we are done with the
        first for loop. The arrays are all set to inf. *)
       replace (size - size) with 0 by lia;
@@ -427,7 +427,7 @@ unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. 
       Intros h' keys'.
       assert (Zlength keys' = size). {
         unfold key_type in *.
-        rewrite (Permutation_Zlength _ _ H5).
+        rewrite (Permutation_Zlength _ _ H4).
         rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
       }
       forward. forward.
