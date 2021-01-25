@@ -7,7 +7,31 @@ Require Import CertiGraph.dijkstra.dijkstra_spec1.
 Local Open Scope Z_scope.
 
 Definition hitem_ (v : val) : mpred :=
-  EX hi, hitem hi v.
+  EX v1 v2 v3, data_at Tsh t_item (v1, (v2, v3)) v.
+
+Lemma hitem_hitem_: forall v hi,
+  hitem hi v |-- hitem_ v.
+Proof.
+  intros. unfold hitem_. simpl.
+  Exists (Vint (Int.repr (fst (fst hi)))) (Vint (snd (fst hi))) (Vint (snd hi)).
+  apply derives_refl.
+Qed.
+
+Lemma weaken_prehitem_: forall v,
+  malloc_compatible (sizeof (Tstruct _structItem noattr)) v ->
+  (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint)) v) |--
+  (hitem_ v).
+Proof.
+  intros v H.
+  apply malloc_compatible_field_compatible in H; simpl; auto. change (12 / 4) with 3.
+  Exists Vundef Vundef Vundef.
+unfold data_at_, data_at, field_at_, default_val, field_at. simpl.
+Intros.
+apply andp_right. apply prop_right. apply H.
+unfold at_offset.
+entailer!.
+admit.
+Admitted.
 
 Section DijkstraProof.
   
@@ -39,44 +63,50 @@ Section DijkstraProof.
     rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
     cancel.
   Qed.
-
-  Definition dijk_setup_loop_inv g sh src dist prev v_pq keys_ptr temp_item arr addresses :=
+  
+  Definition dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_ptr temp_item arr addresses :=
     EX i : Z,
     EX h : heap,
     EX keys: list key_type,
-    PROP (Permutation keys (map heap_item_key (heap_items h))) 
-    LOCAL (temp _dist (pointer_val_val dist);
-          temp _prev (pointer_val_val prev);
+    EX dist_and_prev : list int,
+    PROP (Permutation keys (project_keys h);
+         forall j k,
+           0 <= j < i ->
+           Znth j keys = k ->
+           find_item_by_key (heap_items h) k =
+           [(k, Int.repr j, Znth j dist_and_prev)] \/
+           ~In k (project_keys h);
+         dist_and_prev = list_repeat (Z.to_nat i) (Int.repr inf))
+    LOCAL (temp _dist (pointer_val_val dist_ptr);
+          temp _prev (pointer_val_val prev_ptr);
           temp _src (Vint (Int.repr src));
-          temp _pq v_pq;
+          temp _pq priq_ptr;
           temp _graph (pointer_val_val arr);
           temp _size (Vint (Int.repr size));
           temp _keys (pointer_val_val keys_ptr);
           temp _inf (Vint (Int.repr inf));
           temp _temp_item (pointer_val_val temp_item))
-    SEP (valid_pq v_pq h;
+    SEP (valid_pq priq_ptr h;
          hitem_ (pointer_val_val temp_item);
-        (* Gradually converting from Vundef to a Permutation *)
         data_at Tsh
                 (tarray tint size)
                 (map Vint (map Int.repr keys) ++
                      (list_repeat (Z.to_nat (size-i)) Vundef))
                 (pointer_val_val keys_ptr);
-        free_tok (pointer_val_val keys_ptr) (size * sizeof tint);
-        free_tok (pointer_val_val temp_item) (sizeof (Tstruct _structItem noattr));
         data_at Tsh
                 (tarray tint size)
-                ((list_repeat (Z.to_nat i)
-                              (Vint (Int.repr inf)))
-                   ++ (list_repeat (Z.to_nat (size-i))
-                                   Vundef)) (pointer_val_val prev);
+                (map Vint dist_and_prev ++
+                     (list_repeat (Z.to_nat (size-i)) Vundef))
+                (pointer_val_val prev_ptr);
         data_at Tsh
                 (tarray tint size)
-                ((list_repeat (Z.to_nat i) (Vint (Int.repr inf)))
-                   ++ (list_repeat (Z.to_nat (size-i))
-                                   Vundef)) (pointer_val_val dist);
+                (map Vint dist_and_prev ++
+                     (list_repeat (Z.to_nat (size-i)) Vundef))
+                (pointer_val_val dist_ptr);
         @SpaceAdjMatGraph size CompSpecs sh id
-                          g (pointer_val_val arr) addresses).
+                          g (pointer_val_val arr) addresses;
+        free_tok (pointer_val_val keys_ptr) (size * sizeof tint);
+        free_tok (pointer_val_val temp_item) (sizeof (Tstruct _structItem noattr))).
 
   
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src
@@ -309,42 +339,9 @@ Section DijkstraProof.
     rename H2 into Hinf.
     assert (Int.max_signed <= Int.max_unsigned) by now compute.
     forward_call ((sizeof(Tstruct _structItem noattr))).
-(* Aquinas: exploration
-Print hitem.
-Set Nested Proofs Allowed.
-Print field_at_.
-Print default_val.
-Print data_at.
-Print heap_item.
-Print payload_type.
-Search Int.zero 0.
-Intro vret.
-replace (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
-          (pointer_val_val vret)) with
-(data_at Tsh (tarray tint ((Tstruct _structItem noattr) / sizeof tint))
-          (pointer_val_val vret)).
-
-
-Lemma hitem_fold: forall arr,
-data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
-          (pointer_val_val arr) = hitem (0,Int.zero,Int.zero) (pointer_val_val arr).
-Proof.
-  intros. unfold hitem. simpl. unfold heap_item_rep. simpl. unfold data_at_. unfold field_at_.
-unfold data_at. unfold t_item. simpl. unfold default_val. simpl.
-unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. simpl.
-
-*)
     Intros temp_item.
     rename H2 into Htemp_item.
-    (* HELP
-       It would be awfully nice to massage temp_item 
-       into some "hitem" just about now.
-       I gave it a go but got stuck.
-     *)
-(* Aquinas: This is not true here, but if we change the C code to initialize the data structure, it might be. *)
-    replace (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
-          (pointer_val_val temp_item)) with (hitem_ (pointer_val_val temp_item)) by admit.
-(* end Aquinas edit *)
+    sep_apply weaken_prehitem_.
     forward_call (size * sizeof(tint)).
     1: simpl; lia.
     Intro keys_pv.
@@ -383,16 +380,15 @@ unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. 
       repeat rewrite upd_Znth_list_repeat; try lia.
       simpl fst in *. simpl snd in *.
       assert (Zlength keys0 = i). {
-        (* unfold key_type in *. *)
-        (* rewrite (Permutation_Zlength _ _ H4). *)
-        (* rewrite nat_inc_list_Zlength, Z2Nat.id; lia. *)
-        admit.
+        unfold key_type in *.
+        rewrite (Permutation_Zlength _ _ H7).
+        rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
       }
       (* A number of tweaks to the keys array in SEP... *)
       rewrite upd_Znth_app2.
       2: { repeat rewrite Zlength_map.
            unfold key_type in *.
-           rewrite H8.
+           rewrite H9.
            rewrite Zlength_list_repeat; lia.
       }
       replace (i - Zlength (map Vint (map Int.repr keys0))) with 0.
@@ -420,6 +416,7 @@ unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. 
            Should I say that, or something more general?
          *)
         admit.
+      + rewrite map_app, map_app, app_assoc; cancel. 
     - (* At this point we are done with the
        first for loop. The arrays are all set to inf. *)
       replace (size - size) with 0 by lia;
@@ -427,7 +424,7 @@ unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. 
       Intros h' keys'.
       assert (Zlength keys' = size). {
         unfold key_type in *.
-        rewrite (Permutation_Zlength _ _ H4).
+        rewrite (Permutation_Zlength _ _ H5).
         rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
       }
       forward. forward.

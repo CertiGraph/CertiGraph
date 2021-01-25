@@ -3,7 +3,7 @@ Require Import VST.floyd.proofauto.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
 Require Export CertiGraph.binheap.binary_heap_pro.
-Require Import CertiGraph.binheap.env_binary_heap_pro.
+Require Export CertiGraph.binheap.env_binary_heap_pro.
 
 Set Nested Proofs Allowed.
 
@@ -90,19 +90,19 @@ Definition capacity_spec :=
     SEP (valid_pq pq h).
 
 Definition pq_remove_min_nc_spec :=
-  DECLARE _pq_remove_min_nc WITH pq : val, h : heap, i : val, iv : heap_item
+  DECLARE _pq_remove_min_nc WITH pq : val, h : heap, i : val
   PRE [tptr t_pq, tptr t_item]
     PROP (heap_size h > 0)
     PARAMS (pq; i)
     GLOBALS ()
-    SEP (valid_pq pq h; hitem iv i)
+    SEP (valid_pq pq h; hitem_ i)
   POST [tvoid]
-  EX h', EX iv' : heap_item,
+  EX h', EX iv : heap_item,
     PROP (heap_capacity h = heap_capacity h';
-          Permutation (heap_items h) (iv' :: heap_items h');
-          Forall (cmp_rel iv') (heap_items h'))
+          Permutation (heap_items h) (iv :: heap_items h');
+          Forall (cmp_rel iv) (heap_items h'))
     LOCAL ()
-    SEP (valid_pq pq h'; hitem iv' i).
+    SEP (valid_pq pq h'; hitem iv i).
 
 Definition pq_insert_nc_spec :=
   DECLARE _pq_insert_nc WITH pq : val, h : heap, priority : Z, data : int
@@ -166,6 +166,9 @@ Definition update_pri_if_key (key: key_type) (newpri: priority_type) (hi : heap_
 Definition update_pri_by_key (h: list heap_item) (key: key_type) (newpri: priority_type) :=
   map (update_pri_if_key key newpri) h.
 
+Definition find_item_by_key (h: list heap_item) (key: key_type) :=
+  filter (fun item => Z.eq_dec (heap_item_key item) key) h.
+
 Inductive Subsequence {A : Type} : list A -> list A -> Prop :=
  | SubNil: forall L, Subsequence nil L
  | SubIn: forall L1 L2, Subsequence L1 L2 -> forall x, Subsequence (x :: L1) (x :: L2)
@@ -176,6 +179,9 @@ Definition sub_permutation {A} (l1 l2 : list A) :=
 
 Definition keys_valid (h : list heap_item) :=
   NoDup (map heap_item_key h).
+
+Definition project_keys h :=
+  map heap_item_key (heap_items h).
 
 Lemma Subsequence_In: forall A (l1 l2 : list A),
   Subsequence l1 l2 ->
