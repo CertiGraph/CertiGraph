@@ -160,25 +160,97 @@ Definition pq_free_spec :=
     LOCAL ()
     SEP (emp). 
 
-Fixpoint update_pri_by_key (h: list heap_item) (key: key_type) (newpri: priority_type) :=
-  match h with
-  | [] => []
-  | (key', pri', data') :: t =>
-    if Z.eq_dec key key'
-    then (key, newpri, data') :: t
-    else (key', pri', data') :: (update_pri_by_key t key newpri)
-  end.
+Definition update_pri_if_key (key: key_type) (newpri: priority_type) (hi : heap_item) :=
+  if Z.eq_dec key (heap_item_key hi) then (key, newpri, heap_item_payload hi) else hi.
+
+Definition update_pri_by_key (h: list heap_item) (key: key_type) (newpri: priority_type) :=
+  map (update_pri_if_key key newpri) h.
+
+Inductive Subsequence {A : Type} : list A -> list A -> Prop :=
+ | SubNil: forall L, Subsequence nil L
+ | SubIn: forall L1 L2, Subsequence L1 L2 -> forall x, Subsequence (x :: L1) (x :: L2)
+ | SubOut: forall L1 L2, Subsequence L1 L2 -> forall x, Subsequence L1 (x :: L2).
+
+Definition sub_permutation {A} (l1 l2 : list A) :=
+  exists l2', Permutation l2' l2 /\ Subsequence l1 l2'.
+
+Definition keys_valid (h : list heap_item) :=
+  NoDup (map heap_item_key h).
+
+Lemma Subsequence_In: forall A (l1 l2 : list A),
+  Subsequence l1 l2 ->
+  forall x, In x l1 -> In x l2.
+Proof.
+  induction 1; simpl; auto. contradiction.
+  destruct 1; auto.
+Qed.
+
+Lemma NoDup_Subsequence: forall A (l1 l2 : list A),
+  Subsequence l1 l2 ->
+  NoDup l2 ->
+  NoDup l1.
+Proof.
+  intros ? ? ? ?. induction H; intros.
+  * constructor.
+  * constructor. inversion H0. subst x0 l. intro. apply H3. eapply Subsequence_In; eauto.
+    apply IHSubsequence. inversion H0. trivial.
+  * inversion H0; auto.
+Qed.
+
+Lemma NoDup_sub_permutation: forall A (l1 l2 : list A),
+  sub_permutation l1 l2 ->
+  NoDup l2 ->
+  NoDup l1.
+Proof.
+  intros A l1 l2 [l2' [? ?]] ?.
+  eapply NoDup_Subsequence; eauto.
+  symmetry in H.
+  eapply Permutation_NoDup; eauto.
+Qed.
+
+Lemma keys_valid_tl: forall hi h,
+  keys_valid (hi :: h) -> keys_valid h.
+Proof. intros. eapply List_ext.NoDup_cons_1, H. Qed.
+
+Lemma update_pri_by_key_not_In: forall h key newpri,
+  ~In key (map heap_item_key h) ->
+  update_pri_by_key h key newpri = h.
+Proof.
+  induction h. reflexivity. intros.
+  simpl. unfold update_pri_if_key. case Z.eq_dec; intro. exfalso. apply H. left. auto.
+  rewrite IHh; trivial. intro. apply H. right. trivial.
+Qed.
 
 Lemma update_pri_by_key_split: forall h key newpri start xp xd rest,
-    h = start ++ (key, xp, xd) :: rest ->
-    update_pri_by_key h key newpri = start ++ (key, newpri, xd) :: rest.
-Proof. Admitted.
+  keys_valid h ->
+  h = start ++ (key, xp, xd) :: rest ->
+  update_pri_by_key h key newpri = start ++ (key, newpri, xd) :: rest.
+Proof.
+  intros h key newpri start xp xd. revert h. induction start; intros; rewrite H0.
+  * simpl in *. subst h. rewrite update_pri_by_key_not_In. f_equal.
+    unfold update_pri_if_key. case Z.eq_dec. trivial. contradiction.
+    intro. red in H. simpl in H. inversion H. contradiction.
+  * subst h. simpl in H. generalize (keys_valid_tl _ _ H); intro.
+    specialize (IHstart (start ++ (key, xp, xd) :: rest) rest H0 (eq_refl _)).
+    simpl. rewrite IHstart. f_equal.
+    unfold update_pri_if_key. case Z.eq_dec; auto. intro.
+    inversion H. subst key. rewrite map_app in H3. exfalso. apply H3.
+    apply in_or_app. right. left. trivial.
+Qed.
 
 Lemma can_split: forall (h: heap) (key: key_type),
     (~In key (map heap_item_key (heap_items h))) \/
     exists start xp xd rest,
       (heap_items h) = start ++ (key, xp, xd) :: rest.
-Admitted.
+Proof.
+  destruct h. simpl. induction l. left. intro. inversion H.
+  intro key. case (Z.eq_dec key (heap_item_key a)); intro.
+  * right. destruct a as [[? ?] ?]. unfold heap_item_key in e. simpl in e. subst k.
+    exists nil, p, p0, l. trivial.
+  * specialize (IHl key). destruct IHl. left. intro. apply H. simpl in H0. destruct H0; [symmetry in H0|]; contradiction.
+    destruct H as [start [xp [xd [rest ?]]]].
+    right. exists (a :: start), xp, xd, rest. rewrite H. trivial.
+Qed.
 
 Definition pq_edit_priority_spec := 
   DECLARE _pq_edit_priority WITH pq : val, h : heap, key : Z, newpri : int
@@ -206,60 +278,7 @@ Definition Gprog : funspecs :=
                           pq_make_spec;
                           pq_edit_priority_spec]).
 
-(*
-
-Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
-Proof.
-  start_function.
-  forward_call (sizeof(Tstruct _structPQ noattr)).
-  1: compute; split; inversion 1.
-  Intros pq.
-  forward_call (sizeof(tuint) * size).
-  1: simpl; lia.
-  Intros table.
-  forward_call ((sizeof(Tstruct _structItem noattr) * size)).
-  Intros arr.
-  simpl sizeof.
-  replace (12 * size / 4) with (3 * size).
-  replace (4 * size / 4) with size.
-  replace (16 / 4) with 4.
-  2,3,4: admit. (* easy *)
-  forward_for_simple_bound
-    size
-    (EX i : Z,
-     PROP ()
-     LOCAL (temp _arr (pointer_val_val arr);
-            temp _size (Vint (Int.repr size)))
-     SEP (data_at_ Tsh (tarray tint (3 * size)) (pointer_val_val arr) *
-          free_tok (pointer_val_val arr) (12 * size) *
-          data_at_ Tsh (tarray tint size) (pointer_val_val table) *
-          free_tok (pointer_val_val table) (4 * size) *
-          data_at_ Tsh (tarray tint 4) (pointer_val_val pq) *
-          free_tok (pointer_val_val pq) 16)).
-  - entailer!.
-  - Intros.
-    assert_PROP
-      ((offset_val 0
-                   (force_val
-                      (sem_add_ptr_int (Tstruct _structItem noattr) Signed 
-                                       (pointer_val_val arr) (Vint (Int.repr i)))) =
-        field_address (tarray (Tstruct _structItem noattr) size) [ArraySubsc i] (pointer_val_val arr))). {
-      entailer!.
-      rewrite field_address_offset; trivial.
-      clear H6 H7. destruct H5 as [? [? [? [? ?]]]].
-      repeat split; try lia; trivial.
-      - admit.
-      - admit.
-    }
-    
-    Fail forward.
-    (* Okay, gotta unwrap all the way to the unsigned.
-       I feel pretty misled by VST though...
-     *)
-    
-Admitted.
-
-  Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
+Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
 Proof.
   start_function.
   assert (Hc : k = Zlength arr_contents \/ 0 <= k < Zlength arr_contents) by lia. destruct Hc as [Hc | Hc].
@@ -469,6 +488,199 @@ Proof.
     apply Permutation_map, Zexchange_Permutation.
   * rewrite Zparent_repr. trivial. lia.
 Time Qed.
+
+Lemma body_less: semax_body Vprog Gprog f_less less_spec.
+Proof.
+  start_function.
+  unfold linked_heap_array, heap_array.
+  Intros.
+  forward.
+  rewrite Znth_map; trivial.
+  entailer!.
+  forward.
+  do 2 (rewrite Znth_map; trivial).
+  entailer!.
+  forward.
+  repeat rewrite Znth_map in *; trivial.
+  unfold linked_heap_array, heap_array.
+  entailer!.
+Time Qed.
+
+Lemma body_size: semax_body Vprog Gprog f_pq_size pq_size_spec.
+Proof.
+  start_function.
+  unfold valid_pq.
+  Intros arr junk arr2 lookup.
+  forward.
+  forward.
+  unfold valid_pq.
+  Exists arr junk arr2 lookup.
+  entailer!.
+Time Qed.
+
+Lemma body_capacity: semax_body Vprog Gprog f_capacity capacity_spec.
+Proof.
+  start_function.
+  unfold valid_pq.
+  Intros arr junk arr2 lookup.
+  forward.
+  forward.
+  unfold valid_pq.
+  Exists arr junk arr2 lookup.
+  entailer!.
+Time Qed.
+
+(*
+
+Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
+Proof.
+  start_function.
+  forward_call (sizeof(Tstruct _structPQ noattr)).
+  1: compute; split; inversion 1.
+  Intros pq.
+  forward_call (sizeof(tuint) * size).
+  1: simpl; lia.
+  Intros table.
+  forward_call ((sizeof(Tstruct _structItem noattr) * size)).
+  Intros arr.
+  simpl sizeof.
+  replace (12 * size / 4) with (3 * size).
+  replace (4 * size / 4) with size.
+  replace (16 / 4) with 4.
+  2,3,4: admit. (* easy *)
+  forward_for_simple_bound
+    size
+    (EX i : Z,
+     PROP ()
+     LOCAL (temp _arr (pointer_val_val arr);
+            temp _size (Vint (Int.repr size)))
+     SEP (data_at_ Tsh (tarray tint (3 * size)) (pointer_val_val arr) *
+          free_tok (pointer_val_val arr) (12 * size) *
+          data_at_ Tsh (tarray tint size) (pointer_val_val table) *
+          free_tok (pointer_val_val table) (4 * size) *
+          data_at_ Tsh (tarray tint 4) (pointer_val_val pq) *
+          free_tok (pointer_val_val pq) 16)).
+  - entailer!.
+  - Intros.
+    assert_PROP
+      ((offset_val 0
+                   (force_val
+                      (sem_add_ptr_int (Tstruct _structItem noattr) Signed 
+                                       (pointer_val_val arr) (Vint (Int.repr i)))) =
+        field_address (tarray (Tstruct _structItem noattr) size) [ArraySubsc i] (pointer_val_val arr))). {
+      entailer!.
+      rewrite field_address_offset; trivial.
+      clear H6 H7. destruct H5 as [? [? [? [? ?]]]].
+      repeat split; try lia; trivial.
+      - admit.
+      - admit.
+    }
+    
+    Fail forward.
+    (* Okay, gotta unwrap all the way to the unsigned.
+       I feel pretty misled by VST though...
+     *)
+    
+Admitted.
+*)
+
+
+(*
+(* I need this to make a replace work... ugly... *)
+(* Perhaps a BUG, related to overly-aggressive unfolding of fst/snd that has to be repaired later? 
+   I end up with the messy LHS and would really prefer the nicer RHS. *)
+Lemma heap_item_rep_morph: forall x y,
+  (fst (heap_item_rep x), (fst (snd (heap_item_rep y)), snd (snd (heap_item_rep x)))) = 
+  heap_item_rep (fst (fst x), snd (fst y), snd x).
+Proof. unfold heap_item_rep. destruct x,y; reflexivity. Qed.
+
+Lemma body_exch: semax_body Vprog Gprog f_exch exch_spec.
+Proof.
+  start_function.
+  unfold linked_heap_array, heap_array. Intros.
+  forward. (* BUG, fst and snd are unfolded too far *) { rewrite Znth_map; trivial. entailer!. }
+  forward. { rewrite Znth_map; trivial. entailer!. }
+  forward. { repeat rewrite Znth_map; trivial. entailer!. }
+  forward. { repeat rewrite Znth_map; trivial. entailer!. }
+  forward. { repeat rewrite Znth_map; trivial. entailer!. }
+  forward.
+  forward. { repeat rewrite Znth_map; trivial. entailer!.
+    clear H4.
+    (* We may be in another C-typing issue... *)
+    case (eq_dec j k); intro.
+    + subst k. rewrite upd_Znth_same. trivial. rewrite Zlength_map; auto.
+    + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
+      (* BUG?  So ugly... is there no easier way? *)
+      (* BUG?  These "replace"s are very slow... *)
+      rewrite (surjective_pairing (heap_item_rep (Znth k arr_contents))) in H5.
+      rewrite (surjective_pairing (snd (heap_item_rep (Znth k arr_contents)))) in H5.
+      (* BUG? here is where I need to repack the unpacked rep... *)
+      rewrite heap_item_rep_morph, upd_Znth_map in H5.
+      apply Forall_map in H5.
+      rewrite Forall_Znth in H5. specialize (H5 k).
+      do 2 rewrite Zlength_map in H5. rewrite Zlength_upd_Znth in H5. specialize (H5 H0).
+      do 2 rewrite Znth_map in H5. 2,3,4: autorewrite with sublist; trivial.
+      rewrite upd_Znth_diff in H5; auto. rewrite Znth_map; trivial.
+      (* Flailing around solves the goal... *)
+      simplify_value_fits in H5. destruct H5 as [? [? ?]].
+      apply H6. discriminate. }
+  forward.
+  forward.
+Fail forward. (* BUG, wrong error message here *)
+  (* Some cleanup *)
+  repeat rewrite upd_Znth_same, upd_Znth_overwrite.
+  3,4: rewrite Zlength_upd_Znth. 2,3,4,5: rewrite Zlength_map; lia.
+  repeat rewrite Znth_map. 2,3: lia.
+  replace (let (x, _) := heap_item_rep (Znth k arr_contents) in x) with (fst (heap_item_rep (Znth k arr_contents))) by trivial.
+simpl fst.
+unfold lookup_array.
+Fail forward. (* BUG, should let me prove it's within bounds *)
+  (* This is ugly and very confusing, if you try to "forward" now, or anywhere between the cleanup and here... *)
+Admitted.
+(*
+forward.
+Check heap_item_rep.
+Compute (reptype t_item). _rep.
+forward.
+, Zlength_map; lia.
+Search upd_Znth.
+deadvars!.
+Search Znth upd_Znth.
+repeat rewrite Znth_upd_Znth.
+  forward.
+  (* Prove postcondition *)
+  repeat rewrite upd_Znth_overwrite.
+  2,3,4: autorewrite with sublist; auto.
+  repeat rewrite upd_Znth_same.
+  2,3: autorewrite with sublist; auto.
+  case (eq_dec i j); intro.
+  + subst j. rewrite upd_Znth_overwrite, upd_Znth_same. 2,3: autorewrite with sublist; auto.
+    replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
+             let (_, y) := Znth i (map heap_item_rep arr_contents) in y) 
+            with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
+    rewrite upd_Znth_map. rewrite upd_Znth_same_Znth; trivial.
+    rewrite Zexchange_eq. unfold harray. go_lower. cancel.
+  + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
+    replace (let (x, _) := Znth j (map heap_item_rep arr_contents) in x,
+             let (_, y) := Znth j (map heap_item_rep arr_contents) in y) 
+            with (heap_item_rep (Znth j arr_contents)) by (rewrite Znth_map; auto).
+    replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
+             let (_, y) := Znth i (map heap_item_rep arr_contents) in y) 
+            with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
+    do 2 rewrite upd_Znth_map.
+    rewrite fold_harray'. 2: autorewrite with sublist; trivial.
+    replace (upd_Znth j (upd_Znth i arr_contents (Znth j arr_contents)) (Znth i arr_contents)) with (Zexchange arr_contents i j).
+    go_lower. cancel.
+    apply Znth_eq_ext. { rewrite Zlength_Zexchange. autorewrite with sublist. trivial. }
+    intros. rewrite Zlength_Zexchange in H1. case (eq_dec i0 j); intro.
+    * subst i0. rewrite upd_Znth_same. 2: autorewrite with sublist; trivial.
+      rewrite Znth_Zexchange'; trivial.
+    * case (eq_dec i0 i); intro. subst i0.
+      rewrite upd_Znth_diff. rewrite upd_Znth_same. rewrite Znth_Zexchange; trivial. 1,2,3,4: autorewrite with sublist; trivial.
+      rewrite Znth_Zexchange''; auto.
+      repeat rewrite upd_Znth_diff; autorewrite with sublist; trivial.
+Time Qed.
+
 
 Lemma body_insert_nc: semax_body Vprog Gprog f_insert_nc insert_nc_spec.
 Proof.
@@ -700,141 +912,6 @@ Time Qed.
     Admitted.
  *)
 
-Lemma body_less: semax_body Vprog Gprog f_less less_spec.
-Proof.
-  start_function.
-  unfold linked_heap_array, heap_array.
-  Intros.
-  forward.
-  rewrite Znth_map; trivial.
-  entailer!.
-  forward.
-  do 2 (rewrite Znth_map; trivial).
-  entailer!.
-  forward.
-  repeat rewrite Znth_map in *; trivial.
-  unfold linked_heap_array, heap_array.
-  entailer!.
-Time Qed.
-
-Lemma body_size: semax_body Vprog Gprog f_pq_size pq_size_spec.
-Proof.
-  start_function.
-  unfold valid_pq.
-  Intros arr junk arr2 lookup.
-  forward.
-  forward.
-  unfold valid_pq.
-  Exists arr junk arr2 lookup.
-  entailer!.
-Time Qed.
-
-Lemma body_capacity: semax_body Vprog Gprog f_capacity capacity_spec.
-Proof.
-  start_function.
-  unfold valid_pq.
-  Intros arr junk arr2 lookup.
-  forward.
-  forward.
-  unfold valid_pq.
-  Exists arr junk arr2 lookup.
-  entailer!.
-Time Qed.
-
-(* I need this to make a replace work... ugly... *)
-(* Perhaps a BUG, related to overly-aggressive unfolding of fst/snd that has to be repaired later? 
-   I end up with the messy LHS and would really prefer the nicer RHS. *)
-Lemma heap_item_rep_morph: forall x y,
-  (fst (heap_item_rep x), (fst (snd (heap_item_rep y)), snd (snd (heap_item_rep x)))) = 
-  heap_item_rep (fst (fst x), snd (fst y), snd x).
-Proof. unfold heap_item_rep. destruct x,y; reflexivity. Qed.
-
-Lemma body_exch: semax_body Vprog Gprog f_exch exch_spec.
-Proof.
-  start_function.
-  unfold linked_heap_array, heap_array. Intros.
-  forward. (* BUG, fst and snd are unfolded too far *) { rewrite Znth_map; trivial. entailer!. }
-  forward. { rewrite Znth_map; trivial. entailer!. }
-  forward. { repeat rewrite Znth_map; trivial. entailer!. }
-  forward. { repeat rewrite Znth_map; trivial. entailer!. }
-  forward. { repeat rewrite Znth_map; trivial. entailer!. }
-  forward.
-  forward. { repeat rewrite Znth_map; trivial. entailer!.
-    clear H4.
-    (* We may be in another C-typing issue... *)
-    case (eq_dec j k); intro.
-    + subst k. rewrite upd_Znth_same. trivial. rewrite Zlength_map; auto.
-    + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
-      (* BUG?  So ugly... is there no easier way? *)
-      (* BUG?  These "replace"s are very slow... *)
-      rewrite (surjective_pairing (heap_item_rep (Znth k arr_contents))) in H5.
-      rewrite (surjective_pairing (snd (heap_item_rep (Znth k arr_contents)))) in H5.
-      (* BUG? here is where I need to repack the unpacked rep... *)
-      rewrite heap_item_rep_morph, upd_Znth_map in H5.
-      apply Forall_map in H5.
-      rewrite Forall_Znth in H5. specialize (H5 k).
-      do 2 rewrite Zlength_map in H5. rewrite Zlength_upd_Znth in H5. specialize (H5 H0).
-      do 2 rewrite Znth_map in H5. 2,3,4: autorewrite with sublist; trivial.
-      rewrite upd_Znth_diff in H5; auto. rewrite Znth_map; trivial.
-      (* Flailing around solves the goal... *)
-      simplify_value_fits in H5. destruct H5 as [? [? ?]].
-      apply H6. discriminate. }
-  forward.
-  forward.
-Fail forward. (* BUG, wrong error message here *)
-  (* Some cleanup *)
-  repeat rewrite upd_Znth_same, upd_Znth_overwrite.
-  3,4: rewrite Zlength_upd_Znth. 2,3,4,5: rewrite Zlength_map; lia.
-  repeat rewrite Znth_map. 2,3: lia.
-  replace (let (x, _) := heap_item_rep (Znth k arr_contents) in x) with (fst (heap_item_rep (Znth k arr_contents))) by trivial.
-simpl fst.
-unfold lookup_array.
-Fail forward. (* BUG, should let me prove it's within bounds *)
-  (* This is ugly and very confusing, if you try to "forward" now, or anywhere between the cleanup and here... *)
-Admitted.
-(*
-forward.
-Check heap_item_rep.
-Compute (reptype t_item). _rep.
-forward.
-, Zlength_map; lia.
-Search upd_Znth.
-deadvars!.
-Search Znth upd_Znth.
-repeat rewrite Znth_upd_Znth.
-  forward.
-  (* Prove postcondition *)
-  repeat rewrite upd_Znth_overwrite.
-  2,3,4: autorewrite with sublist; auto.
-  repeat rewrite upd_Znth_same.
-  2,3: autorewrite with sublist; auto.
-  case (eq_dec i j); intro.
-  + subst j. rewrite upd_Znth_overwrite, upd_Znth_same. 2,3: autorewrite with sublist; auto.
-    replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
-             let (_, y) := Znth i (map heap_item_rep arr_contents) in y) 
-            with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
-    rewrite upd_Znth_map. rewrite upd_Znth_same_Znth; trivial.
-    rewrite Zexchange_eq. unfold harray. go_lower. cancel.
-  + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
-    replace (let (x, _) := Znth j (map heap_item_rep arr_contents) in x,
-             let (_, y) := Znth j (map heap_item_rep arr_contents) in y) 
-            with (heap_item_rep (Znth j arr_contents)) by (rewrite Znth_map; auto).
-    replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
-             let (_, y) := Znth i (map heap_item_rep arr_contents) in y) 
-            with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
-    do 2 rewrite upd_Znth_map.
-    rewrite fold_harray'. 2: autorewrite with sublist; trivial.
-    replace (upd_Znth j (upd_Znth i arr_contents (Znth j arr_contents)) (Znth i arr_contents)) with (Zexchange arr_contents i j).
-    go_lower. cancel.
-    apply Znth_eq_ext. { rewrite Zlength_Zexchange. autorewrite with sublist. trivial. }
-    intros. rewrite Zlength_Zexchange in H1. case (eq_dec i0 j); intro.
-    * subst i0. rewrite upd_Znth_same. 2: autorewrite with sublist; trivial.
-      rewrite Znth_Zexchange'; trivial.
-    * case (eq_dec i0 i); intro. subst i0.
-      rewrite upd_Znth_diff. rewrite upd_Znth_same. rewrite Znth_Zexchange; trivial. 1,2,3,4: autorewrite with sublist; trivial.
-      rewrite Znth_Zexchange''; auto.
-      repeat rewrite upd_Znth_diff; autorewrite with sublist; trivial.
-Time Qed.
 *)
  
 *)
