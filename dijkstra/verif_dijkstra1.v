@@ -570,7 +570,8 @@ exists l2a and l2b such that
             apply (vvalid_meaning g); trivial.
             replace size with (heap_capacity h'''') by lia.
             admit.
-            (* should come from PQ. Is it already here? *)
+            (* HELP if you have time
+               should come from PQ. Is it already here? *)
           }
           
           assert (0 <= u < size). {
@@ -582,6 +583,7 @@ exists l2a and l2b such that
             (*
             I used to get this via the link between 
             popped and priq. I may need to reestablish that
+            TODO        
              *)
             admit.
           (*
@@ -612,6 +614,12 @@ exists l2a and l2b such that
            The for loop will repair this and restore
            dijkstra_correct.
            *)
+
+          admit.
+
+          
+          (*
+          
           forward_for_simple_bound
             size
             (dijk_inner_forloop_inv
@@ -1019,13 +1027,14 @@ exists l2a and l2b such that
             unfold dijkstra_correct.
             split3; [auto | apply H16 | apply H18];
               try rewrite <- (vvalid_meaning g); trivial.
-           
+           *)
         * (* After breaking from the while loop,
            prove break's postcondition *)
           forward. Exists prev dist popped h''' keys'''.
-          assert (heap_capacity h''' = heap_capacity h) by admit.
-          (* TODO probably provable from somewhere... *)
-          rewrite H11. entailer!.
+          assert (heap_capacity h''' = heap_capacity h) by lia.
+          rewrite H14. entailer!.
+          admit.
+          (* HELP is this the coercion you proved? *)
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev dist popped h''' keys'''.
