@@ -144,7 +144,8 @@ Definition pq_make_spec :=
     SEP ()
   POST [tptr t_pq]
     EX pq: val, EX h : heap,
-    PROP (heap_capacity h = size)
+    PROP (heap_size h = 0;
+         heap_capacity h = size)
     LOCAL (temp ret_temp pq)
     SEP (valid_pq pq h). (* and the free_toks I get from mallocN *)
 
@@ -180,8 +181,14 @@ Definition sub_permutation {A} (l1 l2 : list A) :=
 Definition keys_valid (h : list heap_item) :=
   NoDup (map heap_item_key h).
 
-Definition project_keys h :=
+Definition proj_keys h :=
   map heap_item_key (heap_items h).
+
+Lemma proj_keys_Zlength: forall h,
+    Zlength (proj_keys h) = heap_size h.
+Proof.
+  intros. unfold proj_keys, heap_size. now rewrite Zlength_map.
+Qed.
 
 Lemma Subsequence_In: forall A (l1 l2 : list A),
   Subsequence l1 l2 ->
