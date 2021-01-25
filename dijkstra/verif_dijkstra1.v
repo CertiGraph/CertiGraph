@@ -533,7 +533,7 @@ exists l2a and l2b such that
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity h''').
-            1: rewrite <- H16, Zlength_app; lia.
+            1: rewrite <- H17, Zlength_app; lia.
             lia.
           }
           rewrite Int.unsigned_repr in H12 by trivial.
@@ -552,12 +552,15 @@ exists l2a and l2b such that
 
           Intros temp. destruct temp as [h'''' min_item]. 
           simpl fst in *. simpl snd in *.
-
+          thaw FR.
+          unfold hitem.
+          forward.
+          replace (data_at Tsh t_item (heap_item_rep min_item) (pointer_val_val temp_item)) with (hitem min_item (pointer_val_val temp_item)).
+          2: unfold hitem; trivial.
+          simpl.
+          remember (Int.signed (snd min_item)) as u.
+          
           (* HERE *)
-
-          admit.
-
-          (* 
           
           (* u is the minimally chosen item from the
            "seen but not popped" category of vertices *)
@@ -565,13 +568,9 @@ exists l2a and l2b such that
           (* We prove a few useful facts about u: *)
           assert (H_u_valid: vvalid g u). {
             apply (vvalid_meaning g); trivial.
-            subst u.
-            replace size with (Zlength priq).
-            apply find_range.
-            apply min_in_list. apply incl_refl.
-            destruct priq.
-            1: rewrite Zlength_nil in H8; ulia. 
-            simpl; left; trivial.
+            replace size with (heap_capacity h'''') by lia.
+            admit.
+            (* should come from PQ. Is it already here? *)
           }
           
           assert (0 <= u < size). {
@@ -580,6 +579,12 @@ exists l2a and l2b such that
 
           assert (~ (In u popped)). {
             intro.
+            (*
+            I used to get this via the link between 
+            popped and priq. I may need to reestablish that
+             *)
+            admit.
+          (*
             rewrite H_popped_priq_link in H13; trivial.
             rewrite <- isEmpty_in' in H11.
             destruct H11 as [? [? ?]].
@@ -589,14 +594,14 @@ exists l2a and l2b such that
             rewrite <- Znth_0_hd by ulia.
             apply min_in_list;
               [ apply incl_refl | apply Znth_In; ulia].
+ *)
           }
-          
-          rewrite Znth_0_hd; [|ulia]. 
-          do 2 rewrite upd_Znth_map.
-          
+                    
           assert (Htemp: 0 <= u < Zlength dist) by lia.
-          pose proof (Znth_dist_cases _ _ Htemp H6).
+          pose proof (Znth_dist_cases _ _ Htemp H9).
           clear Htemp.
+
+          (* HERE *)
           
           (* This is the priq array with which
            we will enter the for loop.
@@ -1014,7 +1019,7 @@ exists l2a and l2b such that
             unfold dijkstra_correct.
             split3; [auto | apply H16 | apply H18];
               try rewrite <- (vvalid_meaning g); trivial.
-           *)
+           
         * (* After breaking from the while loop,
            prove break's postcondition *)
           forward. Exists prev dist popped h''' keys'''.
