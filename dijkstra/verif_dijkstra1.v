@@ -6,6 +6,9 @@ Require Import CertiGraph.dijkstra.dijkstra_spec1.
 
 Local Open Scope Z_scope.
 
+Definition hitem_ (v : val) : mpred :=
+  EX hi, hitem hi v.
+
 Section DijkstraProof.
   
   (* The invariants have been dragged out of the 
@@ -37,12 +40,11 @@ Section DijkstraProof.
     cancel.
   Qed.
 
-  
   Definition dijk_setup_loop_inv g sh src dist prev v_pq keys_ptr temp_item arr addresses :=
     EX i : Z,
     EX h : heap,
     EX keys: list key_type,
-    PROP (Permutation keys (nat_inc_list (Z.to_nat i)))
+    PROP () (* Permutation keys (nat_inc_list (Z.to_nat i))) (* Aquinas: I don't see how you can prove this. *) *)
     LOCAL (temp _dist (pointer_val_val dist);
           temp _prev (pointer_val_val prev);
           temp _src (Vint (Int.repr src));
@@ -53,9 +55,7 @@ Section DijkstraProof.
           temp _inf (Vint (Int.repr inf));
           temp _temp_item (pointer_val_val temp_item))
     SEP (valid_pq v_pq h;
-        (* HELP: make the term below a "hitem" *)
-        data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
-                 (pointer_val_val temp_item);
+         hitem_ (pointer_val_val temp_item);
         (* Gradually converting from Vundef to a Permutation *)
         data_at Tsh
                 (tarray tint size)
@@ -309,6 +309,31 @@ Section DijkstraProof.
     rename H2 into Hinf.
     assert (Int.max_signed <= Int.max_unsigned) by now compute.
     forward_call ((sizeof(Tstruct _structItem noattr))).
+(* Aquinas: exploration
+Print hitem.
+Set Nested Proofs Allowed.
+Print field_at_.
+Print default_val.
+Print data_at.
+Print heap_item.
+Print payload_type.
+Search Int.zero 0.
+Intro vret.
+replace (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
+          (pointer_val_val vret)) with
+(data_at Tsh (tarray tint ((Tstruct _structItem noattr) / sizeof tint))
+          (pointer_val_val vret)).
+
+
+Lemma hitem_fold: forall arr,
+data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
+          (pointer_val_val arr) = hitem (0,Int.zero,Int.zero) (pointer_val_val arr).
+Proof.
+  intros. unfold hitem. simpl. unfold heap_item_rep. simpl. unfold data_at_. unfold field_at_.
+unfold data_at. unfold t_item. simpl. unfold default_val. simpl.
+unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. simpl.
+
+*)
     Intros temp_item.
     rename H2 into Htemp_item.
     (* HELP
@@ -316,12 +341,17 @@ Section DijkstraProof.
        into some "hitem" just about now.
        I gave it a go but got stuck.
      *)
+(* Aquinas: This is not true here, but if we change the C code to initialize the data structure, it might be. *)
+    replace (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
+          (pointer_val_val temp_item)) with (hitem_ (pointer_val_val temp_item)) by admit.
+(* end Aquinas edit *)
     forward_call (size * sizeof(tint)).
     1: simpl; lia.
     Intro keys_pv.
     remember (pointer_val_val keys_pv) as keys.
     forward_call (size).
-    1: admit.
+    1: split. rep_lia.
+       admit. (* Aquinas: Yes, probably you need to strengthen your precondition *)
     (* HELP
        Does this sound okay? Should I add to precon? 
        I have not given any thought to 
@@ -341,8 +371,11 @@ Section DijkstraProof.
       Exists h. Exists (@nil key_type).
       entailer!.
     - forward. forward.
+      assert_PROP (heap_size h0 <= heap_capacity h0). {
+        unfold valid_pq, heap_size. go_lower. Intros arr junk arr2 lookup. rewrite Zlength_app in H14.
+        apply prop_right. rep_lia. }
       forward_call (priq_ptr, h0, inf, Int.repr i).
-      1: { admit.
+      1: { admit. (* Aquinas: see H6.  Do we have an off-by-one issue somewhere? *)
            (* HELP -- needs to be added somewhere? Thoughts? *)
       }
       Intro temp'. destruct temp' as [h' key].
@@ -351,10 +384,9 @@ Section DijkstraProof.
       simpl fst in *. simpl snd in *.
       assert (Zlength keys0 = i). {
         unfold key_type in *.
-        rewrite (Permutation_Zlength _ _ H6).
+        rewrite (Permutation_Zlength _ _ H5).
         rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
       }
-
       (* A number of tweaks to the keys array in SEP... *)
       rewrite upd_Znth_app2.
       2: { repeat rewrite Zlength_map.
