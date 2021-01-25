@@ -465,8 +465,6 @@ exists l2a and l2b such that
        VST will first ask us to first show the
        invariant at the start of the loop
        *)
-
-      (* HERE *)
       
       forward_loop
       (dijk_forloop_inv g sh src dist_ptr prev_ptr keys_pv priq_ptr graph_ptr temp_item addresses)
@@ -485,8 +483,19 @@ exists l2a and l2b such that
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
-        * admit.
-        * admit.
+        * (* Hrmm this seems false. Do I need it? *)
+          admit.
+        * intros.
+          destruct (Z.eq_dec j src).
+          -- subst j.
+             rewrite upd_Znth_same.
+             admit. (* HELP if you have time *)
+             rewrite Zlength_list_repeat; lia.
+          -- rewrite upd_Znth_diff; trivial.
+             2,3: rewrite Zlength_list_repeat; try lia.
+             rewrite Znth_list_repeat_inrange.
+             2,3: apply (vvalid_meaning g); trivial.
+             admit. (* HELP if you have time *)
         * split; red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
         * repeat rewrite map_list_repeat; cancel.
