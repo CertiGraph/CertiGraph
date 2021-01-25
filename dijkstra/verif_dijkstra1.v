@@ -42,7 +42,9 @@ Section DijkstraProof.
     EX h : heap,
     EX keys: list key_type,
     EX dist_and_prev : list int,
-    PROP (Permutation keys (proj_keys h);
+    PROP (heap_capacity h = size;
+         heap_size h = i;
+         Permutation keys (proj_keys h);
          forall j k,
            0 <= j < i ->
            Znth j keys = k ->
@@ -349,26 +351,23 @@ Section DijkstraProof.
       
     - forward. forward.
       assert_PROP (heap_size h0 <= heap_capacity h0). {
-        unfold valid_pq, heap_size. go_lower. Intros arr junk arr2 lookup. rewrite Zlength_app in H17.
+        unfold valid_pq, heap_size. go_lower. Intros arr junk arr2 lookup. rewrite Zlength_app in H19.
         apply prop_right. rep_lia. }
       forward_call (priq_ptr, h0, inf, Int.repr i).
-      1: { admit. (* Aquinas: see H5.  Do we have an off-by-one issue somewhere? *)
-           (* HELP -- needs to be added somewhere? Thoughts? *)
-      }
+      1: lia.
       Intro temp'. destruct temp' as [h' key].
       forward.
       repeat rewrite upd_Znth_list_repeat; try lia.
       simpl fst in *. simpl snd in *.
       assert (Zlength keys0 = i). {
         unfold key_type in *.
-        rewrite (Permutation_Zlength _ _ H7).
-        rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
+        rewrite (Permutation_Zlength _ _ H8).
+        now rewrite proj_keys_Zlength.
       }
       (* A number of tweaks to the keys array in SEP... *)
       rewrite upd_Znth_app2.
       2: { repeat rewrite Zlength_map.
            unfold key_type in *.
-           rewrite H9.
            rewrite Zlength_list_repeat; lia.
       }
       replace (i - Zlength (map Vint (map Int.repr keys0))) with 0.
@@ -385,44 +384,43 @@ Section DijkstraProof.
       2: { rewrite upd_Znth0. reflexivity. }
       (* and done *)
       
-      Exists h'.
-      Exists (keys0 ++ [key]).
-      entailer!.
-      + (* HELP
-           This is interesting. 
-           keys0 is in Permutation with [0..(keys0-1)], and
-           in our case, when "i" is inserted, the 
-           key returned is just "i". But that's implementation-specific.
-           Should I say that, or something more general?
-         *)
-        admit.
-      + rewrite map_app, map_app, app_assoc; cancel. 
+      Exists h' (keys0 ++ [key]) (dist_and_prev ++ [Int.repr inf]).
+      entailer!; remember (heap_capacity h) as size.
+      + remember (heap_size h0) as i.
+        split3; [| |split].
+        * rewrite Heqi.
+          unfold heap_size.
+          pose proof (Permutation_Zlength _ _ H13).
+          rewrite Zlength_cons, <- Z.add_1_r in H7.
+          symmetry. trivial.
+        * admit. (* TODO *)
+        * intros. admit. (* TODO *)
+        * rewrite <- list_repeat1, list_repeat_app,
+          Z2Nat.inj_add. trivial. lia. lia.
+      + repeat rewrite map_app; rewrite app_assoc; cancel.
+        remember (heap_size h0) as i.
+        rewrite list_repeat1.
+        rewrite upd_Znth_app2, Zlength_map, Zlength_list_repeat, Z.sub_diag.
+        rewrite upd_Znth_app1, upd_Znth0.
+        rewrite <- app_assoc.
+        cancel.
+        rewrite binary_heap_Zmodel.Zlength_one. lia.
+        lia.
+        rewrite Zlength_map, Zlength_app,
+        binary_heap_Zmodel.Zlength_one,
+        Zlength_list_repeat, Zlength_list_repeat. lia.
+        lia. lia.
     - (* At this point we are done with the
        first for loop. The arrays are all set to inf. *)
-      replace (size - size) with 0 by lia;
-        rewrite list_repeat_0, <- (app_nil_end).
-      Intros h' keys'.
+      Intros h' keys' dist_and_prev.
+      rewrite Z.sub_diag, list_repeat_0, app_nil_r, app_nil_r.
       assert (Zlength keys' = size). {
         unfold key_type in *.
-        rewrite (Permutation_Zlength _ _ H5).
-        rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
+        rewrite (Permutation_Zlength _ _ H7).
+        rewrite proj_keys_Zlength; trivial.
       }
-      forward. forward.
-      do 2 rewrite <- map_list_repeat.
-      forward.
-      1: { entailer!.
-           apply Forall_Znth with (i := src) in H4.
-           2: lia.
-           rewrite <- app_nil_end.
-           repeat rewrite Znth_map.
-           apply I.
-           2: rewrite Zlength_map.
-           all: unfold key_type in *; rewrite H6; auto.
-      }
-      rewrite <- app_nil_end.
-      repeat rewrite Znth_map.
-      3: rewrite Zlength_map.
-      2,3: unfold key_type in *; lia.
+      assert (0 <= src < Zlength keys') by lia.
+      forward. forward. forward.
       forward_call (priq_ptr, h', Znth src keys', Int.repr 0).
       Intros h''.
       (* Special values for src have been inserted *)
@@ -434,6 +432,8 @@ Section DijkstraProof.
        invariant at the start of the loop
        *)
 
+      (* HERE *)
+      
       forward_loop
       (dijk_forloop_inv g sh src dist_ptr prev_ptr keys_pv priq_ptr graph_ptr temp_item addresses)
       break: (dijk_forloop_break_inv g sh src dist_ptr prev_ptr keys_pv priq_ptr graph_ptr temp_item addresses).
