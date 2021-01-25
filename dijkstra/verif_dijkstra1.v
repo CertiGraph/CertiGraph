@@ -38,7 +38,7 @@ Section DijkstraProof.
   Qed.
 
   
-  Definition dijk_setup_loop_inv g sh src dist prev v_pq keys_ptr v_temp arr addresses :=
+  Definition dijk_setup_loop_inv g sh src dist prev v_pq keys_ptr temp_item arr addresses :=
     EX i : Z,
     EX h : heap,
     EX keys: list key_type,
@@ -50,15 +50,20 @@ Section DijkstraProof.
           temp _graph (pointer_val_val arr);
           temp _size (Vint (Int.repr size));
           temp _keys (pointer_val_val keys_ptr);
-          temp _inf (Vint (Int.repr inf)))
+          temp _inf (Vint (Int.repr inf));
+          temp _temp_item (pointer_val_val temp_item))
     SEP (valid_pq v_pq h;
-        data_at_ Tsh (Tstruct _structItem noattr) v_temp;
+        (* HELP: make the term below a "hitem" *)
+        data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
+                 (pointer_val_val temp_item);
+        (* Gradually converting from Vundef to a Permutation *)
         data_at Tsh
                 (tarray tint size)
                 (map Vint (map Int.repr keys) ++
                      (list_repeat (Z.to_nat (size-i)) Vundef))
                 (pointer_val_val keys_ptr);
-        free_tok (pointer_val_val keys_ptr) (heap_capacity h * sizeof tint);
+        free_tok (pointer_val_val keys_ptr) (size * sizeof tint);
+        free_tok (pointer_val_val temp_item) (sizeof (Tstruct _structItem noattr));
         data_at Tsh
                 (tarray tint size)
                 ((list_repeat (Z.to_nat i)
@@ -72,13 +77,15 @@ Section DijkstraProof.
                                    Vundef)) (pointer_val_val dist);
         @SpaceAdjMatGraph size CompSpecs sh id
                           g (pointer_val_val arr) addresses).
+
   
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src
-             dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
+             dist_ptr prev_ptr keys_ptr priq_ptr graph_ptr temp_item addresses :=
     EX prev : list V,
-    EX priq : list Z,
     EX dist : list Z,
     EX popped : list V,
+    EX h : heap,
+    EX keys: list key_type,
     PROP (
         (* The overall correctness condition *)
         dijkstra_correct g src popped prev dist;
@@ -87,51 +94,74 @@ Section DijkstraProof.
       Znth src dist = 0;
       Znth src prev = src;
       popped <> [] -> In src popped;
-      popped = [] -> src = find priq (fold_right Z.min (hd 0 priq) priq) 0;
-      
+      (* popped = [] -> src = find priq (fold_right Z.min (hd 0 priq) priq) 0; *)
+      (* TODO replace with the new style --
+         if nothing is popped, src is the minimum *)
+
+      (* TODO:
+         commenting out the two below for now, but I'll have to see
+         if I need some new versions of these in the proofs later on *)
+
       (* A fact about the relationship b/w
          the priq and popped arrays *)
+      (*
       forall v,
         vvalid g v ->
         In v popped <-> Znth v priq = Z.add inf 1;
+       *)
       
       (* A fact about the relationship b/w 
          dist and priq arrays *)
+      (*
       forall dst, vvalid g dst ->
                   ~ In dst popped ->
                   Znth dst priq = Znth dst dist;
+       *)
       
       (* Information about the ranges of the three arrays *)
       @inrange_prev size inf prev;
-      @inrange_dist inf dist;
-      @inrange_priq inf priq)
+      @inrange_dist inf dist)
          
          LOCAL (temp _dist (pointer_val_val dist_ptr);
                temp _prev (pointer_val_val prev_ptr);
                temp _src (Vint (Int.repr src));
-               temp _pq (pointer_val_val priq_ptr);
+               temp _pq priq_ptr;
                temp _graph (pointer_val_val graph_ptr);
                temp _size (Vint (Int.repr size));
-               temp _inf (Vint (Int.repr inf)))
-         SEP (data_at Tsh
-                      (tarray tint size)
-                      (map Vint (map Int.repr prev))
-                      (pointer_val_val prev_ptr);
+               temp _inf (Vint (Int.repr inf));
+               temp _temp_item (pointer_val_val temp_item))
+         SEP (valid_pq priq_ptr h;
              data_at Tsh
                      (tarray tint size)
-                     (map Vint (map Int.repr priq))
-                       (pointer_val_val priq_ptr);
+                     (map Vint (map Int.repr prev))
+                     (pointer_val_val prev_ptr);
              data_at Tsh
                      (tarray tint size)
                      (map Vint (map Int.repr dist))
                      (pointer_val_val dist_ptr);
+             data_at Tsh
+                     (tarray tint size)
+                     (map Vint (map Int.repr keys))
+                     (pointer_val_val keys_ptr);
              @SpaceAdjMatGraph size CompSpecs sh id
                                g (pointer_val_val graph_ptr) addresses;
-             free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
+             (* HELP: make the term below a "hitem" *)
+             data_at_ Tsh
+                      (tarray tint
+                              (sizeof (Tstruct _structItem noattr) / sizeof tint))
+                      (pointer_val_val temp_item);
+             free_tok (pointer_val_val temp_item) (sizeof (Tstruct _structItem noattr));
+             free_tok (pointer_val_val keys_ptr) (size * sizeof tint)).
+
+(* TODO: 
+   Just as above, the invariants below need to divest from priq as an array
+   and move to the newer version where a cmp_rel is used to show
+   minimality
+ *)
   
   Definition dijk_forloop_break_inv (g: @DijkGG size inf) sh
-                                    src dist_ptr prev_ptr priq_ptr
-                                    graph_ptr addresses :=
+             src dist_ptr prev_ptr priq_ptr
+             graph_ptr addresses :=
     EX prev: list V,
     EX priq: list Z,
     EX dist: list Z,
@@ -141,7 +171,7 @@ Section DijkstraProof.
         Forall (fun x => x >= inf) priq;
       (* And the correctness condition is established *)
       dijkstra_correct g src popped prev dist)
-         LOCAL (temp _pq (pointer_val_val priq_ptr))
+         LOCAL (temp _pq priq_ptr)
          SEP (data_at Tsh
                       (tarray tint size)
                       (map Vint (map Int.repr prev))
@@ -149,14 +179,14 @@ Section DijkstraProof.
              (data_at Tsh
                       (tarray tint size)
                       (map Vint (map Int.repr priq))
-                        (pointer_val_val priq_ptr));
+                        priq_ptr);
              data_at Tsh
                      (tarray tint size)
                      (map Vint (map Int.repr dist))
                      (pointer_val_val dist_ptr);
              @SpaceAdjMatGraph size CompSpecs sh id
                                g (pointer_val_val graph_ptr) addresses;
-             free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
+             free_tok priq_ptr (sizeof tint * size)).
   
   Definition dijk_inner_forloop_inv (g: @DijkGG size inf) sh
              src (priq dist prev : list Z)
@@ -239,7 +269,7 @@ Section DijkstraProof.
                temp _dist (pointer_val_val dist_ptr);
                temp _prev (pointer_val_val prev_ptr);
                temp _src (Vint (Int.repr src));
-               temp _pq (pointer_val_val priq_ptr);
+               temp _pq priq_ptr;
                temp _graph (pointer_val_val graph_ptr);
                temp _size (Vint (Int.repr size));
                temp _inf (Vint (Int.repr inf)))
@@ -251,16 +281,14 @@ Section DijkstraProof.
              data_at Tsh
                      (tarray tint size)
                      (map Vint (map Int.repr priq'))
-                     (pointer_val_val priq_ptr);
+                     priq_ptr;
              data_at Tsh
                      (tarray tint size)
                      (map Vint (map Int.repr dist'))
                      (pointer_val_val dist_ptr);
              @SpaceAdjMatGraph size CompSpecs sh id 
                                g (pointer_val_val graph_ptr) addresses;
-             free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
-  
-
+             free_tok priq_ptr (sizeof tint * size)).
 
   
   (* DIJKSTRA PROOF BEGINS *)
@@ -273,18 +301,31 @@ Section DijkstraProof.
     rename H1 into Hsz.
     rename H2 into Hinf.
     assert (Int.max_signed <= Int.max_unsigned) by now compute.
+    forward_call ((sizeof(Tstruct _structItem noattr))).
+    Intros temp_item.
+    rename H2 into Htemp_item.
+    (* HELP
+       It would be awfully nice to massage temp_item 
+       into some "hitem" just about now...
+     *)
     forward_call (size * sizeof(tint)).
     1: simpl; lia.
     Intro keys_pv.
     remember (pointer_val_val keys_pv) as keys.
     forward_call (size).
-    1: admit. (* add to precon? *)
+    1: admit.
+    (* HELP
+       Does this sound okay? Should I add to precon? 
+       I have not given any thought to 
+       Int.max_unsgined vs Int.max_signed
+       in Dijkstra verifications.
+     *)
     Intros temp.
     destruct temp as [priq_ptr h].
     simpl fst in *; simpl snd in *.
     forward_for_simple_bound
       size
-      (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_pv v_temp_item graph_ptr addresses).
+      (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_pv temp_item graph_ptr addresses).
     - rewrite list_repeat_0, app_nil_l, Z.sub_0_r, data_at__tarray.
       replace (size * sizeof tint / sizeof tint) with size.
       2: { rewrite Z.div_mul; trivial; simpl; lia. }
@@ -293,7 +334,10 @@ Section DijkstraProof.
       entailer!.
     - forward. forward.
       forward_call (priq_ptr, h0, inf, Int.repr i).
-      1: { admit. }
+      1: { admit.
+           (* HELP -- pq_make should have an additional PROP
+            saying that heap_size = 0 *)
+      }
       Intro temp'. destruct temp' as [h' key].
       forward.
       repeat rewrite upd_Znth_list_repeat; try lia.
@@ -303,6 +347,8 @@ Section DijkstraProof.
         rewrite (Permutation_Zlength _ _ H5).
         rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
       }
+
+      (* A number of tweaks to the keys array in SEP... *)
       rewrite upd_Znth_app2.
       2: { repeat rewrite Zlength_map.
            unfold key_type in *.
@@ -314,23 +360,27 @@ Section DijkstraProof.
            unfold key_type in *. lia.
       }
       replace (Z.to_nat (size - i)) with (Z.to_nat 1 + Z.to_nat (size - (i + 1)))%nat.
-      2: { admit. }
+      2: lia. 
       rewrite <- (list_repeat_app _ (Z.to_nat 1) (Z.to_nat (size - (i + 1)))).
       simpl list_repeat at 1.
       rewrite upd_Znth_app1.
       2: { rewrite binary_heap_Zmodel.Zlength_one. lia. }
       replace (upd_Znth 0 [Vundef] (Vint (Int.repr key))) with [(Vint (Int.repr key))].
       2: { rewrite upd_Znth0. reflexivity. }
+      (* and done *)
+      
       Exists h'.
       Exists (keys0 ++ [key]).
-      rewrite H6.
       entailer!.
-      +
-        (* this is interesting, and it may need to come 
-           from PQ?
+      + (* HELP
+           This is interesting. 
+           keys0 is in Permutation with [0..(keys0-1)], and
+           in our case, when "i" is inserted, the 
+           key returned is just "i". But that's implementation-specific.
+           Should I say that, or something more general?
          *)
         admit.
-      + rewrite map_app, map_app, app_assoc. cancel. 
+      + rewrite map_app, map_app, app_assoc; cancel. 
     - (* At this point we are done with the
        first for loop. The arrays are all set to inf. *)
       replace (size - size) with 0 by lia;
@@ -358,6 +408,7 @@ Section DijkstraProof.
       3: rewrite Zlength_map.
       2,3: unfold key_type in *; lia.
       forward_call (priq_ptr, h', Znth src keys', Int.repr 0).
+      Intros h''.
       (* Special values for src have been inserted *)
       
       (* We will now enter the main while loop.
@@ -367,74 +418,72 @@ Section DijkstraProof.
        invariant at the start of the loop
        *)
 
-      (* HERE *)
-      
       forward_loop
-      (dijk_forloop_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses)
+      (dijk_forloop_inv g sh src dist_ptr prev_ptr keys_pv priq_ptr graph_ptr temp_item addresses)
       break: (dijk_forloop_break_inv g sh src dist_ptr prev_ptr priq_ptr graph_ptr addresses).
       + unfold dijk_forloop_inv.
         Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) src).
         Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) 0).
-        Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) 0).
-        Exists (@nil V).
-        repeat rewrite <- upd_Znth_map; entailer!;
-          clear H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12.
+        Exists (@nil V) h'' keys'.
+        repeat rewrite <- upd_Znth_map; entailer!.
+        remember (heap_capacity h) as size.
         assert (Zlength (list_repeat (Z.to_nat size) inf) = size). {
           rewrite Zlength_list_repeat; ulia.
         }
-        split3; [| |split3; [| |split]].
+        
+        split3; [| |split].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
-        * intros; rewrite find_src; ulia.
-        * intros. split; [inversion 1 | intros; exfalso].
-          destruct (Z.eq_dec src v).
-          -- subst src. rewrite upd_Znth_same in H3; ulia.
-          -- apply (vvalid_meaning g) in H2.
-             rewrite upd_Znth_diff in H3
-               by (try rewrite Zlength_list_repeat; ulia).
-             rewrite Znth_list_repeat_inrange in H3; trivial.
-             rewrite Z.add_1_r in H3.
-             apply (Z.neq_succ_diag_l inf). ulia.
-             
-        * split3; red; apply Forall_upd_Znth;
+        * split; red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
-          
-        * repeat rewrite map_list_repeat. entailer!.
 
       + (* Now the body of the while loop begins. *)
         unfold dijk_forloop_inv.
-        Intros prev priq dist popped.
-        rename H4 into H_popped_src_1.
-        rename H5 into H_popped_src_2.
-        rename H6 into H_popped_priq_link.
-        rename H7 into H4.
-        rename H8 into H5.
-        rename H9 into H6.
-        rename H10 into H7.
-        assert_PROP (Zlength priq = size).
-        { entailer!. now repeat rewrite Zlength_map in *. }
+        rename H1 into H1'.
+        rename H2 into H2'.
+        rename H3 into H3'.
+        rename H4 into H4'.
+        rename H5 into H5'.
+        rename H6 into H6'.
+        Intros prev dist popped h''' keys'''.
         assert_PROP (Zlength prev = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
         assert_PROP (Zlength dist = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
-        
-        forward_call ((pointer_val_val priq_ptr), priq).
-        1: split3; [| |split3]; ulia.
+
+        forward_call (priq_ptr, h''').
         forward_if. (* checking if it's time to break *)
         * (* No, don't break. *)
-          rename H11 into Htemp.
-          assert (@isEmpty inf priq = Vzero). {
-            destruct (@isEmptyTwoCases inf priq);
-              rewrite H11 in Htemp; simpl in Htemp;
-                now inversion Htemp.
+
+          assert_PROP (0 <= heap_size h''' <= Int.max_unsigned). {
+            unfold valid_pq.
+            Intros arr junk lookup l_contents.
+            entailer!. 
+            unfold heap_size. 
+            pose proof (Zlength_nonneg junk). 
+            split; [apply Zlength_nonneg|]. 
+            apply Z.le_trans with (m := heap_capacity h''').
+            1: rewrite <- H13, Zlength_app; lia.
+            lia.
           }
-          clear Htemp.
-          forward_call ((pointer_val_val priq_ptr), priq).
-          1: split3; [| |split3; [| |split]]; ulia.
+          rewrite Int.unsigned_repr in H9 by trivial.
+          forward_call (priq_ptr,
+                        h''',
+                        pointer_val_val temp_item,
+                        (0, Int.repr 0, Int.repr 0)). 
+          1: admit.
+          (* HELP -- massaging it into a "hitem" earlier should 
+             discharge this automagically? *)
+          Unshelve.
+          3: admit. (* this is related to the above *)
+          1: lia.
+
+          Intros temp. destruct temp as [h'''' min_item].
+          simpl fst in *. simpl snd in *.
+
+          (* found bug *)
           
-          Intros u.
-          rename H12 into Hequ.
           (* u is the minimally chosen item from the
            "seen but not popped" category of vertices *)
 
