@@ -3,7 +3,7 @@ Require Import VST.floyd.proofauto.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
 Require Export CertiGraph.binheap.binary_heap_pro.
-Require Import CertiGraph.binheap.env_binary_heap_pro.
+Require Export CertiGraph.binheap.env_binary_heap_pro.
 
 Set Nested Proofs Allowed.
 
@@ -90,19 +90,19 @@ Definition capacity_spec :=
     SEP (valid_pq pq h).
 
 Definition pq_remove_min_nc_spec :=
-  DECLARE _pq_remove_min_nc WITH pq : val, h : heap, i : val, iv : heap_item
+  DECLARE _pq_remove_min_nc WITH pq : val, h : heap, i : val
   PRE [tptr t_pq, tptr t_item]
     PROP (heap_size h > 0)
     PARAMS (pq; i)
     GLOBALS ()
-    SEP (valid_pq pq h; hitem iv i)
+    SEP (valid_pq pq h; hitem_ i)
   POST [tvoid]
-  EX h', EX iv' : heap_item,
+  EX h', EX iv : heap_item,
     PROP (heap_capacity h = heap_capacity h';
-          Permutation (heap_items h) (iv' :: heap_items h');
-          Forall (cmp_rel iv') (heap_items h'))
+          Permutation (heap_items h) (iv :: heap_items h');
+          Forall (cmp_rel iv) (heap_items h'))
     LOCAL ()
-    SEP (valid_pq pq h'; hitem iv' i).
+    SEP (valid_pq pq h'; hitem iv i).
 
 Definition pq_insert_nc_spec :=
   DECLARE _pq_insert_nc WITH pq : val, h : heap, priority : Z, data : int
