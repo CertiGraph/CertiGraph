@@ -7,7 +7,31 @@ Require Import CertiGraph.dijkstra.dijkstra_spec1.
 Local Open Scope Z_scope.
 
 Definition hitem_ (v : val) : mpred :=
-  EX hi, hitem hi v.
+  EX v1 v2 v3, data_at Tsh t_item (v1, (v2, v3)) v.
+
+Lemma hitem_hitem_: forall v hi,
+  hitem hi v |-- hitem_ v.
+Proof.
+  intros. unfold hitem_. simpl.
+  Exists (Vint (Int.repr (fst (fst hi)))) (Vint (snd (fst hi))) (Vint (snd hi)).
+  apply derives_refl.
+Qed.
+
+Lemma weaken_prehitem_: forall v,
+  malloc_compatible (sizeof (Tstruct _structItem noattr)) v ->
+  (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint)) v) |--
+  (hitem_ v).
+Proof.
+  intros v H.
+  apply malloc_compatible_field_compatible in H; simpl; auto. change (12 / 4) with 3.
+  Exists Vundef Vundef Vundef.
+unfold data_at_, data_at, field_at_, default_val, field_at. simpl.
+Intros.
+apply andp_right. apply prop_right. apply H.
+unfold at_offset.
+entailer!.
+admit.
+Admitted.
 
 Section DijkstraProof.
   
@@ -309,42 +333,9 @@ Section DijkstraProof.
     rename H2 into Hinf.
     assert (Int.max_signed <= Int.max_unsigned) by now compute.
     forward_call ((sizeof(Tstruct _structItem noattr))).
-(* Aquinas: exploration
-Print hitem.
-Set Nested Proofs Allowed.
-Print field_at_.
-Print default_val.
-Print data_at.
-Print heap_item.
-Print payload_type.
-Search Int.zero 0.
-Intro vret.
-replace (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
-          (pointer_val_val vret)) with
-(data_at Tsh (tarray tint ((Tstruct _structItem noattr) / sizeof tint))
-          (pointer_val_val vret)).
-
-
-Lemma hitem_fold: forall arr,
-data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
-          (pointer_val_val arr) = hitem (0,Int.zero,Int.zero) (pointer_val_val arr).
-Proof.
-  intros. unfold hitem. simpl. unfold heap_item_rep. simpl. unfold data_at_. unfold field_at_.
-unfold data_at. unfold t_item. simpl. unfold default_val. simpl.
-unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. simpl.
-
-*)
     Intros temp_item.
     rename H2 into Htemp_item.
-    (* HELP
-       It would be awfully nice to massage temp_item 
-       into some "hitem" just about now.
-       I gave it a go but got stuck.
-     *)
-(* Aquinas: This is not true here, but if we change the C code to initialize the data structure, it might be. *)
-    replace (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
-          (pointer_val_val temp_item)) with (hitem_ (pointer_val_val temp_item)) by admit.
-(* end Aquinas edit *)
+    sep_apply weaken_prehitem_.
     forward_call (size * sizeof(tint)).
     1: simpl; lia.
     Intro keys_pv.
@@ -372,10 +363,10 @@ unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. 
       entailer!.
     - forward. forward.
       assert_PROP (heap_size h0 <= heap_capacity h0). {
-        unfold valid_pq, heap_size. go_lower. Intros arr junk arr2 lookup. rewrite Zlength_app in H14.
+        unfold valid_pq, heap_size. go_lower. Intros arr junk arr2 lookup. rewrite Zlength_app in H13.
         apply prop_right. rep_lia. }
       forward_call (priq_ptr, h0, inf, Int.repr i).
-      1: { admit. (* Aquinas: see H6.  Do we have an off-by-one issue somewhere? *)
+      1: { admit. (* Aquinas: see H5.  Do we have an off-by-one issue somewhere? *)
            (* HELP -- needs to be added somewhere? Thoughts? *)
       }
       Intro temp'. destruct temp' as [h' key].
@@ -384,7 +375,7 @@ unfold binary_heap_pro._structItem. unfold field_at. simpl. unfold data_at_rec. 
       simpl fst in *. simpl snd in *.
       assert (Zlength keys0 = i). {
         unfold key_type in *.
-        rewrite (Permutation_Zlength _ _ H5).
+        rewrite (Permutation_Zlength _ _ H7).
         rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
       }
       (* A number of tweaks to the keys array in SEP... *)
