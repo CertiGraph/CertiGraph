@@ -274,7 +274,8 @@ Definition pq_edit_priority_spec :=
     SEP (valid_pq pq h) (* and the free toks I get from pq_make*)
   POST [tvoid]
     EX h': heap,
-    PROP (Permutation (heap_items h') (update_pri_by_key (heap_items h) key newpri))
+    PROP (Permutation (heap_items h') (update_pri_by_key (heap_items h) key newpri);
+         heap_capacity h' = heap_capacity h)
     LOCAL ()
     SEP (valid_pq pq h').
 
