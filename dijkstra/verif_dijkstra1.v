@@ -42,13 +42,13 @@ Section DijkstraProof.
     EX h : heap,
     EX keys: list key_type,
     EX dist_and_prev : list int,
-    PROP (Permutation keys (project_keys h);
+    PROP (Permutation keys (proj_keys h);
          forall j k,
            0 <= j < i ->
            Znth j keys = k ->
            find_item_by_key (heap_items h) k =
            [(k, Int.repr j, Znth j dist_and_prev)] \/
-           ~In k (project_keys h);
+           ~In k (proj_keys h);
          dist_and_prev = list_repeat (Z.to_nat i) (Int.repr inf))
     LOCAL (temp _dist (pointer_val_val dist_ptr);
           temp _prev (pointer_val_val prev_ptr);
@@ -314,7 +314,6 @@ Section DijkstraProof.
     forward_call ((sizeof(Tstruct _structItem noattr))).
     Intros temp_item.
     rename H2 into Htemp_item.
-    sep_apply weaken_prehitem_.
     forward_call (size * sizeof(tint)).
     1: simpl; lia.
     Intro keys_pv.
@@ -334,15 +333,23 @@ Section DijkstraProof.
     forward_for_simple_bound
       size
       (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_pv temp_item graph_ptr addresses).
-    - rewrite list_repeat_0, app_nil_l, Z.sub_0_r, data_at__tarray.
-      replace (size * sizeof tint / sizeof tint) with size.
-      2: { rewrite Z.div_mul; trivial; simpl; lia. }
-      rewrite  <- Heqkeys.
-      Exists h. Exists (@nil key_type).
+    - Exists h (@nil key_type) (@nil int).
       entailer!.
+      1: { rewrite Zlength_nil_inv.
+           apply Permutation_refl.
+           rewrite proj_keys_Zlength; trivial.
+      }
+      remember (heap_capacity h) as size.
+      rewrite app_nil_l, data_at__tarray.
+      replace (size * sizeof tint / sizeof tint) with size.
+      2: rewrite Z.div_mul; trivial; simpl; lia.
+      entailer!. 
+      apply (weaken_prehitem_ (pointer_val_val temp_item)).
+      trivial.
+      
     - forward. forward.
       assert_PROP (heap_size h0 <= heap_capacity h0). {
-        unfold valid_pq, heap_size. go_lower. Intros arr junk arr2 lookup. rewrite Zlength_app in H13.
+        unfold valid_pq, heap_size. go_lower. Intros arr junk arr2 lookup. rewrite Zlength_app in H17.
         apply prop_right. rep_lia. }
       forward_call (priq_ptr, h0, inf, Int.repr i).
       1: { admit. (* Aquinas: see H5.  Do we have an off-by-one issue somewhere? *)
