@@ -481,16 +481,15 @@ exists l2a and l2b such that
           rewrite Zlength_list_repeat; ulia.
         }
         
-        split3; [| |split3; [| |split3]].
+        split3; [| |split3; [| |split]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
         * admit.
         * admit.
-        * admit.
         * split; red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
-        * repeat rewrite map_list_repeat. cancel.
+        * repeat rewrite map_list_repeat; cancel.
 
       + (* Now the body of the while loop begins. *)
         unfold dijk_forloop_inv.
