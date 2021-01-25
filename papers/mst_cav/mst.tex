@@ -119,24 +119,25 @@
 \renewcommand{\implies}{\Rightarrow}
 \renewcommand{\iff}{\Leftrightarrow}
 
-\title{Verified C implementations of classic textbook graph algorithms}
+\title{Functional Correctness of C implementations \\
+of Dijkstra's, Kruskal's, and Prim's Algorithms}
 %\titlerunning{A Machine-Checked C Implementation of Dijkstra's Shortest Path Algorithm}
 %optional, please use if title is longer than one line
 
 \begin{document}
 
-	\author{Anshuman Mohan\inst{1} \and
-	Wei Xiang Leow\inst{1} \and
-	Shengyi Wang\inst{2} \and
-	Aquinas Hobor\inst{1,3}}
+	\author{Anshuman Mohan \and
+	Wei Xiang Leow \and
+%	Shengyi Wang\inst{2} \and
+	Aquinas Hobor} %\inst{1,2}}
 
 	%\authorrunning{A. Mohan et al.}
 % First names are abbreviated in the running head.
 % If there are more than two authors, 'et al.' is used.
 	
-	\institute{School of Computing, National University of Singapore \and
-	Princeton University, USA \and
-	Yale-NUS College, National University of Singapore}	
+	\institute{National University of Singapore}% \and
+%	Princeton University, USA \and
+%	Yale-NUS College, National University of Singapore}	
 	
 	\maketitle
 	%\begin{frontmatter}
@@ -173,14 +174,10 @@
 	
 	\begin{abstract}
 		\vspace{-1.2em}
-		This paper provides proof-verified graph implementations of Dijkstra's, Prim's and Kruskal's graph algorithms.
-		We prove functional correctness of our C implementations, and improve Wang et al\cite{DBLP:journals/pacmpl/WangCMH19}'s CertiGraph platform to reason about undirected graph properties and common spatial representations.
-		
-		In particular, we encounter and explain an overflow issue in Dijkstra’s algorithm. The precise bound in the relevant precondition is nontrivial: we show that the intuitive guess fails and provide a workable refinement. We also make an observation of Prim's algorithm that contradicts the common notion that the basic algorithm cannot work on disconnected graphs - our Prim's implementation is able to compute minimum spanning forests without finding components first.
-		
-		This work fits into an ongoing exploration of verified graph-manipulating algorithms in a realistic setting.
-		
-		\keywords{Dijkstra's shortest-path \and Prim's algorithm \and Kruskal's algorithm \and minimum spanning trees \and verification \and CompCert \and VST}
+        We develop machine-checked verifications of the full functional correctness of C implementations of the eponymous graph algorithms of Dijkstra, Kruskal, and Prim.  We extend Wang et al\cite{DBLP:journals/pacmpl/WangCMH19}'s CertiGraph platform to reason about labels on edges, undirected graphs, and common spatial representations of edge-labeled graphs such as adjacency matrices and edge lists.  We certify binary heaps, including Floyd's bottom-up heap construction, heapsort, and increase/decrease priority.        
+        Our verifications uncover subtle overflows implicit in standard textbook code, including a nontrivial bound on edge weights necessary to execute Dijkstra's algorithm: in fact, we show that the intuitive guess fails and provide a workable refinement.  We observe that the common notion that Prim's algorithm requires a connected graph is wrong: our Prim's implementation is able to compute minimum spanning forests without finding components first.  Our verification of Kruskal's algorithm is notable because it requires reasoning about two graphs simultaneously: the undirected graph undergoing MST construction, and the directed graph representing the forest inside union-find.  Our binary heap verification exposes precise bounds for the heap to operate correctly, avoids a subtle overflow error, and includes a method of recycling keys to avoid overflow. %heap requires 0u, etc.?
+		\keywords{separation logic \and graph algorithms \and Coq \and VST}
+%Dijkstra's shortest-path \and Prim's algorithm \and Kruskal's algorithm \and minimum spanning trees \and verification \and CompCert \and VST}
 	\end{abstract} %\and Coq
 	
 	%\end{frontmatter}

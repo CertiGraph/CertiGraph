@@ -3,7 +3,7 @@ Require Import VST.floyd.proofauto.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
 Require Export CertiGraph.binheap.binary_heap_pro.
-Require Export CertiGraph.binheap.env_binary_heap_pro.
+Require Import CertiGraph.binheap.env_binary_heap_pro.
 
 Set Nested Proofs Allowed.
 
@@ -530,62 +530,6 @@ Proof.
   entailer!.
 Time Qed.
 
-(*
-
-Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
-Proof.
-  start_function.
-  forward_call (sizeof(Tstruct _structPQ noattr)).
-  1: compute; split; inversion 1.
-  Intros pq.
-  forward_call (sizeof(tuint) * size).
-  1: simpl; lia.
-  Intros table.
-  forward_call ((sizeof(Tstruct _structItem noattr) * size)).
-  Intros arr.
-  simpl sizeof.
-  replace (12 * size / 4) with (3 * size).
-  replace (4 * size / 4) with size.
-  replace (16 / 4) with 4.
-  2,3,4: admit. (* easy *)
-  forward_for_simple_bound
-    size
-    (EX i : Z,
-     PROP ()
-     LOCAL (temp _arr (pointer_val_val arr);
-            temp _size (Vint (Int.repr size)))
-     SEP (data_at_ Tsh (tarray tint (3 * size)) (pointer_val_val arr) *
-          free_tok (pointer_val_val arr) (12 * size) *
-          data_at_ Tsh (tarray tint size) (pointer_val_val table) *
-          free_tok (pointer_val_val table) (4 * size) *
-          data_at_ Tsh (tarray tint 4) (pointer_val_val pq) *
-          free_tok (pointer_val_val pq) 16)).
-  - entailer!.
-  - Intros.
-    assert_PROP
-      ((offset_val 0
-                   (force_val
-                      (sem_add_ptr_int (Tstruct _structItem noattr) Signed 
-                                       (pointer_val_val arr) (Vint (Int.repr i)))) =
-        field_address (tarray (Tstruct _structItem noattr) size) [ArraySubsc i] (pointer_val_val arr))). {
-      entailer!.
-      rewrite field_address_offset; trivial.
-      clear H6 H7. destruct H5 as [? [? [? [? ?]]]].
-      repeat split; try lia; trivial.
-      - admit.
-      - admit.
-    }
-    
-    Fail forward.
-    (* Okay, gotta unwrap all the way to the unsigned.
-       I feel pretty misled by VST though...
-     *)
-    
-Admitted.
-*)
-
-
-(*
 (* I need this to make a replace work... ugly... *)
 (* Perhaps a BUG, related to overly-aggressive unfolding of fst/snd that has to be repaired later? 
    I end up with the messy LHS and would really prefer the nicer RHS. *)
@@ -605,25 +549,23 @@ Proof.
   forward. { repeat rewrite Znth_map; trivial. entailer!. }
   forward.
   forward. { repeat rewrite Znth_map; trivial. entailer!.
-    clear H4.
     (* We may be in another C-typing issue... *)
     case (eq_dec j k); intro.
     + subst k. rewrite upd_Znth_same. trivial. rewrite Zlength_map; auto.
     + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
       (* BUG?  So ugly... is there no easier way? *)
-      (* BUG?  These "replace"s are very slow... *)
-      rewrite (surjective_pairing (heap_item_rep (Znth k arr_contents))) in H5.
-      rewrite (surjective_pairing (snd (heap_item_rep (Znth k arr_contents)))) in H5.
+      rewrite (surjective_pairing (heap_item_rep (Znth k arr_contents))) in H4.
+      rewrite (surjective_pairing (snd (heap_item_rep (Znth k arr_contents)))) in H4.
       (* BUG? here is where I need to repack the unpacked rep... *)
-      rewrite heap_item_rep_morph, upd_Znth_map in H5.
-      apply Forall_map in H5.
-      rewrite Forall_Znth in H5. specialize (H5 k).
-      do 2 rewrite Zlength_map in H5. rewrite Zlength_upd_Znth in H5. specialize (H5 H0).
-      do 2 rewrite Znth_map in H5. 2,3,4: autorewrite with sublist; trivial.
-      rewrite upd_Znth_diff in H5; auto. rewrite Znth_map; trivial.
+      rewrite heap_item_rep_morph, upd_Znth_map in H4.
+      apply Forall_map in H4.
+      rewrite Forall_Znth in H4. specialize (H4 k).
+      do 2 rewrite Zlength_map in H4. rewrite Zlength_upd_Znth in H4. specialize (H4 H0).
+      do 2 rewrite Znth_map in H4. 2,3,4: autorewrite with sublist; trivial.
+      rewrite upd_Znth_diff in H4; auto. rewrite Znth_map; trivial.
       (* Flailing around solves the goal... *)
-      simplify_value_fits in H5. destruct H5 as [? [? ?]].
-      apply H6. discriminate. }
+      simplify_value_fits in H4. destruct H4 as [? [? ?]].
+      apply H5. discriminate. }
   forward.
   forward.
 Fail forward. (* BUG, wrong error message here *)
@@ -680,6 +622,64 @@ repeat rewrite Znth_upd_Znth.
       rewrite Znth_Zexchange''; auto.
       repeat rewrite upd_Znth_diff; autorewrite with sublist; trivial.
 Time Qed.
+
+
+(*
+
+Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
+Proof.
+  start_function.
+  forward_call (sizeof(Tstruct _structPQ noattr)).
+  1: compute; split; inversion 1.
+  Intros pq.
+  forward_call (sizeof(tuint) * size).
+  1: simpl; lia.
+  Intros table.
+  forward_call ((sizeof(Tstruct _structItem noattr) * size)).
+  Intros arr.
+  simpl sizeof.
+  replace (12 * size / 4) with (3 * size).
+  replace (4 * size / 4) with size.
+  replace (16 / 4) with 4.
+  2,3,4: admit. (* easy *)
+  forward_for_simple_bound
+    size
+    (EX i : Z,
+     PROP ()
+     LOCAL (temp _arr (pointer_val_val arr);
+            temp _size (Vint (Int.repr size)))
+     SEP (data_at_ Tsh (tarray tint (3 * size)) (pointer_val_val arr) *
+          free_tok (pointer_val_val arr) (12 * size) *
+          data_at_ Tsh (tarray tint size) (pointer_val_val table) *
+          free_tok (pointer_val_val table) (4 * size) *
+          data_at_ Tsh (tarray tint 4) (pointer_val_val pq) *
+          free_tok (pointer_val_val pq) 16)).
+  - entailer!.
+  - Intros.
+    assert_PROP
+      ((offset_val 0
+                   (force_val
+                      (sem_add_ptr_int (Tstruct _structItem noattr) Signed 
+                                       (pointer_val_val arr) (Vint (Int.repr i)))) =
+        field_address (tarray (Tstruct _structItem noattr) size) [ArraySubsc i] (pointer_val_val arr))). {
+      entailer!.
+      rewrite field_address_offset; trivial.
+      clear H6 H7. destruct H5 as [? [? [? [? ?]]]].
+      repeat split; try lia; trivial.
+      - admit.
+      - admit.
+    }
+    
+    Fail forward.
+    (* Okay, gotta unwrap all the way to the unsigned.
+       I feel pretty misled by VST though...
+     *)
+    
+Admitted.
+*)
+
+
+(*
 
 
 Lemma body_insert_nc: semax_body Vprog Gprog f_insert_nc insert_nc_spec.
