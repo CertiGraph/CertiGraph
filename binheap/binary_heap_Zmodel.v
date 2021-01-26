@@ -171,6 +171,15 @@ Proof.
     specialize (H0 x). rewrite Nat2Z.id. lia.
 Qed.
 
+Lemma Zexchange_symm {A}: forall (L : list A) i j,
+  0 <= i < Zlength L -> 0 <= j < Zlength L ->
+  Zexchange L i j = Zexchange L j i.
+Proof.
+  intros.
+  rewrite Zlength_correct in H, H0.
+  apply exchange_symm; lia.
+Qed.
+
 Definition Zleft_child i  := Z.of_nat (binary_heap_model.left_child  (Z.to_nat i)).
 Lemma Zleft_child_unfold: forall i,
   0 <= i ->

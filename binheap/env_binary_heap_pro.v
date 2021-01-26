@@ -1,9 +1,9 @@
+Require Import RelationClasses.
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.binheap.binary_heap_pro.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
-Require Import RelationClasses.
 
 (* Relation on heap items. *)
 Definition key_type : Type := Z. Definition priority_type : Type := int. Definition payload_type : Type := int.
@@ -77,14 +77,17 @@ Definition hitem (i : heap_item) : val -> mpred :=
   data_at Tsh t_item (heap_item_rep i).
 
 Definition lookup_array (lookup : list Z) : val -> mpred :=
-  data_at Tsh (tarray tint (Zlength lookup)) (map (fun z => Vint (Int.repr z)) lookup).
+  data_at Tsh (tarray tuint (Zlength lookup)) (map (fun z => Vint (Int.repr z)) lookup).
 
 Definition heap_array (contents : list heap_item) : val -> mpred :=
  data_at Tsh (tarray t_item (Zlength contents)) (map heap_item_rep contents).
 
 (* Maybe can move this and associated definitons to Zmodel... *)
 Definition linked_correctly' (contents : list heap_item) (lookup : list Z) (offset : Z) : Prop :=
-  forall i, 0 <= i < Zlength contents -> Znth (heap_item_key (Znth i contents)) lookup = offset + i.
+  forall i, 0 <= i < Zlength contents -> 
+    let loc := heap_item_key (Znth i contents) in
+    0 <= loc < Zlength lookup /\
+    Znth loc lookup = offset + i.
 
 Definition linked_correctly (contents : list heap_item) (lookup : list Z) : Prop :=
   linked_correctly' contents lookup 0.
@@ -107,9 +110,9 @@ Lemma linked_correctly_app3: forall contents contents' lookup,
   linked_correctly (contents ++ contents') lookup.
 Proof.
   repeat intro. rewrite Z.add_0_l. assert (0 <= i < Zlength contents \/ Zlength contents <= i < Zlength (contents ++ contents')) by rep_lia.
-  destruct H2. rewrite Znth_app1; try lia. apply H; trivial.
-  rewrite Znth_app2; try lia. rewrite Zlength_app in H2.
-  specialize (H0 (i - Zlength contents)). rewrite H0; lia.
+  destruct H2. destruct H2. unfold loc. rewrite Znth_app1; try lia. apply H; trivial. rep_lia.
+  unfold loc. rewrite Znth_app2; try lia. rewrite Zlength_app in *.
+  specialize (H0 (i - Zlength contents)). destruct H0. lia. rewrite H3. lia.
 Qed.
 
 Lemma linked_correctly_app_eq: forall contents contents' lookup,
@@ -122,9 +125,10 @@ Qed.
 
 Lemma linked_correctly'_shuffle: forall contents lookup lookup' offset,
   linked_correctly' contents lookup offset ->
+  Zlength lookup = Zlength lookup' ->
   (forall i, 0 <= i < Zlength contents -> Znth (heap_item_key (Znth i contents)) lookup = Znth (heap_item_key (Znth i contents)) lookup') ->
   linked_correctly' contents lookup' offset.
-Proof. repeat intro. rewrite <- H0; trivial. apply H. trivial. Qed.
+Proof. repeat intro. unfold loc. rewrite <- H0. rewrite <- H1; trivial. apply H. trivial. Qed.
 
 Definition lookup_oob_eq (contents : list heap_item) (lookup lookup' : list Z) : Prop :=
   forall i, (forall j, 0 <= j < Zlength contents -> heap_item_key (Znth j contents) <> i) ->
@@ -218,14 +222,14 @@ Definition valid_pq (pq : val) (h: heap): mpred :=
        linked_heap_array ((heap_items h) ++ junk) arr lookup arr2).
 
 Definition hitem_ (v : val) : mpred :=
-  EX v1 v2 v3, data_at Tsh t_item (v1, (v2, v3)) v.
+  data_at_ Tsh t_item v.
 
 Lemma hitem_hitem_: forall v hi,
   hitem hi v |-- hitem_ v.
 Proof.
-  intros. unfold hitem_. simpl.
-  Exists (Vint (Int.repr (fst (fst hi)))) (Vint (snd (fst hi))) (Vint (snd hi)).
-  apply derives_refl.
+  intros.
+  unfold hitem, hitem_. cancel.
+  (* apply data_at_data_at_. *)
 Qed.
 
 Lemma weaken_prehitem_: forall v,
@@ -234,15 +238,181 @@ Lemma weaken_prehitem_: forall v,
   (hitem_ v).
 Proof.
   intros v H.
-  apply malloc_compatible_field_compatible in H; simpl; auto. change (12 / 4) with 3.
-  Exists Vundef Vundef Vundef.
-unfold data_at_, data_at, field_at_, default_val, field_at. simpl.
-Intros.
-apply andp_right. apply prop_right. apply H.
-unfold at_offset.
-entailer!.
-admit.
-Admitted.
+  sep_apply data_at__memory_block_cancel.
+  change (sizeof (tarray _ _)) with (sizeof t_item).
+  rewrite memory_block_data_at_.
+  apply derives_refl.
+  apply malloc_compatible_field_compatible in H; auto.
+Qed.
+
+Definition update_pri_if_key (key: key_type) (newpri: priority_type) (hi : heap_item) :=
+  if Z.eq_dec key (heap_item_key hi) then (key, newpri, heap_item_payload hi) else hi.
+
+Definition update_pri_by_key (h: list heap_item) (key: key_type) (newpri: priority_type) :=
+  map (update_pri_if_key key newpri) h.
+
+Definition find_item_by_key (h: list heap_item) (key: key_type) :=
+  filter (fun item => Z.eq_dec (heap_item_key item) key) h.
+
+Inductive Subsequence {A : Type} : list A -> list A -> Prop :=
+ | SubNil: forall L, Subsequence nil L
+ | SubIn: forall L1 L2, Subsequence L1 L2 -> forall x, Subsequence (x :: L1) (x :: L2)
+ | SubOut: forall L1 L2, Subsequence L1 L2 -> forall x, Subsequence L1 (x :: L2).
+
+Definition sub_permutation {A} (l1 l2 : list A) :=
+  exists l2', Permutation l2' l2 /\ Subsequence l1 l2'.
+
+Definition keys_valid (h : list heap_item) :=
+  NoDup (map heap_item_key h).
+
+Definition proj_keys h :=
+  map heap_item_key (heap_items h).
+
+Lemma proj_keys_Zlength: forall h,
+    Zlength (proj_keys h) = heap_size h.
+Proof.
+  intros. unfold proj_keys, heap_size. now rewrite Zlength_map.
+Qed.
+
+Lemma Subsequence_In: forall A (l1 l2 : list A),
+  Subsequence l1 l2 ->
+  forall x, In x l1 -> In x l2.
+Proof.
+  induction 1; simpl; auto. contradiction.
+  destruct 1; auto.
+Qed.
+
+Lemma NoDup_Subsequence: forall A (l1 l2 : list A),
+  Subsequence l1 l2 ->
+  NoDup l2 ->
+  NoDup l1.
+Proof.
+  intros ? ? ? ?. induction H; intros.
+  * constructor.
+  * constructor. inversion H0. subst x0 l. intro. apply H3. eapply Subsequence_In; eauto.
+    apply IHSubsequence. inversion H0. trivial.
+  * inversion H0; auto.
+Qed.
+
+Lemma NoDup_sub_permutation: forall A (l1 l2 : list A),
+  sub_permutation l1 l2 ->
+  NoDup l2 ->
+  NoDup l1.
+Proof.
+  intros A l1 l2 [l2' [? ?]] ?.
+  eapply NoDup_Subsequence; eauto.
+  symmetry in H.
+  eapply Permutation_NoDup; eauto.
+Qed.
+
+Lemma keys_valid_tl: forall hi h,
+  keys_valid (hi :: h) -> keys_valid h.
+Proof. intros. eapply List_ext.NoDup_cons_1, H. Qed.
+
+Lemma update_pri_by_key_not_In: forall h key newpri,
+  ~In key (map heap_item_key h) ->
+  update_pri_by_key h key newpri = h.
+Proof.
+  induction h. reflexivity. intros.
+  simpl. unfold update_pri_if_key. case Z.eq_dec; intro. exfalso. apply H. left. auto.
+  rewrite IHh; trivial. intro. apply H. right. trivial.
+Qed.
+
+Lemma update_pri_by_key_split: forall h key newpri start xp xd rest,
+  keys_valid h ->
+  h = start ++ (key, xp, xd) :: rest ->
+  update_pri_by_key h key newpri = start ++ (key, newpri, xd) :: rest.
+Proof.
+  intros h key newpri start xp xd. revert h. induction start; intros; rewrite H0.
+  * simpl in *. subst h. rewrite update_pri_by_key_not_In. f_equal.
+    unfold update_pri_if_key. case Z.eq_dec. trivial. contradiction.
+    intro. red in H. simpl in H. inversion H. contradiction.
+  * subst h. simpl in H. generalize (keys_valid_tl _ _ H); intro.
+    specialize (IHstart (start ++ (key, xp, xd) :: rest) rest H0 (eq_refl _)).
+    simpl. rewrite IHstart. f_equal.
+    unfold update_pri_if_key. case Z.eq_dec; auto. intro.
+    inversion H. subst key. rewrite map_app in H3. exfalso. apply H3.
+    apply in_or_app. right. left. trivial.
+Qed.
+
+Lemma can_split: forall (h: heap) (key: key_type),
+    (~In key (map heap_item_key (heap_items h))) \/
+    exists start xp xd rest,
+      (heap_items h) = start ++ (key, xp, xd) :: rest.
+Proof.
+  destruct h. simpl. induction l. left. intro. inversion H.
+  intro key. case (Z.eq_dec key (heap_item_key a)); intro.
+  * right. destruct a as [[? ?] ?]. unfold heap_item_key in e. simpl in e. subst k.
+    exists nil, p, p0, l. trivial.
+  * specialize (IHl key). destruct IHl. left. intro. apply H. simpl in H0. destruct H0; [symmetry in H0|]; contradiction.
+    destruct H as [start [xp [xd [rest ?]]]].
+    right. exists (a :: start), xp, xd, rest. rewrite H. trivial.
+Qed.
+
+Lemma upd_Znth_Zexchange {A} {iA : Inhabitant A}: forall k j (L : list A),
+  0 <= k < Zlength L ->
+  0 <= j < Zlength L ->
+  upd_Znth k (upd_Znth j L (Znth k L)) (Znth j L) = Zexchange L j k.
+Proof.
+  intros. apply list_eq_Znth; do 2 rewrite Zlength_upd_Znth. rewrite Zlength_Zexchange; trivial.
+  intros. case (Z.eq_dec i k); intro.
+  * subst k. rewrite Znth_Zexchange'; auto.
+    rewrite upd_Znth_same; auto. rewrite Zlength_upd_Znth; auto.
+  * rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_upd_Znth; auto.
+    case (Z.eq_dec i j); intro.
+    + subst j. rewrite upd_Znth_same; auto. rewrite Znth_Zexchange; auto.
+    + rewrite upd_Znth_diff; auto. rewrite Znth_Zexchange''; auto.
+Qed.
+
+Lemma linked_correctly_Zexchange: forall L1 L2 j k,
+  0 <= j < Zlength L1 ->
+  0 <= k < Zlength L1 ->
+  linked_correctly L1 L2 ->
+  linked_correctly (Zexchange L1 j k) (Zexchange L2 (heap_item_key (Znth j L1)) (heap_item_key (Znth k L1))).
+Proof.
+  repeat intro. subst loc. rewrite Zlength_Zexchange in H2. rewrite Zlength_Zexchange.
+  destruct (H1 _ H). destruct (H1 _ H0). destruct (H1 _ H2). clear H1.
+  case (Z.eq_dec i j); intro.
+  * subst j. rewrite Znth_Zexchange; auto. rewrite Znth_Zexchange'; auto.
+  * case (Z.eq_dec i k); intro.
+    - subst i. rewrite Znth_Zexchange'; auto. rewrite Znth_Zexchange; auto.
+    - rewrite Znth_Zexchange''; auto. rewrite Znth_Zexchange''; auto.
+      intro. rewrite H1 in H8. rewrite H4 in H8. lia.
+      intro. rewrite H1 in H8. rewrite H6 in H8. lia.
+Qed.
+
+Lemma lookup_oob_eq_Zexchange: forall L1 L2 j k,
+  0 <= j < Zlength L1 ->
+  0 <= k < Zlength L1 ->
+  linked_correctly L1 L2 ->
+  lookup_oob_eq (Zexchange L1 j k) L2 (Zexchange L2 (heap_item_key (Znth j L1)) (heap_item_key (Znth k L1))).
+Proof.
+  repeat intro. rewrite Zlength_Zexchange in H2.
+  rewrite Znth_Zexchange''; auto.
+  destruct (H1 _ H); auto.
+  destruct (H1 _ H0); auto.
+  intro. subst i. eapply H2. apply H0. rewrite Znth_Zexchange'; auto.
+  intro. subst i. eapply H2. apply H. rewrite Znth_Zexchange; auto.
+Qed.
 
 
+(*
+Does not seem to work on arrays.
+
+unfold_data_at (data_at _ (tarray tint 3) _ v).
+
+In environment
+v : val
+H : field_compatible (Tstruct _structItem noattr) [] v
+V := list_repeat (Z.to_nat 3) (default_val tint) : list (reptype tint)
+P := v : val
+T := tarray tint 3 : type
+F := field_at Tsh T [] V P : mpred
+id := ?id : ident
+Unable to unify "Tunion ?id noattr" with
+ "match nested_field_rec (tarray tint 3) [] with
+  | Some (_, t0) => t0
+  | None => Tvoid
+  end".
+*)
 
