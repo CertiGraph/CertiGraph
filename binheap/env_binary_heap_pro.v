@@ -395,6 +395,25 @@ Proof.
   intro. subst i. eapply H2. apply H. rewrite Znth_Zexchange; auto.
 Qed.
 
+Lemma exists_min_in_list: forall L,
+  0 < Zlength L ->
+  exists min_item : heap_item,
+  In min_item L /\
+  Forall (cmp_rel min_item) L.
+Proof.
+  induction L. discriminate.
+  destruct L. exists a. split. left. trivial. constructor. reflexivity. constructor.
+  intros _. assert (0 < Zlength (h :: L)) by (rewrite Zlength_cons; rep_lia).
+  specialize (IHL H). clear H. destruct IHL as [mi' [? ?]].
+  case_eq (cmp mi' a); intro. exists mi'.
+  split. right. trivial.
+  constructor. apply H1. trivial.
+  exists a. split. left. trivial. constructor. reflexivity.
+  rewrite Forall_forall in H0. rewrite Forall_forall. intro hi; intros.
+  transitivity mi'.
+  destruct (cmp_linear a mi'); auto. unfold cmp_rel in H3. rewrite H1 in H3. discriminate.
+  apply H0. trivial.
+Qed.
 
 (*
 Does not seem to work on arrays.
