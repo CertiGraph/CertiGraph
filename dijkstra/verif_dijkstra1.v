@@ -92,20 +92,12 @@ Section DijkstraProof.
     EX h : heap,
     EX keys: list key_type,
     PROP (
-        (* The overall correctness condition *)
         dijkstra_correct g src popped prev dist;
       
-      (* Some special facts about src *)
       Znth src dist = 0;
       Znth src prev = src;
-      popped <> [] -> In src popped;
-      (* popped = [] -> src = find priq (fold_right Z.min (hd 0 priq) priq) 0; *)
-      (* TODO replace with the new style --
-         if nothing is popped, src is the minimum *)
 
-      (* TODO:
-         commenting out the two below for now, but I'll have to see
-         if I need some new versions of these in the proofs later on *)
+      popped <> [] -> In src popped;
       heap_capacity h = size;
       Permutation keys (proj_keys h);
       forall j k,
@@ -114,7 +106,17 @@ Section DijkstraProof.
         find_item_by_key (heap_items h) k =
         [(k, Int.repr (Znth j dist), Int.repr j)] \/
         ~In k (proj_keys h);
-      
+
+      0 < Zlength (heap_items h) ->
+      exists min_item,
+      In min_item (heap_items h) /\
+      Forall (cmp_rel min_item) (heap_items h) /\
+      (popped = [] -> src = Int.signed (snd min_item));
+
+      (* TODO:
+         commenting out the two below for now, but I'll have to see
+         if I need some new versions of these in the proofs later on *)
+
       (* A fact about the relationship b/w
          the priq and popped arrays *)
       (*
@@ -172,10 +174,9 @@ Section DijkstraProof.
     EX keys: list key_type,
     PROP (
 
-        (* TODO replace this? 
         (* This fact comes from breaking while *)
-        Forall (fun x => x >= inf) priq;
-         *)
+        heap_size h = 0;
+         
       (* And the correctness condition is established *)
       dijkstra_correct g src popped prev dist)
          LOCAL (temp _pq priq_ptr;
@@ -199,16 +200,24 @@ Section DijkstraProof.
              free_tok (pointer_val_val keys_ptr) (heap_capacity h * sizeof tint)).
   
   Definition dijk_inner_forloop_inv (g: @DijkGG size inf) sh
-             src (priq dist prev : list Z)
+             src
              dist_ptr prev_ptr priq_ptr graph_ptr addresses :=
     EX i : Z,
     EX prev' : list V,
-    EX priq' : list Z,
     EX dist' : list Z,
     EX popped' : list V,
-    let u :=
-        find priq (fold_right Z.min (hd 0 priq) priq) 0 in
+    EX h : heap,
+    EX h' : heap,
+    EX u : Z,
+
     PROP (
+        0 < Zlength (heap_items h) ->
+        exists min_item,
+          In min_item (heap_items h) /\
+          Forall (cmp_rel min_item) (heap_items h) /\
+          u = Int.signed (snd min_item);
+
+      
         (* inv_popped is not affected *)
         forall dst,
           vvalid g dst ->
@@ -246,12 +255,17 @@ Section DijkstraProof.
       Znth src dist' = 0;
       Znth src prev' = src;
       popped' <> [] -> In src popped';
-      popped' = [] -> src = find priq' (fold_right Z.min
-                                                   (hd 0 priq') priq') 0;
+      
+      0 < Zlength (heap_items h') ->
+      exists min_item',
+      In min_item' (heap_items h') /\
+      Forall (cmp_rel min_item') (heap_items h') /\
+      (popped' = [] -> src = Int.signed (snd min_item'));
       
       (* a useful fact about u *)
       In u popped';
-      
+
+      (*
       (* A fact about the relationship b/w 
          priq and popped arrays *)
       forall v,
@@ -264,15 +278,16 @@ Section DijkstraProof.
         vvalid g dst ->
         ~ In dst popped' ->
         Znth dst priq' = Znth dst dist';
+       *)
       
       (* the lengths of the threee arrays *)
-      Zlength priq' = size;
+      (* Zlength priq' = size; *)
       Zlength dist' = size;
       Zlength prev' = size;
                                                            
       (* and ranges of the three arrays *)
       @inrange_prev size inf prev';
-      @inrange_priq inf priq';
+      (* @inrange_priq inf priq'; *)
       @inrange_dist inf dist')
          
          LOCAL (temp _u (Vint (Int.repr u));
@@ -284,14 +299,11 @@ Section DijkstraProof.
                temp _size (Vint (Int.repr size));
                temp _inf (Vint (Int.repr inf)))
          
-         SEP (data_at Tsh
+         SEP (valid_pq priq_ptr h';
+             data_at Tsh
                       (tarray tint size)
                       (map Vint (map Int.repr prev'))
                       (pointer_val_val prev_ptr);
-             data_at Tsh
-                     (tarray tint size)
-                     (map Vint (map Int.repr priq'))
-                     priq_ptr;
              data_at Tsh
                      (tarray tint size)
                      (map Vint (map Int.repr dist'))
@@ -473,7 +485,7 @@ exists l2a and l2b such that
           rewrite Zlength_list_repeat; ulia.
         }
         
-        split3; [| |split3; [| |split]].
+        split3; [| |split3; [| |split3]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
@@ -490,6 +502,16 @@ exists l2a and l2b such that
              rewrite Znth_list_repeat_inrange.
              2,3: apply (vvalid_meaning g); trivial.
              admit. (* HELP if you have time *)
+        * intros.
+          destruct (exists_min_in_list (heap_items h'') H27) as [min [? ?]].
+          exists min. split3; trivial.
+          intros.
+          (* h' is all infs (see H8)
+             and h'' is h' with src tweaked to 0 (see H12)
+             and 0 < inf, 
+             so this is true
+           *)
+          admit.
         * split; red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
         * repeat rewrite map_list_repeat; cancel.
@@ -527,18 +549,16 @@ exists l2a and l2b such that
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity h''').
-            1: rewrite <- H17, Zlength_app; lia.
+            1: rewrite <- H18, Zlength_app; lia.
             lia.
           }
-          rewrite Int.unsigned_repr in H12 by trivial.
-          (* HELP -- massage it into a "hitem", then frame, then call *)
+          rewrite Int.unsigned_repr in H14 by trivial.
           freeze FR := (data_at _ _ _ _)
                          (data_at _ _ _ _)
                          (data_at _ _ _ _)
                          (free_tok _ _)
                          (free_tok _ _)
-                         (SpaceAdjMatGraph _ _ _ _ _).
-          
+                         (SpaceAdjMatGraph _ _ _ _ _).      
           forward_call (priq_ptr,
                         h''',
                         pointer_val_val temp_item). 
@@ -594,7 +614,7 @@ exists l2a and l2b such that
           }
                     
           assert (Htemp: 0 <= u < Zlength dist) by lia.
-          pose proof (Znth_dist_cases _ _ Htemp H9).
+          pose proof (Znth_dist_cases _ _ Htemp H10).
           clear Htemp.
 
           (* HERE *)
@@ -609,6 +629,9 @@ exists l2a and l2b such that
            dijkstra_correct.
            *)
 
+          admit.
+
+          (*
           
           forward_for_simple_bound
             size
@@ -1017,12 +1040,29 @@ exists l2a and l2b such that
             unfold dijkstra_correct.
             split3; [auto | apply H16 | apply H18];
               try rewrite <- (vvalid_meaning g); trivial.
-           
+           *)
         * (* After breaking from the while loop,
            prove break's postcondition *)
           forward. Exists prev dist popped h''' keys'''.
           assert (heap_capacity h''' = heap_capacity h) by lia.
-          rewrite H14. entailer!.
+          assert_PROP (0 <= heap_size h''' <= Int.max_unsigned). {
+            unfold valid_pq.
+            Intros arr junk lookup l_contents.
+            entailer!. 
+            unfold heap_size. 
+            pose proof (Zlength_nonneg junk). 
+            split; [apply Zlength_nonneg|]. 
+            apply Z.le_trans with (m := heap_capacity h''').
+            1: rewrite <- H19, Zlength_app; lia.
+            lia.
+          }
+          rewrite H15. entailer!.
+          clear -H14 H16.
+          rewrite Int.unsigned_repr in H14 by trivial.
+          unfold heap_size in *.
+          pose proof (Zlength_nonneg (heap_items h''')).
+          lia.
+          
           admit.
           (* HELP is this the coercion you proved? *)
       + (* from the break's postcon, prove the overall postcon *)

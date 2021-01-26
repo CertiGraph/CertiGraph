@@ -554,7 +554,10 @@ Proof.
   assert (Hy : 0 <= Zlength l) by apply Zlength_nonneg.
   forward.
   forward.
-  forward. { unfold linked_heap_array, heap_array. Intros. entailer!. }
+  forward.
+Admitted.
+
+(*{ unfold linked_heap_array, heap_array. Intros. entailer!. }
   forward. { unfold linked_heap_array, lookup_array. Intros. entailer!. }
   forward_call (0, Zlength l, arr, root :: l, lookup, lookup_contents).
     { entailer!. simpl. congruence. }
@@ -567,7 +570,7 @@ Proof.
     { entailer!. rewrite Znth_map. rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
       unfold heap_item_rep. trivial. rewrite Zlength_Zexchange. lia. }
   unfold hitem.
-Admitted.
+Admitted. *)
 (*
 
   forward.
