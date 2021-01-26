@@ -244,6 +244,40 @@ Proof.
       apply nth_error_None in H. apply nth_error_None in H0. congruence.
 Qed.
 
+Lemma exchange_symm : forall A (L : list A) i j,
+  (i < length L) -> (j < length L) ->
+  exchange L i j = exchange L j i.
+Proof.
+  intros.
+  apply nth_error_eq. intro k.
+  case (eq_nat_dec i k); intro. subst k.
+  rewrite nth_error_exchange; auto.
+  rewrite nth_error_exchange'; auto.
+  case (eq_nat_dec j k); intro. subst k.
+  rewrite nth_error_exchange'; auto.
+  rewrite nth_error_exchange; auto.
+  rewrite nth_error_exchange''; auto.
+  rewrite nth_error_exchange''; auto.
+Qed.
+
+Lemma exchange_update : forall A k j x y (L : list A),
+  k < length L ->
+  j < length L ->
+  nth_error L k = Some x ->
+  nth_error L j = Some y ->
+  update (update L j x) k y = exchange L j k.
+Proof.
+  intros. apply nth_error_eq. intros.
+  case (eq_nat_dec k i); intro. subst k.
+  rewrite nth_error_exchange'; auto.
+  rewrite nth_error_update; auto. rewrite update_length; auto.
+  rewrite nth_error_update'; auto.
+  case (eq_nat_dec j i); intro. subst j.
+  rewrite nth_error_exchange; auto.
+  rewrite nth_error_update; auto.
+  rewrite nth_error_exchange''; auto.
+  rewrite nth_error_update'; auto.
+Qed.
 
 Fixpoint foot_split {A} (L : list A) : (list A) * (option A) :=
   match L with 
