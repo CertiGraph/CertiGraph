@@ -83,7 +83,7 @@ void pq_edit_priority(PQ *pq, int key, int newpri) {
                    // or we did nothing
 
 void pq_remove_min_nc(PQ *pq, Item* item) {
-  unsigned int fa = pq->first_available - 1;
+  /*  unsigned int fa = pq->first_available - 1;
   Item* cells = pq->heap_cells;
   unsigned* lookup = pq->key_table;
   
@@ -93,7 +93,13 @@ void pq_remove_min_nc(PQ *pq, Item* item) {
   item->key = cells[fa].key;
 
   sink(ROOT_IDX, cells, fa, lookup);
-  pq->first_available = fa;
+  pq->first_available = fa; */
+  pq->first_available--;
+  exch(ROOT_IDX, pq->first_available, pq->heap_cells);
+  item->priority = pq->heap_cells[pq->first_available].priority;
+  item->data = pq->heap_cells[pq->first_available].data;
+  item->key = cells[fa].key;
+  sink(ROOT_IDX, pq->heap_cells, pq->first_available);
 }  
 
 unsigned int pq_insert(PQ *pq, int priority, int data) {
