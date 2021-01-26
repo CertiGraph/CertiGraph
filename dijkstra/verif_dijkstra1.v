@@ -9,7 +9,7 @@ Local Open Scope Z_scope.
 Section DijkstraProof.
   
   (* The invariants have been dragged out of the 
-   proof for readability and reuse
+     proof for readability and reuse
    *)
 
   Context {size: Z}.
@@ -161,12 +161,6 @@ Section DijkstraProof.
              hitem_ (pointer_val_val temp_item);
              free_tok (pointer_val_val temp_item) (sizeof (Tstruct _structItem noattr));
              free_tok (pointer_val_val keys_ptr) (size * sizeof tint)).
-
-(* TODO: 
-   Just as above, the invariants below need to divest from priq as an array
-   and move to the newer version where a cmp_rel is used to show
-   minimality
- *)
   
   Definition dijk_forloop_break_inv (g: @DijkGG size inf) sh
              src dist_ptr prev_ptr keys_ptr priq_ptr
@@ -615,10 +609,6 @@ exists l2a and l2b such that
            dijkstra_correct.
            *)
 
-          admit.
-
-          
-          (*
           
           forward_for_simple_bound
             size
@@ -1027,7 +1017,7 @@ exists l2a and l2b such that
             unfold dijkstra_correct.
             split3; [auto | apply H16 | apply H18];
               try rewrite <- (vvalid_meaning g); trivial.
-           *)
+           
         * (* After breaking from the while loop,
            prove break's postcondition *)
           forward. Exists prev dist popped h''' keys'''.
