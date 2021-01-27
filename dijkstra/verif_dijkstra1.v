@@ -203,8 +203,8 @@ Section DijkstraProof.
              free_tok (pointer_val_val keys_ptr) (heap_capacity h * sizeof tint)).
   
   Definition dijk_inner_forloop_inv (g: @DijkGG size inf) sh
-             src
-             dist_ptr prev_ptr priq_ptr h graph_ptr addresses :=
+             src ti min_item keys
+             dist_ptr prev_ptr priq_ptr keys_ptr h graph_ptr addresses :=
     EX i : Z,
     EX prev' : list V,
     EX dist' : list Z,
@@ -214,7 +214,6 @@ Section DijkstraProof.
 
     PROP (
         0 < Zlength (heap_items h) ->
-        exists min_item,
           In min_item (heap_items h) /\
           Forall (cmp_rel min_item) (heap_items h) /\
           u = Int.signed (snd min_item);
@@ -308,8 +307,10 @@ Section DijkstraProof.
                      (pointer_val_val dist_ptr);
              @SpaceAdjMatGraph size CompSpecs sh id 
                                g (pointer_val_val graph_ptr) addresses;
-             free_tok priq_ptr (sizeof tint * size)).
-
+             hitem min_item (pointer_val_val ti) *
+             data_at Tsh (tarray tint (heap_capacity h)) (map Vint (map Int.repr keys))
+                     keys_ptr * free_tok (pointer_val_val ti) 12 *
+             free_tok keys_ptr (heap_capacity h * 4)).
   
   (* DIJKSTRA PROOF BEGINS *)
 
@@ -639,16 +640,11 @@ exists l2a and l2b such that
            *)
 
 
-        (* HERE *)
-          admit.
-
-          (*
-
           forward_for_simple_bound
             size
             (dijk_inner_forloop_inv
-            g sh src 
-               dist_ptr prev_ptr priq_ptr h graph_ptr addresses).
+            g sh src ti min_item keys
+               dist_ptr prev_ptr priq_ptr keys_ptr hc graph_ptr addresses).
           -- (* We start the for loop as planned --
               with the old dist and prev arrays,
               and with a priq array where u has been popped *)
@@ -659,30 +655,49 @@ exists l2a and l2b such that
             Exists he.
             Exists u.
             entailer!.
+            2: {
+              replace (heap_capacity h) with (heap_capacity he).
+              replace (heap_capacity hc) with (heap_capacity he).
+              cancel. lia.
+            }
             remember (Int.signed (snd min_item)) as u.
             remember (heap_capacity h) as size. 
             symmetry in Heqsize.
             clear H20 H21 H22 H23 H24 H25 H26 H27 H28
                   H29 H30 H31 H32 PNpriq_ptr.
+
+            red in H8.
+            assert (0 < Zlength (heap_items hc)) by admit.
+            destruct (H8 H20) as [min_item' [_ [? ?]]].
+            replace min_item' with min_item in *.
+            rewrite <- Hequ in H22.
+            2: { admit. (* TODO *)
+            }
             
-            split3; [| | split3; [| |split3; [| |split3; [| |split]]]]; trivial.
+            split3; [| | split3; [| |split3; [| |split]]]; trivial.
             ++ intros.
-               (* if popped = [], then 
+               split3; trivial.
+               admit.
+               (* TODO not hard *)
+
+            ++ (* if popped = [], then 
                 prove inv_popped for [u].
                 if popped <> [], then we're set
                 *)
                destruct popped eqn:?.
                2: {
-                 apply (inv_popped_add_u _ _ _ _ _ _ priq); try ulia.
-                 apply H_popped_src_1; inversion 1.
+                 (* TODO update the lemma *)
+                 (* apply (inv_popped_add_u _ _ _ _ _ _ priq); try ulia. *)
+                 (* apply H_popped_src_1; inversion 1. *)
+                 admit.
                }
                replace u with src in *.
-               2: apply H_popped_src_2; trivial.
-               intro.
-               simpl in H16; destruct H16; [|lia].
-               subst dst; clear H15.
-               destruct H14; [left | right].
-               ** exfalso. rewrite H14 in H2. ulia.
+               2: apply H22; trivial. 
+               intros. intro.
+               simpl in H24; destruct H24; [|lia].
+               subst dst; clear H23.
+               destruct H19; [left | right].
+               ** exfalso. rewrite H19 in H2. ulia.
                ** exists (src, []). split3.
                   --- split3; [| |split3]; trivial.
                       +++ split; trivial.
@@ -691,59 +706,36 @@ exists l2a and l2b such that
                           inversion 1.
                   --- unfold path_in_popped.
                       intros. 
-                      inversion H15.
-                      +++ simpl in H16. 
+                      inversion H23.
+                      +++ simpl in H24. 
                           subst step. simpl; left; trivial.
-                      +++ destruct H16 as [? [? _]].
-                          inversion H16.
+                      +++ destruct H24 as [? [? _]].
+                          inversion H24.
                   --- red. intros. rewrite path_cost.path_cost_zero; try ulia.
                       apply path_cost_pos; trivial.
+  
             ++ intros.
-               apply (vvalid_meaning g) in H15.
+               apply (vvalid_meaning g) in H23.
                apply inv_unpopped_weak_add_unpopped; trivial.
 
             ++ intros.
-               apply (vvalid_meaning g) in H15.
+               apply (vvalid_meaning g) in H23.
                apply (inv_unseen_weak_add_unpopped g prev _ _ src); trivial.
 
-            ++ intros. clear H15.
+            ++ intros. clear H23.
                destruct popped eqn:?.
-               2: right; apply H_popped_src_1; inversion 1.
-               simpl. left. symmetry.
-               apply H_popped_src_2; trivial.
+               2: right; apply H4; inversion 1.
+               simpl. left. symmetry. apply H22; trivial.
 
-            ++ intros. inversion H15.
+            ++ red. intros.
+               exists min_item; split3; trivial.
+               admit. (* false... *)
+               intro. inversion H24.
                
             ++ apply in_eq.
 
-            ++ intros.
-               assert (H16 := H15).
-               rewrite (vvalid_meaning g v) in H16.
-               split; intros; destruct (Z.eq_dec v u).
-               ** subst v; rewrite upd_Znth_same; ulia.
-               ** simpl in H17; destruct H17; [ulia|].
-                  rewrite upd_Znth_diff; try ulia.
-                  apply H_popped_priq_link; trivial.
-               ** left; lia.
-               ** right.
-                  rewrite upd_Znth_diff in H17; try ulia.
-                  apply <- H_popped_priq_link; trivial.
-                  
-            ++ intros.
-               assert (dst <> u). {
-                 intro. subst dst. apply H16, in_eq.
-               }
-               assert (0 <= dst < Zlength priq). {
-                 rewrite (vvalid_meaning g) in H15; lia.
-               }
-               rewrite upd_Znth_diff by lia.
-               apply H4; trivial.
-               apply not_in_cons in H16; destruct H16 as [_ ?];
-                 ulia.
-
-            ++ rewrite upd_Znth_Zlength; ulia.
-
-            ++ apply Forall_upd_Znth; ulia.   
+            ++ subst u.
+               rewrite Int.repr_signed. trivial.
 
           -- (* We now begin with the for loop's body *)
             rewrite <- Hequ.
@@ -1048,7 +1040,7 @@ exists l2a and l2b such that
             unfold dijkstra_correct.
             split3; [auto | apply H16 | apply H18];
               try rewrite <- (vvalid_meaning g); trivial.
-           *)
+           
         * (* After breaking from the while loop,
            prove break's postcondition *)
           forward.
