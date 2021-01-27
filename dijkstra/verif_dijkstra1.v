@@ -143,6 +143,7 @@ Section DijkstraProof.
          
          LOCAL (temp _dist (pointer_val_val dist_ptr);
                temp _prev (pointer_val_val prev_ptr);
+               temp _keys (pointer_val_val keys_ptr);
                temp _src (Vint (Int.repr src));
                temp _pq priq_ptr;
                temp _graph (pointer_val_val graph_ptr);
@@ -290,6 +291,7 @@ Section DijkstraProof.
          LOCAL (temp _u (Vint (Int.repr u));
                temp _dist (pointer_val_val dist_ptr);
                temp _prev (pointer_val_val prev_ptr);
+               temp _keys keys_ptr;
                temp _src (Vint (Int.repr src));
                temp _pq priq_ptr;
                temp _graph (pointer_val_val graph_ptr);
@@ -307,9 +309,10 @@ Section DijkstraProof.
                      (pointer_val_val dist_ptr);
              @SpaceAdjMatGraph size CompSpecs sh id 
                                g (pointer_val_val graph_ptr) addresses;
-             hitem min_item (pointer_val_val ti) *
+             hitem min_item (pointer_val_val ti);
              data_at Tsh (tarray tint (heap_capacity h)) (map Vint (map Int.repr keys))
-                     keys_ptr * free_tok (pointer_val_val ti) 12 *
+                     keys_ptr;
+             free_tok (pointer_val_val ti) 12;
              free_tok keys_ptr (heap_capacity h * 4)).
   
   (* DIJKSTRA PROOF BEGINS *)
@@ -739,28 +742,27 @@ exists l2a and l2b such that
 
           -- (* We now begin with the for loop's body *)
             rewrite <- Hequ.
-            freeze FR := (data_at _ _ _ _) (data_at _ _ _ _) (data_at _ _ _ _).
+            freeze FR := (data_at _ _ _ _) (data_at _ _ _ _)  (data_at _ _ _ _).
             Intros.
-            rename H16 into H_inv_popped.
-            rename H17 into H_inv_unpopped.
-            rename H18 into H_inv_unpopped_weak.
-            rename H19 into H_inv_unseen.
-            rename H20 into H_inv_unseen_weak.
-            rename H21 into H16.
-            rename H22 into H17.
-            rename H23 into H18.
-            rename H24 into H19.
-            rename H25 into H20.
-            rename H26 into H_priq_popped_link.
-            rename H27 into H_priq_dist_link.
-            rename H31 into H21.
-            rename H32 into H22.
-            rename H33 into H23.
-            rename H28 into H24.
-            rename H29 into H25.
-            rename H30 into H26.
 
-            forward_call (sh, g, graph_ptr, addresses, u, i).
+            assert (Htemp: 0 < Zlength (heap_items hc)). {
+              admit.
+              (* easy lemma based on
+                 H5: 0 < heap_size hc
+               *)
+            }
+            specialize (H21 Htemp).
+            destruct H21 as [? [? ?]].
+            clear Htemp.
+            
+            rename H22 into H_inv_popped.
+            rename H23 into H_inv_unpopped.
+            rename H24 into H_inv_unpopped_weak.
+            rename H25 into H_inv_unseen.
+            rename H26 into H_inv_unseen_weak.
+            subst u0.
+
+            forward_call (sh, g, graph_ptr, addresses, u, i).            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
 
             assert (H_i_valid: vvalid g i). {
@@ -770,7 +772,7 @@ exists l2a and l2b such that
             rewrite <- elabel_Znth_graph_to_mat in Heqcost; try ulia.
 
             forward_if.
-            ++ rename H27 into Htemp.
+            ++ rename H22 into Htemp.
                assert (0 <= cost <= Int.max_signed / size). {
                  pose proof (edge_representable g (u, i)).
                  rewrite Heqcost in *.
@@ -786,12 +788,12 @@ exists l2a and l2b such that
                
                assert (0 <= Znth u dist' <= inf). {
                  assert (0 <= u < Zlength dist') by lia.
-                 apply (sublist.Forall_Znth _ _ _ H28) in H23.
+                 apply (sublist.Forall_Znth _ _ _ H23) in H35.
                  assumption.
                }
                assert (0 <= Znth i dist' <= inf). {
                  assert (0 <= i < Zlength dist') by lia.
-                 apply (sublist.Forall_Znth _ _ _ H29) in H23.
+                 apply (sublist.Forall_Znth _ _ _ H24) in H35.
                  assumption.
                }
                assert (0 <= Znth u dist' + cost <= Int.max_signed). {
@@ -806,29 +808,35 @@ exists l2a and l2b such that
                thaw FR.
                forward. forward. forward_if.
 
-               ** rename H31 into H_improvement.
+               ** rename H26 into H_improvement.
                   (* We know that we are definitely
                    going to make edits in the arrays:
                    we have found a better path to i, via u *)
-                  rename H28 into Htemp.
-                  assert (H28: 0 <= Znth u dist' < inf) by lia.
+                  rename H23 into Htemp.
+                  assert (H23: 0 <= Znth u dist' < inf) by lia.
                   clear Htemp.
 
                   assert (H_i_not_popped: ~ In i (popped')). { 
                     apply (not_in_popped g src u i cost prev' dist'); trivial.
                   }
                   assert (Htemp : 0 <= i < Zlength dist') by lia.
-                  pose proof (Znth_dist_cases i dist' Htemp H23).
+                  pose proof (Znth_dist_cases i dist' Htemp H35).
                   clear Htemp.
-                  rename H31 into icases.
-                  rewrite <- H_priq_dist_link in icases; trivial.
-                  
-                  forward. forward. forward.
+                  rename H26 into icases.
+                  (* rewrite <- H_priq_dist_link in icases; trivial. *)
+                  (* hrmm this is gonna 
+                     be a problem.
+                     I need to be able to say that 
+                     each item IN the PQ
+                     is there at cost = or < inf
+                   *) 
+
+                  assert (0 <= i < Zlength keys) by lia.
+                  forward. forward. forward. forward.
                   forward; rewrite upd_Znth_same; trivial.
                   1: entailer!.
                   1,3: repeat rewrite Zlength_map; lia.
-                  forward_call ((pointer_val_val priq_ptr), i,
-                                (Znth u dist' + cost), priq').
+                  forward_call (priq_ptr, h', Znth i keys, Int.repr (Znth u dist' + cost)).
 
 (* Now we must show that the for loop's invariant
    holds if we take another step,
@@ -838,22 +846,19 @@ exists l2a and l2b such that
    with the i'th cell updated in all three arrays,
    to log a new improved path via u 
  *)
-                  1: split; [|red]; ulia.
+                  Intros hf.
                   Exists (upd_Znth i prev' u).
-                  Exists (upd_Znth i priq' (Znth u dist' + cost)).
                   Exists (upd_Znth i dist' (Znth u dist' + cost)).
                   Exists popped'.
+                  Exists hf u.
                   repeat rewrite <- upd_Znth_map.
                   entailer!.
 
-                  clear H31 H32 H33 H34 H35 H36
-                        H37 H38 H39 H40 H41 H42 H8.
+                  clear H39 H40 H41 H42 H43 H44 H45 H46
+                  H47 H48 H49 H50 PNkeys_ptr PNpriq_ptr.
 
-                  remember (find priq (fold_right Z.min (hd 0 priq)
-                                                  priq) 0) as u.
-                  remember (Zlength priq) as size.
-                  rename Heqsize into H8.
-                  symmetry in H8.
+                  remember (Int.signed (snd min_item)) as u.
+                  remember (heap_capacity h) as size.
 
                   remember (Znth u dist' + elabel g (u, i)) as newcost.
                   fold V in *. simpl id in *.
@@ -864,12 +869,14 @@ exists l2a and l2b such that
                   split3; [| | split3;
                                [| | split3;
                                     [| | split3;
-                                         [| |split3;
-                                             [| | split3]]]]]; intros.
-                  (* 13 goals, where the 13th is 
-                   3 range-based goals together *)
+                                         [| |split3]]]];
+                  intros.
+                  (* 11 goals, where the 11th is 
+                   2 range-based goals together *)
                   --- apply inv_popped_newcost; ulia.
-                  --- apply inv_unpopped_newcost with (priq0 := priq'); ulia. 
+                  --- admit.
+                      (* TODO update this lemma *)
+                      (* apply inv_unpopped_newcost with (priq0 := priq'); ulia.  *)
                   --- now apply inv_unpopped_weak_newcost.
                   --- apply inv_unseen_newcost; ulia.
                   --- apply inv_unseen_weak_newcost; ulia. 
@@ -877,47 +884,29 @@ exists l2a and l2b such that
                         intro; subst src; lia.
                   --- rewrite upd_Znth_diff; try lia;
                         intro; subst src; lia.
-                  --- assert (H33 := H32).
-                      rewrite (vvalid_meaning g) in H33.
-                      split; intros; destruct (Z.eq_dec v i).
-                      +++ exfalso. subst v.
-                          apply H_i_not_popped; trivial.
-                      +++ rewrite upd_Znth_diff; try ulia.
-                          apply H_priq_popped_link; trivial.
-                      +++ exfalso. subst v.
-                          rewrite upd_Znth_same in H34; ulia.
-                      +++ rewrite upd_Znth_diff in H34; try ulia.
-                          apply <- H_priq_popped_link; trivial.
-                  --- destruct (Z.eq_dec dst i).
-                      1: subst dst; repeat rewrite upd_Znth_same; ulia.
-                      repeat rewrite upd_Znth_diff; trivial; try lia.
-                      apply H_priq_dist_link; trivial.
-                      all: rewrite (vvalid_meaning g) in H32; ulia.
+                  --- red. intros.
+                      admit.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
-                  --- rewrite upd_Znth_Zlength; ulia.
-                  --- split3; apply Forall_upd_Znth;  ulia.
+                  --- split; apply Forall_upd_Znth;  ulia.
 
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
-                 rename H31 into H_non_improvement.
+                 rename H26 into H_non_improvement.
                  forward. 
                  (* The old arrays are just fine. *)
-                 Exists prev' priq' dist' popped'.
+                 Exists prev' dist' popped' h' u.
                  entailer!.
-                 remember (find priq (fold_right Z.min
-                                                 (hd 0 priq) priq) 0) as u.
-                 remember (Zlength priq) as size.
+                 remember (Int.signed (snd min_item)) as u.
+                 remember (heap_capacity h) as size.
                  
-                 clear H31 H32 H33 H34 H35 H36
-                       H37 H38 H39 H40 H41 H42 H8.
-                 rename Heqsize into H8.
-                 symmetry in H8.
+                 clear H26 H37 H38 H39 H40 H41 H42 H43 H44
+                       H45 H46 H47 PNkeys_ptr PNpriq_ptr.
                  
                  assert (elabel g (u, i) < inf). {
                    apply Z.le_lt_trans with (m := Int.max_signed / size);
                      trivial.
-                   apply H27.
+                   apply H22.
                    apply (inf_further_restricted g).
                  }
                  split3; [| |split].
@@ -934,13 +923,13 @@ exists l2a and l2b such that
 
                      assert (i <= i < size) by lia.
                      destruct (Z.eq_dec m u).
-                     2: now apply (H_inv_unseen_weak _ H38) with (m:=m).
+                     2: now apply (H_inv_unseen_weak _ H43) with (m:=m).
                      subst m.
                      rename p2m into p2u.
-                     rewrite H34 in H_non_improvement.
+                     rewrite H39 in H_non_improvement.
                      assert (0 <= u < size) by lia.
                      rewrite path_cost_glue_one_step.
-                     destruct H37 as [_ [_ [_ [? _]]]].
+                     destruct H42 as [_ [_ [_ [? _]]]].
                      simpl id in *. ulia.
                  --- intros.
                      assert (i <= dst < size) by lia.
@@ -948,18 +937,16 @@ exists l2a and l2b such that
             ++  (* i was not a neighbor of u.
                  We must prove the for loop's invariant holds *)
               forward.
-              Exists prev' priq' dist' popped'.
+              Exists prev' dist' popped' h' u.
               thaw FR.
               entailer!.
-              remember (find priq (fold_right Z.min (hd 0 priq) priq) 0) as u.
-              remember (Zlength priq) as size.
+              remember (Int.signed (snd min_item)) as u.
+              remember (heap_capacity h) as size.
 
-              clear H28 H29 H30 H31 H32 H33
-                    H34 H35 H36 H37 H38 H39 H8.
-              rename Heqsize into H8.
-              symmetry in H8.
+              clear H23 H24 H25 H26 H37 H38 H39 H40 H41
+                    H42 H43 H44 PNkeys_ptr PNpriq_ptr.
 
-              rewrite Int.signed_repr in H27.
+              rewrite Int.signed_repr in H22.
               2: apply edge_representable.
               split3; [| |split]; intros.
               ** destruct (Z.eq_dec dst i).
@@ -972,9 +959,9 @@ exists l2a and l2b such that
  *)
                      unfold inv_unpopped; intros.
                      assert (i <= i < size) by lia.
-                     destruct (H_inv_unpopped_weak i H31 H29 H30).
+                     destruct (H_inv_unpopped_weak i H26 H24 H25).
                      1: left; trivial.
-                     destruct H32 as [? [[? [? [? [? [? ?]]]]]?]].
+                     destruct H37 as [? [[? [? [? [? [? ?]]]]]?]].
                      remember (Znth i prev') as mom.
 
                      assert (Znth mom dist' < inf). {
@@ -987,7 +974,7 @@ exists l2a and l2b such that
                      intros.
                      destruct (@Znth_dist_cases inf mom' dist')
                        as [e | e]; trivial.
-                     1: apply (vvalid_meaning g) in H41; ulia.
+                     1: apply (vvalid_meaning g) in H46; ulia.
                      1: { rewrite e.
                           pose proof (edge_cost_pos g (mom', i)).
                           ulia.
@@ -1000,13 +987,13 @@ exists l2a and l2b such that
                      destruct (Z.eq_dec mom' u).
                      1: { subst mom'.
                           assert (0 <= Znth u dist'). {
-                            apply (sublist.Forall_Znth _ _ u) in H23.
-                            simpl in H23. apply H23.
+                            apply (sublist.Forall_Znth _ _ u) in H35.
+                            simpl in H35. apply H35.
                             lia.
                           }
                           simpl id in *. ulia.
                      }
-                     apply H39; trivial.
+                     apply H44; trivial.
                  --- apply H_inv_unpopped; lia.
               ** destruct (Z.eq_dec dst i);
                    [| apply H_inv_unpopped_weak]; lia. 
@@ -1016,30 +1003,38 @@ exists l2a and l2b such that
                  assert (i <= i < size) by lia.
                  unfold inv_unseen; intros.
                  destruct (Z.eq_dec m u).
-                 2: now apply (H_inv_unseen_weak _ H29)
+                 2: now apply (H_inv_unseen_weak _ H24)
                    with (m:=m).
                  
                  subst m.
                  assert (0 <= Znth u dist'). {
-                   apply (sublist.Forall_Znth _ _ u) in H23.
-                   apply H23.
+                   apply (sublist.Forall_Znth _ _ u) in H35.
+                   apply H35.
                    ulia.
                  }
                  rewrite path_cost_glue_one_step.
-                 destruct H34 as [? _].
-                 pose proof (path_cost_pos _ _ H34).
+                 destruct H39 as [? _].
+                 pose proof (path_cost_pos _ _ H39).
                  simpl id in *. ulia.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
-            Intros prev' priq' dist' popped'.
-            Exists prev' priq' dist' popped'.
+            Intros prev' dist' popped' h' u0.
+            unfold dijk_forloop_inv.
+            Exists prev' dist' popped' h'.
             entailer!.
-            remember (find priq (fold_right Z.min (hd 0 priq) priq) 0)
-              as u.
-            unfold dijkstra_correct.
-            split3; [auto | apply H16 | apply H18];
-              try rewrite <- (vvalid_meaning g); trivial.
+            2: { replace (heap_capacity hc) with (heap_capacity h). cancel. admit.
+            }
+            
+            remember (Int.signed (snd min_item)) as u.
+            split3; [| |split].
+            ++ unfold dijkstra_correct.
+               split3; [auto | apply H22 | apply H24];
+                 try rewrite <- (vvalid_meaning g); trivial.
+            ++ admit.
+            ++ admit.
+            ++ split; [|admit].
+               intros. admit.
            
         * (* After breaking from the while loop,
            prove break's postcondition *)
