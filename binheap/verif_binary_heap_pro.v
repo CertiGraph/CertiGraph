@@ -188,6 +188,282 @@ Definition Gprog : funspecs :=
                           pq_make_spec;
                           pq_edit_priority_spec]).
 
+Lemma fold_linked_heap_array: forall L1 v1 L2 v2,
+  linked_correctly L1 L2 ->
+  (heap_array L1 v1) * (lookup_array L2 v2) |-- linked_heap_array L1 v1 L2 v2.
+Proof.
+  intros. unfold linked_heap_array. entailer!.
+Qed.
+
+Lemma relink_tail: forall L0 L1 L2 L1' L2',
+  linked_correctly (L0 ++ L1) L1' ->
+  Permutation L0 L2 ->
+  lookup_oob_eq L2 L1' L2' ->
+  forall i, 0 <= i < Zlength L1 ->
+  Znth (heap_item_key (Znth i L1)) L1' = Znth (heap_item_key (Znth i L1)) L2'.
+Proof.
+  intros old_live junk live lookup lookup'. intros.
+  destruct H, H1.
+  apply Permutation_Znth in H0. 2: apply (0,Int.zero,Int.zero).
+  assert (0 <= i + Zlength live < Zlength (old_live ++ junk)) by (rewrite Zlength_app; rep_lia).
+  destruct (H3 _ H5).
+  rewrite <- H4; trivial.
+  repeat intro.
+  rewrite Znth_app2 in H7. 2: lia.
+  replace (i + Zlength live - Zlength old_live) with i in H7 by lia.
+  destruct H0 as [H0 [f [? [? ?]]]].
+  rewrite H12 in H9. 2: lia.
+  specialize (H10 (Z.to_nat j)).
+  assert (0 <= (Z.of_nat (f (Z.to_nat j))) < Zlength (old_live ++ junk)) by lia.
+  destruct (H3 _ H13).
+  rewrite Znth_app1 in H15. 2: lia.
+  rewrite H9 in H15. rewrite H7 in H15. lia.
+Qed.
+
+Lemma body_remove_min_nc: semax_body Vprog Gprog f_pq_remove_min_nc pq_remove_min_nc_spec.
+Proof.
+  start_function.
+  unfold valid_pq.
+  Intros arr junk lookup lookup_contents.
+  assert_PROP (linked_correctly (heap_items h ++ junk) lookup_contents). { unfold linked_heap_array. entailer!. }
+  rename H3 into Hz.
+  rewrite linked_heap_array_split. Intros.
+  destruct h. destruct l. inversion H.
+  unfold heap_items, heap_capacity, heap_size in *. simpl in H, H0, H1, Hz |-*. clear H.
+  generalize (foot_split_spec _ (h :: l)).
+  case foot_split. destruct o; intro. 2: destruct H; subst l0; discriminate.
+  rename h into root. rename h0 into foot.
+  assert (Hx: Zlength l = Zlength (root :: l) - 1) by (rewrite Zlength_cons; lia).
+  assert (Hy : 0 <= Zlength l) by apply Zlength_nonneg.
+  forward.
+  forward.
+  forward.
+  forward. { unfold linked_heap_array, heap_array, lookup_array. Intros. entailer!. }
+  forward. { unfold linked_heap_array, heap_array, lookup_array. Intros. entailer!. }
+  forward_call (0, Zlength l, arr, root :: l, lookup, lookup_contents).
+    { entailer!. simpl. congruence. }
+    { lia. }
+  Intros lookup_contents'.
+  forward.
+  forward.
+  unfold linked_heap_array at 1. (* Not delighted with these unfolds... *)
+  unfold heap_array at 1. Intros.
+  forward. 
+    { entailer!. rewrite Zlength_Zexchange. lia. }
+    { entailer!. rewrite Znth_map. rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
+      unfold heap_item_rep. trivial. rewrite Zlength_Zexchange. lia. }
+  unfold hitem_.
+  forward.
+  forward.
+  forward.
+  forward.
+    { entailer!. rewrite Zlength_Zexchange. lia. }
+    { entailer!. rewrite Znth_map. rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
+      unfold heap_item_rep. trivial. rewrite Zlength_Zexchange. lia. }
+  forward.
+  forward.
+  forward.
+  forward.
+    { entailer!. rewrite Zlength_Zexchange. lia. }
+    { entailer!. rewrite Znth_map. rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
+      unfold heap_item_rep. trivial. rewrite Zlength_Zexchange. lia. }
+  forward.
+  forward.
+  forward.
+  forward.
+  (* Time to cleanup! *)
+  deadvars!.
+  rewrite <- Hx.
+  rewrite Znth_map. 2: rewrite Zlength_Zexchange; lia.
+  rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
+  change (data_at _ t_item _) with (data_at Tsh t_item (heap_item_rep root)).
+  autorewrite with norm. rewrite <- Hx.
+  rewrite H.
+  (* Take cases... *)
+  destruct l.
+  * (* corner case: heap is now empty *)
+    destruct l0. 2: destruct l0; discriminate.
+    inversion H. subst foot. clear H Hx.
+    simpl.
+    forward_call (0, arr, @nil heap_item, 0, lookup, lookup_contents'); rewrite Zlength_nil. 
+      { unfold linked_heap_array, heap_array. rewrite data_at_isptr. entailer. (* Surely there's a less heavy hammer way to do this? *)
+        rewrite data_at_zero_array_eq; auto. entailer!. split. destruct H5; trivial. repeat intro. rewrite Zlength_nil in H14. lia. }
+      { split; auto. split; auto. split. rep_lia. split. rep_lia.
+        apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
+    (* Prove postcondition *)
+    Intro vret. destruct vret as [vret lookup_contents''].
+    Exists (n, vret) root. entailer. (* Surely there's a less heavy hammer way to do this? *)
+    (* destruct H1. *)
+    apply Permutation_nil in H7. simpl in H7. subst vret. clear (* H *) Hy.
+    unfold linked_heap_array. Intros.
+    sep_apply harray_emp. rewrite emp_sepcon.
+    rewrite Zlength_Zexchange.
+    do 2 rewrite fold_heap_array. unfold valid_pq, hitem.
+    apply andp_right. apply prop_right. auto.
+    Exists arr (root :: junk) lookup lookup_contents''. simpl. unfold linked_heap_array. entailer!.
+    2: rewrite <- heap_array_split; apply derives_refl.
+    rewrite Zlength_nil in *. rewrite Zexchange_eq in *. simpl in Hz, H3, H6, H.
+    change (root :: junk) with ([root] ++ junk). red.
+    destruct H, H4.
+    apply linked_correctly'_shuffle with lookup_contents'; trivial.
+    apply linked_correctly_app3; trivial.
+    apply linked_correctly'_shuffle with lookup_contents; trivial.
+    + intros.
+      rewrite H18; trivial. intros. rewrite Zlength_one in H20. assert (j = 0) by lia. subst j.
+      change (Znth 0 [root]) with root.
+      intro.
+      clear -Hz H21 H19.
+      destruct Hz.
+      assert (0 <= 0 < Zlength (root :: junk)) by (rewrite Zlength_cons; rep_lia).
+      destruct (H0 _ H1).
+      assert (0 <= (1 + i0) < Zlength (root :: junk)) by (rewrite Zlength_cons; rep_lia).
+      destruct (H0 _ H4).
+      clear -H21 H3 H6 H19.
+      rewrite Znth_0_cons, H21 in H3.
+      change (root :: junk) with ([root] ++ junk) in H6.
+      rewrite Znth_app2 in H6; rewrite Zlength_one in *. 2: lia.
+      replace (1 + i0 - 1) with i0 in H6 by lia. rewrite H3 in H6. lia.
+    + intros. rewrite H17; auto. rewrite Zlength_nil. lia.
+  * (* main line: heap still has items in it *)
+    destruct l0; inversion H. subst h0.
+    assert (Zlength (h :: l) = Zlength (root :: l0)).
+    { rewrite H8, Zlength_app, Zlength_one, Zlength_cons. lia. }
+    rewrite H6, Zexchange_head_foot.
+    rewrite fold_heap_array.
+    sep_apply fold_linked_heap_array.
+    { rewrite H8 in H5.
+      replace (Zlength (l0 ++ [foot])) with (Zlength (root :: l0)) in H5 by congruence.
+      rewrite app_comm_cons in H5.
+      rewrite Zexchange_head_foot in H5. trivial. }
+    rewrite linked_heap_array_split. Intros.
+    forward_call (0, arr, (foot :: l0), Zlength (foot :: l0), lookup, lookup_contents').
+      { split. rewrite Zlength_cons. generalize (Zlength_nonneg l0). lia.
+        split; trivial. split. rep_lia.
+        (* Here is where we use the bound. *)
+        split. intros _. generalize (Zlength_nonneg junk); intro.
+        simpl in H2. repeat rewrite Zlength_cons in *. rewrite Zlength_app in H2. lia.
+        apply weak_heapOrdered_root with root.
+        rewrite H8, app_comm_cons in H1.
+        apply heapOrdered_cutfoot in H1. trivial. }
+    (* Prove postcondition *)
+    Intros vret. destruct vret as [vret lookup_contents''].
+    Exists (n, vret) root. simpl fst. simpl snd. unfold hitem, heap_item_rep, heap_size, heap_capacity. entailer!.
+      { (* Pure part *)
+        split. constructor. rewrite H8. transitivity ([foot] ++ l0). apply Permutation_app_comm. destruct H4. auto.
+        generalize (root_minimal _ _ _ _ H1 root eq_refl); intro.
+        rewrite H8 in H16. apply Forall_inv_tail in H16.
+        eapply forall_permutation. apply H16. transitivity ([foot] ++ l0). apply Permutation_app_comm. simpl. tauto. }
+    unfold valid_pq. Exists arr (root :: junk) lookup lookup_contents''. unfold heap_size, heap_capacity. simpl.
+    replace (Zlength vret) with (Zlength (root :: l0)). 2: { apply Permutation_Zlength in H11. trivial. }
+(*    destruct H4. *)
+    entailer!. { (* Pure part inside spatial part *)
+      simpl in *. rewrite <- H2. apply Permutation_Zlength in H11. autorewrite with sublist. rewrite <- H11.
+      autorewrite with sublist in *. lia. }
+    (* Spatial part, this seems a bit uglier than necessary? *)
+    change (root :: junk) with ([root] ++ junk). rewrite app_assoc. do 2 rewrite linked_heap_array_split.
+    generalize H11; intro Hq.
+    apply Permutation_Zlength in H11.
+    rewrite app_comm_cons. rewrite Zlength_app. rewrite H11. rewrite Zlength_app.
+    assert (Zlength (root :: l0) = Zlength vret). { simpl in H11. rewrite <- H11. do 2 rewrite Zlength_cons. trivial. }
+    do 3 rewrite app_comm_cons.
+    do 4 rewrite Zlength_app.
+    rewrite H16.
+    do 2 rewrite Zlength_one.
+    rewrite Zlength_cons. simpl fst in *.
+    rewrite H8. replace (Z.succ (Zlength (l0 ++ [foot])) + Zlength junk) with (Zlength vret + 1 + Zlength junk).
+    2: { rewrite Zlength_app. rewrite <- H16.  rewrite Zlength_cons, Zlength_one. rep_lia. }
+    entailer!. simpl in *. clear H13 H14 H15.
+    split.
+    + apply linked_correctly'_shuffle with lookup_contents'; trivial.
+      apply linked_correctly'_shuffle with lookup_contents; trivial.
+      replace (Zlength vret + 1) with (Zlength (root :: h :: l)); trivial.
+      rewrite <- H16. rewrite H8. do 2 rewrite Zlength_cons. rewrite Zlength_app, Zlength_one. lia.
+      destruct H4; trivial. 2: destruct H9; trivial.
+      - rewrite H8 in H4.
+        replace (Zlength _) with (Zlength (root :: l0)) in H4.
+        2: rewrite Zlength_app, Zlength_cons, Zlength_one; lia.
+        rewrite app_comm_cons in H4.
+        rewrite Zexchange_head_foot in H4.
+        eapply relink_tail.
+        3: apply H4. 
+        do 2 rewrite app_comm_cons in Hz.
+        apply Hz. rewrite H8.
+        transitivity (root :: (foot :: l0)).
+        2: apply Permutation_cons_append.
+        constructor.
+        transitivity ([foot] ++ l0).
+        2: reflexivity.
+        apply Permutation_app_comm.
+      - rewrite H8 in H5.
+        replace (Zlength _) with (Zlength (root :: l0)) in H5.
+        2: rewrite Zlength_app, Zlength_cons, Zlength_one; lia.
+        rewrite app_comm_cons in H5.
+        rewrite Zexchange_head_foot in H5.
+        intros.
+        destruct H9.
+        rewrite <- H14. trivial.
+        repeat intro.
+        destruct Hz.
+        apply Permutation_Znth in Hq. 2: apply (0, Int.zero, Int.zero).
+        destruct Hq as [? [f2 [? [? ?]]]].
+        rewrite H23 in H17. 2: lia.
+        generalize (H19 (Zlength (root :: h :: l) + i0)); intro Hqq.
+        spec Hqq. do 2 rewrite app_comm_cons. rewrite Zlength_app. lia.
+        do 2 rewrite app_comm_cons in Hqq. rewrite Znth_app2 in Hqq. 2: lia.
+        replace (Zlength (root :: h :: l) + i0 - Zlength (root :: h :: l)) with i0 in Hqq by lia.
+        destruct Hqq.
+        assert (Z.of_nat (f2 (Z.to_nat j)) = 0 \/ Z.of_nat (f2 (Z.to_nat j)) > 0) by lia.
+        rewrite H8 in H25.
+        destruct H26.
+        ** rewrite H26, Znth_0_cons in H17.
+           specialize (H19 (Zlength (h :: l))). spec H19. repeat rewrite Zlength_cons. rewrite Zlength_app. rep_lia.
+           destruct H19. rewrite app_comm_cons, H8 in H27. rewrite app_comm_cons in H27.
+           rewrite Znth_app1 in H27. 2: rewrite Zlength_cons; rep_lia.
+           rewrite app_comm_cons in H27. rewrite Znth_app2 in H27. 2: rewrite Zlength_cons, Zlength_app, Zlength_one; rep_lia.
+           replace (Zlength (l0 ++ [foot]) - Zlength (root :: l0)) with 0 in H27 by (rewrite Zlength_cons, Zlength_app, Zlength_one; rep_lia).
+           change (Znth 0 [foot]) with foot in H27.
+           rewrite H17 in H27. rewrite H25 in H27. autorewrite with sublist in H27. lia.
+        ** specialize (H21 (Z.to_nat j)). spec H21. lia.
+           specialize (H19 (Z.of_nat (f2 (Z.to_nat j)))). spec H19. { rewrite app_comm_cons, H8.
+           rewrite Zlength_cons, Zlength_app. rewrite Zlength_app, Zlength_one. rewrite Zlength_cons in H21. lia. }
+           do 2 rewrite app_comm_cons in H19. rewrite H8 in H19. rewrite Znth_app1 in H19.
+           2: autorewrite with sublist in *; rep_lia.
+           rewrite app_comm_cons in H19.
+           change (root :: l0) with ([root] ++ l0) in H19.
+           rewrite <- app_assoc in H19.
+           rewrite Znth_app2 in H19.
+           2: rewrite Zlength_one; rep_lia.
+           change (foot :: l0) with ([foot] ++ l0) in H17.
+           rewrite Znth_app2 in H17. 2: rewrite Zlength_one; lia.
+           rewrite Znth_app1 in H19. 2: autorewrite with sublist in *; rep_lia.
+           rewrite Zlength_one in H17. rewrite Zlength_one in H19. destruct H19.
+           rewrite H17 in H27. rewrite H25 in H27.
+           autorewrite with sublist in H27, H21. lia.
+    + rewrite H8 in H5.
+      replace (Zlength _) with (Zlength (root :: l0)) in H5.
+      2: rewrite Zlength_app, Zlength_cons, Zlength_one; lia.
+      rewrite app_comm_cons in H5.
+      rewrite Zexchange_head_foot in H5.
+      split.
+        { destruct H9. eapply Permutation_NoDup. apply H9. destruct H5. trivial. }
+      intros. rewrite Zlength_one in H13. assert (i0 = 0) by lia. subst i0. subst loc.
+      destruct H7. specialize (H14 _ H13). destruct H14.
+      change (Znth 0 [root]) with root in *.
+      destruct H9. split. { apply Permutation_Zlength in H9. lia. }
+      destruct H5. generalize H18; intro Hqq. specialize (H18 (Zlength (foot :: l0))). spec H18. rewrite Zlength_app, Zlength_one. rep_lia.
+      destruct H18. rewrite Znth_app2 in H19. 2: lia.
+      replace (Zlength _ - Zlength _) with 0 in H19 by lia. change (Znth _ [root]) with root in H19.
+      rewrite <- H17. lia.
+      repeat intro.
+      apply Permutation_Znth in Hq. 2: apply (0, Int.zero, Int.zero).
+      destruct Hq as [? [f [? [? ?]]]].
+      specialize (Hqq (Z.of_nat (f (Z.to_nat j)))). spec Hqq.
+        { rewrite Zlength_app, Zlength_one. specialize (H23 (Z.to_nat j)). lia. }
+      destruct Hqq. rewrite Znth_app1 in H27. 2: specialize (H23 (Z.to_nat j)); lia.
+      rewrite <- H25 in H27. 2: lia.
+      rewrite H21 in H27. rewrite H19 in H27. specialize (H23 (Z.to_nat j)); lia.
+Time Qed.
+
 (* I need this to make a replace work... ugly... *)
 (* Perhaps a BUG, related to overly-aggressive unfolding of fst/snd that has to be repaired later? 
    I end up with the messy LHS and would really prefer the nicer RHS. *)
@@ -236,14 +512,14 @@ Proof.
   simpl fst. simpl snd.
   unfold lookup_array.
   (* HORRIBLE BUG, unsigned in C, signed data_at in VST, forward isn't working; and error message was terrible! *)
-  forward. { entailer!. destruct (H1 k H0). apply H9. }
+  forward. { entailer!. destruct H1. destruct (H9 k H0). apply H9. lia. }
   forward.
   forward.
   forward.
   repeat rewrite upd_Znth_overwrite. repeat rewrite upd_Znth_same.
   2,3,4,5,6: repeat rewrite Zlength_upd_Znth; rewrite Zlength_map; rep_lia.
   simpl snd.
-  forward. { entailer!. destruct (H1 j H). apply H9. }
+  forward. { entailer!. destruct H1. destruct (H9 j H). apply H9. lia. }
   Exists (Zexchange lookup_contents (heap_item_key (Znth j arr_contents)) (heap_item_key (Znth k arr_contents))).
   autorewrite with sublist in *.
   unfold linked_heap_array, heap_array, lookup_array.
@@ -277,6 +553,7 @@ Proof.
     rewrite upd_Znth_map. 
     f_equal.
     change (fst (fst ?c)) with (heap_item_key c).
+    destruct H1 as [Hx H1].
     destruct (H1 _ H).
     destruct (H1 _ H0).
     rewrite Zexchange_symm; auto.
@@ -537,161 +814,6 @@ Proof.
   entailer!.
 Time Qed.
 
-Lemma body_remove_min_nc: semax_body Vprog Gprog f_pq_remove_min_nc pq_remove_min_nc_spec.
-Proof.
-  start_function.
-  unfold valid_pq.
-  Intros arr junk lookup lookup_contents.
-  assert_PROP (linked_correctly (heap_items h ++ junk) lookup_contents). { unfold linked_heap_array. entailer!. }
-  rename H3 into Hz.
-  rewrite linked_heap_array_split. Intros.
-  destruct h. destruct l. inversion H.
-  unfold heap_items, heap_capacity, heap_size in *. simpl in H, H0, H1, Hz |-*. clear H.
-  generalize (foot_split_spec _ (h :: l)).
-  case foot_split. destruct o; intro. 2: destruct H; subst l0; discriminate.
-  rename h into root. rename h0 into foot.
-  assert (Hx: Zlength l = Zlength (root :: l) - 1) by (rewrite Zlength_cons; lia).
-  assert (Hy : 0 <= Zlength l) by apply Zlength_nonneg.
-  forward.
-  forward.
-  forward.
-Admitted.
-
-(*{ unfold linked_heap_array, heap_array. Intros. entailer!. }
-  forward. { unfold linked_heap_array, lookup_array. Intros. entailer!. }
-  forward_call (0, Zlength l, arr, root :: l, lookup, lookup_contents).
-    { entailer!. simpl. congruence. }
-    { lia. }
-  Intros lookup_contents'.
-  unfold linked_heap_array at 1. (* Not delighted with these unfolds... *)
-  unfold heap_array. Intros.
-  forward.
-    { entailer!. rewrite Zlength_Zexchange. lia. }
-    { entailer!. rewrite Znth_map. rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
-      unfold heap_item_rep. trivial. rewrite Zlength_Zexchange. lia. }
-  unfold hitem.
-Admitted. *)
-(*
-
-  forward.
-  forward.
-    { entailer!. rewrite Zlength_Zexchange. lia. }
-    { entailer!. rewrite Znth_map. 2: rewrite Zlength_Zexchange; lia.
-      rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
-      apply Forall_map in H9.
-      rewrite Forall_Znth in H9. specialize (H9 (Zlength l)). do 2 rewrite Zlength_map in H9. rewrite Zlength_Zexchange in H9.
-      spec H9. lia.
-      rewrite Znth_map in H9. 2: rewrite Zlength_map, Zlength_Zexchange; lia.
-      rewrite Znth_map in H9. 2: rewrite Zlength_Zexchange; lia.
-      rewrite Znth_Zexchange' in H9; try lia.
-      (* Flailing around solves the goal... *)
-      apply H9. discriminate. }
-  forward.
-  forward.
-    { entailer!. rewrite Zlength_Zexchange. lia. }
-    { entailer!. rewrite Znth_map. rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
-      unfold heap_item_rep. trivial. rewrite Zlength_Zexchange. lia. }
-  forward.
-change (data_at _ _ _ arr) with (heap_array (Zexchange (root :: l) 0 (Zlength l)) arr).
-deadvars!.
-rewrite <- Hx.
-rewrite Znth_map. 2: rewrite Zlength_Zexchange; lia.
-rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
-autorewrite with norm. rewrite <- Hx.
-unfold heap_item_rep. rewrite H.
-destruct l.
-  * (* corner case: heap is now empty *)
-    destruct l0. 2: destruct l0; discriminate.
-    inversion H. subst foot. clear H Hx.
-    simpl.
-    forward_call (0, arr, @nil heap_item, 0, lookup, lookup_contents'); rewrite Zlength_nil. 
-      { unfold linked_heap_array, heap_array. rewrite data_at_isptr. entailer. (* Surely there's a less heavy hammer way to do this? *)
-        rewrite data_at_zero_array_eq; auto. entailer!. repeat intro. rewrite Zlength_nil in H14. lia. }
-      { split; auto. split; auto. split. rep_lia. split. rep_lia.
-        apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
-    (* Prove postcondition *)
-    Intro vret. destruct vret as [vret lookup_contents''].
-    forward.
-    Exists (n, vret) root. entailer. (* Surely there's a less heavy hammer way to do this? *)
-    (* destruct H1. *)
-    apply Permutation_nil in H7. simpl in H7. subst vret. clear (* H *) Hy.
-    unfold linked_heap_array. Intros.
-    sep_apply harray_emp. rewrite emp_sepcon.
-    rewrite Zlength_Zexchange. rewrite Zexchange_eq.
-    do 2 rewrite fold_heap_array. unfold valid_pq, hitem.
-    apply andp_right. apply prop_right. auto.
-    Exists arr (root :: junk) lookup lookup_contents''. simpl. unfold linked_heap_array. entailer!.
-    2: rewrite <- heap_array_split; apply derives_refl.
-    rewrite Zlength_nil in *. rewrite Zexchange_eq in *. simpl in Hz, H3, H6, H.
-    change (root :: junk) with ([root] ++ junk). red.
-    apply linked_correctly'_shuffle with lookup_contents'.
-    apply linked_correctly_app3; trivial.
-    apply linked_correctly'_shuffle with lookup_contents. trivial.
-    intros. apply H4; repeat intro. rewrite Zlength_one in H18. assert (j = 0) by lia. subst j. rewrite Znth_0_cons in H19.
-specialize (Hz (i0 + 1)). spec Hz. rewrite Zlength_cons; lia.
-Search Znth cons.
-rewrite Znth_pos_cons in Hz. 2: lia. replace (i0 + 1 - 1) with i0 in Hz by lia.
-specialize (H5 0 H18). rewrite Znth_0_cons in H5. simpl in H5.
-specialize (H4 (i0 + 1)).
-
-(*
-rewrite H4 in Hz.
-rewrite <- H19 in Hz.
-
- simpl. H17).
-rewrite <- H19 in H3. rewrite Zlength_one in H3.
-red in H4.
-
-Search lookup_contents'.
-
-specialize 
-Search Znth 0.
-
- rewrite Znth_0. 
-*)
-
-    admit. admit.
-  * (* main line: heap still has items in it *)
-    destruct l0; inversion H. subst h0.
-    assert (Zlength (h :: l) = Zlength (root :: l0)).
-    { rewrite H8, Zlength_app, Zlength_one, Zlength_cons. lia. }
-    rewrite H6, Zexchange_head_foot.
-    (* rewrite harray_split.
-    forward_call (0, arr, (foot :: l0), Zlength (foot :: l0)). entailer!.
-      { split. rewrite Zlength_cons. generalize (Zlength_nonneg l0). lia.
-        split; trivial. split. rep_lia.
-        (* Here is where we use the bound. *)
-        split. intros _. generalize (Zlength_nonneg junk); intro.
-        simpl in H2. repeat rewrite Zlength_cons in *. rewrite Zlength_app in H2. lia.
-        apply weak_heapOrdered_root with root.
-        rewrite H5, app_comm_cons in H1.
-        apply heapOrdered_cutfoot in H1. trivial. }
-    (* Prove postcondition *)
-    Intro vret. Exists (n, vret) root. simpl fst. unfold hitem, heap_item_rep, heap_size, heap_capacity. simpl fst. simpl snd. entailer!.
-      { (* Pure part *)
-        split. constructor. rewrite H5. transitivity ([foot] ++ l0). apply Permutation_app_comm. destruct H4. auto.
-        generalize (root_minimal _ _ _ _ H1 root eq_refl); intro.
-        rewrite H5 in H10. apply Forall_inv_tail in H10.
-        eapply forall_permutation. apply H10. transitivity ([foot] ++ l0). apply Permutation_app_comm. simpl. tauto. }
-    unfold valid_pq. Exists arr (root :: junk). unfold heap_size, heap_capacity. simpl.
-    destruct H4.
-    replace (Zlength vret) with (Zlength (root :: l0)). 2: { apply Permutation_Zlength in H10. trivial. }
-    entailer!. { (* Pure part inside spatial part *)
-      simpl fst in H2. rewrite <- H2. apply Permutation_Zlength in H10. autorewrite with sublist. rewrite <- H10.
-      simpl snd. autorewrite with sublist in *. lia. }
-    (* Spatial part, this seems a bit uglier than necessary? *)
-    change (root :: junk) with ([root] ++ junk). rewrite app_assoc. do 2 rewrite harray_split.
-    apply Permutation_Zlength in H10.
-    rewrite app_comm_cons. rewrite Zlength_app. rewrite H10. rewrite Zlength_app.
-    assert (Zlength (root :: l0) = Zlength vret). { rewrite <- H10. do 2 rewrite Zlength_cons. trivial. }
-    do 3 rewrite app_comm_cons.
-    do 4 rewrite Zlength_app. rewrite H11.
-    do 2 rewrite Zlength_one.
-    rewrite Zlength_cons.
-    rewrite H3, H11. cancel.
-Time Qed.
-     *)
-    Admitted.
 
 
 (*

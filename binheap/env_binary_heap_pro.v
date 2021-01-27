@@ -84,6 +84,7 @@ Definition heap_array (contents : list heap_item) : val -> mpred :=
 
 (* Maybe can move this and associated definitons to Zmodel... *)
 Definition linked_correctly' (contents : list heap_item) (lookup : list Z) (offset : Z) : Prop :=
+  NoDup lookup /\
   forall i, 0 <= i < Zlength contents -> 
     let loc := heap_item_key (Znth i contents) in
     0 <= loc < Zlength lookup /\
@@ -95,21 +96,29 @@ Definition linked_correctly (contents : list heap_item) (lookup : list Z) : Prop
 Lemma linked_correctly_app1: forall contents contents' lookup,
   linked_correctly (contents ++ contents') lookup ->
   linked_correctly contents lookup.
-Proof. repeat intro. specialize (H i). rewrite Znth_app1 in H. 2: lia. apply H. rewrite Zlength_app. rep_lia. Qed.
+Proof. 
+  repeat intro. destruct H. split; trivial.
+  repeat intro. specialize (H0 i). rewrite Znth_app1 in H0. 2: lia. 
+  apply H0. rewrite Zlength_app. rep_lia.
+Qed.
 
 Lemma linked_correctly_app2: forall contents contents' lookup,
   linked_correctly (contents ++ contents') lookup ->
   linked_correctly' contents' lookup (Zlength contents).
-Proof. repeat intro. specialize (H (Zlength contents + i)). rewrite Znth_app2 in H. 2: lia.
+Proof.
+  repeat intro. destruct H as [Hz H]. split; trivial. intros.
+  specialize (H (Zlength contents + i)). rewrite Znth_app2 in H. 2: lia.
   rewrite Z.add_0_l in H. replace (Zlength contents + i - Zlength contents) with i in H by lia.
-  apply H. rewrite Zlength_app. rep_lia. Qed.
+  apply H. rewrite Zlength_app. rep_lia.
+Qed.
 
 Lemma linked_correctly_app3: forall contents contents' lookup,
   linked_correctly contents lookup ->
   linked_correctly' contents' lookup (Zlength contents) ->
   linked_correctly (contents ++ contents') lookup.
 Proof.
-  repeat intro. rewrite Z.add_0_l. assert (0 <= i < Zlength contents \/ Zlength contents <= i < Zlength (contents ++ contents')) by rep_lia.
+  repeat intro. destruct H as [Hz H]. destruct H0 as [Hz' H0]. split. trivial. intros.
+  rewrite Z.add_0_l. assert (0 <= i < Zlength contents \/ Zlength contents <= i < Zlength (contents ++ contents')) by rep_lia.
   destruct H2. destruct H2. unfold loc. rewrite Znth_app1; try lia. apply H; trivial. rep_lia.
   unfold loc. rewrite Znth_app2; try lia. rewrite Zlength_app in *.
   specialize (H0 (i - Zlength contents)). destruct H0. lia. rewrite H3. lia.
@@ -125,24 +134,33 @@ Qed.
 
 Lemma linked_correctly'_shuffle: forall contents lookup lookup' offset,
   linked_correctly' contents lookup offset ->
-  Zlength lookup = Zlength lookup' ->
+  Permutation lookup lookup' ->
   (forall i, 0 <= i < Zlength contents -> Znth (heap_item_key (Znth i contents)) lookup = Znth (heap_item_key (Znth i contents)) lookup') ->
   linked_correctly' contents lookup' offset.
-Proof. repeat intro. unfold loc. rewrite <- H0. rewrite <- H1; trivial. apply H. trivial. Qed.
+Proof.
+  intros. destruct H as [Hz H]. split.
+  eapply Permutation_NoDup; eauto.
+  repeat intro. unfold loc. rewrite <- H1; trivial.
+  apply Permutation_Zlength in H0. rewrite <- H0. apply H; trivial.
+Qed.
 
 Definition lookup_oob_eq (contents : list heap_item) (lookup lookup' : list Z) : Prop :=
+  Permutation lookup lookup' /\
   forall i, (forall j, 0 <= j < Zlength contents -> heap_item_key (Znth j contents) <> i) ->
   Znth i lookup = Znth i lookup'.
 
 Lemma lookup_oob_eq_refl: forall contents lookup,
   lookup_oob_eq contents lookup lookup.
-Proof. repeat intro. trivial. Qed.
+Proof. split. trivial. repeat intro. trivial. Qed.
 
 Lemma lookup_oob_eq_trans: forall contents lookup lookup' lookup'',
   lookup_oob_eq contents lookup lookup' ->
   lookup_oob_eq contents lookup' lookup'' ->
   lookup_oob_eq contents lookup lookup''.
-Proof. repeat intro. specialize (H i H1). rewrite H. apply H0; trivial. Qed.
+Proof.
+  intros. destruct H, H0. split. transitivity lookup'; auto.
+  repeat intro. specialize (H1 i H3). rewrite H1. apply H2; trivial. 
+Qed.
 
 Instance lookup_oob_po: forall c, PreOrder (lookup_oob_eq c).
 Proof. intro c. split. intro x. apply lookup_oob_eq_refl. intros x y z. apply lookup_oob_eq_trans. Qed.
@@ -152,7 +170,8 @@ Lemma lookup_oob_eq_shuffle: forall contents contents' lookup lookup',
   lookup_oob_eq contents lookup lookup' ->
   lookup_oob_eq contents' lookup lookup'.
 Proof. 
-  repeat intro. apply H0. repeat intro.
+  repeat intro. destruct H0 as [Hz H0]. split; trivial. intros.
+  apply H0. repeat intro.
   symmetry in H.
   apply Permutation_Znth in H. 2: exact 0. destruct H as [? [f [? [? ?]]]].
   do 2 rewrite Zlength_map in *. rewrite <- H in *.
@@ -161,6 +180,21 @@ Proof.
   specialize (H6 j H2). rewrite Znth_map in H6. 2: lia. rewrite H6 in H3.
   rewrite Znth_map in H3. trivial.
   specialize (H4 (Z.to_nat j)). rep_lia.
+Qed.
+
+Lemma lookup_oob_eq_Zexchange: forall L1 L2 j k,
+  0 <= j < Zlength L1 ->
+  0 <= k < Zlength L1 ->
+  linked_correctly L1 L2 ->
+  lookup_oob_eq (Zexchange L1 j k) L2 (Zexchange L2 (heap_item_key (Znth j L1)) (heap_item_key (Znth k L1))).
+Proof.
+  repeat intro. destruct H1 as [Hz H1]. split; repeat rewrite Zlength_Zexchange in *.
+  apply Zexchange_Permutation.
+  intros. rewrite Znth_Zexchange''; auto.
+  destruct (H1 _ H); auto.
+  destruct (H1 _ H0); auto.
+  intro. subst i. eapply H2. apply H0. rewrite Znth_Zexchange'; auto.
+  intro. subst i. eapply H2. apply H. rewrite Znth_Zexchange; auto.
 Qed.
 
 Definition linked_heap_array (contents : list heap_item) (v1 : val) (lookup : list Z) (v2 : val) : mpred :=
@@ -215,9 +249,9 @@ Definition valid_pq (pq : val) (h: heap): mpred :=
   EX arr : val, EX junk: list heap_item, EX arr2 : val, EX lookup : list Z,
     (!! heap_ordered (heap_items h)) && (!! (Zlength ((heap_items h) ++ junk) = heap_capacity h)) &&
     (!! (2 * (heap_capacity h - 1) <= Int.max_unsigned)) &&
-    (!! Permutation
+(*    (!! Permutation
         (map heap_item_key ((heap_items h) ++ junk))
-        (nat_inc_list (Z.to_nat (heap_capacity h)))) &&
+        (nat_inc_list (Z.to_nat (heap_capacity h)))) && *)
     (data_at Tsh t_pq (Vint (Int.repr (heap_capacity h)), (Vint (Int.repr (heap_size h)), (arr, arr2))) pq *
        linked_heap_array ((heap_items h) ++ junk) arr lookup arr2).
 
@@ -370,29 +404,18 @@ Lemma linked_correctly_Zexchange: forall L1 L2 j k,
   linked_correctly L1 L2 ->
   linked_correctly (Zexchange L1 j k) (Zexchange L2 (heap_item_key (Znth j L1)) (heap_item_key (Znth k L1))).
 Proof.
-  repeat intro. subst loc. rewrite Zlength_Zexchange in H2. rewrite Zlength_Zexchange.
-  destruct (H1 _ H). destruct (H1 _ H0). destruct (H1 _ H2). clear H1.
-  case (Z.eq_dec i j); intro.
-  * subst j. rewrite Znth_Zexchange; auto. rewrite Znth_Zexchange'; auto.
-  * case (Z.eq_dec i k); intro.
-    - subst i. rewrite Znth_Zexchange'; auto. rewrite Znth_Zexchange; auto.
-    - rewrite Znth_Zexchange''; auto. rewrite Znth_Zexchange''; auto.
-      intro. rewrite H1 in H8. rewrite H4 in H8. lia.
-      intro. rewrite H1 in H8. rewrite H6 in H8. lia.
-Qed.
-
-Lemma lookup_oob_eq_Zexchange: forall L1 L2 j k,
-  0 <= j < Zlength L1 ->
-  0 <= k < Zlength L1 ->
-  linked_correctly L1 L2 ->
-  lookup_oob_eq (Zexchange L1 j k) L2 (Zexchange L2 (heap_item_key (Znth j L1)) (heap_item_key (Znth k L1))).
-Proof.
-  repeat intro. rewrite Zlength_Zexchange in H2.
-  rewrite Znth_Zexchange''; auto.
-  destruct (H1 _ H); auto.
-  destruct (H1 _ H0); auto.
-  intro. subst i. eapply H2. apply H0. rewrite Znth_Zexchange'; auto.
-  intro. subst i. eapply H2. apply H. rewrite Znth_Zexchange; auto.
+  repeat intro. destruct H1 as [Hz ?]. split. 
+  * eapply Permutation_NoDup. 2: apply Hz.
+    apply Zexchange_Permutation.
+  * intros. subst loc. rewrite Zlength_Zexchange in H2. rewrite Zlength_Zexchange.
+    destruct (H1 _ H). destruct (H1 _ H0). destruct (H1 _ H2). clear H1.
+    case (Z.eq_dec i j); intro.
+    - subst j. rewrite Znth_Zexchange; auto. rewrite Znth_Zexchange'; auto.
+    - case (Z.eq_dec i k); intro.
+      + subst i. rewrite Znth_Zexchange'; auto. rewrite Znth_Zexchange; auto.
+      + rewrite Znth_Zexchange''; auto. rewrite Znth_Zexchange''; auto.
+        intro. rewrite H1 in H8. rewrite H4 in H8. lia.
+        intro. rewrite H1 in H8. rewrite H6 in H8. lia.
 Qed.
 
 Lemma exists_min_in_list: forall L,
@@ -413,6 +436,36 @@ Proof.
   transitivity mi'.
   destruct (cmp_linear a mi'); auto. unfold cmp_rel in H3. rewrite H1 in H3. discriminate.
   apply H0. trivial.
+Qed.
+
+Lemma linked_correctly'_app: forall L1 L1' L2 n,
+  linked_correctly' (L1 ++ L1') L2 n <->
+  (linked_correctly' L1 L2 n /\ linked_correctly' L1' L2 (Zlength L1 + n)).
+Proof.
+  split; intros. destruct H. split; split; trivial; repeat intro. subst loc.
+  assert (0 <= i < Zlength (L1 ++ L1')) by (rewrite Zlength_app; rep_lia).
+  specialize (H0 _ H2). destruct H0.
+  rewrite app_Znth1 in *; try lia. subst loc.
+  assert (0 <= i + Zlength L1 < Zlength (L1 ++ L1')) by (rewrite Zlength_app; rep_lia).
+  specialize (H0 _ H2). destruct H0.
+  rewrite app_Znth2 in *; try lia.
+  replace (i + Zlength L1 - Zlength L1) with i in * by lia.
+  replace (Zlength L1 + n + i) with (n + (i + Zlength L1)) by lia. auto.
+  destruct H as [[? ?] [? ?]]. split; trivial. intros. subst loc.
+  rewrite Zlength_app in H3. assert (0 <= i < Zlength L1 \/ 0 <= i - Zlength L1 < Zlength L1') by rep_lia.
+  destruct H4. rewrite app_Znth1; auto; lia.
+  rewrite app_Znth2; try lia.
+  specialize (H2 _ H4). destruct H2. replace (Zlength L1 + n + (i - Zlength L1)) with (n + i) in H5 by lia.
+  auto.
+Qed.
+
+Lemma lookup_oob_eq_nil: forall L1 L2,
+  lookup_oob_eq nil L1 L2 ->
+  L1 = L2.
+Proof.
+  intros. destruct H.
+  apply Znth_eq_ext. apply Permutation_Zlength; trivial. intros.
+  apply H0. intros. rewrite Zlength_nil in H2. lia.
 Qed.
 
 (*
