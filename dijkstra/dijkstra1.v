@@ -737,24 +737,16 @@ Definition f_dijkstra := {|
                   Sskip)
                 (Ssequence
                   (Scall None
-                    (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid
-                                   cc_default))
-                    ((Etempvar _temp_item (tptr (Tstruct _structItem noattr))) ::
-                     nil))
+                    (Evar _pq_free (Tfunction
+                                     (Tcons (tptr (Tstruct _structPQ noattr))
+                                       Tnil) tvoid cc_default))
+                    ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) :: nil))
                   (Ssequence
                     (Scall None
-                      (Evar _pq_free (Tfunction
-                                       (Tcons
-                                         (tptr (Tstruct _structPQ noattr))
-                                         Tnil) tvoid cc_default))
-                      ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
-                       nil))
-                    (Ssequence
-                      (Scall None
-                        (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil)
-                                       tvoid cc_default))
-                        ((Etempvar _keys (tptr tint)) :: nil))
-                      (Sreturn None))))))))))))
+                      (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid
+                                     cc_default))
+                      ((Etempvar _keys (tptr tint)) :: nil))
+                    (Sreturn None)))))))))))
 |}.
 
 Definition f_main := {|

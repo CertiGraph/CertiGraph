@@ -193,7 +193,8 @@ Section DijkstraProof.
       (* And the correctness condition is established *)
       dijkstra_correct g src popped prev dist)
          LOCAL (temp _pq priq_ptr;
-               temp _temp_item (pointer_val_val temp_item))
+               temp _temp_item (pointer_val_val temp_item);
+               temp _keys (pointer_val_val keys_ptr))
          SEP (data_at Tsh
                       (tarray tint size)
                       (map Vint (map Int.repr prev))
@@ -1061,25 +1062,19 @@ exists l2a and l2b such that
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev dist popped hc.
-        freeze FR := (valid_pq _ _)
+        freeze FR := (data_at _ _ _ _)
                        (data_at _ _ _ _)
                        (data_at _ _ _ _)
-                       (data_at _ _ _ _)
-                       (SpaceAdjMatGraph _ _ _ _ _)
-                       (free_tok (pointer_val_val keys_pv) _).
-        (* TODO: add freeN... *)
-        admit.
-
-        (*freeze FR := (data_at _ _ _ (pointer_val_val prev_ptr))
-                       (data_at _ _ _ (pointer_val_val dist_ptr))
                        (SpaceAdjMatGraph _ _ _ _ _).
-        forward_call (Tsh, priq_ptr, size, priq).
-        entailer!.
-        thaw FR.
+
+        forward_call (priq_ptr, hc).
+        forward_call (Tsh, keys_pv, size, keys).
+        entailer!. admit. (* has to do with freeing ti *)
+        (* thaw FR. *)
         forward.
         Exists prev dist popped. entailer!.
-        intros. destruct (H2 _ H9) as [? _]; trivial.
-         *)
+        intros. destruct (H7 _ H10) as [? _]; trivial.
+        admit.
   Admitted.
 
 End DijkstraProof.

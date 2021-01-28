@@ -97,7 +97,7 @@ void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
             }
         }
     }
-    freeN (temp_item);
+//    freeN (temp_item);
     pq_free (pq);
     freeN(keys);
     return;
