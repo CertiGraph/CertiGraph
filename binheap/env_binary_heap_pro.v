@@ -468,6 +468,38 @@ Proof.
   apply H0. intros. rewrite Zlength_nil in H2. lia.
 Qed.
 
+Lemma fold_linked_heap_array: forall L1 v1 L2 v2,
+  linked_correctly L1 L2 ->
+  (heap_array L1 v1) * (lookup_array L2 v2) |-- linked_heap_array L1 v1 L2 v2.
+Proof.
+  intros. unfold linked_heap_array. entailer!.
+Qed.
+
+Lemma relink_tail: forall L0 L1 L2 L1' L2',
+  linked_correctly (L0 ++ L1) L1' ->
+  Permutation L0 L2 ->
+  lookup_oob_eq L2 L1' L2' ->
+  forall i, 0 <= i < Zlength L1 ->
+  Znth (heap_item_key (Znth i L1)) L1' = Znth (heap_item_key (Znth i L1)) L2'.
+Proof.
+  intros old_live junk live lookup lookup'. intros.
+  destruct H, H1.
+  apply Permutation_Znth in H0. 2: apply (0,Int.zero,Int.zero).
+  assert (0 <= i + Zlength live < Zlength (old_live ++ junk)) by (rewrite Zlength_app; rep_lia).
+  destruct (H3 _ H5).
+  rewrite <- H4; trivial.
+  repeat intro.
+  rewrite Znth_app2 in H7. 2: lia.
+  replace (i + Zlength live - Zlength old_live) with i in H7 by lia.
+  destruct H0 as [H0 [f [? [? ?]]]].
+  rewrite H12 in H9. 2: lia.
+  specialize (H10 (Z.to_nat j)).
+  assert (0 <= (Z.of_nat (f (Z.to_nat j))) < Zlength (old_live ++ junk)) by lia.
+  destruct (H3 _ H13).
+  rewrite Znth_app1 in H15. 2: lia.
+  rewrite H9 in H15. rewrite H7 in H15. lia.
+Qed.
+
 (*
 Does not seem to work on arrays.
 

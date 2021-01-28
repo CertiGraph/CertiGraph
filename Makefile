@@ -55,6 +55,7 @@ DATA_STRUCTURE_FILES = \
 
 BINARY_HEAP_FILES = \
   binary_heap_model.v binary_heap_Zmodel.v \
+  binary_heap_malloc_spec.v \
   binary_heap.v env_binary_heap.v verif_binary_heap.v \
   binary_heap_pro.v env_binary_heap_pro.v verif_binary_heap_pro.v
 
