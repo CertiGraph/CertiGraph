@@ -306,7 +306,8 @@ Section DijkstraProof.
                temp _pq priq_ptr;
                temp _graph (pointer_val_val graph_ptr);
                temp _size (Vint (Int.repr size));
-               temp _inf (Vint (Int.repr inf)))
+               temp _inf (Vint (Int.repr inf));
+               temp _temp_item (pointer_val_val ti))
          
          SEP (valid_pq priq_ptr h';
              data_at Tsh
@@ -945,8 +946,8 @@ exists l2a and l2b such that
               remember (Int.signed (snd min_item)) as u.
               remember (heap_capacity h) as size.
 
-              clear H24 H25 H26 H27 H37 H38 H39 H40 H41
-                    H42 H43 H44 H45 PNkeys_ptr PNpriq_ptr.
+              clear H24 H25 H26 H27 H37 H39 H40 H41
+                    H42 H43 H44 H45 H46 PNkeys_ptr PNpriq_ptr.
 
               rewrite Int.signed_repr in H23.
               2: apply edge_representable.
@@ -976,7 +977,7 @@ exists l2a and l2b such that
                      intros.
                      destruct (@Znth_dist_cases inf mom' dist')
                        as [e | e]; trivial.
-                     1: apply (vvalid_meaning g) in H46; ulia.
+                     1: apply (vvalid_meaning g) in H47; ulia.
                      1: { rewrite e.
                           pose proof (edge_cost_pos g (mom', i)).
                           ulia.
@@ -995,7 +996,7 @@ exists l2a and l2b such that
                           }
                           simpl id in *. ulia.
                      }
-                     apply H44; trivial.
+                     apply H45; trivial.
                  --- apply H_inv_unpopped; lia.
               ** destruct (Z.eq_dec dst i);
                    [| apply H_inv_unpopped_weak]; lia. 
@@ -1015,8 +1016,8 @@ exists l2a and l2b such that
                    ulia.
                  }
                  rewrite path_cost_glue_one_step.
-                 destruct H39 as [? _].
-                 pose proof (path_cost_pos _ _ H39).
+                 destruct H40 as [? _].
+                 pose proof (path_cost_pos _ _ H40).
                  simpl id in *. ulia.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
@@ -1036,8 +1037,7 @@ exists l2a and l2b such that
             ++ admit. (* cat 1 *)
             ++ red. intros.
                admit. (* cat 1 *)
-            ++ split; [|admit].
-               admit. (* cat 1 *)
+            ++ admit. (* cat 1 *)
            
         * (* After breaking from the while loop,
            prove break's postcondition *)
