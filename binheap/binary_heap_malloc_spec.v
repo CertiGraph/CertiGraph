@@ -1,5 +1,5 @@
 Require Import VST.floyd.proofauto.
-Require Import CertiGraph.binheap.binary_heap.
+Require Import CertiGraph.binheap.binary_heap_pro.
 
 (* Axioms for malloc/free -- someday these should be merged to the new verified implementation. *)
 
