@@ -506,8 +506,7 @@ Definition f_pq_edit_priority := {|
   fn_vars := nil;
   fn_temps := ((_table, (tptr tuint)) ::
                (_cells, (tptr (Tstruct _structItem noattr))) ::
-               (_target, tuint) :: (_oldpri, tint) :: (_t'1, tuint) ::
-               (_t'2, tuint) :: nil);
+               (_target, tuint) :: (_oldpri, tint) :: (_t'1, tuint) :: nil);
   fn_body :=
 (Ssequence
   (Sset _table
@@ -526,61 +525,48 @@ Definition f_pq_edit_priority := {|
           (Ebinop Oadd (Etempvar _table (tptr tuint)) (Etempvar _key tint)
             (tptr tuint)) tuint))
       (Ssequence
+        (Sset _oldpri
+          (Efield
+            (Ederef
+              (Ebinop Oadd
+                (Etempvar _cells (tptr (Tstruct _structItem noattr)))
+                (Etempvar _target tuint) (tptr (Tstruct _structItem noattr)))
+              (Tstruct _structItem noattr)) _priority tint))
         (Ssequence
-          (Scall (Some _t'1)
-            (Evar _pq_size (Tfunction
-                             (Tcons (tptr (Tstruct _structPQ noattr)) Tnil)
-                             tuint cc_default))
-            ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) :: nil))
-          (Sifthenelse (Ebinop Oge (Etempvar _target tuint)
-                         (Etempvar _t'1 tuint) tint)
-            (Sreturn None)
-            Sskip))
-        (Ssequence
-          (Sset _oldpri
+          (Sassign
             (Efield
               (Ederef
                 (Ebinop Oadd
                   (Etempvar _cells (tptr (Tstruct _structItem noattr)))
                   (Etempvar _target tuint)
                   (tptr (Tstruct _structItem noattr)))
-                (Tstruct _structItem noattr)) _priority tint))
-          (Ssequence
-            (Sassign
-              (Efield
-                (Ederef
-                  (Ebinop Oadd
-                    (Etempvar _cells (tptr (Tstruct _structItem noattr)))
-                    (Etempvar _target tuint)
-                    (tptr (Tstruct _structItem noattr)))
-                  (Tstruct _structItem noattr)) _priority tint)
-              (Etempvar _newpri tint))
-            (Sifthenelse (Ebinop Ole (Etempvar _newpri tint)
-                           (Etempvar _oldpri tint) tint)
+                (Tstruct _structItem noattr)) _priority tint)
+            (Etempvar _newpri tint))
+          (Sifthenelse (Ebinop Ole (Etempvar _newpri tint)
+                         (Etempvar _oldpri tint) tint)
+            (Scall None
+              (Evar _swim (Tfunction
+                            (Tcons tuint
+                              (Tcons (tptr (Tstruct _structItem noattr))
+                                (Tcons (tptr tuint) Tnil))) tvoid cc_default))
+              ((Etempvar _target tuint) ::
+               (Etempvar _cells (tptr (Tstruct _structItem noattr))) ::
+               (Etempvar _table (tptr tuint)) :: nil))
+            (Ssequence
+              (Sset _t'1
+                (Efield
+                  (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
+                    (Tstruct _structPQ noattr)) _first_available tuint))
               (Scall None
-                (Evar _swim (Tfunction
+                (Evar _sink (Tfunction
                               (Tcons tuint
                                 (Tcons (tptr (Tstruct _structItem noattr))
-                                  (Tcons (tptr tuint) Tnil))) tvoid
-                              cc_default))
+                                  (Tcons tuint (Tcons (tptr tuint) Tnil))))
+                              tvoid cc_default))
                 ((Etempvar _target tuint) ::
                  (Etempvar _cells (tptr (Tstruct _structItem noattr))) ::
-                 (Etempvar _table (tptr tuint)) :: nil))
-              (Ssequence
-                (Sset _t'2
-                  (Efield
-                    (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
-                      (Tstruct _structPQ noattr)) _first_available tuint))
-                (Scall None
-                  (Evar _sink (Tfunction
-                                (Tcons tuint
-                                  (Tcons (tptr (Tstruct _structItem noattr))
-                                    (Tcons tuint (Tcons (tptr tuint) Tnil))))
-                                tvoid cc_default))
-                  ((Etempvar _target tuint) ::
-                   (Etempvar _cells (tptr (Tstruct _structItem noattr))) ::
-                   (Etempvar _t'2 tuint) :: (Etempvar _table (tptr tuint)) ::
-                   nil))))))))))
+                 (Etempvar _t'1 tuint) :: (Etempvar _table (tptr tuint)) ::
+                 nil)))))))))
 |}.
 
 Definition f_pq_remove_min_nc := {|
