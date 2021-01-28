@@ -56,7 +56,8 @@ Section DijkstraProof.
          forall j,
            0 <= j < i ->
            keys_dist_linked_correctly j keys dist_and_prev h;
-         dist_and_prev = list_repeat (Z.to_nat i) (Int.repr inf))
+         dist_and_prev = list_repeat (Z.to_nat i) (Int.repr inf);
+         Zlength keys = i)
     LOCAL (temp _dist (pointer_val_val dist_ptr);
           temp _prev (pointer_val_val prev_ptr);
           temp _src (Vint (Int.repr src));
@@ -378,9 +379,6 @@ Section DijkstraProof.
       forward.
       repeat rewrite upd_Znth_list_repeat; try lia.
       simpl fst in *. simpl snd in *.
-      assert (Zlength keys0 = i). { (* add? *)
-        admit.
-      }
       (* A number of tweaks to the keys array in SEP... *)
       rewrite upd_Znth_app2.
       2: { repeat rewrite Zlength_map.
@@ -409,9 +407,9 @@ Section DijkstraProof.
           symmetry in Heqi; rename Heqi into H3;
             clear H9 H10 H11 H12 H13 H14 H15 H16 H17
               H18 H19 H20 PNpriq_ptr.
-      + split3.
+      + split3; [| |split].
         * rewrite <- H3. unfold heap_size.
-          pose proof (Permutation_Zlength _ _ H7).
+          pose proof (Permutation_Zlength _ _ H8).
           rewrite Zlength_cons, <- Z.add_1_r in H5.
           symmetry. trivial.
         * red. intros.
@@ -432,6 +430,8 @@ Section DijkstraProof.
              admit. (* cat 2 *)
         * rewrite <- list_repeat1, list_repeat_app,
           Z2Nat.inj_add. trivial. lia. lia.
+        * rewrite Zlength_app, binary_heap_Zmodel.Zlength_one.
+          lia.
       + repeat rewrite map_app; rewrite app_assoc; cancel.
         rewrite list_repeat1, upd_Znth_app2,
         Zlength_map, Zlength_list_repeat, Z.sub_diag,
@@ -452,14 +452,13 @@ Section DijkstraProof.
       remember (pointer_val_val keys_pv) as keys_ptr.
 
       rewrite Z.sub_diag, list_repeat_0, app_nil_r, app_nil_r.
-      assert (Zlength keys = size). {
-        admit. (* add *)
-      }
       assert (Htemp: 0 <= src < Zlength keys) by lia.
       forward. forward. forward.
       clear Htemp.
       forward_call (priq_ptr, ha, Znth src keys, Int.repr 0).
-      admit. (* cat 2 *)
+      1: { 
+        admit. (* cat 2 *)
+      }
       Intros hb.
       rename H6 into H_ha_hb_rel.
       assert (H_hb_cap: heap_capacity hb = size) by lia.
