@@ -70,7 +70,7 @@ void pq_edit_priority(PQ *pq, int key, int newpri) {
   unsigned int* table = pq->key_table;
   Item* cells = pq->heap_cells;
   unsigned int target = table[key];
-  if (target >= pq_size(pq)) return;
+  // if (target >= pq_size(pq)) return;
   // I will now know that this key refers to a valid member of the heap
   int oldpri = cells[target].priority;
 

@@ -1,6 +1,7 @@
 Require Import RelationClasses.
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.binheap.binary_heap_model.
+Require Export CertiGraph.binheap.binary_heap_malloc_spec.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
 Require Export CertiGraph.binheap.binary_heap_pro.
 Require Export CertiGraph.binheap.env_binary_heap_pro.
@@ -118,23 +119,6 @@ Definition pq_insert_nc_spec :=
     LOCAL (temp ret_temp (Vint (Int.repr key)))
     SEP (valid_pq pq h').
 
-Parameter free_tok : val -> Z -> mpred.
-
-Definition mallocN_spec {CS: compspecs} :=
-  DECLARE _mallocN
-  WITH n: Z
-  PRE [tint]
-  PROP (4 <= n <= Int.max_unsigned)
-  PARAMS (Vint (Int.repr n))
-  GLOBALS ()
-  SEP ()
-  POST [ tptr tvoid ]
-  EX v: pointer_val,
-  PROP (malloc_compatible n (pointer_val_val v))
-  LOCAL (temp ret_temp (pointer_val_val v))
-  SEP (data_at_ Tsh (tarray tint (n / sizeof tint)) (pointer_val_val v) *
-       free_tok (pointer_val_val v) n).
-
 Definition pq_make_spec := 
   DECLARE _pq_make WITH size : Z
   PRE [tuint]
@@ -164,7 +148,7 @@ Definition pq_free_spec :=
 Definition pq_edit_priority_spec := 
   DECLARE _pq_edit_priority WITH pq : val, h : heap, key : Z, newpri : int
   PRE [tptr t_pq, tint, tint]
-  PROP ()
+  PROP (In key (proj_keys h))
     PARAMS (pq; Vint (Int.repr (key)); Vint newpri)
     GLOBALS ()
     SEP (valid_pq pq h) (* and the free toks I get from pq_make*)
@@ -186,39 +170,27 @@ Definition Gprog : funspecs :=
                           capacity_spec;
                           mallocN_spec;
                           pq_make_spec;
+                          pq_free_spec;
                           pq_edit_priority_spec]).
 
-Lemma fold_linked_heap_array: forall L1 v1 L2 v2,
-  linked_correctly L1 L2 ->
-  (heap_array L1 v1) * (lookup_array L2 v2) |-- linked_heap_array L1 v1 L2 v2.
+Lemma body_edit_priority: semax_body Vprog Gprog f_pq_edit_priority pq_edit_priority_spec.
 Proof.
-  intros. unfold linked_heap_array. entailer!.
-Qed.
-
-Lemma relink_tail: forall L0 L1 L2 L1' L2',
-  linked_correctly (L0 ++ L1) L1' ->
-  Permutation L0 L2 ->
-  lookup_oob_eq L2 L1' L2' ->
-  forall i, 0 <= i < Zlength L1 ->
-  Znth (heap_item_key (Znth i L1)) L1' = Znth (heap_item_key (Znth i L1)) L2'.
-Proof.
-  intros old_live junk live lookup lookup'. intros.
-  destruct H, H1.
-  apply Permutation_Znth in H0. 2: apply (0,Int.zero,Int.zero).
-  assert (0 <= i + Zlength live < Zlength (old_live ++ junk)) by (rewrite Zlength_app; rep_lia).
-  destruct (H3 _ H5).
-  rewrite <- H4; trivial.
-  repeat intro.
-  rewrite Znth_app2 in H7. 2: lia.
-  replace (i + Zlength live - Zlength old_live) with i in H7 by lia.
-  destruct H0 as [H0 [f [? [? ?]]]].
-  rewrite H12 in H9. 2: lia.
-  specialize (H10 (Z.to_nat j)).
-  assert (0 <= (Z.of_nat (f (Z.to_nat j))) < Zlength (old_live ++ junk)) by lia.
-  destruct (H3 _ H13).
-  rewrite Znth_app1 in H15. 2: lia.
-  rewrite H9 in H15. rewrite H7 in H15. lia.
-Qed.
+  start_function.
+  unfold valid_pq.
+  Intros arr junk lookup lookup_contents.
+  assert_PROP (linked_correctly (heap_items h ++ junk) lookup_contents). { unfold linked_heap_array. entailer!. }
+  rewrite linked_heap_array_split. Intros.
+  forward. { unfold linked_heap_array, lookup_array. Intros. entailer!. }
+  forward. { unfold linked_heap_array, heap_array. Intros. entailer!. }
+  unfold linked_heap_array, lookup_array. Intros.
+  generalize H; intro.
+  apply In_Znth_iff in H6.
+  destruct H6 as [loc [? ?]].
+  destruct H5.
+  unfold proj_keys in H6, H7. rewrite Zlength_map in H6. rewrite Znth_map in H7.
+  destruct (H8 loc H6).
+  forward.
+Admitted.
 
 Lemma body_remove_min_nc: semax_body Vprog Gprog f_pq_remove_min_nc pq_remove_min_nc_spec.
 Proof.
