@@ -130,9 +130,9 @@ PQ* pq_make(unsigned int size) { /* could take a size parameter I suppose... */
 }
 
 void pq_free (PQ *pq) {
-    free(pq->key_table);
-    free(pq->heap_cells);
-    free(pq);
+    freeN(pq->key_table);
+    freeN(pq->heap_cells);
+    freeN(pq);
 }
 
 /* could imagine adding some additonal functions:
