@@ -73,7 +73,7 @@ Definition _data : ident := 3%positive.
 Definition _exch : ident := 70%positive.
 Definition _fa : ident := 76%positive.
 Definition _first_available : ident := 6%positive.
-Definition _free : ident := 62%positive.
+Definition _freeN : ident := 63%positive.
 Definition _heap_cells : ident := 7%positive.
 Definition _i : ident := 89%positive.
 Definition _item : ident := 84%positive.
@@ -87,7 +87,7 @@ Definition _less : ident := 73%positive.
 Definition _lookup : ident := 67%positive.
 Definition _main : ident := 92%positive.
 Definition _malloc : ident := 61%positive.
-Definition _mallocN : ident := 63%positive.
+Definition _mallocN : ident := 62%positive.
 Definition _newpri : ident := 79%positive.
 Definition _oldpri : ident := 82%positive.
 Definition _pq : ident := 71%positive.
@@ -903,7 +903,7 @@ Definition f_pq_free := {|
         (Ederef (Etempvar _pq (tptr (Tstruct _structPQ noattr)))
           (Tstruct _structPQ noattr)) _key_table (tptr tuint)))
     (Scall None
-      (Evar _free (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
+      (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
       ((Etempvar _t'2 (tptr tuint)) :: nil)))
   (Ssequence
     (Ssequence
@@ -913,10 +913,10 @@ Definition f_pq_free := {|
             (Tstruct _structPQ noattr)) _heap_cells
           (tptr (Tstruct _structItem noattr))))
       (Scall None
-        (Evar _free (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
+        (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
         ((Etempvar _t'1 (tptr (Tstruct _structItem noattr))) :: nil)))
     (Scall None
-      (Evar _free (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
+      (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
       ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) :: nil))))
 |}.
 
@@ -1177,11 +1177,14 @@ Definition global_definitions : list (ident * globdef fundef type) :=
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
  (_malloc,
    Gfun(External EF_malloc (Tcons tuint Tnil) (tptr tvoid) cc_default)) ::
- (_free, Gfun(External EF_free (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_mallocN,
    Gfun(External (EF_external "mallocN"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
+ (_freeN,
+   Gfun(External (EF_external "freeN"
+                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
+     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_exch, Gfun(Internal f_exch)) :: (_pq_size, Gfun(Internal f_pq_size)) ::
  (_capacity, Gfun(Internal f_capacity)) :: (_less, Gfun(Internal f_less)) ::
  (_swim, Gfun(Internal f_swim)) :: (_sink, Gfun(Internal f_sink)) ::
@@ -1196,7 +1199,7 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 Definition public_idents : list ident :=
 (_pq_free :: _pq_make :: _pq_remove_min :: _pq_insert :: _pq_remove_min_nc ::
  _pq_edit_priority :: _pq_insert_nc :: _sink :: _swim :: _less ::
- _capacity :: _pq_size :: _exch :: _mallocN :: _free :: _malloc ::
+ _capacity :: _pq_size :: _exch :: _freeN :: _mallocN :: _malloc ::
  ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
