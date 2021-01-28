@@ -1,7 +1,5 @@
 #include <stdlib.h>
 #include "binary_heap_pro.h"
-extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
-extern void freeN (void* p); /* Maybe there are better choices for deallocators? */
 
 #define ROOT_IDX       0u
 #define LEFT_CHILD(x)  (2u * x) + 1u

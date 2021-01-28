@@ -1216,6 +1216,14 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "time"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons (tptr tint) Tnil) tint cc_default)) ::
+ (_mallocN,
+   Gfun(External (EF_external "mallocN"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
+ (_freeN,
+   Gfun(External (EF_external "freeN"
+                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
+     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_pq_remove_min_nc,
    Gfun(External (EF_external "pq_remove_min_nc"
                    (mksignature (AST.Tint :: AST.Tint :: nil) AST.Tvoid
@@ -1246,14 +1254,6 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "pq_free"
                    (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
      (Tcons (tptr (Tstruct _structPQ noattr)) Tnil) tvoid cc_default)) ::
- (_mallocN,
-   Gfun(External (EF_external "mallocN"
-                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
-     (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
- (_freeN,
-   Gfun(External (EF_external "freeN"
-                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
-     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_setup, Gfun(Internal f_setup)) ::
  (_print_graph, Gfun(Internal f_print_graph)) ::
  (_printPath, Gfun(Internal f_printPath)) ::
@@ -1264,8 +1264,8 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_main :: _dijkstra :: _getCell :: _getPaths :: _printPath :: _print_graph ::
- _setup :: _freeN :: _mallocN :: _pq_free :: _pq_make :: _pq_size ::
- _pq_edit_priority :: _pq_insert_nc :: _pq_remove_min_nc :: _time ::
+ _setup :: _pq_free :: _pq_make :: _pq_size :: _pq_edit_priority ::
+ _pq_insert_nc :: _pq_remove_min_nc :: _freeN :: _mallocN :: _time ::
  _printf :: _srand :: _rand :: _free :: _malloc :: ___builtin_debug ::
  ___builtin_write32_reversed :: ___builtin_write16_reversed ::
  ___builtin_read32_reversed :: ___builtin_read16_reversed ::
