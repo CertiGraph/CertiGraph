@@ -25,6 +25,20 @@ Section DijkstraSpec.
   Definition Vprog : varspecs. mk_varspecs prog. Defined.
   Global Existing Instance CompSpecs.
 
+  Definition freeN_spec {CS: compspecs} :=
+    DECLARE _freeN
+    WITH sh: share, p: pointer_val, n: Z, contents: list Z
+    PRE [tptr tvoid]
+    PROP ()
+    PARAMS (pointer_val_val p)
+    GLOBALS ()
+    SEP (data_at sh (tarray tint n)
+                 (map Vint (map Int.repr contents))
+                 (pointer_val_val p) *
+        free_tok (pointer_val_val p) (sizeof tint * n))
+  POST [tvoid]
+    PROP () LOCAL () SEP (emp).
+  
   Definition getCell_spec :=
     DECLARE _getCell
     WITH sh: wshare,
@@ -95,6 +109,7 @@ Section DijkstraSpec.
                        getCell_spec;
                        dijkstra_spec;
                        mallocN_spec;
+                       freeN_spec;
                        pq_remove_min_nc_spec;
                        pq_insert_nc_spec; 
                        pq_size_spec;
