@@ -126,6 +126,7 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 
 \begin{document}
 
+\hide{
 	\author{Anshuman Mohan \and
 	Wei Xiang Leow \and
 %	Shengyi Wang\inst{2} \and
@@ -138,7 +139,8 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 	\institute{National University of Singapore}% \and
 %	Princeton University, USA \and
 %	Yale-NUS College, National University of Singapore}	
-	
+}
+\author{ } \institute{ }
 	\maketitle
 	%\begin{frontmatter}
 	
@@ -170,12 +172,12 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 	%\author{}
 	
 	%\address{}
-	
+	\vspace{-2em}
 	
 	\begin{abstract}
 		\vspace{-1.2em}
-        We develop machine-checked verifications of the full functional correctness of C implementations of the eponymous graph algorithms of Dijkstra, Kruskal, and Prim.  We extend Wang et al\cite{DBLP:journals/pacmpl/WangCMH19}'s CertiGraph platform to reason about labels on edges, undirected graphs, and common spatial representations of edge-labeled graphs such as adjacency matrices and edge lists.  We certify binary heaps, including Floyd's bottom-up heap construction, heapsort, and increase/decrease priority.        
-        Our verifications uncover subtle overflows implicit in standard textbook code, including a nontrivial bound on edge weights necessary to execute Dijkstra's algorithm: in fact, we show that the intuitive guess fails and provide a workable refinement.  We observe that the common notion that Prim's algorithm requires a connected graph is wrong: our Prim's implementation is able to compute minimum spanning forests without finding components first.  Our verification of Kruskal's algorithm is notable because it requires reasoning about two graphs simultaneously: the undirected graph undergoing MST construction, and the directed graph representing the forest inside union-find.  Our binary heap verification exposes precise bounds for the heap to operate correctly, avoids a subtle overflow error, and includes a method of recycling keys to avoid overflow. %heap requires 0u, etc.?
+        We develop machine-checked verifications of the full functional correctness of C implementations of the eponymous graph algorithms of Dijkstra, Kruskal, and Prim.  We extend Wang et al's CertiGraph platform \cite{DBLP:journals/pacmpl/WangCMH19} to reason about labels on edges, undirected graphs, and common spatial representations of edge-labeled graphs such as adjacency matrices and edge lists.  We certify binary heaps, including Floyd's bottom-up heap construction, heapsort, and increase/decrease priority.
+        Our verifications uncover subtle overflows implicit in standard textbook code, including a nontrivial bound on edge weights necessary to execute Dijkstra's algorithm: in fact, we show that the intuitive guess fails and provide a workable refinement.  We observe that the common notion that Prim's algorithm requires a connected graph is wrong: we verify that a standard textbook implementation of Prim's algorithm can compute minimum spanning forests without finding components first.  Our verification of Kruskal's algorithm is notable because it requires reasoning about two graphs simultaneously: the undirected graph undergoing MST construction, and the directed graph representing the forest inside union-find.  Our binary heap verification exposes precise bounds for the heap to operate correctly, avoids a subtle overflow error, and includes a method of recycling keys to avoid overflow. %heap requires 0u, etc.?
 		\keywords{separation logic \and graph algorithms \and Coq \and VST}
 %Dijkstra's shortest-path \and Prim's algorithm \and Kruskal's algorithm \and minimum spanning trees \and verification \and CompCert \and VST}
 	\end{abstract} %\and Coq
@@ -185,7 +187,7 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 	%% \linenumbers
 	
 	%% main text
-	
+%\hide{	
 	\section{Introduction}
 	\label{sec:intro}
 	\input{intro.tex}
@@ -230,17 +232,17 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 	\section{Concluding thoughts: Future and Related Work}
 	\label{sec:conclusion}
 	\input{conclusion.tex}
-	
+%}	
 	\bibliographystyle{splncs}
 	\bibliography{mst}
-	
+%\hide{	
 	%% The Appendices part is started with the command \appendix;
 	%% appendix sections are then done as normal sections
 	\appendix
 	\label{sec:apx}
 	\input{verification.tex}
 	% \input{appendix.tex}
-	
+%	}
 	
 	%%\end{thebibliography}
 \end{document}
