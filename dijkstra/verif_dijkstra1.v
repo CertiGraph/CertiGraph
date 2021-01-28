@@ -289,9 +289,9 @@ Section DijkstraProof.
        *)
       
       (* the lengths of the threee arrays *)
-      (* Zlength priq' = size; *)
       Zlength dist' = size;
       Zlength prev' = size;
+      heap_capacity h' = size;
                                                            
       (* and ranges of the three arrays *)
       @inrange_prev size inf prev';
@@ -481,6 +481,7 @@ exists l2a and l2b such that
       forward. forward. forward.
       clear Htemp.
       forward_call (priq_ptr, ha, Znth src keys, Int.repr 0).
+      admit. (* cat 2 *)
       Intros hb.
       rename H6 into H_ha_hb_rel.
       assert (H_hb_cap: heap_capacity hb = size) by lia.
@@ -753,6 +754,9 @@ exists l2a and l2b such that
             rename H26 into H_inv_unseen.
             rename H27 into H_inv_unseen_weak.
             subst u0.
+            rename H35 into H_H'_cap.
+            rename H36 into H35.
+            rename H37 into H36.
 
             forward_call (sh, g, graph_ptr, addresses, u, i).            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
@@ -829,6 +833,7 @@ exists l2a and l2b such that
                   1: entailer!.
                   1,3: repeat rewrite Zlength_map; lia.
                   forward_call (priq_ptr, h', Znth i keys, Int.repr (Znth u dist' + cost)).
+                  admit. (* cat 2 *)
 
 (* Now we must show that the for loop's invariant
    holds if we take another step,
@@ -1017,12 +1022,11 @@ exists l2a and l2b such that
           -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
             Intros prev' dist' popped' h' u0.
+            replace (heap_capacity hc) with size.
             unfold dijk_forloop_inv.
             Exists prev' dist' popped' h'.
             entailer!.
-            2: { replace (heap_capacity hc) with (heap_capacity h). cancel.
-                 unfold hitem_, hitem. apply data_at_data_at_.
-            }
+            2: unfold hitem_, hitem; apply data_at_data_at_.
             
             remember (Int.signed (snd min_item)) as u.
             split3; [| |split].
@@ -1030,9 +1034,10 @@ exists l2a and l2b such that
                split3; [auto | apply H23 | apply H25];
                  try rewrite <- (vvalid_meaning g); trivial.
             ++ admit. (* cat 1 *)
-            ++ admit. (* cat 1 *)
+            ++ red. intros.
+               admit. (* cat 1 *)
             ++ split; [|admit].
-               intros. admit. (* cat 1 *)
+               admit. (* cat 1 *)
            
         * (* After breaking from the while loop,
            prove break's postcondition *)
