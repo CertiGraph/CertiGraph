@@ -422,8 +422,7 @@ exists l2a and l2b such that
    and
         Permutation l1 (l2a ++ l2b)
  *)
-          (* HELP if you have time *)
-          admit.
+          admit. (* cat 2 *)
 
         * red. intros.
           rewrite <- (list_repeat1 (Int.repr inf)).
@@ -431,17 +430,16 @@ exists l2a and l2b such that
           rewrite Znth_list_repeat_inrange by lia.
           destruct (Z.eq_dec i j).
           -- subst j. left.
-             admit.
-(* H8: Permutation ((k, Int.repr inf, Int.repr i) :: heap_items h0) (heap_items h') *)
-             (* HELP if you have time *)
+             admit. (* cat 2 *)
+          (* H8: Permutation ((k, Int.repr inf, Int.repr i) :: heap_items h0) (heap_items h') *)
+
           -- assert (0 <= j < i) by lia.
              clear H6 n.
              rewrite Znth_app1 in H10 by lia.
              red in H5.
              specialize (H5 _ H11 _ H10). 
              rewrite Znth_list_repeat_inrange in H5 by lia.
-             admit.
-          (* HELP if you have time *)
+             admit. (* cat 2 *)
         * rewrite <- list_repeat1, list_repeat_app,
           Z2Nat.inj_add. trivial. lia. lia.
       + repeat rewrite map_app; rewrite app_assoc; cancel.
@@ -507,19 +505,18 @@ exists l2a and l2b such that
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
-        * (* Hrmm this seems false. Do I need it? *)
-          admit.
+        * admit. (* cat 2 *)
         * red. intros.
           destruct (Z.eq_dec i src).
           -- subst i.
              rewrite upd_Znth_same.
-             admit. (* HELP if you have time *)
+             admit. (* cat 2 *)
              rewrite Zlength_map, Zlength_list_repeat; lia.
           -- rewrite upd_Znth_diff; trivial.
              2,3: rewrite Zlength_map, Zlength_list_repeat; try lia.
              rewrite map_list_repeat, Znth_list_repeat_inrange.
              2,3: apply (vvalid_meaning g); trivial.
-             admit. (* HELP if you have time *)
+             admit. (* cat 2 *)
         * red. intros.
           destruct (exists_min_in_list (heap_items hb) H5) as [min [? ?]].
           exists min. split3; trivial.
@@ -529,7 +526,7 @@ exists l2a and l2b such that
              and 0 < inf, 
              so this is true
            *)
-          admit.
+          admit. (* cat 2 *)
         * split; red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
         * repeat rewrite map_list_repeat; cancel.
@@ -563,7 +560,7 @@ exists l2a and l2b such that
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity hc).
-            1: rewrite <- H16, Zlength_app; lia.
+            1: rewrite <- H15, Zlength_app; lia.
             lia.
           }
           rewrite Int.unsigned_repr in H5 by trivial.
@@ -597,8 +594,7 @@ exists l2a and l2b such that
           assert (H_u_valid: vvalid g u). {
             apply (vvalid_meaning g); trivial.
             replace size with (heap_capacity he) by lia.
-            (* rewrite <- H14, H_hc_cap. *)
-            admit.
+            admit. (* cat 2 *)
             (* HELP if you have time
                should come from PQ. Is it already here? *)
           }
@@ -607,25 +603,17 @@ exists l2a and l2b such that
             apply (vvalid_meaning g) in H_u_valid; trivial.
           } 
 
+          assert (Ha: In min_item (heap_items hc)). {
+            admit. (* cat 2 *)
+          }
           assert (~ (In u popped)). {
             intro.
             (*
             I used to get this via the link between 
-            popped and priq. I may need to reestablish that
+            popped and priq. I may need to reestablish that.
             TODO        
              *)
-            admit.
-          (*
-            rewrite H_popped_priq_link in H13; trivial.
-            rewrite <- isEmpty_in' in H11.
-            destruct H11 as [? [? ?]].
-            subst u.
-            rewrite Znth_find in H13.
-            1: pose proof (fold_min _ _ H11); lia.
-            rewrite <- Znth_0_hd by ulia.
-            apply min_in_list;
-              [ apply incl_refl | apply Znth_In; ulia].
- *)
+            admit. (* cat 1 *)
           }
                     
           assert (Htemp: 0 <= u < Zlength dist) by lia.
@@ -671,18 +659,15 @@ exists l2a and l2b such that
 
             red in H8.
             assert (0 < Zlength (heap_items hc)) by admit.
+            (* cat 2 *)
             destruct (H8 H20) as [min_item' [_ [? ?]]].
             replace min_item' with min_item in *.
             rewrite <- Hequ in H22.
-            2: { admit. (* TODO *)
+            2: { admit. (* cat 2 *)
             }
             
             split3; [| | split3; [| |split3; [| |split]]]; trivial.
-            ++ intros.
-               split3; trivial.
-               admit.
-               (* TODO not hard *)
-
+            ++ intros. split3; trivial.
             ++ (* if popped = [], then 
                 prove inv_popped for [u].
                 if popped <> [], then we're set
@@ -692,7 +677,7 @@ exists l2a and l2b such that
                  (* TODO update the lemma *)
                  (* apply (inv_popped_add_u _ _ _ _ _ _ priq); try ulia. *)
                  (* apply H_popped_src_1; inversion 1. *)
-                 admit.
+                 admit. (* cat 4 *)
                }
                replace u with src in *.
                2: apply H22; trivial. 
@@ -731,10 +716,11 @@ exists l2a and l2b such that
                simpl. left. symmetry. apply H22; trivial.
 
             ++ red. intros.
-               exists min_item; split3; trivial.
-               admit. (* false... *)
-               intro. inversion H24.
-               
+               destruct (exists_min_in_list _ H23)
+                 as [min [? ?]].
+               exists min. split3; trivial.
+               intro contra. inversion contra.
+
             ++ apply in_eq.
 
             ++ subst u.
@@ -874,7 +860,7 @@ exists l2a and l2b such that
                   (* 11 goals, where the 11th is 
                    2 range-based goals together *)
                   --- apply inv_popped_newcost; ulia.
-                  --- admit.
+                  --- admit. (* cat 4 *)
                       (* TODO update this lemma *)
                       (* apply inv_unpopped_newcost with (priq0 := priq'); ulia.  *)
                   --- now apply inv_unpopped_weak_newcost.
@@ -885,7 +871,12 @@ exists l2a and l2b such that
                   --- rewrite upd_Znth_diff; try lia;
                         intro; subst src; lia.
                   --- red. intros.
-                      admit.
+                      destruct (exists_min_in_list _ H40) as
+                          [min [? ?]].
+                      exists min; split3; trivial.
+                      intro contra.
+                      rewrite contra in H31.
+                      inversion H31.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- split; apply Forall_upd_Znth;  ulia.
@@ -1023,7 +1014,8 @@ exists l2a and l2b such that
             unfold dijk_forloop_inv.
             Exists prev' dist' popped' h'.
             entailer!.
-            2: { replace (heap_capacity hc) with (heap_capacity h). cancel. admit.
+            2: { replace (heap_capacity hc) with (heap_capacity h). cancel.
+                 unfold hitem_, hitem. apply data_at_data_at_.
             }
             
             remember (Int.signed (snd min_item)) as u.
@@ -1031,10 +1023,10 @@ exists l2a and l2b such that
             ++ unfold dijkstra_correct.
                split3; [auto | apply H22 | apply H24];
                  try rewrite <- (vvalid_meaning g); trivial.
-            ++ admit.
-            ++ admit.
+            ++ admit. (* cat 1 *)
+            ++ admit. (* cat 1 *)
             ++ split; [|admit].
-               intros. admit.
+               intros. admit. (* cat 1 *)
            
         * (* After breaking from the while loop,
            prove break's postcondition *)
@@ -1050,7 +1042,7 @@ exists l2a and l2b such that
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity hc).
-            1: rewrite <- H17, Zlength_app; lia.
+            1: rewrite <- H16, Zlength_app; lia.
             lia.
           }
           rewrite H13. entailer!.
@@ -1059,8 +1051,7 @@ exists l2a and l2b such that
           unfold heap_size in *.
           pose proof (Zlength_nonneg (heap_items hc)).
           lia.
-          
-          admit.
+          admit. (* cat 2 *)
           (* HELP is this the coercion you proved? *)
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
