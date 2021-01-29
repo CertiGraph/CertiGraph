@@ -122,11 +122,10 @@ Qed.
       (popped = [] -> src = Int.signed (snd min_item)).
 
   Definition in_heap_or_popped (popped: list V) (h: heap) :=
-    forall i,
-      In i popped ->
-      ~ (exists i_item,
-            In i_item (heap_items h) /\
-            i = Int.signed (snd i_item)).
+    forall i_item,
+      (In (Int.signed (snd i_item)) popped -> ~ In i_item (heap_items h))
+      /\
+      (In i_item (heap_items h) -> ~ In (Int.signed (snd i_item)) popped).
 
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src keys
              dist_ptr prev_ptr keys_ptr priq_ptr graph_ptr temp_item addresses :=
@@ -559,7 +558,9 @@ Qed.
              so this is true
            *)
           admit. (* cat 1 *)
-        * red. intros i contra. inversion contra.
+        * red. intros. split.
+          -- intro contra. inversion contra.
+          -- intro. apply in_nil.
         * red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
         * red; apply Forall_upd_Znth;
@@ -585,10 +586,20 @@ Qed.
 
         rename H11 into Hd.
         
+Set Nested Proofs Allowed.
+Lemma valid_pq_NoDup_keys:
+  forall p h,
+    valid_pq p h |-- !! NoDup (heap_items h).
+Admitted.
+
         assert_PROP (Zlength prev = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
         assert_PROP (Zlength dist = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
+        assert_PROP (NoDup (heap_items hc)). {
+          sep_apply valid_pq_NoDup_keys. entailer!.
+        }
+        rename H13 into Hnew.
 
         rename H5 into H_hc_cap.
         forward_call (priq_ptr, hc).
@@ -649,8 +660,8 @@ Qed.
             apply Permutation_cons_In with (l2 := heap_items he); trivial.
           }
           assert (~ (In u popped)). {
-            intro. apply (H8 _ H18).
-            exists min_item. split; trivial.
+            intro. apply (H8 min_item); trivial.
+            subst u. trivial.
           }
                     
           assert (Htemp: 0 <= u < Zlength dist) by lia.
@@ -681,6 +692,7 @@ Qed.
             Exists dist.
             Exists (u :: popped).
             Exists he.
+
             entailer!.
             2: {
               replace (heap_capacity h) with (heap_capacity he) by lia.
@@ -753,7 +765,44 @@ Qed.
                specialize (Hd _ H20 H22).
                admit.
 
-            ++ admit.   
+            ++ red in H8 |- *. intros.
+               destruct (H8 i_item). split; intros.
+               ** simpl in H22. destruct H22.
+                  --- intro.
+                      replace i_item with min_item in *.
+                      2: { (* payloads are unique... *) admit. }
+                      
+                      (* can I get, from remove_min, that min is
+                         no longer in heap he? 
+                       *)
+
+Lemma Perm_Perm_cons_Perm:
+  forall {A} {l1 l2 l3: list A} {a b},
+    Permutation l1 (a :: l2) ->
+    Permutation l2 (b :: l3) ->
+    Permutation l1 (a :: b :: l3).
+Admitted. 
+
+Lemma NoDup_Perm_False:
+  forall {A} {l1 l2: list A} {a},
+    NoDup l1 ->
+    Permutation l1 (a :: a :: l2) -> False.
+Admitted.
+
+                      pose proof (In_Permutation_cons _ _ H23).
+                      destruct H25 as [he' ?].
+
+
+pose proof (Perm_Perm_cons_Perm H15 H25).
+apply (NoDup_Perm_False H24 H26).
+
+                  --- specialize (H20 H22). 
+                      intro. apply H21; trivial.
+                      apply (in_cons min_item) in H23.
+                      apply Permutation_sym in H15.
+                      apply (Permutation_in _ H15); trivial.
+
+               **
 
             ++ subst u.
                rewrite Int.repr_signed. trivial.
