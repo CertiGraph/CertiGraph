@@ -325,7 +325,9 @@ Qed.
       forall i,
         vvalid g i ->
         ~ In i popped' ->
-        In (Znth i keys) (proj_keys h'))
+        In (Znth i keys) (proj_keys h');
+
+      in_heap_or_popped popped' h')
          
          LOCAL (temp _u (Vint (Int.repr u));
                temp _dist (pointer_val_val dist_ptr);
@@ -690,7 +692,7 @@ Qed.
             clear H20 H21 H22 H23 H24 H25 H26 H27 H28
                   H29 H30 H31 H32 H33 PNpriq_ptr.
 
-            split3; [| | split3; [| |split3; [| |split]]]; trivial.
+            split3; [| | split3; [| |split3; [| |split3]]]; trivial.
             ++ (* if popped = [], then 
                 prove inv_popped for [u].
                 if popped <> [], then we're set
@@ -751,6 +753,8 @@ Qed.
                specialize (Hd _ H20 H22).
                admit.
 
+            ++ admit.   
+
             ++ subst u.
                rewrite Int.repr_signed. trivial.
 
@@ -768,6 +772,7 @@ Qed.
             rename H35 into H34.
             rename H36 into H35.
             rename H37 into He.
+            rename H38 into Hf.
 
             forward_call (sh, g, graph_ptr, addresses, u, i).            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
@@ -1042,13 +1047,12 @@ Qed.
             2: unfold hitem_, hitem; apply data_at_data_at_.
             
             remember (Int.signed (snd min_item)) as u.
-            split3.
+            split.
             ++ unfold dijkstra_correct.
                split3; [auto | apply H21 | apply H23];
                  try rewrite <- (vvalid_meaning g); trivial.
             ++ red. intros.
                admit. (* cat 1 *)
-            ++ admit. (* cat 1 *)
            
         * (* After breaking from the while loop,
            prove break's postcondition *)
