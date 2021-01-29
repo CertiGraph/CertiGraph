@@ -500,6 +500,64 @@ Proof.
   rewrite H9 in H15. rewrite H7 in H15. lia.
 Qed.
 
+Lemma valid_pq_NoDup: forall p h,
+  valid_pq p h |-- !! NoDup (heap_items h).
+Proof.
+  intros. unfold valid_pq, linked_heap_array, linked_correctly, linked_correctly'. Intros arr junk lookup lookup'.
+  entailer!. clear H4 H5.
+  apply NoDup_nth_error. rewrite NoDup_nth_error in H0. intros.
+  rewrite <- (Nat2Z.id i) in H5.
+  rewrite Znth_nth_error in H5. 2: rewrite Zlength_correct; rep_lia.
+  remember (nth_error (heap_items h) j). destruct o. 2: discriminate.
+  assert (j < length (heap_items h))%nat. { eapply nth_error_Some. intro. congruence. }
+  assert (0 <= Z.of_nat j < Zlength (heap_items h)) by (rewrite Zlength_correct; lia).
+  rewrite <- (Nat2Z.id j) in Heqo. rewrite Znth_nth_error in Heqo; auto.
+  inversion Heqo. subst h0. clear Heqo. inversion H5. clear H5.
+  generalize (H1 (Z.of_nat i)); generalize (H1 (Z.of_nat j)); intros. clear H1.
+  rewrite Zlength_app in *. spec H5. rep_lia. spec H8. rewrite Zlength_correct; rep_lia.
+  rewrite Znth_app1 in H5. 2: lia.
+  rewrite Znth_app1 in H8. 2: rewrite Zlength_correct; lia.
+  destruct H5, H8.
+  rewrite H9 in H10. rewrite H10 in H5. lia.
+Qed.
+
+Lemma upd_Znth_update {A} {iA : Inhabitant A}: forall t (L: list A) x,
+  0 <= t < Zlength L ->
+  upd_Znth t L x = update L (Z.to_nat t) x.
+Proof.
+  intros.
+  apply List_ext.list_eq_Znth. 
+    { rewrite Zlength_upd_Znth. do 2 rewrite Zlength_correct. rewrite update_length. trivial. }
+  intros. rewrite Zlength_upd_Znth in H0.
+  case (eq_dec i t); intros.
+  subst i. rewrite upd_Znth_same; auto.
+  assert (nth_error (update L (Z.to_nat t) x) (Z.to_nat t) = Some x). 
+    { rewrite nth_error_update; auto. rewrite Zlength_correct in H. lia. }
+  rewrite Znth_nth_error in H1. inversion H1. do 2 rewrite H3. trivial. 
+  rewrite Zlength_correct. rewrite update_length. rewrite Zlength_correct in H. lia.
+  rewrite Znth_upd_Znth_diff; auto.
+  apply nth_error_Znth; auto. rewrite Zlength_correct. rewrite update_length. rewrite Zlength_correct in H0; lia.
+  rewrite nth_error_update'. trivial.
+  lia.
+Qed.
+
+Lemma Perm_Perm_cons_Perm: forall {A} {l1 l2 l3: list A} {a b},
+  Permutation l1 (a :: l2) ->
+  Permutation l2 (b :: l3) ->
+  Permutation l1 (a :: b :: l3).
+Proof.
+  intros. transitivity (a :: l2). trivial. constructor. trivial.
+Qed.
+
+Lemma NoDup_Perm_False: forall {A} {l1 l2: list A} {a},
+  NoDup l1 ->
+  Permutation l1 (a :: a :: l2) -> False.
+Proof.
+  intros. assert (NoDup (a :: a :: l2)).
+  eapply Permutation_NoDup; eauto.
+  inversion H1. apply H4. left. trivial.
+Qed.
+
 (*
 Does not seem to work on arrays.
 

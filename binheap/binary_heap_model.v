@@ -699,6 +699,29 @@ Proof.
   intro. subst i0. assert (i < length L) by (apply nth_error_Some; congruence). lia.
 Qed.
 
+Lemma heapOrdered_lower_priority_weak_heapOrdered2: forall H,
+  heapOrdered H ->
+  forall t old, 
+  nth_error H t = Some old ->
+  forall new, new <<= old ->
+  weak_heapOrdered2 (update H t new) t.
+Proof.
+  intros. apply hOhO2 in H0. split. intros. rewrite nth_error_update' in H4; auto.
+  case (dec_eq_nat t (parent i)); intro.
+  subst t. rewrite nth_error_update in H5. inversion H5. subst a. clear H5.
+  transitivity old; auto. eapply H0; eauto.
+  eapply nth_error_Some. intro. rewrite H6 in H1. discriminate.
+  rewrite nth_error_update' in H5; auto.
+  eapply H0; eauto.
+  repeat intro.
+  assert (t > root_idx) by (unfold root_idx in *; lia).
+  generalize (parent_dec _ H8); intro.
+  rewrite nth_error_update' in H7. 2: lia.
+  rewrite nth_error_update' in H6.
+  transitivity old; eapply H0; eauto. rewrite H5; trivial.
+  intro. subst gs. lia.
+Qed.
+
 Lemma swim1_hO: forall L j,
   weak_heapOrdered2 L j ->
   match swim1 L j with
@@ -1008,6 +1031,31 @@ Lemma weak_heapOrdered_oob: forall i L,
 Proof.
   intros. apply weak_heapOrdered_bounded_root_weak_heapOrdered in H0.
   apply heapOrdered_bounded_root_heapOrdered. apply weak_heapOrdered_bounded_oob in H0; auto.
+Qed.
+
+Lemma heapOrdered_raise_priority_weak_heapOrdered: forall H,
+  heapOrdered H ->
+  forall t old,
+  nth_error H t = Some old ->
+  forall new, old <<= new ->
+  weak_heapOrdered (update H t new) t.
+Proof.
+  split; intros. rewrite nth_error_update' in H4; auto.
+  specialize (H0 _ _ H4). destruct H0.
+  case (eq_nat_dec t (left_child i)); intro. subst t.
+  rewrite nth_error_update. 2: apply nth_error_Some; intro Hx; rewrite Hx in H1; discriminate.
+  rewrite nth_error_update'. 2: apply left_child_neq_right_child.
+  split; intros; auto. inversion H6. subst b. transitivity old; auto.
+  case (eq_nat_dec t (right_child i)); intro. subst t.
+  rewrite nth_error_update. 2: apply nth_error_Some; intro Hx; rewrite Hx in H1; discriminate.
+  rewrite nth_error_update'. 2: { intro. symmetry in H6. apply left_child_neq_right_child in H6; trivial. }
+  split; intros; auto. inversion H6. subst c. transitivity old; auto.
+  rewrite nth_error_update'; auto. rewrite nth_error_update'; auto.
+  repeat intro.
+  rewrite nth_error_update' in H7. 2: generalize (parent_dec t); lia.
+  rewrite nth_error_update' in H6. 2: intro; subst gs; generalize (parent_dec t); lia.
+  apply hOhO2 in H0.
+  transitivity old; eapply H0; eauto. rewrite H5; trivial.
 Qed.
 
 (* facts about sink relative to bottom-up heapify *)

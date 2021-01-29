@@ -118,8 +118,12 @@ PQ* pq_make(unsigned int size) { /* could take a size parameter I suppose... */
   unsigned int* table = (unsigned int*) mallocN(sizeof(unsigned int) * size);
   Item* arr = (Item*) mallocN(sizeof(Item) * size);
   int i; 
-  for (i = 0; i < size; i++)
+  for (i = 0; i < size; i++) {
     arr[i].key = i;
+    arr[i].priority = 0;
+    arr[i].data = 0;
+    table[i] = i;
+  }
 
   pq->capacity = size;
   pq->first_available = 0;

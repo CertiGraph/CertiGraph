@@ -185,12 +185,204 @@ Proof.
   unfold linked_heap_array, lookup_array. Intros.
   generalize H; intro.
   apply In_Znth_iff in H6.
-  destruct H6 as [loc [? ?]].
+  destruct H6 as [target [? ?]].
   destruct H5.
-  unfold proj_keys in H6, H7. rewrite Zlength_map in H6. rewrite Znth_map in H7.
-  destruct (H8 loc H6).
+  unfold proj_keys in H6, H7. rewrite Zlength_map in H6. rewrite Znth_map in H7; auto.
+  destruct (H8 target H6).
   forward.
-Admitted.
+  unfold heap_array.
+  forward. { entailer!. } { entailer!. rewrite Znth_map. 2: lia. rewrite H10. apply I. }
+  forward. { entailer!. }
+  rewrite Znth_map. 2: { rewrite <- H7. rewrite H10. lia. }
+  rewrite <- H7. rewrite H10. change (0 + target) with target in *.
+  remember (Znth target (heap_items h)) as hi.
+  remember (key, newpri, heap_item_payload hi) as new_hi.
+  forward_if.
+  * assert (cmp_rel (key, newpri, heap_item_payload hi) hi).
+      { unfold cmp_rel. unfold cmp. unfold heap_item_priority. simpl. rewrite H11. trivial. }
+    forward_call (target, arr, upd_Znth target (heap_items h) new_hi, lookup, lookup_contents).
+      { unfold linked_heap_array, heap_array, lookup_array. entailer!.
+        * split; trivial. simpl. rewrite Zlength_upd_Znth. intros.
+          replace (heap_item_key (Znth i
+            (upd_Znth (Znth (heap_item_key hi) lookup_contents) (heap_items h)
+              (heap_item_key hi, newpri, heap_item_payload hi)))) 
+            with (heap_item_key (Znth i (heap_items h))).
+          apply H8; trivial.
+          rewrite <- Znth_map. 2: lia.
+          rewrite <- (Znth_map _ heap_item_key). 2: rewrite Zlength_upd_Znth; lia.
+          rewrite <- upd_Znth_map. unfold heap_item_key at 4. simpl fst.
+          case (eq_dec i (Znth (heap_item_key hi) lookup_contents)); intro.
+          2: rewrite Znth_upd_Znth_diff; auto.
+          subst i.
+          rewrite Znth_upd_Znth_same.
+          rewrite Znth_map.
+          rewrite <- Heqhi. trivial.
+          lia. rewrite Zlength_map. lia. trivial.
+        * rewrite <- upd_Znth_map. rewrite Zlength_upd_Znth. cancel. }
+      { rewrite Zlength_upd_Znth. split; trivial.
+        generalize (Znth_nth_error _ _ H6); intro.
+        rewrite <- Heqhi in H13.
+        generalize (heapOrdered_lower_priority_weak_heapOrdered2 _ _ _ _ H1 _ _ H13 _ H12); intros.
+        rewrite upd_Znth_update. rewrite Heqnew_hi. apply H14. trivial. }
+    Intros vret. destruct vret as [heap_contents' lookup_contents'].
+    Exists (fst h, heap_contents'). entailer!.
+    + unfold heap_items. simpl snd. simpl fst in H15. symmetry in H15.
+      transitivity (upd_Znth (Znth (heap_item_key hi) lookup_contents) 
+             (heap_items h) (heap_item_key hi, newpri, heap_item_payload hi)); trivial.
+      replace (upd_Znth (Znth (heap_item_key hi) lookup_contents) (heap_items h)
+         (heap_item_key hi, newpri, heap_item_payload hi))
+        with (update_pri_by_key (snd h) (heap_item_key hi) newpri). reflexivity.
+      unfold update_pri_by_key.
+      apply List_ext.list_eq_Znth; rewrite Zlength_map. { rewrite Zlength_upd_Znth. trivial. }
+      intros.
+      case (eq_dec i (Znth (heap_item_key hi) lookup_contents)); intro.
+      - subst i. rewrite Znth_upd_Znth_same. 2,3: lia.
+        rewrite Znth_map. 2: lia.
+        change (snd h) with (heap_items h). rewrite <- Heqhi.
+        unfold update_pri_if_key. case Z.eq_dec; auto. intro Hx; contradiction.
+      - rewrite Znth_upd_Znth_diff; auto.
+        rewrite Znth_map. 2: lia.
+        unfold update_pri_if_key. case Z.eq_dec; intro; auto.
+        destruct (H8 _ H7).
+        unfold heap_items in H21.
+        rewrite <- e in H21. lia.
+    + unfold valid_pq. Exists arr junk lookup lookup_contents'.
+      rewrite linked_heap_array_split. unfold heap_capacity, heap_size, heap_items. simpl fst in *. simpl snd in *.
+      generalize H15; intro. apply Permutation_Zlength in H7. rewrite Zlength_upd_Znth in H7.
+      unfold heap_items in H7. do 2 rewrite Zlength_app. rewrite H7. entailer!.
+      (* Pure part inside spatial part. *)
+      split. 2: rewrite <- H7; unfold heap_items, heap_capacity in H2; rewrite <- H2; rewrite Zlength_app; trivial.
+      clear H17 H18 H10 H21 H11.
+      destruct H13. split. eapply Permutation_NoDup; eauto.
+      simpl. intros. destruct H3.
+      generalize (H17 ((Zlength (heap_items h)) + i)); intro. spec H18.
+      rewrite Zlength_app; rep_lia. destruct H18.
+      rewrite Znth_app2 in H18, H21. 2,3: lia.
+      replace (Zlength (heap_items h) + i - Zlength (heap_items h)) with i in * by lia.
+      generalize H10; intro. apply Permutation_Zlength in H22. rewrite <- H22. split; trivial.
+      rewrite <- H11. rewrite H21. apply Permutation_Zlength in H15. rewrite <- H15.
+      rewrite Zlength_upd_Znth. lia.
+      repeat intro. rename H24 into Hk.
+      rename H21 into Hkk.
+      apply Permutation_Znth in H15. 2: apply (0, Int.zero, Int.zero).
+      rewrite Zlength_upd_Znth in H15. destruct H15 as [? [f [? [? ?]]]].
+      rewrite H25 in Hk. 2: lia.
+      specialize (H17 (Z.of_nat (f (Z.to_nat j)))). spec H17.
+      specialize (H21 (Z.to_nat j)). spec H21. lia. rewrite Zlength_app. lia.
+      destruct H17.
+      rewrite Znth_app1 in H17, H26. 2,3: specialize (H21 (Z.to_nat j)); lia.
+      rewrite <- Znth_map in Hk. 2: rewrite Zlength_upd_Znth; specialize (H21 (Z.to_nat j)); lia.
+      rewrite <- upd_Znth_map in Hk. unfold heap_item_key in Hk at 3; simpl in Hk.
+      rewrite upd_Znth_map in Hk. 
+      rewrite Znth_map in Hk. 2: rewrite Zlength_upd_Znth; specialize (H21 (Z.to_nat j)); lia.
+      clear PNarr PNlookup PNpq H16.
+      replace (upd_Znth (Znth (heap_item_key hi) lookup_contents) (heap_items h) hi) with (heap_items h) in Hk.
+      rewrite Hk in H26. rewrite Hkk in H26. specialize (H21 (Z.to_nat j)); lia.
+      rewrite In_Znth_iff in H. destruct H as [spot [? ?]].
+      generalize (H8 spot); intro. spec H27. unfold proj_keys in H. rewrite Zlength_map in H. apply H.
+      destruct H27.
+      unfold proj_keys in H16.
+      rewrite Znth_map in H16. 2: { unfold proj_keys in H. rewrite Zlength_map in H. rep_lia. }
+      rewrite H16 in H28.
+      rewrite H28.
+      rewrite Heqhi. rewrite H28.
+      rewrite upd_Znth_same_Znth. 2: lia. trivial.
+  * assert (cmp_rel hi (heap_item_key hi, newpri, heap_item_payload hi)).
+      { unfold cmp_rel. unfold cmp. unfold heap_item_priority. simpl.
+        apply lt_inv in H11.
+        case_eq (Int.lt newpri (snd (fst hi))); auto. intro.
+        apply lt_inv in H12. lia. }
+    forward.
+    forward_call (target, arr, upd_Znth target (heap_items h) new_hi, heap_size h, lookup, lookup_contents).
+      { unfold linked_heap_array, heap_array, lookup_array. entailer!.
+        * split; trivial. simpl. rewrite Zlength_upd_Znth. intros.
+          replace (heap_item_key (Znth i
+            (upd_Znth (Znth (heap_item_key hi) lookup_contents) (heap_items h)
+              (heap_item_key hi, newpri, heap_item_payload hi)))) 
+            with (heap_item_key (Znth i (heap_items h))).
+          apply H8; trivial.
+          rewrite <- Znth_map. 2: lia.
+          rewrite <- (Znth_map _ heap_item_key). 2: rewrite Zlength_upd_Znth; lia.
+          rewrite <- upd_Znth_map. unfold heap_item_key at 4. simpl fst.
+          case (eq_dec i (Znth (heap_item_key hi) lookup_contents)); intro.
+          2: rewrite Znth_upd_Znth_diff; auto.
+          subst i.
+          rewrite Znth_upd_Znth_same.
+          rewrite Znth_map.
+          rewrite <- Heqhi. trivial.
+          lia. rewrite Zlength_map. lia. trivial.
+        * rewrite <- upd_Znth_map. rewrite Zlength_upd_Znth. cancel. }
+      { rewrite Zlength_upd_Znth. split. lia. split; trivial.
+        split. lia. split. intros.
+        unfold heap_size. rewrite Zlength_app in H2. rep_lia.
+        generalize (Znth_nth_error _ _ H6); intro.
+        rewrite <- Heqhi in H13.
+        generalize (heapOrdered_raise_priority_weak_heapOrdered _ _ _ _ H1 _ _ H13 _ H12); intros.
+        rewrite upd_Znth_update. 2: trivial. rewrite Heqnew_hi. rewrite H7 in H14. apply H14. }
+    Intros vret. destruct vret as [heap_contents' lookup_contents'].
+    Exists (fst h, heap_contents'). entailer!.
+    + unfold heap_items. simpl snd. simpl fst in H15. symmetry in H15.
+      transitivity (upd_Znth (Znth (heap_item_key hi) lookup_contents) 
+             (heap_items h) (heap_item_key hi, newpri, heap_item_payload hi)); trivial.
+      replace (upd_Znth (Znth (heap_item_key hi) lookup_contents) (heap_items h)
+         (heap_item_key hi, newpri, heap_item_payload hi))
+        with (update_pri_by_key (snd h) (heap_item_key hi) newpri). reflexivity.
+      unfold update_pri_by_key.
+      apply List_ext.list_eq_Znth; rewrite Zlength_map. { rewrite Zlength_upd_Znth. trivial. }
+      intros.
+      case (eq_dec i (Znth (heap_item_key hi) lookup_contents)); intro.
+      - subst i. rewrite Znth_upd_Znth_same. 2,3: lia.
+        rewrite Znth_map. 2: lia.
+        change (snd h) with (heap_items h). rewrite <- Heqhi.
+        unfold update_pri_if_key. case Z.eq_dec; auto. intro Hx; contradiction.
+      - rewrite Znth_upd_Znth_diff; auto.
+        rewrite Znth_map. 2: lia.
+        unfold update_pri_if_key. case Z.eq_dec; intro; auto.
+        destruct (H8 _ H7).
+        unfold heap_items in H21.
+        rewrite <- e in H21. lia.
+    + unfold valid_pq. Exists arr junk lookup lookup_contents'.
+      rewrite linked_heap_array_split. unfold heap_capacity, heap_size, heap_items. simpl fst in *. simpl snd in *.
+      generalize H15; intro. apply Permutation_Zlength in H7. rewrite Zlength_upd_Znth in H7.
+      unfold heap_items in H7. do 2 rewrite Zlength_app. rewrite H7. entailer!.
+      (* Pure part inside spatial part. *)
+      split. 2: rewrite <- H7; unfold heap_items, heap_capacity in H2; rewrite <- H2; rewrite Zlength_app; trivial.
+      clear H17 H18 H10 H21 H11.
+      destruct H13. split. eapply Permutation_NoDup; eauto.
+      simpl. intros. destruct H3.
+      generalize (H17 ((Zlength (heap_items h)) + i)); intro. spec H18.
+      rewrite Zlength_app; rep_lia. destruct H18.
+      rewrite Znth_app2 in H18, H21. 2,3: lia.
+      replace (Zlength (heap_items h) + i - Zlength (heap_items h)) with i in * by lia.
+      generalize H10; intro. apply Permutation_Zlength in H22. rewrite <- H22. split; trivial.
+      rewrite <- H11. rewrite H21. apply Permutation_Zlength in H15. rewrite <- H15.
+      rewrite Zlength_upd_Znth. lia.
+      repeat intro. rename H24 into Hk.
+      rename H21 into Hkk.
+      apply Permutation_Znth in H15. 2: apply (0, Int.zero, Int.zero).
+      rewrite Zlength_upd_Znth in H15. destruct H15 as [? [f [? [? ?]]]].
+      rewrite H25 in Hk. 2: lia.
+      specialize (H17 (Z.of_nat (f (Z.to_nat j)))). spec H17.
+      specialize (H21 (Z.to_nat j)). spec H21. lia. rewrite Zlength_app. lia.
+      destruct H17.
+      rewrite Znth_app1 in H17, H26. 2,3: specialize (H21 (Z.to_nat j)); lia.
+      rewrite <- Znth_map in Hk. 2: rewrite Zlength_upd_Znth; specialize (H21 (Z.to_nat j)); lia.
+      rewrite <- upd_Znth_map in Hk. unfold heap_item_key in Hk at 3; simpl in Hk.
+      rewrite upd_Znth_map in Hk. 
+      rewrite Znth_map in Hk. 2: rewrite Zlength_upd_Znth; specialize (H21 (Z.to_nat j)); lia.
+      clear PNarr PNlookup PNpq H16.
+      replace (upd_Znth (Znth (heap_item_key hi) lookup_contents) (heap_items h) hi) with (heap_items h) in Hk.
+      rewrite Hk in H26. rewrite Hkk in H26. specialize (H21 (Z.to_nat j)); lia.
+      rewrite In_Znth_iff in H. destruct H as [spot [? ?]].
+      generalize (H8 spot); intro. spec H27. unfold proj_keys in H. rewrite Zlength_map in H. apply H.
+      destruct H27.
+      unfold proj_keys in H16.
+      rewrite Znth_map in H16. 2: { unfold proj_keys in H. rewrite Zlength_map in H. rep_lia. }
+      rewrite H16 in H28.
+      rewrite H28.
+      rewrite Heqhi. rewrite H28.
+      rewrite upd_Znth_same_Znth. 2: lia. trivial.
+Time Qed.
 
 Lemma body_remove_min_nc: semax_body Vprog Gprog f_pq_remove_min_nc pq_remove_min_nc_spec.
 Proof.
