@@ -24,7 +24,18 @@ Section DijkstraProof.
     pose proof (in_eq a l2).
     apply Permutation_sym in H.
     apply (Permutation_in _ H); trivial.
-  Qed.    
+  Qed.
+
+  Lemma update_pri_by_key_unaffected:
+  forall l key newpri,
+    map heap_item_key (update_pri_by_key l key newpri) = map heap_item_key l.
+Proof.
+  intros. induction l.
+  - trivial.
+  - simpl. rewrite IHl. f_equal.
+    unfold update_pri_by_key, update_pri_if_key, heap_item_key.
+    destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
+Qed.
 
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
   Proof.
@@ -163,7 +174,12 @@ Section DijkstraProof.
       
       (* Information about the ranges of the three arrays *)
       @inrange_prev size inf prev;
-      @inrange_dist inf dist)
+      @inrange_dist inf dist;
+
+      forall i,
+        vvalid g i ->
+        ~ In i popped ->
+        In (Znth i keys) (proj_keys h))
          
          LOCAL (temp _dist (pointer_val_val dist_ptr);
                temp _prev (pointer_val_val prev_ptr);
@@ -240,7 +256,7 @@ Section DijkstraProof.
 
     PROP (
         0 < Zlength (heap_items h) ->
-          In min_item (heap_items h) /\
+          (* In min_item (heap_items h) /\ *)
           Forall (cmp_rel min_item) (heap_items h) /\
           u = Int.signed (snd min_item);
 
@@ -311,7 +327,12 @@ Section DijkstraProof.
       (* and ranges of the three arrays *)
       @inrange_prev size inf prev';
       (* @inrange_priq inf priq'; *)
-      @inrange_dist inf dist')
+      @inrange_dist inf dist';
+
+      forall i,
+        vvalid g i ->
+        ~ In i popped' ->
+        In (Znth i keys) (proj_keys h'))
          
          LOCAL (temp _u (Vint (Int.repr u));
                temp _dist (pointer_val_val dist_ptr);
@@ -518,7 +539,7 @@ Section DijkstraProof.
           rewrite Zlength_list_repeat; ulia.
         }
         
-        split3; [| |split3; [| |split3]].
+        split3; [| |split3; [| |split3; [| |split3]]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
@@ -544,8 +565,16 @@ Section DijkstraProof.
            *)
           admit. (* cat 2 *)
         * red. intros i contra. inversion contra.
-        * split; red; apply Forall_upd_Znth;
+        * red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
+        * red; apply Forall_upd_Znth;
+            try apply Forall_list_repeat; ulia.
+        * intros.
+          apply (Permutation_map heap_item_key) in H_ha_hb_rel.
+          rewrite update_pri_by_key_unaffected in H_ha_hb_rel.
+          apply Permutation_sym in H_ha_hb_rel.
+          unfold proj_keys in Hc |- *.
+          apply (Permutation_in _ H_ha_hb_rel), Hc, (vvalid_meaning g); trivial.          
         * repeat rewrite map_list_repeat; cancel.
 
       + (* Now the body of the while loop begins. *)
@@ -558,6 +587,8 @@ Section DijkstraProof.
 
         Intros prev dist popped hc.
         (* may need a link between hc and hb? *)
+
+        rename H11 into Hd.
         
         assert_PROP (Zlength prev = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
@@ -646,7 +677,7 @@ Section DijkstraProof.
             size
             (dijk_inner_forloop_inv
             g sh src ti min_item keys
-               dist_ptr prev_ptr priq_ptr keys_ptr hc graph_ptr addresses).
+               dist_ptr prev_ptr priq_ptr keys_ptr he graph_ptr addresses).
           -- (* We start the for loop as planned --
               with the old dist and prev arrays,
               and with a priq array where u has been popped *)
@@ -658,9 +689,8 @@ Section DijkstraProof.
             Exists u.
             entailer!.
             2: {
-              replace (heap_capacity h) with (heap_capacity he).
-              replace (heap_capacity hc) with (heap_capacity he).
-              cancel. lia.
+              replace (heap_capacity h) with (heap_capacity he) by lia.
+              cancel. 
             }
             remember (Int.signed (snd min_item)) as u.
             remember (heap_capacity h) as size. 
@@ -668,29 +698,7 @@ Section DijkstraProof.
             clear H20 H21 H22 H23 H24 H25 H26 H27 H28
                   H29 H30 H31 H32 H33 PNpriq_ptr.
 
-            red in H8.
-            assert (0 < Zlength (heap_items hc)). {
-              unfold heap_size in *. trivial.
-            }
-
-            destruct (H7 H20) as [min_item' [Hb [? ?]]].
-            replace min_item' with min_item in *.
-            2: {
-              (* min_item already beat min_item' 
-                 when they were both inside hc
-               *)
-              
-(*H16: Forall (cmp_rel min_item) (heap_items he)
-H15: Permutation (heap_items hc) (min_item :: heap_items he)
-H21: Forall (cmp_rel min_item') (heap_items hc)
- *)
-              admit.
-            }
-            
-            rewrite <- Hequ in H22.
-
             split3; [| | split3; [| |split3; [| |split]]]; trivial.
-            ++ intros. split3; trivial.
             ++ (* if popped = [], then 
                 prove inv_popped for [u].
                 if popped <> [], then we're set
@@ -703,10 +711,11 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                  admit. (* cat 4 *)
                }
                replace u with src in *.
-               2: apply H22; trivial. 
+               2: { admit. }
+
                intros. intro.
-               simpl in H24; destruct H24; [|lia].
-               subst dst; clear H23.
+               simpl in H21; destruct H21; [|lia].
+               subst dst; clear H20.
                destruct H19; [left | right].
                ** exfalso. rewrite H19 in H2. ulia.
                ** exists (src, []). split3.
@@ -717,34 +726,39 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                           inversion 1.
                   --- unfold path_in_popped.
                       intros. 
-                      inversion H23.
-                      +++ simpl in H24. 
+                      inversion H20.
+                      +++ simpl in H21. 
                           subst step. simpl; left; trivial.
-                      +++ destruct H24 as [? [? _]].
-                          inversion H24.
+                      +++ destruct H21 as [? [? _]].
+                          inversion H21.
                   --- red. intros. rewrite path_cost.path_cost_zero; try ulia.
                       apply path_cost_pos; trivial.
   
             ++ intros.
-               apply (vvalid_meaning g) in H23.
+               apply (vvalid_meaning g) in H20.
                apply inv_unpopped_weak_add_unpopped; trivial.
 
             ++ intros.
-               apply (vvalid_meaning g) in H23.
+               apply (vvalid_meaning g) in H20.
                apply (inv_unseen_weak_add_unpopped g prev _ _ src); trivial.
 
-            ++ intros. clear H23.
+            ++ intros. clear H20.
                destruct popped eqn:?.
                2: right; apply H4; inversion 1.
-               simpl. left. symmetry. apply H22; trivial.
-
+               simpl. left. symmetry. admit.
+               
             ++ red. intros.
-               destruct (exists_min_in_list _ H23)
+               destruct (exists_min_in_list _ H20)
                  as [min [? ?]].
                exists min. split3; trivial.
                intro contra. inversion contra.
 
             ++ apply in_eq.
+
+            ++ intros. rewrite not_in_cons in H21; destruct H21.
+               specialize (Hd _ H20 H22).
+               admit.
+               (* apply Hd; trivial. *)
 
             ++ subst u.
                rewrite Int.repr_signed. trivial.
@@ -754,12 +768,14 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
             freeze FR := (data_at _ _ _ _) (data_at _ _ _ _)  (data_at _ _ _ _).
             Intros.
 
-            assert (Htemp: 0 < Zlength (heap_items hc)). {
-              unfold heap_size in *; trivial.
+            rename H37 into He.
+
+            assert (Htemp: 0 < Zlength (heap_items he)). {
+              admit.
             }
 
             specialize (H21 Htemp).
-            destruct H21 as [? [? ?]].
+            destruct H21.
             clear Htemp.
             
             rename H22 into H_inv_popped.
@@ -847,9 +863,6 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                   1: entailer!.
                   1,3: repeat rewrite Zlength_map; lia.
                   forward_call (priq_ptr, h', Znth i keys, Int.repr (Znth u dist' + cost)).
-                  1: {
-                    admit. (* cat 1 *)
-                  }
                   
 (* Now we must show that the for loop's invariant
    holds if we take another step,
@@ -867,8 +880,8 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                   repeat rewrite <- upd_Znth_map.
                   entailer!.
 
-                  clear H39 H40 H41 H42 H43 H44 H45 H46
-                        H47 H48 H49 H50 H51
+                  clear H38 H39 H40 H41 H42 H43 H44 H45 H46
+                        H47 H48 H49 H50
                         PNkeys_ptr PNpriq_ptr.
 
                   remember (Int.signed (snd min_item)) as u.
@@ -883,10 +896,10 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                   split3; [| | split3;
                                [| | split3;
                                     [| | split3;
-                                         [| |split3]]]];
+                                         [| |split3;
+                          [| |split3]]]]];
                   intros.
-                  (* 11 goals, where the 11th is 
-                   2 range-based goals together *)
+                  (* 13 goals *)
                   --- apply inv_popped_newcost; ulia.
                   --- admit. (* cat 4 *)
                       (* TODO update this lemma *)
@@ -899,7 +912,7 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                   --- rewrite upd_Znth_diff; try lia;
                         intro; subst src; lia.
                   --- red. intros.
-                      destruct (exists_min_in_list _ H40) as
+                      destruct (exists_min_in_list _ H39) as
                           [min [? ?]].
                       exists min; split3; trivial.
                       intro contra.
@@ -907,7 +920,9 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                       inversion H31.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
-                  --- split; apply Forall_upd_Znth;  ulia.
+                  --- apply Forall_upd_Znth;  ulia.
+                  --- apply Forall_upd_Znth;  ulia.
+                  --- admit.
 
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
@@ -919,8 +934,8 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                  remember (Int.signed (snd min_item)) as u.
                  remember (heap_capacity h) as size.
                  
-                 clear H26 H36 H38 H39 H40 H41 H42 H43 H44
-                       H45 H46 H47 H48 PNkeys_ptr PNpriq_ptr.
+                 clear H26 H36 H37 H38 H39 H40 H41 H42 H43 H44
+                       H45 H46 H47 PNkeys_ptr PNpriq_ptr.
                  
                  assert (elabel g (u, i) < inf). {
                    apply Z.le_lt_trans with (m := Int.max_signed / size);
@@ -942,13 +957,13 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
 
                      assert (i <= i < size) by lia.
                      destruct (Z.eq_dec m u).
-                     2: now apply (H_inv_unseen_weak _ H43) with (m:=m).
+                     2: now apply (H_inv_unseen_weak _ H42) with (m:=m).
                      subst m.
                      rename p2m into p2u.
-                     rewrite H39 in H_non_improvement.
+                     rewrite H38 in H_non_improvement.
                      assert (0 <= u < size) by lia.
                      rewrite path_cost_glue_one_step.
-                     destruct H42 as [_ [_ [_ [? _]]]].
+                     destruct H41 as [_ [_ [_ [? _]]]].
                      simpl id in *. ulia.
                  --- intros.
                      assert (i <= dst < size) by lia.
@@ -962,8 +977,8 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
               remember (Int.signed (snd min_item)) as u.
               remember (heap_capacity h) as size.
               
-              clear H23 H24 H25 H26 H36 H38 H39 H40 H41
-                    H42 H43 H44 H45 PNkeys_ptr PNpriq_ptr.
+              clear H23 H24 H25 H26 H36 H37 H38 H39 H40 H41
+                    H42 H43 H44 PNkeys_ptr PNpriq_ptr.
 
               rewrite Int.signed_repr in H22.
               2: apply edge_representable.
@@ -993,7 +1008,7 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                      intros.
                      destruct (@Znth_dist_cases inf mom' dist')
                        as [e | e]; trivial.
-                     1: apply (vvalid_meaning g) in H46; ulia.
+                     1: apply (vvalid_meaning g) in H45; ulia.
                      1: { rewrite e.
                           pose proof (edge_cost_pos g (mom', i)).
                           ulia.
@@ -1012,7 +1027,7 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                           }
                           simpl id in *. ulia.
                      }
-                     apply H44; trivial.
+                     apply H43; trivial.
                  --- apply H_inv_unpopped; lia.
               ** destruct (Z.eq_dec dst i);
                    [| apply H_inv_unpopped_weak]; lia. 
@@ -1032,14 +1047,14 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
                    ulia.
                  }
                  rewrite path_cost_glue_one_step.
-                 destruct H39 as [? _].
-                 pose proof (path_cost_pos _ _ H39).
+                 destruct H38 as [? _].
+                 pose proof (path_cost_pos _ _ H38).
                  simpl id in *. ulia.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
             Intros prev' dist' popped' h' u0.
-            replace (heap_capacity hc) with size.
+            replace (heap_capacity he) with size.
             unfold dijk_forloop_inv.
             Exists prev' dist' popped' h'.
             entailer!.
@@ -1053,6 +1068,7 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
             ++ red. intros.
                admit. (* cat 1 *)
             ++ admit. (* cat 1 *)
+            ++ lia.
            
         * (* After breaking from the while loop,
            prove break's postcondition *)
@@ -1095,6 +1111,7 @@ H21: Forall (cmp_rel min_item') (heap_items hc)
         Exists prev dist popped. entailer!.
         intros. destruct (H7 _ H10) as [? _]; trivial.
         admit.
-  Admitted.
+        Unshelve. admit.
+  Admitted. 
 
 End DijkstraProof.
