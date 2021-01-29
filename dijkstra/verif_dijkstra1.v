@@ -245,22 +245,15 @@ Qed.
              free_tok (pointer_val_val keys_ptr) (heap_capacity h * sizeof tint)).
   
   Definition dijk_inner_forloop_inv (g: @DijkGG size inf) sh
-             src ti min_item keys
+             src u ti min_item keys
              dist_ptr prev_ptr priq_ptr keys_ptr h graph_ptr addresses :=
     EX i : Z,
     EX prev' : list V,
     EX dist' : list Z,
     EX popped' : list V,
     EX h' : heap,
-    EX u : Z,
 
     PROP (
-        0 < Zlength (heap_items h) ->
-          (* In min_item (heap_items h) /\ *)
-          Forall (cmp_rel min_item) (heap_items h) /\
-          u = Int.signed (snd min_item);
-
-      
         (* inv_popped is not affected *)
         forall dst,
           vvalid g dst ->
@@ -563,7 +556,7 @@ Qed.
              and 0 < inf, 
              so this is true
            *)
-          admit. (* cat 2 *)
+          admit. (* cat 1 *)
         * red. intros i contra. inversion contra.
         * red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
@@ -643,7 +636,7 @@ Qed.
             apply (vvalid_meaning g); trivial.
             replace size with (heap_capacity he) by lia.
             subst u.
-            admit. (* cat 1 *)
+            admit. (* cat 1 *) (* next? *)
           }
           
           assert (0 <= u < size). {
@@ -676,7 +669,7 @@ Qed.
           forward_for_simple_bound
             size
             (dijk_inner_forloop_inv
-            g sh src ti min_item keys
+            g sh src u ti min_item keys
                dist_ptr prev_ptr priq_ptr keys_ptr he graph_ptr addresses).
           -- (* We start the for loop as planned --
               with the old dist and prev arrays,
@@ -686,7 +679,6 @@ Qed.
             Exists dist.
             Exists (u :: popped).
             Exists he.
-            Exists u.
             entailer!.
             2: {
               replace (heap_capacity h) with (heap_capacity he) by lia.
@@ -758,35 +750,24 @@ Qed.
             ++ intros. rewrite not_in_cons in H21; destruct H21.
                specialize (Hd _ H20 H22).
                admit.
-               (* apply Hd; trivial. *)
 
             ++ subst u.
                rewrite Int.repr_signed. trivial.
 
           -- (* We now begin with the for loop's body *)
-            rewrite <- Hequ.
             freeze FR := (data_at _ _ _ _) (data_at _ _ _ _)  (data_at _ _ _ _).
+            assert (1 = 1) by trivial.
             Intros.
-
-            rename H37 into He.
-
-            assert (Htemp: 0 < Zlength (heap_items he)). {
-              admit.
-            }
-
-            specialize (H21 Htemp).
-            destruct H21.
-            clear Htemp.
             
             rename H22 into H_inv_popped.
             rename H23 into H_inv_unpopped.
             rename H24 into H_inv_unpopped_weak.
             rename H25 into H_inv_unseen.
             rename H26 into H_inv_unseen_weak.
-            subst u0.
             rename H34 into H_h'_cap.
             rename H35 into H34.
             rename H36 into H35.
+            rename H37 into He.
 
             forward_call (sh, g, graph_ptr, addresses, u, i).            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
@@ -876,7 +857,7 @@ Qed.
                   Exists (upd_Znth i prev' u).
                   Exists (upd_Znth i dist' (Znth u dist' + cost)).
                   Exists popped'.
-                  Exists hf u.
+                  Exists hf.
                   repeat rewrite <- upd_Znth_map.
                   entailer!.
 
@@ -929,7 +910,7 @@ Qed.
                  rename H26 into H_non_improvement.
                  forward. 
                  (* The old arrays are just fine. *)
-                 Exists prev' dist' popped' h' u.
+                 Exists prev' dist' popped' h'.
                  entailer!.
                  remember (Int.signed (snd min_item)) as u.
                  remember (heap_capacity h) as size.
@@ -971,7 +952,7 @@ Qed.
             ++  (* i was not a neighbor of u.
                  We must prove the for loop's invariant holds *)
               forward.
-              Exists prev' dist' popped' h' u.
+              Exists prev' dist' popped' h'.
               thaw FR.
               entailer!.
               remember (Int.signed (snd min_item)) as u.
@@ -1053,22 +1034,21 @@ Qed.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
-            Intros prev' dist' popped' h' u0.
-            replace (heap_capacity he) with size.
+            Intros prev' dist' popped' h'.
+            replace (heap_capacity he) with size by lia.
             unfold dijk_forloop_inv.
             Exists prev' dist' popped' h'.
             entailer!.
             2: unfold hitem_, hitem; apply data_at_data_at_.
             
-            (* remember (Int.signed (snd min_item)) as u. *)
+            remember (Int.signed (snd min_item)) as u.
             split3.
             ++ unfold dijkstra_correct.
-               split3; [auto | apply H22 | apply H24];
+               split3; [auto | apply H21 | apply H23];
                  try rewrite <- (vvalid_meaning g); trivial.
             ++ red. intros.
                admit. (* cat 1 *)
             ++ admit. (* cat 1 *)
-            ++ lia.
            
         * (* After breaking from the while loop,
            prove break's postcondition *)
