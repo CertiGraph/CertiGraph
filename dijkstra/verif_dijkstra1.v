@@ -67,7 +67,11 @@ Section DijkstraProof.
            0 <= j < i ->
            keys_dist_linked_correctly j keys dist_and_prev h;
          dist_and_prev = list_repeat (Z.to_nat i) (Int.repr inf);
-         Zlength keys = i)
+         Zlength keys = i;
+         forall j,
+           0 <= j < i ->
+           In (Znth j keys) (proj_keys h))
+         
     LOCAL (temp _dist (pointer_val_val dist_ptr);
           temp _prev (pointer_val_val prev_ptr);
           temp _src (Vint (Int.repr src));
@@ -385,6 +389,7 @@ Section DijkstraProof.
       forward. forward.
       forward_call (priq_ptr, h0, inf, Int.repr i).
       1: lia.
+      rename H7 into Hc.
       Intro temp'. destruct temp' as [h' key].
       forward.
       repeat rewrite upd_Znth_list_repeat; try lia.
@@ -417,7 +422,7 @@ Section DijkstraProof.
           symmetry in Heqi; rename Heqi into H3;
             clear H9 H10 H11 H12 H13 H14 H15 H16 H17
               H18 H19 H20 PNpriq_ptr.
-      + split3; [| |split].
+      + split3; [| |split3].
         * rewrite <- H3. unfold heap_size.
           pose proof (Permutation_Zlength _ _ H8).
           rewrite Zlength_cons, <- Z.add_1_r in H5.
@@ -442,6 +447,22 @@ Section DijkstraProof.
           Z2Nat.inj_add. trivial. lia. lia.
         * rewrite Zlength_app, binary_heap_Zmodel.Zlength_one.
           lia.
+        * intros. destruct (Z.eq_dec i j).
+          -- subst j; clear H5.
+             rewrite Znth_app2 by lia.
+             replace (i - Zlength keys0) with 0 by lia.
+             rewrite Znth_0_cons.
+             apply (Permutation_map heap_item_key), Permutation_sym in H8.
+             unfold proj_keys.
+             apply (Permutation_cons_In _ _ _ H8).
+          -- assert (0 <= j < i) by lia. clear H5 n.
+             rewrite Znth_app1 by lia.
+             apply (Permutation_map heap_item_key) in H8.
+             rewrite map_cons in H8.
+             unfold proj_keys in Hc |- *.
+             apply (Permutation_in _ H8).
+             simpl. right. apply Hc; trivial.
+          
       + repeat rewrite map_app; rewrite app_assoc; cancel.
         rewrite list_repeat1, upd_Znth_app2,
         Zlength_map, Zlength_list_repeat, Z.sub_diag,
@@ -460,26 +481,13 @@ Section DijkstraProof.
       (* pre_keys are no longer needed *)
       clear Heqpre_keys H_mc_keys pre_keys.
       remember (pointer_val_val keys_pv) as keys_ptr.
+      rename H6 into Hc.
 
       rewrite Z.sub_diag, list_repeat_0, app_nil_r, app_nil_r.
       assert (Htemp: 0 <= src < Zlength keys) by lia.
       forward. forward. forward.
       clear Htemp.
       forward_call (priq_ptr, ha, Znth src keys, Int.repr 0).
-      1: {
-        admit. (* cat 1 *)
-        (* forall j,
-           0 <= j < i ->
-           In (Znth j keys) (proj_keys h)
-         *)
-
-        (* and later...
-           forall j, 
-           vvalid j g ->
-           ~ In j popped ->
-           In (Znth j keys) (proj_keys h)
-         *)
-      }
       Intros hb.
       rename H6 into H_ha_hb_rel.
       assert (H_hb_cap: heap_capacity hb = size) by lia.
