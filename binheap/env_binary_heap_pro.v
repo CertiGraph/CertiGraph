@@ -541,6 +541,23 @@ Proof.
   lia.
 Qed.
 
+Lemma Perm_Perm_cons_Perm: forall {A} {l1 l2 l3: list A} {a b},
+  Permutation l1 (a :: l2) ->
+  Permutation l2 (b :: l3) ->
+  Permutation l1 (a :: b :: l3).
+Proof.
+  intros. transitivity (a :: l2). trivial. constructor. trivial.
+Qed.
+
+Lemma NoDup_Perm_False: forall {A} {l1 l2: list A} {a},
+  NoDup l1 ->
+  Permutation l1 (a :: a :: l2) -> False.
+Proof.
+  intros. assert (NoDup (a :: a :: l2)).
+  eapply Permutation_NoDup; eauto.
+  inversion H1. apply H4. left. trivial.
+Qed.
+
 (*
 Does not seem to work on arrays.
 
