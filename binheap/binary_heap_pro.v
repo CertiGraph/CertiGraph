@@ -849,14 +849,41 @@ Definition f_pq_make := {|
                              (Etempvar _size tuint) tint)
                 Sskip
                 Sbreak)
-              (Sassign
-                (Efield
-                  (Ederef
-                    (Ebinop Oadd
-                      (Etempvar _arr (tptr (Tstruct _structItem noattr)))
-                      (Etempvar _i tint) (tptr (Tstruct _structItem noattr)))
-                    (Tstruct _structItem noattr)) _key tuint)
-                (Etempvar _i tint)))
+              (Ssequence
+                (Sassign
+                  (Efield
+                    (Ederef
+                      (Ebinop Oadd
+                        (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+                        (Etempvar _i tint)
+                        (tptr (Tstruct _structItem noattr)))
+                      (Tstruct _structItem noattr)) _key tuint)
+                  (Etempvar _i tint))
+                (Ssequence
+                  (Sassign
+                    (Efield
+                      (Ederef
+                        (Ebinop Oadd
+                          (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+                          (Etempvar _i tint)
+                          (tptr (Tstruct _structItem noattr)))
+                        (Tstruct _structItem noattr)) _priority tint)
+                    (Econst_int (Int.repr 0) tint))
+                  (Ssequence
+                    (Sassign
+                      (Efield
+                        (Ederef
+                          (Ebinop Oadd
+                            (Etempvar _arr (tptr (Tstruct _structItem noattr)))
+                            (Etempvar _i tint)
+                            (tptr (Tstruct _structItem noattr)))
+                          (Tstruct _structItem noattr)) _data tint)
+                      (Econst_int (Int.repr 0) tint))
+                    (Sassign
+                      (Ederef
+                        (Ebinop Oadd (Etempvar _table (tptr tuint))
+                          (Etempvar _i tint) (tptr tuint)) tuint)
+                      (Etempvar _i tint))))))
             (Sset _i
               (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint)
                 tint))))
