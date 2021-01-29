@@ -16,6 +16,16 @@ Section DijkstraProof.
   Context {inf: Z}.
   Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
+  Lemma Permutation_cons_In: forall {A} (l1 l2: list A) a,
+      Permutation l1 (a :: l2) ->
+      In a l1.
+  Proof.
+    intros.
+    pose proof (in_eq a l2).
+    apply Permutation_sym in H.
+    apply (Permutation_in _ H); trivial.
+  Qed.    
+
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
   Proof.
     start_function.
@@ -456,8 +466,19 @@ Section DijkstraProof.
       forward. forward. forward.
       clear Htemp.
       forward_call (priq_ptr, ha, Znth src keys, Int.repr 0).
-      1: { 
-        admit. (* cat 2 *)
+      1: {
+        admit. (* cat 1 *)
+        (* forall j,
+           0 <= j < i ->
+           In (Znth j keys) (proj_keys h)
+         *)
+
+        (* and later...
+           forall j, 
+           vvalid j g ->
+           ~ In j popped ->
+           In (Znth j keys) (proj_keys h)
+         *)
       }
       Intros hb.
       rename H6 into H_ha_hb_rel.
@@ -508,7 +529,7 @@ Section DijkstraProof.
           destruct (exists_min_in_list (heap_items hb) H4) as [min [? ?]].
           exists min. split3; trivial.
           intros _.
-          (* ha is all infs (see H4)
+          (* ha is all infs (see H3)
              and hb is ha with src tweaked to 0 (see H_ha_hb_rel)
              and 0 < inf, 
              so this is true
@@ -582,9 +603,8 @@ Section DijkstraProof.
           assert (H_u_valid: vvalid g u). {
             apply (vvalid_meaning g); trivial.
             replace size with (heap_capacity he) by lia.
-            admit. (* cat 2 *)
-            (* HELP if you have time
-               should come from PQ. Is it already here? *)
+            subst u.
+            admit. (* cat 1 *)
           }
           
           assert (0 <= u < size). {
@@ -592,7 +612,7 @@ Section DijkstraProof.
           } 
 
           assert (Ha: In min_item (heap_items hc)). {
-            admit. (* cat 2 *)
+            apply Permutation_cons_In with (l2 := heap_items he); trivial.
           }
           assert (~ (In u popped)). {
             intro. apply (H8 _ H18).
@@ -641,14 +661,26 @@ Section DijkstraProof.
                   H29 H30 H31 H32 H33 PNpriq_ptr.
 
             red in H8.
-            assert (0 < Zlength (heap_items hc)) by admit.
-            (* cat 2 *)
-            destruct (H7 H20) as [min_item' [_ [? ?]]].
+            assert (0 < Zlength (heap_items hc)). {
+              unfold heap_size in *. trivial.
+            }
+
+            destruct (H7 H20) as [min_item' [Hb [? ?]]].
             replace min_item' with min_item in *.
-            rewrite <- Hequ in H22.
-            2: { admit. (* cat 2 *)
+            2: {
+              (* min_item already beat min_item' 
+                 when they were both inside hc
+               *)
+              
+(*H16: Forall (cmp_rel min_item) (heap_items he)
+H15: Permutation (heap_items hc) (min_item :: heap_items he)
+H21: Forall (cmp_rel min_item') (heap_items hc)
+ *)
+              admit.
             }
             
+            rewrite <- Hequ in H22.
+
             split3; [| | split3; [| |split3; [| |split]]]; trivial.
             ++ intros. split3; trivial.
             ++ (* if popped = [], then 
@@ -715,11 +747,9 @@ Section DijkstraProof.
             Intros.
 
             assert (Htemp: 0 < Zlength (heap_items hc)). {
-              admit.
-              (* easy lemma based on
-                 H5: 0 < heap_size hc
-               *)
+              unfold heap_size in *; trivial.
             }
+
             specialize (H21 Htemp).
             destruct H21 as [? [? ?]].
             clear Htemp.
@@ -809,8 +839,10 @@ Section DijkstraProof.
                   1: entailer!.
                   1,3: repeat rewrite Zlength_map; lia.
                   forward_call (priq_ptr, h', Znth i keys, Int.repr (Znth u dist' + cost)).
-                  admit. (* cat 2 *)
-
+                  1: {
+                    admit. (* cat 1 *)
+                  }
+                  
 (* Now we must show that the for loop's invariant
    holds if we take another step,
    ie when i increments
