@@ -2,6 +2,7 @@ Require Import RelationClasses.
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.binheap.binary_heap_pro.
+Require Import CertiGraph.binheap.binary_heap_malloc_spec.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
 
@@ -253,7 +254,11 @@ Definition valid_pq (pq : val) (h: heap): mpred :=
         (map heap_item_key ((heap_items h) ++ junk))
         (nat_inc_list (Z.to_nat (heap_capacity h)))) && *)
     (data_at Tsh t_pq (Vint (Int.repr (heap_capacity h)), (Vint (Int.repr (heap_size h)), (arr, arr2))) pq *
-       linked_heap_array ((heap_items h) ++ junk) arr lookup arr2).
+       linked_heap_array ((heap_items h) ++ junk) arr lookup arr2 *
+(* tokens that allow deallocation *)
+       free_tok arr (sizeof (Tstruct _structItem noattr) * (heap_capacity h)) * 
+       free_tok arr2 (sizeof tuint * (heap_capacity h)) *
+       free_tok pq (sizeof (Tstruct _structPQ noattr))).
 
 Definition hitem_ (v : val) : mpred :=
   data_at_ Tsh t_item v.
@@ -505,7 +510,7 @@ Lemma valid_pq_NoDup: forall p h,
 Proof.
   intros. unfold valid_pq, linked_heap_array, linked_correctly, linked_correctly'. Intros arr junk lookup lookup'.
   entailer!. clear H4 H5.
-  apply NoDup_nth_error. rewrite NoDup_nth_error in H0. intros.
+  apply NoDup_nth_error. rewrite NoDup_nth_error in H2. intros.
   rewrite <- (Nat2Z.id i) in H5.
   rewrite Znth_nth_error in H5. 2: rewrite Zlength_correct; rep_lia.
   remember (nth_error (heap_items h) j). destruct o. 2: discriminate.
@@ -513,7 +518,7 @@ Proof.
   assert (0 <= Z.of_nat j < Zlength (heap_items h)) by (rewrite Zlength_correct; lia).
   rewrite <- (Nat2Z.id j) in Heqo. rewrite Znth_nth_error in Heqo; auto.
   inversion Heqo. subst h0. clear Heqo. inversion H5. clear H5.
-  generalize (H1 (Z.of_nat i)); generalize (H1 (Z.of_nat j)); intros. clear H1.
+  generalize (H3 (Z.of_nat i)); generalize (H3 (Z.of_nat j)); intros. clear H3.
   rewrite Zlength_app in *. spec H5. rep_lia. spec H8. rewrite Zlength_correct; rep_lia.
   rewrite Znth_app1 in H5. 2: lia.
   rewrite Znth_app1 in H8. 2: rewrite Zlength_correct; lia.
@@ -557,6 +562,185 @@ Proof.
   eapply Permutation_NoDup; eauto.
   inversion H1. apply H4. left. trivial.
 Qed.
+
+Lemma malloc_pq: forall v,
+  malloc_compatible (sizeof (Tstruct _structPQ noattr)) v ->
+  (data_at_ Tsh (tarray tint (sizeof (Tstruct _structPQ noattr) / sizeof tint)) v) |--
+  (data_at_ Tsh t_pq v).
+Proof.
+  intros v H.
+  sep_apply data_at__memory_block_cancel.
+  change (sizeof (tarray _ _)) with (sizeof t_pq).
+  rewrite memory_block_data_at_.
+  apply derives_refl.
+  apply malloc_compatible_field_compatible in H; auto.
+Qed.
+
+Lemma malloc_items: forall v size,
+  malloc_compatible (sizeof (Tstruct _structItem noattr) * size) v ->
+  data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) * size / sizeof tint)) v |--
+  data_at_ Tsh (tarray t_item size) v.
+Proof.
+  intros v size H.
+  sep_apply data_at__memory_block_cancel.
+  replace (sizeof (Tstruct _structItem noattr) * size / sizeof tint) with (3 * size).
+  2: { simpl sizeof. change 12 with (3 * 4). rewrite <- Z.mul_assoc. rewrite (Z.mul_comm 4).
+    rewrite Z.mul_assoc. rewrite Z_div_mult; lia. }
+  rewrite memory_block_data_at_.
+  admit.
+Admitted.
+
+Lemma malloc_lookup: forall v size,
+  malloc_compatible (sizeof tint * size) v ->
+  data_at_ Tsh (tarray tint (sizeof tint * size / sizeof tint)) v |--
+  data_at_ Tsh (tarray tuint size) v.
+Proof.
+  intros v size H.
+  sep_apply data_at__memory_block_cancel.
+  replace (sizeof tint * size / sizeof tint) with size.
+  2: { simpl sizeof. rewrite Z.mul_comm, Z_div_mult; lia. }
+  admit.
+Admitted.
+
+Lemma Zlength_default_val_array: forall t size,
+  0 <= size ->
+  Zlength (default_val (tarray t size)) = size.
+Proof.
+  unfold default_val. simpl. intros. rewrite Zlength_list_repeat; lia.
+Qed.
+
+Definition initializing_inc_list (size capacity : Z) : list val :=
+  (map (fun z => Vint (Int.repr z)) (List_ext.nat_inc_list (Z.to_nat size))) ++ 
+  default_val (tarray tuint (capacity - size)).
+
+Lemma initializing_inc_list_inc: forall size capacity,
+  0 <= size < capacity ->
+  upd_Znth size (initializing_inc_list size capacity) (Vint (Int.repr size)) =
+  initializing_inc_list (size + 1) capacity.
+Proof.
+  unfold initializing_inc_list. intros.
+  rewrite upd_Znth_app2.
+  1,2: rewrite Zlength_map, List_ext.nat_inc_list_Zlength.
+  2: rewrite (Zlength_default_val_array tuint); lia.
+  rewrite Z2Nat.id. 2: lia. rewrite Z.sub_diag.
+  apply List_ext.list_eq_Znth.
+  rewrite Zlength_app, Zlength_app, Zlength_upd_Znth, Zlength_map, Zlength_map.
+  rewrite (Zlength_default_val_array tuint), (Zlength_default_val_array tuint).
+  rewrite List_ext.nat_inc_list_Zlength, List_ext.nat_inc_list_Zlength. 1,2,3: lia.
+  rewrite Zlength_app, Zlength_upd_Znth, Zlength_map.
+  rewrite List_ext.nat_inc_list_Zlength, (Zlength_default_val_array tuint). 2: lia.
+  replace (Z.of_nat (Z.to_nat size) + (capacity - size)) with capacity by lia.
+  intros. assert (i < size \/ size <= i) by lia. destruct H1.
+  rewrite Znth_app1, Znth_app1. rewrite Znth_map, Znth_map.
+  rewrite List_ext.nat_inc_list_i, List_ext.nat_inc_list_i. trivial.
+  5,6: rewrite Zlength_map. 3,4,5,6: rewrite List_ext.nat_inc_list_Zlength.
+  1,2,3,4,5,6: lia.
+  rewrite Znth_app2. 1,2 : rewrite Zlength_map, List_ext.nat_inc_list_Zlength. 2: lia.
+  assert (i = size \/ size < i) by lia. destruct H2. subst i.
+  rewrite Znth_app1. rewrite Znth_map, List_ext.nat_inc_list_i, Z2Nat.id, Z.sub_diag, Znth_upd_Znth_same; trivial.
+  5: rewrite Zlength_map. 4,5: rewrite List_ext.nat_inc_list_Zlength.
+  rewrite (Zlength_default_val_array tuint).
+  1,2,3,4,5,6: lia.
+  rewrite Znth_app2. 1,2: rewrite Zlength_map, List_ext.nat_inc_list_Zlength.
+  rewrite Znth_upd_Znth_diff.
+  unfold default_val. simpl.
+  rewrite Znth_list_repeat_inrange, Znth_list_repeat_inrange; trivial.
+  1,2,3,4: lia.
+Qed.
+
+Lemma initializing_inc_list_done: forall capacity,
+  initializing_inc_list capacity capacity =
+  map (fun z => Vint (Int.repr z)) (List_ext.nat_inc_list (Z.to_nat capacity)).
+Proof.
+  unfold initializing_inc_list. intros. rewrite Z.sub_diag.
+  apply app_nil_r.
+Qed.
+
+Definition initial_item_list (size : Z) : list heap_item :=
+  map (fun i => (i, Int.zero, Int.zero)) (List_ext.nat_inc_list (Z.to_nat size)).
+
+Lemma Zlength_initial_item_list: forall size,
+  0 <= size ->
+  Zlength (initial_item_list size) = size.
+Proof. intros. unfold initial_item_list. rewrite Zlength_map, List_ext.nat_inc_list_Zlength. lia. Qed.
+
+Definition initializing_item_list (size capacity : Z) : list (reptype t_item) :=
+  map heap_item_rep (initial_item_list size) ++ default_val (tarray t_item (capacity - size)).
+
+Lemma Zlength_initializing_item_list: forall size capacity,
+  0 <= size < capacity ->
+  Zlength (initializing_item_list size capacity) = capacity.
+Proof.
+  unfold initializing_item_list. intros. 
+  rewrite Zlength_app, Zlength_map, Zlength_initial_item_list, (Zlength_default_val_array t_item); lia.
+Qed.
+
+Lemma initial_item_list_i: forall i size,
+  0 <= i < size ->
+  Znth i (initial_item_list size) = (i, Int.zero, Int.zero).
+Proof.
+  intros. unfold initial_item_list. rewrite Znth_map. rewrite List_ext.nat_inc_list_i. trivial.
+  2: rewrite List_ext.nat_inc_list_Zlength. 1,2: lia.
+Qed.
+
+(* BUG, we shouldn't need this but it seems like a bad guess is being made for implicit assumptions without it? *)
+Definition initializing_item_array (size capacity : Z) (v : val) : mpred :=
+  data_at Tsh (tarray t_item capacity) (initializing_item_list size capacity) v.
+
+Lemma initializing_item_list_inc: forall size capacity : Z,
+  0 <= size < capacity ->
+    upd_Znth size (initializing_item_list size capacity) (Vint (Int.repr size), (Vzero, Vzero)) =
+    initializing_item_list (size + 1) capacity.
+Proof.
+  unfold initializing_item_list. intros.
+  rewrite upd_Znth_app2.
+  1,2: rewrite Zlength_map, Zlength_initial_item_list.
+  3: rewrite (Zlength_default_val_array t_item); lia.
+  2,3: lia. rewrite Z.sub_diag.
+  apply List_ext.list_eq_Znth.
+  rewrite Zlength_app, Zlength_app, Zlength_upd_Znth, Zlength_map, Zlength_map.
+  rewrite (Zlength_default_val_array t_item), (Zlength_default_val_array t_item).
+  rewrite Zlength_initial_item_list, Zlength_initial_item_list. 1-5: lia.
+  rewrite Zlength_app, Zlength_upd_Znth, Zlength_map.
+  rewrite Zlength_initial_item_list, (Zlength_default_val_array t_item). 2,3: lia.
+  replace (size + (capacity - size)) with capacity by lia.
+  intros. assert (i < size \/ size <= i) by lia. destruct H1.
+  rewrite Znth_app1, Znth_app1. rewrite Znth_map, Znth_map.
+  rewrite initial_item_list_i, initial_item_list_i. trivial. 
+  5,6: rewrite Zlength_map. 3-6: rewrite Zlength_initial_item_list. 1-10: lia.
+  rewrite Znth_app2. 1,2 : rewrite Zlength_map, Zlength_initial_item_list. 2-4: lia.
+  assert (i = size \/ size < i) by lia. destruct H2. subst i.
+  rewrite Znth_app1. rewrite Znth_map, Z.sub_diag, Znth_upd_Znth_same, initial_item_list_i. trivial.
+  2: rewrite (Zlength_default_val_array t_item). 6: rewrite Zlength_map.
+  5,6: rewrite Zlength_initial_item_list. 1-8: lia.
+  rewrite Znth_app2. 1,2: rewrite Zlength_map, Zlength_initial_item_list.
+  rewrite Znth_upd_Znth_diff.
+  unfold default_val. simpl.
+  rewrite Znth_list_repeat_inrange, Znth_list_repeat_inrange; trivial.
+  1-6: lia.
+Qed.
+
+Lemma initializing_item_list_done: forall capacity,
+  initializing_item_list capacity capacity = map heap_item_rep (initial_item_list capacity).
+Proof.
+  unfold initializing_item_list. intros. rewrite Z.sub_diag.
+  apply app_nil_r.
+Qed.
+
+Lemma initial_link_ok: forall size,
+  0 <= size ->
+  linked_correctly (initial_item_list size) (List_ext.nat_inc_list (Z.to_nat size)).
+Proof.
+  split. apply List_ext.nat_inc_list_NoDup.
+  intros. rewrite List_ext.nat_inc_list_Zlength. rewrite Zlength_initial_item_list in H0; trivial.
+  subst loc. unfold initial_item_list. rewrite Znth_map.
+  unfold heap_item_key. simpl.
+  rewrite List_ext.nat_inc_list_i. 
+  rewrite List_ext.nat_inc_list_i.
+  4: rewrite List_ext.nat_inc_list_Zlength. 
+  1,2,3,4: lia.
+Qed.
+
 
 (*
 Does not seem to work on arrays.

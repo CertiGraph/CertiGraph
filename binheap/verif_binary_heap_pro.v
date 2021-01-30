@@ -173,6 +173,70 @@ Definition Gprog : funspecs :=
                           pq_free_spec;
                           pq_edit_priority_spec]).
 
+Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
+Proof.
+  start_function.
+  forward_call (sizeof(Tstruct _structPQ noattr)).
+    { compute; split; inversion 1. }
+  Intros pq.
+  sep_apply malloc_pq.
+  forward_call (sizeof(tuint) * size). 
+   { simpl; lia. }
+  Intros table.
+  sep_apply malloc_lookup.
+  forward_call ((sizeof(Tstruct _structItem noattr) * size)).
+  Intros arr.
+  sep_apply malloc_items.
+
+  forward_for_simple_bound size
+    (EX i : Z,
+     PROP ()
+     LOCAL (temp _table (pointer_val_val table);
+            temp _arr (pointer_val_val arr);
+            temp _size (Vint (Int.repr size));
+            temp _pq (pointer_val_val pq))
+(* BUG, you can't just use "data_at Tsh (tarray t_item size) (initializing_item_list size size) v" *)
+     SEP (initializing_item_array i size (pointer_val_val arr);
+          free_tok (pointer_val_val arr) (sizeof (Tstruct _structItem noattr) * size);
+          data_at Tsh (tarray tuint size) (initializing_inc_list i size) (pointer_val_val table);
+          free_tok (pointer_val_val table) (sizeof tuint * size);
+          data_at_ Tsh t_pq (pointer_val_val pq);
+          free_tok (pointer_val_val pq) (sizeof (Tstruct _structPQ noattr)))).
+  { entailer!. unfold initializing_item_array, initializing_inc_list, initializing_item_list.
+    simpl. replace (size - 0) with size by lia. cancel. }
+  { unfold initializing_item_array.
+    forward.
+    forward.
+    rewrite upd_Znth_overwrite, upd_Znth_same. simpl snd. simpl fst.
+    2,3: rewrite Zlength_initializing_item_list; lia.
+    forward.
+    rewrite upd_Znth_overwrite, upd_Znth_same. simpl snd. simpl fst.
+    2,3: rewrite Zlength_initializing_item_list; lia.
+    forward.
+    (* Prove loop invariant *)
+    rewrite initializing_inc_list_inc. 2: lia.
+    rewrite initializing_item_list_inc. 2: lia.
+    entailer!. }
+  forward.
+  forward.
+  forward.
+  forward.
+  forward.
+  (* Prove postcondition *)
+  Exists (pointer_val_val pq) (Z.to_nat size, @nil heap_item).
+  unfold valid_pq, heap_size, heap_capacity. entailer!. lia.
+  Exists (pointer_val_val arr) (initial_item_list size) (pointer_val_val table) (List_ext.nat_inc_list (Z.to_nat size)).
+  unfold initializing_item_array, linked_heap_array, heap_array, lookup_array.
+  rewrite Zlength_app, Zlength_nil.
+  rewrite initializing_inc_list_done, initializing_item_list_done.
+  rewrite Z2Nat.id, Zlength_initial_item_list, List_ext.nat_inc_list_Zlength. 2,3: lia.
+  entailer!.
+  { split. 
+    apply heapOrdered_empty. simpl heap_items. simpl.
+    apply initial_link_ok. lia. }
+  { rewrite Z2Nat.id. cancel. lia. }
+Time Qed.
+
 Lemma body_edit_priority: semax_body Vprog Gprog f_pq_edit_priority pq_edit_priority_spec.
 Proof.
   start_function.
@@ -251,7 +315,8 @@ Proof.
       generalize H15; intro. apply Permutation_Zlength in H7. rewrite Zlength_upd_Znth in H7.
       unfold heap_items in H7. do 2 rewrite Zlength_app. rewrite H7. entailer!.
       (* Pure part inside spatial part. *)
-      split. 2: rewrite <- H7; unfold heap_items, heap_capacity in H2; rewrite <- H2; rewrite Zlength_app; trivial.
+      split. { rewrite <- H7. unfold heap_items, heap_capacity in H2. 
+        rewrite <- H2. rewrite Zlength_app; trivial. }
       clear H17 H18 H10 H21 H11.
       destruct H13. split. eapply Permutation_NoDup; eauto.
       simpl. intros. destruct H3.
@@ -346,7 +411,7 @@ Proof.
       generalize H15; intro. apply Permutation_Zlength in H7. rewrite Zlength_upd_Znth in H7.
       unfold heap_items in H7. do 2 rewrite Zlength_app. rewrite H7. entailer!.
       (* Pure part inside spatial part. *)
-      split. 2: rewrite <- H7; unfold heap_items, heap_capacity in H2; rewrite <- H2; rewrite Zlength_app; trivial.
+      split. rewrite <- H7; unfold heap_items, heap_capacity in H2; rewrite <- H2; rewrite Zlength_app; trivial.
       clear H17 H18 H10 H21 H11.
       destruct H13. split. eapply Permutation_NoDup; eauto.
       simpl. intros. destruct H3.
@@ -1066,58 +1131,6 @@ Proof.
         destruct H3. lia.
 Time Qed.
 
-(*
 
-Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
-Proof.
-  start_function.
-  forward_call (sizeof(Tstruct _structPQ noattr)).
-  1: compute; split; inversion 1.
-  Intros pq.
-  forward_call (sizeof(tuint) * size).
-  1: simpl; lia.
-  Intros table.
-  forward_call ((sizeof(Tstruct _structItem noattr) * size)).
-  Intros arr.
-  simpl sizeof.
-  replace (12 * size / 4) with (3 * size).
-  replace (4 * size / 4) with size.
-  replace (16 / 4) with 4.
-  2,3,4: admit. (* easy *)
-  forward_for_simple_bound
-    size
-    (EX i : Z,
-     PROP ()
-     LOCAL (temp _arr (pointer_val_val arr);
-            temp _size (Vint (Int.repr size)))
-     SEP (data_at_ Tsh (tarray tint (3 * size)) (pointer_val_val arr) *
-          free_tok (pointer_val_val arr) (12 * size) *
-          data_at_ Tsh (tarray tint size) (pointer_val_val table) *
-          free_tok (pointer_val_val table) (4 * size) *
-          data_at_ Tsh (tarray tint 4) (pointer_val_val pq) *
-          free_tok (pointer_val_val pq) 16)).
-  - entailer!.
-  - Intros.
-    assert_PROP
-      ((offset_val 0
-                   (force_val
-                      (sem_add_ptr_int (Tstruct _structItem noattr) Signed 
-                                       (pointer_val_val arr) (Vint (Int.repr i)))) =
-        field_address (tarray (Tstruct _structItem noattr) size) [ArraySubsc i] (pointer_val_val arr))). {
-      entailer!.
-      rewrite field_address_offset; trivial.
-      clear H6 H7. destruct H5 as [? [? [? [? ?]]]].
-      repeat split; try lia; trivial.
-      - admit.
-      - admit.
-    }
-    
-    Fail forward.
-    (* Okay, gotta unwrap all the way to the unsigned.
-       I feel pretty misled by VST though...
-     *)
-    
-Admitted.
-*)
 
 
