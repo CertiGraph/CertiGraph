@@ -56,15 +56,15 @@ Definition SPACE_STRUCT_SIZE: Z :=
 Lemma four_div_WORD_SIZE: (4 | WORD_SIZE).
 Proof. first [now exists 1 | now exists 2]. Qed.
 
-(* Lemma MSS_eq_unsigned: *)
-(*   Int.unsigned (Int.shl (Int.repr 1) (Int.repr 29)) = MAX_SPACE_SIZE. *)
-(* Proof. *)
-(*   rewrite Int.shl_mul_two_p. *)
-(*   rewrite (Int.unsigned_repr 29) by (compute; split; discriminate). *)
-(*   rewrite mul_repr. unfold MAX_SPACE_SIZE. rewrite Zbits.Zshiftl_mul_two_p by lia. *)
-(*   rewrite !Z.mul_1_l, Int.unsigned_repr; *)
-(*     [lia | compute; split; intro S; discriminate]. *)
-(* Qed. *)
+Lemma MSS_eq_unsigned:
+  Int.unsigned (Int.shl (Int.repr 1) (Int.repr 29)) = Z.shiftl 1 29.
+Proof.
+  rewrite Int.shl_mul_two_p.
+  rewrite (Int.unsigned_repr 29) by (compute; split; discriminate).
+  rewrite mul_repr. rewrite Zbits.Zshiftl_mul_two_p by lia.
+  rewrite !Z.mul_1_l, Int.unsigned_repr;
+    [lia | compute; split; intro S; discriminate].
+Qed.
 
 Lemma MSS_max_unsigned_range: forall n,
     0 <= n < MAX_SPACE_SIZE ->
