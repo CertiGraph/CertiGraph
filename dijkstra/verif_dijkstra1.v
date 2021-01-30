@@ -17,8 +17,7 @@ Section DijkstraProof.
   Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
   Lemma Permutation_cons_In: forall {A} (l1 l2: list A) a,
-      Permutation l1 (a :: l2) ->
-      In a l1.
+      Permutation l1 (a :: l2) -> In a l1.
   Proof.
     intros.
     pose proof (in_eq a l2).
@@ -30,11 +29,10 @@ Section DijkstraProof.
   forall l key newpri,
     map heap_item_key (update_pri_by_key l key newpri) = map heap_item_key l.
   Proof.
-    intros. induction l.
-    - trivial.
-    - simpl. rewrite IHl. f_equal.
-      unfold update_pri_by_key, update_pri_if_key, heap_item_key.
-      destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
+    intros. induction l; trivial.
+    simpl. rewrite IHl. f_equal.
+    unfold update_pri_by_key, update_pri_if_key, heap_item_key.
+    destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
   Qed.
   
   Lemma Int_signed_strip:
