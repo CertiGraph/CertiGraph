@@ -593,68 +593,74 @@ Section DijkstraProof.
              2,3: apply (vvalid_meaning g); trivial.
              admit.
         * red. intros.
-(*
-
 generalize H_ha_hb_rel; intro Hx.
-generalize Hn; intro Hnx.
 apply (Permutation_in min_item) in H_ha_hb_rel; trivial.
-unfold update_pri_by_key in H_ha_hb_rel.
-apply list_in_map_inv in H_ha_hb_rel.
-destruct H_ha_hb_rel as [orig_min [? ?]].
-specialize (Hn _ H10).
-destruct orig_min as [[o1 o2] o3].
-destruct min_item as [[m1 m2] m3].
-unfold update_pri_if_key in H9. unfold heap_item_priority, heap_item_key, heap_item_payload in *.
-simpl in H9. revert H9.
-case Z.eq_dec; simpl; intros.
-inversion H9. subst m1 m2 m3.
-admit.
-inversion H9. subst m1 m2 m3.
-simpl in Hn. rewrite Forall_forall in H8.
-symmetry in Hx.
-generalize (Permutation_in (Znth src keys, Int.zero, Int.repr src) Hx); intro.
-spec H11.
+Set Nested Proofs Allowed.
+
+Lemma In_update_pri_by_key: forall i L k np,
+  In i (update_pri_by_key L k np) ->
+  (In i L /\ heap_item_key i <> k) \/
+  (exists oi, In oi L /\ 
+              heap_item_key i = k /\ 
+              heap_item_payload i = heap_item_payload oi /\ 
+              heap_item_key i = heap_item_key oi /\
+              heap_item_priority i = np).
+Proof.
+  intros.
+  unfold update_pri_by_key in H.
+  rewrite in_map_iff in H. destruct H as [oi [? ?]].
+  revert H. unfold update_pri_if_key. case Z.eq_dec; intros.
+  2: left; subst; auto.
+  right. exists oi. split; trivial. subst i. unfold heap_item_key, heap_item_payload, heap_item_priority in *.
+  simpl. tauto.
+Qed.
+
+apply In_update_pri_by_key in H_ha_hb_rel.
+assert (Hxxx: In (Znth src keys, Int.repr inf, Int.repr src) (heap_items ha)) by admit. (* Anshuman *)
+destruct H_ha_hb_rel as [[? ?] | ?].
+**
+rewrite Forall_forall in H8.
+specialize (H8 (Znth src keys, Int.zero, Int.repr src)).
+spec H8. symmetry in Hx.
+apply (Permutation_in (Znth src keys, Int.zero, Int.repr src)) in Hx; auto.
 unfold update_pri_by_key.
-apply in_map_iff.
+rewrite in_map_iff.
 exists (Znth src keys, Int.repr inf, Int.repr src).
-unfold update_pri_if_key. unfold heap_item_key. simpl.
+unfold update_pri_if_key, heap_item_key. simpl.
 case Z.eq_dec. 2: intro Hxx; contradiction. intros _.
-split; trivial.
-Search src.
-
-
-
-Search In map.
-
-S
-apply list_in_map_inv.
- in Hx.
-apply (Permutation_in (o1, o2, o3)) in Hx; trivial.
-Search src.
-specialize (H8 (
-Check src.
-
-
-Search map In.
-
-
-
-
-Search Permutation In.
-Search update_pri_by_key.
-Print keys_valid.
- with min.
-rewrite In_Znth_iff in H7.
-destruct H7 as [loc_min [? ?]].
-*)
-
-          (* ha is all infs (see Hn)
-             and hb is ha with src tweaked to 0 (see H_ha_hb_rel)
-             and 0 < inf, 
-             so this is true.
-             Aquinas?
-           *)
-          admit.
+split. trivial. trivial.
+clear -H9 H8 Hn Hinf.
+unfold cmp_rel, cmp, heap_item_priority in *. simpl in H8. rewrite Hn in H8.
+remember (Int.lt Int.zero (Int.repr inf)). destruct b. discriminate.
+symmetry in Heqb.
+apply lt_false_inv in Heqb.
+unfold Int.zero in Heqb.
+rewrite Int.signed_repr in Heqb.
+rewrite Int.signed_repr in Heqb.
+1-3: rep_lia. trivial.
+**
+destruct H9 as [oi [? [? [? [? ?]]]]].
+destruct min_item as [[m1 m2] m3].
+unfold heap_item_key, heap_item_payload, heap_item_priority in *. simpl in *.
+subst m2 m3.
+destruct oi as [[o1 o2] o3]. simpl in *. subst o1. subst m1.
+generalize (Hn _ H9); intro. simpl in H10. subst o2.
+assert (NoDup (map heap_item_key (heap_items ha))) by admit.
+clear -H10 Hxxx H9 Hsz H. rename H into Hsz'.
+apply in_split in H9. destruct H9 as [L1 [L2 ?]].
+rewrite H in *. apply in_app_or in Hxxx.
+rewrite map_app in H10. simpl in H10.
+apply NoDup_remove_2 in H10.
+unfold heap_item_key in H10 at 1. simpl in H10.
+destruct Hxxx. destruct H10.
+apply in_or_app. left.
+apply (in_map heap_item_key) in H0.
+apply H0.
+destruct H0. inversion H0. rewrite Int.signed_repr; auto. rep_lia.
+destruct H10.
+apply in_or_app. right.
+apply (in_map heap_item_key) in H0.
+apply H0.
         * red. intros. inversion H4.
         * red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
@@ -813,7 +819,13 @@ destruct H7 as [loc_min [? ?]].
                  and it can beat itself.
                  Aquinas?
                *)
-              admit.
+apply Forall_forall.
+intros.
+rewrite Forall_forall in H16.
+specialize (H16 x).
+Search Permutation In.
+apply (Permutation_in x) in H15; trivial.
+destruct H15. subst x. reflexivity. auto.
             }
 
             split3; [| | split3; [| |split3; [| |split3;
@@ -873,14 +885,24 @@ destruct H7 as [loc_min [? ?]].
                unfold proj_keys in Hd |- *.
                pose proof (Permutation_map heap_item_key H15).
                apply (Permutation_in _ H23) in Hd. 
-               simpl in Hd. destruct Hd as [Hd | ?]; trivial.
-               exfalso. apply H21.
-               (* u's key is the same as i's key.
-                  u = i
-                  Aquinas?
-                *)
-               admit.
+               simpl in Hd.
 
+
+
+ destruct Hd as [Hd | ?]; trivial.
+               exfalso. apply H21.
+clear -H22 H8 Hd Hequ Ha H6 H20 H_u_valid.
+assert (exists i_item, In i_item (heap_items hc) /\ i = Int.signed (snd i_item)) by admit. clear H8 H22.
+destruct H as [i_item [Hb ?]].
+
+generalize (H6 _ H20 _ eq_refl); intro.
+destruct H0. 2: { destruct H0. rewrite <- Hd. unfold proj_keys. apply in_map. trivial. }
+generalize (H6 _ H_u_valid (heap_item_key min_item)); intro.
+spec H1. admit.
+destruct H1.
+2: { destruct H1. apply in_map. trivial. }
+rewrite Hd in H1 at 1. rewrite H0 in H1. inversion H1.
+admit.
             ++ red in H8 |- *. intros.
                specialize (H8 i_item). intro.
                replace i_item with min_item in *.
@@ -895,21 +917,22 @@ destruct H7 as [loc_min [? ?]].
                  rewrite H20 in Hequ.
                  apply Int_signed_strip in Hequ.
                  assert (NoDup (map snd (heap_items hc))) by admit.
-                 
-(* Aquinas, could you get me through? I sorta started... 
-                    
-apply (in_map snd) in H22.
-apply In_nth_error in H22.
-destruct H22 as [i_index ?].
-
-apply (in_map snd) in Ha.
-apply In_nth_error in Ha.
-destruct Ha as [min_index ?].
-
- *)
-(* if yes, I'll go back and get you the admitted assertion about NoDup *)
-
-                 admit.
+{
+destruct min_item as [[mi1 mi2] mi3].
+destruct i_item as [[i1 i2] i3].
+simpl in Hequ. subst i3.
+clear -Ha H22 H23.
+apply in_split in Ha. destruct Ha as [l1 [l2 ?]].
+rewrite H in H23.
+rewrite map_app in H23. simpl in H23.
+apply NoDup_remove in H23. destruct H23.
+rewrite H in H22.
+apply in_app_or in H22.
+destruct H22. exfalso. apply H1. apply in_or_app. left.
+apply in_map_iff. exists (i1, i2, mi3). auto.
+destruct H2. trivial.
+exfalso. apply H1. apply in_or_app. right.
+apply in_map_iff. exists (i1, i2, mi3). auto. }
                }
                destruct (In_Permutation_cons _ _ H21) as [he' ?].
                pose proof (Perm_Perm_cons_Perm H15 H22).
