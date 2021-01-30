@@ -169,9 +169,38 @@ Definition Gprog : funspecs :=
                           pq_size_spec;
                           capacity_spec;
                           mallocN_spec;
+                          freeN_spec;
                           pq_make_spec;
                           pq_free_spec;
                           pq_edit_priority_spec]).
+
+Lemma body_free: semax_body Vprog Gprog f_pq_free pq_free_spec.
+Proof.
+  start_function. unfold valid_pq, linked_heap_array, heap_array, lookup_array.
+  Intros arr junk lookup lookup_contents.
+  forward.
+  sep_apply (data_at_data_at_ Tsh (tarray t_item (Zlength (heap_items h ++ junk)))).
+  sep_apply free_items.
+  sep_apply (data_at_data_at_ Tsh (tarray tuint (Zlength lookup_contents))).
+  sep_apply free_lookup.
+  simpl.
+  rewrite H2. change (16 / 4) with 4.
+  rewrite Z.mul_comm, Z_div_mult.
+  change 12 with (3 * 4) at 1.
+  rewrite <- Z.mul_assoc.
+  rewrite (Z.mul_comm 4), Z.mul_assoc, Z_div_mult.
+  2,3: lia.
+  rewrite H.
+  rewrite (Z.mul_comm (heap_capacity h)).
+  forward_call (lookup, heap_capacity h).
+  forward.
+  change 12 with (4 * 3). rewrite <- Z.mul_assoc.
+  forward_call (arr, 3 * heap_capacity h).
+  sep_apply data_at_data_at_.
+  sep_apply free_pq.
+  forward_call (pq, 4).
+  entailer!.
+Time Qed.
 
 Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
 Proof.
@@ -242,6 +271,7 @@ Proof.
   start_function.
   unfold valid_pq.
   Intros arr junk lookup lookup_contents.
+  rename H0 into Hxx. rename H1 into H0. rename H2 into H1. rename H3 into H2.
   assert_PROP (linked_correctly (heap_items h ++ junk) lookup_contents). { unfold linked_heap_array. entailer!. }
   rewrite linked_heap_array_split. Intros.
   forward. { unfold linked_heap_array, lookup_array. Intros. entailer!. }
@@ -315,6 +345,7 @@ Proof.
       generalize H15; intro. apply Permutation_Zlength in H7. rewrite Zlength_upd_Znth in H7.
       unfold heap_items in H7. do 2 rewrite Zlength_app. rewrite H7. entailer!.
       (* Pure part inside spatial part. *)
+      split. { destruct H13. apply Permutation_Zlength in H13. rewrite <- H13. trivial. }
       split. { rewrite <- H7. unfold heap_items, heap_capacity in H2. 
         rewrite <- H2. rewrite Zlength_app; trivial. }
       clear H17 H18 H10 H21 H11.
@@ -411,7 +442,8 @@ Proof.
       generalize H15; intro. apply Permutation_Zlength in H7. rewrite Zlength_upd_Znth in H7.
       unfold heap_items in H7. do 2 rewrite Zlength_app. rewrite H7. entailer!.
       (* Pure part inside spatial part. *)
-      split. rewrite <- H7; unfold heap_items, heap_capacity in H2; rewrite <- H2; rewrite Zlength_app; trivial.
+      split. { destruct H13. apply Permutation_Zlength in H13. rewrite <- H13. trivial. }
+      split. { rewrite <- H7; unfold heap_items, heap_capacity in H2; rewrite <- H2; rewrite Zlength_app; trivial. }
       clear H17 H18 H10 H21 H11.
       destruct H13. split. eapply Permutation_NoDup; eauto.
       simpl. intros. destruct H3.
@@ -454,6 +486,7 @@ Proof.
   start_function.
   unfold valid_pq.
   Intros arr junk lookup lookup_contents.
+  rename H0 into Hxx. rename H1 into H0. rename H2 into H1. rename H3 into H2.
   assert_PROP (linked_correctly (heap_items h ++ junk) lookup_contents). { unfold linked_heap_array. entailer!. }
   rename H3 into Hz.
   rewrite linked_heap_array_split. Intros.
@@ -516,7 +549,8 @@ Proof.
     simpl.
     forward_call (0, arr, @nil heap_item, 0, lookup, lookup_contents'); rewrite Zlength_nil. 
       { unfold linked_heap_array, heap_array. rewrite data_at_isptr. entailer. (* Surely there's a less heavy hammer way to do this? *)
-        rewrite data_at_zero_array_eq; auto. entailer!. split. destruct H5; trivial. repeat intro. rewrite Zlength_nil in H14. lia. }
+        rewrite data_at_zero_array_eq; auto. entailer!. split.
+        destruct H5; trivial. repeat intro. rewrite Zlength_nil in H14. lia. }
       { split; auto. split; auto. split. rep_lia. split. rep_lia.
         apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
     (* Prove postcondition *)
@@ -531,6 +565,8 @@ Proof.
     apply andp_right. apply prop_right. auto.
     Exists arr (root :: junk) lookup lookup_contents''. simpl. unfold linked_heap_array. entailer!.
     2: rewrite <- heap_array_split; apply derives_refl.
+    split. { destruct H. apply Permutation_Zlength in H. simpl in H. rewrite <- H.
+             destruct H4. apply Permutation_Zlength in H4. rewrite <- H4. trivial. }
     rewrite Zlength_nil in *. rewrite Zexchange_eq in *. simpl in Hz, H3, H6, H.
     change (root :: junk) with ([root] ++ junk). red.
     destruct H, H4.
@@ -586,6 +622,8 @@ Proof.
     replace (Zlength vret) with (Zlength (root :: l0)). 2: { apply Permutation_Zlength in H11. trivial. }
 (*    destruct H4. *)
     entailer!. { (* Pure part inside spatial part *)
+      split. { destruct H9. apply Permutation_Zlength in H9. simpl in H9. rewrite <- H9.
+             destruct H4. apply Permutation_Zlength in H4. rewrite <- H4. trivial. }
       simpl in *. rewrite <- H2. apply Permutation_Zlength in H11. autorewrite with sublist. rewrite <- H11.
       autorewrite with sublist in *. lia. }
     (* Spatial part, this seems a bit uglier than necessary? *)
@@ -1048,6 +1086,7 @@ Proof.
   start_function.
   unfold valid_pq.
   Intros arr junk lookup lookup_contents.
+  rename H0 into Hxx. rename H1 into H0. rename H2 into H1. rename H3 into H2.
   destruct junk. { exfalso. unfold heap_size, heap_capacity in *. rewrite Zlength_app, Zlength_nil in H2. lia. }
   change (h0 :: junk) with ([h0] ++ junk) in *. rewrite app_assoc in *.
   rewrite linked_heap_array_split. Intros.
@@ -1101,9 +1140,10 @@ Proof.
     change ((fst (fst h0), Int.repr priority, data) :: heap_items h) with ([(fst (fst h0), Int.repr priority, data)] ++ heap_items h).
     apply Permutation_app_comm.
   * Exists arr junk lookup lookup'. entailer!.
-    + rewrite Zlength_app. apply Permutation_Zlength in H9.
-      unfold heap_items. simpl in *. rewrite <- H9. unfold heap_capacity in *. simpl. rewrite <- H2.
-      autorewrite with sublist. trivial.
+    + split. { unfold heap_capacity in *. simpl. rewrite <- H2. repeat rewrite Zlength_app.
+        apply Permutation_Zlength in H9. rewrite Zlength_app, Zlength_one in *. simpl fst in H9. lia. }
+      destruct H7. apply Permutation_Zlength in H7. simpl snd in H7. rewrite <- H7.
+      unfold heap_capacity in *. simpl in *. rewrite <- Hxx. trivial.
     + unfold heap_size, heap_capacity, heap_items. simpl fst in *. simpl snd in *.
       generalize (Permutation_Zlength _ _ _ H9); intro. rewrite <- H16.
       rewrite Zlength_app, Zlength_one in *. cancel.
@@ -1130,7 +1170,3 @@ Proof.
         specialize (H3 i H18). rewrite <- H20 in H3. destruct H5. unfold heap_item_key in H25.
         destruct H3. lia.
 Time Qed.
-
-
-
-
