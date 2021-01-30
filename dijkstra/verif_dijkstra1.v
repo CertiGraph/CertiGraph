@@ -95,8 +95,12 @@ Section DijkstraProof.
 
          forall item,
            In item (heap_items h) ->
-           0 <= Int.signed (snd item) < size)
-         
+           0 <= Int.signed (snd item) < size;
+
+         forall item,
+           In item (heap_items h) ->
+           heap_item_priority item = Int.repr inf)
+
     LOCAL (temp _dist (pointer_val_val dist_ptr);
           temp _prev (pointer_val_val prev_ptr);
           temp _src (Vint (Int.repr src));
@@ -407,10 +411,10 @@ Section DijkstraProof.
       (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_pv ti graph_ptr addresses).
     - Exists h (@nil key_type) (@nil int).
       entailer!.
-      1: { intros. exfalso.
-           unfold heap_size in H_h_sz.
+      1: { unfold heap_size in H_h_sz.
            apply Zlength_nil_inv in H_h_sz.
-           rewrite H_h_sz in H9. inversion H9.
+           rewrite H_h_sz in *.
+           split; inversion 1.
       }
                
       remember (heap_capacity h) as size.
@@ -427,6 +431,7 @@ Section DijkstraProof.
       1: lia.
       rename H7 into Hc.
       rename H8 into Hg.
+      rename H9 into Hn.
       Intro temp'. destruct temp' as [h' key].
       forward.
       repeat rewrite upd_Znth_list_repeat; try lia.
@@ -459,7 +464,7 @@ Section DijkstraProof.
           symmetry in Heqi; rename Heqi into H3;
             clear H9 H10 H11 H12 H13 H14 H15 H16 H17
               H18 H19 H20 PNpriq_ptr.
-      + split3; [| |split3; [| |split]].
+      + split3; [| |split3; [| |split3]].
         * rewrite <- H3. unfold heap_size.
           pose proof (Permutation_Zlength _ _ H8).
           rewrite Zlength_cons, <- Z.add_1_r in H5.
@@ -470,7 +475,7 @@ Section DijkstraProof.
           rewrite Znth_list_repeat_inrange by lia.
           destruct (Z.eq_dec i j).
           -- subst j. left.
-             admit. (* cat 2 *)
+             admit. 
           (* H7: Permutation ((k, Int.repr inf, Int.repr i) :: heap_items h0) (heap_items h') *)
 
           -- assert (0 <= j < i) by lia.
@@ -479,7 +484,7 @@ Section DijkstraProof.
              red in H4.
              specialize (H4 _ H10 _ H9). 
              rewrite Znth_list_repeat_inrange in H4 by lia.
-             admit. (* cat 2 *)
+             admit.
         * rewrite <- list_repeat1, list_repeat_app,
           Z2Nat.inj_add. trivial. lia. lia.
         * rewrite Zlength_app, binary_heap_Zmodel.Zlength_one.
@@ -506,6 +511,12 @@ Section DijkstraProof.
           -- subst item. simpl snd.
              rewrite Int.signed_repr; rep_lia.
           -- apply Hg; trivial.
+        * intros.
+          apply Permutation_sym in H8.
+          apply (Permutation_in _ H8) in H5.
+          simpl in H5. destruct H5.
+          -- subst item. unfold heap_item_priority; trivial.
+          -- apply Hn; trivial.
           
       + repeat rewrite map_app; rewrite app_assoc; cancel.
         rewrite list_repeat1, upd_Znth_app2,
@@ -527,6 +538,7 @@ Section DijkstraProof.
       remember (pointer_val_val keys_pv) as keys_ptr.
       rename H6 into Hc.
       rename H7 into Hj.
+      rename H8 into Hn.
 
       rewrite Z.sub_diag, list_repeat_0, app_nil_r, app_nil_r.
       assert (Htemp: 0 <= src < Zlength keys) by lia.
@@ -571,20 +583,21 @@ Section DijkstraProof.
           destruct (Z.eq_dec i src).
           -- subst i.
              rewrite upd_Znth_same.
-             admit. (* cat 2 *)
+             admit.
              rewrite Zlength_map, Zlength_list_repeat; lia.
           -- rewrite upd_Znth_diff; trivial.
              2,3: rewrite Zlength_map, Zlength_list_repeat; try lia.
              rewrite map_list_repeat, Znth_list_repeat_inrange.
              2,3: apply (vvalid_meaning g); trivial.
-             admit. (* cat 2 *)
+             admit.
         * red. intros.
-          (* ha is all infs (see H3)
+          (* ha is all infs (see Hn)
              and hb is ha with src tweaked to 0 (see H_ha_hb_rel)
              and 0 < inf, 
-             so this is true
+             so this is true.
+             Aquinas?
            *)
-          admit. (* cat 1 *)
+          admit.
         * red. intros. inversion H4.
         * red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
@@ -621,7 +634,7 @@ Section DijkstraProof.
 
         rename H11 into Hd.
         rename H12 into Hk.
-        
+                
         assert_PROP (Zlength prev = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
         assert_PROP (Zlength dist = size).
@@ -629,9 +642,9 @@ Section DijkstraProof.
         assert_PROP (NoDup (heap_items hc)). {
           sep_apply valid_pq_NoDup. entailer!.
         }
-        rename H13 into Hg.
 
         rename H5 into H_hc_cap.
+        rename H13 into H13'.
         forward_call (priq_ptr, hc).
         forward_if. (* checking if it's time to break *)
         * (* No, don't break. *)
@@ -644,7 +657,7 @@ Section DijkstraProof.
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity hc).
-           1: rewrite <- H15, Zlength_app; lia.
+            1: rewrite <- H15, Zlength_app; lia.
             lia.
           }
           rewrite Int.unsigned_repr in H5 by trivial.
@@ -757,7 +770,7 @@ Section DijkstraProof.
                  (* TODO update the lemma *)
                  (* apply (inv_popped_add_u _ _ _ _ _ _ priq); try ulia. *)
                  (* apply H_popped_src_1; inversion 1. *)
-                 admit. (* cat 4 *)
+                 admit.
                }
                replace u with src in * by now apply Hl.  
                intros. intro.
@@ -843,7 +856,7 @@ destruct Ha as [min_index ?].
                }
                destruct (In_Permutation_cons _ _ H21) as [he' ?].
                pose proof (Perm_Perm_cons_Perm H15 H22).
-               apply (NoDup_Perm_False Hg H23).
+               apply (NoDup_Perm_False H13' H23).
                
             ++ intros.
                apply (in_cons min_item) in H20.
@@ -984,7 +997,7 @@ destruct Ha as [min_index ?].
                   intros.
                   (* 14 goals *)
                   --- apply inv_popped_newcost; ulia.
-                  --- admit. (* cat 4 *)
+                  --- admit.
                       (* TODO update this lemma *)
                       (* apply inv_unpopped_newcost with (priq0 := priq'); ulia.  *)
                   --- now apply inv_unpopped_weak_newcost.
@@ -1172,7 +1185,7 @@ destruct Ha as [min_index ?].
                split3; [auto | apply H21 | apply H23];
                  try rewrite <- (vvalid_meaning g); trivial.
             ++ red. intros.
-               admit. (* cat 1 *)
+               admit.
            
         * (* After breaking from the while loop,
            prove break's postcondition *)
@@ -1197,7 +1210,7 @@ destruct Ha as [min_index ?].
           unfold heap_size in *.
           pose proof (Zlength_nonneg (heap_items hc)).
           lia.
-          admit. (* cat 2 *)
+          admit.
           (* HELP is this the coercion you proved? *)
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
