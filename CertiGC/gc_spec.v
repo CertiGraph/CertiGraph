@@ -368,11 +368,12 @@ Definition create_heap_spec :=
     PROP (readable_share sh)
     PARAMS ()
     GLOBALS (gv)
-    SEP (mem_mgr gv; all_string_constants sh gv)
+    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv)
   POST [tptr heap_type]
     EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp h)
-    SEP (mem_mgr gv; all_string_constants sh gv; malloc_token Ews heap_type h;
+    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv;
+        malloc_token Ews heap_type h;
          data_at Ews heap_type
                  ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
                     :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h;
@@ -386,11 +387,11 @@ Definition make_tinfo_spec :=
     PROP (readable_share sh)
     PARAMS ()
     GLOBALS (gv)
-    SEP (mem_mgr gv; all_string_constants sh gv)
+    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv)
   POST [tptr thread_info_type]
     EX t: val, EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp t)
-    SEP (mem_mgr gv; all_string_constants sh gv;
+    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv;
          malloc_token Ews thread_info_type t;
          data_at Ews thread_info_type
                  (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,
@@ -439,7 +440,7 @@ Definition garbage_collect_spec :=
           safe_to_copy g)
     PARAMS (fi; ti)
     GLOBALS (gv)
-    SEP (all_string_constants rsh gv;
+    SEP (all_string_constants rsh gv; MSS_constant gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g;
@@ -452,7 +453,7 @@ Definition garbage_collect_spec :=
           garbage_collect_condition g' t_info' roots' f_info;
           safe_to_copy g')
     LOCAL ()
-    SEP (mem_mgr gv;
+    SEP (mem_mgr gv; MSS_constant gv;
          all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
