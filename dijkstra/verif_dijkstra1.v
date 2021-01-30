@@ -902,7 +902,10 @@ spec H1. admit.
 destruct H1.
 2: { destruct H1. apply in_map. trivial. }
 rewrite Hd in H1 at 1. rewrite H0 in H1. inversion H1.
-admit.
+apply (vvalid_meaning g) in H20.
+apply (vvalid_meaning g) in H_u_valid.
+repeat rewrite Int.Z_mod_modulus_eq, Z.mod_small in H5; ulia.
+
             ++ red in H8 |- *. intros.
                specialize (H8 i_item). intro.
                replace i_item with min_item in *.
