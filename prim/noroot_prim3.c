@@ -1,7 +1,9 @@
-#include "../priq_malloc/priq_arr.h"
+#include "../priq/priq_arr.h"
 
 #define SIZE 8
 #define INF 2147483646 // INT_MAX - 1
+
+//I feel like we should store the matrix in a struct. That way SIZE can be preserved yet it can be moved around with ease
 
 int check_symmetric_matrix(int graph[SIZE][SIZE]) {
     for (int i = 0; i < SIZE; ++i) {
@@ -50,7 +52,6 @@ int prim(int graph[SIZE][SIZE], int parent[SIZE]) {
     int out[SIZE];
     initialise_list(out, 0);
     
-
     //Q = G.V;
     int* pq = init(SIZE);
     for (int v = 0; v < SIZE; ++v) {
@@ -61,8 +62,8 @@ int prim(int graph[SIZE][SIZE], int parent[SIZE]) {
         out[u] = 1;
         for (int v = 0; v < SIZE; ++v) {
             if (out[v]==0) {				//(*this is why out array is kept, to not require extra O(logn) search of pq*)
-		        cost = getCell(graph, u, v);
-                if (cost < key[v]) { //(*this is why key array is kept, to not require extra O(logn) search of pq*)
+		    cost = getCell(graph, u, v);
+            if (cost < key[v]) { //(*this is why key array is kept, to not require extra O(logn) search of pq*)
 	                parent[v] = u;
 	                key[v] = cost;
 	                adjustWeight(v, key[v], pq);

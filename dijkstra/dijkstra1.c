@@ -1,14 +1,15 @@
 #include <stdlib.h>
+#include <assert.h>
 #include <limits.h>
 #include <stdio.h>  
 #include <time.h>
-#include "../priq_malloc/priq_arr.h"
+#include "../binheap/binary_heap_pro.h"
 
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
  
-extern void * mallocN (int n);
-extern void freeN (void *p);
+// extern void * mallocN (int n);
+// extern void freeN (void *p);
 
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
@@ -26,7 +27,7 @@ void setup (int** graph, int size, int inf) {
     for (i = 0; i < size; i++) {
         for (j = 0; j <= size; j++) {
             int random = rand() % (CONN * INFL); // 1 / CONN of these will be greater than INFL
-            graph[i][j] = (i==j) ? 0 : (random > INFL) ? inf : 1 + random; // so the rest will be INF
+            graph[i][j] = (i==j) ? 0 : (random > INFL) ? inf : random; // so the rest will be INF
         }
     }
 }
@@ -69,34 +70,38 @@ int getCell (int **graph, int u, int i) {
 }
 
 void dijkstra (int** graph, int src, int *dist, int *prev, int size, int inf) {
-    int* pq = init(size);
+    int* i_ptr; 
+    Item* temp_item = (Item*) mallocN(sizeof(Item));
+    int* keys = mallocN (size * sizeof (int));
+    PQ* pq = pq_make(size); 
     int i, j, u, cost;
     for (i = 0; i < size; i++) {
         dist[i] = inf;  // Best-known distance from src to i
         prev[i] = inf;  // Last vertex visited before i
-        push(i, inf, pq);  // Everybody goes in the queue  
+        keys[i] = pq_insert_nc(pq, inf, i); // Insert everyone, plus store keys locally
     }
     dist[src] = 0;
     prev[src] = src;
-    adjustWeight(src, 0, pq); // special values for src
-    while (!pq_emp(size, inf, pq)) {
-        u = popMin(size, inf, pq);  // src -> u is optimal. relax u's neighbors, then done with u.
+    pq_edit_priority(pq, keys[src], 0); // special value for src
+    while (pq_size(pq) > 0) {
+        pq_remove_min_nc(pq, temp_item);
+        u = temp_item->data; // src -> u is optimal. relax u's neighbors, then done with u.
         for (i = 0; i < size; i++) {
             cost = getCell(graph, u, i); 
             if (cost < inf) { // i.e. node i is a neighbor of mine
                 if (dist[i] > dist[u] + cost) {  // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + cost;  // improve it
                     prev[i] = u;  // note that we got there via 'u'
-                    adjustWeight(i, dist[i], pq); // and stash the improvement in the PQ
+                    pq_edit_priority(pq, keys[i], dist[i]); // and stash the improvement in the PQ
                 }
             }
         }
     }
-    freePQ (pq);
+//    freeN (temp_item);
+    pq_free (pq);
+    freeN(keys);
     return;
 }
-
-
 
 int main(int argc, const char * argv[])
 {
@@ -107,15 +112,15 @@ int main(int argc, const char * argv[])
     int src = rand() % size; 
 
     int** graph;
-    graph = mallocN (size * sizeof *graph);
+    graph = malloc (size * sizeof *graph);
     for (i = 0; i < size; i++) {
-        graph[i] = mallocN (size * sizeof *graph[i]);
+        graph[i] = malloc (size * sizeof *graph[i]);
     }
     setup(graph, size, inf);
     print_graph(graph, size, inf, src);
     
-    int* prev = mallocN (size * sizeof *prev);
-    int* dist = mallocN (size * sizeof *dist);
+    int* prev = malloc (size * sizeof *prev);
+    int* dist = malloc (size * sizeof *dist);
     
     dijkstra(graph, src, dist, prev, size, inf);
     getPaths(src, dist, prev, size, inf);

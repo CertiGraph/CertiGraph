@@ -1,24 +1,14 @@
 Require Import VST.floyd.proofauto.
+Require Import Coq.Classes.Equivalence.
 Require Import CertiGraph.lib.List_ext.
 
-Section PriqArrUtils.
+Section FindLemmas.
 
 Context {size : Z}.
 Context {inf: Z}.
 Context {Z_EqDec : EquivDec.EqDec Z eq}. 
 
-(** UTILITIES TO HELP WITH VERIF OF ARRAY-BASED PQ **)
-
-(* a weight to be added cannot be inf + 1 *)
-Definition weight_inrange_priq item :=
-  Int.min_signed <= item <= inf.
-
-(* over time, the overall PQ can range from MIN to inf + 1 *)
-Definition inrange_priq (priq : list Z) :=
-  Forall (fun x => Int.min_signed <= x <= inf + 1) priq.
-
-Definition isEmpty (priq : list Z) : val :=
-  fold_right (fun h acc => if (Z_lt_dec h (inf + 1)) then Vzero else acc) Vone priq.
+(* Find and lemmas about it *)
 
 Fixpoint find {A: Type} {EA: EquivDec.EqDec A eq} (l : list A) (n : A) (ans : Z) :=
   match l with
@@ -28,84 +18,6 @@ Fixpoint find {A: Type} {EA: EquivDec.EqDec A eq} (l : list A) (n : A) (ans : Z)
               else (find t n (1 + ans))
   end.
 
-(** LEMMAS ABOUT THESE UTILITIES **)
-
-Lemma isEmpty_in: forall l target,
-    In target l -> target < inf + 1 -> isEmpty l = Vzero.
-Proof.
-  intros. induction l.
-  1: exfalso; apply (in_nil H).
-  unfold isEmpty. rewrite fold_right_cons.
-  destruct (Z_lt_dec a (inf+1)); trivial.
-  simpl in H; simpl; destruct H.
-  1: rewrite H in n; exfalso; lia.
-  clear n a. specialize (IHl H).
-  unfold isEmpty in IHl. trivial.
-Qed.
-
-Lemma isEmpty_in': forall l,
-    (exists i, In i l /\ i < (inf + 1)) <-> isEmpty l = Vzero.
-Proof.
-  split; intros.
-  - destruct H as [? [? ?]]. induction l.
-    1: exfalso; apply (in_nil H).
-    unfold isEmpty. rewrite fold_right_cons.
-    destruct (Z_lt_dec a (inf+1)); trivial.
-    simpl in H; simpl; destruct H.
-    1: rewrite H in n; exfalso; lia.
-    clear n a. specialize (IHl H).
-    unfold isEmpty in IHl. trivial.
-  - induction l.
-    1: inversion H.
-    simpl in H. destruct (Z_lt_dec a (inf+1)).
-    + exists a. split; simpl; [left|]; trivial.
-    + destruct (IHl H) as [? [? ?]].
-      exists x. split; [apply in_cons|]; assumption.
-Qed.
-
-Lemma isEmptyTwoCases: forall l,
-    isEmpty l = Vone \/ isEmpty l = Vzero.
-Proof.
-  intros. induction l. 1: simpl; left; trivial.
-  destruct IHl; simpl; destruct (Z_lt_dec a (inf+1));
-    (try now left); now right.
-Qed.
-
-Lemma isEmptyMeansInf: forall l,
-    isEmpty l = Vone <-> Forall (fun x => x > inf) l.
-Proof.
-  intros.
-  split; intros.
-  - induction l; trivial. simpl in H.
-    destruct (Z_lt_dec a (inf+1)); [inversion H|].
-    specialize (IHl H). apply Forall_cons; trivial. lia.
-  - induction l; trivial. simpl.
-    destruct (Z_lt_dec a (inf+1)).
-    2: { apply IHl.
-         rewrite Forall_forall; intros.
-         rewrite Forall_forall in H. simpl in H.
-         apply H. right; trivial.
-    }
-    exfalso.
-    rewrite Forall_forall in H.
-    assert (In a (a :: l)) by (apply in_eq).
-    specialize (H _ H0). lia.
-Qed.
-
-Lemma isEmpty_Vone_app: forall l1 l2,
-    isEmpty (l1 ++ l2) = Vone <->
-    isEmpty l1 = Vone /\ isEmpty l2 = Vone.
-Proof.
-  intros. split; intros.
-  - repeat rewrite isEmptyMeansInf, Forall_forall in *;
-      split; intros; apply H, in_or_app;
-        [left | right]; trivial.
-  - repeat rewrite isEmptyMeansInf, Forall_forall in *.
-    destruct H. intros.
-    apply in_app_or in H1; destruct H1;
-      [apply H | apply H0]; trivial.
-Qed.
-    
 Lemma find_index_gen: forall (l: list Z) i ans,
     0 <= i < Zlength l ->
     ~ In (Znth i l) (sublist 0 i l) ->
@@ -351,16 +263,6 @@ Proof.
   - rewrite <- Znth_0_hd by trivial. apply Znth_In; lia.
 Qed.
 
-Lemma find_min_lt_inf: forall u l,
-    u = find l (fold_right Z.min (hd 0 l) l) 0 -> isEmpty l = Vzero ->
-    Zlength l > 0 -> Znth u l < inf + 1.
-Proof.
-  intros. rewrite <- isEmpty_in' in H0. destruct H0 as [? [? ?]].
-  rewrite H. rewrite Znth_find.
-  - pose proof (fold_min _ _ H0). lia.
-  - now apply fold_min_in_list.
-Qed.
-
 Lemma find_app_In1:
 forall {A:Type} {EA: EquivDec.EqDec A eq} (l1 l2: list A) v ans, In v l1 -> find (l1++l2) v ans = find l1 v ans.
 Proof.
@@ -473,5 +375,230 @@ do 2 rewrite find_accum_add1 in H2. apply (IHl x y acc).
 apply NoDup_cons_1 in H; auto. auto. auto. lia.
 Qed.
 
+(***************FIND LEMMAS*******)
 
-End PriqArrUtils.
+Context {E: Type}.
+Context {E_EqDec: EquivDec.EqDec E eq}.
+
+Lemma NoDup_incl_ordered_powerlist:
+  forall (l: list E), NoDup l -> exists L,
+  (forall l', (NoDup l' /\ incl l' l /\ (forall x y, In x l' -> In y l' -> (find l' x 0 <= find l' y 0 <-> find l x 0 <= find l y 0)))
+  <-> In l' L).
+Proof.
+induction l; intros.
+exists (nil::nil). intros; split; intros. destruct H0 as [? [? ?]]. destruct l'. left; auto.
+assert (In e (e::l')). left; auto. apply H1 in H3; contradiction.
+destruct H0. subst l'. split. apply NoDup_nil. split. unfold incl; intros; auto.
+intros. simpl. lia.
+contradiction.
+(*inductive step*)
+assert (~ In a l). apply NoDup_cons_2 in H; auto. apply NoDup_cons_1 in H.
+destruct (IHl H) as [L ?]. clear IHl.
+assert (forall l', In l' L -> ~ In a l').
+intros. apply H1 in H2. destruct H2 as [? [? ?]]. unfold not; intros. apply H3 in H5. contradiction.
+exists (L ++ map (fun l' => (a::l')) L).
+intros; split; intros.
+**
+destruct H3 as [? [? ?]]. apply in_or_app.
+destruct (in_dec E_EqDec a l').
+****
+right.
+(*then l' must be of form (a::l'')*)
+destruct l'. contradiction.
+destruct (E_EqDec e a).
+******
+hnf in e0. subst e.
+apply in_map. apply H1.
+split. apply NoDup_cons_1 in H3; auto.
+split. unfold incl; intros. assert (In a0 (a::l)). apply H4. right; auto.
+destruct H7. subst a0. apply NoDup_cons_2 in H3. contradiction. auto.
+intros.
+assert (find (a :: l') x 0 <= find (a :: l') y 0 <-> find (a :: l) x 0 <= find (a :: l) y 0). apply H5.
+right; auto. right; auto.
+apply NoDup_cons_2 in H3.
+simpl in H8.
+destruct (E_EqDec a x). hnf in e. subst x. contradiction.
+destruct (E_EqDec a y). hnf in e. subst y. contradiction.
+replace 1 with (1+0) in H8 by lia. repeat rewrite find_accum_add1 in H8.
+split; intros. lia. lia.
+******
+unfold complement, equiv in c.
+assert (find (e :: l') e 0 <= find (e :: l') a 0 <-> find (a :: l) e 0 <= find (a :: l) a 0). apply H5.
+left; auto. auto. simpl in H6.
+destruct (E_EqDec e e). 2: { unfold complement, equiv in c0; contradiction. }
+destruct (E_EqDec a a). 2: { unfold complement, equiv in c0; contradiction. }
+clear e0 e1.
+destruct (E_EqDec e a). hnf in e0; contradiction.
+destruct (E_EqDec a e). hnf in e0; symmetry in e0; contradiction.
+clear c0 c1.
+assert (0 <= find l' a 1). { apply (Z.le_trans 0 1). lia. apply find_lbound. }
+apply H6 in H7. assert (1 <= 0). { apply (Z.le_trans 1 (find l e 1)). apply find_lbound. auto. }
+lia.
+****
+left. apply H1. split. auto. split. unfold incl; intros. assert (In a0 (a::l)). apply H4; auto.
+destruct H7. subst a0. contradiction. auto.
+intros. assert (find l' x 0 <= find l' y 0 <-> find (a :: l) x 0 <= find (a :: l) y 0). apply H5; auto.
+simpl in H8. destruct (E_EqDec a x). hnf in e. subst x. contradiction.
+destruct (E_EqDec a y). hnf in e. subst y. contradiction.
+replace 1 with (1+0) in H8 by lia. do 2 rewrite find_accum_add1 in H8.
+split; intros. apply H8 in H9. lia.
+apply H8. lia.
+**
+apply in_app_or in H3. destruct H3.
+****
+apply H1 in H3. destruct H3 as [? [? ?]].
+split. auto. split. unfold incl; intros. right. apply H4. auto.
+intros.
+assert (find l' x 0 <= find l' y 0 <-> find l x 0 <= find l y 0). apply H5; auto.
+simpl.
+destruct (E_EqDec a x). hnf in e; subst x. apply H4 in H6; contradiction.
+destruct (E_EqDec a y). hnf in e; subst y. apply H4 in H7; contradiction.
+replace 1 with (1+0) by lia. do 2 rewrite (find_accum_add1).
+split; intros. apply H8 in H9. lia. lia.
+****
+apply list_in_map_inv in H3. destruct H3 as [lx [? ?]]. subst l'. rename lx into l'.
+assert (~ In a l'). apply H2; auto. apply H1 in H4. destruct H4 as [? [? ?]].
+split. apply NoDup_cons; auto.
+split. unfold incl; intros. destruct H7. subst a0. left; auto.
+right. apply H5. auto.
+intros. destruct H7.
+subst x. simpl. destruct (E_EqDec a a). 2: { unfold complement, equiv in c; contradiction. }
+destruct (E_EqDec a y). lia. split; intros. apply (Z.le_trans 0 1). lia. apply find_lbound. apply (Z.le_trans 0 1). lia. apply find_lbound.
+destruct H8. subst y. simpl.
+destruct (E_EqDec a a). 2: { unfold complement, equiv in c; contradiction. }
+destruct (E_EqDec a x). lia. split; intros.
+assert (1 <= 0). apply (Z.le_trans 1 (find l' x 1)). apply find_lbound. lia. lia.
+assert (1 <= 0). apply (Z.le_trans 1 (find l x 1)). apply find_lbound. lia. lia.
+assert (find l' x 0 <= find l' y 0 <-> find l x 0 <= find l y 0). apply H6; auto. simpl.
+destruct (E_EqDec a x). hnf in e; subst x; contradiction.
+destruct (E_EqDec a y). hnf in e; subst y; contradiction.
+replace 1 with (1+0) by lia. repeat rewrite find_accum_add1.
+split; intros; lia.
+Qed.
+
+Lemma test2:
+forall (l' l: list E), NoDup l -> NoDup l' -> incl l' l -> exists lsorted, Permutation lsorted l' /\
+(forall a b, In a lsorted -> In b lsorted -> (find lsorted a 0 <= find lsorted b 0 <-> find l a 0 <= find l b 0)).
+Proof.
+induction l'; intros l Hl; intros.
+exists nil. split. apply perm_nil. intros. contradiction.
+assert (exists lsorted : list E,
+         Permutation lsorted l' /\
+         (forall a b : E, In a lsorted -> In b lsorted -> find lsorted a 0 <= find lsorted b 0 <-> find l a 0 <= find l b 0)).
+apply IHl'. auto. apply NoDup_cons_1 in H; auto. unfold incl; intros. apply H0. right; auto. clear IHl'.
+destruct H1 as [lsorted [? ?]].
+assert (Ha: ~ In a lsorted). unfold not; intros. apply (Permutation_in (l':=l')) in H3. 2: auto.
+apply NoDup_cons_2 in H; contradiction.
+assert (Hsorted_NoDup: NoDup lsorted). apply (Permutation_NoDup (l:=l')). apply Permutation_sym; auto. apply NoDup_cons_1 in H; auto.
+(*split the list*)
+set (k:= find l a 0) in *.
+assert (exists l1 l2, lsorted = l1++l2 /\ (forall x, In x l1 -> find l x 0 < find l a 0) /\ (forall x, In x l2 -> find l a 0 <= find l x 0)). {
+clear H1.
+induction lsorted. exists nil; exists nil. split. rewrite app_nil_r; auto.
+split; intros; contradiction.
+destruct (Z.lt_ge_cases (find l a0 0) (find l a 0)); rename H1 into Ha0.
+++
+assert (exists l1 l2 : list E,
+              lsorted = l1 ++ l2 /\
+              (forall x : E, In x l1 -> find l x 0 < find l a 0) /\ (forall x : E, In x l2 -> find l a 0 <= find l x 0)). {
+apply IHlsorted. 2: { unfold not; intros. apply Ha. right; auto. }
+2: { apply NoDup_cons_1 in Hsorted_NoDup; auto. }
+intros. split; intros.
+apply H2. right; auto. right; auto.
+apply NoDup_cons_2 in Hsorted_NoDup.
+simpl. destruct (E_EqDec a0 a1). hnf in e; subst a0; contradiction.
+destruct (E_EqDec a0 b). hnf in e; subst a0; contradiction.
+replace 1 with (1+0) by lia. do 2 rewrite find_accum_add1. lia.
+apply H2 in H4. 2: right; auto. 2: right; auto.
+simpl in H4. apply NoDup_cons_2 in Hsorted_NoDup.
+destruct (E_EqDec a0 a1). hnf in e; subst a0; contradiction.
+destruct (E_EqDec a0 b). hnf in e; subst a0; contradiction.
+replace 1 with (1+0) in H4 by lia. do 2 rewrite find_accum_add1 in H4. lia.
+} clear IHlsorted.
+destruct H1 as [l1 [l2 [? [? ?]]]].
+exists (a0::l1). exists l2. split. simpl. rewrite H1; auto.
+split; intros. destruct H5. subst x; auto. apply H3; auto.
+apply H4; auto.
+++
+exists nil. exists (a0::lsorted). split. auto.
+split; intros. contradiction.
+destruct H1. subst x. auto.
+apply (Z.le_trans _ (find l a0 0)). auto.
+apply H2. left; auto. right; auto.
+rewrite find_cons. apply find_lbound.
+}
+destruct H3 as [l1 [l2 [? [? ?]]]]. subst lsorted.
+exists (l1++a::l2).
+split. { apply NoDup_Permutation. apply NoDup_app_inv. apply NoDup_app_l in Hsorted_NoDup; auto.
+apply NoDup_cons. unfold not; intros; apply Ha. apply in_or_app; right; auto.
+apply NoDup_app_r in Hsorted_NoDup; auto.
+unfold not; intros. destruct H6. subst x. apply Ha. apply in_or_app; left; auto.
+assert (~ In x l2). apply (NoDup_app_not_in E l1 l2); auto. contradiction.
+auto.
+split; intros. apply in_app_or in H3; destruct H3. right. apply (Permutation_in (l:=l1++l2)); auto. apply in_or_app; left; auto.
+destruct H3. subst x. left; auto. right. apply (Permutation_in (l:=l1++l2)); auto. apply in_or_app; right; auto.
+apply in_or_app. destruct H3. subst x. right; left; auto.
+apply (Permutation_in (l':=l1++l2)) in H3. 2: apply Permutation_sym; auto.
+apply in_app_or in H3; destruct H3. left; auto. right; right; auto.
+}
+intros. apply in_app_or in H3. apply in_app_or in H6. specialize H2 with a0 b.
+destruct H3; destruct H6.
+**
+rewrite (find_app_In1 l1 (a::l2)) by auto. rewrite find_app_In1 by auto.
+rewrite find_app_In1 in H2 by auto. rewrite find_app_In1 in H2 by auto.
+apply H2. apply in_or_app. left; auto. apply in_or_app; left; auto.
+**
+rewrite find_app_In1 by auto.
+assert (~ In b l1). unfold not; intros. destruct H6. subst b. apply Ha. apply in_or_app; left; auto.
+assert (~ In b l2). apply (NoDup_app_not_in E l1 l2); auto. contradiction.
+rewrite find_app_notIn1 by auto.
+destruct H6. subst b. split; intros. apply Z.le_lteq. left; apply H4; auto.
+apply (Z.le_trans _ (Zlength l1 + 0)). apply find_ubound. pose proof (find_lbound (a::l2) a 0); lia.
+split; intros. apply (Z.le_trans _ (find l a 0)). apply Z.le_lteq. left; apply H4; auto. apply H5; auto.
+apply (Z.le_trans _ (Zlength l1 + 0)). apply find_ubound. pose proof (find_lbound (a::l2) b 0); lia.
+**
+assert (~ In a0 l1). unfold not; intros. destruct H3. subst a0. apply Ha. apply in_or_app; left; auto.
+assert (~ In a0 l2). apply (NoDup_app_not_in E l1 l2); auto. contradiction.
+(*this is false*)
+rewrite find_app_notIn1 by auto. rewrite find_app_In1 by auto.
+split; intros. assert (find l1 b 0 < Zlength l1 + 0). apply find_In_ubound; auto. rewrite Z.add_0_r in H9.
+assert (0 <= find (a::l2) a0 0). apply find_lbound. lia.
+destruct H3. subst a0.
+****
+assert (find l b 0 < find l a 0). apply H4; auto. lia.
+****
+assert (find l b 0 < find l a0 0). apply (Z.lt_le_trans _ (find l a 0)). apply H4; auto. apply H5; auto. lia.
+**
+assert (~ In a0 l1). unfold not; intros. destruct H3. subst a0. apply Ha. apply in_or_app; left; auto.
+assert (~ In a0 l2). apply (NoDup_app_not_in E l1 l2); auto. contradiction.
+assert (~ In b l1). unfold not; intros. destruct H6. subst b. apply Ha. apply in_or_app; left; auto.
+assert (~ In b l2). apply (NoDup_app_not_in E l1 l2); auto. contradiction.
+rewrite find_app_notIn1 by auto. rewrite find_app_notIn1 by auto.
+rewrite find_app_notIn1 in H2 by auto. rewrite find_app_notIn1 in H2 by auto.
+destruct H3; destruct H6.
+****
+subst a0. subst b. split; intros; lia.
+****
+subst a0. rewrite find_cons. split; intros. apply H5; auto. pose proof (find_lbound (a::l2) b 0); lia.
+****
+subst b. rewrite find_cons. (*falseness*)
+split; intros.
+assert (0 < find (a::l2) a0 0). simpl. destruct (E_EqDec a a0).
+hnf in e. subst a0. exfalso; apply Ha. apply in_or_app; right; auto.
+pose proof (find_lbound l2 a0 1). lia.
+lia.
+apply Z.le_lteq in H6. destruct H6.
+assert (find l a 0 <= find l a0 0). apply H5; auto. lia.
+assert (incl l' l). unfold incl; intros. apply H0. right; auto.
+apply (find_eq l a0 a 0) in H6. subst a0. rewrite find_cons; lia.
+auto. apply H9. apply (Permutation_in (l:= (l1++l2))); auto. apply in_or_app; right; auto.
+apply H0. left; auto.
+**** rewrite <- H2.
+2: apply in_or_app; right; auto. 2: apply in_or_app; right; auto.
+simpl.
+destruct (E_EqDec a a0). hnf in e; subst a0. exfalso; apply Ha. apply in_or_app; right; auto.
+destruct (E_EqDec a b). hnf in e; subst b. exfalso; apply Ha. apply in_or_app; right; auto.
+replace 1 with (1+0) by lia. do 2 rewrite find_accum_add1. split; intros; lia.
+Qed.
+
+End FindLemmas.

@@ -2,7 +2,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <time.h>
-#include "../priq_malloc/priq_arr.h"
+#include "../priq/priq_arr.h"
 
 #define SIZE 8  // number of vertices
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
@@ -28,7 +28,7 @@ void setup (int graph[SIZE][SIZE]) {
     for (i = 0; i < SIZE; i++) {
         for (j = 0; j <= SIZE; j++) {
             int random = rand() % (CONN * INFL); // 1 / CONN of these will be greater than INFL
-            graph[i][j] = (i==j) ? 0 : (random > INFL) ? INF : 1 + random; // so the rest will be INF
+            graph[i][j] = (i==j) ? 0 : (random > INFL) ? INF : random; // so the rest will be INF
         }
     }
 }

@@ -35,3 +35,6 @@ poster.run.xml
 *.cmi
 *.cmx
 *.cmxs
+*.key
+sumlist.c
+sumlist.v

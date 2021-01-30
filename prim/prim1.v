@@ -66,48 +66,51 @@ Definition ___compcert_va_composite : ident := 19%positive.
 Definition ___compcert_va_float64 : ident := 18%positive.
 Definition ___compcert_va_int32 : ident := 16%positive.
 Definition ___compcert_va_int64 : ident := 17%positive.
-Definition _a : ident := 69%positive.
-Definition _adjustWeight : ident := 61%positive.
-Definition _check_symmetric_matrix : ident := 68%positive.
-Definition _cost : ident := 78%positive.
-Definition _getCell : ident := 74%positive.
-Definition _graph : ident := 65%positive.
-Definition _i : ident := 58%positive.
-Definition _inf : ident := 77%positive.
-Definition _initialise_list : ident := 72%positive.
-Definition _initialise_matrix : ident := 70%positive.
-Definition _j : ident := 67%positive.
-Definition _key : ident := 79%positive.
-Definition _list : ident := 71%positive.
-Definition _main : ident := 63%positive.
-Definition _mallocN : ident := 64%positive.
-Definition _minVertex : ident := 56%positive.
-Definition _minWeight : ident := 57%positive.
-Definition _newWeight : ident := 60%positive.
-Definition _out : ident := 80%positive.
-Definition _parent : ident := 76%positive.
-Definition _popMin : ident := 59%positive.
-Definition _pq : ident := 54%positive.
-Definition _pq_emp : ident := 62%positive.
-Definition _prim : ident := 83%positive.
-Definition _push : ident := 55%positive.
-Definition _r : ident := 75%positive.
-Definition _size : ident := 66%positive.
-Definition _u : ident := 73%positive.
-Definition _v : ident := 81%positive.
-Definition _v__1 : ident := 82%positive.
-Definition _vertex : ident := 52%positive.
-Definition _weight : ident := 53%positive.
-Definition _t'1 : ident := 84%positive.
-Definition _t'10 : ident := 93%positive.
-Definition _t'2 : ident := 85%positive.
-Definition _t'3 : ident := 86%positive.
-Definition _t'4 : ident := 87%positive.
-Definition _t'5 : ident := 88%positive.
-Definition _t'6 : ident := 89%positive.
-Definition _t'7 : ident := 90%positive.
-Definition _t'8 : ident := 91%positive.
-Definition _t'9 : ident := 92%positive.
+Definition _a : ident := 73%positive.
+Definition _adjustWeight : ident := 66%positive.
+Definition _check_symmetric_matrix : ident := 72%positive.
+Definition _cost : ident := 81%positive.
+Definition _freeN : ident := 53%positive.
+Definition _freePQ : ident := 68%positive.
+Definition _getCell : ident := 78%positive.
+Definition _graph : ident := 70%positive.
+Definition _i : ident := 63%positive.
+Definition _inf : ident := 60%positive.
+Definition _init : ident := 56%positive.
+Definition _initialise_list : ident := 76%positive.
+Definition _initialise_matrix : ident := 74%positive.
+Definition _j : ident := 71%positive.
+Definition _key : ident := 82%positive.
+Definition _list : ident := 75%positive.
+Definition _main : ident := 69%positive.
+Definition _mallocN : ident := 52%positive.
+Definition _minVertex : ident := 61%positive.
+Definition _minWeight : ident := 62%positive.
+Definition _newWeight : ident := 65%positive.
+Definition _out : ident := 83%positive.
+Definition _parent : ident := 80%positive.
+Definition _popMin : ident := 64%positive.
+Definition _pq : ident := 55%positive.
+Definition _pq_emp : ident := 67%positive.
+Definition _prim : ident := 86%positive.
+Definition _push : ident := 59%positive.
+Definition _r : ident := 79%positive.
+Definition _size : ident := 54%positive.
+Definition _u : ident := 77%positive.
+Definition _v : ident := 84%positive.
+Definition _v__1 : ident := 85%positive.
+Definition _vertex : ident := 57%positive.
+Definition _weight : ident := 58%positive.
+Definition _t'1 : ident := 87%positive.
+Definition _t'10 : ident := 96%positive.
+Definition _t'2 : ident := 88%positive.
+Definition _t'3 : ident := 89%positive.
+Definition _t'4 : ident := 90%positive.
+Definition _t'5 : ident := 91%positive.
+Definition _t'6 : ident := 92%positive.
+Definition _t'7 : ident := 93%positive.
+Definition _t'8 : ident := 94%positive.
+Definition _t'9 : ident := 95%positive.
 
 Definition f_check_symmetric_matrix := {|
   fn_return := tint;
@@ -170,8 +173,8 @@ Definition f_check_symmetric_matrix := {|
 Definition f_initialise_matrix := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_graph, (tptr (tptr tint))) :: (_a, tint) ::
-                (_size, tint) :: nil);
+  fn_params := ((_graph, (tptr (tptr tint))) :: (_size, tint) ::
+                (_a, tint) :: nil);
   fn_vars := nil;
   fn_temps := ((_i, tint) :: (_j, tint) :: (_t'1, (tptr tint)) :: nil);
   fn_body :=
@@ -209,7 +212,7 @@ Definition f_initialise_matrix := {|
 Definition f_initialise_list := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_list, (tptr tint)) :: (_a, tint) :: (_size, tint) :: nil);
+  fn_params := ((_list, (tptr tint)) :: (_size, tint) :: (_a, tint) :: nil);
   fn_vars := nil;
   fn_temps := ((_i, tint) :: nil);
   fn_body :=
@@ -252,17 +255,15 @@ Definition f_getCell := {|
 Definition f_prim := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_graph, (tptr (tptr tint))) :: (_r, tint) ::
-                (_parent, (tptr tint)) :: (_size, tint) :: (_inf, tint) ::
-                nil);
+  fn_params := ((_graph, (tptr (tptr tint))) :: (_size, tint) ::
+                (_inf, tint) :: (_r, tint) :: (_parent, (tptr tint)) :: nil);
   fn_vars := nil;
   fn_temps := ((_cost, tint) :: (_key, (tptr tint)) :: (_out, (tptr tint)) ::
                (_pq, (tptr tint)) :: (_v, tint) :: (_u, tint) ::
                (_v__1, tint) :: (_t'6, tint) :: (_t'5, tint) ::
-               (_t'4, tint) :: (_t'3, (tptr tvoid)) ::
-               (_t'2, (tptr tvoid)) :: (_t'1, (tptr tvoid)) ::
-               (_t'10, tint) :: (_t'9, tint) :: (_t'8, tint) ::
-               (_t'7, tint) :: nil);
+               (_t'4, tint) :: (_t'3, (tptr tint)) :: (_t'2, (tptr tvoid)) ::
+               (_t'1, (tptr tvoid)) :: (_t'10, tint) :: (_t'9, tint) ::
+               (_t'8, tint) :: (_t'7, tint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
@@ -276,8 +277,8 @@ Definition f_prim := {|
                                (Tcons (tptr tint)
                                  (Tcons tint (Tcons tint Tnil))) tvoid
                                cc_default))
-      ((Etempvar _key (tptr tint)) :: (Etempvar _inf tint) ::
-       (Etempvar _size tint) :: nil))
+      ((Etempvar _key (tptr tint)) :: (Etempvar _size tint) ::
+       (Etempvar _inf tint) :: nil))
     (Ssequence
       (Scall None
         (Evar _initialise_list (Tfunction
@@ -300,8 +301,8 @@ Definition f_prim := {|
                                      (Tcons (tptr tint)
                                        (Tcons tint (Tcons tint Tnil))) tvoid
                                      cc_default))
-            ((Etempvar _out (tptr tint)) :: (Econst_int (Int.repr 0) tint) ::
-             (Etempvar _size tint) :: nil))
+            ((Etempvar _out (tptr tint)) :: (Etempvar _size tint) ::
+             (Econst_int (Int.repr 0) tint) :: nil))
           (Ssequence
             (Sassign
               (Ederef
@@ -310,11 +311,9 @@ Definition f_prim := {|
             (Ssequence
               (Ssequence
                 (Scall (Some _t'3)
-                  (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid)
-                                   cc_default))
-                  ((Ebinop Omul (Etempvar _size tint) (Esizeof tint tuint)
-                     tuint) :: nil))
-                (Sset _pq (Etempvar _t'3 (tptr tvoid))))
+                  (Evar _init (Tfunction (Tcons tint Tnil) (tptr tint)
+                                cc_default)) ((Etempvar _size tint) :: nil))
+                (Sset _pq (Etempvar _t'3 (tptr tint))))
               (Ssequence
                 (Ssequence
                   (Sset _v (Econst_int (Int.repr 0) tint))
@@ -345,9 +344,13 @@ Definition f_prim := {|
                     (Ssequence
                       (Ssequence
                         (Scall (Some _t'4)
-                          (Evar _pq_emp (Tfunction (Tcons (tptr tint) Tnil)
-                                          tint cc_default))
-                          ((Etempvar _pq (tptr tint)) :: nil))
+                          (Evar _pq_emp (Tfunction
+                                          (Tcons tint
+                                            (Tcons tint
+                                              (Tcons (tptr tint) Tnil))) tint
+                                          cc_default))
+                          ((Etempvar _size tint) :: (Etempvar _inf tint) ::
+                           (Etempvar _pq (tptr tint)) :: nil))
                         (Sifthenelse (Eunop Onotbool (Etempvar _t'4 tint)
                                        tint)
                           Sskip
@@ -355,9 +358,13 @@ Definition f_prim := {|
                       (Ssequence
                         (Ssequence
                           (Scall (Some _t'5)
-                            (Evar _popMin (Tfunction (Tcons (tptr tint) Tnil)
+                            (Evar _popMin (Tfunction
+                                            (Tcons tint
+                                              (Tcons tint
+                                                (Tcons (tptr tint) Tnil)))
                                             tint cc_default))
-                            ((Etempvar _pq (tptr tint)) :: nil))
+                            ((Etempvar _size tint) :: (Etempvar _inf tint) ::
+                             (Etempvar _pq (tptr tint)) :: nil))
                           (Sset _u (Etempvar _t'5 tint)))
                         (Ssequence
                           (Sassign
@@ -451,7 +458,22 @@ Definition f_prim := {|
                                 (Ebinop Oadd (Etempvar _v__1 tint)
                                   (Econst_int (Int.repr 1) tint) tint)))))))
                     Sskip)
-                  (Sreturn None))))))))))
+                  (Ssequence
+                    (Scall None
+                      (Evar _freePQ (Tfunction (Tcons (tptr tvoid) Tnil)
+                                      tvoid cc_default))
+                      ((Etempvar _pq (tptr tint)) :: nil))
+                    (Ssequence
+                      (Scall None
+                        (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil)
+                                       tvoid cc_default))
+                        ((Etempvar _out (tptr tint)) :: nil))
+                      (Ssequence
+                        (Scall None
+                          (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil)
+                                         tvoid cc_default))
+                          ((Etempvar _key (tptr tint)) :: nil))
+                        (Sreturn None)))))))))))))
 |}.
 
 Definition composites : list composite_definition :=
@@ -702,6 +724,10 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
+ (_init,
+   Gfun(External (EF_external "init"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tint Tnil) (tptr tint) cc_default)) ::
  (_push,
    Gfun(External (EF_external "push"
                    (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
@@ -709,8 +735,9 @@ Definition global_definitions : list (ident * globdef fundef type) :=
      (Tcons tint (Tcons tint (Tcons (tptr tint) Tnil))) tvoid cc_default)) ::
  (_popMin,
    Gfun(External (EF_external "popMin"
-                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
-     (Tcons (tptr tint) Tnil) tint cc_default)) ::
+                   (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
+                     AST.Tint cc_default))
+     (Tcons tint (Tcons tint (Tcons (tptr tint) Tnil))) tint cc_default)) ::
  (_adjustWeight,
    Gfun(External (EF_external "adjustWeight"
                    (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
@@ -718,12 +745,21 @@ Definition global_definitions : list (ident * globdef fundef type) :=
      (Tcons tint (Tcons tint (Tcons (tptr tint) Tnil))) tvoid cc_default)) ::
  (_pq_emp,
    Gfun(External (EF_external "pq_emp"
-                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
-     (Tcons (tptr tint) Tnil) tint cc_default)) ::
+                   (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
+                     AST.Tint cc_default))
+     (Tcons tint (Tcons tint (Tcons (tptr tint) Tnil))) tint cc_default)) ::
+ (_freePQ,
+   Gfun(External (EF_external "freePQ"
+                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
+     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_mallocN,
    Gfun(External (EF_external "mallocN"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
+ (_freeN,
+   Gfun(External (EF_external "freeN"
+                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
+     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_check_symmetric_matrix, Gfun(Internal f_check_symmetric_matrix)) ::
  (_initialise_matrix, Gfun(Internal f_initialise_matrix)) ::
  (_initialise_list, Gfun(Internal f_initialise_list)) ::
@@ -732,25 +768,25 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_prim :: _getCell :: _initialise_list :: _initialise_matrix ::
- _check_symmetric_matrix :: _mallocN :: _pq_emp :: _adjustWeight ::
- _popMin :: _push :: ___builtin_debug :: ___builtin_write32_reversed ::
- ___builtin_write16_reversed :: ___builtin_read32_reversed ::
- ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
- ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
- ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
- ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
- ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
- ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
- ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
- ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
- ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
- ___compcert_va_composite :: ___compcert_va_float64 ::
- ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
- ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
- ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
- ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
- ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
- ___builtin_bswap :: ___builtin_bswap64 :: nil).
+ _check_symmetric_matrix :: _freeN :: _mallocN :: _freePQ :: _pq_emp ::
+ _adjustWeight :: _popMin :: _push :: _init :: ___builtin_debug ::
+ ___builtin_write32_reversed :: ___builtin_write16_reversed ::
+ ___builtin_read32_reversed :: ___builtin_read16_reversed ::
+ ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
+ ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
+ ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
+ ___builtin_clzl :: ___builtin_clz :: ___compcert_i64_umulh ::
+ ___compcert_i64_smulh :: ___compcert_i64_sar :: ___compcert_i64_shr ::
+ ___compcert_i64_shl :: ___compcert_i64_umod :: ___compcert_i64_smod ::
+ ___compcert_i64_udiv :: ___compcert_i64_sdiv :: ___compcert_i64_utof ::
+ ___compcert_i64_stof :: ___compcert_i64_utod :: ___compcert_i64_stod ::
+ ___compcert_i64_dtou :: ___compcert_i64_dtos :: ___compcert_va_composite ::
+ ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
+ ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
+ ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
+ ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
+ ___builtin_fsqrt :: ___builtin_fabs :: ___builtin_bswap16 ::
+ ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.

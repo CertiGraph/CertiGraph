@@ -18,19 +18,25 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.MathAdjMatGraph.
 
-
-Section SpaceAdjMatGraph1.
+Section Spatial_AdjMat_Model_1.
+  (* Model 1 is for a heap-allocated graph,
+     where the graph is malloc-ed
+     by first malloc-ing a "spine" column of some size, 
+     and then malloc-ing a "row" into each cell
+     of the spine.       
+   *)
 
   Context {size : Z}. 
   Context {CompSpecs : compspecs}.
   Context {V_EqDec : EquivDec.EqDec V eq}. 
   Context {E_EqDec: EquivDec.EqDec E eq}.
   
-  (* SPATIAL REPRESENTATION *)
-
-  (* Assumption: (v,0), (v,1) ... (v, size-1) are edges.
-   Action: makes a list containing each edge's elabel.
-   The argument f is an opportunity to tweak the edges as needed
+  (* Assumption: 
+     (v,0), (v,1) ... (v, size-1) are edges.
+     
+     Action: 
+      Makes a list containing each edge's elabel.
+      The argument f is an opportunity to tweak the edges as needed
    *)  
   Definition vert_to_list (g: AdjMatLG) (f : E -> E) (v : V) :=
     map (elabel g)
@@ -38,11 +44,10 @@ Section SpaceAdjMatGraph1.
              (nat_inc_list (Z.to_nat size))).
 
   (* Assumptions: 
-   1. 0, 1, ... (size-1) are vertices
-   2. for any vertex v,
-          (v,0), (v,1) ... (v, size-1) are edges.
+     1. 0, 1, ... (size-1) are vertices
+     2. for any vertex v, (v,0), (v,1) ... (v, size-1) are edges.
           
-      Action:
+     Action:
       Makes a list of lists, where each member list 
       is a vertex's edge-label-list (see helper above).
    *)
@@ -50,6 +55,8 @@ Section SpaceAdjMatGraph1.
     map (vert_to_list g f)
         (nat_inc_list (Z.to_nat size)).
 
+  (* Some lemmas about the above *)
+  
   Lemma graph_to_mat_Zlength:
     forall g (f : E -> E),
       0 <= size ->
@@ -142,28 +149,4 @@ Section SpaceAdjMatGraph1.
     subst contents. rewrite graph_to_mat_Zlength; lia.
   Qed.
 
-(*
-  The below is not currently used by SpaceDijkGraph because 
-  iter_sepcon is cleaner. However, just keep it around 
-  because it is a general model.
-  For a (better?) example of this in use for VST, see above.
- *)
-
-(* 
-  What it does:        
-  Uses abstract_data_at to create a spatial representation.
- *)
-Class SpaceAdjMatGraph_abstract (Addr: Type) (Pred: Type) :=
-  abstract_data_at: Addr -> list Z -> Pred.
-
-Context {Pred: Type}.
-Context {Addr: Type}.
-Context {SAMG : SpaceAdjMatGraph_abstract Addr Pred}.
-
-Definition AdjMatGraph_rep
-           (g: AdjMatLG)
-           (f : E -> E)
-           (a : Addr) : Pred :=
-  abstract_data_at a (@graph_to_list g f).
-
-End SpaceAdjMatGraph1.
+End Spatial_AdjMat_Model_1.
