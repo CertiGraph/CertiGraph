@@ -3,7 +3,8 @@ Require Import CertiGraph.dijkstra.dijkstra_env.
 
 (* A separate file with the underlying PQ spec-ed out *)
 (* Require Export CertiGraph.priq.priq_arr_specs. (* *) *)
-Require Export CertiGraph.binheap.verif_binary_heap_pro. 
+Require Export CertiGraph.binheap.verif_binary_heap_pro.
+Require Export CertiGraph.binheap.binary_heap_malloc_spec.
 
 
 (* Dijkstra-specific imports *)
@@ -25,6 +26,7 @@ Section DijkstraSpec.
   Definition Vprog : varspecs. mk_varspecs prog. Defined.
   Global Existing Instance CompSpecs.
 
+  (*
   Definition freeN_spec {CS: compspecs} :=
     DECLARE _freeN
     WITH sh: share, p: pointer_val, n: Z, contents: list Z
@@ -38,6 +40,7 @@ Section DijkstraSpec.
         free_tok (pointer_val_val p) (sizeof tint * n))
   POST [tvoid]
     PROP () LOCAL () SEP (emp).
+   *)
   
   Definition getCell_spec :=
     DECLARE _getCell
@@ -101,12 +104,6 @@ Section DijkstraSpec.
 
   Definition Gprog : funspecs :=
     ltac:(with_library prog [
-                         (* (@init_spec size _); *)
-                       (* (@push_spec size inf _); *)
-                       (* (@pq_emp_spec size inf _); *)
-                       (* (@adjustWeight_spec size inf _); *)
-                       (* (@popMin_spec size inf Z_EqDec _); *)
-                       (* freePQ_spec; *)
                        getCell_spec;
                        dijkstra_spec;
                        mallocN_spec;

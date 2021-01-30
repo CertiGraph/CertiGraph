@@ -282,6 +282,14 @@ Proof.
   apply malloc_compatible_field_compatible in H; auto.
 Qed.
 
+Lemma hitem_free:
+  forall v,
+    hitem_ v |--
+           data_at_ Tsh
+           (tarray tint
+                   (sizeof (Tstruct _structItem noattr) / sizeof tint)) v.
+Admitted.
+
 Definition update_pri_if_key (key: key_type) (newpri: priority_type) (hi : heap_item) :=
   if Z.eq_dec key (heap_item_key hi) then (key, newpri, heap_item_payload hi) else hi.
 
