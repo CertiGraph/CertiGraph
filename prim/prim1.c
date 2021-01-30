@@ -1,8 +1,9 @@
-//well, no need for malloc and free I guess
 #include "../priq/priq_arr.h"
-extern void * mallocN (int n);
 
 //I feel like we should store the matrix in a struct. That way size can be preserved yet it can be moved around with ease
+
+extern void * mallocN (int n);
+extern void freeN (void *p);
 
 int check_symmetric_matrix(int** graph, int size) {
     for (int i = 0; i < size; ++i) {
@@ -15,7 +16,7 @@ int check_symmetric_matrix(int** graph, int size) {
     return 1;
 }
 
-void initialise_matrix(int** graph, int a, int size) {
+void initialise_matrix(int** graph, int size, int a) {
     for (int i = 0; i < size; ++i) {
         for (int j = 0; j < size; ++j) {
             graph[i][j] = a;
@@ -23,7 +24,7 @@ void initialise_matrix(int** graph, int a, int size) {
     }
 }
 
-void initialise_list(int* list, int a, int size) {
+void initialise_list(int* list, int size, int a) {
     for (int i = 0; i < size; ++i) {
         list[i] = a;
     }
@@ -41,24 +42,25 @@ IMPORTANT: The soundness of the graph depends on declaring evalid g (u,v) -> u <
     otherwise algorithm doesn't preserve whether (u,v) or (v,u) is in graph
 It's not even clear in a conventional adjacency matrix anyway, because an undirected adjmatrix is symmetrical ("nice" graphs)
 */
-void prim(int** graph, int r, int* parent, int size, int inf) {
+void prim(int** graph, int size, int inf, int r, int* parent) {
     //This should ideally be replaced by a pq-specific "find_item_in_queue", but depending on the pq may be O(logn)
     int cost;
     int* key = mallocN (size * sizeof *key);
-    initialise_list(key, inf, size);
+    initialise_list(key, size, inf);
     initialise_list(parent, size, size);
     //as a marker to check if v is in pq. 1 for NOT in pq (already checked). This should ideally be replaced by a pq-specific "in_queue"
     int* out = mallocN (size * sizeof *out);
-    initialise_list(out, 0, size);
+    
+    initialise_list(out, size, 0);
     key[r] = 0; //first in pq
     
     //Q = G.V;
-    int* pq = mallocN (size * sizeof *pq);
+    int* pq = init(size);
     for (int v = 0; v < size; ++v) {
         push(v, key[v], pq);
     }
-    while (!pq_emp(pq)) {
-        int u = popMin(pq);
+    while (!pq_emp(size, inf, pq)) {
+        int u = popMin(size, inf, pq);
         out[u] = 1;
         for (int v = 0; v < size; ++v) {
             if (out[v]==0) {				//(*this is why out array is kept, to not require extra O(logn) search of pq*)
@@ -71,5 +73,8 @@ void prim(int** graph, int r, int* parent, int size, int inf) {
             }
         }
     }
+    freePQ(pq);
+    freeN(out);
+    freeN(key);
     return;
 }

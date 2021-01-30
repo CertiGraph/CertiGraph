@@ -15,7 +15,8 @@ CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_CERTIGRAPH)
 
 LIB_FILES = \
   Coqlib.v Equivalence_ext.v List_Func_ext.v Ensembles_ext.v List_ext.v \
-  EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v Morphisms_ext.v
+  EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v Morphisms_ext.v \
+  find_lemmas.v 
 
 MSL_EXT_FILES = \
   log_normalize.v iter_sepcon.v ramification_lemmas.v abs_addr.v seplog.v \
@@ -42,8 +43,9 @@ GRAPH_FILES = \
   list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
   graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v \
   MathAdjMatGraph.v SpaceAdjMatGraph1.v SpaceAdjMatGraph2.v SpaceAdjMatGraph3.v \
-  eformat_lemmas.v
-
+  path_cost.v \
+  MathUAdjMatGraph.v SpaceUAdjMatGraph1.v SpaceUAdjMatGraph2.v SpaceUAdjMatGraph3.v \
+  MathEdgeLabelGraph.v SpaceEdgeLabelGraph.v
   # 1 = noncontiguous
   # 2 = contiguous 1-d
   # 3 = contiguous 2-d
@@ -53,7 +55,9 @@ DATA_STRUCTURE_FILES = \
 
 BINARY_HEAP_FILES = \
   binary_heap_model.v binary_heap_Zmodel.v \
-  binary_heap.v env_binary_heap.v verif_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v
+  binary_heap_malloc_spec.v \
+  binary_heap.v env_binary_heap.v verif_binary_heap.v \
+  binary_heap_pro.v env_binary_heap_pro.v verif_binary_heap_pro.v
 
 MARK_FILES = \
   env_mark_bi.v spatial_graph_bi_mark.v verif_mark_bi.v verif_mark_bi_dag.v 
@@ -88,33 +92,33 @@ CERTIGC_FILES = \
 KRUSKAL_FILES = \
   WeightedEdgeListGraph.v \
   kruskal_edgelist.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_specs.v \
-  verif_kruskal_edgelist.v
+  verif_sort.v verif_kruskal_edgelist.v
+
+#kruskal_edgelist_sort.v env_kruskal_edgelist_sort.v spatial_wedgearray_graph_sort.v kruskal_specs_sort.v \
+
 
 PRIM_FILES = \
-  MatrixUGraph.v spatial_undirected_matrix.v \
-  prim.v specs_prim.v verif_prim.v \
-  noroot_prim.v specs_noroot_prim.v verif_noroot_prim.v \
-  MatrixUGraph3.v prim3.v prim_spec3.v spatial_undirected_matrix3.v \
-  noroot_prim3.v noroot_prim3_spec.v prim_constants.v
-#prim1.v prim_spec1.v spatial_undirected_matrix1.v verif_prim1.v
+  prim_env.v prim_constants.v \
+  prim1.v prim_spec1.v verif_prim1.v \
+  prim2.v prim_spec2.v verif_prim2.v \
+  prim3.v prim_spec3.v verif_prim3.v \
+  noroot_prim3.v noroot_prim_spec3.v verif_noroot_prim3.v 
 
 DIJKSTRA_FILES = \
-  dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \
-  dijkstra2.v SpaceDijkGraph2.v dijkstra_spec2.v verif_dijkstra2.v \
-  dijkstra3.v SpaceDijkGraph3.v dijkstra_spec3.v verif_dijkstra3.v \
-  MathDijkGraph.v env_dijkstra_arr.v dijkstra_constants.v \
-  path_cost.v dijkstra_math_proof.v dijkstra_spec_pure.v 
+  dijkstra1.v dijkstra_spec1.v verif_dijkstra1.v \
+  dijkstra2.v dijkstra_spec2.v verif_dijkstra2.v \
+  dijkstra3.v dijkstra_spec3.v verif_dijkstra3.v \
+  MathDijkGraph.v dijkstra_env.v dijkstra_constants.v \
+  dijkstra_math_proof.v dijkstra_spec_pure.v 
   # 1 = noncontiguous
   # 2 = contiguous 1-d
   # 3 = contiguous 2-d
 
-
 PRIQ_FILES = \
-  priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
+  priq_arr.v priq_arr_specs.v is_empty_lemmas.v verif_priq_arr.v 
 
-PRIQ_MALLOC_FILES = \
-  priq_arr.v priq_arr_specs.v priq_arr_utils.v verif_priq_arr.v 
-
+APPEND_FILES = \
+  append.v list_dt.v verif_append.v 
 
 CLIGHT_FILES = mark/mark_bi.v dispose/dispose_bi.v copy/copy_bi.v summatrix/summatrix.v
 
@@ -134,7 +138,7 @@ NORMAL_FILES = \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
   $(PRIQ_FILES:%.v=priq/%.v) \
-  $(PRIQ_MALLOC_FILES:%.v=priq_malloc/%.v) \
+  $(APPEND_FILES:%.v=append/%.v) \
   $(PRIM_FILES:%.v=prim/%.v) \
   $(UNION_FIND_FILES:%.v=unionfind/%.v) \
   $(COPY_FILES:%.v=copy/%.v) \
@@ -161,8 +165,7 @@ VST_CRITICAL_FILES = \
   progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
 
 # clightgen:
-#	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c prim/noroot_prim.c
-# ../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq_malloc/priq_arr.c dijkstra/dijkstra1.c 
+#	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim1.c prim/prim2.c prim/prim3.c prim/noroot_prim3.c dijkstra/dijkstra1.c dijkstra/dijkstra2.c dijkstra/dijkstra3.c
 #	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c 
 
 .PHONY: vstandme7
@@ -175,7 +178,10 @@ vstandme3:
 
 .PHONY: mst
 mst:
-	make priq_malloc/verif_priq_arr.vo prim/verif_prim3.vo prim/verif_noroot_prim.vo dijkstra/verif*.vo kruskal/verif*.vo -kj7
+	make priq/verif_priq_arr.vo \
+	prim/verif_prim1.vo prim/verif_prim2.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo \
+	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
+	kruskal/verif_sort.v kruskal/verif_kruskal_edgelist.vo -kj7
 
 .depend depend:
 	@echo 'coqdep ... >.depend'

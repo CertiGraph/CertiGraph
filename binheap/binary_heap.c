@@ -1,5 +1,6 @@
 #include "binary_heap.h"
 extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
+extern void freeN (void* p); /* Maybe there are better choices for deallocators? */
 
 #define ROOT_IDX       0u
 #define LEFT_CHILD(x)  (2u * x) + 1u
@@ -16,16 +17,16 @@ void exch(unsigned int j, unsigned int k, Item arr[]) {
   arr[k].data = data;
 }
 
+int less(unsigned int j, unsigned int k, Item arr[]) {
+  return (arr[j].priority <= arr[k].priority);
+}
+
 unsigned int size(PQ *pq) {
   return pq->first_available;
 }
 
 unsigned int capacity(PQ *pq) {
   return pq->capacity;
-}
-
-int less(unsigned int j, unsigned int k, Item arr[]) {
-  return (arr[j].priority <= arr[k].priority);
 }
 
 void swim(unsigned int k, Item arr[]) {
@@ -60,6 +61,28 @@ void remove_min_nc(PQ *pq, Item* item) {
   sink(ROOT_IDX, pq->heap_cells, pq->first_available);
 }  
 
+void build_heap(Item arr[], unsigned int size) {
+  unsigned int start = PARENT(size);
+  while(1) {
+    sink(start, arr, size);
+    if (start == 0) break;
+    start--;
+  }
+}
+
+// Note, this will result in a reverse sorted list since we have a min-heap rather than a max-heap.
+void heapsort_rev(Item* arr, unsigned int size) {
+  // build the heap
+  build_heap(arr,size);
+
+  unsigned int active = size;
+  while (active > 1) {
+    active--;
+    exch(ROOT_IDX, active, arr);
+    sink(ROOT_IDX, arr, active);
+  }
+} 
+
 /* Everything above here has been verified. */
 
 void insert(PQ *pq, Item *x) {
@@ -74,16 +97,29 @@ Item* remove_min(PQ *pq) {
   return item;
 }
 
-PQ* make() { /* could take a size parameter I suppose... */
-  Item* arr = (Item*) mallocN(sizeof(Item) * INITIAL_SIZE);
+PQ* make(unsigned int size) { /* could take a size parameter I suppose... */
+  Item* arr = (Item*) mallocN(sizeof(Item) * size);
   PQ *pq = (PQ*) mallocN(sizeof(PQ));
-  pq->capacity = INITIAL_SIZE;
+  pq->capacity = size;
   pq->first_available = 0;
   pq->heap_cells = arr;
   return pq;
 }
 
-/* could imagine adding some additonal functions:
-     heapify
-     ?
-*/
+PQ* heapify(Item* arr, unsigned int size) {
+  // First, build the heap within the array
+  build_heap(arr,size);
+
+  // Now, malloc the structure
+  PQ *pq = (PQ*) mallocN(sizeof(PQ));
+  pq->capacity = size;
+  pq->first_available = size;
+  pq->heap_cells = arr;
+  return pq;
+}
+
+void pq_free(PQ *pq) {
+  freeN(pq->heap_cells);
+  freeN(pq);
+}
+

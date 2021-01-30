@@ -1,22 +1,5 @@
-Require Export VST.floyd.proofauto.
-
-Require Import Coq.ZArith.ZArith.
-Require Import Coq.micromega.Lia.
-Require Import Coq.Lists.List.
-
-Require Import VST.msl.seplog.
-Require Import VST.floyd.sublist.
-Require Import compcert.lib.Integers.
-
-Require Import CertiGraph.lib.Coqlib.
-Require Import CertiGraph.lib.EquivDec_ext.
-Require Import CertiGraph.lib.List_ext.
-Require Import CertiGraph.graph.graph_model.
-Require Import CertiGraph.graph.path_lemmas.
+Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Export CertiGraph.graph.MathAdjMatGraph.
-
-Require Import Coq.Classes.EquivDec.
-Require Export CertiGraph.priq_malloc.priq_arr_utils.
 
 Local Open Scope logic.
 Local Open Scope Z_scope.
@@ -36,12 +19,12 @@ Section MathDijkGraph.
     {
     basic:
       (* first, we can take AdjMat's soundness wholesale *)
-      (@SoundAdjMat size inf _ _ g);
+      @SoundAdjMat size inf g;
     
     veb:
       (* from the AdjMat soundness above we already know 
-       e is representable, 
-       but for Dijkstra we need a further constraint. 
+         e is representable, 
+         but for Dijkstra we need a further constraint. 
        *)
       forall e,
         evalid g e ->
@@ -52,7 +35,7 @@ Section MathDijkGraph.
 
     sfr: (* size is further restricted *)
       size * 4 <= Int.max_signed;
-    (* sizeof tint = 4 *)
+    (* because sizeof tint = 4 *)
     
     ifr: (* inf is further restricted *)
       Int.max_signed / size < inf <= Int.max_signed - (Int.max_signed / size)
@@ -63,55 +46,54 @@ Section MathDijkGraph.
   Definition DijkGG := (GeneralGraph V E DV DE DG (fun g => SoundDijk g)).
 
   (* Some handy coercions: *)
-  Definition DijkGG_DijkLG (g: DijkGG): DijkLG := lg_gg g.
-  Coercion DijkGG_DijkLG: DijkGG >-> DijkLG.
-  Identity Coercion DijkLG_AdjMatLG: DijkLG >-> AdjMatLG.
-  Identity Coercion AdjMatLG_LabeledGraph: AdjMatLG >-> LabeledGraph.
+  Identity Coercion AdjMatLG_DijkLG: DijkLG >-> AdjMatLG.
+  Identity Coercion LabeledGraph_AdjMatLG: AdjMatLG >-> LabeledGraph.
+
+  (* We can drag out the soundness condition *)
+  Definition SoundDijk_DijkGG (g: DijkGG) := (@sound_gg _ _ _ _ _ _ _ _ g).
 
   (* We can always drag out SoundAdjMat *)
-  Definition DijkGG_SoundAdjMat (g: DijkGG) :=
-    @basic g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+  Definition SoundAdjMat_DijkGG (g: DijkGG) :=
+    @basic g (SoundDijk_DijkGG g).
 
   (* A DijkGG can be weakened into an AdjMatGG *)
-  Definition DijkGG_AdjMatGG (g: DijkGG) : AdjMatGG :=
-    Build_GeneralGraph DV DE DG SoundAdjMat g (DijkGG_SoundAdjMat g).
+  Definition AdjMatGG_DijkGG (g: DijkGG) : AdjMatGG :=
+    Build_GeneralGraph DV DE DG SoundAdjMat g (SoundAdjMat_DijkGG g).
 
-  Coercion DijkGG_AdjMatGG: DijkGG >-> AdjMatGG.
+  Coercion AdjMatGG_DijkGG: DijkGG >-> AdjMatGG.
 
   (* Great! So now when we want to access an AdjMat
-   plugin, we can simply use the AdjMat getter 
-   and pass it a DijkGG. The coercion will be seamless. 
+     plugin, we can simply use the AdjMat getter 
+     and pass it a DijkGG. The coercion will be seamless. 
    *)
 
-  (* For the two Dijkstra-specigic plugins, 
-   we create getters: 
-   *)
+  (* For the four Dijkstra-specific plugins, we create getters: *)
   Definition valid_edge_bounds (g: DijkGG) :=
-    @veb g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+    @veb g (SoundDijk_DijkGG g).
 
   Definition cost_to_self (g: DijkGG) :=
-    @cts g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+    @cts g (SoundDijk_DijkGG g).
 
   Definition size_further_restricted (g: DijkGG) :=
-    @sfr g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+    @sfr g (SoundDijk_DijkGG g).
 
   Definition inf_further_restricted (g: DijkGG) :=
-    @ifr g ((@sound_gg _ _ _ _ _ _ _ _ g)).
+    @ifr g (SoundDijk_DijkGG g).
 
-  Lemma inf_further_restricted':
+  Lemma inf_bounds:
     forall (g: DijkGG),
       0 < inf < Int.max_signed.
   Proof.
     intros.
     pose proof (inf_further_restricted g).
     pose proof (size_representable g).
-    split.
-    - apply Z.le_lt_trans with (m := Int.max_signed / size);
-        [|lia].
-      apply Z.div_pos; [|lia]. compute; inversion 1.
+    split. 
+    - apply Z.le_lt_trans with
+          (m := Int.max_signed / size);
+        [apply Z.div_pos|]; rep_lia.
     - destruct H as [_ ?].
-      apply Z.le_lt_trans
-        with (m := Int.max_signed - Int.max_signed/size); trivial.
+      apply Z.le_lt_trans with
+          (m := Int.max_signed - Int.max_signed/size); trivial.
       assert (0 < Int.max_signed / size). {
         apply Z.div_str_pos; trivial.
       }
@@ -131,7 +113,7 @@ Section MathDijkGraph.
     - apply H; trivial.
     - rewrite H0 in n.
       replace (elabel g e) with inf by trivial.
-      apply (@inf_representable _ _ _ _ g).
+      pose proof (@inf_representable _ _ g). lia.
   Qed.
 
   Lemma div_pos_le:
@@ -162,9 +144,8 @@ Section MathDijkGraph.
     pose proof (invalid_edge_weight g e).
     pose proof (edge_cost_pos g e).
     destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
-    - specialize (H e0).
-      split; trivial.
-      1: apply Z.le_trans with (m := 0); trivial; rep_lia.
+    - specialize (H e0). 
+      split; trivial. rep_lia.
       apply Z.le_trans with (m := (Int.max_signed / size)); trivial.
       apply H.
       pose proof (size_representable g).
@@ -172,9 +153,7 @@ Section MathDijkGraph.
     - rewrite H0 in n.
       replace (elabel g e) with inf by trivial.
       pose proof (inf_representable g).
-      split; [|lia].
-      apply Z.le_trans with (m := 0); [|lia].
-      compute; inversion 1.
+      split; rep_lia.
   Qed.
 
   Lemma strong_evalid_dijk:
@@ -189,9 +168,8 @@ Section MathDijkGraph.
       [rewrite (evalid_meaning g) |
        rewrite (edge_src_fst g) |
        rewrite (edge_dst_snd g)]; trivial.
-    split.
-    - apply edge_representable.
-    - intro. simpl in H2. lia. 
+    split; trivial.
+    apply edge_representable.
   Qed.
-
+  
 End MathDijkGraph.

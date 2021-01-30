@@ -1,5 +1,4 @@
 #include "../unionfind/unionfind_arr.h"
-#define INT_MAX 2147483647
 
 static const int MAX_EDGES = 8;
 
@@ -36,37 +35,64 @@ void fill_edge(struct edge *wedge, int w, int u, int v) {
   wedge->dst = v;
 }
 
-void swap_edges(struct edge *a, struct edge *b) {
-	struct edge tmp;
-  tmp.weight = a->weight; tmp.src = a->src; tmp.dst = a->dst;
-	a->weight = b->weight; a->src = b->src; a->dst = b->dst;
-	b->weight = tmp.weight; b->src = tmp.src; b->dst = tmp.dst;
-}
-
 /*********************SORTING***********************/
-int yucky_find_min(struct edge* a, int lo, int hi) {
-  int min_value = INT_MAX;
-  int min_index = lo;
-  for (int i = lo; i < hi; ++i) {
-    int w = a[i].weight;
-    if (w <= min_value) {
-      min_value = w;
-      min_index = i;
-    }
-  }
-  return min_index;
+#define ROOT_IDX       0u
+#define LEFT_CHILD(x)  (2u * x) + 1u
+#define RIGHT_CHILD(x) 2u * (x + 1u)
+#define PARENT(x)      (x - 1u) / 2u
+
+// Modifed from basic heap to adjust to the data structure
+void exch(unsigned int j, unsigned int k, struct edge arr[]) {
+  int weight = arr[j].weight;
+  int src = arr[j].src;
+  int dst = arr[j].dst;
+  arr[j].weight = arr[k].weight;
+  arr[j].src = arr[k].src;
+  arr[j].dst = arr[k].dst;  
+  arr[k].weight = weight;
+  arr[k].src = src;
+  arr[k].dst = dst;
 }
 
-void sort_edges(struct edge* a, int n) {
-  //selection sort
-  int i = 0;
-  while (i <= n) {
-    int j = yucky_find_min(a, i, n);
-    swap_edges(a+i,a+j);
-    ++i;
-  }
-  return;
+// Modified from basic heap to form a max-heap rather than a min-heap
+int greater(unsigned int j, unsigned int k, struct edge arr[]) {
+  return (arr[j].weight >= arr[k].weight);
 }
+
+void sink (unsigned int k, struct edge arr[], unsigned int first_available) {
+  while (LEFT_CHILD(k) < first_available) { /* Requirement that capacity <= MAX_SIZE be of reasonable size */
+    unsigned j = LEFT_CHILD(k);
+    if (j+1 < first_available && greater(j+1, j, arr)) j++; /* careful with j+1 overflow? */
+    if (greater(k, j, arr)) break;
+    exch(k, j, arr);
+    k = j;
+  }
+}
+
+void build_heap(struct edge arr[], unsigned int size) {
+  unsigned int start = PARENT(size);
+  while(1) {
+    sink(start, arr, size);
+    if (start == 0) break;
+    start--;
+  }
+}
+
+void heapsort(struct edge* arr, int sz) {
+  if (sz == 0) return;
+  unsigned int size = (unsigned int) sz;
+  // build the heap
+  build_heap(arr,size);
+
+  unsigned int active = size;
+  while (active > 1) {
+    active--;
+    exch(ROOT_IDX, active, arr);
+    sink(ROOT_IDX, arr, active);
+  }
+} 
+
+/*********************END SORTING***********************/
 
 void free_graph(struct graph * graph) {
     free(graph->edge_list);
@@ -82,7 +108,7 @@ struct graph *kruskal(struct graph *graph) {
     //"add" all vertices
     mst->V = graph_V;
 
-    sort_edges(graph->edge_list, graph_E); //because the new sort_spec now gives the length of the list instead of the index of the last element
+    heapsort(graph->edge_list, graph_E); //because the new sort_spec now gives the length of the list instead of the index of the last element
     
     for (int i = 0; i < graph_E; ++i) {
         //extract the data

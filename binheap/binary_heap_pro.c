@@ -1,5 +1,5 @@
+#include <stdlib.h>
 #include "binary_heap_pro.h"
-extern void * mallocN (int n); /* Maybe there are better choices for allocators? */
 
 #define ROOT_IDX       0u
 #define LEFT_CHILD(x)  (2u * x) + 1u
@@ -9,7 +9,7 @@ extern void * mallocN (int n); /* Maybe there are better choices for allocators?
 /* I'm assuming a decent compiler will inline the next two functions; if not they can be made #define macros. */
 void exch(unsigned int j, unsigned int k, Item arr[], unsigned int lookup[]) {
   int priority = arr[j].priority;
-  void* data = arr[j].data;
+  int data = arr[j].data;
   unsigned int key1 = arr[j].key;
   unsigned int key2 = arr[k].key;
   arr[j].priority = arr[k].priority;
@@ -22,7 +22,7 @@ void exch(unsigned int j, unsigned int k, Item arr[], unsigned int lookup[]) {
   lookup[key1] = k;
 }
 
-unsigned int size(PQ *pq) {
+unsigned int pq_size(PQ *pq) {
   return pq->first_available;
 }
 
@@ -51,7 +51,7 @@ void sink (unsigned int k, Item arr[], unsigned int first_available, unsigned in
   }
 }
 
-unsigned int insert_nc(PQ *pq, int priority, void* data) {
+unsigned int pq_insert_nc(PQ *pq, int priority, int data) {
   unsigned int fa = pq->first_available;
   Item* cells = pq->heap_cells;
 
@@ -65,8 +65,24 @@ unsigned int insert_nc(PQ *pq, int priority, void* data) {
   return key;
 }
 
-void remove_min_nc(PQ *pq, Item* item) {
-  unsigned int fa = pq->first_available - 1;
+void pq_edit_priority(PQ *pq, int key, int newpri) {
+  unsigned int* table = pq->key_table;
+  Item* cells = pq->heap_cells;
+  unsigned int target = table[key];
+  // if (target >= pq_size(pq)) return;
+  // I will now know that this key refers to a valid member of the heap
+  int oldpri = cells[target].priority;
+
+  cells[target].priority = newpri;
+  if (newpri <= oldpri) swim(target, cells, table); 
+     // potentially unnecessary swimming in case of equality
+  else sink (target, cells, pq->first_available, table);
+}
+// post condition: either the key was in the heap and we did all this stuff,
+                   // or we did nothing
+
+void pq_remove_min_nc(PQ *pq, Item* item) {
+  /*  unsigned int fa = pq->first_available - 1;
   Item* cells = pq->heap_cells;
   unsigned* lookup = pq->key_table;
   
@@ -76,28 +92,51 @@ void remove_min_nc(PQ *pq, Item* item) {
   item->key = cells[fa].key;
 
   sink(ROOT_IDX, cells, fa, lookup);
-  pq->first_available = fa;
+  pq->first_available = fa; */
+  pq->first_available--;
+  exch(ROOT_IDX, pq->first_available, pq->heap_cells, pq->key_table);
+  item->priority = pq->heap_cells[pq->first_available].priority;
+  item->data = pq->heap_cells[pq->first_available].data;
+  item->key = pq->heap_cells[pq->first_available].key;
+  sink(ROOT_IDX, pq->heap_cells, pq->first_available, pq->key_table);
 }  
 
-unsigned int insert(PQ *pq, int priority, void* data) {
+unsigned int pq_insert(PQ *pq, int priority, int data) {
   if (pq->first_available == pq->capacity) return 0; /* Hrm, maybe should signal error or grow heap or whatever... */
-  return insert_nc(pq, priority, data);
+  return pq_insert_nc(pq, priority, data);
 }
 
-Item* remove_min(PQ *pq) {
+Item* pq_remove_min(PQ *pq) {
   if (pq->first_available == ROOT_IDX) return 0;
-  Item* item = (Item*) mallocN(sizeof(Item));
-  remove_min_nc(pq, item);
+  Item* item = (Item*) malloc(sizeof(Item));
+  pq_remove_min_nc(pq, item);
   return item;
 }
 
-PQ* make() { /* could take a size parameter I suppose... */
-  Item* arr = (Item*) mallocN(sizeof(Item) * INITIAL_SIZE);
+PQ* pq_make(unsigned int size) { /* could take a size parameter I suppose... */
   PQ *pq = (PQ*) mallocN(sizeof(PQ));
-  pq->capacity = INITIAL_SIZE;
+  unsigned int* table = (unsigned int*) mallocN(sizeof(unsigned int) * size);
+  Item* arr = (Item*) mallocN(sizeof(Item) * size);
+  int i; 
+  for (i = 0; i < size; i++) {
+    arr[i].key = i;
+    arr[i].priority = 0;
+    arr[i].data = 0;
+    table[i] = i;
+  }
+
+  pq->capacity = size;
   pq->first_available = 0;
   pq->heap_cells = arr;
+  pq->key_table = table;
+
   return pq;
+}
+
+void pq_free (PQ *pq) {
+    freeN(pq->key_table);
+    freeN(pq->heap_cells);
+    freeN(pq);
 }
 
 /* could imagine adding some additonal functions:

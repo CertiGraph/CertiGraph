@@ -66,60 +66,72 @@ Definition ___compcert_va_composite : ident := 19%positive.
 Definition ___compcert_va_float64 : ident := 18%positive.
 Definition ___compcert_va_int32 : ident := 16%positive.
 Definition ___compcert_va_int64 : ident := 17%positive.
-Definition ___stringlit_1 : ident := 80%positive.
-Definition ___stringlit_2 : ident := 81%positive.
-Definition ___stringlit_3 : ident := 82%positive.
-Definition ___stringlit_4 : ident := 83%positive.
-Definition ___stringlit_5 : ident := 89%positive.
-Definition ___stringlit_6 : ident := 90%positive.
+Definition ___stringlit_1 : ident := 95%positive.
+Definition ___stringlit_2 : ident := 96%positive.
+Definition ___stringlit_3 : ident := 97%positive.
+Definition ___stringlit_4 : ident := 98%positive.
+Definition ___stringlit_5 : ident := 104%positive.
+Definition ___stringlit_6 : ident := 105%positive.
+Definition _a : ident := 73%positive.
 Definition _adjustWeight : ident := 66%positive.
-Definition _argc : ident := 96%positive.
-Definition _argv : ident := 97%positive.
-Definition _cost : ident := 94%positive.
-Definition _curr : ident := 85%positive.
-Definition _dijkstra : ident := 95%positive.
-Definition _dist : ident := 88%positive.
-Definition _free : ident := 70%positive.
+Definition _argc : ident := 108%positive.
+Definition _argv : ident := 109%positive.
+Definition _check_symmetric_matrix : ident := 72%positive.
+Definition _cost : ident := 81%positive.
+Definition _curr : ident := 100%positive.
+Definition _dijkstra : ident := 107%positive.
+Definition _dist : ident := 103%positive.
+Definition _free : ident := 87%positive.
 Definition _freeN : ident := 53%positive.
 Definition _freePQ : ident := 68%positive.
-Definition _getCell : ident := 93%positive.
-Definition _getPaths : ident := 91%positive.
-Definition _graph : ident := 75%positive.
+Definition _getCell : ident := 78%positive.
+Definition _getPaths : ident := 106%positive.
+Definition _graph : ident := 70%positive.
 Definition _i : ident := 63%positive.
 Definition _inf : ident := 60%positive.
 Definition _init : ident := 56%positive.
-Definition _j : ident := 76%positive.
+Definition _initialise_list : ident := 76%positive.
+Definition _initialise_matrix : ident := 74%positive.
+Definition _j : ident := 71%positive.
+Definition _key : ident := 82%positive.
+Definition _list : ident := 75%positive.
 Definition _main : ident := 69%positive.
 Definition _mallocN : ident := 52%positive.
 Definition _minVertex : ident := 61%positive.
 Definition _minWeight : ident := 62%positive.
 Definition _newWeight : ident := 65%positive.
+Definition _out : ident := 83%positive.
+Definition _parent : ident := 80%positive.
 Definition _popMin : ident := 64%positive.
 Definition _pq : ident := 55%positive.
 Definition _pq_emp : ident := 67%positive.
-Definition _prev : ident := 86%positive.
-Definition _printPath : ident := 87%positive.
-Definition _print_graph : ident := 84%positive.
-Definition _printf : ident := 73%positive.
+Definition _prev : ident := 101%positive.
+Definition _prim : ident := 86%positive.
+Definition _printPath : ident := 102%positive.
+Definition _print_graph : ident := 99%positive.
+Definition _printf : ident := 90%positive.
 Definition _push : ident := 59%positive.
-Definition _rand : ident := 71%positive.
-Definition _random : ident := 77%positive.
-Definition _setup : ident := 78%positive.
+Definition _r : ident := 79%positive.
+Definition _rand : ident := 88%positive.
+Definition _random : ident := 92%positive.
+Definition _setup : ident := 93%positive.
 Definition _size : ident := 54%positive.
-Definition _srand : ident := 72%positive.
-Definition _src : ident := 79%positive.
-Definition _time : ident := 74%positive.
-Definition _u : ident := 92%positive.
+Definition _srand : ident := 89%positive.
+Definition _src : ident := 94%positive.
+Definition _time : ident := 91%positive.
+Definition _u : ident := 77%positive.
+Definition _v : ident := 84%positive.
+Definition _v__1 : ident := 85%positive.
 Definition _vertex : ident := 57%positive.
 Definition _weight : ident := 58%positive.
-Definition _t'1 : ident := 98%positive.
-Definition _t'2 : ident := 99%positive.
-Definition _t'3 : ident := 100%positive.
-Definition _t'4 : ident := 101%positive.
-Definition _t'5 : ident := 102%positive.
-Definition _t'6 : ident := 103%positive.
-Definition _t'7 : ident := 104%positive.
-Definition _t'8 : ident := 105%positive.
+Definition _t'1 : ident := 110%positive.
+Definition _t'2 : ident := 111%positive.
+Definition _t'3 : ident := 112%positive.
+Definition _t'4 : ident := 113%positive.
+Definition _t'5 : ident := 114%positive.
+Definition _t'6 : ident := 115%positive.
+Definition _t'7 : ident := 116%positive.
+Definition _t'8 : ident := 117%positive.
 
 Definition v___stringlit_4 := {|
   gvar_info := (tarray tschar 22);
@@ -254,19 +266,11 @@ Definition f_setup := {|
                                    (Econst_int (Int.repr 50) tint) tint)
                       (Ssequence
                         (Sset _t'4
-                          (Ecast
-                            (Ebinop Osub
-                              (Econst_int (Int.repr 2147483647) tint)
-                              (Ebinop Odiv
-                                (Econst_int (Int.repr 2147483647) tint)
-                                (Econst_int (Int.repr 8) tint) tint) tint)
+                          (Ecast (Econst_int (Int.repr 1879048192) tint)
                             tint))
                         (Sset _t'3 (Ecast (Etempvar _t'4 tint) tint)))
                       (Ssequence
-                        (Sset _t'4
-                          (Ecast
-                            (Ebinop Oadd (Econst_int (Int.repr 1) tint)
-                              (Etempvar _random tint) tint) tint))
+                        (Sset _t'4 (Ecast (Etempvar _random tint) tint))
                         (Sset _t'3 (Ecast (Etempvar _t'4 tint) tint)))))
                   (Sassign
                     (Ederef
@@ -318,12 +322,8 @@ Definition f_print_graph := {|
                             (Econst_int (Int.repr 8) tint) tint)
                           (Etempvar _j tint) tint) (tptr tint)) tint))
                   (Sifthenelse (Ebinop Oeq (Etempvar _t'1 tint)
-                                 (Ebinop Osub
-                                   (Econst_int (Int.repr 2147483647) tint)
-                                   (Ebinop Odiv
-                                     (Econst_int (Int.repr 2147483647) tint)
-                                     (Econst_int (Int.repr 8) tint) tint)
-                                   tint) tint)
+                                 (Econst_int (Int.repr 1879048192) tint)
+                                 tint)
                     (Scall None
                       (Evar _printf (Tfunction (Tcons (tptr tschar) Tnil)
                                       tint
@@ -419,10 +419,7 @@ Definition f_getPaths := {|
               (Sset _t'1
                 (Ecast
                   (Ebinop Olt (Etempvar _t'3 tint)
-                    (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-                      (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                        (Econst_int (Int.repr 8) tint) tint) tint) tint)
-                  tbool)))
+                    (Econst_int (Int.repr 1879048192) tint) tint) tbool)))
             (Sset _t'1 (Econst_int (Int.repr 0) tint)))
           (Sifthenelse (Etempvar _t'1 tint)
             (Ssequence
@@ -500,27 +497,20 @@ Definition f_dijkstra := {|
             (Sassign
               (Ederef
                 (Ebinop Oadd (Etempvar _dist (tptr tint)) (Etempvar _i tint)
-                  (tptr tint)) tint)
-              (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-                (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                  (Econst_int (Int.repr 8) tint) tint) tint))
+                  (tptr tint)) tint) (Econst_int (Int.repr 1879048192) tint))
             (Ssequence
               (Sassign
                 (Ederef
                   (Ebinop Oadd (Etempvar _prev (tptr tint))
                     (Etempvar _i tint) (tptr tint)) tint)
-                (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-                  (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                    (Econst_int (Int.repr 8) tint) tint) tint))
+                (Econst_int (Int.repr 1879048192) tint))
               (Scall None
                 (Evar _push (Tfunction
                               (Tcons tint
                                 (Tcons tint (Tcons (tptr tint) Tnil))) tvoid
                               cc_default))
                 ((Etempvar _i tint) ::
-                 (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-                   (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                     (Econst_int (Int.repr 8) tint) tint) tint) ::
+                 (Econst_int (Int.repr 1879048192) tint) ::
                  (Etempvar _pq (tptr tint)) :: nil)))))
         (Sset _i
           (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint)
@@ -553,9 +543,7 @@ Definition f_dijkstra := {|
                                       (Tcons tint (Tcons (tptr tint) Tnil)))
                                     tint cc_default))
                     ((Econst_int (Int.repr 8) tint) ::
-                     (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-                       (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                         (Econst_int (Int.repr 8) tint) tint) tint) ::
+                     (Econst_int (Int.repr 1879048192) tint) ::
                      (Etempvar _pq (tptr tint)) :: nil))
                   (Sifthenelse (Eunop Onotbool (Etempvar _t'2 tint) tint)
                     Sskip
@@ -568,9 +556,7 @@ Definition f_dijkstra := {|
                                         (Tcons tint (Tcons (tptr tint) Tnil)))
                                       tint cc_default))
                       ((Econst_int (Int.repr 8) tint) ::
-                       (Ebinop Osub (Econst_int (Int.repr 2147483647) tint)
-                         (Ebinop Odiv (Econst_int (Int.repr 2147483647) tint)
-                           (Econst_int (Int.repr 8) tint) tint) tint) ::
+                       (Econst_int (Int.repr 1879048192) tint) ::
                        (Etempvar _pq (tptr tint)) :: nil))
                     (Sset _u (Etempvar _t'3 tint)))
                   (Ssequence
@@ -594,12 +580,8 @@ Definition f_dijkstra := {|
                                nil))
                             (Sset _cost (Etempvar _t'4 tint)))
                           (Sifthenelse (Ebinop Olt (Etempvar _cost tint)
-                                         (Ebinop Osub
-                                           (Econst_int (Int.repr 2147483647) tint)
-                                           (Ebinop Odiv
-                                             (Econst_int (Int.repr 2147483647) tint)
-                                             (Econst_int (Int.repr 8) tint)
-                                             tint) tint) tint)
+                                         (Econst_int (Int.repr 1879048192) tint)
+                                         tint)
                             (Ssequence
                               (Sset _t'5
                                 (Ederef

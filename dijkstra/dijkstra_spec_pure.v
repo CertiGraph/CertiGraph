@@ -1,6 +1,5 @@
-Require Import CertiGraph.dijkstra.env_dijkstra_arr.
-Require Export CertiGraph.dijkstra.MathDijkGraph.
-Require Import CertiGraph.dijkstra.path_cost.
+Require Import CertiGraph.dijkstra.dijkstra_env.
+Require Import CertiGraph.dijkstra.MathDijkGraph.
 
 Local Open Scope Z_scope.
 
@@ -11,24 +10,24 @@ Section DijkstraSpecPure.
   Context {V_EqDec : EquivDec.EqDec V eq}. 
   Context {E_EqDec : EquivDec.EqDec E eq}. 
 
-  Definition path_correct (g: @DijkGG size inf _ _)
-             (prev dist: list V) src dst p : Prop  :=
+  Definition path_correct (g: @DijkGG size inf)
+             (prev: list V) (dist: list Z) src dst p : Prop  :=
     valid_path g p /\
     path_ends g p src dst /\
     path_cost g p < inf /\ 
     Znth dst dist = path_cost g p /\
-    Forall (fun x => Znth (snd x) prev = fst x) (snd p).
+    Forall (fun (x: E) => Znth (snd x) prev = fst x) (snd p).
 
-  Definition path_globally_optimal (g: @DijkGG size inf _ _) src dst p : Prop :=
+  Definition path_globally_optimal (g: @DijkGG size inf) src dst p : Prop :=
     forall p', valid_path g p' ->
                path_ends g p' src dst ->
                path_cost g p <= path_cost g p'.
 
-  Definition path_in_popped (g: @DijkGG size inf _ _) popped p :=
+  Definition path_in_popped (g: @DijkGG size inf) popped p :=
     forall step, In_path g step p ->
                  In step popped.
 
-  Definition inv_popped (g: DijkGG) src (popped prev dist : list V) dst :=
+  Definition inv_popped (g: DijkGG) src (popped prev: list V) (dist: list Z) dst :=
     In dst popped ->
     (Znth dst dist = inf /\ (* if I'm unreachable *)
      (forall p, (* I'm unreachable via all paths *)
@@ -41,8 +40,8 @@ Section DijkstraSpecPure.
         path_in_popped g popped p /\
         path_globally_optimal g src dst p).
 
-  Definition inv_unpopped (g : @DijkGG size inf _ _) src
-             (popped prev dist: list V) (dst: V) :=
+  Definition inv_unpopped (g : @DijkGG size inf) src
+             (popped prev: list V) (dist: list Z) (dst: V) :=
     ~ In dst popped ->
     Znth dst dist < inf ->
     dst = src \/
@@ -58,8 +57,8 @@ Section DijkstraSpecPure.
        In mom' popped ->
        Znth dst dist <= Znth mom' dist + elabel g (mom', dst)).
 
-  Definition inv_unpopped_weak (g : @DijkGG size inf _ _) (src: V)
-             (popped prev dist : list V) (dst u : V) :=
+  Definition inv_unpopped_weak (g : @DijkGG size inf) (src: V)
+             (popped prev: list V) (dist: list Z) (dst u : V) :=
     ~ In dst popped ->
     Znth dst dist < inf ->
     dst = src \/
@@ -78,7 +77,7 @@ Section DijkstraSpecPure.
       Znth dst dist <= Znth mom' dist + elabel g (mom', dst).
   
   Definition inv_unseen (g : DijkGG) (src: V)
-             (popped prev dist: list V) (dst : V) :=
+             (popped prev: list V) (dist: list Z) (dst : V) :=
     ~ In dst popped ->
     Znth dst dist = inf ->
     forall m p2m,
@@ -88,7 +87,7 @@ Section DijkstraSpecPure.
       path_cost g (path_glue p2m (m, [(m, dst)])) >= inf.
 
   Definition inv_unseen_weak (g : DijkGG) (src: V)
-             (popped prev dist: list V) (dst u : V) :=
+             (popped prev: list V) (dist: list Z) (dst u : V) :=
     ~ In dst popped ->
     Znth dst dist = inf ->
     forall m p2m,

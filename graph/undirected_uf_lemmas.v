@@ -1,9 +1,9 @@
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
-(*for ufgraph *)
+(* for ufgraph *)
 Require Import CertiGraph.graph.path_lemmas.
 (*for unionfind*)
-Require Import CertiGraph.graph.UnionFind.
+Require Export CertiGraph.graph.UnionFind.
 Require Import CertiGraph.msl_application.ArrayGraph.
 Require Import CertiGraph.unionfind.env_unionfind_arr.
 (*spanning tree definition*)
@@ -149,7 +149,8 @@ Proof.
       intros.
       simpl in H2. inversion H2; subst a; clear H2.
       apply adjacent_ufroot_same in H.
-      apply (ufroot_same_trans _ (liGraph g) _ z); trivial.       apply IHp. trivial.
+      apply (ufroot_same_trans _ (liGraph g) _ z); trivial.
+      apply IHp. trivial.
 Qed.
 
 Lemma ufroot_same_connected:
@@ -172,4 +173,12 @@ Proof.
   intros. split; intros.
   apply connected_ufroot_same; trivial.
   apply ufroot_same_connected; trivial.
+Qed.
+
+Lemma uf_equiv_ufroot_same:
+  forall (g1 g2: UFGraph) u v,
+    uf_equiv g1 g2 ->
+    ufroot_same g1 u v <-> ufroot_same g2 u v.
+Proof.
+intros. do 2 rewrite <- connected_ufroot_same_iff. apply uf_equiv_connected. auto.
 Qed.
