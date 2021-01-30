@@ -800,6 +800,15 @@ Section DijkstraProof.
 
             ++ intros. rewrite not_in_cons in H21; destruct H21.
                specialize (Hd _ H20 H22).
+               unfold proj_keys in Hd |- *.
+               pose proof (Permutation_map heap_item_key H15).
+               apply (Permutation_in _ H23) in Hd. 
+               simpl in Hd. destruct Hd as [Hd | ?]; trivial.
+               exfalso. apply H21.
+               (* u's key is the same as i's key.
+                  u = i
+                  Aquinas?
+                *)
                admit.
 
             ++ red in H8 |- *. intros.
