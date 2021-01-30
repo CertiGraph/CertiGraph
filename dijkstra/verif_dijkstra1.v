@@ -372,6 +372,7 @@ Qed.
   Lemma body_dijkstra: semax_body Vprog (@Gprog size inf) f_dijkstra (@dijkstra_spec size inf).
   Proof.
     start_function.
+    rename H1 into Hsz'.
     pose proof (size_further_restricted g).
     pose proof (inf_bounds g).
     rename H1 into Hsz.
@@ -384,14 +385,7 @@ Qed.
     Intro keys_pv.
     remember (pointer_val_val keys_pv) as pre_keys.
     forward_call (size).
-    1: split. rep_lia.
-       admit. (* Aquinas: Yes, probably you need to strengthen your precondition *)
-    (* HELP
-       Does this sound okay? Should I add to precon? 
-       I have not given any thought to 
-       Int.max_unsgined vs Int.max_signed
-       in Dijkstra verifications.
-     *)
+    1: split; rep_lia.
     Intros temp.
     destruct temp as [priq_ptr h]; simpl fst in *; simpl snd in *.
     rename H1 into H_mc_keys.
