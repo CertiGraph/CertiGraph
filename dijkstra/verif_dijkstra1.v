@@ -714,7 +714,7 @@ destruct H7 as [loc_min [? ?]].
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity hc).
-            1: rewrite <- H15, Zlength_app; lia.
+            1: rewrite <- H16, Zlength_app; lia.
             lia.
           }
           rewrite Int.unsigned_repr in H5 by trivial.
@@ -924,7 +924,7 @@ destruct Ha as [min_index ?].
             ++ red in H6 |- *. intros.
                specialize (H6 _ H20 _ H21).
                destruct H6.
-               ** admit.
+               ** admit. (* find_item_by_key *)
                ** right. intro. apply H6.
                   unfold proj_keys in *.
                   apply (Permutation_map heap_item_key) in H15.
@@ -1112,7 +1112,7 @@ destruct Ha as [min_index ?].
                       +++ subst item. unfold heap_item_payload. simpl.
                           apply Hl; trivial.
                       +++ subst orig. apply Hl; trivial.
-                  --- admit. (* placeholder *)
+                  --- admit. (* find_item_by_key *)
                         
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
@@ -1269,7 +1269,7 @@ destruct Ha as [min_index ?].
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity hc).
-            1: rewrite <- H16, Zlength_app; lia.
+            1: rewrite <- H17, Zlength_app; lia.
             lia.
           }
           rewrite H13. entailer!.
