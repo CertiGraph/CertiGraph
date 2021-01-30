@@ -868,7 +868,17 @@ destruct Ha as [min_index ?].
                apply (Permutation_in _ H15) in H20.
                apply Hk; trivial.
 
-            ++ intros. admit. (* placeholder *)
+            ++ red in H6 |- *. intros.
+               specialize (H6 _ H20 _ H21).
+               destruct H6.
+               ** admit.
+               ** right. intro. apply H6.
+                  unfold proj_keys in *.
+                  apply (Permutation_map heap_item_key) in H15.
+                  rewrite map_cons in H15.
+                  apply (in_cons (heap_item_key min_item)) in H22.
+                  apply Permutation_sym in H15.
+                  apply (Permutation_in _ H15) in H22; trivial.
 
             ++ subst u.
                rewrite Int.repr_signed. trivial.
