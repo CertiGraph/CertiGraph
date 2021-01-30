@@ -869,7 +869,7 @@ destruct Ha as [min_index ?].
             ++ red in H6 |- *. intros.
                specialize (H6 _ H20 _ H21).
                destruct H6.
-               ** admit.
+               ** admit. (* find_item_by_key *)
                ** right. intro. apply H6.
                   unfold proj_keys in *.
                   apply (Permutation_map heap_item_key) in H15.
@@ -1057,7 +1057,7 @@ destruct Ha as [min_index ?].
                       +++ subst item. unfold heap_item_payload. simpl.
                           apply Hl; trivial.
                       +++ subst orig. apply Hl; trivial.
-                  --- admit. (* placeholder *)
+                  --- admit. (* find_item_by_key *)
                         
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
