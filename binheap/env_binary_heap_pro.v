@@ -250,9 +250,7 @@ Definition valid_pq (pq : val) (h: heap): mpred :=
   EX arr : val, EX junk: list heap_item, EX arr2 : val, EX lookup : list Z,
     (!! heap_ordered (heap_items h)) && (!! (Zlength ((heap_items h) ++ junk) = heap_capacity h)) &&
     (!! (2 * (heap_capacity h - 1) <= Int.max_unsigned)) &&
-(*    (!! Permutation
-        (map heap_item_key ((heap_items h) ++ junk))
-        (nat_inc_list (Z.to_nat (heap_capacity h)))) && *)
+    (!! (Zlength lookup = heap_capacity h)) &&
     (data_at Tsh t_pq (Vint (Int.repr (heap_capacity h)), (Vint (Int.repr (heap_size h)), (arr, arr2))) pq *
        linked_heap_array ((heap_items h) ++ junk) arr lookup arr2 *
 (* tokens that allow deallocation *)
@@ -509,21 +507,21 @@ Lemma valid_pq_NoDup: forall p h,
   valid_pq p h |-- !! NoDup (heap_items h).
 Proof.
   intros. unfold valid_pq, linked_heap_array, linked_correctly, linked_correctly'. Intros arr junk lookup lookup'.
-  entailer!. clear H4 H5.
-  apply NoDup_nth_error. rewrite NoDup_nth_error in H2. intros.
-  rewrite <- (Nat2Z.id i) in H5.
-  rewrite Znth_nth_error in H5. 2: rewrite Zlength_correct; rep_lia.
+  entailer!. clear H5 H6.
+  apply NoDup_nth_error. rewrite NoDup_nth_error in H3. intros.
+  rewrite <- (Nat2Z.id i) in H6.
+  rewrite Znth_nth_error in H6. 2: rewrite Zlength_correct; rep_lia.
   remember (nth_error (heap_items h) j). destruct o. 2: discriminate.
   assert (j < length (heap_items h))%nat. { eapply nth_error_Some. intro. congruence. }
   assert (0 <= Z.of_nat j < Zlength (heap_items h)) by (rewrite Zlength_correct; lia).
   rewrite <- (Nat2Z.id j) in Heqo. rewrite Znth_nth_error in Heqo; auto.
-  inversion Heqo. subst h0. clear Heqo. inversion H5. clear H5.
-  generalize (H3 (Z.of_nat i)); generalize (H3 (Z.of_nat j)); intros. clear H3.
-  rewrite Zlength_app in *. spec H5. rep_lia. spec H8. rewrite Zlength_correct; rep_lia.
-  rewrite Znth_app1 in H5. 2: lia.
-  rewrite Znth_app1 in H8. 2: rewrite Zlength_correct; lia.
-  destruct H5, H8.
-  rewrite H9 in H10. rewrite H10 in H5. lia.
+  inversion Heqo. subst h0. clear Heqo. inversion H6. clear H6.
+  generalize (H4 (Z.of_nat i)); generalize (H4 (Z.of_nat j)); intros. clear H4.
+  rewrite Zlength_app in *. spec H6. rep_lia. spec H9. rewrite Zlength_correct; rep_lia.
+  rewrite Znth_app1 in H6. 2: lia.
+  rewrite Znth_app1 in H9. 2: rewrite Zlength_correct; lia.
+  destruct H6, H9.
+  rewrite H10 in H11. rewrite H11 in H6. lia.
 Qed.
 
 Lemma upd_Znth_update {A} {iA : Inhabitant A}: forall t (L: list A) x,
@@ -576,6 +574,13 @@ Proof.
   apply malloc_compatible_field_compatible in H; auto.
 Qed.
 
+Lemma free_pq: forall v,
+(*  malloc_compatible (sizeof (Tstruct _structPQ noattr)) v -> *)
+  (data_at_ Tsh t_pq v) |--
+  (data_at_ Tsh (tarray tint (sizeof (Tstruct _structPQ noattr) / sizeof tint)) v).
+Proof.
+Admitted.
+
 Lemma malloc_items: forall v size,
   malloc_compatible (sizeof (Tstruct _structItem noattr) * size) v ->
   data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) * size / sizeof tint)) v |--
@@ -590,6 +595,13 @@ Proof.
   admit.
 Admitted.
 
+Lemma free_items: forall v size,
+(*  malloc_compatible (sizeof (Tstruct _structItem noattr) * size) v *)
+  data_at_ Tsh (tarray t_item size) v |--
+  data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) * size / sizeof tint)) v.
+Proof.
+Admitted.
+
 Lemma malloc_lookup: forall v size,
   malloc_compatible (sizeof tint * size) v ->
   data_at_ Tsh (tarray tint (sizeof tint * size / sizeof tint)) v |--
@@ -600,6 +612,13 @@ Proof.
   replace (sizeof tint * size / sizeof tint) with size.
   2: { simpl sizeof. rewrite Z.mul_comm, Z_div_mult; lia. }
   admit.
+Admitted.
+
+Lemma free_lookup: forall v size,
+(*  malloc_compatible (sizeof tint * size) v -> *)
+  data_at_ Tsh (tarray tuint size) v |--
+  data_at_ Tsh (tarray tint (sizeof tint * size / sizeof tint)) v.
+Proof.
 Admitted.
 
 Lemma Zlength_default_val_array: forall t size,
