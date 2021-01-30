@@ -88,7 +88,7 @@ Proof.
     (* make succeed *)
     + split; [apply writable_Ews | split; [assumption|]].
       unfold MAX_SPACE_SIZE. compute; split; [discriminate | reflexivity].
-    + Intros p0. freeze [0;1;2;3;5] FR.
+    + Intros p0. freeze [0;1;2;3;4;6] FR.
       (* change back to "data_at sh heap_type v h" *)
       rewrite <- space_array_1_eq. rewrite sublist_list_repeat by lia.
       change (12 - 1) with 11 at 2.

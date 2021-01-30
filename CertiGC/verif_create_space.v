@@ -10,13 +10,12 @@ Proof.
   - exfalso.
     match goal with
     | H: Int64.ltu _ _ = false |- _ =>
-      apply ltu64_repr_false in H; try rewrite !Int64.unsigned_repr in * by rep_lia;
-        [unfold MAX_SPACE_SIZE in *; lia | vm_compute; easy |
-         now apply MSS_max_unsigned_range]
+      apply ltu64_repr_false in H; try rewrite !Int64.unsigned_repr in * by rep_lia
     | H: Int.unsigned _ >= Int.unsigned _ |- _ =>
-      rewrite MSS_eq_unsigned, Int.unsigned_repr in H;
-        [unfold MAX_SPACE_SIZE in *; lia | apply MSS_max_unsigned_range; assumption]
-    end.
+      rewrite !Int.unsigned_repr in H
+    end;
+      [unfold MAX_SPACE_SIZE in *; lia | vm_compute; easy |
+       now apply MSS_max_unsigned_range].
   - forward. entailer!.
   - forward_call (Tarray int_or_ptr_type n noattr, gv).
     + entailer!. simpl. rewrite Z.max_r by lia. now rewrite Z.mul_comm.

@@ -70,7 +70,7 @@ struct space {
 #define DEPTH 0  /* how much depth-first search to do */
 #endif
 
-const unsigned long long MAX_SPACE_SIZE =
+const uintnat MAX_SPACE_SIZE =
     sizeof(void*) == 8 ? (((unsigned long long)1) << 40) : (1 << 29);
 /* The restriction of max space size is required by pointer
    subtraction.  If the space is larger than this restriction, the
