@@ -642,6 +642,7 @@ Lemma free_lookup: forall v size,
   data_at_ Tsh (tarray tuint size) v |--
   data_at_ Tsh (tarray tint (sizeof tint * size / sizeof tint)) v.
 Proof.
+intros.
 Admitted.
 
 Lemma Zlength_default_val_array: forall t size,

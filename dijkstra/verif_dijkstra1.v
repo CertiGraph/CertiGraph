@@ -593,6 +593,61 @@ Section DijkstraProof.
              2,3: apply (vvalid_meaning g); trivial.
              admit.
         * red. intros.
+(*
+
+generalize H_ha_hb_rel; intro Hx.
+generalize Hn; intro Hnx.
+apply (Permutation_in min_item) in H_ha_hb_rel; trivial.
+unfold update_pri_by_key in H_ha_hb_rel.
+apply list_in_map_inv in H_ha_hb_rel.
+destruct H_ha_hb_rel as [orig_min [? ?]].
+specialize (Hn _ H10).
+destruct orig_min as [[o1 o2] o3].
+destruct min_item as [[m1 m2] m3].
+unfold update_pri_if_key in H9. unfold heap_item_priority, heap_item_key, heap_item_payload in *.
+simpl in H9. revert H9.
+case Z.eq_dec; simpl; intros.
+inversion H9. subst m1 m2 m3.
+admit.
+inversion H9. subst m1 m2 m3.
+simpl in Hn. rewrite Forall_forall in H8.
+symmetry in Hx.
+generalize (Permutation_in (Znth src keys, Int.zero, Int.repr src) Hx); intro.
+spec H11.
+unfold update_pri_by_key.
+apply in_map_iff.
+exists (Znth src keys, Int.repr inf, Int.repr src).
+unfold update_pri_if_key. unfold heap_item_key. simpl.
+case Z.eq_dec. 2: intro Hxx; contradiction. intros _.
+split; trivial.
+Search src.
+
+
+
+Search In map.
+
+S
+apply list_in_map_inv.
+ in Hx.
+apply (Permutation_in (o1, o2, o3)) in Hx; trivial.
+Search src.
+specialize (H8 (
+Check src.
+
+
+Search map In.
+
+
+
+
+Search Permutation In.
+Search update_pri_by_key.
+Print keys_valid.
+ with min.
+rewrite In_Znth_iff in H7.
+destruct H7 as [loc_min [? ?]].
+*)
+
           (* ha is all infs (see Hn)
              and hb is ha with src tweaked to 0 (see H_ha_hb_rel)
              and 0 < inf, 
