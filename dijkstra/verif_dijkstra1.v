@@ -29,13 +29,24 @@ Section DijkstraProof.
   Lemma update_pri_by_key_unaffected:
   forall l key newpri,
     map heap_item_key (update_pri_by_key l key newpri) = map heap_item_key l.
-Proof.
-  intros. induction l.
-  - trivial.
-  - simpl. rewrite IHl. f_equal.
-    unfold update_pri_by_key, update_pri_if_key, heap_item_key.
-    destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
-Qed.
+  Proof.
+    intros. induction l.
+    - trivial.
+    - simpl. rewrite IHl. f_equal.
+      unfold update_pri_by_key, update_pri_if_key, heap_item_key.
+      destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
+  Qed.
+  
+  Lemma Int_signed_strip:
+    forall a b, Int.signed a = Int.signed b -> a = b.
+  Proof.
+    intros.
+    pose proof (Int.signed_eq a b). unfold zeq in H0.
+    destruct (Z.eq_dec (Int.signed a) (Int.signed b)).
+    simpl in H0. apply int_eq_e; trivial.
+    exfalso. apply n. trivial.
+  Qed.
+  (* why was that so awful? *)
 
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
   Proof.
@@ -119,11 +130,12 @@ Qed.
 
   Definition src_picked_first h src (popped: list V) :=
     0 < Zlength (heap_items h) ->
-    exists min_item,
-      In min_item (heap_items h) /\
-      Forall (cmp_rel min_item) (heap_items h) /\
-      (popped = [] -> src = Int.signed (snd min_item)).
-
+    popped = [] ->
+    forall min_item,
+      In min_item (heap_items h) ->
+      Forall (cmp_rel min_item) (heap_items h) ->
+      src = Int.signed (snd min_item).
+  
   Definition in_heap_or_popped (popped: list V) (h: heap) :=
     forall i_item,
       (In (Int.signed (snd i_item)) popped -> ~ In i_item (heap_items h)).
@@ -567,10 +579,6 @@ Qed.
              2,3: apply (vvalid_meaning g); trivial.
              admit. (* cat 2 *)
         * red. intros.
-          destruct (exists_min_in_list (heap_items hb) H4) as [min [? ?]].
-          exists min. split3; trivial.
-          intros _.
-          red in H3.
           (* ha is all infs (see H3)
              and hb is ha with src tweaked to 0 (see H_ha_hb_rel)
              and 0 < inf, 
@@ -726,6 +734,18 @@ Qed.
             clear H20 H21 H22 H23 H24 H25 H26 H27 H28
                   H29 H30 H31 H32 H33 PNpriq_ptr.
 
+            assert (Hl: popped = [] -> src = u). {
+              intros. subst u.
+              apply H7; trivial.
+              (* min_item beat everyone in he
+                 hc is min_item + everyone in he
+                 min_item can beat everyone in he
+                 and it can beat itself.
+                 Aquinas?
+               *)
+              admit.
+            }
+
             split3; [| | split3; [| |split3; [| |split3;
                     [| |split]]]]; trivial.
             ++ (* if popped = [], then 
@@ -739,9 +759,7 @@ Qed.
                  (* apply H_popped_src_1; inversion 1. *)
                  admit. (* cat 4 *)
                }
-               replace u with src in *.
-               2: { admit. }
-               
+               replace u with src in * by now apply Hl.  
                intros. intro.
                simpl in H21; destruct H21; [|lia].
                subst dst; clear H20.
@@ -774,13 +792,9 @@ Qed.
             ++ intros. clear H20.
                destruct popped eqn:?.
                2: right; apply H4; inversion 1.
-               simpl. left. symmetry. admit.
+               simpl. left. symmetry. apply Hl; trivial.
                
-            ++ red. intros.
-               destruct (exists_min_in_list _ H20)
-                 as [min [? ?]].
-               exists min. split3; trivial.
-               intro contra. inversion contra.
+            ++ red. intros. inversion H21.
 
             ++ apply in_eq.
 
@@ -791,7 +805,33 @@ Qed.
             ++ red in H8 |- *. intros.
                specialize (H8 i_item). intro.
                replace i_item with min_item in *.
-               2: { (* payloads are unique. *) admit. }
+               2: {
+                 assert (In i_item (heap_items hc)). {
+                   apply (in_cons min_item) in H21.
+                   apply Permutation_sym in H15.
+                   apply (Permutation_in _ H15); trivial.
+                 }
+                 simpl in H20. destruct H20.
+                 2: exfalso; apply H8; trivial.
+                 rewrite H20 in Hequ.
+                 apply Int_signed_strip in Hequ.
+                 assert (NoDup (map snd (heap_items hc))) by admit.
+                 
+(* Aquinas, could you get me through? I sorta started... 
+                    
+apply (in_map snd) in H22.
+apply In_nth_error in H22.
+destruct H22 as [i_index ?].
+
+apply (in_map snd) in Ha.
+apply In_nth_error in Ha.
+destruct Ha as [min_index ?].
+
+ *)
+(* if yes, I'll go back and get you the admitted assertion about NoDup *)
+
+                 admit.
+               }
                destruct (In_Permutation_cons _ _ H21) as [he' ?].
                pose proof (Perm_Perm_cons_Perm H15 H22).
                apply (NoDup_Perm_False Hg H23).
@@ -946,11 +986,7 @@ Qed.
                   --- rewrite upd_Znth_diff; try lia;
                         intro; subst src; lia.
                   --- red. intros.
-                      destruct (exists_min_in_list _ H39) as
-                          [min [? ?]].
-                      exists min; split3; trivial.
-                      intro contra.
-                      rewrite contra in H31.
+                      rewrite H40 in H31.
                       inversion H31.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
