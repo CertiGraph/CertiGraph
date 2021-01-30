@@ -126,9 +126,7 @@ Qed.
 
   Definition in_heap_or_popped (popped: list V) (h: heap) :=
     forall i_item,
-      (In (Int.signed (snd i_item)) popped -> ~ In i_item (heap_items h))
-      /\
-      (In i_item (heap_items h) -> ~ In (Int.signed (snd i_item)) popped).
+      (In (Int.signed (snd i_item)) popped -> ~ In i_item (heap_items h)).
 
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src keys
              dist_ptr prev_ptr keys_ptr priq_ptr graph_ptr temp_item addresses :=
@@ -579,9 +577,7 @@ Qed.
              so this is true
            *)
           admit. (* cat 1 *)
-        * red. intros. split.
-          -- intro contra. inversion contra.
-          -- intro. apply in_nil.
+        * red. intros. inversion H4.
         * red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
         * red; apply Forall_upd_Znth;
@@ -793,32 +789,13 @@ Qed.
                admit.
 
             ++ red in H8 |- *. intros.
-               destruct (H8 i_item). split; intros.
+               specialize (H8 i_item). intro.
+               replace i_item with min_item in *.
+               2: { (* payloads are unique. *) admit. }
+               destruct (In_Permutation_cons _ _ H21) as [he' ?].
+               pose proof (Perm_Perm_cons_Perm H15 H22).
+               apply (NoDup_Perm_False Hg H23).
                
-               ** simpl in H22. destruct H22.
---- intro.
-    replace i_item with min_item in *.
-    2: { (* payloads are unique. *) admit. }
-    destruct (In_Permutation_cons _ _ H23) as [he' ?].
-    pose proof (Perm_Perm_cons_Perm H15 H24).
-    apply (NoDup_Perm_False Hg H25).
---- specialize (H20 H22). 
-    intro. apply H21; trivial.
-    apply (in_cons min_item) in H23.
-    apply Permutation_sym in H15.
-    apply (Permutation_in _ H15); trivial.
-    
-               ** intro. simpl in H23. destruct H23.
---- replace i_item with min_item in *.
-    2: { (* payloads are unique. *) admit. }
-    destruct (In_Permutation_cons _ _ H22) as [he' ?].
-    pose proof (Perm_Perm_cons_Perm H15 H24).
-    apply (NoDup_Perm_False Hg H25).
---- specialize (H20 H23). apply H20.
-    apply (in_cons min_item) in H22.
-    apply Permutation_sym in H15.
-    apply (Permutation_in _ H15); trivial.
-
             ++ intros.
                apply (in_cons min_item) in H20.
                apply Permutation_sym in H15.
@@ -986,12 +963,18 @@ Qed.
                       apply Permutation_sym in H36.
                       apply (Permutation_in _ H36); trivial.
                   --- red in Hf |- *.
-                      intro some_item.
-(* should be okay, 
-   because popped and heap membership have not been changed. 
-   Hrmmm not 100% sure though.
- *)
-                      admit.
+                      intros some_item ?. intro. 
+                      pose proof (Permutation_in _ H36 H40).
+                      unfold update_pri_by_key in H41.
+                      apply list_in_map_inv in H41.
+                      destruct H41 as [x [? ?]].
+                      unfold update_pri_if_key in H41.
+                      destruct (Z.eq_dec (Znth i keys) (heap_item_key x)).
+                      +++ rewrite e in *.
+                          rewrite H41 in H39.
+                          simpl in H39. unfold heap_item_payload in H39.
+                          apply (Hf x); trivial.
+                      +++ apply (Hf _ H39). subst x; trivial.
                   --- apply (Permutation_in _ H36) in H39.
                       unfold update_pri_by_key in H39.
                       apply list_in_map_inv in H39.
