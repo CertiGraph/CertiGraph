@@ -70,17 +70,8 @@ struct space {
 #define DEPTH 0  /* how much depth-first search to do */
 #endif
 
-#ifndef MAX_SPACE_SIZE
-#if SIZEOF_PTR == SIZEOF_LONG
-#define MAX_SPACE_SIZE (1ULL << 40)
-#elif SIZEOF_PTR == SIZEOF_INT
-#define MAX_SPACE_SIZE (1 << 29)
-#elif SIZEOF_PTR == 8
-#define MAX_SPACE_SIZE (1ULL << 40)
-#else
-#error "No integer type available to represent pointers"
-#endif
-#endif
+const unsigned long long MAX_SPACE_SIZE =
+    sizeof(void*) == 8 ? (((unsigned long long)1) << 40) : (1 << 29);
 /* The restriction of max space size is required by pointer
    subtraction.  If the space is larger than this restriction, the
    behavior of pointer subtraction is undefined.
