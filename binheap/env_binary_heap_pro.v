@@ -592,6 +592,17 @@ Proof.
   2: { simpl sizeof. change 12 with (3 * 4). rewrite <- Z.mul_assoc. rewrite (Z.mul_comm 4).
     rewrite Z.mul_assoc. rewrite Z_div_mult; lia. }
   rewrite memory_block_data_at_.
+  2: { destruct v; inversion H. 
+       split3; [| |split3]; trivial; try apply I.
+       - destruct H as [_ ?]. simpl in H. simpl. rewrite Z.max_r. lia.
+         admit.
+       - red. apply align_compatible_rec_Tarray.
+         intros. simpl (Ctypes.sizeof tint).
+         apply (align_compatible_rec_by_value _ _ Mint32); trivial.
+         simpl. unfold natural_alignment in H0.
+         red in H0. destruct H0 as [z ?].
+         apply Z.divide_add_r; [exists (2 * z) | exists i0]; lia.
+  }
   admit.
 Admitted.
 
@@ -611,6 +622,18 @@ Proof.
   sep_apply data_at__memory_block_cancel.
   replace (sizeof tint * size / sizeof tint) with size.
   2: { simpl sizeof. rewrite Z.mul_comm, Z_div_mult; lia. }
+  rewrite memory_block_data_at_.
+  2: { destruct v; inversion H. 
+       split3; [| |split3]; trivial; try apply I.
+       - destruct H as [_ ?]. simpl in H. simpl. rewrite Z.max_r. lia.
+         admit.
+       - red. apply align_compatible_rec_Tarray.
+         intros. simpl (Ctypes.sizeof tint).
+         apply (align_compatible_rec_by_value _ _ Mint32); trivial.
+         simpl. unfold natural_alignment in H0.
+         red in H0. destruct H0 as [z ?].
+         apply Z.divide_add_r; [exists (2 * z) | exists i0]; lia.
+  }
   admit.
 Admitted.
 
