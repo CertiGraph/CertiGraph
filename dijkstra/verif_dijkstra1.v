@@ -351,7 +351,11 @@ Section DijkstraProof.
 
       forall item,
         In item (heap_items h') ->
-        0 <= Int.signed (snd item) < size)
+        0 <= Int.signed (snd item) < size;
+
+      forall i,
+        vvalid g i ->
+        keys_dist_linked_correctly i keys (map Int.repr dist') h')
          
          LOCAL (temp _u (Vint (Int.repr u));
                temp _dist (pointer_val_val dist_ptr);
@@ -760,7 +764,7 @@ Section DijkstraProof.
             }
 
             split3; [| | split3; [| |split3; [| |split3;
-                    [| |split]]]]; trivial.
+                    [| |split3]]]]; trivial.
             ++ (* if popped = [], then 
                 prove inv_popped for [u].
                 if popped <> [], then we're set
@@ -864,6 +868,8 @@ destruct Ha as [min_index ?].
                apply (Permutation_in _ H15) in H20.
                apply Hk; trivial.
 
+            ++ intros. admit. (* placeholder *)
+
             ++ subst u.
                rewrite Int.repr_signed. trivial.
 
@@ -883,6 +889,7 @@ destruct Ha as [min_index ?].
             rename H37 into He.
             rename H38 into Hf.
             rename H39 into Hl.
+            rename H40 into Ho.
 
             forward_call (sh, g, graph_ptr, addresses, u, i).            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
@@ -993,9 +1000,9 @@ destruct Ha as [min_index ?].
                                [| | split3;
                                     [| | split3;
                                          [| |split3;
-                          [| |split3; [| |split3]]]]]];
+                          [| |split3; [| |split3; [| |split]]]]]]];
                   intros.
-                  (* 14 goals *)
+                  (* 16 goals *)
                   --- apply inv_popped_newcost; ulia.
                   --- admit.
                       (* TODO update this lemma *)
@@ -1041,7 +1048,8 @@ destruct Ha as [min_index ?].
                       destruct (Z.eq_dec (Znth i keys) (heap_item_key orig)).
                       +++ subst item. unfold heap_item_payload. simpl.
                           apply Hl; trivial.
-                      +++ subst orig. apply Hl; trivial. 
+                      +++ subst orig. apply Hl; trivial.
+                  --- admit. (* placeholder *)
                         
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
@@ -1180,13 +1188,10 @@ destruct Ha as [min_index ?].
             2: unfold hitem_, hitem; apply data_at_data_at_.
             
             remember (Int.signed (snd min_item)) as u.
-            split.
-            ++ unfold dijkstra_correct.
-               split3; [auto | apply H21 | apply H23];
-                 try rewrite <- (vvalid_meaning g); trivial.
-            ++ red. intros.
-               admit.
-           
+            unfold dijkstra_correct.
+            split3; [auto | apply H21 | apply H23];
+              try rewrite <- (vvalid_meaning g); trivial.
+            
         * (* After breaking from the while loop,
            prove break's postcondition *)
           forward.
