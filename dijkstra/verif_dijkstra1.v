@@ -80,7 +80,11 @@ Qed.
          Zlength keys = i;
          forall j,
            0 <= j < i ->
-           In (Znth j keys) (proj_keys h))
+           In (Znth j keys) (proj_keys h);
+
+         forall item,
+           In item (heap_items h) ->
+           0 <= Int.signed (snd item) < size)
          
     LOCAL (temp _dist (pointer_val_val dist_ptr);
           temp _prev (pointer_val_val prev_ptr);
@@ -177,7 +181,11 @@ Qed.
       forall i,
         vvalid g i ->
         ~ In i popped ->
-        In (Znth i keys) (proj_keys h))
+        In (Znth i keys) (proj_keys h);
+
+      forall item,
+        In item (heap_items h) ->
+        0 <= Int.signed (snd item) < size)
          
          LOCAL (temp _dist (pointer_val_val dist_ptr);
                temp _prev (pointer_val_val prev_ptr);
@@ -325,7 +333,11 @@ Qed.
         ~ In i popped' ->
         In (Znth i keys) (proj_keys h');
 
-      in_heap_or_popped popped' h')
+      in_heap_or_popped popped' h';
+
+      forall item,
+        In item (heap_items h') ->
+        0 <= Int.signed (snd item) < size)
          
          LOCAL (temp _u (Vint (Int.repr u));
                temp _dist (pointer_val_val dist_ptr);
@@ -391,6 +403,12 @@ Qed.
       (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_pv ti graph_ptr addresses).
     - Exists h (@nil key_type) (@nil int).
       entailer!.
+      1: { intros. exfalso.
+           unfold heap_size in H_h_sz.
+           apply Zlength_nil_inv in H_h_sz.
+           rewrite H_h_sz in H9. inversion H9.
+      }
+               
       remember (heap_capacity h) as size.
       rewrite app_nil_l, data_at__tarray.
       replace (size * sizeof tint / sizeof tint) with size.
@@ -404,6 +422,7 @@ Qed.
       forward_call (priq_ptr, h0, inf, Int.repr i).
       1: lia.
       rename H7 into Hc.
+      rename H8 into Hg.
       Intro temp'. destruct temp' as [h' key].
       forward.
       repeat rewrite upd_Znth_list_repeat; try lia.
@@ -436,7 +455,7 @@ Qed.
           symmetry in Heqi; rename Heqi into H3;
             clear H9 H10 H11 H12 H13 H14 H15 H16 H17
               H18 H19 H20 PNpriq_ptr.
-      + split3; [| |split3].
+      + split3; [| |split3; [| |split]].
         * rewrite <- H3. unfold heap_size.
           pose proof (Permutation_Zlength _ _ H8).
           rewrite Zlength_cons, <- Z.add_1_r in H5.
@@ -476,6 +495,13 @@ Qed.
              unfold proj_keys in Hc |- *.
              apply (Permutation_in _ H8).
              simpl. right. apply Hc; trivial.
+        * intros.
+          apply Permutation_sym in H8.
+          apply (Permutation_in _ H8) in H5.
+          simpl in H5. destruct H5.
+          -- subst item. simpl snd.
+             rewrite Int.signed_repr; rep_lia.
+          -- apply Hg; trivial.
           
       + repeat rewrite map_app; rewrite app_assoc; cancel.
         rewrite list_repeat1, upd_Znth_app2,
@@ -496,6 +522,7 @@ Qed.
       clear Heqpre_keys H_mc_keys pre_keys.
       remember (pointer_val_val keys_pv) as keys_ptr.
       rename H6 into Hc.
+      rename H7 into Hj.
 
       rewrite Z.sub_diag, list_repeat_0, app_nil_r, app_nil_r.
       assert (Htemp: 0 <= src < Zlength keys) by lia.
@@ -532,7 +559,7 @@ Qed.
           rewrite Zlength_list_repeat; ulia.
         }
         
-        split3; [| |split3; [| |split3; [| |split3]]].
+        split3; [| |split3; [| |split3; [| |split3; [| |split]]]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
@@ -551,6 +578,7 @@ Qed.
           destruct (exists_min_in_list (heap_items hb) H4) as [min [? ?]].
           exists min. split3; trivial.
           intros _.
+          red in H3.
           (* ha is all infs (see H3)
              and hb is ha with src tweaked to 0 (see H_ha_hb_rel)
              and 0 < inf, 
@@ -570,6 +598,16 @@ Qed.
           apply Permutation_sym in H_ha_hb_rel.
           unfold proj_keys in Hc |- *.
           apply (Permutation_in _ H_ha_hb_rel), Hc, (vvalid_meaning g); trivial.          
+        * intros.
+          apply (Permutation_in _ H_ha_hb_rel) in H4.
+          unfold update_pri_by_key in H4.
+          apply list_in_map_inv in H4.
+          destruct H4 as [orig [? ?]].
+          unfold update_pri_if_key in H4.
+          destruct (Z.eq_dec (Znth src keys) (heap_item_key orig)).
+          -- subst item. simpl snd. unfold heap_item_payload.
+             apply Hj; trivial.
+          -- subst orig. apply Hj; trivial.
         * repeat rewrite map_list_repeat; cancel.
 
       + (* Now the body of the while loop begins. *)
@@ -584,6 +622,7 @@ Qed.
         (* may need a link between hc and hb? *)
 
         rename H11 into Hd.
+        rename H12 into Hk.
         
         assert_PROP (Zlength prev = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
@@ -641,9 +680,8 @@ Qed.
           (* We prove a few useful facts about u: *)
           assert (H_u_valid: vvalid g u). {
             apply (vvalid_meaning g); trivial.
-            replace size with (heap_capacity he) by lia.
             subst u.
-            admit. (* cat 1 *) (* next? *)
+            apply Hk, (Permutation_cons_In _ _ _ H15).
           }
           
           assert (0 <= u < size). {
@@ -698,7 +736,8 @@ Qed.
             clear H20 H21 H22 H23 H24 H25 H26 H27 H28
                   H29 H30 H31 H32 H33 PNpriq_ptr.
 
-            split3; [| | split3; [| |split3; [| |split3]]]; trivial.
+            split3; [| | split3; [| |split3; [| |split3;
+                    [| |split]]]]; trivial.
             ++ (* if popped = [], then 
                 prove inv_popped for [u].
                 if popped <> [], then we're set
@@ -712,7 +751,7 @@ Qed.
                }
                replace u with src in *.
                2: { admit. }
-
+               
                intros. intro.
                simpl in H21; destruct H21; [|lia].
                subst dst; clear H20.
@@ -786,6 +825,12 @@ Qed.
     apply Permutation_sym in H15.
     apply (Permutation_in _ H15); trivial.
 
+            ++ intros.
+               apply (in_cons min_item) in H20.
+               apply Permutation_sym in H15.
+               apply (Permutation_in _ H15) in H20.
+               apply Hk; trivial.
+
             ++ subst u.
                rewrite Int.repr_signed. trivial.
 
@@ -804,6 +849,7 @@ Qed.
             rename H36 into H35.
             rename H37 into He.
             rename H38 into Hf.
+            rename H39 into Hl.
 
             forward_call (sh, g, graph_ptr, addresses, u, i).            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
@@ -914,9 +960,9 @@ Qed.
                                [| | split3;
                                     [| | split3;
                                          [| |split3;
-                          [| |split3]]]]];
+                          [| |split3; [| |split3]]]]]];
                   intros.
-                  (* 13 goals *)
+                  (* 14 goals *)
                   --- apply inv_popped_newcost; ulia.
                   --- admit. (* cat 4 *)
                       (* TODO update this lemma *)
@@ -939,8 +985,29 @@ Qed.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- apply Forall_upd_Znth;  ulia.
                   --- apply Forall_upd_Znth;  ulia.
-                  --- admit.
-
+                  --- specialize (He _ H39 H40).
+                      unfold proj_keys in He |- *.
+                      apply (Permutation_map heap_item_key) in H36.
+                      rewrite update_pri_by_key_unaffected in H36.
+                      apply Permutation_sym in H36.
+                      apply (Permutation_in _ H36); trivial.
+                  --- red in Hf |- *.
+                      intro some_item.
+(* should be okay, 
+   because popped and heap membership have not been changed. 
+   Hrmmm not 100% sure though.
+ *)
+                      admit.
+                  --- apply (Permutation_in _ H36) in H39.
+                      unfold update_pri_by_key in H39.
+                      apply list_in_map_inv in H39.
+                      destruct H39 as [orig [? ?]].
+                      unfold update_pri_if_key in H39.
+                      destruct (Z.eq_dec (Znth i keys) (heap_item_key orig)).
+                      +++ subst item. unfold heap_item_payload. simpl.
+                          apply Hl; trivial.
+                      +++ subst orig. apply Hl; trivial. 
+                        
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
                  rename H26 into H_non_improvement.
