@@ -659,7 +659,7 @@ Section DijkstraProof.
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity hc).
-            1: rewrite <- H15, Zlength_app; lia.
+            1: rewrite <- H16, Zlength_app; lia.
             lia.
           }
           rewrite Int.unsigned_repr in H5 by trivial.
@@ -1214,7 +1214,7 @@ destruct Ha as [min_index ?].
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity hc).
-            1: rewrite <- H16, Zlength_app; lia.
+            1: rewrite <- H17, Zlength_app; lia.
             lia.
           }
           rewrite H13. entailer!.
