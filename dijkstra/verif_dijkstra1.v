@@ -46,7 +46,28 @@ Section DijkstraProof.
   Qed.
   (* why was that so awful? *)
 
-  Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
+  Lemma In_update_pri_by_key: forall i L k np,
+      In i (update_pri_by_key L k np) ->
+      (In i L /\ heap_item_key i <> k) \/
+      (exists oi, In oi L /\ 
+                  heap_item_key i = k /\ 
+                  heap_item_payload i = heap_item_payload oi /\ 
+                  heap_item_key i = heap_item_key oi /\
+                  heap_item_priority i = np).
+  Proof.
+    intros.
+    unfold update_pri_by_key in H.
+    rewrite in_map_iff in H. destruct H as [oi [? ?]].
+    revert H. unfold update_pri_if_key. case Z.eq_dec; intros.
+    2: left; subst; auto.
+    right. exists oi. split; trivial. subst i.
+    unfold heap_item_key, heap_item_payload, heap_item_priority in *.
+    simpl. tauto.
+  Qed.
+
+
+  Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell
+                                 (@getCell_spec size inf).
   Proof.
     start_function.
     rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
@@ -55,7 +76,8 @@ Section DijkstraProof.
       rewrite Znth_map; repeat rewrite Zlength_map.
       all: rewrite nat_inc_list_Zlength; lia.
     }
-    assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_mat size g id)))) by lia.
+    assert (0 <= i < Zlength (map Int.repr
+                                  (Znth u (@graph_to_mat size g id)))) by lia.
     assert (0 <= i < Zlength (Znth u (@graph_to_mat size g id))). {
       rewrite Zlength_map in H1. lia.
     }
@@ -74,7 +96,8 @@ Section DijkstraProof.
       [(k, Znth i dist, Int.repr i)] \/
       ~ In k (proj_keys h).
   
-  Definition dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_ptr temp_item arr addresses :=
+  Definition dijk_setup_loop_inv g sh src dist_ptr
+             prev_ptr priq_ptr keys_ptr temp_item arr addresses :=
     EX i : Z,
     EX h : heap,
     EX keys: list key_type,
@@ -224,7 +247,8 @@ Section DijkstraProof.
              @SpaceAdjMatGraph size CompSpecs sh id
                                g (pointer_val_val graph_ptr) addresses;
              hitem_ (pointer_val_val temp_item);
-             free_tok (pointer_val_val temp_item) (sizeof (Tstruct _structItem noattr));
+             free_tok (pointer_val_val temp_item)
+                      (sizeof (Tstruct _structItem noattr));
              free_tok (pointer_val_val keys_ptr) (size * sizeof tint)).
   
   Definition dijk_forloop_break_inv (g: @DijkGG size inf) sh
@@ -255,11 +279,14 @@ Section DijkstraProof.
              @SpaceAdjMatGraph size CompSpecs sh id
                                g (pointer_val_val graph_ptr) addresses;
              valid_pq priq_ptr h;
-             data_at Tsh (tarray tint (heap_capacity h)) (map Vint (map Int.repr keys))
+             data_at Tsh (tarray tint (heap_capacity h))
+                     (map Vint (map Int.repr keys))
                      (pointer_val_val keys_ptr);
-             data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint))
+             data_at_ Tsh (tarray tint
+                                  (sizeof (Tstruct _structItem noattr) / sizeof tint))
                       (pointer_val_val temp_item);
-             free_tok (pointer_val_val temp_item) (sizeof (Tstruct _structItem noattr));
+             free_tok (pointer_val_val temp_item)
+                      (sizeof (Tstruct _structItem noattr));
              free_tok (pointer_val_val keys_ptr) (heap_capacity h * sizeof tint)).
   
   Definition dijk_inner_forloop_inv (g: @DijkGG size inf) sh
@@ -378,14 +405,16 @@ Section DijkstraProof.
              @SpaceAdjMatGraph size CompSpecs sh id 
                                g (pointer_val_val graph_ptr) addresses;
              hitem min_item (pointer_val_val ti);
-             data_at Tsh (tarray tint (heap_capacity h)) (map Vint (map Int.repr keys))
+             data_at Tsh (tarray tint (heap_capacity h))
+                     (map Vint (map Int.repr keys))
                      keys_ptr;
              free_tok (pointer_val_val ti) 12;
              free_tok keys_ptr (heap_capacity h * 4)).
   
   (* DIJKSTRA PROOF BEGINS *)
 
-  Lemma body_dijkstra: semax_body Vprog (@Gprog size inf) f_dijkstra (@dijkstra_spec size inf).
+  Lemma body_dijkstra: semax_body Vprog (@Gprog size inf)
+                                  f_dijkstra (@dijkstra_spec size inf).
   Proof.
     start_function.
     rename H1 into Hsz'.
@@ -410,7 +439,8 @@ Section DijkstraProof.
 
     forward_for_simple_bound
       size
-      (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_pv ti graph_ptr addresses).
+      (dijk_setup_loop_inv g sh src dist_ptr
+                           prev_ptr priq_ptr keys_pv ti graph_ptr addresses).
     - Exists h (@nil key_type) (@nil int).
       entailer!.
       1: { unfold heap_size in H_h_sz.
@@ -454,7 +484,8 @@ Section DijkstraProof.
       simpl list_repeat at 1.
       rewrite upd_Znth_app1.
       2: { rewrite binary_heap_Zmodel.Zlength_one. lia. }
-      replace (upd_Znth 0 [Vundef] (Vint (Int.repr key))) with [(Vint (Int.repr key))].
+      replace (upd_Znth 0 [Vundef] (Vint (Int.repr key))) with
+          [(Vint (Int.repr key))].
       2: { rewrite upd_Znth0. reflexivity. }
       (* and done *)
       
@@ -478,7 +509,8 @@ Section DijkstraProof.
           destruct (Z.eq_dec i j).
           -- subst j. left.
              admit. 
-          (* H7: Permutation ((k, Int.repr inf, Int.repr i) :: heap_items h0) (heap_items h') *)
+          (* H7: Permutation ((k, Int.repr inf, Int.repr i) :: 
+             heap_items h0) (heap_items h') *)
 
           -- assert (0 <= j < i) by lia.
              clear H5 n.
@@ -561,8 +593,12 @@ Section DijkstraProof.
        *)
       
       forward_loop
-      (dijk_forloop_inv g sh src keys dist_ptr prev_ptr keys_pv priq_ptr graph_ptr ti addresses)
-      break: (dijk_forloop_break_inv g sh src keys dist_ptr prev_ptr keys_pv priq_ptr graph_ptr ti addresses).
+        (dijk_forloop_inv g sh src keys
+                          dist_ptr prev_ptr keys_pv priq_ptr
+                          graph_ptr ti addresses)
+        break: (dijk_forloop_break_inv
+                  g sh src keys dist_ptr prev_ptr
+                  keys_pv priq_ptr graph_ptr ti addresses).
       + unfold dijk_forloop_inv.
         Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) src).
         Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) 0).
@@ -593,74 +629,56 @@ Section DijkstraProof.
              2,3: apply (vvalid_meaning g); trivial.
              admit.
         * red. intros.
-generalize H_ha_hb_rel; intro Hx.
-apply (Permutation_in min_item) in H_ha_hb_rel; trivial.
-Set Nested Proofs Allowed.
-
-Lemma In_update_pri_by_key: forall i L k np,
-  In i (update_pri_by_key L k np) ->
-  (In i L /\ heap_item_key i <> k) \/
-  (exists oi, In oi L /\ 
-              heap_item_key i = k /\ 
-              heap_item_payload i = heap_item_payload oi /\ 
-              heap_item_key i = heap_item_key oi /\
-              heap_item_priority i = np).
-Proof.
-  intros.
-  unfold update_pri_by_key in H.
-  rewrite in_map_iff in H. destruct H as [oi [? ?]].
-  revert H. unfold update_pri_if_key. case Z.eq_dec; intros.
-  2: left; subst; auto.
-  right. exists oi. split; trivial. subst i. unfold heap_item_key, heap_item_payload, heap_item_priority in *.
-  simpl. tauto.
-Qed.
-
-apply In_update_pri_by_key in H_ha_hb_rel.
-assert (Hxxx: In (Znth src keys, Int.repr inf, Int.repr src) (heap_items ha)) by admit. (* Anshuman *)
-destruct H_ha_hb_rel as [[? ?] | ?].
-**
-rewrite Forall_forall in H8.
-specialize (H8 (Znth src keys, Int.zero, Int.repr src)).
-spec H8. symmetry in Hx.
-apply (Permutation_in (Znth src keys, Int.zero, Int.repr src)) in Hx; auto.
-unfold update_pri_by_key.
-rewrite in_map_iff.
-exists (Znth src keys, Int.repr inf, Int.repr src).
-unfold update_pri_if_key, heap_item_key. simpl.
-case Z.eq_dec. 2: intro Hxx; contradiction. intros _.
-split. trivial. trivial.
-clear -H9 H8 Hn Hinf.
-unfold cmp_rel, cmp, heap_item_priority in *. simpl in H8. rewrite Hn in H8.
-remember (Int.lt Int.zero (Int.repr inf)). destruct b. discriminate.
-symmetry in Heqb.
-apply lt_false_inv in Heqb.
-unfold Int.zero in Heqb.
-rewrite Int.signed_repr in Heqb.
-rewrite Int.signed_repr in Heqb.
-1-3: rep_lia. trivial.
-**
-destruct H9 as [oi [? [? [? [? ?]]]]].
-destruct min_item as [[m1 m2] m3].
-unfold heap_item_key, heap_item_payload, heap_item_priority in *. simpl in *.
-subst m2 m3.
-destruct oi as [[o1 o2] o3]. simpl in *. subst o1. subst m1.
-generalize (Hn _ H9); intro. simpl in H10. subst o2.
-assert (NoDup (map heap_item_key (heap_items ha))) by admit.
-clear -H10 Hxxx H9 Hsz H. rename H into Hsz'.
-apply in_split in H9. destruct H9 as [L1 [L2 ?]].
-rewrite H in *. apply in_app_or in Hxxx.
-rewrite map_app in H10. simpl in H10.
-apply NoDup_remove_2 in H10.
-unfold heap_item_key in H10 at 1. simpl in H10.
-destruct Hxxx. destruct H10.
-apply in_or_app. left.
-apply (in_map heap_item_key) in H0.
-apply H0.
-destruct H0. inversion H0. rewrite Int.signed_repr; auto. rep_lia.
-destruct H10.
-apply in_or_app. right.
-apply (in_map heap_item_key) in H0.
-apply H0.
+          generalize H_ha_hb_rel; intro Hx.
+          apply (Permutation_in min_item) in H_ha_hb_rel; trivial.
+          apply In_update_pri_by_key in H_ha_hb_rel.
+          assert (Hxxx: In (Znth src keys, Int.repr inf, Int.repr src)
+                           (heap_items ha)) by admit. (* Anshuman *)
+          destruct H_ha_hb_rel as [[? ?] | ?].
+          -- rewrite Forall_forall in H8.
+             specialize (H8 (Znth src keys, Int.zero, Int.repr src)).
+             spec H8. symmetry in Hx.
+             apply (Permutation_in (Znth src keys, Int.zero, Int.repr src)) in
+                 Hx; auto.
+             unfold update_pri_by_key.
+             rewrite in_map_iff.
+             exists (Znth src keys, Int.repr inf, Int.repr src).
+             unfold update_pri_if_key, heap_item_key. simpl.
+             case Z.eq_dec. 2: intro Hxx; contradiction. intros _.
+             split. trivial. trivial.
+             clear -H9 H8 Hn Hinf.
+             unfold cmp_rel, cmp, heap_item_priority in *. simpl in H8.
+             rewrite Hn in H8.
+             remember (Int.lt Int.zero (Int.repr inf)). destruct b. discriminate.
+             symmetry in Heqb.
+             apply lt_false_inv in Heqb.
+             unfold Int.zero in Heqb.
+             rewrite Int.signed_repr in Heqb.
+             rewrite Int.signed_repr in Heqb.
+             1-3: rep_lia. trivial.
+          -- destruct H9 as [oi [? [? [? [? ?]]]]].
+             destruct min_item as [[m1 m2] m3].
+             unfold heap_item_key, heap_item_payload, heap_item_priority in *.
+             simpl in *.
+             subst m2 m3.
+             destruct oi as [[o1 o2] o3]. simpl in *. subst o1. subst m1.
+             generalize (Hn _ H9); intro. simpl in H10. subst o2.
+             assert (NoDup (map heap_item_key (heap_items ha))) by admit.
+             clear -H10 Hxxx H9 Hsz H. rename H into Hsz'.
+             apply in_split in H9. destruct H9 as [L1 [L2 ?]].
+             rewrite H in *. apply in_app_or in Hxxx.
+             rewrite map_app in H10. simpl in H10.
+             apply NoDup_remove_2 in H10.
+             unfold heap_item_key in H10 at 1. simpl in H10.
+             destruct Hxxx. destruct H10.
+             apply in_or_app. left.
+             apply (in_map heap_item_key) in H0.
+             apply H0.
+             destruct H0. inversion H0. rewrite Int.signed_repr; auto. rep_lia.
+             destruct H10.
+             apply in_or_app. right.
+             apply (in_map heap_item_key) in H0.
+             apply H0.
         * red. intros. inversion H4.
         * red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
@@ -742,7 +760,9 @@ apply H0.
           thaw FR.
           unfold hitem.
           forward.
-          replace (data_at Tsh t_item (heap_item_rep min_item) (pointer_val_val ti)) with (hitem min_item (pointer_val_val ti)).
+          replace (data_at Tsh t_item (heap_item_rep min_item)
+                           (pointer_val_val ti)) with
+              (hitem min_item (pointer_val_val ti)).
           2: unfold hitem; trivial.
           simpl.
           remember (Int.signed (snd min_item)) as u.
@@ -813,19 +833,13 @@ apply H0.
             assert (Hl: popped = [] -> src = u). {
               intros. subst u.
               apply H7; trivial.
-              (* min_item beat everyone in he
-                 hc is min_item + everyone in he
-                 min_item can beat everyone in he
-                 and it can beat itself.
-                 Aquinas?
-               *)
-apply Forall_forall.
-intros.
-rewrite Forall_forall in H16.
-specialize (H16 x).
-Search Permutation In.
-apply (Permutation_in x) in H15; trivial.
-destruct H15. subst x. reflexivity. auto.
+              apply Forall_forall.
+              intros.
+              rewrite Forall_forall in H16.
+              specialize (H16 x).
+              Search Permutation In.
+              apply (Permutation_in x) in H15; trivial.
+              destruct H15. subst x. reflexivity. auto.
             }
 
             split3; [| | split3; [| |split3; [| |split3;
@@ -887,24 +901,28 @@ destruct H15. subst x. reflexivity. auto.
                apply (Permutation_in _ H23) in Hd. 
                simpl in Hd.
 
-
-
- destruct Hd as [Hd | ?]; trivial.
+               destruct Hd as [Hd | ?]; trivial.
                exfalso. apply H21.
-clear -H22 H8 Hd Hequ Ha H6 H20 H_u_valid.
-assert (exists i_item, In i_item (heap_items hc) /\ i = Int.signed (snd i_item)) by admit. clear H8 H22.
-destruct H as [i_item [Hb ?]].
-
-generalize (H6 _ H20 _ eq_refl); intro.
-destruct H0. 2: { destruct H0. rewrite <- Hd. unfold proj_keys. apply in_map. trivial. }
-generalize (H6 _ H_u_valid (heap_item_key min_item)); intro.
-spec H1. admit.
-destruct H1.
-2: { destruct H1. apply in_map. trivial. }
-rewrite Hd in H1 at 1. rewrite H0 in H1. inversion H1.
-apply (vvalid_meaning g) in H20.
-apply (vvalid_meaning g) in H_u_valid.
-repeat rewrite Int.Z_mod_modulus_eq, Z.mod_small in H5; ulia.
+               clear -H22 H8 Hd Hequ Ha H6 H20 H_u_valid.
+               assert (exists i_item,
+                          In i_item (heap_items hc) /\
+                          i = Int.signed (snd i_item)) by admit.
+               clear H8 H22.
+               destruct H as [i_item [Hb ?]].
+               
+               generalize (H6 _ H20 _ eq_refl); intro.
+               destruct H0. 2: {
+                 destruct H0. rewrite <- Hd.
+                 unfold proj_keys. apply in_map. trivial.
+               }
+               generalize (H6 _ H_u_valid (heap_item_key min_item)); intro.
+               spec H1. admit.
+               destruct H1.
+               2: { destruct H1. apply in_map. trivial. }
+               rewrite Hd in H1 at 1. rewrite H0 in H1. inversion H1.
+               apply (vvalid_meaning g) in H20.
+               apply (vvalid_meaning g) in H_u_valid.
+               repeat rewrite Int.Z_mod_modulus_eq, Z.mod_small in H5; ulia.
 
             ++ red in H8 |- *. intros.
                specialize (H8 i_item). intro.
@@ -920,22 +938,21 @@ repeat rewrite Int.Z_mod_modulus_eq, Z.mod_small in H5; ulia.
                  rewrite H20 in Hequ.
                  apply Int_signed_strip in Hequ.
                  assert (NoDup (map snd (heap_items hc))) by admit.
-{
-destruct min_item as [[mi1 mi2] mi3].
-destruct i_item as [[i1 i2] i3].
-simpl in Hequ. subst i3.
-clear -Ha H22 H23.
-apply in_split in Ha. destruct Ha as [l1 [l2 ?]].
-rewrite H in H23.
-rewrite map_app in H23. simpl in H23.
-apply NoDup_remove in H23. destruct H23.
-rewrite H in H22.
-apply in_app_or in H22.
-destruct H22. exfalso. apply H1. apply in_or_app. left.
-apply in_map_iff. exists (i1, i2, mi3). auto.
-destruct H2. trivial.
-exfalso. apply H1. apply in_or_app. right.
-apply in_map_iff. exists (i1, i2, mi3). auto. }
+                 destruct min_item as [[mi1 mi2] mi3].
+                 destruct i_item as [[i1 i2] i3].
+                 simpl in Hequ. subst i3.
+                 clear -Ha H22 H23.
+                 apply in_split in Ha. destruct Ha as [l1 [l2 ?]].
+                 rewrite H in H23.
+                 rewrite map_app in H23. simpl in H23.
+                 apply NoDup_remove in H23. destruct H23.
+                 rewrite H in H22.
+                 apply in_app_or in H22.
+                 destruct H22. exfalso. apply H1. apply in_or_app. left.
+                 apply in_map_iff. exists (i1, i2, mi3). auto.
+                 destruct H2. trivial.
+                 exfalso. apply H1. apply in_or_app. right.
+                 apply in_map_iff. exists (i1, i2, mi3). auto. 
                }
                destruct (In_Permutation_cons _ _ H21) as [he' ?].
                pose proof (Perm_Perm_cons_Perm H15 H22).
@@ -1054,7 +1071,8 @@ apply in_map_iff. exists (i1, i2, mi3). auto. }
                   forward; rewrite upd_Znth_same; trivial.
                   1: entailer!.
                   1,3: repeat rewrite Zlength_map; lia.
-                  forward_call (priq_ptr, h', Znth i keys, Int.repr (Znth u dist' + cost)).
+                  forward_call (priq_ptr, h',
+                                Znth i keys, Int.repr (Znth u dist' + cost)).
                   
 (* Now we must show that the for loop's invariant
    holds if we take another step,
@@ -1314,9 +1332,12 @@ apply in_map_iff. exists (i1, i2, mi3). auto. }
                        (SpaceAdjMatGraph _ _ _ _ _)
                        (valid_pq _ _)
                        (free_tok (pointer_val_val keys_pv) _).
-        forward_call (pointer_val_val ti, (sizeof (Tstruct _structItem noattr) / sizeof tint)).
+        forward_call (pointer_val_val ti,
+                      (sizeof (Tstruct _structItem noattr) / sizeof tint)).
         1: {
-          replace (sizeof tint * (sizeof (Tstruct _structItem noattr) / sizeof tint)) with (sizeof (Tstruct _structItem noattr)) by ulia.
+          replace (sizeof tint *
+                   (sizeof (Tstruct _structItem noattr) / sizeof tint)) with
+              (sizeof (Tstruct _structItem noattr)) by ulia.
             
           entailer!.
         }
