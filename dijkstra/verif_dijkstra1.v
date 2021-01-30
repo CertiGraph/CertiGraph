@@ -1301,25 +1301,32 @@ apply in_map_iff. exists (i1, i2, mi3). auto. }
           unfold heap_size in *.
           pose proof (Zlength_nonneg (heap_items hc)).
           lia.
-          admit.
-          (* HELP is this the coercion you proved? *)
+          apply hitem_free.
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev dist popped hc.
         freeze FR := (data_at _ _ _ _)
                        (data_at _ _ _ _)
                        (data_at _ _ _ _)
-                       (SpaceAdjMatGraph _ _ _ _ _).
-
+                       (SpaceAdjMatGraph _ _ _ _ _)
+                       (valid_pq _ _)
+                       (free_tok (pointer_val_val keys_pv) _).
+        forward_call (pointer_val_val ti, (sizeof (Tstruct _structItem noattr) / sizeof tint)).
+        1: {
+          replace (sizeof tint * (sizeof (Tstruct _structItem noattr) / sizeof tint)) with (sizeof (Tstruct _structItem noattr)) by ulia.
+            
+          entailer!.
+        }
+        thaw FR.
         forward_call (priq_ptr, hc).
-        forward_call (Tsh, keys_pv, size, keys).
-        entailer!. admit. (* has to do with freeing ti *)
-        (* thaw FR. *)
-        forward.
+        freeze FR := (data_at _ _ _ _)
+                       (data_at _ _ _ _)
+                       (SpaceAdjMatGraph _ _ _ _ _).
+        forward_call (pointer_val_val keys_pv, heap_capacity hc).
+        1: rewrite Z.mul_comm; entailer!.
+        forward. thaw FR.
         Exists prev dist popped. entailer!.
-        intros. destruct (H7 _ H10) as [? _]; trivial.
-        admit.
-        Unshelve. admit.
+        intros. destruct (H7 _ H15) as [? _]; trivial.
   Admitted. 
 
 End DijkstraProof.
