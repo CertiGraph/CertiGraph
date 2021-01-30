@@ -29,13 +29,24 @@ Section DijkstraProof.
   Lemma update_pri_by_key_unaffected:
   forall l key newpri,
     map heap_item_key (update_pri_by_key l key newpri) = map heap_item_key l.
-Proof.
-  intros. induction l.
-  - trivial.
-  - simpl. rewrite IHl. f_equal.
-    unfold update_pri_by_key, update_pri_if_key, heap_item_key.
-    destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
-Qed.
+  Proof.
+    intros. induction l.
+    - trivial.
+    - simpl. rewrite IHl. f_equal.
+      unfold update_pri_by_key, update_pri_if_key, heap_item_key.
+      destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
+  Qed.
+  
+  Lemma Int_signed_strip:
+    forall a b, Int.signed a = Int.signed b -> a = b.
+  Proof.
+    intros.
+    pose proof (Int.signed_eq a b). unfold zeq in H0.
+    destruct (Z.eq_dec (Int.signed a) (Int.signed b)).
+    simpl in H0. apply int_eq_e; trivial.
+    exfalso. apply n. trivial.
+  Qed.
+  (* why was that so awful? *)
 
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
   Proof.
@@ -63,8 +74,7 @@ Qed.
       Znth i keys = k ->
       find_item_by_key (heap_items h) k =
       [(k, Znth i dist, Int.repr i)] \/
-      ~In k (proj_keys h).
-    
+      ~ In k (proj_keys h).
   
   Definition dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_ptr temp_item arr addresses :=
     EX i : Z,
@@ -81,8 +91,16 @@ Qed.
          Zlength keys = i;
          forall j,
            0 <= j < i ->
-           In (Znth j keys) (proj_keys h))
-         
+           In (Znth j keys) (proj_keys h);
+
+         forall item,
+           In item (heap_items h) ->
+           0 <= Int.signed (snd item) < size;
+
+         forall item,
+           In item (heap_items h) ->
+           heap_item_priority item = Int.repr inf)
+
     LOCAL (temp _dist (pointer_val_val dist_ptr);
           temp _prev (pointer_val_val prev_ptr);
           temp _src (Vint (Int.repr src));
@@ -116,16 +134,15 @@ Qed.
 
   Definition src_picked_first h src (popped: list V) :=
     0 < Zlength (heap_items h) ->
-    exists min_item,
-      In min_item (heap_items h) /\
-      Forall (cmp_rel min_item) (heap_items h) /\
-      (popped = [] -> src = Int.signed (snd min_item)).
-
+    popped = [] ->
+    forall min_item,
+      In min_item (heap_items h) ->
+      Forall (cmp_rel min_item) (heap_items h) ->
+      src = Int.signed (snd min_item).
+  
   Definition in_heap_or_popped (popped: list V) (h: heap) :=
     forall i_item,
-      (In (Int.signed (snd i_item)) popped -> ~ In i_item (heap_items h))
-      /\
-      (In i_item (heap_items h) -> ~ In (Int.signed (snd i_item)) popped).
+      (In (Int.signed (snd i_item)) popped -> ~ In i_item (heap_items h)).
 
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src keys
              dist_ptr prev_ptr keys_ptr priq_ptr graph_ptr temp_item addresses :=
@@ -178,7 +195,11 @@ Qed.
       forall i,
         vvalid g i ->
         ~ In i popped ->
-        In (Znth i keys) (proj_keys h))
+        In (Znth i keys) (proj_keys h);
+
+      forall item,
+        In item (heap_items h) ->
+        0 <= Int.signed (snd item) < size)
          
          LOCAL (temp _dist (pointer_val_val dist_ptr);
                temp _prev (pointer_val_val prev_ptr);
@@ -326,7 +347,15 @@ Qed.
         ~ In i popped' ->
         In (Znth i keys) (proj_keys h');
 
-      in_heap_or_popped popped' h')
+      in_heap_or_popped popped' h';
+
+      forall item,
+        In item (heap_items h') ->
+        0 <= Int.signed (snd item) < size;
+
+      forall i,
+        vvalid g i ->
+        keys_dist_linked_correctly i keys (map Int.repr dist') h')
          
          LOCAL (temp _u (Vint (Int.repr u));
                temp _dist (pointer_val_val dist_ptr);
@@ -361,6 +390,7 @@ Qed.
   Lemma body_dijkstra: semax_body Vprog (@Gprog size inf) f_dijkstra (@dijkstra_spec size inf).
   Proof.
     start_function.
+    rename H1 into Hsz'.
     pose proof (size_further_restricted g).
     pose proof (inf_bounds g).
     rename H1 into Hsz.
@@ -373,14 +403,7 @@ Qed.
     Intro keys_pv.
     remember (pointer_val_val keys_pv) as pre_keys.
     forward_call (size).
-    1: split. rep_lia.
-       admit. (* Aquinas: Yes, probably you need to strengthen your precondition *)
-    (* HELP
-       Does this sound okay? Should I add to precon? 
-       I have not given any thought to 
-       Int.max_unsgined vs Int.max_signed
-       in Dijkstra verifications.
-     *)
+    1: split; rep_lia.
     Intros temp.
     destruct temp as [priq_ptr h]; simpl fst in *; simpl snd in *.
     rename H1 into H_mc_keys.
@@ -392,6 +415,12 @@ Qed.
       (dijk_setup_loop_inv g sh src dist_ptr prev_ptr priq_ptr keys_pv ti graph_ptr addresses).
     - Exists h (@nil key_type) (@nil int).
       entailer!.
+      1: { unfold heap_size in H_h_sz.
+           apply Zlength_nil_inv in H_h_sz.
+           rewrite H_h_sz in *.
+           split; inversion 1.
+      }
+               
       remember (heap_capacity h) as size.
       rewrite app_nil_l, data_at__tarray.
       replace (size * sizeof tint / sizeof tint) with size.
@@ -405,6 +434,8 @@ Qed.
       forward_call (priq_ptr, h0, inf, Int.repr i).
       1: lia.
       rename H7 into Hc.
+      rename H8 into Hg.
+      rename H9 into Hn.
       Intro temp'. destruct temp' as [h' key].
       forward.
       repeat rewrite upd_Znth_list_repeat; try lia.
@@ -437,7 +468,7 @@ Qed.
           symmetry in Heqi; rename Heqi into H3;
             clear H9 H10 H11 H12 H13 H14 H15 H16 H17
               H18 H19 H20 PNpriq_ptr.
-      + split3; [| |split3].
+      + split3; [| |split3; [| |split3]].
         * rewrite <- H3. unfold heap_size.
           pose proof (Permutation_Zlength _ _ H8).
           rewrite Zlength_cons, <- Z.add_1_r in H5.
@@ -448,7 +479,7 @@ Qed.
           rewrite Znth_list_repeat_inrange by lia.
           destruct (Z.eq_dec i j).
           -- subst j. left.
-             admit. (* cat 2 *)
+             admit. 
           (* H7: Permutation ((k, Int.repr inf, Int.repr i) :: heap_items h0) (heap_items h') *)
 
           -- assert (0 <= j < i) by lia.
@@ -457,7 +488,7 @@ Qed.
              red in H4.
              specialize (H4 _ H10 _ H9). 
              rewrite Znth_list_repeat_inrange in H4 by lia.
-             admit. (* cat 2 *)
+             admit.
         * rewrite <- list_repeat1, list_repeat_app,
           Z2Nat.inj_add. trivial. lia. lia.
         * rewrite Zlength_app, binary_heap_Zmodel.Zlength_one.
@@ -477,6 +508,19 @@ Qed.
              unfold proj_keys in Hc |- *.
              apply (Permutation_in _ H8).
              simpl. right. apply Hc; trivial.
+        * intros.
+          apply Permutation_sym in H8.
+          apply (Permutation_in _ H8) in H5.
+          simpl in H5. destruct H5.
+          -- subst item. simpl snd.
+             rewrite Int.signed_repr; rep_lia.
+          -- apply Hg; trivial.
+        * intros.
+          apply Permutation_sym in H8.
+          apply (Permutation_in _ H8) in H5.
+          simpl in H5. destruct H5.
+          -- subst item. unfold heap_item_priority; trivial.
+          -- apply Hn; trivial.
           
       + repeat rewrite map_app; rewrite app_assoc; cancel.
         rewrite list_repeat1, upd_Znth_app2,
@@ -497,6 +541,8 @@ Qed.
       clear Heqpre_keys H_mc_keys pre_keys.
       remember (pointer_val_val keys_pv) as keys_ptr.
       rename H6 into Hc.
+      rename H7 into Hj.
+      rename H8 into Hn.
 
       rewrite Z.sub_diag, list_repeat_0, app_nil_r, app_nil_r.
       assert (Htemp: 0 <= src < Zlength keys) by lia.
@@ -533,7 +579,7 @@ Qed.
           rewrite Zlength_list_repeat; ulia.
         }
         
-        split3; [| |split3; [| |split3; [| |split3]]].
+        split3; [| |split3; [| |split3; [| |split3; [| |split]]]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
@@ -541,26 +587,22 @@ Qed.
           destruct (Z.eq_dec i src).
           -- subst i.
              rewrite upd_Znth_same.
-             admit. (* cat 2 *)
+             admit.
              rewrite Zlength_map, Zlength_list_repeat; lia.
           -- rewrite upd_Znth_diff; trivial.
              2,3: rewrite Zlength_map, Zlength_list_repeat; try lia.
              rewrite map_list_repeat, Znth_list_repeat_inrange.
              2,3: apply (vvalid_meaning g); trivial.
-             admit. (* cat 2 *)
+             admit.
         * red. intros.
-          destruct (exists_min_in_list (heap_items hb) H4) as [min [? ?]].
-          exists min. split3; trivial.
-          intros _.
-          (* ha is all infs (see H3)
+          (* ha is all infs (see Hn)
              and hb is ha with src tweaked to 0 (see H_ha_hb_rel)
              and 0 < inf, 
-             so this is true
+             so this is true.
+             Aquinas?
            *)
-          admit. (* cat 1 *)
-        * red. intros. split.
-          -- intro contra. inversion contra.
-          -- intro. apply in_nil.
+          admit.
+        * red. intros. inversion H4.
         * red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
         * red; apply Forall_upd_Znth;
@@ -571,6 +613,16 @@ Qed.
           apply Permutation_sym in H_ha_hb_rel.
           unfold proj_keys in Hc |- *.
           apply (Permutation_in _ H_ha_hb_rel), Hc, (vvalid_meaning g); trivial.          
+        * intros.
+          apply (Permutation_in _ H_ha_hb_rel) in H4.
+          unfold update_pri_by_key in H4.
+          apply list_in_map_inv in H4.
+          destruct H4 as [orig [? ?]].
+          unfold update_pri_if_key in H4.
+          destruct (Z.eq_dec (Znth src keys) (heap_item_key orig)).
+          -- subst item. simpl snd. unfold heap_item_payload.
+             apply Hj; trivial.
+          -- subst orig. apply Hj; trivial.
         * repeat rewrite map_list_repeat; cancel.
 
       + (* Now the body of the while loop begins. *)
@@ -585,23 +637,18 @@ Qed.
         (* may need a link between hc and hb? *)
 
         rename H11 into Hd.
-        
-Set Nested Proofs Allowed.
-Lemma valid_pq_NoDup_keys:
-  forall p h,
-    valid_pq p h |-- !! NoDup (heap_items h).
-Admitted.
-
+        rename H12 into Hk.
+                
         assert_PROP (Zlength prev = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
         assert_PROP (Zlength dist = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
         assert_PROP (NoDup (heap_items hc)). {
-          sep_apply valid_pq_NoDup_keys. entailer!.
+          sep_apply valid_pq_NoDup. entailer!.
         }
-        rename H13 into Hnew.
 
         rename H5 into H_hc_cap.
+        rename H13 into H13'.
         forward_call (priq_ptr, hc).
         forward_if. (* checking if it's time to break *)
         * (* No, don't break. *)
@@ -614,7 +661,7 @@ Admitted.
             pose proof (Zlength_nonneg junk). 
             split; [apply Zlength_nonneg|]. 
             apply Z.le_trans with (m := heap_capacity hc).
-           1: rewrite <- H15, Zlength_app; lia.
+            1: rewrite <- H15, Zlength_app; lia.
             lia.
           }
           rewrite Int.unsigned_repr in H5 by trivial.
@@ -632,6 +679,7 @@ Admitted.
           (* hd is skipped because it is "head" *)
           Intros temp. destruct temp as [he min_item]. 
           simpl fst in *. simpl snd in *.
+
           thaw FR.
           unfold hitem.
           forward.
@@ -647,9 +695,8 @@ Admitted.
           (* We prove a few useful facts about u: *)
           assert (H_u_valid: vvalid g u). {
             apply (vvalid_meaning g); trivial.
-            replace size with (heap_capacity he) by lia.
             subst u.
-            admit. (* cat 1 *) (* next? *)
+            apply Hk, (Permutation_cons_In _ _ _ H15).
           }
           
           assert (0 <= u < size). {
@@ -704,7 +751,20 @@ Admitted.
             clear H20 H21 H22 H23 H24 H25 H26 H27 H28
                   H29 H30 H31 H32 H33 PNpriq_ptr.
 
-            split3; [| | split3; [| |split3; [| |split3]]]; trivial.
+            assert (Hl: popped = [] -> src = u). {
+              intros. subst u.
+              apply H7; trivial.
+              (* min_item beat everyone in he
+                 hc is min_item + everyone in he
+                 min_item can beat everyone in he
+                 and it can beat itself.
+                 Aquinas?
+               *)
+              admit.
+            }
+
+            split3; [| | split3; [| |split3; [| |split3;
+                    [| |split3]]]]; trivial.
             ++ (* if popped = [], then 
                 prove inv_popped for [u].
                 if popped <> [], then we're set
@@ -714,11 +774,9 @@ Admitted.
                  (* TODO update the lemma *)
                  (* apply (inv_popped_add_u _ _ _ _ _ _ priq); try ulia. *)
                  (* apply H_popped_src_1; inversion 1. *)
-                 admit. (* cat 4 *)
+                 admit.
                }
-               replace u with src in *.
-               2: { admit. }
-
+               replace u with src in * by now apply Hl.  
                intros. intro.
                simpl in H21; destruct H21; [|lia].
                subst dst; clear H20.
@@ -751,58 +809,66 @@ Admitted.
             ++ intros. clear H20.
                destruct popped eqn:?.
                2: right; apply H4; inversion 1.
-               simpl. left. symmetry. admit.
+               simpl. left. symmetry. apply Hl; trivial.
                
-            ++ red. intros.
-               destruct (exists_min_in_list _ H20)
-                 as [min [? ?]].
-               exists min. split3; trivial.
-               intro contra. inversion contra.
+            ++ red. intros. inversion H21.
 
             ++ apply in_eq.
 
             ++ intros. rewrite not_in_cons in H21; destruct H21.
                specialize (Hd _ H20 H22).
+               unfold proj_keys in Hd |- *.
+               pose proof (Permutation_map heap_item_key H15).
+               apply (Permutation_in _ H23) in Hd. 
+               simpl in Hd. destruct Hd as [Hd | ?]; trivial.
+               exfalso. apply H21.
+               (* u's key is the same as i's key.
+                  u = i
+                  Aquinas?
+                *)
                admit.
 
             ++ red in H8 |- *. intros.
-               destruct (H8 i_item). split; intros.
-               ** simpl in H22. destruct H22.
-                  --- intro.
-                      replace i_item with min_item in *.
-                      2: { (* payloads are unique... *) admit. }
-                      
-                      (* can I get, from remove_min, that min is
-                         no longer in heap he? 
-                       *)
+               specialize (H8 i_item). intro.
+               replace i_item with min_item in *.
+               2: {
+                 assert (In i_item (heap_items hc)). {
+                   apply (in_cons min_item) in H21.
+                   apply Permutation_sym in H15.
+                   apply (Permutation_in _ H15); trivial.
+                 }
+                 simpl in H20. destruct H20.
+                 2: exfalso; apply H8; trivial.
+                 rewrite H20 in Hequ.
+                 apply Int_signed_strip in Hequ.
+                 assert (NoDup (map snd (heap_items hc))) by admit.
+                 
+(* Aquinas, could you get me through? I sorta started... 
+                    
+apply (in_map snd) in H22.
+apply In_nth_error in H22.
+destruct H22 as [i_index ?].
 
-Lemma Perm_Perm_cons_Perm:
-  forall {A} {l1 l2 l3: list A} {a b},
-    Permutation l1 (a :: l2) ->
-    Permutation l2 (b :: l3) ->
-    Permutation l1 (a :: b :: l3).
-Admitted. 
+apply (in_map snd) in Ha.
+apply In_nth_error in Ha.
+destruct Ha as [min_index ?].
 
-Lemma NoDup_Perm_False:
-  forall {A} {l1 l2: list A} {a},
-    NoDup l1 ->
-    Permutation l1 (a :: a :: l2) -> False.
-Admitted.
+ *)
+(* if yes, I'll go back and get you the admitted assertion about NoDup *)
 
-                      pose proof (In_Permutation_cons _ _ H23).
-                      destruct H25 as [he' ?].
+                 admit.
+               }
+               destruct (In_Permutation_cons _ _ H21) as [he' ?].
+               pose proof (Perm_Perm_cons_Perm H15 H22).
+               apply (NoDup_Perm_False H13' H23).
+               
+            ++ intros.
+               apply (in_cons min_item) in H20.
+               apply Permutation_sym in H15.
+               apply (Permutation_in _ H15) in H20.
+               apply Hk; trivial.
 
-
-pose proof (Perm_Perm_cons_Perm H15 H25).
-apply (NoDup_Perm_False H24 H26).
-
-                  --- specialize (H20 H22). 
-                      intro. apply H21; trivial.
-                      apply (in_cons min_item) in H23.
-                      apply Permutation_sym in H15.
-                      apply (Permutation_in _ H15); trivial.
-
-               **
+            ++ intros. admit. (* placeholder *)
 
             ++ subst u.
                rewrite Int.repr_signed. trivial.
@@ -822,6 +888,8 @@ apply (NoDup_Perm_False H24 H26).
             rename H36 into H35.
             rename H37 into He.
             rename H38 into Hf.
+            rename H39 into Hl.
+            rename H40 into Ho.
 
             forward_call (sh, g, graph_ptr, addresses, u, i).            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
@@ -932,11 +1000,11 @@ apply (NoDup_Perm_False H24 H26).
                                [| | split3;
                                     [| | split3;
                                          [| |split3;
-                          [| |split3]]]]];
+                          [| |split3; [| |split3; [| |split]]]]]]];
                   intros.
-                  (* 13 goals *)
+                  (* 16 goals *)
                   --- apply inv_popped_newcost; ulia.
-                  --- admit. (* cat 4 *)
+                  --- admit.
                       (* TODO update this lemma *)
                       (* apply inv_unpopped_newcost with (priq0 := priq'); ulia.  *)
                   --- now apply inv_unpopped_weak_newcost.
@@ -947,18 +1015,42 @@ apply (NoDup_Perm_False H24 H26).
                   --- rewrite upd_Znth_diff; try lia;
                         intro; subst src; lia.
                   --- red. intros.
-                      destruct (exists_min_in_list _ H39) as
-                          [min [? ?]].
-                      exists min; split3; trivial.
-                      intro contra.
-                      rewrite contra in H31.
+                      rewrite H40 in H31.
                       inversion H31.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- apply Forall_upd_Znth;  ulia.
                   --- apply Forall_upd_Znth;  ulia.
-                  --- admit.
-
+                  --- specialize (He _ H39 H40).
+                      unfold proj_keys in He |- *.
+                      apply (Permutation_map heap_item_key) in H36.
+                      rewrite update_pri_by_key_unaffected in H36.
+                      apply Permutation_sym in H36.
+                      apply (Permutation_in _ H36); trivial.
+                  --- red in Hf |- *.
+                      intros some_item ?. intro. 
+                      pose proof (Permutation_in _ H36 H40).
+                      unfold update_pri_by_key in H41.
+                      apply list_in_map_inv in H41.
+                      destruct H41 as [x [? ?]].
+                      unfold update_pri_if_key in H41.
+                      destruct (Z.eq_dec (Znth i keys) (heap_item_key x)).
+                      +++ rewrite e in *.
+                          rewrite H41 in H39.
+                          simpl in H39. unfold heap_item_payload in H39.
+                          apply (Hf x); trivial.
+                      +++ apply (Hf _ H39). subst x; trivial.
+                  --- apply (Permutation_in _ H36) in H39.
+                      unfold update_pri_by_key in H39.
+                      apply list_in_map_inv in H39.
+                      destruct H39 as [orig [? ?]].
+                      unfold update_pri_if_key in H39.
+                      destruct (Z.eq_dec (Znth i keys) (heap_item_key orig)).
+                      +++ subst item. unfold heap_item_payload. simpl.
+                          apply Hl; trivial.
+                      +++ subst orig. apply Hl; trivial.
+                  --- admit. (* placeholder *)
+                        
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
                  rename H26 into H_non_improvement.
@@ -1096,13 +1188,10 @@ apply (NoDup_Perm_False H24 H26).
             2: unfold hitem_, hitem; apply data_at_data_at_.
             
             remember (Int.signed (snd min_item)) as u.
-            split.
-            ++ unfold dijkstra_correct.
-               split3; [auto | apply H21 | apply H23];
-                 try rewrite <- (vvalid_meaning g); trivial.
-            ++ red. intros.
-               admit. (* cat 1 *)
-           
+            unfold dijkstra_correct.
+            split3; [auto | apply H21 | apply H23];
+              try rewrite <- (vvalid_meaning g); trivial.
+            
         * (* After breaking from the while loop,
            prove break's postcondition *)
           forward.
@@ -1126,7 +1215,7 @@ apply (NoDup_Perm_False H24 H26).
           unfold heap_size in *.
           pose proof (Zlength_nonneg (heap_items hc)).
           lia.
-          admit. (* cat 2 *)
+          admit.
           (* HELP is this the coercion you proved? *)
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
