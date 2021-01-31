@@ -1310,7 +1310,13 @@ Section DijkstraProof.
                       rewrite update_pri_by_key_payloads_unaffected in H36.
                       symmetry in H36.
                       apply (Permutation_NoDup H36); trivial.
-                  --- admit.
+                  --- apply (Permutation_in _ H36) in H39.
+                      apply In_update_pri_by_key in H39.
+                      destruct H39 as [[? ?] | ?].
+                      1: apply Hw; trivial.
+                      destruct H39 as [? [? [? [? [? ?]]]]].
+                      specialize (Hw _ H39).
+                      rewrite H41, H42; trivial.
                       
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
