@@ -16,6 +16,13 @@ Section DijkstraProof.
   Context {inf: Z}.
   Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
+  Lemma nat_inc_list_plus_1_Permutation:
+    forall (i : Z),
+      Permutation
+        (nat_inc_list (Z.to_nat (i + 1)))
+        (i :: nat_inc_list (Z.to_nat i)).
+  Admitted.
+
   Lemma Permutation_cons_In: forall {A} (l1 l2: list A) a,
       Permutation l1 (a :: l2) -> In a l1.
   Proof.
@@ -25,13 +32,23 @@ Section DijkstraProof.
     apply (Permutation_in _ H); trivial.
   Qed.
 
-  Lemma update_pri_by_key_unaffected:
+  Lemma update_pri_by_key_keys_unaffected:
   forall l key newpri,
     map heap_item_key (update_pri_by_key l key newpri) = map heap_item_key l.
   Proof.
     intros. induction l; trivial.
     simpl. rewrite IHl. f_equal.
     unfold update_pri_by_key, update_pri_if_key, heap_item_key.
+    destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
+  Qed.
+  
+  Lemma update_pri_by_key_payloads_unaffected:
+  forall l key newpri,
+    map heap_item_payload (update_pri_by_key l key newpri) = map heap_item_payload l.
+  Proof.
+    intros. induction l; trivial.
+    simpl. rewrite IHl. f_equal.
+    unfold update_pri_by_key, update_pri_if_key, heap_item_payload, heap_item_key.
     destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
   Qed.
   
@@ -110,17 +127,19 @@ Section DijkstraProof.
            keys_dist_linked_correctly j keys dist_and_prev h;
          dist_and_prev = list_repeat (Z.to_nat i) (Int.repr inf);
          Zlength keys = i;
+
          forall j,
            0 <= j < i ->
            In (Znth j keys) (proj_keys h);
 
-         forall item,
-           In item (heap_items h) ->
-           0 <= Int.signed (snd item) < size;
-
-         forall item,
-           In item (heap_items h) ->
-           heap_item_priority item = Int.repr inf)
+         Permutation (map heap_item_payload (heap_items h))
+                     (map Int.repr (nat_inc_list (Z.to_nat i)));
+         
+         Forall (fun item =>
+                   heap_item_priority item = Int.repr inf)
+                (heap_items h);
+         
+         NoDup (map heap_item_payload (heap_items h)))
 
     LOCAL (temp _dist (pointer_val_val dist_ptr);
           temp _prev (pointer_val_val prev_ptr);
@@ -159,11 +178,11 @@ Section DijkstraProof.
     forall min_item,
       In min_item (heap_items h) ->
       Forall (cmp_rel min_item) (heap_items h) ->
-      src = Int.signed (snd min_item).
+      src = Int.signed (heap_item_payload min_item).
   
   Definition in_heap_or_popped (popped: list V) (h: heap) :=
     forall i_item,
-      (In (Int.signed (snd i_item)) popped -> ~ In i_item (heap_items h)).
+      (In (Int.signed (heap_item_payload i_item)) popped -> ~ In i_item (heap_items h)).
 
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src keys
              dist_ptr prev_ptr keys_ptr priq_ptr graph_ptr temp_item addresses :=
@@ -218,9 +237,11 @@ Section DijkstraProof.
         ~ In i popped ->
         In (Znth i keys) (proj_keys h);
 
-      forall item,
-        In item (heap_items h) ->
-        0 <= Int.signed (snd item) < size)
+      Forall (fun item =>
+                0 <= Int.signed (heap_item_payload item) < size)
+             (heap_items h);
+      
+      NoDup (map heap_item_payload (heap_items h)))
          
          LOCAL (temp _dist (pointer_val_val dist_ptr);
                temp _prev (pointer_val_val prev_ptr);
@@ -374,9 +395,9 @@ Section DijkstraProof.
 
       in_heap_or_popped popped' h';
 
-      forall item,
-        In item (heap_items h') ->
-        0 <= Int.signed (snd item) < size;
+      Forall (fun item =>
+                0 <= Int.signed (heap_item_payload item) < size)
+             (heap_items h');
 
       forall i,
         vvalid g i ->
@@ -446,7 +467,9 @@ Section DijkstraProof.
       1: { unfold heap_size in H_h_sz.
            apply Zlength_nil_inv in H_h_sz.
            rewrite H_h_sz in *.
-           split; inversion 1.
+           split3; try apply Forall_nil.
+           trivial.
+           apply NoDup_nil.
       }
                
       remember (heap_capacity h) as size.
@@ -464,6 +487,7 @@ Section DijkstraProof.
       rename H7 into Hc.
       rename H8 into Hg.
       rename H9 into Hn.
+      rename H10 into Hp.
       Intro temp'. destruct temp' as [h' key].
       forward.
       repeat rewrite upd_Znth_list_repeat; try lia.
@@ -497,7 +521,7 @@ Section DijkstraProof.
           symmetry in Heqi; rename Heqi into H3;
             clear H9 H10 H11 H12 H13 H14 H15 H16 H17
               H18 H19 H20 PNpriq_ptr.
-      + split3; [| |split3; [| |split3]].
+      + split3; [| |split3; [| |split3; [| |split]]].
         * rewrite <- H3. unfold heap_size.
           pose proof (Permutation_Zlength _ _ H8).
           rewrite Zlength_cons, <- Z.add_1_r in H5.
@@ -538,20 +562,38 @@ Section DijkstraProof.
              unfold proj_keys in Hc |- *.
              apply (Permutation_in _ H8).
              simpl. right. apply Hc; trivial.
-        * intros.
-          apply Permutation_sym in H8.
-          apply (Permutation_in _ H8) in H5.
-          simpl in H5. destruct H5.
-          -- subst item. simpl snd.
-             rewrite Int.signed_repr; rep_lia.
-          -- apply Hg; trivial.
-        * intros.
-          apply Permutation_sym in H8.
-          apply (Permutation_in _ H8) in H5.
-          simpl in H5. destruct H5.
-          -- subst item. unfold heap_item_priority; trivial.
-          -- apply Hn; trivial.
+        *
+          (* rewrite Forall_forall. intros item ?. *)
+          apply (Permutation_map heap_item_payload), Permutation_sym in H8.
+          apply (Permutation_trans H8). simpl.
+
+          Set Nested Proofs Allowed.
           
+
+          pose proof (nat_inc_list_plus_1_Permutation i).
+          apply (Permutation_map Int.repr), Permutation_sym in H5.
+          simpl in H5.
+          apply (perm_skip (Int.repr i)) in Hg.
+          apply (Permutation_trans Hg); trivial.
+        * rewrite Forall_forall. intros item ?.
+          apply Permutation_sym in H8.
+          apply (Permutation_in _ H8) in H5.
+          simpl in H5. destruct H5.
+          -- subst item. unfold heap_item_priority. trivial.
+          -- rewrite Forall_forall in Hn.
+             specialize (Hn _ H5). trivial.
+        * apply (Permutation_map heap_item_payload) in H8.
+          apply (Permutation_NoDup H8).
+          simpl.
+          apply NoDup_cons; trivial.
+          intro.
+          apply (Permutation_in _ Hg) in H5.
+          apply list_in_map_inv in H5.
+          destruct H5 as [? [? ?]].
+          apply nat_inc_list_in_iff in H9. destruct H9.
+          inversion H5.
+          repeat rewrite Int.Z_mod_modulus_eq, Z.mod_small in H12;
+            try ulia.
       + repeat rewrite map_app; rewrite app_assoc; cancel.
         rewrite list_repeat1, upd_Znth_app2,
         Zlength_map, Zlength_list_repeat, Z.sub_diag,
@@ -573,6 +615,7 @@ Section DijkstraProof.
       rename H6 into Hc.
       rename H7 into Hj.
       rename H8 into Hn.
+      rename H9 into Hq.
 
       rewrite Z.sub_diag, list_repeat_0, app_nil_r, app_nil_r.
       assert (Htemp: 0 <= src < Zlength keys) by lia.
@@ -613,7 +656,7 @@ Section DijkstraProof.
           rewrite Zlength_list_repeat; ulia.
         }
         
-        split3; [| |split3; [| |split3; [| |split3; [| |split]]]].
+        split3; [| |split3; [| |split3; [| |split3; [| |split3]]]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
@@ -686,7 +729,7 @@ Section DijkstraProof.
             try apply Forall_list_repeat; ulia.
         * intros.
           apply (Permutation_map heap_item_key) in H_ha_hb_rel.
-          rewrite update_pri_by_key_unaffected in H_ha_hb_rel.
+          rewrite update_pri_by_key_keys_unaffected in H_ha_hb_rel.
           apply Permutation_sym in H_ha_hb_rel.
           unfold proj_keys in Hc |- *.
           apply (Permutation_in _ H_ha_hb_rel), Hc, (vvalid_meaning g); trivial.          
@@ -697,9 +740,12 @@ Section DijkstraProof.
           destruct H4 as [orig [? ?]].
           unfold update_pri_if_key in H4.
           destruct (Z.eq_dec (Znth src keys) (heap_item_key orig)).
-          -- subst item. simpl snd. unfold heap_item_payload.
+          -- subst item. simpl. unfold heap_item_payload.
              apply Hj; trivial.
           -- subst orig. apply Hj; trivial.
+        * apply (Permutation_map heap_item_payload), Permutation_sym in H_ha_hb_rel.
+          rewrite update_pri_by_key_payloads_unaffected in H_ha_hb_rel.
+          apply (Permutation_NoDup H_ha_hb_rel); trivial.
         * repeat rewrite map_list_repeat; cancel.
 
       + (* Now the body of the while loop begins. *)
@@ -708,13 +754,13 @@ Section DijkstraProof.
         rename H2 into H_ha_size.
         rename H3 into H_keys_ha.
         subst dist_and_prev.
-        rename H5 into H_keys_sz.
-
+        rename H5 into H_keys_sz.        
         Intros prev dist popped hc.
         (* may need a link between hc and hb? *)
 
         rename H11 into Hd.
         rename H12 into Hk.
+        rename H13 into Hr.
                 
         assert_PROP (Zlength prev = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
@@ -820,6 +866,8 @@ Section DijkstraProof.
             Exists he.
 
             entailer!.
+
+
             2: {
               replace (heap_capacity h) with (heap_capacity he) by lia.
               cancel. 
@@ -937,7 +985,7 @@ Section DijkstraProof.
                  2: exfalso; apply H8; trivial.
                  rewrite H20 in Hequ.
                  apply Int_signed_strip in Hequ.
-                 assert (NoDup (map snd (heap_items hc))) by admit.
+                 rename Hr into H23.
                  destruct min_item as [[mi1 mi2] mi3].
                  destruct i_item as [[i1 i2] i3].
                  simpl in Hequ. subst i3.
