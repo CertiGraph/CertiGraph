@@ -118,7 +118,9 @@ Section DijkstraProof.
          forall j,
            0 <= j < i ->
            keys_dist_linked_correctly j keys dist_and_prev h;
+         
          dist_and_prev = list_repeat (Z.to_nat i) (Int.repr inf);
+         
          Zlength keys = i;
 
          forall j,
@@ -132,7 +134,12 @@ Section DijkstraProof.
                    heap_item_priority item = Int.repr inf)
                 (heap_items h);
          
-         NoDup (map heap_item_payload (heap_items h)))
+         NoDup (map heap_item_payload (heap_items h));
+
+         forall j,
+           0 <= j < i ->
+           In (Znth j keys, Int.repr inf, Int.repr j)
+              (heap_items h))
 
     LOCAL (temp _dist (pointer_val_val dist_ptr);
           temp _prev (pointer_val_val prev_ptr);
@@ -483,6 +490,8 @@ Section DijkstraProof.
       rename H8 into Hg.
       rename H9 into Hn.
       rename H10 into Hp.
+      rename H11 into Ht.
+             
       Intro temp'. destruct temp' as [h' key].
       forward.
       repeat rewrite upd_Znth_list_repeat; try lia.
@@ -516,7 +525,7 @@ Section DijkstraProof.
           symmetry in Heqi; rename Heqi into H3;
             clear H9 H10 H11 H12 H13 H14 H15 H16 H17
               H18 H19 H20 PNpriq_ptr.
-      + split3; [| |split3; [| |split3; [| |split]]].
+      + split3; [| |split3; [| |split3; [| |split3]]].
         * rewrite <- H3. unfold heap_size.
           pose proof (Permutation_Zlength _ _ H8).
           rewrite Zlength_cons, <- Z.add_1_r in H5.
@@ -589,6 +598,16 @@ Section DijkstraProof.
           inversion H5.
           repeat rewrite Int.Z_mod_modulus_eq, Z.mod_small in H12;
             try ulia.
+        * intros.
+          apply (Permutation_in _ H8). simpl.
+          destruct (Z.eq_dec i j).
+          -- subst j. clear H5. left.
+             rewrite Znth_app2 by lia.
+             replace (i - Zlength keys0) with 0 by lia.
+             rewrite Znth_0_cons. trivial. 
+          -- assert (0 <= j < i) by lia.
+             clear H5. right.
+             rewrite Znth_app1 by lia. apply Ht; trivial.          
       + repeat rewrite map_app; rewrite app_assoc; cancel.
         rewrite list_repeat1, upd_Znth_app2,
         Zlength_map, Zlength_list_repeat, Z.sub_diag,
@@ -611,6 +630,7 @@ Section DijkstraProof.
       rename H7 into Hj.
       rename H8 into Hn.
       rename H9 into Hq.
+      rename H10 into Hu.
 
       assert_PROP (NoDup (map heap_item_key (heap_items ha))). {
         sep_apply valid_heap_NoDup_keys. entailer!.
@@ -676,7 +696,9 @@ Section DijkstraProof.
           apply (Permutation_in min_item) in H_ha_hb_rel; trivial.
           apply In_update_pri_by_key in H_ha_hb_rel.
           assert (Hxxx: In (Znth src keys, Int.repr inf, Int.repr src)
-                           (heap_items ha)) by admit. (* Anshuman *)
+                           (heap_items ha)). {
+            apply Hu; trivial.
+          }
           destruct H_ha_hb_rel as [[? ?] | ?].
           -- rewrite Forall_forall in H8.
              specialize (H8 (Znth src keys, Int.zero, Int.repr src)).
