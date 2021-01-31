@@ -555,6 +555,12 @@ Section DijkstraProof.
       (* and done *)
       
       Exists h' (keys0 ++ [key]) (dist_and_prev ++ [Int.repr inf]).
+
+      assert_PROP (NoDup (map heap_item_key (heap_items h'))). {
+        sep_apply valid_heap_NoDup_keys. entailer!.
+      }
+      rename H9 into Hc'.
+            
       entailer!;
               remember (heap_capacity h) as size;
         remember (heap_size h0) as i;
@@ -568,23 +574,63 @@ Section DijkstraProof.
           pose proof (Permutation_Zlength _ _ H8).
           rewrite Zlength_cons, <- Z.add_1_r in H5.
           symmetry. trivial.
-        * red. intros.
-          rewrite <- (list_repeat1 (Int.repr inf)).
-          rewrite list_repeat_app, <- Z2Nat.inj_add by lia.
-          rewrite Znth_list_repeat_inrange by lia.
+        * intros.
           destruct (Z.eq_dec i j).
-          -- subst j. left.
-             admit. 
-          (* H7: Permutation ((k, Int.repr inf, Int.repr i) :: 
-             heap_items h0) (heap_items h') *)
-
+          -- subst j; clear H5.
+             red. intros.
+             unfold find_item_by_key.
+             rewrite Znth_app2;
+               rewrite Zlength_list_repeat; try lia.
+             replace (i - i) with 0 by lia.
+             rewrite Znth_0_cons.
+             rewrite Znth_app2 in H5 by lia.
+             replace (i - Zlength keys0) with 0 in H5 by lia.
+             rewrite Znth_0_cons in H5. subst k.
+             symmetry in H8.
+             apply Permutation_cons_In in H8.
+             left.
+             admit.
+             (* Aquinas *)
+             (* H8 says I deserve to be in there.
+                Hc' says that the keys are unique, so no one
+                else can be there
+              *)
           -- assert (0 <= j < i) by lia.
              clear H5 n.
-             rewrite Znth_app1 in H9 by lia.
-             red in H4.
-             specialize (H4 _ H10 _ H9). 
-             rewrite Znth_list_repeat_inrange in H4 by lia.
-             admit.
+             red in H4 |- *.
+             intros.
+             rewrite Znth_app1 in H5 by lia.
+             specialize (H4 _ H9 _ H5).
+             destruct H4.
+             ++ left. rewrite Znth_app1.
+                2: rewrite Zlength_list_repeat; lia.
+             (* Aquinas *)
+             (* H4 says I deserve to be in h0.
+                H8 says that h' is h0 + newguy
+                Hc' says that newguy can't have the same key as me
+                    and therefore cannot also pass the test
+                    and therefore the list remains a singleton
+              *)
+                admit.
+             ++ unfold find_item_by_key.
+                (* bug?
+
+                We know that everyone in h0 fails the test (H4)
+                Now say the new item "(key, Int.repr inf, Int.repr i)"
+                PASSES the filter test, i.e. say key = k.
+                The item that would go into the filtered list is,
+                well, the new item:
+                "(key, Int.repr inf, Int.repr i)".
+
+                But this isn't the same as the target in the goal
+                because we know i <> j.
+                 *)
+
+                (* am I missing something? *)
+
+                (* Aquinas *)
+                admit.
+               
         * rewrite <- list_repeat1, list_repeat_app,
           Z2Nat.inj_add. trivial. lia. lia.
         * rewrite Zlength_app, binary_heap_Zmodel.Zlength_one.
@@ -755,17 +801,40 @@ Section DijkstraProof.
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
-        * red. intros.
+        * red in H3 |- *. intros.
+          left.
+          (* right is impossible -- 
+             Hu:
+             forall j : Z,
+             0 <= j < size -> In (Znth j keys, Int.repr inf, Int.repr j) (heap_items ha)
+
+             and
+             
+             hb does not remove any items from ha.
+           *)
+          apply (vvalid_meaning g) in H4.
+          specialize (H3 _ H4 _ H6).
           destruct (Z.eq_dec i src).
           -- subst i.
              rewrite upd_Znth_same.
+             2: rewrite Zlength_map, Zlength_list_repeat; lia.
+             unfold find_item_by_key.
+             specialize (Hu _ H4). rewrite H6 in Hu.
+
+             (* Okay so (k, inf, src) was in ha, 
+                and hb updated it to (k, 0, src).
+                stands to reason that, when queried, 
+                hb should give this back.
+              *)
+             (* Aquinas? *)
              admit.
-             rewrite Zlength_map, Zlength_list_repeat; lia.
           -- rewrite upd_Znth_diff; trivial.
              2,3: rewrite Zlength_map, Zlength_list_repeat; try lia.
-             rewrite map_list_repeat, Znth_list_repeat_inrange.
-             2,3: apply (vvalid_meaning g); trivial.
+             rewrite map_list_repeat, Znth_list_repeat_inrange by lia.
+             rewrite Znth_list_repeat_inrange in H3 by lia.
              admit.
+             (* logically makes sense, but is there enough info? *)
+             
         * red. intros.
           generalize H_ha_hb_rel; intro Hx.
           apply (Permutation_in min_item) in H_ha_hb_rel; trivial.
