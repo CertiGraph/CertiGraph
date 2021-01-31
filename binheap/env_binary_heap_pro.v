@@ -269,7 +269,7 @@ Proof.
   (* apply data_at_data_at_. *)
 Qed.
 
-Lemma weaken_prehitem_: forall v,
+Lemma malloc_hitem: forall v,
   malloc_compatible (sizeof (Tstruct _structItem noattr)) v ->
   (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint)) v) |--
   (hitem_ v).
@@ -282,13 +282,166 @@ Proof.
   apply malloc_compatible_field_compatible in H; auto.
 Qed.
 
-Lemma hitem_free:
-  forall v,
-    hitem_ v |--
-           data_at_ Tsh
-           (tarray tint
-                   (sizeof (Tstruct _structItem noattr) / sizeof tint)) v.
-Admitted.
+Lemma free_hitem: forall v,
+  hitem_ v |--
+  data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint)) v.
+Proof.
+  unfold hitem_. intro.
+  saturate_local.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  apply derives_refl.
+  destruct H as [? [? [? [? ?]]]].
+  split3; auto.
+  split3; auto.
+  hnf in H2 |- *.
+  destruct v; auto.
+  unfold t_item in H2.
+  change (_ / _) with 3.
+  apply align_compatible_rec_Tarray; intros.
+  assert (i0 = 0 \/ i0 = 1 \/ i0 = 2) by lia.
+  destruct H5 as [? | [? | ?]]; subst i0;
+  [ eapply align_compatible_rec_Tstruct_inv with (i0 := _key) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _priority) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _data) in H2 ] ;
+  try reflexivity;
+  eapply align_compatible_rec_by_value; try reflexivity;
+  eapply align_compatible_rec_by_value_inv in H2; try reflexivity; apply H2.
+Qed.
+
+Lemma free_pq: forall v,
+  (data_at_ Tsh t_pq v) |--
+  (data_at_ Tsh (tarray tint (sizeof (Tstruct _structPQ noattr) / sizeof tint)) v).
+Proof.
+  intro. saturate_local.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  apply derives_refl.
+  destruct H as [? [? [? [? ?]]]].
+  split3; auto.
+  split3; auto.
+  hnf in H2 |- *.
+  destruct v; auto.
+  unfold t_pq in H2.
+  change (_ / _) with 4.
+  apply align_compatible_rec_Tarray; intros.
+  assert (i0 = 0 \/ i0 = 1 \/ i0 = 2 \/ i0 = 3) by lia.
+  destruct H5 as [? | [? | [? | ?]]]; subst i0;
+  [ eapply align_compatible_rec_Tstruct_inv with (i0 := _capacity) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _first_available) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _heap_cells) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _key_table) in H2 ];
+  try reflexivity; eapply align_compatible_rec_by_value; try reflexivity;
+  eapply align_compatible_rec_by_value_inv in H2; try reflexivity; apply H2.
+Qed.
+
+Lemma simpl_size_t_item: forall s,
+  12 * s / 4 = 3 * s.
+Proof.
+  intro. change 12 with (3 * 4).
+  rewrite <- Z.mul_assoc. rewrite (Z.mul_comm 4).
+  rewrite Z.mul_assoc.
+  rewrite Z.div_mul; lia.
+Qed.
+
+Lemma malloc_items: forall v size,
+  0 <= size ->
+  malloc_compatible (sizeof (Tstruct _structItem noattr) * size) v ->
+  data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) * size / sizeof tint)) v |--
+  data_at_ Tsh (tarray t_item size) v.
+Proof.
+  intros.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  simpl sizeof.
+  apply derives_refl'. f_equal. rewrite (Z.mul_comm 12). change 12 with (3 * 4).
+  rewrite Z.mul_assoc.
+  rewrite Z_div_mult. 1,2: lia.
+  apply malloc_compatible_field_compatible; try reflexivity.
+  simpl in *.
+  rewrite Z.max_r by lia. trivial.
+Qed.
+
+Lemma free_items: forall v size,
+(*  malloc_compatible (sizeof (Tstruct _structItem noattr) * size) v *)
+  data_at_ Tsh (tarray t_item size) v |--
+  data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) * size / sizeof tint)) v.
+Proof.
+  intros. saturate_local.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  simpl. rewrite simpl_size_t_item.
+  apply derives_refl'. f_equal. lia.
+  destruct H as [? [? [? [? ?]]]].
+  split3; auto.
+  split3; auto.
+  hnf in H1 |- *.
+  destruct v; auto. simpl. rewrite simpl_size_t_item.
+  simpl in H1. lia.
+  hnf in H2 |- *.
+  destruct v; auto.
+  simpl sizeof. rewrite simpl_size_t_item.
+  apply align_compatible_rec_Tarray; intros.
+  assert (exists k, 0 <= k < size /\ (i0 = 3 * k + 0 \/ i0 = 3 * k + 1 \/ i0 = 3 * k + 2)).
+  { exists (i0 / 3).
+    generalize (Z_div_mod_eq i0 3); intro. spec H5. lia.
+    generalize (Z.mod_pos_bound i0 3); intro. spec H6. lia.
+    split. 2: lia.
+    destruct H4. split.
+    apply Z.div_pos; lia.
+    apply Z.div_lt_upper_bound; lia. }
+  destruct H5 as [k [? ?]].
+  eapply align_compatible_rec_Tarray_inv in H2. 2: apply H5.
+  destruct H6 as [? | [? | ?]]; subst i0;
+  [ eapply align_compatible_rec_Tstruct_inv with (i0 := _key) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _priority) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _data) in H2 ] ;
+  try reflexivity;
+  eapply align_compatible_rec_by_value; try reflexivity;
+  eapply align_compatible_rec_by_value_inv in H2; try reflexivity;
+  simpl in *; rewrite (Z.mul_add_distr_l 4), Z.mul_assoc, Z.add_assoc; simpl; apply H2.
+Qed.
+
+Lemma malloc_lookup: forall v size,
+  0 <= size ->
+  malloc_compatible (sizeof tint * size) v ->
+  data_at_ Tsh (tarray tint (sizeof tint * size / sizeof tint)) v |--
+  data_at_ Tsh (tarray tuint size) v.
+Proof.
+  intros.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  simpl sizeof.
+  apply derives_refl'. f_equal.
+  rewrite (Z.mul_comm _ size).
+  rewrite Z_div_mult; lia.
+  apply malloc_compatible_field_compatible; try reflexivity.
+  simpl in *.
+  rewrite Z.max_r by lia. trivial.
+Qed.
+
+Lemma free_lookup: forall v size,
+(*  malloc_compatible (sizeof tint * size) v -> *)
+  data_at_ Tsh (tarray tuint size) v |--
+  data_at_ Tsh (tarray tint (sizeof tint * size / sizeof tint)) v.
+Proof.
+  intros. saturate_local.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  simpl. rewrite (Z.mul_comm _ size), Z_div_mult; trivial. lia.
+  destruct H as [? [? [? [? ?]]]].
+  split3; auto.
+  split3; auto.
+  hnf in H1 |- *.
+  destruct v; auto. simpl. rewrite (Z.mul_comm _ size), Z_div_mult; trivial. lia.
+  hnf in H2 |- *.
+  destruct v; auto.
+  simpl sizeof. rewrite (Z.mul_comm _ size), Z_div_mult. 2: lia.
+  apply align_compatible_rec_Tarray; intros.
+  eapply align_compatible_rec_Tarray_inv in H2. 2: apply H4.
+  eapply align_compatible_rec_by_value; try reflexivity.
+  eapply align_compatible_rec_by_value_inv in H2. apply H2. reflexivity.
+Qed.
 
 Definition update_pri_if_key (key: key_type) (newpri: priority_type) (hi : heap_item) :=
   if Z.eq_dec key (heap_item_key hi) then (key, newpri, heap_item_payload hi) else hi.
@@ -581,77 +734,6 @@ Proof.
   apply derives_refl.
   apply malloc_compatible_field_compatible in H; auto.
 Qed.
-
-Lemma free_pq: forall v,
-(*  malloc_compatible (sizeof (Tstruct _structPQ noattr)) v -> *)
-  (data_at_ Tsh t_pq v) |--
-  (data_at_ Tsh (tarray tint (sizeof (Tstruct _structPQ noattr) / sizeof tint)) v).
-Proof.
-Admitted.
-
-Lemma malloc_items: forall v size,
-  malloc_compatible (sizeof (Tstruct _structItem noattr) * size) v ->
-  data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) * size / sizeof tint)) v |--
-  data_at_ Tsh (tarray t_item size) v.
-Proof.
-  intros v size H.
-  sep_apply data_at__memory_block_cancel.
-  replace (sizeof (Tstruct _structItem noattr) * size / sizeof tint) with (3 * size).
-  2: { simpl sizeof. change 12 with (3 * 4). rewrite <- Z.mul_assoc. rewrite (Z.mul_comm 4).
-    rewrite Z.mul_assoc. rewrite Z_div_mult; lia. }
-  rewrite memory_block_data_at_.
-  2: { destruct v; inversion H. 
-       split3; [| |split3]; trivial; try apply I.
-       - destruct H as [_ ?]. simpl in H. simpl. rewrite Z.max_r. lia.
-         admit.
-       - red. apply align_compatible_rec_Tarray.
-         intros. simpl (Ctypes.sizeof tint).
-         apply (align_compatible_rec_by_value _ _ Mint32); trivial.
-         simpl. unfold natural_alignment in H0.
-         red in H0. destruct H0 as [z ?].
-         apply Z.divide_add_r; [exists (2 * z) | exists i0]; lia.
-  }
-  admit.
-Admitted.
-
-Lemma free_items: forall v size,
-(*  malloc_compatible (sizeof (Tstruct _structItem noattr) * size) v *)
-  data_at_ Tsh (tarray t_item size) v |--
-  data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) * size / sizeof tint)) v.
-Proof.
-Admitted.
-
-Lemma malloc_lookup: forall v size,
-  malloc_compatible (sizeof tint * size) v ->
-  data_at_ Tsh (tarray tint (sizeof tint * size / sizeof tint)) v |--
-  data_at_ Tsh (tarray tuint size) v.
-Proof.
-  intros v size H.
-  sep_apply data_at__memory_block_cancel.
-  replace (sizeof tint * size / sizeof tint) with size.
-  2: { simpl sizeof. rewrite Z.mul_comm, Z_div_mult; lia. }
-  rewrite memory_block_data_at_.
-  2: { destruct v; inversion H. 
-       split3; [| |split3]; trivial; try apply I.
-       - destruct H as [_ ?]. simpl in H. simpl. rewrite Z.max_r. lia.
-         admit.
-       - red. apply align_compatible_rec_Tarray.
-         intros. simpl (Ctypes.sizeof tint).
-         apply (align_compatible_rec_by_value _ _ Mint32); trivial.
-         simpl. unfold natural_alignment in H0.
-         red in H0. destruct H0 as [z ?].
-         apply Z.divide_add_r; [exists (2 * z) | exists i0]; lia.
-  }
-  admit.
-Admitted.
-
-Lemma free_lookup: forall v size,
-(*  malloc_compatible (sizeof tint * size) v -> *)
-  data_at_ Tsh (tarray tuint size) v |--
-  data_at_ Tsh (tarray tint (sizeof tint * size / sizeof tint)) v.
-Proof.
-intros.
-Admitted.
 
 Lemma Zlength_default_val_array: forall t size,
   0 <= size ->
