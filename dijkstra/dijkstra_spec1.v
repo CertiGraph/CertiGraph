@@ -3,9 +3,8 @@ Require Import CertiGraph.dijkstra.dijkstra_env.
 
 (* A separate file with the underlying PQ spec-ed out *)
 (* Require Export CertiGraph.priq.priq_arr_specs. (* *) *)
-Require Export CertiGraph.binheap.verif_binary_heap_pro.
 Require Export CertiGraph.binheap.binary_heap_malloc_spec.
-
+Require Export CertiGraph.binheap.spec_binary_heap_pro.
 
 (* Dijkstra-specific imports *)
 Require Import CertiGraph.dijkstra.MathDijkGraph.

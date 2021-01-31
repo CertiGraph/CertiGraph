@@ -57,7 +57,7 @@ BINARY_HEAP_FILES = \
   binary_heap_model.v binary_heap_Zmodel.v \
   binary_heap_malloc_spec.v \
   binary_heap.v env_binary_heap.v verif_binary_heap.v \
-  binary_heap_pro.v env_binary_heap_pro.v verif_binary_heap_pro.v
+  binary_heap_pro.v env_binary_heap_pro.v spec_binary_heap_pro.v verif_binary_heap_pro.v
 
 MARK_FILES = \
   env_mark_bi.v spatial_graph_bi_mark.v verif_mark_bi.v verif_mark_bi_dag.v 
