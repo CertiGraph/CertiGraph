@@ -1039,7 +1039,16 @@ Section DijkstraProof.
                   apply (in_cons (heap_item_key min_item)) in H22.
                   apply Permutation_sym in H15.
                   apply (Permutation_in _ H15) in H22; trivial.
-            ++ admit.
+            ++ 
+clear -Hs H15.
+assert (In min_item (heap_items hc)) by (eapply Permutation_cons_In; eauto).
+apply in_split in H. destruct H as [L1 [L2 ?]].
+rewrite H in H15.
+symmetry in H15. apply Permutation_cons_app_inv in H15.
+apply (Permutation_map heap_item_payload) in H15. symmetry in H15.
+eapply Permutation_NoDup. apply H15. rewrite H in Hs.
+rewrite map_app in Hs. simpl in Hs.
+eapply NoDup_remove_1 in Hs. rewrite map_app. apply Hs.
                (* Aquinas, this is in-situ.
                   See H15 and Hs. The function heap_item_payload 
                   is injective.
