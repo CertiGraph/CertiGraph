@@ -908,6 +908,16 @@ Proof.
   apply Permutation_cons_append.
 Qed.
 
+Lemma Permutation_filter: forall A (L1 L2 : list A) (f : A -> bool),
+  Permutation L1 L2 ->
+  Permutation (filter f L1) (filter f L2).
+Proof.
+  intros. induction H.
+  constructor. simpl. case (f x). constructor. trivial. trivial.
+  simpl. case (f x); case (f y). constructor. constructor. reflexivity.
+  constructor. reflexivity. reflexivity. transitivity (filter f l'); trivial.
+Qed.
+
 (*
 Does not seem to work on arrays.
 
