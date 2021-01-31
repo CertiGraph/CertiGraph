@@ -898,7 +898,7 @@ forall (t g: UAdjMatGG) l, is_partial_lgraph t g -> incl l (EList t) ->
 Proof.
 induction l; intros. simpl; auto.
 simpl. replace (elabel g a) with (elabel t a). rewrite IHl; auto.
-apply incl_cons_inv in H0; auto.
+apply incl_cons_inv in H0; destruct H0; auto.
 apply H. rewrite <- EList_evalid. apply H0. left; auto.
 Qed.
 
