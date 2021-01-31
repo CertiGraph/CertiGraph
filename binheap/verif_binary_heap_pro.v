@@ -62,10 +62,10 @@ Proof.
   forward_call (sizeof(tuint) * size). 
    { simpl; lia. }
   Intros table.
-  sep_apply malloc_lookup.
+  sep_apply malloc_lookup. lia.
   forward_call ((sizeof(Tstruct _structItem noattr) * size)).
   Intros arr.
-  sep_apply malloc_items.
+  sep_apply malloc_items. lia.
 
   forward_for_simple_bound size
     (EX i : Z,
