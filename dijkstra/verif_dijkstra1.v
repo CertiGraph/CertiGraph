@@ -658,17 +658,17 @@ Section DijkstraProof.
              unfold heap_item_key. trivial.
           -- rewrite Znth_app1. apply Hx; trivial.
              replace (Zlength keys0) with i by lia.
-eapply in_map in H5.
-eapply Permutation_in in H5. 2: apply Hg.
-apply In_Znth_iff in H5.
-destruct H5 as [loc [? ?]].
-rewrite Zlength_map in H5.
-rewrite Znth_map in H9; auto.
-rewrite nat_inc_list_i in H9.
-1,2: rewrite nat_inc_list_Zlength in H5; trivial.
-rewrite <- H9.
-rewrite Z2Nat.id in H5. 2: lia.
-rewrite Int.signed_repr by ulia. lia.
+             eapply in_map in H5.
+             eapply Permutation_in in H5. 2: apply Hg.
+             apply In_Znth_iff in H5.
+             destruct H5 as [loc [? ?]].
+             rewrite Zlength_map in H5.
+             rewrite Znth_map in H9; auto.
+             rewrite nat_inc_list_i in H9.
+             1,2: rewrite nat_inc_list_Zlength in H5; trivial.
+             rewrite <- H9.
+             rewrite Z2Nat.id in H5. 2: lia.
+             rewrite Int.signed_repr by ulia. lia.
         * intros. destruct (Z.eq_dec i j).
           -- subst j. clear H5.
              exists (key, Int.repr inf, Int.repr i).
