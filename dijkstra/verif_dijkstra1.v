@@ -752,12 +752,20 @@ Section DijkstraProof.
           destruct H4 as [orig [? ?]].
           unfold update_pri_if_key in H4.
           destruct (Z.eq_dec (Znth src keys) (heap_item_key orig)).
-          -- subst x. simpl. unfold heap_item_payload.
-             admit. (* in-situ *)
-             (* apply Hj; trivial. *)
-          -- subst orig.
-             admit. (* in-situ *)
-             (* apply Hj; trivial. *)
+          -- subst x. simpl.
+             apply (in_map heap_item_payload), (Permutation_in _ Hj) in H6.
+             apply list_in_map_inv in H6.
+             destruct H6 as [? [? ?]].
+             apply nat_inc_list_in_iff in H6.
+             rewrite Z2Nat.id in H6 by lia.
+             rewrite H4, Int.signed_repr; ulia.
+          -- subst x.
+             apply (in_map heap_item_payload), (Permutation_in _ Hj) in H6.
+             apply list_in_map_inv in H6.
+             destruct H6 as [? [? ?]].
+             apply nat_inc_list_in_iff in H6.
+             rewrite Z2Nat.id in H6 by lia.
+             rewrite H4, Int.signed_repr; ulia.
         * apply (Permutation_map heap_item_payload), Permutation_sym in H_ha_hb_rel.
           rewrite update_pri_by_key_payloads_unaffected in H_ha_hb_rel.
           apply (Permutation_NoDup H_ha_hb_rel); trivial.
