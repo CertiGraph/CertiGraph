@@ -897,6 +897,17 @@ Proof.
   rewrite H9 in H11. lia.
 Qed.
 
+Lemma nat_inc_list_plus_1_Permutation: forall (i : Z),
+  0 <= i ->
+  Permutation (nat_inc_list (Z.to_nat (i + 1))) (i :: nat_inc_list (Z.to_nat i)).
+Proof.
+  intros.
+  replace (Z.to_nat (i + 1)) with (1 + Z.to_nat i)%nat by lia.
+  simpl. symmetry.
+  rewrite Z2Nat.id; auto.
+  apply Permutation_cons_append.
+Qed.
+
 (*
 Does not seem to work on arrays.
 
