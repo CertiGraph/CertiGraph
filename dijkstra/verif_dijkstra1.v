@@ -16,13 +16,6 @@ Section DijkstraProof.
   Context {inf: Z}.
   Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
-  Lemma nat_inc_list_plus_1_Permutation:
-    forall (i : Z),
-      Permutation
-        (nat_inc_list (Z.to_nat (i + 1)))
-        (i :: nat_inc_list (Z.to_nat i)).
-  Admitted.
-
   Lemma Permutation_cons_In: forall {A} (l1 l2: list A) a,
       Permutation l1 (a :: l2) -> In a l1.
   Proof.
