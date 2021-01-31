@@ -479,7 +479,7 @@ Section DijkstraProof.
       replace (size * sizeof tint / sizeof tint) with size.
       2: rewrite Z.div_mul; trivial; simpl; lia.
       entailer!. 
-      apply (weaken_prehitem_ (pointer_val_val ti)).
+      apply (malloc_hitem (pointer_val_val ti)).
       trivial.
       
     - rename keys into keys0.
@@ -1405,7 +1405,7 @@ Section DijkstraProof.
           unfold heap_size in *.
           pose proof (Zlength_nonneg (heap_items hc)).
           lia.
-          apply hitem_free.
+          apply free_hitem.
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev dist popped hc.
