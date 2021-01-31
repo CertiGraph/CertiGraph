@@ -792,6 +792,28 @@ Proof.
   1,2,3,4: lia.
 Qed.
 
+Lemma valid_heap_NoDup_keys: forall p h,
+  valid_pq p h |-- !!(NoDup (map heap_item_key (heap_items h))).
+Proof.
+  intros. unfold valid_pq, linked_heap_array. Intros arr junk arr2 lookup. entailer!.
+  destruct H3. clear H4 H5.
+  apply NoDup_nth_error. intros.
+  remember (nth_error (map heap_item_key (heap_items h)) i). destruct o. 
+  2: { symmetry in Heqo. apply nth_error_Some in Heqo. contradiction. lia. }
+  assert (j < length (map heap_item_key (heap_items h)))%nat. { apply nth_error_Some. intro. rewrite H7 in H5. discriminate. }
+  assert (0 <= Z.of_nat i < Zlength (heap_items h)). { rewrite map_length in H4. rewrite Zlength_correct. lia. } clear H4.
+  assert (0 <= Z.of_nat j < Zlength (heap_items h)). { rewrite map_length in H7. rewrite Zlength_correct. lia. } clear H7.
+  destruct (H6 (Z.of_nat i)). 2: destruct (H6 (Z.of_nat j)). 1,2: rewrite Zlength_app; rep_lia.
+  rewrite Znth_app1 in H7, H9, H10, H11. 2-5: lia.
+  rewrite Heqo in H5.
+  rewrite <- (Nat2Z.id i) in H5.
+  rewrite <- (Nat2Z.id j) in H5.
+  rewrite nth_error_Znth in H5.
+  2,3: rewrite Zlength_map; lia.
+  rewrite <- (Znth_map _ heap_item_key) in H9. 2: lia.
+  rewrite H5 in H9. rewrite Znth_map in H9. 2: lia.
+  rewrite H9 in H11. lia.
+Qed.
 
 (*
 Does not seem to work on arrays.
