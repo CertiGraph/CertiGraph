@@ -569,7 +569,7 @@ Section DijkstraProof.
           apply (Permutation_map Int.repr), Permutation_sym in H5.
           simpl in H5.
           apply (perm_skip (Int.repr i)) in Hg.
-          apply (Permutation_trans Hg); trivial.
+          apply (Permutation_trans Hg); trivial. lia.
         * rewrite Forall_forall. intros item ?.
           apply Permutation_sym in H8.
           apply (Permutation_in _ H8) in H5.
