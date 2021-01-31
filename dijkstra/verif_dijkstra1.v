@@ -669,12 +669,6 @@ rewrite nat_inc_list_i in H9.
 rewrite <- H9.
 rewrite Z2Nat.id in H5. 2: lia.
 rewrite Int.signed_repr by ulia. lia.
-             (* Aquinas *)
-             (* Hg gives you that 
-                (heap_item_payload some_item)
-                is in permutation with 0... (i-1)
-              *)
-             admit.
         * intros. destruct (Z.eq_dec i j).
           -- subst j. clear H5.
              exists (key, Int.repr inf, Int.repr i).
