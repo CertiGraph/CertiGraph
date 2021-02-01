@@ -209,7 +209,7 @@ Section DijkstraProof.
       ~ In k (proj_keys h).
   
   Definition dijk_setup_loop_inv g sh src dist_ptr
-             prev_ptr priq_ptr keys_ptr temp_item arr addresses :=
+             prev_ptr priq_ptr keys_ptr temp_ptr arr addresses :=
     EX i : Z,
     EX h : heap,
     EX keys: list key_type,
@@ -268,9 +268,9 @@ Section DijkstraProof.
           temp _size (Vint (Int.repr size));
           temp _keys (pointer_val_val keys_ptr);
           temp _inf (Vint (Int.repr inf));
-          temp _temp_item (pointer_val_val temp_item))
+          temp _temp (pointer_val_val temp_ptr))
     SEP (valid_pq priq_ptr h;
-         hitem_ (pointer_val_val temp_item);
+         hitem_ (pointer_val_val temp_ptr);
         data_at Tsh
                 (tarray tint size)
                 (map Vint (map Int.repr keys) ++
@@ -289,7 +289,7 @@ Section DijkstraProof.
         @SpaceAdjMatGraph size CompSpecs sh id
                           g (pointer_val_val arr) addresses;
         free_tok (pointer_val_val keys_ptr) (size * sizeof tint);
-        free_tok (pointer_val_val temp_item) (sizeof (Tstruct _structItem noattr))).
+        free_tok (pointer_val_val temp_ptr) (sizeof (Tstruct _structItem noattr))).
 
   Definition src_picked_first h src (popped: list V) :=
     0 < Zlength (heap_items h) ->
@@ -304,7 +304,7 @@ Section DijkstraProof.
       (In (Int.signed (heap_item_payload i_item)) popped -> ~ In i_item (heap_items h)).
 
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src keys
-             dist_ptr prev_ptr keys_ptr priq_ptr graph_ptr temp_item addresses :=
+             dist_ptr prev_ptr keys_ptr priq_ptr graph_ptr temp_ptr addresses :=
     EX prev : list V,
     EX dist : list Z,
     EX popped : list V,
@@ -382,7 +382,7 @@ Section DijkstraProof.
                temp _graph (pointer_val_val graph_ptr);
                temp _size (Vint (Int.repr size));
                temp _inf (Vint (Int.repr inf));
-               temp _temp_item (pointer_val_val temp_item))
+               temp _temp (pointer_val_val temp_ptr))
          SEP (valid_pq priq_ptr h;
              data_at Tsh
                      (tarray tint size)
@@ -398,14 +398,14 @@ Section DijkstraProof.
                      (pointer_val_val keys_ptr);
              @SpaceAdjMatGraph size CompSpecs sh id
                                g (pointer_val_val graph_ptr) addresses;
-             hitem_ (pointer_val_val temp_item);
-             free_tok (pointer_val_val temp_item)
+             hitem_ (pointer_val_val temp_ptr);
+             free_tok (pointer_val_val temp_ptr)
                       (sizeof (Tstruct _structItem noattr));
              free_tok (pointer_val_val keys_ptr) (size * sizeof tint)).
   
   Definition dijk_forloop_break_inv (g: @DijkGG size inf) sh
              src keys dist_ptr prev_ptr keys_ptr priq_ptr
-             graph_ptr temp_item addresses :=
+             graph_ptr temp_ptr addresses :=
     EX prev: list V,
     EX dist: list Z,
     EX popped: list V,
@@ -418,7 +418,7 @@ Section DijkstraProof.
       (* And the correctness condition is established *)
       dijkstra_correct g src popped prev dist)
          LOCAL (temp _pq priq_ptr;
-               temp _temp_item (pointer_val_val temp_item);
+               temp _temp (pointer_val_val temp_ptr);
                temp _keys (pointer_val_val keys_ptr))
          SEP (data_at Tsh
                       (tarray tint size)
@@ -436,8 +436,8 @@ Section DijkstraProof.
                      (pointer_val_val keys_ptr);
              data_at_ Tsh (tarray tint
                                   (sizeof (Tstruct _structItem noattr) / sizeof tint))
-                      (pointer_val_val temp_item);
-             free_tok (pointer_val_val temp_item)
+                      (pointer_val_val temp_ptr);
+             free_tok (pointer_val_val temp_ptr)
                       (sizeof (Tstruct _structItem noattr));
              free_tok (pointer_val_val keys_ptr) (heap_capacity h * sizeof tint)).
   
@@ -557,7 +557,7 @@ Section DijkstraProof.
                temp _graph (pointer_val_val graph_ptr);
                temp _size (Vint (Int.repr size));
                temp _inf (Vint (Int.repr inf));
-               temp _temp_item (pointer_val_val ti))
+               temp _temp (pointer_val_val ti))
          
          SEP (valid_pq priq_ptr h';
              data_at Tsh
