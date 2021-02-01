@@ -97,4 +97,40 @@ Definition connected_graph (g: PGraph) :=
 	forall u v, vvalid g u -> vvalid g v -> connected g u v.
 
 Definition utree g := uforest g /\ connected_graph g.
+\end{lstlisting} 
+
+\subsection{Undirected adjacency matrix representation}
+
+We chose a symmetrical matrix representation for the undirected graph to be used in Prim's algorithm. This bears similarities to the adjacency matrix used in Dijkstra's, allowing us to reuse many properties about adjacency matrices.
+
+We observe one quirk about a symmetric undirected matrix. In our abstract graphs, which are fundamentally directed, the abstract edges $(u,v)$ and $(v,u)$ where $u \neq v$ are clearly distinct from each other. However, in a symmetric matrix both $g[u][v]$ and $g[v][u]$ will be marked, thus it is unclear which edge is in the graph. To disambiguate, we impose the following condition: If $g[u][v]$ and $g[v][u]$ are marked, and $u \leq v$, then we consider $(u,v)$ to be the valid edge; if $v \textless u$, then $(v,u)$ is the valid edge.
+
+\subsection{Edge list representation, multi-graph trimming, and subtle differences of graphs in different representations}
+Kruskal's algorithm differs from Prim's in that it directly operates on the edges of the input graph, rather than Prim's vertex-based approaches. Consequently, in C implementations it is useful to pass the graph in as a list of graph edges, rather than an adjacency matrix or list. This also simplifies the sorting necessary in Kruskal's.
+
+We define a simple edge list representation in C below, and observe mathematical differences between the graphs that can be represented by an edge list and an adjacency-matrix representation. As mentioned in the Prim's section, in a symmetric adjacency matrix, $g[u][v])$ and $g[v][u]$ are considered the same edge; however, this is not true for an edge list, where every edge is effectively an ordered pair due to the memory positions of the data. As a result, this edge list can contain multiple edges between two vertices whereas a 2D adjacency matrix cannot. Further, we prove that Kruskal's algorithm can handle such inputs and still return a minimal spanning forest.
+\newline
+\begin{lstlisting}
+struct edge {
+	int weight;
+	int src;
+	int dst;
+};
+
+struct graph {
+	int V; //number of vertices {0...V-1}
+	int E; //number of edges in the edgelist
+	struct edge *edge_list;
+};
+//Consider a graph with edges {weight=1,src=0,dst=1}
+//	and {weight=2,src=1,dst=0}
 \end{lstlisting}
+\begin{figure}
+\begin{tikzpicture} [auto, node distance =2 cm and 2cm ,on grid, semithick, state/.style ={ circle}]
+	\node[state] (V0) {$\m{v_0}$};
+	\node[state] (V1) [right=of V0] {$\m{v_1}$};
+	\path (V0) edge [bend left] node[above=0.15 cm] {$\{1,\m{v_0},\m{v_1}\}$} (V1);
+	\path (V1) edge [bend left] node[below=0.15 cm] {$\{2,\m{v_1},\m{v_0}\}$} (V0);
+\end{tikzpicture}
+\caption{Example of one kind of multi-graph representable by the above C edge-list implementation, which Kruskal's algorithm is able to prune.}
+\end{figure}

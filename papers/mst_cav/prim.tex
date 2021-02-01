@@ -30,11 +30,6 @@ v.key = w(u,v)
 \end{BVerbatim}
 \caption{Left: abstract Prim's algorithm from CLRS~\cite{clrs}. Right: the algorithm omitting the root, which is unnecessary. Note that CLRS does not explicitly define \texttt{EXTRACT-MIN}}
 \end{figure}
-\subsection{Undirected adjacency matrix representation}
-
-We chose a symmetrical matrix representation for the undirected graph to be used in Prim's algorithm. This bears similarities to the adjacency matrix used in Dijkstra's, allowing us to reuse many properties about adjacency matrices.
-
-We observe one quirk about a symmetric undirected matrix. In our abstract graphs, which are fundamentally directed, the abstract edges $(u,v)$ and $(v,u)$ where $u \neq v$ are clearly distinct from each other. However, in a symmetric matrix both $g[u][v]$ and $g[v][u]$ will be marked, thus it is unclear which edge is in the graph. To disambiguate, we impose the following condition: If $g[u][v]$ and $g[v][u]$ are marked, and $u \leq v$, then we consider $(u,v)$ to be the valid edge; if $v \textless u$, then $(v,u)$ is the valid edge.
 
 \subsection{Base algorithm of Prim's returning a forest}
 
@@ -68,4 +63,4 @@ Consequently, our code allows a simple implementation of Prim's to return a fore
 
 Note that the priority queue used for this verification is still tied to \texttt{INF}, and thus in the verification our argument is weakened to ``\texttt{INF} is a valid weight in the priority queue" rather than ``membership in the priority queue is independent of \texttt{INF}". Work on a stronger priority queue which completely dissociates from \texttt{INF} was to be delivered by Aquinas Hobor since May 2020.
 
-A further observation is that if we dissociate \texttt{INF} and the priority queue, then the input root required by Prim's is no longer necessary. The root's key is artificially set to 0 in Prim's, which kickstarts the main loop. However, since our emptiness check and \texttt{EXTRACT-MIN} implementation can return vertices with \texttt{INF} weight, the loop will start as long as there are un-popped vertices. Thus, we suggest it is possible to remove the \texttt{rt} parameter. Doing so simplifies the proof, because we do not have to reason about the artificially weighted \texttt{key[rt]}. The noroot-variant is in Figure 4 at the beginning of this section, while the verified implementation of Prim's without root is in \texttt{noroot\_prim.c}.
+A further observation is that if we dissociate \texttt{INF} and the priority queue, then the input root required by Prim's is no longer necessary. The root's key is artificially set to 0 in Prim's, which kickstarts the main loop. However, since our emptiness check and \texttt{EXTRACT-MIN} implementation can return vertices with \texttt{INF} weight, the loop will start as long as there are un-popped vertices. Thus, we suggest it is possible to remove the \texttt{rt} parameter. Doing so simplifies the proof, because we do not have to reason about the artificially weighted \texttt{key[rt]}. The noroot-variant is in Figure 4 at the beginning of this section, while the verified implementation of Prim's without root is in \texttt{noroot\_prim.c}. 
