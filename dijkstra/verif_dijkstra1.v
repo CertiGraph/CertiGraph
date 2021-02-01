@@ -1876,8 +1876,17 @@ ulia.
                ** (* i used to be in hc, but some minimum has been tossed
                      from hc. the question becomes whether i was that min.
                    *)
+                 clear -H6 H15 H20 H21 Hequ Hd'.
                  destruct (Z.eq_dec i u).
-                 --- subst i. right. admit.
+                 --- subst i. right.
+                     intro.
+                     apply (Permutation_map heap_item_key) in H15.
+                     apply (Permutation_NoDup H15) in Hd'.
+                     simpl in Hd'.
+                     apply NoDup_cons_2 in Hd'. apply Hd'.
+                     unfold proj_keys in H.
+                     replace k with (heap_item_key min_item) in H by admit.
+                     trivial.
                  --- left. admit.
                ** right. intro. apply H6.
                   unfold proj_keys in *.
@@ -2108,11 +2117,22 @@ ulia.
                       specialize (Ho _ H39 _ H40).
                       destruct Ho.
                       +++ left.
-      (* pretty reasonable. it was in h' (see H41)
-         and now it'll be in hf
-         with the updated priority *)
-                          (* sibling *)
-                          admit.
+                          apply (vvalid_meaning g) in H39.
+                          destruct (Z.eq_dec i0 i).
+*** subst i0.
+    rewrite upd_Znth_same.
+    2: rewrite Zlength_map; lia.
+    apply Permutation_find_item_by_key with (k := k) in H36.
+    rewrite H40 in H36.
+    rewrite (find_item_by_key_update_pri_by_key
+               _ _ (Int.repr (Znth i dist')) (Int.repr i) _) in H36.
+    symmetry in H36.
+    apply Permutation_length_1_inv in H36; trivial.
+    rewrite Znth_map in H41; ulia.
+
+*** rewrite upd_Znth_diff; trivial.
+    2,3: rewrite Zlength_map; try lia.
+    admit. (* sibling of Aquinas' current goal *)
                       +++ right. intro. apply H41.
                           unfold proj_keys in *.
                           apply (Permutation_map heap_item_key) in H36.
