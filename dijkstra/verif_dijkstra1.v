@@ -2180,7 +2180,20 @@ ulia.
 
 *** rewrite upd_Znth_diff; trivial.
     2,3: rewrite Zlength_map; try lia.
-    admit. (* sibling of Aquinas' current goal *)
+    assert (H_NoDup_keys: NoDup keys) by admit.    
+    assert (Znth i keys <> k). {
+      intro.
+      pose proof (NoDup_nth keys Inhabitant_Z).
+      rewrite H43 in H_NoDup_keys. clear H43.
+      rewrite <- H42 in H40.
+      do 2 rewrite <- nth_Znth in H40. 2-4: lia.
+      rewrite Zlength_correct in H_keys_sz.
+      apply H_NoDup_keys in H40; lia.
+    }
+    apply Permutation_find_item_by_key with (k := k) in H36.
+    rewrite find_item_by_key_update_pri_by_key' in H36; auto.
+    rewrite H41 in H36. symmetry in H36.
+    apply Permutation_length_1_inv in H36. trivial.
                       +++ right. intro. apply H41.
                           unfold proj_keys in *.
                           apply (Permutation_map heap_item_key) in H36.
