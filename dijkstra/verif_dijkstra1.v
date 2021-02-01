@@ -1115,24 +1115,8 @@ Section DijkstraProof.
               *)
                 admit.
              ++ unfold find_item_by_key.
-                (* bug?
-
-                We know that everyone in h0 fails the test (see H4)
-                Now say the new item "(key, Int.repr inf, Int.repr i)"
-                PASSES the filter test, i.e. say key = k.
-                The item that would go into the filtered list is,
-                well, the new item:
-                "(key, Int.repr inf, Int.repr i)".
-
-                But this isn't the same as the target in the goal
-                because we know i <> j.
-                 *)
-
-                (* am I missing something? *)
-
-                (* Aquinas *)
-                admit.
-               
+                specialize (Hc _ H9). rewrite H5 in Hc. exfalso.
+                apply H4; trivial.
         * rewrite <- list_repeat1, list_repeat_app,
           Z2Nat.inj_add. trivial. lia. lia.
         * rewrite Zlength_app, binary_heap_Zmodel.Zlength_one.
@@ -1991,6 +1975,7 @@ unfold find_item_by_key in *.
       (* pretty reasonable. it was in h' (see H41)
          and now it'll be in hf
          with the updated priority *)
+                          (* sibling *)
                           admit.
                       +++ right. intro. apply H41.
                           unfold proj_keys in *.
