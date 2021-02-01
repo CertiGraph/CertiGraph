@@ -1107,7 +1107,7 @@ Section DijkstraProof.
              ++ left. rewrite Znth_app1.
                 2: rewrite Zlength_list_repeat; lia.
              (* Aquinas *)
-             (* H4 says I deserve to be in h0.
+             (* H4 says I deserve to be in h0's filter.
                 H8 says that h' is h0 + newguy
                 Hc' says that newguy can't have the same key as me
                     and therefore cannot also pass the test
@@ -1117,7 +1117,7 @@ Section DijkstraProof.
              ++ unfold find_item_by_key.
                 (* bug?
 
-                We know that everyone in h0 fails the test (H4)
+                We know that everyone in h0 fails the test (see H4)
                 Now say the new item "(key, Int.repr inf, Int.repr i)"
                 PASSES the filter test, i.e. say key = k.
                 The item that would go into the filtered list is,
@@ -1618,7 +1618,8 @@ Section DijkstraProof.
                  specialize (Hz _ H21 H22).
                  destruct Hz as [i_item [? ?]].
                  
-                 (* Aquinas? *)
+                 (* Aquinas pure *)
+                 admit.
                }
                replace u with src in * by now apply Hl.  
                intros. intro.
@@ -1962,7 +1963,20 @@ Section DijkstraProof.
                           rewrite Forall_forall in Hl. apply Hl; trivial.
                       +++ subst orig. rewrite Forall_forall in Hl.
                           apply Hl; trivial.
-                  --- admit. (* find_item_by_key *)
+                  --- red in Ho |- *.
+                      intros.
+                      specialize (Ho _ H39 _ H40).
+                      destruct Ho.
+                      +++ left.
+      (* pretty reasonable. it was in h' (see H41)
+         and now it'll be in hf
+         with the updated priority *)
+                          admit.
+                      +++ right. intro. apply H41.
+                          unfold proj_keys in *.
+                          apply (Permutation_map heap_item_key) in H36.
+                          rewrite update_pri_by_key_keys_unaffected in H36.
+                          apply (Permutation_in _ H36) in H42; trivial.
                   --- apply (Permutation_map heap_item_payload) in H36.
                       rewrite update_pri_by_key_payloads_unaffected in H36.
                       symmetry in H36.
