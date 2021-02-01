@@ -14,6 +14,17 @@ Proof.
   split; intro; apply H; apply in_or_app; auto.
 Qed.
 
+Lemma Permutation_two_eq: forall A (L : list A) x,
+  Permutation L [x ; x] ->
+  L = [x ; x].
+Proof.
+  intros. remember [x ; x]. revert Heql. induction H.
+  * discriminate.
+  * inversion 1. subst. symmetry in H. apply Permutation_length_1_inv in H. subst. trivial.
+  * inversion 1. trivial.
+  * intros. subst l''. spec IHPermutation2. trivial. specialize (IHPermutation1 IHPermutation2). subst l'. trivial.
+Qed.
+
 Lemma filter_empty: forall A f (L : list A),
   (forall x, In x L -> f x = false) ->
   filter f L = [].
@@ -1162,7 +1173,6 @@ apply in_split in H8. destruct H8 as [L1 [L2 ?]]. rewrite H in *. clear H h'.
 unfold find_item_by_key. rewrite filter_app. simpl.
 case Z.eq_dec; simpl. 2: destruct 1; trivial. intros _.
 rewrite map_app in Hc'. simpl in Hc'. apply NoDup_remove_2 in Hc'.
-
 apply not_In_app in Hc'. destruct Hc'.
 rewrite filter_empty, filter_empty; try reflexivity;
 intros; case Z.eq_dec; simpl; auto; intro; exfalso; 
@@ -1179,47 +1189,23 @@ unfold heap_item_key at 1; simpl; apply in_map; trivial.
                 2: rewrite Zlength_list_repeat; lia.
 clear -H4 H8 Hc'.
 apply Permutation_find_item_by_key with (k := k) in H8.
-
-
 change (?x :: ?y) with ([x] ++ y) in H8.
 rewrite find_item_by_key_app, H4 in H8.
 revert H8. unfold find_item_by_key at 1. simpl. case Z.eq_dec; simpl; intros.
 2: { apply Permutation_length_1_inv in H8. trivial. }
 exfalso. unfold heap_item_key in e. simpl in e. subst k.
-(* HERE 
 symmetry in H8.
 apply Permutation_map with (f := heap_item_key) in H8.
-eapply Permutation_NoDup in H8.
-inversion H8. subst; unfold heap_item_key in *; simpl in *. auto.
-Search NoDup map.
-
-un
-
-unfold heap_item_key at 1 in H8.
-simpl in H8.
-eapply Permutation_NoDup in Hc'. 2: apply H8.
-
-
-Search map filter.
+unfold heap_item_key at 2 in H8. simpl in H8. remember (heap_items h'). clear -Hc' H8.
+apply Permutation_two_eq in H8.
 unfold find_item_by_key in H8.
-
-rewrite <- (filter_map_comm _ (fun item : heap_item => Z.eq_dec (heap_item_key item) key) heap_item_key) in H8.
-
-Search heap_item_key 
-
-
- unfold heap_item_ke
-inversion e.  subst k. symmetry in H8.
-
-*)
-             (* Aquinas *)
-             (* H4 says I deserve to be in h0's filter.
-                H8 says that h' is h0 + newguy
-                Hc' says that newguy can't have the same key as me
-                    and therefore cannot also pass the test
-                    and therefore the list remains a singleton
-              *)
-                admit.
+generalize (NoDup_filter _ (Z.eq_dec key) _ Hc'); intro.
+rewrite <- (filter_map_comm _ _ _ (fun y : key_type => Z.eq_dec key y)) in H8.
+change Z with key_type in *.
+rewrite H8 in H.
+inversion H. apply H2. left. trivial.
+intros [[? ?] ?]. unfold heap_item_key. simpl.
+case Z.eq_dec; case Z.eq_dec; auto. intros. destruct n. auto.
              ++ unfold find_item_by_key.
                 specialize (Hc _ H9). rewrite H5 in Hc. exfalso.
                 apply H4; trivial.
