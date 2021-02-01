@@ -1320,16 +1320,17 @@ Section DijkstraProof.
           -- subst i.
              rewrite upd_Znth_same.
              2: rewrite Zlength_map, Zlength_list_repeat; lia.
-             unfold find_item_by_key.
              specialize (Hu _ H4). rewrite H6 in Hu.
-
-             (* Okay so (k, inf, src) was in ha, 
-                and hb updated it to (k, 0, src).
-                stands to reason that, when queried, 
-                hb should give this back.
-              *)
-             (* Aquinas? *)
-             admit.
+             destruct H3. 2: { destruct H3. unfold proj_keys.
+               change k with (heap_item_key (k, Int.repr inf, Int.repr src)).
+               apply in_map. trivial. }
+             rewrite Znth_list_repeat_inrange in H3; trivial.
+             apply Permutation_find_item_by_key with (k := k) in H_ha_hb_rel.
+             rewrite H6 in H_ha_hb_rel.
+             rewrite find_item_by_key_update_pri_by_key with 
+               (op := Int.repr inf) (v := Int.repr src) in H_ha_hb_rel; trivial.
+             symmetry in H_ha_hb_rel. apply Permutation_length_1_inv in H_ha_hb_rel.
+             trivial.
           -- rewrite upd_Znth_diff; trivial.
              2,3: rewrite Zlength_map, Zlength_list_repeat; try lia.
              rewrite map_list_repeat, Znth_list_repeat_inrange by lia.
