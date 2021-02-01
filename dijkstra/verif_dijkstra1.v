@@ -6,6 +6,73 @@ Require Import CertiGraph.dijkstra.dijkstra_spec1.
 
 Local Open Scope Z_scope.
 
+Set Nested Proofs Allowed.
+Lemma not_In_app: forall A x (L1 L2 : list A),
+  ~ In x (L1 ++ L2) ->
+  ~ In x L1 /\ ~ In x L2.
+Proof.
+  split; intro; apply H; apply in_or_app; auto.
+Qed.
+
+Lemma filter_empty: forall A f (L : list A),
+  (forall x, In x L -> f x = false) ->
+  filter f L = [].
+Proof.
+  induction L; intros. reflexivity.
+  simpl. rewrite H. apply IHL. intros. apply H. right. trivial.
+  left. trivial.
+Qed.
+
+Lemma find_item_by_key_app: forall L1 L2 k,
+  find_item_by_key (L1 ++ L2) k = find_item_by_key L1 k ++ find_item_by_key L2 k.
+Proof. intros. unfold find_item_by_key. rewrite filter_app. trivial. Qed.
+
+Lemma filter_false_nil:
+    forall A (l: list A) f,
+      (forall a, In a l -> f a = false) ->
+      filter f l = [].
+  Proof. intros. apply filter_empty. trivial. Qed.
+  
+  Lemma find_item_by_key_finds_item:
+    forall h item,
+      In item h ->
+      NoDup (map heap_item_key h) ->
+      find_item_by_key h (heap_item_key item) =
+      [item].
+  Proof.
+    intros.
+    unfold find_item_by_key. induction h; [inversion H|].
+    destruct H.
+    - subst a. simpl.
+      destruct (Z.eq_dec (heap_item_key item) (heap_item_key item)).
+      2: exfalso; apply n; trivial. 
+      simpl. simpl in H0.
+      apply NoDup_cons_2 in H0.
+      replace (filter
+                 (fun item0 : heap_item =>
+                    Z.eq_dec (heap_item_key item0) (heap_item_key item)) h)
+        with (@nil heap_item); trivial.
+      rewrite filter_false_nil; trivial.
+      intros.
+      rewrite <- not_true_iff_false.
+      intro.
+      apply (in_map heap_item_key) in H.
+      replace (heap_item_key a) with (heap_item_key item) in H.
+      apply H0; trivial.
+      destruct (Z.eq_dec (heap_item_key a) (heap_item_key item)).
+      + lia.
+      + simpl in H1. inversion H1.
+    - simpl.
+      destruct (Z.eq_dec (heap_item_key a) (heap_item_key item)).
+      + exfalso.
+        simpl in H0.
+        apply NoDup_cons_2 in H0. 
+        apply H0. rewrite e. apply in_map; trivial.
+      + simpl. apply IHh; trivial.
+        simpl in H0.
+        apply (NoDup_cons_1 _ (heap_item_key a)); trivial.
+  Qed.
+
 Section DijkstraProof.
   
   (* The invariants have been dragged out of the 
@@ -1080,7 +1147,6 @@ Section DijkstraProof.
           destruct (Z.eq_dec i j).
           -- subst j; clear H5.
              red. intros.
-             unfold find_item_by_key.
              rewrite Znth_app2;
                rewrite Zlength_list_repeat; try lia.
              replace (i - i) with 0 by lia.
@@ -1091,12 +1157,17 @@ Section DijkstraProof.
              symmetry in H8.
              apply Permutation_cons_In in H8.
              left.
-             admit.
-             (* Aquinas *)
-             (* H8 says I deserve to be in there.
-                Hc' says that the keys are unique, so no one
-                else can be there
-              *)
+clear -H8 Hc'.
+apply in_split in H8. destruct H8 as [L1 [L2 ?]]. rewrite H in *. clear H h'.
+unfold find_item_by_key. rewrite filter_app. simpl.
+case Z.eq_dec; simpl. 2: destruct 1; trivial. intros _.
+rewrite map_app in Hc'. simpl in Hc'. apply NoDup_remove_2 in Hc'.
+
+apply not_In_app in Hc'. destruct Hc'.
+rewrite filter_empty, filter_empty; try reflexivity;
+intros; case Z.eq_dec; simpl; auto; intro; exfalso; 
+[apply H0 | apply H]; rewrite <- e;
+unfold heap_item_key at 1; simpl; apply in_map; trivial.
           -- assert (0 <= j < i) by lia.
              clear H5 n.
              red in H4 |- *.
@@ -1106,6 +1177,41 @@ Section DijkstraProof.
              destruct H4.
              ++ left. rewrite Znth_app1.
                 2: rewrite Zlength_list_repeat; lia.
+clear -H4 H8 Hc'.
+apply Permutation_find_item_by_key with (k := k) in H8.
+
+
+change (?x :: ?y) with ([x] ++ y) in H8.
+rewrite find_item_by_key_app, H4 in H8.
+revert H8. unfold find_item_by_key at 1. simpl. case Z.eq_dec; simpl; intros.
+2: { apply Permutation_length_1_inv in H8. trivial. }
+exfalso. unfold heap_item_key in e. simpl in e. subst k.
+(* HERE 
+symmetry in H8.
+apply Permutation_map with (f := heap_item_key) in H8.
+eapply Permutation_NoDup in H8.
+inversion H8. subst; unfold heap_item_key in *; simpl in *. auto.
+Search NoDup map.
+
+un
+
+unfold heap_item_key at 1 in H8.
+simpl in H8.
+eapply Permutation_NoDup in Hc'. 2: apply H8.
+
+
+Search map filter.
+unfold find_item_by_key in H8.
+
+rewrite <- (filter_map_comm _ (fun item : heap_item => Z.eq_dec (heap_item_key item) key) heap_item_key) in H8.
+
+Search heap_item_key 
+
+
+ unfold heap_item_ke
+inversion e.  subst k. symmetry in H8.
+
+*)
              (* Aquinas *)
              (* H4 says I deserve to be in h0's filter.
                 H8 says that h' is h0 + newguy
@@ -1140,10 +1246,6 @@ Section DijkstraProof.
           (* rewrite Forall_forall. intros item ?. *)
           apply (Permutation_map heap_item_payload), Permutation_sym in H8.
           apply (Permutation_trans H8). simpl.
-
-          Set Nested Proofs Allowed.
-          
-
           pose proof (nat_inc_list_plus_1_Permutation i).
           apply (Permutation_map Int.repr), Permutation_sym in H5.
           simpl in H5.
@@ -1464,6 +1566,11 @@ Section DijkstraProof.
         assert_PROP (NoDup (heap_items hc)). {
           sep_apply valid_pq_NoDup. entailer!.
         }
+        assert_PROP (NoDup (map heap_item_key (heap_items hc))). {
+          sep_apply valid_heap_NoDup_keys. entailer!.
+        }
+        rename H14 into Hd'.
+
 
         rename H5 into H_hc_cap.
         rename H13 into H13'.
@@ -1613,17 +1720,46 @@ rewrite Forall_forall in H16. auto.
 unfold cmp_rel, cmp in H25. revert H25.
 case_eq (Int.lt (heap_item_priority i_item) (heap_item_priority min_item)). discriminate. intros ? _.
 apply lt_false_inv in H25.
-(* The above is easy, but now I'm back on your side of the fence, no? *)
-(*
-clear -H1 H6 H21 H25 H_u_valid H15.
-generalize (H6 _ H_u_valid) (H6 _ H21); intros.
-specialize (H _ eq_refl). specialize (H0 _ eq_refl).
-unfold find_item_by_key in *.
+red in H6.
+replace (Int.signed (heap_item_priority i_item)) with
+(Znth i dist) in H25.
+replace (Int.signed (heap_item_priority min_item)) with
+(Znth u dist) in H25.
+lia.
 
-(* Not sure how to go, the above is just exploration... *)
-*)
-                 (* Aquinas pure *)
-                 admit.
+- specialize (Ht _ Ha).
+unfold heap_item_payload in Ht.
+rewrite <- Hequ in Ht.
+specialize (H6 _ H_u_valid _ Ht).
+destruct H6.
+2: { exfalso. apply H6. unfold proj_keys.
+apply in_map; trivial.
+}
+rewrite find_item_by_key_finds_item in H6; trivial.
+inversion H6.
+unfold heap_item_priority. simpl.
+rewrite Znth_map, Int.signed_repr; ulia.
+
+- specialize (Ht _ H23).
+unfold heap_item_payload in Ht.
+unfold heap_item_payload in H24.
+rewrite <- H24 in Ht.
+specialize (H6 _ H21 _ Ht).
+destruct H6.
+2: { exfalso. apply H6. unfold proj_keys.
+apply in_map; trivial.
+}
+rewrite find_item_by_key_finds_item in H6; trivial.
+inversion H6.
+unfold heap_item_priority. simpl.
+apply (vvalid_meaning g) in H21.
+rewrite Znth_map, Int.signed_repr; try ulia.
+red in H10. rewrite Forall_forall in H10.
+assert (In (Znth i dist) dist). {
+apply Znth_In. lia.
+}
+specialize (H10 _ H26).
+ulia.
                }
                replace u with src in * by now apply Hl.  
                intros. intro.
