@@ -6,14 +6,16 @@ void dijkstra (int **graph, int src, int *dist,
                int *prev, int size, int inf {
 $\color{OliveGreen}//~\braces{\p{AdjMat}(\gamma) *
 \mathsf{array}(\texttt{dist}, \_) * \mathsf{array}(\texttt{prev}, \_)}$
- int pq = init(size); int i, j, u, cost;
- for (i = 0; i < size; i++)
- {  dist[i] = inf; prev[i] = inf; push(i, inf, pq);  }
- dist[src] = 0; prev[src] = src; dec_key(src, 0, pq);
+ Item* temp = (Item*) mallocN(sizeof(Item));
+ int* keys = mallocN (size * sizeof (int));
+ PQ* pq = pq_make(size); int i, j, u, cost;
+ for (i = 0; i < size; i++) 
+ { dist[i] = inf; prev[i] = inf; keys[i] = pq_push(pq, inf, i); }
+ dist[src] = 0; prev[src] = src; pq_editpri(pq, keys[src], 0);
 $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}}.~\p{AdjMat}(\gamma) * {\color{red}\p{PQ}(\texttt{pq})} * \mathsf{array}(\texttt{dist},{\color{red}\m{dist}}) * \mathsf{array}(\texttt{prev}, {\color{red}\m{prev}}) /| \null \\
 {\color{red}\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}}$ $\label{code:whileinv}$
- while (!pq_emp(size, inf, pq)) {
-  u = pop_min(size, inf, pq); $\label{code:pop}$
+ while (pq_size(pq) > 0) {
+  pq_pop(pq, temp); u = temp->data; $\label{code:pop}$
 $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{popped'}, \m{i}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) * \mathsf{array}(\texttt{dist},\m{\color{red}dist'}) * \mathsf{array}(\texttt{prev}, \m{\color{red}prev'}) /| \null \\
 {\color{red}\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped'}, \m{prev'}, \m{dist'}, \m{i}, \texttt{u})}}$ $\label{code:forinv}$
   for (i = 0; i < size; i++) {
@@ -21,14 +23,14 @@ $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{poppe
    if (cost < inf) {
     if (dist[i] > dist[u] + cost) { $\label{code:overflow}$
      dist[i] = dist[u] + cost; prev[i] = u; $\label{code:update1}$ 
-     dec_key(i, dist[i], pq); $\label{code:update2}$
+     pq_editpri(pq, keys[i], dist[i]); $\label{code:update2}$
   }}} $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) *
   \mathsf{array}(\texttt{dist},\m{\color{red}dist''}) * \mathsf{array}(\texttt{prev}, \m{\color{red}prev''}) /| \null \\
   {\color{red}\m{dijk\_correct}(\gamma, \texttt{src}, \m{popped'}, \m{prev''}, \m{dist''})}}$
  } $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist^{\circ}}, \m{prev^{\circ}}, \m{popped^{\circ}}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) * \mathsf{array}(\texttt{dist},\m{\color{red}dist^{\circ}}) * \mathsf{array}(\texttt{prev}, \m{\color{red}prev^{\circ}}) /| \null \\
 {\color{red}\m{all\_popped(popped^{\circ})}} /|
 {\color{red}\m{dijk\_correct}(\gamma,\texttt{src},\m{popped^{\circ}},\m{prev^{\circ}},\m{dist^{\circ}})}}$
- freePQ (pq); return; 
+ freeN (temp); pq_free (pq); freeN (keys); return; 
 }
 \end{lstlisting}
 \vspace{-1em}
