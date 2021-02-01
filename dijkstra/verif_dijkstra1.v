@@ -1862,18 +1862,46 @@ ulia.
                ** (* i used to be in hc, but some minimum has been tossed
                      from hc. the question becomes whether i was that min.
                    *)
-                 clear -H6 H15 H20 H21 Hequ Hd'.
+                 apply (vvalid_meaning g) in H20.
+                 apply (vvalid_meaning g) in H_u_valid.
+                 assert (H_NoDup_keys: NoDup keys) by admit.
+                   
+                 clear -H6 H15 H20 H21 Hequ Hd' Ht Ha H_keys_sz
+                           H_u_valid H_NoDup_keys.
                  destruct (Z.eq_dec i u).
-                 --- subst i. right.
-                     intro.
+                 --- subst i. right. intro.
                      apply (Permutation_map heap_item_key) in H15.
                      apply (Permutation_NoDup H15) in Hd'.
                      simpl in Hd'.
                      apply NoDup_cons_2 in Hd'. apply Hd'.
                      unfold proj_keys in H.
-                     replace k with (heap_item_key min_item) in H by admit.
-                     trivial.
-                 --- left. admit.
+                     replace k with (heap_item_key min_item) in H; trivial.
+                     specialize (Ht _ Ha).
+                     rewrite <- Ht, <- H21, Hequ. f_equal.
+                     
+                 --- left. unfold find_item_by_key in *.
+                     apply (Permutation_filter _ _ _
+                              (fun item : heap_item =>
+                                 Z.eq_dec (heap_item_key item) k))
+                       in H15.
+                     rewrite H6 in H15.
+                     apply Permutation_length_1_inv in H15.
+                     simpl in H15.
+                     destruct (Z.eq_dec (heap_item_key min_item) k).
+                     +++ simpl in H15. exfalso.
+                         specialize (Ht _ Ha).
+                         rewrite <- Ht, <- H21 in e.
+                         unfold heap_item_payload in e. rewrite <- Hequ in e.
+                         apply n.
+                         do 2 rewrite <- nth_Znth in e; try lia.
+                         pose proof (NoDup_nth keys Inhabitant_Z).
+                         rewrite H in H_NoDup_keys.
+                         specialize (H_NoDup_keys (Z.to_nat u) (Z.to_nat i)).
+                         spec H_NoDup_keys. rewrite <- ZtoNat_Zlength; lia.
+                         spec H_NoDup_keys. rewrite <- ZtoNat_Zlength; lia.
+                         ulia.
+                     +++ simpl in H15; trivial.
+                     
                ** right. intro. apply H6.
                   unfold proj_keys in *.
                   apply (Permutation_map heap_item_key) in H15.
