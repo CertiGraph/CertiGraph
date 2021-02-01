@@ -15,7 +15,215 @@ Section DijkstraProof.
   Context {size: Z}.
   Context {inf: Z}.
   Context {Z_EqDec : EquivDec.EqDec Z eq}.
+  
+  Lemma inv_unpopped_newcost:
+    forall (g: @DijkGG size inf) src dst (u i: V)
+           dist prev popped newcost,
+      (forall dst : Z,
+          vvalid g dst ->
+          inv_popped g src popped prev dist dst) ->
+      (forall dst : Z,
+          0 <= dst < i ->
+          inv_unpopped g src popped prev dist dst) ->
+      (forall dst : Z,
+          i <= dst < size ->
+          inv_unpopped_weak g src popped prev dist dst u) ->
+      (forall dst : Z,
+          i <= dst < size ->
+          inv_unseen_weak g src popped prev dist dst u) ->
+      newcost = Znth u dist + elabel g (u, i) ->
+      vvalid g u ->
+      vvalid g i ->
+      u <> i ->
+      In u popped ->
+      @inrange_dist inf dist ->
+      Zlength prev = size ->
+      Zlength dist = size ->
+      0 <= Znth u dist <= inf ->
+      0 <= elabel g (u, i) <= Int.max_signed / size ->
+      0 <= Znth i dist <= inf ->
+      newcost < Znth i dist ->
+      ~ In i popped ->
+      Znth i dist = inf \/ Znth i dist < inf ->
+      0 <= dst < i + 1 ->
+      inv_unpopped g src popped (upd_Znth i prev u)
+                   (upd_Znth i dist newcost) dst.
+  Proof.
+    intros ? ? ? ? ? ? ? ? ?
+           H_inv_popped H_inv_unpopped H_inv_unpopped_weak
+           H_inv_unseen_weak Heqnewcost.
+    intros. destruct (Z.eq_dec dst i).
+    2: apply inv_unpopped_newcost_dst_neq_i; trivial.
+    
+    subst dst; clear H12.
+    (* This is a key change --
+       i will now be locally optimal,
+       _thanks to the new path via u_.
+       In other words, it is moving from
+       the weaker inv_unpopped clause
+       to the stronger
+     *)
+    unfold inv_unpopped; intros.
+    destruct (Z.eq_dec i src); [left | right; split]; trivial.
+    destruct (H_inv_popped _ H H2).
+    1: ulia.
+    assert (0 <= i < size) by now apply (vvalid_meaning g).
+    assert (0 <= u < size) by now apply (vvalid_meaning g).
+    rewrite upd_Znth_same by lia.
+    
+    split3; [| |split3; [| |split]]; trivial.
+    1: ulia.
+    1: rewrite upd_Znth_diff; ulia.
+    1: rewrite upd_Znth_same; [rewrite upd_Znth_diff|]; ulia.
+    intros. rewrite upd_Znth_same; [|ulia].
+    
+    (* This is another key point in the proof:
+       we must show that the path via u is
+       better than all other paths via
+       other popped verices 
+     *)
+    assert (mom' <> i). {
+      intro. subst mom'.
+      apply H10; trivial.
+    }
+    rewrite upd_Znth_diff; trivial.
+    2: apply (vvalid_meaning g) in H17; ulia.
+    2: lia. 
+    destruct (@Znth_dist_cases inf mom' dist); trivial.
+    1: apply (vvalid_meaning g) in H17; ulia. 
+    1: { rewrite H20. pose proof (edge_cost_pos g (mom', i)). ulia.
+    }
 
+    destruct (H_inv_popped _ H17 H18) as
+        [? | [p2mom' [? [? ?]]]]; [ulia|].
+    assert (Hrem:= H21).
+    destruct H21 as [? [? [? ?]]].
+    pose proof (path_ends_In_path_dst _ _ _ _ H24).
+    destruct (zlt ((Znth mom' dist) + elabel g (mom', i)) inf).
+    2: {
+      destruct (zlt (elabel g (mom', i)) inf); lia.
+    }
+    
+    (* 
+     The known conditions are:
+     - dist[u] + graph[u][i] < dist[i]
+     - i is an unpopped vertex.
+     
+     Now we prove for any other path p' which is from s to i
+     and composed by popped vertices (INCLUDING u),
+     dist[u] + graph[u][i] <= path_cost p'.
+ 
+     There are two cases about p': In u p' \/ ~ In u p'
+     *)
+
+    destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
+    - (* Yes, the path p2mom' goes via u *) 
+      (*
+        1. In u p': p' is the path from s to i.
+        Consider the vertex mom' which is
+        just before i. Again, there are two cases:
+        mom' = u \/ ~ mom' = u.
+       *)
+
+      apply in_path_eq_epath_to_vpath in i0.
+      2: trivial.
+      
+      destruct (Z.eq_dec mom' u).
+      1: {
+        (*
+          1.1 mom' = u: path_cost p' = path_cost [s to u] + graph[u][i].
+          As we know, u is just popped, dist[u] is the
+          global optimal, so dist[u] <= path_cost [s to u],
+          so dist[u] + graph[u][i] <= path_cost p'.
+         *)
+        subst mom'.
+        unfold path_globally_optimal in H13. ulia.
+      }
+      
+
+      (*
+      1.2 ~ mom' = u: 
+      p' can conceptually be split up as:
+      path s to u ++ path u to mom' + edge (mom', i).
+       *)
+      (*
+      Since p' is composed by popped vertex
+      (including u) only, mom' must be a popped
+      vertex. Then it satisfies inv_popped, which means
+      dist[mom'] <= path_cost [s to u] + path_cost [u to mom']
+      and the global optimal path from s to mom' is
+      composed by popped vertices only. 
+       *)
+      
+      (* Digression: a brief check to see if i was popped, 
+         unseen, or just unpopped. 
+       *)
+      destruct H11.
+      1: {
+        (* i was unseen *)
+        assert (i <= i < size) by lia.
+        (* rewrite H_priq_dist_link in H11; trivial. *)
+        pose proof (H_inv_unseen_weak
+                      _ H28 H10 H11 mom'
+                      p2mom' H17 H18 n0 Hrem).
+        rewrite path_cost_path_glue, one_step_path_Znth in H29.
+        ulia.
+      }
+      
+      (* Now we know that i was seen but unpopped. 
+       Great, now we can employ inv_unpopped_weak. *)
+      (* Because i is "seen", we know that 
+         The best-known path to i via popped vertices is 
+         already logged in dist[i]. 
+         So dist[i] <= dist[mom'] + (mom', i).
+       *)
+      assert (Znth i dist <= Znth mom' dist + elabel g (mom', i)). {
+        assert (i <= i < size) by lia.
+        assert (0 <= mom' < size). {
+          apply (vvalid_meaning g); ulia.
+        }
+        destruct (H_inv_unpopped_weak _ H28 H10 H11).
+        1: lia.
+        destruct H30 as [_ [_ ?]]. apply H30; trivial.
+      }
+      
+      (*
+      So we have 
+      dist[u] + graph[u][i] <= dist[i]
+                            <= dist[mom'] + (mom', i) 
+                            <= path_cost p'.
+       *)
+      ulia.
+    -
+      (* Since u is not in the path, 
+         we can just tango with
+         the step <> u condition from 
+         inv_unpopped_weak. 
+         This case is okay.
+       *)
+      assert (mom' <> u). {
+        intro. subst mom'. apply n0.
+        apply in_path_eq_epath_to_vpath; trivial.
+      }
+      destruct H11.
+      1: {
+        (* i was unseen *)
+        assert (i <= i < size) by lia.
+        pose proof (H_inv_unseen_weak
+                      _ H29 H10 H11 mom' p2mom'
+                      H17 H18 H28 Hrem).
+        rewrite path_cost_path_glue, one_step_path_Znth in H30.
+        ulia.
+      }
+      assert (i <= i < size) by lia.
+      destruct (H_inv_unpopped_weak i H29 H10 H11).
+      1: subst i; exfalso; lia.
+      apply Z.lt_le_incl.
+      apply Z.lt_le_trans with (m:=Znth i dist).
+      1: lia.
+      destruct H30 as [_ [_ ?]]. apply H30; trivial.
+  Qed.
+  
   Lemma Permutation_cons_In: forall {A} (l1 l2: list A) a,
       Permutation l1 (a :: l2) -> In a l1.
   Proof.
@@ -1224,7 +1432,12 @@ Section DijkstraProof.
             ++ red in H6 |- *. intros.
                specialize (H6 _ H20 _ H21).
                destruct H6.
-               ** admit. (* find_item_by_key *)
+               ** (* i used to be in hc, but some minimum has been tossed
+                     from hc. the question becomes whether i was that min.
+                   *)
+                 destruct (Z.eq_dec i u).
+                 --- subst i. right. admit.
+                 --- left. admit.
                ** right. intro. apply H6.
                   unfold proj_keys in *.
                   apply (Permutation_map heap_item_key) in H15.
@@ -1400,9 +1613,11 @@ Section DijkstraProof.
                   intros.
                   (* 19 goals *)
                   --- apply inv_popped_newcost; ulia.
-                  --- admit.
-                      (* TODO update this lemma *)
-                      (* apply inv_unpopped_newcost with (priq0 := priq'); ulia.  *)
+                  ---
+
+
+
+  apply inv_unpopped_newcost; ulia.
                   --- now apply inv_unpopped_weak_newcost.
                   --- apply inv_unseen_newcost; ulia.
                   --- apply inv_unseen_weak_newcost; ulia. 
