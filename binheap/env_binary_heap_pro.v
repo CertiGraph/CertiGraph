@@ -918,20 +918,25 @@ Proof.
   constructor. reflexivity. reflexivity. transitivity (filter f l'); trivial.
 Qed.
 
-Lemma filter_map_comm: forall A f g (L : list A),
-  (forall x, f x = f (g x)) ->
-  filter f (map g L) = map g (filter f L).
+Lemma filter_map_comm: forall A B (f : A -> bool) (g : B -> bool) (h : A -> B) (L : list A),
+  (forall x, f x = g (h x)) ->
+  filter g (map h L) = map h (filter f L).
 Proof.
   induction L; intros. reflexivity.
   simpl. rewrite <- H. case (f a); auto. simpl. f_equal. auto.
 Qed.
+
+Lemma filter_map_comm': forall A f g (L : list A),
+  (forall x, f x = f (g x)) ->
+  filter f (map g L) = map g (filter f L).
+Proof. intros. rewrite filter_map_comm with (f := f); auto. Qed.
 
 Lemma find_item_by_key_update_pri_by_key: forall L k op v np,
   find_item_by_key L k = [(k, op, v)] ->
   find_item_by_key (update_pri_by_key L k np) k = [(k, np, v)].
 Proof.
   intros. unfold find_item_by_key, update_pri_by_key in *.
-  rewrite filter_map_comm. 2: { unfold update_pri_if_key. intros.
+  rewrite filter_map_comm'. 2: { unfold update_pri_if_key. intros.
     destruct x as [[kk ?] ?].
     unfold heap_item_key. simpl.
     case (Z.eq_dec kk); case (Z.eq_dec _ kk); simpl; 
@@ -946,6 +951,8 @@ Lemma Permutation_find_item_by_key: forall L1 L2 k,
   Permutation L1 L2 ->
   Permutation (find_item_by_key L1 k) (find_item_by_key L2 k).
 Proof. intros. unfold find_item_by_key. apply Permutation_filter. trivial. Qed.
+
+
 
 (*
 Does not seem to work on arrays.
