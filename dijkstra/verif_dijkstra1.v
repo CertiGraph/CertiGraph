@@ -1618,6 +1618,25 @@ Section DijkstraProof.
                  specialize (Hz _ H21 H22).
                  destruct Hz as [i_item [? ?]].
                  
+assert (cmp_rel min_item i_item). {
+clear -H23 Ha H15 H16.
+eapply Permutation_in in Ha.
+eapply Permutation_in in H23. 2,3: apply H15.
+destruct H23. subst. reflexivity.
+rewrite Forall_forall in H16. auto.
+}
+unfold cmp_rel, cmp in H25. revert H25.
+case_eq (Int.lt (heap_item_priority i_item) (heap_item_priority min_item)). discriminate. intros ? _.
+apply lt_false_inv in H25.
+(* The above is easy, but now I'm back on your side of the fence, no? *)
+(*
+clear -H1 H6 H21 H25 H_u_valid H15.
+generalize (H6 _ H_u_valid) (H6 _ H21); intros.
+specialize (H _ eq_refl). specialize (H0 _ eq_refl).
+unfold find_item_by_key in *.
+
+(* Not sure how to go, the above is just exploration... *)
+*)
                  (* Aquinas pure *)
                  admit.
                }
