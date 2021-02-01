@@ -698,16 +698,17 @@ Section DijkstraProof.
              symmetry in H8.
              apply Permutation_cons_In in H8.
              left.
-clear -H8 Hc'.
-apply in_split in H8. destruct H8 as [L1 [L2 ?]]. rewrite H in *. clear H h'.
-unfold find_item_by_key. rewrite filter_app. simpl.
-case Z.eq_dec; simpl. 2: destruct 1; trivial. intros _.
-rewrite map_app in Hc'. simpl in Hc'. apply NoDup_remove_2 in Hc'.
-apply not_In_app in Hc'. destruct Hc'.
-rewrite filter_empty, filter_empty; try reflexivity;
-intros; case Z.eq_dec; simpl; auto; intro; exfalso; 
-[apply H0 | apply H]; rewrite <- e;
-unfold heap_item_key at 1; simpl; apply in_map; trivial.
+             clear -H8 Hc'.
+             apply in_split in H8. destruct H8 as [L1 [L2 ?]].
+             rewrite H in *. clear H h'.
+             unfold find_item_by_key. rewrite filter_app. simpl.
+             case Z.eq_dec; simpl. 2: destruct 1; trivial. intros _.
+             rewrite map_app in Hc'. simpl in Hc'. apply NoDup_remove_2 in Hc'.
+             apply not_In_app in Hc'. destruct Hc'.
+             rewrite filter_empty, filter_empty; try reflexivity;
+               intros; case Z.eq_dec; simpl; auto; intro; exfalso; 
+                 [apply H0 | apply H]; rewrite <- e;
+                   unfold heap_item_key at 1; simpl; apply in_map; trivial.
           -- assert (0 <= j < i) by lia.
              clear H5 n.
              red in H4 |- *.
@@ -717,25 +718,29 @@ unfold heap_item_key at 1; simpl; apply in_map; trivial.
              destruct H4.
              ++ left. rewrite Znth_app1.
                 2: rewrite Zlength_list_repeat; lia.
-clear -H4 H8 Hc'.
-apply Permutation_find_item_by_key with (k := k) in H8.
-change (?x :: ?y) with ([x] ++ y) in H8.
-rewrite find_item_by_key_app, H4 in H8.
-revert H8. unfold find_item_by_key at 1. simpl. case Z.eq_dec; simpl; intros.
-2: { apply Permutation_length_1_inv in H8. trivial. }
-exfalso. unfold heap_item_key in e. simpl in e. subst k.
-symmetry in H8.
-apply Permutation_map with (f := heap_item_key) in H8.
-unfold heap_item_key at 2 in H8. simpl in H8. remember (heap_items h'). clear -Hc' H8.
-apply Permutation_two_eq in H8.
-unfold find_item_by_key in H8.
-generalize (NoDup_filter _ (Z.eq_dec key) _ Hc'); intro.
-rewrite <- (filter_map_comm _ _ _ (fun y : key_type => Z.eq_dec key y)) in H8.
-change Z with key_type in *.
-rewrite H8 in H.
-inversion H. apply H2. left. trivial.
-intros [[? ?] ?]. unfold heap_item_key. simpl.
-case Z.eq_dec; case Z.eq_dec; auto. intros. destruct n. auto.
+                clear -H4 H8 Hc'.
+                apply Permutation_find_item_by_key with (k := k) in H8.
+                change (?x :: ?y) with ([x] ++ y) in H8.
+                rewrite find_item_by_key_app, H4 in H8.
+                revert H8. unfold find_item_by_key at 1. simpl.
+                case Z.eq_dec; simpl; intros.
+                2: { apply Permutation_length_1_inv in H8. trivial. }
+                exfalso. unfold heap_item_key in e. simpl in e. subst k.
+                symmetry in H8.
+                apply Permutation_map with (f := heap_item_key) in H8.
+                unfold heap_item_key at 2 in H8.
+                simpl in H8. remember (heap_items h'). clear -Hc' H8.
+                apply Permutation_two_eq in H8.
+                unfold find_item_by_key in H8.
+                generalize (NoDup_filter _ (Z.eq_dec key) _ Hc'); intro.
+                rewrite <- (filter_map_comm _ _ _
+                                            (fun y :
+                                                   key_type => Z.eq_dec key y)) in H8.
+                change Z with key_type in *.
+                rewrite H8 in H.
+                inversion H. apply H2. left. trivial.
+                intros [[? ?] ?]. unfold heap_item_key. simpl.
+                case Z.eq_dec; case Z.eq_dec; auto. intros. destruct n. auto.
              ++ unfold find_item_by_key.
                 specialize (Hc _ H9). rewrite H5 in Hc. exfalso.
                 apply H4; trivial.
@@ -933,15 +938,6 @@ case Z.eq_dec; case Z.eq_dec; auto. intros. destruct n. auto.
         * rewrite upd_Znth_same; ulia.
         * red in H3 |- *. intros.
           left.
-          (* right is impossible -- 
-             Hu:
-             forall j : Z,
-             0 <= j < size -> In (Znth j keys, Int.repr inf, Int.repr j) (heap_items ha)
-
-             and
-             
-             hb does not remove any items from ha.
-           *)
           apply (vvalid_meaning g) in H4.
           specialize (H3 _ H4 _ H6).
           destruct (Z.eq_dec i src).
@@ -963,18 +959,20 @@ case Z.eq_dec; case Z.eq_dec; auto. intros. destruct n. auto.
              2,3: rewrite Zlength_map, Zlength_list_repeat; try lia.
              rewrite map_list_repeat, Znth_list_repeat_inrange by lia.
              rewrite Znth_list_repeat_inrange in H3 by lia.
-destruct H3. 2: { destruct H3. rewrite <- H6. apply Hc. trivial. }
-assert (Znth src keys <> k). { intro. clear -H H4 H6 n H_NoDup_keys H7 H5.
-pose proof (NoDup_nth keys Inhabitant_Z). rewrite H0 in H_NoDup_keys. clear H0.
-rewrite <- H7 in H6.
-do 2 rewrite <- nth_Znth in H6. 2-4: lia.
-rewrite Zlength_correct in H5.
-apply H_NoDup_keys in H6; lia.
-}
-apply Permutation_find_item_by_key with (k := k) in H_ha_hb_rel.
-rewrite find_item_by_key_update_pri_by_key' in H_ha_hb_rel; auto.
-rewrite H3 in H_ha_hb_rel. symmetry in H_ha_hb_rel.
-apply Permutation_length_1_inv in H_ha_hb_rel. trivial.
+             destruct H3. 2: { destruct H3. rewrite <- H6. apply Hc. trivial. }
+             assert (Znth src keys <> k). {
+               intro. clear -H H4 H6 n H_NoDup_keys H7 H5.
+               pose proof (NoDup_nth keys Inhabitant_Z).
+               rewrite H0 in H_NoDup_keys. clear H0.
+               rewrite <- H7 in H6.
+               do 2 rewrite <- nth_Znth in H6. 2-4: lia.
+               rewrite Zlength_correct in H5.
+               apply H_NoDup_keys in H6; lia.
+             }
+             apply Permutation_find_item_by_key with (k := k) in H_ha_hb_rel.
+             rewrite find_item_by_key_update_pri_by_key' in H_ha_hb_rel; auto.
+             rewrite H3 in H_ha_hb_rel. symmetry in H_ha_hb_rel.
+             apply Permutation_length_1_inv in H_ha_hb_rel. trivial.
         * red. intros.
           generalize H_ha_hb_rel; intro Hx.
           apply (Permutation_in min_item) in H_ha_hb_rel; trivial.
@@ -1043,7 +1041,7 @@ apply Permutation_length_1_inv in H_ha_hb_rel. trivial.
           rewrite update_pri_by_key_keys_unaffected in H_ha_hb_rel.
           apply Permutation_sym in H_ha_hb_rel.
           unfold proj_keys in Hc |- *.
-          apply (Permutation_in _ H_ha_hb_rel), Hc, (vvalid_meaning g); trivial.          
+          apply (Permutation_in _ H_ha_hb_rel), Hc, (vvalid_meaning g); trivial.      
         * rewrite Forall_forall. intros.
           apply (Permutation_in _ H_ha_hb_rel) in H4.
           unfold update_pri_by_key in H4.
@@ -1262,56 +1260,58 @@ apply Permutation_length_1_inv in H_ha_hb_rel. trivial.
                  specialize (Hz _ H21 H22).
                  destruct Hz as [i_item [? ?]].
                  
-assert (cmp_rel min_item i_item). {
-clear -H23 Ha H15 H16.
-eapply Permutation_in in Ha.
-eapply Permutation_in in H23. 2,3: apply H15.
-destruct H23. subst. reflexivity.
-rewrite Forall_forall in H16. auto.
-}
-unfold cmp_rel, cmp in H25. revert H25.
-case_eq (Int.lt (heap_item_priority i_item) (heap_item_priority min_item)). discriminate. intros ? _.
-apply lt_false_inv in H25.
-red in H6.
-replace (Int.signed (heap_item_priority i_item)) with
-(Znth i dist) in H25.
-replace (Int.signed (heap_item_priority min_item)) with
-(Znth u dist) in H25.
-lia.
+                 assert (cmp_rel min_item i_item). {
+                   clear -H23 Ha H15 H16.
+                   eapply Permutation_in in Ha.
+                   eapply Permutation_in in H23. 2,3: apply H15.
+                   destruct H23. subst. reflexivity.
+                   rewrite Forall_forall in H16. auto.
+                 }
+                 unfold cmp_rel, cmp in H25. revert H25.
+                 case_eq (Int.lt (heap_item_priority i_item)
+                                 (heap_item_priority min_item)).
+                 discriminate. intros ? _.
+                 apply lt_false_inv in H25.
+                 red in H6.
+                 replace (Int.signed (heap_item_priority i_item)) with
+                     (Znth i dist) in H25.
+                 replace (Int.signed (heap_item_priority min_item)) with
+                     (Znth u dist) in H25.
+                 lia.
 
-- specialize (Ht _ Ha).
-unfold heap_item_payload in Ht.
-rewrite <- Hequ in Ht.
-specialize (H6 _ H_u_valid _ Ht).
-destruct H6.
-2: { exfalso. apply H6. unfold proj_keys.
-apply in_map; trivial.
-}
-rewrite find_item_by_key_finds_item in H6; trivial.
-inversion H6.
-unfold heap_item_priority. simpl.
-rewrite Znth_map, Int.signed_repr; ulia.
-
-- specialize (Ht _ H23).
-unfold heap_item_payload in Ht.
-unfold heap_item_payload in H24.
-rewrite <- H24 in Ht.
-specialize (H6 _ H21 _ Ht).
-destruct H6.
-2: { exfalso. apply H6. unfold proj_keys.
-apply in_map; trivial.
-}
-rewrite find_item_by_key_finds_item in H6; trivial.
-inversion H6.
-unfold heap_item_priority. simpl.
-apply (vvalid_meaning g) in H21.
-rewrite Znth_map, Int.signed_repr; try ulia.
-red in H10. rewrite Forall_forall in H10.
-assert (In (Znth i dist) dist). {
-apply Znth_In. lia.
-}
-specialize (H10 _ H26).
-ulia.
+                 - specialize (Ht _ Ha).
+                   unfold heap_item_payload in Ht.
+                   rewrite <- Hequ in Ht.
+                   specialize (H6 _ H_u_valid _ Ht).
+                   destruct H6.
+                   2: { exfalso. apply H6. unfold proj_keys.
+                        apply in_map; trivial.
+                   }
+                   rewrite find_item_by_key_finds_item in H6; trivial.
+                   inversion H6.
+                   unfold heap_item_priority. simpl.
+                   rewrite Znth_map, Int.signed_repr; ulia.
+                   
+                 - specialize (Ht _ H23).
+                   unfold heap_item_payload in Ht.
+                   unfold heap_item_payload in H24.
+                   rewrite <- H24 in Ht.
+                   specialize (H6 _ H21 _ Ht).
+                   destruct H6.
+                   2: { exfalso. apply H6. unfold proj_keys.
+                        apply in_map; trivial.
+                   }
+                   rewrite find_item_by_key_finds_item in H6; trivial.
+                   inversion H6.
+                   unfold heap_item_priority. simpl.
+                   apply (vvalid_meaning g) in H21.
+                   rewrite Znth_map, Int.signed_repr; try ulia.
+                   red in H10. rewrite Forall_forall in H10.
+                   assert (In (Znth i dist) dist). {
+                     apply Znth_In. lia.
+                   }
+                   specialize (H10 _ H26).
+                   ulia.
                }
                replace u with src in * by now apply Hl.  
                intros. intro.
@@ -1641,11 +1641,7 @@ ulia.
                   intros.
                   (* 19 goals *)
                   --- apply inv_popped_newcost; ulia.
-                  ---
-
-
-
-  apply inv_unpopped_newcost'; ulia.
+                  --- apply inv_unpopped_newcost'; ulia.
                   --- now apply inv_unpopped_weak_newcost.
                   --- apply inv_unseen_newcost; ulia.
                   --- apply inv_unseen_weak_newcost; ulia. 
@@ -1697,32 +1693,33 @@ ulia.
                       +++ left.
                           apply (vvalid_meaning g) in H39.
                           destruct (Z.eq_dec i0 i).
-*** subst i0.
-    rewrite upd_Znth_same.
-    2: rewrite Zlength_map; lia.
-    apply Permutation_find_item_by_key with (k := k) in H36.
-    rewrite H40 in H36.
-    rewrite (find_item_by_key_update_pri_by_key
-               _ _ (Int.repr (Znth i dist')) (Int.repr i) _) in H36.
-    symmetry in H36.
-    apply Permutation_length_1_inv in H36; trivial.
-    rewrite Znth_map in H41; ulia.
-
-*** rewrite upd_Znth_diff; trivial.
-    2,3: rewrite Zlength_map; try lia.
-    assert (Znth i keys <> k). {
-      intro.
-      pose proof (NoDup_nth keys Inhabitant_Z).
-      rewrite H43 in H_NoDup_keys. clear H43.
-      rewrite <- H42 in H40.
-      do 2 rewrite <- nth_Znth in H40. 2-4: lia.
-      rewrite Zlength_correct in H_keys_sz.
-      apply H_NoDup_keys in H40; lia.
-    }
-    apply Permutation_find_item_by_key with (k := k) in H36.
-    rewrite find_item_by_key_update_pri_by_key' in H36; auto.
-    rewrite H41 in H36. symmetry in H36.
-    apply Permutation_length_1_inv in H36. trivial.
+                          *** subst i0.
+                              rewrite upd_Znth_same.
+                              2: rewrite Zlength_map; lia.
+                              apply Permutation_find_item_by_key with (k := k) in H36.
+                              rewrite H40 in H36.
+                              rewrite (find_item_by_key_update_pri_by_key
+                                         _ _ (Int.repr (Znth i dist'))
+                                         (Int.repr i) _) in H36.
+                              symmetry in H36.
+                              apply Permutation_length_1_inv in H36; trivial.
+                              rewrite Znth_map in H41; ulia.
+                              
+                          *** rewrite upd_Znth_diff; trivial.
+                              2,3: rewrite Zlength_map; try lia.
+                              assert (Znth i keys <> k). {
+                                intro.
+                                pose proof (NoDup_nth keys Inhabitant_Z).
+                                rewrite H43 in H_NoDup_keys. clear H43.
+                                rewrite <- H42 in H40.
+                                do 2 rewrite <- nth_Znth in H40. 2-4: lia.
+                                rewrite Zlength_correct in H_keys_sz.
+                                apply H_NoDup_keys in H40; lia.
+                              }
+                              apply Permutation_find_item_by_key with (k := k) in H36.
+                              rewrite find_item_by_key_update_pri_by_key' in H36; auto.
+                              rewrite H41 in H36. symmetry in H36.
+                              apply Permutation_length_1_inv in H36. trivial.
                       +++ right. intro. apply H41.
                           unfold proj_keys in *.
                           apply (Permutation_map heap_item_key) in H36.
