@@ -84,6 +84,30 @@ Lemma filter_false_nil:
         apply (NoDup_cons_1 _ (heap_item_key a)); trivial.
   Qed.
 
+Lemma filter_absorb_map: forall A (f : A -> A) (g : A -> bool) L,
+  (forall x, (g (f x) = g x) /\ ((g (f x) = false) \/ f x = x)) ->
+  filter g (map f L) = filter g L.
+Proof.
+  induction L; auto; intros.
+  simpl.
+  case_eq (g (f a)); intro. destruct (H a). rewrite H0 in H2. destruct H2. discriminate.
+  rewrite H1 in *. rewrite H0. rewrite H2, IHL; trivial.
+  destruct (H a). rewrite H1 in H0. rewrite H0.
+  apply IHL; auto.
+Qed.
+
+Lemma find_item_by_key_update_pri_by_key': forall L k1 k2 np,
+  k1 <> k2 ->
+  find_item_by_key (update_pri_by_key L k1 np) k2 = find_item_by_key L k2.
+Proof.
+  intros. unfold find_item_by_key, update_pri_by_key.
+  rewrite filter_absorb_map. trivial. intros.
+  unfold update_pri_if_key, heap_item_key. destruct x as [[? ?] ?].
+  simpl. case Z.eq_dec; intro; simpl. subst k1. split; trivial.
+  case Z.eq_dec; auto; intro; simpl. contradiction.
+  case Z.eq_dec; simpl; split; auto.
+Qed.
+
 Section DijkstraProof.
   
   (* The invariants have been dragged out of the 
@@ -1407,9 +1431,19 @@ case Z.eq_dec; case Z.eq_dec; auto. intros. destruct n. auto.
              2,3: rewrite Zlength_map, Zlength_list_repeat; try lia.
              rewrite map_list_repeat, Znth_list_repeat_inrange by lia.
              rewrite Znth_list_repeat_inrange in H3 by lia.
-             admit.
-             (* logically makes sense, but is there enough info? *)
-             
+destruct H3. 2: { destruct H3. rewrite <- H6. apply Hc. trivial. }
+assert (NoDup keys) by admit.
+assert (Znth src keys <> k). { intro. clear -H H4 H6 n H7 H8 H5.
+pose proof (NoDup_nth keys Inhabitant_Z). rewrite H0 in H7. clear H0.
+rewrite <- H8 in H6.
+do 2 rewrite <- nth_Znth in H6. 2-4: lia.
+rewrite Zlength_correct in H5.
+apply H7 in H6; lia.
+}
+apply Permutation_find_item_by_key with (k := k) in H_ha_hb_rel.
+rewrite find_item_by_key_update_pri_by_key' in H_ha_hb_rel; auto.
+rewrite H3 in H_ha_hb_rel. symmetry in H_ha_hb_rel.
+apply Permutation_length_1_inv in H_ha_hb_rel. trivial.
         * red. intros.
           generalize H_ha_hb_rel; intro Hx.
           apply (Permutation_in min_item) in H_ha_hb_rel; trivial.
