@@ -72,15 +72,15 @@ Definition ___stringlit_3 : ident := 105%positive.
 Definition ___stringlit_4 : ident := 106%positive.
 Definition ___stringlit_5 : ident := 112%positive.
 Definition ___stringlit_6 : ident := 113%positive.
-Definition _argc : ident := 122%positive.
-Definition _argv : ident := 123%positive.
+Definition _argc : ident := 121%positive.
+Definition _argv : ident := 122%positive.
 Definition _arr : ident := 66%positive.
 Definition _capacity : ident := 5%positive.
 Definition _cells : ident := 77%positive.
-Definition _cost : ident := 120%positive.
+Definition _cost : ident := 119%positive.
 Definition _curr : ident := 108%positive.
 Definition _data : ident := 3%positive.
-Definition _dijkstra : ident := 121%positive.
+Definition _dijkstra : ident := 120%positive.
 Definition _dist : ident := 111%positive.
 Definition _exch : ident := 70%positive.
 Definition _fa : ident := 76%positive.
@@ -92,7 +92,6 @@ Definition _getPaths : ident := 114%positive.
 Definition _graph : ident := 98%positive.
 Definition _heap_cells : ident := 7%positive.
 Definition _i : ident := 89%positive.
-Definition _i_ptr : ident := 117%positive.
 Definition _inf : ident := 99%positive.
 Definition _item : ident := 84%positive.
 Definition _j : ident := 64%positive.
@@ -101,7 +100,7 @@ Definition _key : ident := 1%positive.
 Definition _key1 : ident := 68%positive.
 Definition _key2 : ident := 69%positive.
 Definition _key_table : ident := 8%positive.
-Definition _keys : ident := 119%positive.
+Definition _keys : ident := 118%positive.
 Definition _less : ident := 73%positive.
 Definition _lookup : ident := 67%positive.
 Definition _main : ident := 92%positive.
@@ -135,21 +134,21 @@ Definition _structPQ : ident := 9%positive.
 Definition _swim : ident := 74%positive.
 Definition _table : ident := 80%positive.
 Definition _target : ident := 81%positive.
-Definition _temp_item : ident := 118%positive.
+Definition _temp : ident := 117%positive.
 Definition _time : ident := 97%positive.
 Definition _u : ident := 115%positive.
-Definition _t'1 : ident := 124%positive.
-Definition _t'10 : ident := 133%positive.
-Definition _t'11 : ident := 134%positive.
-Definition _t'12 : ident := 135%positive.
-Definition _t'2 : ident := 125%positive.
-Definition _t'3 : ident := 126%positive.
-Definition _t'4 : ident := 127%positive.
-Definition _t'5 : ident := 128%positive.
-Definition _t'6 : ident := 129%positive.
-Definition _t'7 : ident := 130%positive.
-Definition _t'8 : ident := 131%positive.
-Definition _t'9 : ident := 132%positive.
+Definition _t'1 : ident := 123%positive.
+Definition _t'10 : ident := 132%positive.
+Definition _t'11 : ident := 133%positive.
+Definition _t'12 : ident := 134%positive.
+Definition _t'2 : ident := 124%positive.
+Definition _t'3 : ident := 125%positive.
+Definition _t'4 : ident := 126%positive.
+Definition _t'5 : ident := 127%positive.
+Definition _t'6 : ident := 128%positive.
+Definition _t'7 : ident := 129%positive.
+Definition _t'8 : ident := 130%positive.
+Definition _t'9 : ident := 131%positive.
 
 Definition v___stringlit_4 := {|
   gvar_info := (tarray tschar 22);
@@ -504,8 +503,7 @@ Definition f_dijkstra := {|
                 (_dist, (tptr tint)) :: (_prev, (tptr tint)) ::
                 (_size, tint) :: (_inf, tint) :: nil);
   fn_vars := nil;
-  fn_temps := ((_i_ptr, (tptr tint)) ::
-               (_temp_item, (tptr (Tstruct _structItem noattr))) ::
+  fn_temps := ((_temp, (tptr (Tstruct _structItem noattr))) ::
                (_keys, (tptr tint)) ::
                (_pq, (tptr (Tstruct _structPQ noattr))) :: (_i, tint) ::
                (_j, tint) :: (_u, tint) :: (_cost, tint) :: (_t'6, tint) ::
@@ -520,7 +518,7 @@ Definition f_dijkstra := {|
     (Scall (Some _t'1)
       (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
       ((Esizeof (Tstruct _structItem noattr) tuint) :: nil))
-    (Sset _temp_item
+    (Sset _temp
       (Ecast (Etempvar _t'1 (tptr tvoid))
         (tptr (Tstruct _structItem noattr)))))
   (Ssequence
@@ -626,13 +624,13 @@ Definition f_dijkstra := {|
                                                       Tnil)) tvoid
                                                   cc_default))
                         ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
-                         (Etempvar _temp_item (tptr (Tstruct _structItem noattr))) ::
+                         (Etempvar _temp (tptr (Tstruct _structItem noattr))) ::
                          nil))
                       (Ssequence
                         (Sset _u
                           (Efield
                             (Ederef
-                              (Etempvar _temp_item (tptr (Tstruct _structItem noattr)))
+                              (Etempvar _temp (tptr (Tstruct _structItem noattr)))
                               (Tstruct _structItem noattr)) _data tint))
                         (Ssequence
                           (Sset _i (Econst_int (Int.repr 0) tint))
@@ -739,7 +737,7 @@ Definition f_dijkstra := {|
                   (Scall None
                     (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid
                                    cc_default))
-                    ((Etempvar _temp_item (tptr (Tstruct _structItem noattr))) ::
+                    ((Etempvar _temp (tptr (Tstruct _structItem noattr))) ::
                      nil))
                   (Ssequence
                     (Scall None
