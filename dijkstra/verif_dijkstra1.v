@@ -1236,7 +1236,6 @@ Section DijkstraProof.
               intros.
               rewrite Forall_forall in H16.
               specialize (H16 x).
-              Search Permutation In.
               apply (Permutation_in x) in H15; trivial.
               destruct H15. subst x. reflexivity. auto.
             }
@@ -1945,7 +1944,7 @@ Section DijkstraProof.
         forward. thaw FR.
         Exists prev dist popped. entailer!.
         intros. destruct (H7 _ H15) as [? _]; trivial.
-  Qed.
+  Time Qed.
 
   (* Print Assumptions body_dijkstra. *)
 
