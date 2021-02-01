@@ -118,508 +118,6 @@ Section DijkstraProof.
   Context {inf: Z}.
   Context {Z_EqDec : EquivDec.EqDec Z eq}.
   
-  Lemma inv_unpopped_newcost:
-    forall (g: @DijkGG size inf) src dst (u i: V)
-           dist prev popped newcost,
-      (forall dst : Z,
-          vvalid g dst ->
-          inv_popped g src popped prev dist dst) ->
-      (forall dst : Z,
-          0 <= dst < i ->
-          inv_unpopped g src popped prev dist dst) ->
-      (forall dst : Z,
-          i <= dst < size ->
-          inv_unpopped_weak g src popped prev dist dst u) ->
-      (forall dst : Z,
-          i <= dst < size ->
-          inv_unseen_weak g src popped prev dist dst u) ->
-      newcost = Znth u dist + elabel g (u, i) ->
-      vvalid g u ->
-      vvalid g i ->
-      u <> i ->
-      In u popped ->
-      @inrange_dist inf dist ->
-      Zlength prev = size ->
-      Zlength dist = size ->
-      0 <= Znth u dist <= inf ->
-      0 <= elabel g (u, i) <= Int.max_signed / size ->
-      0 <= Znth i dist <= inf ->
-      newcost < Znth i dist ->
-      ~ In i popped ->
-      Znth i dist = inf \/ Znth i dist < inf ->
-      0 <= dst < i + 1 ->
-      inv_unpopped g src popped (upd_Znth i prev u)
-                   (upd_Znth i dist newcost) dst.
-  Proof.
-    intros ? ? ? ? ? ? ? ? ?
-           H_inv_popped H_inv_unpopped H_inv_unpopped_weak
-           H_inv_unseen_weak Heqnewcost.
-    intros. destruct (Z.eq_dec dst i).
-    2: apply inv_unpopped_newcost_dst_neq_i; trivial.
-    
-    subst dst; clear H12.
-    (* This is a key change --
-       i will now be locally optimal,
-       _thanks to the new path via u_.
-       In other words, it is moving from
-       the weaker inv_unpopped clause
-       to the stronger
-     *)
-    unfold inv_unpopped; intros.
-    destruct (Z.eq_dec i src); [left | right; split]; trivial.
-    destruct (H_inv_popped _ H H2).
-    1: ulia.
-    assert (0 <= i < size) by now apply (vvalid_meaning g).
-    assert (0 <= u < size) by now apply (vvalid_meaning g).
-    rewrite upd_Znth_same by lia.
-    
-    split3; [| |split3; [| |split]]; trivial.
-    1: ulia.
-    1: rewrite upd_Znth_diff; ulia.
-    1: rewrite upd_Znth_same; [rewrite upd_Znth_diff|]; ulia.
-    intros. rewrite upd_Znth_same; [|ulia].
-    
-    (* This is another key point in the proof:
-       we must show that the path via u is
-       better than all other paths via
-       other popped verices 
-     *)
-    assert (mom' <> i). {
-      intro. subst mom'.
-      apply H10; trivial.
-    }
-    rewrite upd_Znth_diff; trivial.
-    2: apply (vvalid_meaning g) in H17; ulia.
-    2: lia. 
-    destruct (@Znth_dist_cases inf mom' dist); trivial.
-    1: apply (vvalid_meaning g) in H17; ulia. 
-    1: { rewrite H20. pose proof (edge_cost_pos g (mom', i)). ulia.
-    }
-
-    destruct (H_inv_popped _ H17 H18) as
-        [? | [p2mom' [? [? ?]]]]; [ulia|].
-    assert (Hrem:= H21).
-    destruct H21 as [? [? [? ?]]].
-    pose proof (path_ends_In_path_dst _ _ _ _ H24).
-    destruct (zlt ((Znth mom' dist) + elabel g (mom', i)) inf).
-    2: {
-      destruct (zlt (elabel g (mom', i)) inf); lia.
-    }
-    
-    (* 
-     The known conditions are:
-     - dist[u] + graph[u][i] < dist[i]
-     - i is an unpopped vertex.
-     
-     Now we prove for any other path p' which is from s to i
-     and composed by popped vertices (INCLUDING u),
-     dist[u] + graph[u][i] <= path_cost p'.
- 
-     There are two cases about p': In u p' \/ ~ In u p'
-     *)
-
-    destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
-    - (* Yes, the path p2mom' goes via u *) 
-      (*
-        1. In u p': p' is the path from s to i.
-        Consider the vertex mom' which is
-        just before i. Again, there are two cases:
-        mom' = u \/ ~ mom' = u.
-       *)
-
-      apply in_path_eq_epath_to_vpath in i0.
-      2: trivial.
-      
-      destruct (Z.eq_dec mom' u).
-      1: {
-        (*
-          1.1 mom' = u: path_cost p' = path_cost [s to u] + graph[u][i].
-          As we know, u is just popped, dist[u] is the
-          global optimal, so dist[u] <= path_cost [s to u],
-          so dist[u] + graph[u][i] <= path_cost p'.
-         *)
-        subst mom'.
-        unfold path_globally_optimal in H13. ulia.
-      }
-      
-
-      (*
-      1.2 ~ mom' = u: 
-      p' can conceptually be split up as:
-      path s to u ++ path u to mom' + edge (mom', i).
-       *)
-      (*
-      Since p' is composed by popped vertex
-      (including u) only, mom' must be a popped
-      vertex. Then it satisfies inv_popped, which means
-      dist[mom'] <= path_cost [s to u] + path_cost [u to mom']
-      and the global optimal path from s to mom' is
-      composed by popped vertices only. 
-       *)
-      
-      (* Digression: a brief check to see if i was popped, 
-         unseen, or just unpopped. 
-       *)
-      destruct H11.
-      1: {
-        (* i was unseen *)
-        assert (i <= i < size) by lia.
-        (* rewrite H_priq_dist_link in H11; trivial. *)
-        pose proof (H_inv_unseen_weak
-                      _ H28 H10 H11 mom'
-                      p2mom' H17 H18 n0 Hrem).
-        rewrite path_cost_path_glue, one_step_path_Znth in H29.
-        ulia.
-      }
-      
-      (* Now we know that i was seen but unpopped. 
-       Great, now we can employ inv_unpopped_weak. *)
-      (* Because i is "seen", we know that 
-         The best-known path to i via popped vertices is 
-         already logged in dist[i]. 
-         So dist[i] <= dist[mom'] + (mom', i).
-       *)
-      assert (Znth i dist <= Znth mom' dist + elabel g (mom', i)). {
-        assert (i <= i < size) by lia.
-        assert (0 <= mom' < size). {
-          apply (vvalid_meaning g); ulia.
-        }
-        destruct (H_inv_unpopped_weak _ H28 H10 H11).
-        1: lia.
-        destruct H30 as [_ [_ ?]]. apply H30; trivial.
-      }
-      
-      (*
-      So we have 
-      dist[u] + graph[u][i] <= dist[i]
-                            <= dist[mom'] + (mom', i) 
-                            <= path_cost p'.
-       *)
-      ulia.
-    -
-      (* Since u is not in the path, 
-         we can just tango with
-         the step <> u condition from 
-         inv_unpopped_weak. 
-         This case is okay.
-       *)
-      assert (mom' <> u). {
-        intro. subst mom'. apply n0.
-        apply in_path_eq_epath_to_vpath; trivial.
-      }
-      destruct H11.
-      1: {
-        (* i was unseen *)
-        assert (i <= i < size) by lia.
-        pose proof (H_inv_unseen_weak
-                      _ H29 H10 H11 mom' p2mom'
-                      H17 H18 H28 Hrem).
-        rewrite path_cost_path_glue, one_step_path_Znth in H30.
-        ulia.
-      }
-      assert (i <= i < size) by lia.
-      destruct (H_inv_unpopped_weak i H29 H10 H11).
-      1: subst i; exfalso; lia.
-      apply Z.lt_le_incl.
-      apply Z.lt_le_trans with (m:=Znth i dist).
-      1: lia.
-      destruct H30 as [_ [_ ?]]. apply H30; trivial.
-  Qed.
-
-  Lemma inv_popped_add_u:
-    forall (g: @DijkGG size inf) src dst u popped prev (dist: list Z),
-      dijkstra_correct g src popped prev dist ->
-      Znth src dist = 0 ->
-      @inrange_dist inf dist ->
-      Zlength dist = size ->
-      ~ In u popped ->
-      vvalid g u ->
-      Znth u dist <= inf ->
-      vvalid g dst ->
-      In src popped ->
-      (forall i,
-          vvalid g i ->
-          ~ In i popped ->
-          Znth u dist <= Znth i dist) ->
-      inv_popped g src (u :: popped) prev dist dst.
-  Proof.
-    intros. rename H8 into H_u_best.
-    destruct (Z.eq_dec dst u).
-
-    (* the easy case where dst is old, and not the new u *)
-    2: {
-      intro. simpl in H8; destruct H8; [lia|].
-      destruct (H _ H6) as [? _].
-      specialize (H9 H8); destruct H9 as [[? ?]|[? [? [? ?]]]];
-        [left | right].
-      - split; trivial.
-      - exists x; split3; trivial.
-        unfold path_in_popped. intros.
-        specialize (H10 _ H12). simpl; right; trivial.
-    }
-
-    (* now we must show that u is a valid entrant *)
-    subst dst. clear H6.
-    apply Zle_lt_or_eq in H5.
-    destruct H5.
-    - (* u was seen and is being popped *) {
-        destruct (H _ H4) as [_ [? _]].
-        specialize (H6 H3 H5).
-        destruct H6 as [? | [_ [? [? [? [? [? ?]]]]]]].
-
-        (* the easy case where src itself is being poppped *)
-        1: subst src; apply inv_popped_add_src; trivial.
-
-        (* now we are in the main proof: 
-           u <> src, and u is the exact new entrant.
-           Main point: there is some mom in popped.
-           the best path to u is:
-           (the optimal path to mom) + (mom, u)
-         *)
-
-        remember (Znth u prev) as mom.
-        destruct (popped_noninf_has_path
-                    _ _ _ _ _ _ H H8) as [p2mom [? [? ?]]]; trivial.
-        1: pose proof (edge_cost_pos g (mom, u)); ulia.
-
-        right. clear H16.
-        exists (fst p2mom, snd p2mom +:: (mom, u)).              
-        assert (Hg: evalid g (mom, u)). {
-          rewrite (evalid_meaning g); split.
-          apply edge_representable. trivial.
-        }
-        assert (strong_evalid g (mom, u)). {
-          split3; trivial.
-          rewrite (edge_src_fst g); simpl; trivial.
-          rewrite (edge_dst_snd g); simpl; trivial.
-        }
-        
-        split3.
-        - apply path_correct_app_cons; trivial. lia.
-        - unfold path_in_popped. intros.
-          destruct H13 as [? [? _]].
-          apply (in_path_app_cons _ _ _ src) in H17; trivial.
-          destruct H17.
-          + specialize (H14 _ H17).
-            simpl. right; trivial.
-          + subst step. simpl; left; trivial.
-
-        - (* Heart of the proof:
-             we must show that the locally optimal path via mom
-             is actually the globally optimal path to u *)
-          unfold path_globally_optimal in H15.
-          destruct H13 as [? [? [? [? ?]]]].
-          unfold path_globally_optimal; intros.
-          rewrite path_cost_app_cons; trivial.
-          destruct (Z_le_gt_dec
-                      (path_cost g p2mom + elabel g (mom, u))
-                      (path_cost g p')); auto.
-          apply Z.gt_lt in g0.
-          destruct (zlt (path_cost g p') inf); [|ulia].
-
-          (* p' claims to be a strictly better path
-             from src to u (see g0).
-             We will show that this is impossible. *)
-          exfalso. apply Zlt_not_le in g0. apply g0.
-          
-          rewrite (surjective_pairing p') in *.
-          remember (snd p') as links.
-          replace (fst p') with src in *.
-          2: destruct H22; simpl in H22; lia.
-
-          assert (Htemp: In src popped). {
-            destruct H22. apply H14; trivial.
-            left. rewrite (surjective_pairing p2mom) in *.
-            simpl. destruct H17. simpl in H17. lia.
-          } 
-
-          (* we can split p' into three segments:
-             the part inside popped, 
-             the hop from popped to unpopped,
-             and the part outside popped 
-           *)
-          destruct (path_leaving_popped_stronger g links src u popped)
-            as [p1
-                  [mom'
-                     [child'
-                        [p2
-                           [? [? [? [? [? [? [? [? [? [? [? Ha]]]]]]]]]]]]]]];
-                                           trivial.
-          clear Htemp.
-
-          (* We clean up the goal *)
-          replace (path_cost g (src, links)) with
-              (path_cost g p1 +
-               elabel g (mom', child') +
-               path_cost g p2).
-          2: { rewrite <- H23.
-               do 2 rewrite path_cost_path_glue.
-               rewrite one_step_path_Znth. ulia.
-          }
-
-          assert (vvalid g mom'). {
-            destruct H30 as [_ [? _]].
-            rewrite (edge_src_fst g) in H30.
-            simpl in H30; trivial.
-          }
-
-          assert (vvalid g child'). {
-            destruct H30 as [_ [_ ?]].
-            rewrite (edge_dst_snd g) in H30;
-              simpl in H30; trivial.
-          }
-
-          (* mom' is optimal, and so we know that there exists a 
-             path optp2mom', the global minimum from src to mom' *)
-          destruct (H mom' H34) as [? _].
-          destruct (H36 H28) as [[? ?] | [optp2mom' [? [? ?]]]].
-          1: specialize (H38 p1 H24 H26); lia.
-          
-          (* and path_cost of optp2mom' will be <= that of p1 *)
-          pose proof (H39 p1 H24 H26).
-
-          (* so now we can prove something quite a bit stronger *)
-          apply Z.le_trans with
-              (m := path_cost g optp2mom' + elabel g (mom', child')).
-          2: pose proof (path_cost_pos _ _ H25); lia.
-
-          (* Intuitionally this is clear: 
-             u was chosen for being the cheapest 
-             of the unpopped vertices. child' cannot beat it.
-             However, for the purposes of the proof, 
-             we must take cases on the status of child'
-           *)
-          assert (Znth mom' dist + elabel g (mom', child') < inf). {
-            destruct H37 as [_ [_ [_ [? _]]]].
-            rewrite H37.
-            apply Z.le_lt_trans
-              with (m := path_cost g p1 + elabel g (mom', child')); [lia|].
-            rewrite <- H23 in l.
-            replace (path_glue p1 (path_glue (mom', [(mom', child')]) p2))
-              with
-                (path_glue (path_glue p1 (mom', [(mom', child')])) p2) in l.
-            2: { apply (path_glue_assoc g).
-                 apply (path_ends_meet _ _ _ src mom' child');
-                   trivial.
-                 apply path_ends_one_step.
-                 apply (path_ends_meet _ _ _ mom' child' u);
-                   trivial.
-                 apply path_ends_one_step.
-            }
-            apply path_cost_path_glue_lt in l; trivial.
-            2: { apply valid_path_merge; trivial.
-                 apply (path_ends_meet _ _ _ src mom' child');
-                   trivial.
-                 apply path_ends_one_step.
-                 simpl; split; trivial.
-                 rewrite (edge_src_fst g); trivial.
-            }
-            destruct l as [l _].
-            rewrite path_cost_path_glue in l; trivial.
-          }
-          
-          assert (0 <= Znth mom' dist). {
-            rewrite (vvalid_meaning g) in H34.
-            apply (sublist.Forall_Znth _ _ mom') in H1.
-            apply H1. ulia.
-          }
-          assert (Htemp: 0 <= child' < Zlength dist). {
-            apply (vvalid_meaning g) in H35; trivial. ulia. 
-          }
-          
-          destruct (@Znth_dist_cases inf child' dist) as [? | [_ ?]];
-                                                        trivial; clear Htemp.
-          + (* dist[child'] = inf. This is impossible *)
-            exfalso.
-            destruct (H _ H35) as [_ [_ ?]].
-            specialize (H44 H29 H43 mom' optp2mom' H34 H28 H37).
-            rewrite path_cost_path_glue, one_step_path_Znth in H44.
-            destruct H37 as [_ [? [_ [Hc _]]]]. ulia.
-          + (* dist[child'] < inf. We use inv_unpopped *)
-            destruct (H _ H35) as [_ [? _]].
-            red in H44.
-            specialize (H44 H29 H43).
-            destruct H44 as [? | [_ [? [? [? [? [? ?]]]]]]].
-            * (* child' = src. Again, impossible *)
-              exfalso.
-              subst child'.
-              apply H29, H38.
-              destruct H37 as [_ [[? _] _]]. left.
-              rewrite (surjective_pairing optp2mom') in *; simpl.
-              simpl in H37; lia.
-            * specialize (H49 mom' H34 H28).
-              apply Z.le_trans with (m := Znth child' dist); trivial.
-              2: destruct H37 as [_ [_ [_ [? _]]]]; ulia.
-              rewrite <- H19, <- H11.
-              apply H_u_best; trivial.
-      }
-    - (* u was unseen and is being popped *)
-      intro. clear H6.
-      left. destruct (H _ H4) as [_ [_ ?]].
-      specialize (H6 H3 H5).
-      split; trivial.
-      intros.
-
-      destruct p as [s links].
-      replace s with src in *.
-      2: destruct H9 as [? _]; simpl in H9; lia.
-      destruct (path_leaving_popped _ _ _ _ popped H8 H9 H7 H3) as
-          [p1 [mom [child [p2 [? [? [? [? [? [? [? [? ?]]]]]]]]]]]].
-      rewrite <- H10.
-
-      assert (vvalid g mom). {
-        apply (path_ends_valid_dst _ src _ p1); trivial.
-      }
-      
-      (* we don't know enough about mom. 
-         let's destruct dijkstra_correct to take cases *)
-      destruct (H _ H19) as [? _].
-      destruct (H20 H15) as [[? ?] | [optp2mom [? [? ?]]]].
-
-      + (* mom was popped @ inf *)
-        repeat rewrite path_cost_path_glue.
-        rewrite one_step_path_Znth.
-        specialize (H22 p1 H11 H13).
-        pose proof (edge_cost_pos g (mom, child)).
-        pose proof (path_cost_pos _ _ H12).
-        ulia.
-
-      + (* mom was popped @ < inf *)
-        (* it turns out we can prove something stronger *)
-        specialize (H23 p1 H11 H13).
-        cut (path_cost g
-                       (path_glue optp2mom
-                                  (path_glue (mom, [(mom, child)]) p2)) >= inf).
-        1: repeat rewrite path_cost_path_glue; lia.
-
-        (* child was ~In popped, but we don't know any more. 
-           We take cases on child to learn more
-         *)
-        assert (vvalid g child). {
-          apply (path_ends_valid_src _ _ u p2); trivial.
-        }
-        assert (0 <= child < Zlength dist). {
-          rewrite (vvalid_meaning g) in H24. ulia.
-        }
-        destruct (Znth_dist_cases _ _ H25 H1) as [? | [_ ?]].
-        * (* child is unseen *)
-          destruct (H _ H24) as [_ [_ ?]].
-          specialize (H27 H16 H26 mom optp2mom H19 H15 H21).
-          rewrite path_cost_path_glue in H27.
-          repeat rewrite path_cost_path_glue.
-          pose proof (path_cost_pos _ _ H12).
-          ulia.
-        * (* child is seen but unpopped *)
-          (* this is impossible: 
-             dist[u] = inf and u was chosen minimally!
-           *)
-          exfalso.
-          apply Zlt_not_le in H26.
-          apply H26. rewrite <- H5.
-          repeat rewrite <- H1; trivial.
-          apply H_u_best; trivial.
-  Qed.
-  
   Lemma Permutation_cons_In: forall {A} (l1 l2: list A) a,
       Permutation l1 (a :: l2) -> In a l1.
   Proof.
@@ -754,7 +252,13 @@ Section DijkstraProof.
            0 <= j < i ->
            exists j_item,
 	     In j_item (heap_items h) /\
-	     j = Int.signed (heap_item_payload j_item))
+	     j = Int.signed (heap_item_payload j_item);
+
+         NoDup keys;
+         
+         (Permutation
+            keys
+            (map heap_item_key (heap_items h))))
          
     LOCAL (temp _dist (pointer_val_val dist_ptr);
           temp _prev (pointer_val_val prev_ptr);
@@ -1108,8 +612,8 @@ Section DijkstraProof.
       1: { unfold heap_size in H_h_sz.
            apply Zlength_nil_inv in H_h_sz.
            rewrite H_h_sz in *.
-           split3; [| |split]; trivial; try apply Forall_nil.
-           apply NoDup_nil.
+           split3; [| |split3; [| |split]]; trivial; try apply Forall_nil.
+           1,3: apply NoDup_nil.
            inversion 1.
       }
                
@@ -1132,6 +636,8 @@ Section DijkstraProof.
       rename H11 into Ht.
       rename H12 into Hx.
       rename H13 into Hb'.
+      rename H14 into H_NoDup_keys.
+      rename H15 into H_keys_perm.
              
       Intro temp'. destruct temp' as [h' key].
       forward.
@@ -1173,7 +679,7 @@ Section DijkstraProof.
             clear H9 H10 H11 H12 H13 H14 H15 H16 H17
               H18 H19 H20 PNpriq_ptr.
       + split3; [| |split3;
-                    [| |split3; [| |split3; [| |split3]]]].
+                    [| |split3; [| |split3; [| |split3; [| |split3]]]]].
         * rewrite <- H3. unfold heap_size.
           pose proof (Permutation_Zlength _ _ H8).
           rewrite Zlength_cons, <- Z.add_1_r in H5.
@@ -1324,6 +830,30 @@ case Z.eq_dec; case Z.eq_dec; auto. intros. destruct n. auto.
              destruct Hb' as [? [? ?]].
              exists x. split; trivial.
              apply (Permutation_in _ H8). right; trivial.
+        * pose proof (Permutation_cons_append keys0 key).
+          apply (Permutation_NoDup H5). clear H5.
+          apply NoDup_cons; trivial.
+          apply (Permutation_map heap_item_key) in H8.
+          symmetry in H8.
+          apply (Permutation_NoDup H8) in Hc'.
+          simpl in Hc'.
+          apply NoDup_cons_2 in Hc'.
+          unfold heap_item_key in Hc' at 1. simpl in Hc'.
+          intro.
+          apply (Permutation_in _ H_keys_perm) in H5. contradiction.
+        * pose proof (Permutation_cons_append keys0 key).
+          symmetry in H5.
+          apply (Permutation_trans H5).
+          apply (Permutation_map heap_item_key) in H8.
+          simpl in H8. 
+          apply Permutation_trans with
+              (l' :=
+                 (heap_item_key (key, Int.repr inf, Int.repr i)
+                                :: map heap_item_key (heap_items h0)));
+            trivial.
+          unfold heap_item_key at 1. simpl.
+          apply perm_skip. trivial.
+          
       + repeat rewrite map_app; rewrite app_assoc; cancel.
         rewrite list_repeat1, upd_Znth_app2,
         Zlength_map, Zlength_list_repeat, Z.sub_diag,
@@ -1349,6 +879,8 @@ case Z.eq_dec; case Z.eq_dec; auto. intros. destruct n. auto.
       rename H10 into Hu.
       rename H11 into Hy.
       rename H12 into Hc'.
+      rename H13 into H_NoDup_keys.
+      clear H14.
 
       assert_PROP (NoDup (map heap_item_key (heap_items ha))). {
         sep_apply valid_heap_NoDup_keys. entailer!.
@@ -1432,13 +964,12 @@ case Z.eq_dec; case Z.eq_dec; auto. intros. destruct n. auto.
              rewrite map_list_repeat, Znth_list_repeat_inrange by lia.
              rewrite Znth_list_repeat_inrange in H3 by lia.
 destruct H3. 2: { destruct H3. rewrite <- H6. apply Hc. trivial. }
-assert (NoDup keys) by admit.
-assert (Znth src keys <> k). { intro. clear -H H4 H6 n H7 H8 H5.
-pose proof (NoDup_nth keys Inhabitant_Z). rewrite H0 in H7. clear H0.
-rewrite <- H8 in H6.
+assert (Znth src keys <> k). { intro. clear -H H4 H6 n H_NoDup_keys H7 H5.
+pose proof (NoDup_nth keys Inhabitant_Z). rewrite H0 in H_NoDup_keys. clear H0.
+rewrite <- H7 in H6.
 do 2 rewrite <- nth_Znth in H6. 2-4: lia.
 rewrite Zlength_correct in H5.
-apply H7 in H6; lia.
+apply H_NoDup_keys in H6; lia.
 }
 apply Permutation_find_item_by_key with (k := k) in H_ha_hb_rel.
 rewrite find_item_by_key_update_pri_by_key' in H_ha_hb_rel; auto.
@@ -1722,7 +1253,8 @@ apply Permutation_length_1_inv in H_ha_hb_rel. trivial.
                destruct popped eqn:?.
                2: {
                  intros.
-                 apply inv_popped_add_u; try ulia.
+                 replace (heap_capacity h) with size in *.
+                 apply inv_popped_add_u'; try ulia.
                  1: apply H4; inversion 1.
                  rewrite <- Heql in *.
                  intros.
@@ -1897,9 +1429,7 @@ ulia.
                      from hc. the question becomes whether i was that min.
                    *)
                  apply (vvalid_meaning g) in H20.
-                 apply (vvalid_meaning g) in H_u_valid.
-                 assert (H_NoDup_keys: NoDup keys) by admit.
-                   
+                 apply (vvalid_meaning g) in H_u_valid.                   
                  clear -H6 H15 H20 H21 Hequ Hd' Ht Ha H_keys_sz
                            H_u_valid H_NoDup_keys.
                  destruct (Z.eq_dec i u).
@@ -2115,7 +1645,7 @@ ulia.
 
 
 
-  apply inv_unpopped_newcost; ulia.
+  apply inv_unpopped_newcost'; ulia.
                   --- now apply inv_unpopped_weak_newcost.
                   --- apply inv_unseen_newcost; ulia.
                   --- apply inv_unseen_weak_newcost; ulia. 
@@ -2180,7 +1710,6 @@ ulia.
 
 *** rewrite upd_Znth_diff; trivial.
     2,3: rewrite Zlength_map; try lia.
-    assert (H_NoDup_keys: NoDup keys) by admit.    
     assert (Znth i keys <> k). {
       intro.
       pose proof (NoDup_nth keys Inhabitant_Z).
@@ -2419,6 +1948,9 @@ ulia.
         forward. thaw FR.
         Exists prev dist popped. entailer!.
         intros. destruct (H7 _ H15) as [? _]; trivial.
-  Admitted. 
+  Qed.
+
+  (* Print Assumptions body_dijkstra. *)
+
 
 End DijkstraProof.
