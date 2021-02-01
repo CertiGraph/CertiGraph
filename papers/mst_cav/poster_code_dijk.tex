@@ -12,11 +12,19 @@ $\color{OliveGreen}//~\braces{\p{AdjMat}(\gamma) *
  for (i = 0; i < size; i++) 
  { dist[i] = inf; prev[i] = inf; keys[i] = pq_push(pq, inf, i); }
  dist[src] = 0; prev[src] = src; pq_editpri(pq, keys[src], 0);
-$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}}.~\p{AdjMat}(\gamma) * {\color{red}\p{PQ}(\texttt{pq})} * \mathsf{array}(\texttt{dist},{\color{red}\m{dist}}) * \mathsf{array}(\texttt{prev}, {\color{red}\m{prev}}) /| \null \\
+$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}, \m{keys},\m{heap}}.~\p{AdjMat}(\gamma) * {\color{red}\p{PQ}(\texttt{pq},\m{heap})} * \mathsf{array}(\texttt{dist},{\color{red}\m{dist}}) * \null \\
+\mathsf{array}(\texttt{prev}, {\color{red}\m{prev}}) * 
+{\color{red}\mathsf{array}(\texttt{keys}, \m{keys}}) * 
+{\color{red}\mathsf{Item}(\texttt{temp}, \_)} /| \null \\
 {\color{red}\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}}$ $\label{code:whileinv}$
  while (pq_size(pq) > 0) {
   pq_pop(pq, temp); u = temp->data; $\label{code:pop}$
-$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{popped'}, \m{i}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) * \mathsf{array}(\texttt{dist},\m{\color{red}dist'}) * \mathsf{array}(\texttt{prev}, \m{\color{red}prev'}) /| \null \\
+$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{popped'}, \m{heap'}, \m{i}, \texttt{u}_{key}, \texttt{u}_{pri}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq},{\color{red}\m{heap'}}) * \null \\
+\mathsf{array}(\texttt{dist},\m{\color{red}dist'}) * 
+\mathsf{array}(\texttt{prev}, \m{\color{red}prev'}) * 
+\mathsf{array}(\texttt{keys}, \m{keys}) * \null \\
+\mathsf{Item}(\texttt{temp}, \m{\color{red}(\texttt{u}_{key}, \texttt{u}_{pri}, \texttt{u})}) /| 
+\m{\color{red}min(\texttt{u}, \m{heap'})} /| \null \\
 {\color{red}\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped'}, \m{prev'}, \m{dist'}, \m{i}, \texttt{u})}}$ $\label{code:forinv}$
   for (i = 0; i < size; i++) {
    cost = getCell(graph, u, i); $\label{code:cost}$
@@ -24,12 +32,20 @@ $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{poppe
     if (dist[i] > dist[u] + cost) { $\label{code:overflow}$
      dist[i] = dist[u] + cost; prev[i] = u; $\label{code:update1}$ 
      pq_editpri(pq, keys[i], dist[i]); $\label{code:update2}$
-  }}} $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) *
-  \mathsf{array}(\texttt{dist},\m{\color{red}dist''}) * \mathsf{array}(\texttt{prev}, \m{\color{red}prev''}) /| \null \\
-  {\color{red}\m{dijk\_correct}(\gamma, \texttt{src}, \m{popped'}, \m{prev''}, \m{dist''})}}$
- } $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist^{\circ}}, \m{prev^{\circ}}, \m{popped^{\circ}}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) * \mathsf{array}(\texttt{dist},\m{\color{red}dist^{\circ}}) * \mathsf{array}(\texttt{prev}, \m{\color{red}prev^{\circ}}) /| \null \\
+  }}} $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''},\m{heap''}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq},\m{\color{red}heap''}) *
+  \mathsf{array}(\texttt{dist},\m{\color{red}dist''}) * \null \\
+  \mathsf{array}(\texttt{prev}, \m{\color{red}prev''}) *
+  \mathsf{array}(\texttt{keys}, \m{keys}) *
+  \mathsf{Item}(\texttt{temp}, \m{(\texttt{u}_{key}, \texttt{u}_{pri}, \texttt{u})}) /| \null \\
+  \m{min(\texttt{u}, \m{heap'})} /|
+  {\m{\color{red}dijk\_correct}(\gamma, \texttt{src}, \m{popped'}, \m{\color{red}prev''}, \m{\color{red}dist''})}}$
+ } $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist^{\circ}}, \m{prev^{\circ}}, \m{popped^{\circ}}, \m{heap^{\circ}}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq},\m{\color{red}heap^{\circ}}) * \null \\
+ \mathsf{array}(\texttt{dist},\m{\color{red}dist^{\circ}}) * 
+ \mathsf{array}(\texttt{prev}, \m{\color{red}prev^{\circ}}) *
+ \mathsf{array}(\texttt{keys}, \m{keys}) * 
+ {\mathsf{Item}(\texttt{temp}, \_)} /| \null \\
 {\color{red}\m{all\_popped(popped^{\circ})}} /|
-{\color{red}\m{dijk\_correct}(\gamma,\texttt{src},\m{popped^{\circ}},\m{prev^{\circ}},\m{dist^{\circ}})}}$
+{\m{dijk\_correct}(\gamma,\texttt{src},\m{\color{red}popped^{\circ}},\m{\color{red}prev^{\circ}},\m{\color{red}dist^{\circ}})}}$
  freeN (temp); pq_free (pq); freeN (keys); return; 
 }
 \end{lstlisting}
