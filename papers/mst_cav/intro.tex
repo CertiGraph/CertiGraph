@@ -13,7 +13,7 @@ within idealized formal environments---which likewise leads them to ignore the s
 In our work, we provide~C~implementations of each of these algorithms, and prove in Coq~\cite{coq} the full functional correctness of same with respect to
 the formal semantics of CompCert~C~\cite{leroy:compcert}.  Although our~C~code is developed from standard textbooks, we uncover a number of subtleties, including:
 \begin{itemize}
-\item[\S\ref{sec:overflow}] an overflow in Dijkstra's algorithm whose avoidance requires a nontrivial refinement to the algorithm's precondition to bound edge weights,
+\item[\S\ref{sec:dijkoverflow}] an overflow in Dijkstra's algorithm whose avoidance requires a nontrivial refinement to the algorithm's precondition to bound edge weights,
 \item[\S\ref{sec:prim}] that the specification of Prim's algorithm can be strengthened to apply to disconnected graphs without any change to the code,
 \item[\S\ref{sec:prim}] the presence of a wholly unneeded line of code in Prim's algorithm,
 \item[\S\ref{sec:binheap}] several potential overflows in binary heaps equipped with Floyd's linear-time build-heap function and an edit-priority operation.
@@ -46,7 +46,7 @@ We discuss two observations. First, in spite of the many pen-and-paper proofs of
 
 The remainder of this paper is organized as follows:
 \begin{itemize}
-    \item[\S\ref{sec:undirected}] We explain our extensions to CertiGraph: edge-labeled graphs, undirected graphs, and spacial representations of such graphs.
+    \item[\S\ref{sec:undirected}] We explain our extensions to CertiGraph: edge-labeled graphs, undirected graphs, and spatial representations of such graphs.
 %    \item[\S\ref{sec:structure}] We discuss modularity within the graph library as a follow-up from Kruskal's, demonstrating VST's and CertiGraph's ability to build incrementally larger systems.
     \item[\S\ref{sec:dijkstra}] We explain our verification of Dijkstra's algorithm in some detail, discuss a potential overflow, and refine the precondition to avoid it. %~implementation of  and the key loop invariants we use to certify its specification.
 %    \item[\S\ref{sec:overflow}] We explain how overflow can occur and give a refinement to the precondition of the function that restricts edge weights and the standard \texttt{INF} definition appropriately in a way that prevents said overflow.

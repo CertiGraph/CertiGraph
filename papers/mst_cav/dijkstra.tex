@@ -14,8 +14,8 @@ and two allocated arrays \texttt{dist} and \texttt{prev}.
 The spatial predicate $\mathsf{array}(\texttt{x},\vec{v})$, which connects 
 an array pointer \texttt{x} with its contents $\vec{v}$, is standard and unexciting.
 $\mathsf{PQ}(\texttt{pq},\m{heap})$ is the spatial 
-representation of our priority queue;
-we do nothing spatially interesting with the PQ.
+representation of our priority queue (PQ);
+we leave the management of the PQ to the operations described in~\S\ref{sec:binheap}.
 %An $\mathsf{Item}(\texttt{i},\m{(key, pri, data)})$
 %is just an item from the priority queue.
 Of greater interest is $\mathsf{AdjMat}(\texttt{g},\gamma)$, which
@@ -58,26 +58,29 @@ graph~$\gamma$, which in turn exposes an interface in the language of graph theo
 }
 
 Dijkstra's algorithm uses a PQ to greedily choose the 
-cheapest unoptimized vertex, as on line~\ref{code:pop}. The 
+cheapest unoptimized vertex on line~\ref{code:pop}. The 
 best-known distances to vertices are expected to improve as 
 various edges are relaxed, and such improvements need to be logged in the PQ:
-Dijkstra's algorithm implicitly demands of its~PQ the relatively 
-nonstandard \texttt{decrease\_priority} 
-operation.\footnote{A popular \cite{blah,blah,blah} 
-workaround gets by with a simpler PQ (or even without a PQ).  
-Note that \texttt{dist} already tracks the best-known cost 
-to any vertex (line~\ref{code:update1}). Maintain a list of  
-vertices that have been optimized. 
-Find the cheapest unoptimized vertex by 
-iterating over \texttt{dist} while rejecting optimized items. 
-Neat, but far too slow.}
-This motivates our ``advanced''~PQ~(\S\ref{sec:modpri}),
-which supports this efficiently via a general \texttt{pq\_edit\_priority} operation.
+Dijkstra's algorithm implicitly assumes that its~PQ supports the additional
+operation \texttt{decrease\_priority}.
+Our ``advanced''~PQ~(\S\ref{sec:modpri})
+supports this operation in logarithmic time with the 
+\texttt{pq\_edit\_priority} function\footnote{Because
+\texttt{decrease\_priority} is relatively complex to implement,
+several popular~\cite{blah,blah,blah} 
+workarounds use simpler PQs at the cost
+of decreased performance.}.
 % each \texttt{pop\_min} now takes $\bigO(n)$ time.
 
+%Note that \texttt{dist} already tracks the best-known cost 
+%to any vertex (line~\ref{code:update1}). Maintain a list of  
+%vertices that have been optimized. 
+%Find the cheapest unoptimized vertex by 
+%iterating over \texttt{dist} while rejecting optimized items. 
+%Neat, but far too slow.
 
-The key to the verification is the pure parts of the loop
-invariants on lines~\ref{code:whileinv} and~\ref{code:forinv}.  The \texttt{while} invariant $\m{dijk\_correct}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist})$ unfolds into:
+\note{The key to the verification is the loop
+invariants on lines~\ref{code:whileinv} and~\ref{code:forinv}.  The pure \texttt{while} invariant $\m{dijk\_correct}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist})$ essentially unfolds into:}
 \[
 \begin{array}{l}
 \forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{size} -> \m{inv\_popped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
@@ -108,9 +111,9 @@ $\m{dst}$.
 After line~\ref{code:pop}, 
 the above invariant is no longer true: a minimum-cost item~\m{u} has been 
 popped from the PQ, and so the \m{dist} and \m{prev} arrays need to be 
-updated to account for downstream changes. The \texttt{for} loop does exactly this repair work.
-Its invariant 
-$\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{u}, \m{i})$ unfolds into:
+updated to account for this pop. The \texttt{for} loop does exactly this repair work.
+Its pure invariant 
+$\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{u}, \m{i})$ essentially unfolds into:
 \[
 \begin{array}{l}
 \forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{size} -> \m{inv\_popped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
