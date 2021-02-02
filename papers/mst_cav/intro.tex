@@ -23,7 +23,7 @@ All of these appear to be absent from algorithmic and formal methods literature.
 We wish to develop general and reusable techniques for verifying graph-manipulating programs.  Accordingly, we leverage and/or extend three large existing formal Coq developments to state and prove the full functional correctness of our code in Coq: CompCert, the Verified Software Toolchain~\cite{appel:programlogics}, and the CertiGraph project~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our primary extensions are to the latter, and include:
 \begin{enumerate}
 \item pure/abstract reasoning for graphs with edge labels, including specialized support for graphs that label edges with costs (\emph{e.g.} a distinguished edge-label value for ``infinity'' that indicates invalid/absent edges);
-\item pure reasoning for undirected graphs;
+\item pure reasoning for undirected graphs (\emph{e.g.}, notions of connectedness);
 \item spatial representations and associated reasoning for edge-labeled graphs (several flavors of adjacency matrices as well as edge lists).
 \end{enumerate}
 We prove that our pure and spatial reasoning are well-isolated from each other by verifying several implementations (of each of Dijkstra and Prim) that represent graphs differently in memory but reuse the entire pure portion of the proof.  We likewise show that our spatial reasoning is generic by reusing graph representations in both Dijkstra and Prim.  Our Kruskal's verification proves that we can reason about two graphs simultaneously: a directed graph with vertex labels for union-find and an undirected graph with edge labels, for which we are building a spanning forest.
@@ -54,6 +54,7 @@ The remainder of this paper is organized as follows:
 %    's algorithm and discuss our findings on its ability to operate on disconnected graphs by simply dissociating a vertex's membership in the priority queue from its weight.
 %    \item[\S\ref{sec:kruskal}] We present 's algorithm and discuss the nuances between different graph representations, as well as the reuse of previously independently verified programs.
     \item[\S\ref{sec:binheap}] We overview our verification of binary heaps, including a discussion of Floyd's bottom-up heap construction and the edit-priority operation.
+    \item[\S\ref{sec:stats}] We briefly discuss engineering, \emph{e.g.} statistics for our formal development.
     \item[\S\ref{sec:conclusion}] We discuss related work, outline future research directions, and conclude.
 %    putting this result in the context of our previous and ongoing work. We discuss related work in certifying the three graph algorithms, and revisit standard algorithms textbook presentations.
 \end{itemize}
