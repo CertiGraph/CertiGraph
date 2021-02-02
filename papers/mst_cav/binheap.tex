@@ -108,14 +108,14 @@ void heapsort_rev(Item* arr, unsigned int size) {
 Given that in \S\ref{sec:heapinsertremove} we already generalized the specification for \texttt{sink} to handle a portion of the array being unordered, the verification of these functions is straightforward.  There is, however, the possibility of a subtle underflow on line~\ref{code:parentunderflow}, in the case when building an empty heap (\emph{i.e.}, $\texttt{size}=0$).  In turn, this means that \texttt{heapsort\_rev} as given above cannot sort empty lists; in our ``basic'' implementation we strengthen the precondition accordingly, whereas in our ``Kruskal'' implementation we add a line before~\ref{code:buildheapsort} that \texttt{return}s when $\texttt{size}=0$.  We use a max-heap for Kruskal because heapsort yields a \emph{reverse} sorted list.
 
 \subsection{Modifying an element's priority}
+\label{sec:modpri}
 
 In contrast to \texttt{heapify} and \texttt{heapsort}, standard algorithms textbooks are vague on the implementation of \texttt{edit\_priority}~\cite{clrs,sedgewick}.  The idea is that, during \texttt{insert}, each item is associated not only with its usual \texttt{int} priority
 but also a unique \texttt{unsigned int} ``key''.
-This key is generated during \texttt{insert} and returned to the user.
-Internally, the binary heap maintains a secondary array \texttt{key\_table} that maps each key to the current heap-array location of the associated item.
-The user calls \texttt{edit\_priority} by supplying the \emph{key} of the item
-they wish to modify, and the binary heap uses the key to
-locate the item before calling \texttt{sink} or \texttt{swim}. To keep everything linked together, the \texttt{key\_table} is modified during \texttt{exch}ange.
+This key is generated during \texttt{insert} and returned to the client.
+Internally, the binary heap maintains a secondary array \texttt{key\_table} that maps each key to the current location of the associated item within the primary heap array. The client calls \texttt{edit\_priority} by supplying the key associated with the item
+it wishes to modify, and the binary heap looks up the key in the \texttt{key\_table} to
+locate the item in the heap array before calling \texttt{sink} or \texttt{swim}. To keep everything linked together, the \texttt{key\_table} is modified during \texttt{exch}ange.
 
 One detail entirely missing from standard textbooks is how to generate the keys on insert.  The initial idea is to have a global counter starting at 0, which is then increased on each insert.  Unfortunately, this is unsound: during (very) long runs involving both \texttt{insert} and \texttt{remove-min}, this key counter will overflow.  Although overflow is defined in C for \texttt{unsigned int}, this overflow is fatal algorithmically: multiple items could be assigned the same key.
 
