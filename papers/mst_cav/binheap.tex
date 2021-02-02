@@ -1,18 +1,18 @@
 \lstset{style=myTinyStyle}
 
-Binary heaps are a classic data structure for imperative programs~\cite{clrs,sedgewick}.  Briefly, binary heaps embed a heap-ordered tree in an array, using arithmetic to move indices between parent, left, and right children.  In addition to providing the standard \texttt{insert} and \texttt{remove-min} (or \texttt{remove-max} for a max-heap) operations in logarithmic time, binary heaps can by upgraded with two nontrivial operations.  First, Floyd's \texttt{heapify} function builds a binary heap from an unordered array in linear time, and as a related upgrade, perform a worst-case linearithmic sort using only constant additional space.  Second, they can be upgraded to support a logarithmic-time \texttt{decrease-key} operation.
+Binary heaps are a classic data structure for imperative programs~\cite{clrs,sedgewick}.  Briefly, binary heaps embed a heap-ordered tree in an array and use arithmetic on indices to navigate between a parent and its left and right children.  In addition to providing the standard \texttt{insert} and \texttt{remove-min}/\texttt{remove-max}\footnote{depending on whether it is a min- or max-ordered heap} operations in logarithmic time, binary heaps can by upgraded to support two nontrivial operations.  First, Floyd's \texttt{heapify} function builds a binary heap from an unordered array in linear time, and as a related upgrade, performs a worst-case linearithmic-time sort using only constant additional space.  Second, they can be upgraded to support logarithmic-time \texttt{decrease-} and \texttt{increase-pri}ority operations, which we generalize straightforwardly into \texttt{edit\_pri}.
 
-Binary heaps are a good fit for our graph algorithms because Dijkstra's and Prim's algorithms use \texttt{decrease-key} and a constant-space \texttt{heapsort} is appropriate for the sparse edge-list-represented graphs typically targeted by Kruskal's.  The C language has poor support for polymorphic higher-order functions, and a binary heap that supports \texttt{decrease-key} is twice as slow as a binary heap that does not.  Accordingly, we implement binary heaps in C three times:
+Binary heaps are a good fit for our graph algorithms because Dijkstra's and Prim's algorithms need to edit priorities, and a constant-space \texttt{heapsort} is appropriate for the sparse edge-list-represented graphs typically targeted by Kruskal's.  The~C language has poor support for polymorphic higher-order functions, and a binary heap that supports \texttt{edit\_pri} is half as fast as a binary heap that does not.  Accordingly, we implement binary heaps in C three times:
 \[
 \begin{array}{l@{\qquad}c@{\quad}c@{\quad}c@{\quad}l}
-\text{name} & \text{min/max} & \texttt{decrease-key} & \texttt{heapify} & \text{payload} \\
+\text{name} & \text{heap order} & \texttt{edit\_pri} & \texttt{heapify} & \text{payload} \\
 \hline
 \text{basic} & \text{min} & \text{no} & \text{yes} & \texttt{void*} \\
 \text{advanced} & \text{min} & \text{yes} & \text{no} & \texttt{int} \\
 \text{Kruskal} & \text{max} & \text{no} & \text{yes} & \texttt{int, int} \text{ (\emph{i.e.}, unboxed)}
 \end{array}
 \]
-Priorities are simply of type \texttt{int}.  The ``advanced'' implementation requires a notion of ``key'' (to lookup the item whose priority must be changed), for which we use \texttt{unsigned int}.  Kruskal's implementation is stripped down to the bare minimum required to implement \texttt{heapsort} (\emph{e.g.} it does not support \texttt{insert}).  We next overview these verifications, dividend into three parts: basic heap operations, \texttt{heapify} and \texttt{heapsort} operations, and the \texttt{decrease-key} operation.
+Priorities are simply of type \texttt{int}.  \note[too much detail, too soon?]{The ``advanced'' implementation requires each item to be tagged to a ``key'', which is used to lookup the item whose priority must be changed; these keys are \texttt{unsigned int}s.}  The Kruskal-specific implementation is stripped down to the bare minimum required to implement \texttt{heapsort} (\emph{e.g.} it does not support \texttt{insert}).  We next overview these verifications, divided into three parts: basic heap operations, \texttt{heapify} and \texttt{heapsort} operations, and the \texttt{edit\_pri} operation.
 
 \subsection{The basic heap operations of insertion and min/max-removal}
 \label{sec:heapinsertremove}
@@ -23,10 +23,11 @@ void exch(unsigned int j, unsigned int k, Item arr[]) {
  int priority = arr[j].priority; void* data = arr[j].data;
  arr[j].priority = arr[k].priority; arr[j].data = arr[k].data;
  arr[k].priority = priority; arr[k].data = data; }
+
 int less(unsigned int j, unsigned int k, Item arr[]) {
  return (arr[j].priority <= arr[k].priority); }
 \end{lstlisting}
-These C functions are specified as refinements of Gallina functions that exchange polymorphic data in lists and compare objects in an abstract preordered set, and we verify them in VST after a little irksome engineering.  The payoff is that the key heap operations, which following Sedgewick~\cite{sedgewick} we call \texttt{swim} and \texttt{sink}, can use identical C code (up to alpha renaming) in all three implementations:
+These C functions are specified as refinements of Gallina functions that exchange polymorphic data in lists and compare objects in an abstract preordered set; we verify them in CertiGraph after a little irksome engineering.  The payoff is that the key heap operations, which following Sedgewick~\cite{sedgewick} we call \texttt{swim} and \texttt{sink}, can use identical C code (up to alpha renaming) in all three implementations:
 \begin{lstlisting}
 void swim(unsigned int k, Item arr[]) {
  while (k > ROOT_IDX && less (k, PARENT(k), arr)) {
