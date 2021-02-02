@@ -26,7 +26,7 @@ while Q < 0
   for each v in G.Adj[u]
     if v in Q and w(u,v) < v.key
       v.pi = u
-v.key = w(u,v)
+      v.key = w(u,v)
 \end{BVerbatim}
 \caption{Left: abstract Prim's algorithm from CLRS~\cite{clrs}. Right: the algorithm omitting the root, which is unnecessary. Note that CLRS does not explicitly define \texttt{EXTRACT-MIN}}
 \end{figure}

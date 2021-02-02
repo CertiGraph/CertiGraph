@@ -51,22 +51,22 @@ graph~$\gamma$, which in turn exposes an interface in the language of graph theo
 \end{split}
 \end{equation*}}
 
-Dijkstra's algorithm uses a priority queue to greedily choose the 
-next-cheapest unexamined vertex, as in line~\ref{code:pop}. Of course, the 
-best-known distances to vertices are expected to improve as the algorithm
-proceeds, and such improvements need to be logged in the PQ:
+Dijkstra's algorithm uses a PQ to greedily choose the 
+cheapest unoptimized vertex, as on line~\ref{code:pop}. Of course, the 
+best-known distances to vertices are expected to improve as 
+various edges are relaxed, and such improvements need to be logged in the PQ:
 Dijkstra's algorithm implicitly demands of its~PQ the relatively 
 nonstandard \texttt{decrease\_key} 
 operation.\footnote{A popular \cite{blah,blah,blah} 
 workaround gets by with a simpler PQ (or even without a PQ).  
 Note that \texttt{dist} already tracks the best-known cost 
 to any vertex (line~\ref{code:update1}). Maintain a list of  
-vertices that have been fully optimized. 
-Find the cheapest unexamined vertex by 
-iterating over \texttt{dist} while rejecting fully optimized items. 
+vertices that have been optimized. 
+Find the cheapest unoptimized vertex by 
+iterating over \texttt{dist} while rejecting optimized items. 
 Neat, but far too slow.}
 This motivates our ``advanced''~PQ~(\S\ref{sec:binheap}),
-which supports this via a general \texttt{pq\_editpri} method.
+which supports this efficiently via a general \texttt{pq\_editpri} operation.
 % each \texttt{pop\_min} now takes $\bigO(n)$ time.
 
 
@@ -85,26 +85,26 @@ categories:
 \item $\m{inv\_popped}$: $\m{dst}$ has been fully processed and
 popped from the PQ.
 Either \m{dst} is unreachable, meaning that there exists no finite-cost path from 
-\m{src} to \m{dst}, or it is reachable, meaning that a globally optimal 
-path from $\m{src}$ to $\m{dst}$ exists, the cost of this path is logged in
-\m{dist}, all the vertices visited by the path are also popped,
-and the links of the path are logged in \m{prev}.
+\m{src}~to~\m{dst}, or \m{dst} is reachable, meaning that a globally optimal 
+path from $\m{src}$~to~$\m{dst}$ exists, the cost of this path is logged in
+\m{dist}, all vertices visited by the path are also popped,
+and the links of the path are logged in~\m{prev}.
 \item $\m{inv\_unpopped}$: $\m{dst}$ is reachable in
-one step from a popped vertex ``\m{mom}''.
+one step from a popped vertex \m{mom}.
 This route is locally optimal: we cannot
 improve the cost via an alternate popped vertex.
 \m{prev} logs
 \m{mom} as the best-known way to reach $\m{dst}$, and \m{dist}
 logs the path cost via \m{mom} as the best-known cost.
-\item $\m{inv\_unseen}$: no finite-cost path is known from any popped vertex to
+\item $\m{inv\_unseen}$: no finite-cost path exists from any popped vertex to
 $\m{dst}$.
 \end{enumerate}
 After line~\ref{code:pop}, 
-the above invariant is no longer true: a minimum-cost item has been 
+the above invariant is no longer true: a minimum-cost item~\m{u} has been 
 popped from the PQ, and so the \m{dist} and \m{prev} arrays need to be 
-updated to account for downstream changes. The \texttt{for} loop does exactly this.
+updated to account for downstream changes. The \texttt{for} loop does exactly this repair work.
 Its invariant 
-$\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{i}, \m{u})$ unfolds into:
+$\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{u}, \m{i})$ unfolds into:
 \[
 \begin{array}{l}
 \forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{size} -> \m{inv\_popped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
@@ -117,30 +117,32 @@ $\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{i},
 We now have five cases, many of which are familiar from $\m{dijk\_correct}$:
 \begin{enumerate}
 \item $\m{inv\_popped}$: $\m{dst}$ has been fully processed and
-popped from the PQ.  For all popped vertices \emph{except for}~\m{u},
-this is trivial from $\m{dijk\_correct}$. For~\m{u} itself, we reach the heart of Dijkstra's correctness: the cost to the fringe vertex with minimum cost cannot be further improved.  %The associated entailment is not trivial.
-%\item $\m{inv\_unseen}$: no path is known from $\texttt{src}$ to $\m{dst}$.  This is straightforward.
+popped from the PQ.  For all ``previously-popped vertices'' (\emph{i.e., }except for~\m{u}),
+this is trivial from $\m{dijk\_correct}$. For~\m{u} itself, we reach the heart of Dijkstra's correctness: 
+the locally-optimal path to the cheapest unpopped vertex is 
+\emph{globally} optimal.
+%the cost to the unpopped vertex with minimum cost cannot be further improved.  %The associated entailment is not trivial.
 \item $\m{inv\_unpopped}$ (less than \m{i}): $\m{dst}$ is reachable in
-one hop from a popped vertex ``\emph{mom}''. Initially this is trivial since $\m{i}=0$, and we restore it as \m{i} increments by updating costs when they can be improved, as in lines~\ref{code:update1}~and~\ref{code:update2}.
-\item $\m{inv\_unseen}$ (less than \m{i}): no finite-cost path is known from any popped vertex to $\m{dst}$. As above, this is restored as \m{i} increments.
+one hop from a popped vertex \m{mom}. Initially this is trivial since $\m{i}=0$, and we restore it as \m{i} increments by updating costs when they can be improved, as on lines~\ref{code:update1}~and~\ref{code:update2}.
+\item $\m{inv\_unseen}$ (less than \m{i}): no finite-cost path exists from any popped vertex to $\m{dst}$. As above, this is restored as \m{i} increments.
 \item $\m{inv\_unpopped\_weak}$ (between \m{i} and \texttt{size}):
-$\m{dst}$ is reachable in one hop from a popped ``\emph{mom}'' vertex,
-with further improvements possible via \m{u}.
-This fact is key: as~$\m{i}$ increments, we strengthen this 
-into $\m{inv\_unpopped}$ after considering whether the popping of
-\m{u} improves the best-known cost of \m{dst}.
+$\m{dst}$ is reachable in one hop from a previously-popped vertex \m{mom},
+with further improvements possible via~\m{u}.
+This fact is key: as~$\m{i}$ increments, we strengthen it 
+into $\m{inv\_unpopped}$ after considering whether routing via
+\m{u} improves the best-known cost to~\m{dst}.
 \item $\m{inv\_unseen\_weak}$ (between \m{i} and \texttt{size}):
-no finite-cost path is known from any popped vertex to
-$\m{dst}$, but there may be one from \m{u}.
-Again, as $\m{i}$ increments, we consider whether the popping 
-of \m{u} reveals a finite-cost path to~\m{dst}. 
+no finite-cost path exists from any previously-popped vertex to
+$\m{dst}$, but there may be one from~\m{u}.
+As~$\m{i}$ increments, we consider whether routing via~\m{u} 
+reveals a finite-cost path to~\m{dst}. 
 This is strengthened into
 $\m{inv\_unpopped}$ if so, and into
 $\m{inv\_unseen}$ if not.
 \end{enumerate}
 At the end of the \texttt{for} loop on line \ref{code:caughtup},
 the fourth and fifth cases fall away 
-(\texttt{i~=~size}), and the PQ and the \m{dist} and \m{prev} arrays
+(\texttt{\m{i}~=~size}), and the PQ and the \m{dist} and \m{prev} arrays
 finish ``catching up'' to the pop on line~\ref{code:pop}.
 This allows us to infer 
 the \texttt{while} invariant $\m{dijk\_correct}$, 
