@@ -1,26 +1,53 @@
-{\color{red}Dijkstra's eponymous shortest-path algorithm~\cite{DBLP:journals/nm/Dijkstra59} finds
+Dijkstra's eponymous shortest-path algorithm~\cite{DBLP:journals/nm/Dijkstra59} finds
 the cost-minimal paths from a distinguished \emph{source} vertex
-source to all reachable vertices in a finite directed graph. Prim's and Kruskal's algorithms return minimal spanning trees for finite undirected graphs.
-These three algorithms are classic and ubiquitous, appearing widely in textbooks~\cite{clrs} in real routing protocol libraries. Many textbooks and classic lecture notes discuss their proofs in pen and paper. Further, the algorithms have been in
-use for over $60$ years, suggesting that for all practical purposes
-their safety and correctness have been verified by decades of application.
+source to all reachable vertices in a directed graph. Prim's~\cite{prim} and Kruskal's~\cite{kruskal} algorithms return minimal spanning trees for undirected graphs.
+These algorithms are classic and ubiquitous, appearing widely in textbooks~\cite{clrs,DBLP:books/daglib/0022194,heineman2008algorithms,rozen,kepnergilbert,sedgewick} as well as in real routing protocol libraries.
 
-%Recent efforts [cite Mizar, cite ACL2, cite Coq] have implemented the algorithm
-%in proof assistants and formally proved claims about its behavior.
-%However, because they operate entirely within idealized formal checkers,
-%these works inadvertently gloss over certain classes of issues
-%that routinely crop up in real-world settings.
+In addition to decades of use and textbook analysis, recent efforts have implemented one or more of these algorithms in proof 
+assistants and formally proved claims about their behavior \cite{Mizar,ACL2,Coq,cite,cite,cite}.  A reasonable person might think that all 
+that could be said had been.  However, we have found this not to be the case.  Generally speaking, textbook code glosses over a cornucopia 
+of issues that routinely crop up in real-world settings: under/overflows, integration with performant data structures, manual memory (de-)allocation, 
+error handling, casts, memory alignment issues, and so forth.  On the other hand, previous work with formal checkers tends to operate entirely 
+within idealized formal environments---which likewise leads them to ignore the same kinds of issues.
 
+In our work, we provide~C~implementations of each of these algorithms, and prove in Coq~\cite{coq} the full functional correctness of same with respect to
+the formal semantics of CompCert~C~\cite{leroy:compcert}.  Although our~C~code is developed from standard textbooks, we uncover a number of subtleties, including:
+\begin{itemize}
+\item[\S\ref{sec:overflow}] an overflow in Dijkstra's algorithm whose avoidance requires a nontrivial refinement to the algorithm's precondition to bound edge weights,
+\item[\S\ref{sec:prim}] that the specification of Prim's algorithm can be strengthened to apply to disconnected graphs without any change to the code,
+\item[\S\ref{sec:prim}] the presence of a wholly unneeded line of code in Prim's algorithm,
+\item[\S\ref{sec:binheap}] several potential overflows in binary heaps equipped with Floyd's linear-time build-heap function and an edit-priority operation.
+\end{itemize}
+All of these appear to be absent from algorithmic and formal methods literature.
+
+We wish to develop general and reusable techniques for verifying graph-manipulating programs.  Accordingly, we leverage and/or extend three large existing formal Coq developments to state and prove the full functional correctness of our code in Coq: CompCert, the Verified Software Toolchain~\cite{appel:programlogics}, and the CertiGraph project~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our primary extensions are to the latter, and include:
+\begin{enumerate}
+\item pure/abstract reasoning for graphs with edge labels, including specialized support for graphs that label edges with costs (\emph{e.g.} a distinguished edge-label value for ``infinity'' that indicates invalid/absent edges);
+\item pure reasoning for undirected graphs;
+\item spatial representations and associated reasoning for edge-labeled graphs (several flavors of adjacency matrices as well as edge lists).
+\end{enumerate}
+We prove that our pure and spatial reasoning are well-isolated from each other by verifying several implementations (of each of Dijkstra and Prim) that represent graphs differently in memory but reuse the entire pure portion of the proof.  We likewise show that our spatial reasoning is generic by reusing graph representations in both Dijkstra and Prim.  Our Kruskal's verification proves that we can reason about two graphs simultaneously: a directed graph with vertex labels for union-find and an undirected graph with edge labels, for which we are building a spanning forest.
+In addition to our verification of Dijkstra, Prim, and Kruskal, we develop increased lemma support for the preexisting CertiGraph union-find example~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our extension to ``base VST'' (\emph{e.g.}, verifications that do not involve graphs) primarily consist of our verified binary heap.
+
+% Many textbooks and classic lecture notes discuss their proofs in pen and paper. Further, the algorithms have been in
+%use for over $60$ years, suggesting that for all practical purposes
+%their safety and correctness have been verified by decades of application.
+
+\hide{
 Here we verify a~C~implementation of Dijkstra's one-to-all shortest path algorithm.
-We implement textbook~C~code~\cite{clrs} in CompCert~C~\cite{leroy:compcert} so that
-we can use the Verified Software Toolchain~\cite{appel:programlogics} and
-Wang~\emph{et al.}'s recent framework for verifying graph algorithms~\cite{DBLP:journals/pacmpl/WangCMH19} to state and prove the full functional
-correctness of the code using the Coq proof assistant~\cite{coq}.}
+We implement textbook~C~code~\cite{clrs} in CompCert~C~ so that
+we can use  and
+Wang~\emph{et al.}'s recent framework for verifying graph algorithms .
 
-We discuss two observations. First, in spite of the many pen-and-paper proofs of these algorithms, we expose a subtle overflow issue in Dijkstra's~C~code and make a nontrivial refinement to the precondition of the algorithm so that users know when the code will calculate the correct paths. In addition, we disprove an informal but common notion that Prim's algorithm cannot work on disconnected graphs. We demonstrate that it can return a minimum spanning forest, and further that the root parameter is unnecessary.
+We discuss two observations. First, in spite of the many pen-and-paper proofs of these algorithms, we expose a subtle overflow issue in Dijkstra's~C~code and make a nontrivial 
+
+ so that users know when the code will calculate the correct paths. In addition, we disprove an informal but common notion that Prim's algorithm cannot work on disconnected graphs. We demonstrate that it can return a minimum spanning forest, and further that the root parameter is unnecessary.
+}
 
 The remainder of this paper is organized as follows:
 \begin{itemize}
+    \item[\S\ref{sec:undirected}] We explain how our undirected graph and forest definitions within the context of a fundamenetally directed graph library to enable verification of Prim's and Kruskal's algorithms
+    \item[\S\ref{sec:structure}] We discuss modularity within the graph library as a follow-up from Kruskal's, demonstrating VST's and CertiGraph's ability to build incrementally larger systems.
     \item[\S\ref{sec:dijkstra}] We briefly present and explain
     our~C~implementation of Dijkstra's algorithm and the key loop invariants
     we use to certify its specification.
@@ -28,12 +55,10 @@ The remainder of this paper is organized as follows:
     refinement to the precondition of the function that restricts edge weights
     and the standard \texttt{INF} definition
     appropriately in a way that prevents said overflow.
-    \item[\S\ref{sec:undirected}] We explain how our undirected graph and forest definitions within the context of a fundamenetally directed graph library to enable verification of Prim's and Kruskal's algorithms
     \item[\S\ref{sec:prim}] We present Prim's algorithm and discuss our findings on its ability to operate on disconnected graphs by simply dissociating a vertex's membership in the priority queue from its weight.
     \item[\S\ref{sec:kruskal}] We present Kruskal's algorithm and discuss the nuances between different graph representations, as well as the reuse of previously independently verified programs.
-    \item[\S\ref{sec:structure}] We discuss modularity within the graph library as a follow-up from Kruskal's, demonstrating VST's and CertiGraph's ability to build incrementally larger systems.
     \item[\S\ref{sec:conclusion}] We conclude by putting this result in the context of our
     previous and ongoing work. We discuss related work in certifying the three graph algorithms, and revisit standard algorithms textbook presentations.
-\end{itemize} 
+\end{itemize}
 
 \noindent Our code is available at \url{https://github.com/anshumanmohan/CertiGraph}.
