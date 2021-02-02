@@ -1,19 +1,19 @@
 Dijkstra's algorithm clearly cannot work when a path
-cost is greater than \texttt{INT\_MAX}.  A reasonable-looking restriction 
-is to bound edge costs by 
-$\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}-1}\right\rfloor$, since 
-the longest optimal path has $\texttt{size}-1$ links and so the 
-most expensive possible path costs no more than \texttt{INT\_MAX}.  
-However, this has two flaws.  First, since we are writing real code in~C, 
-rather than pseudocode in an idealized setting, we must reserve some 
-concrete \texttt{int} value \texttt{inf} for ``infinity'', which has 
-the special semantics that, if the best-known distance to a vertex~\m{x}
-is \texttt{inf}, then~\m{x} is as-yet unreachable. 
-A consequence of this is that reachable destination vertices cannot have a 
-path cost of \texttt{inf}: if they did, this would be logged in the 
-\m{dist} array and create an unpleasant ambiguity. 
-Second, even though the best-known distances start at \texttt{inf} 
-(see line~\ref{code:assigninf}) and only ever decrease from there, the code can 
+cost is more than \texttt{INT\_MAX}.  A reasonable-looking restriction
+is to bound edge costs by
+$\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}-1}\right\rfloor$, since
+the longest optimal path has $\texttt{size}-1$ links and so the
+most expensive possible path costs no more than \texttt{INT\_MAX}.
+However, this has two flaws.  First, since we are writing real code in~C,
+rather than pseudocode in an idealized setting, we must reserve some
+concrete \texttt{int} value \texttt{inf} for ``infinity'', with 
+the semantics that if the best-known distance to a vertex~\m{x}
+is \texttt{inf}, then~\m{x} is as-yet unreachable.
+A consequence of this is that reachable destination vertices cannot have a
+path cost of \texttt{inf}: if they did, this would be logged in the
+\texttt{dist} array and create an ambiguity.
+Second, even though the best-known distances start at \texttt{inf}
+(see line~\ref{code:assigninf}) and only ever decrease from there, the code can
 overflow on lines~\ref{code:overflow}~and~\ref{code:update1}.
 
 \begin{figure}[t]
@@ -26,21 +26,21 @@ overflow on lines~\ref{code:overflow}~and~\ref{code:update1}.
   \draw [->,line width=1pt,arrows={-Stealth}] (A) -- (B);
   \draw [->,line width=1pt,arrows={-Stealth}] (B) -- (C);
   \draw [->,line width=1pt,arrows={-Stealth}] (C.south) .. controls ++(0, -2) .. (B);
-  \node at (5,0.6) {3};
-  \node at (15,0.6) {3};
-  \node at (16,-2.4) {3};
+  \node at (5,0.6) {5};
+  \node at (15,0.6) {5};
+  \node at (16,-2.4) {6};
 \end{tikzpicture}
-\caption{A graph that will result in overflow on a 3-bit machine.}
+\caption{A graph that will result in overflow on a 4-bit machine.}
 \label{fig:overflow}
 \end{figure}
 
-Consider applying Dijkstra's algorithm on a hypothetical 3-bit unsigned machine to 
-the graph in figure~\ref{fig:overflow}.  The \texttt{size} of the graph is 3 nodes, and so the na\"ive edge-weight upper bound is $\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}-1}\right\rfloor = \left\lfloor\frac{7}{3-1}\right\rfloor = 3$, exactly as pictured in figure~\ref{fig:overflow}.  Indeed, a glance at the diagram is enough to tell that the true distance from the source~A~to vertices~B~and~C~are~3~and~6 respectively---both of which are representable with 3 bits, and so na\"ively all seems well.  %Unfortunately, Dijkstra's algorithm does not exactly work like that.  
-Indeed, after processing vertices~A~and~B, 3~and~6~\emph{are} the costs reflected in the \m{dist} array for~B~and~C respectively---\emph{but unfortunately vertex~C~is still in the priority queue}.  After vertex~C~is popped on line~\ref{code:pop}, we fetch its neighbors in the \texttt{for} loop; vertex~B's cost of~3~is fetched on line~\ref{code:cost}.  On line~\ref{code:overflow} the currently optimal cost of~B~(3) is compared against the sum of the optimal cost of~C~(6) plus the just-retrieved cost of the edge from~C~to~B~(3).  Since $6+3$ overflows in 3-bit arithmetic, the comparison is not between~3~and~9 but in fact between~3~and~1!  Thus the code decides that a new cheaper path from~A~to~B~exists (in particular, A$\leadsto$B$\leadsto$C$\leadsto$B) and then trashes the \texttt{dist} and \texttt{prev} arrays on line~\ref{code:update1}.
+Consider applying Dijkstra's algorithm on a hypothetical 4-bit unsigned machine to
+the graph in figure~\ref{fig:overflow}.  The \texttt{size} of the graph is 3 nodes, and so the na\"ive edge-weight upper bound is $\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}-1}\right\rfloor = \left\lfloor\frac{15}{3-1}\right\rfloor = 7$, for example as in the graph pictured in figure~\ref{fig:overflow}.  Indeed, a glance at the figure is enough to tell that the true distance from the source~A~to vertices~B~and~C~are~5~and~10 respectively---both of which are representable with 4 bits, and so na\"ively all seems well.  %Unfortunately, Dijkstra's algorithm does not exactly work like that.
+Indeed, after processing vertices~A~and~B, 5~and~10~\emph{are} the costs reflected in the \texttt{dist} array for~B~and~C respectively---\emph{but unfortunately vertex~C~is still in the priority queue}.  After vertex~C~is popped on line~\ref{code:pop}, we fetch its neighbors in the \texttt{for} loop; vertex~B's cost of~6~is fetched on line~\ref{code:cost}.  On line~\ref{code:overflow} the currently optimal cost of~B~(5) is compared against the sum of the optimal cost of~C~(10) plus the just-retrieved cost of the edge from~C~to~B~(6).  Since $10+6$ overflows in 4-bit arithmetic, the comparison is not between~5~and~16 but in fact between~5~and~0!  Thus the code decides that a new cheaper path from~A~to~B~exists (in particular, A$\leadsto$B$\leadsto$C$\leadsto$B) and then trashes the \texttt{dist} and \texttt{prev} arrays on line~\ref{code:update1}.
 
 Our code uses signed \texttt{int} rather than \texttt{unsigned int} so we have undefined behavior rather than defined-but-wrong behavior, but the essence of the overflow is identical.
-Our solution is twofold.  First, we restrict the maximum edge cost to $\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}}\right\rfloor - 1$, which in the 3-bit setting just described forces an edge cost of no more than~2.  Second, we require in the precondition that 
-$\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor - 1 < \texttt{inf} \le \texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$, which in the 3-bit setting means $2 < \texttt{inf} \le 6$ 
-Consider modifying figure~\ref{fig:overflow} to
-have edge weights of~2~rather than~3.  After processing vertices~A~and~B, the distances to~B~and~C are no more than~2~and~4 respectively.  When we process vertex~C, the comparison on line~\ref{code:overflow} is thus between the previous best cost to~B~(2) and the candidate best cost to~B~via~C~(6); there is no overflow and the code behaves as advertised.
+Our solution is twofold.  First, we restrict the maximum edge cost to $\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}}\right\rfloor - 1$, which in the 4-bit setting just described forces an edge cost of no more than~4.  Consider modifying figure~\ref{fig:overflow} to
+have edge weights of~4~rather than~5s~and~6s.  After processing vertices~A~and~B, the distances to~B~and~C are no more than~4~and~8 respectively.  When we process vertex~C, the comparison on line~\ref{code:overflow} is thus between the previous best cost to~B~(4) and the candidate best cost to~B~via~C~(12); there is no overflow and the code behaves as advertised.
+
+The second part of our solution is that we require in the function precondition that $\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor - 1 < \texttt{inf} \le \texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$.  As long as $\texttt{size} > 1$, this is perfectly realizable  by setting \texttt{inf} to $\texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$), \emph{i.e.} in the 4-bit machine we set \texttt{inf} to $11$.  When $\texttt{size} = 1$, this inequality is not realizable; our verification is thus not applicable to single-vertex graphs, a special case for which the shortest-path problem is in any event rather uninteresting.
 
