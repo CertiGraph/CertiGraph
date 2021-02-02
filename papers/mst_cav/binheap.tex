@@ -95,12 +95,12 @@ void build_heap(Item arr[], unsigned int size) {
  while(1) { sink(start, arr, size);
             if (start == 0) break; start--;  } }
 
-void heapsort_rev(Item* arr, unsigned int size)           {
+void heapsort_rev(Item* arr, unsigned int size) {
  build_heap(arr,size); $\label{code:buildheapsort}$
  while (size > 1) { size--;
   exch(ROOT_IDX, size, arr); sink(ROOT_IDX, arr, size); } }
 \end{lstlisting}
-Given that in \S\ref{sec:heapinsertremove} we already generalized the specification for \texttt{sink} to handle a portion of the array being unordered, the verification of these functions is straightforward.  There is, however, the possibility of a subtle underflow on line~\ref{code:parentunderflow}, in the case when building an empty heap (\emph{i.e.}, $\texttt{size}=0$).  In turn, this means that \texttt{heapsort\_rev} as given above cannot sort empty lists; in our ``basic'' implementation we strengthen the precondition accordingly, whereas in our ``Kruskal'' implementation we add a line before~\ref{code:buildheapsort} that \texttt{return}s when $\texttt{size}=0$.  We use a max-heap in Kruskal's because heapsort yields a \emph{reverse} sorted list.
+Given that in \S\ref{sec:heapinsertremove} we already generalized the specification for \texttt{sink} to handle a portion of the array being unordered, the verification of these functions is straightforward.  There is, however, the possibility of a subtle underflow on line~\ref{code:parentunderflow}, in the case when building an empty heap (\emph{i.e.}, $\texttt{size}=0$).  In turn, this means that \texttt{heapsort\_rev} as given above cannot sort empty lists; in our ``basic'' implementation we strengthen the precondition accordingly, whereas in our ``Kruskal'' implementation we add a line before~\ref{code:buildheapsort} that \texttt{return}s when $\texttt{size}=0$.  We use a max-heap for Kruskal because heapsort yields a \emph{reverse} sorted list.
 
 \subsection{Modifying an element's priority}
 
