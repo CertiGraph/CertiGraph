@@ -952,7 +952,106 @@ Lemma Permutation_find_item_by_key: forall L1 L2 k,
   Permutation (find_item_by_key L1 k) (find_item_by_key L2 k).
 Proof. intros. unfold find_item_by_key. apply Permutation_filter. trivial. Qed.
 
+Lemma not_In_app: forall A x (L1 L2 : list A),
+  ~ In x (L1 ++ L2) ->
+  ~ In x L1 /\ ~ In x L2.
+Proof.
+  split; intro; apply H; apply in_or_app; auto.
+Qed.
 
+Lemma Permutation_two_eq: forall A (L : list A) x,
+  Permutation L [x ; x] ->
+  L = [x ; x].
+Proof.
+  intros. remember [x ; x]. revert Heql. induction H.
+  * discriminate.
+  * inversion 1. subst. symmetry in H. apply Permutation_length_1_inv in H. subst. trivial.
+  * inversion 1. trivial.
+  * intros. subst l''. spec IHPermutation2. trivial. specialize (IHPermutation1 IHPermutation2). subst l'. trivial.
+Qed.
+
+Lemma filter_empty: forall A f (L : list A),
+  (forall x, In x L -> f x = false) ->
+  filter f L = [].
+Proof.
+  induction L; intros. reflexivity.
+  simpl. rewrite H. apply IHL. intros. apply H. right. trivial.
+  left. trivial.
+Qed.
+
+Lemma find_item_by_key_app: forall L1 L2 k,
+  find_item_by_key (L1 ++ L2) k = find_item_by_key L1 k ++ find_item_by_key L2 k.
+Proof. intros. unfold find_item_by_key. rewrite filter_app. trivial. Qed.
+
+Lemma filter_false_nil:
+    forall A (l: list A) f,
+      (forall a, In a l -> f a = false) ->
+      filter f l = [].
+  Proof. intros. apply filter_empty. trivial. Qed.
+  
+  Lemma find_item_by_key_finds_item:
+    forall h item,
+      In item h ->
+      NoDup (map heap_item_key h) ->
+      find_item_by_key h (heap_item_key item) =
+      [item].
+  Proof.
+    intros.
+    unfold find_item_by_key. induction h; [inversion H|].
+    destruct H.
+    - subst a. simpl.
+      destruct (Z.eq_dec (heap_item_key item) (heap_item_key item)).
+      2: exfalso; apply n; trivial. 
+      simpl. simpl in H0.
+      apply NoDup_cons_2 in H0.
+      replace (filter
+                 (fun item0 : heap_item =>
+                    Z.eq_dec (heap_item_key item0) (heap_item_key item)) h)
+        with (@nil heap_item); trivial.
+      rewrite filter_false_nil; trivial.
+      intros.
+      rewrite <- not_true_iff_false.
+      intro.
+      apply (in_map heap_item_key) in H.
+      replace (heap_item_key a) with (heap_item_key item) in H.
+      apply H0; trivial.
+      destruct (Z.eq_dec (heap_item_key a) (heap_item_key item)).
+      + lia.
+      + simpl in H1. inversion H1.
+    - simpl.
+      destruct (Z.eq_dec (heap_item_key a) (heap_item_key item)).
+      + exfalso.
+        simpl in H0.
+        apply NoDup_cons_2 in H0. 
+        apply H0. rewrite e. apply in_map; trivial.
+      + simpl. apply IHh; trivial.
+        simpl in H0.
+        apply (NoDup_cons_1 _ (heap_item_key a)); trivial.
+  Qed.
+
+Lemma filter_absorb_map: forall A (f : A -> A) (g : A -> bool) L,
+  (forall x, (g (f x) = g x) /\ ((g (f x) = false) \/ f x = x)) ->
+  filter g (map f L) = filter g L.
+Proof.
+  induction L; auto; intros.
+  simpl.
+  case_eq (g (f a)); intro. destruct (H a). rewrite H0 in H2. destruct H2. discriminate.
+  rewrite H1 in *. rewrite H0. rewrite H2, IHL; trivial.
+  destruct (H a). rewrite H1 in H0. rewrite H0.
+  apply IHL; auto.
+Qed.
+
+Lemma find_item_by_key_update_pri_by_key': forall L k1 k2 np,
+  k1 <> k2 ->
+  find_item_by_key (update_pri_by_key L k1 np) k2 = find_item_by_key L k2.
+Proof.
+  intros. unfold find_item_by_key, update_pri_by_key.
+  rewrite filter_absorb_map. trivial. intros.
+  unfold update_pri_if_key, heap_item_key. destruct x as [[? ?] ?].
+  simpl. case Z.eq_dec; intro; simpl. subst k1. split; trivial.
+  case Z.eq_dec; auto; intro; simpl. contradiction.
+  case Z.eq_dec; simpl; split; auto.
+Qed.
 
 (*
 Does not seem to work on arrays.
