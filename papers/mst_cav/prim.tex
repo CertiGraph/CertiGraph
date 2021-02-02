@@ -6,7 +6,7 @@ for each u in G.V
   u.parent = NIL
 r.key = 0
 Q = G.V
-while Q < 0
+while Q
   u = EXTRACT-MIN(Q)
   for each v in G.Adj[u]
     if v in Q and w(u,v) < v.key
@@ -21,7 +21,7 @@ for each u in G.V
   u.parent = NIL
 
 Q = G.V
-while Q < 0
+while Q
   u = EXTRACT-MIN(Q)
   for each v in G.Adj[u]
     if v in Q and w(u,v) < v.key

@@ -58,6 +58,8 @@ These functions involve a number of complexities, both at the algorithms level a
 \]
 A second C-semantics issue is the potential for overflow within \texttt{LEFT\_CHILD} and \texttt{RIGHT\_CHILD} (as well as the increments on line~\ref{code:sinkplusplus}), and underflow within the \texttt{PARENT} macro (if \texttt{x} should ever be 0).  To avoid this overflow, the precondition of \texttt{sink} requires that when $\texttt{k}$ is in bounds (\emph{i.e.}, $\texttt{k} < \texttt{available}$), then $2\cdot(\texttt{available}-1) \leq \texttt{max\_unsigned}$.  An edge case occurs when deleting the last element from a heap ($\texttt{k}=\texttt{available}$); we then require $2\cdot\texttt{k}\leq \texttt{max\_unsigned}$.
 
+\lstset{style=CoqStyle}
+
 At the algorithmic level, both the \texttt{swim} and \texttt{sink} functions involve nontrivial loop invariants; \texttt{sink} is complicated by the further need to support Floyd's \texttt{heapify}, during which a large portion of the array is unordered.  Accordingly, we build Gallina models of both functions and show that they restore heap order given a mostly-ordered input heap.  There are two different versions of ``mostly-ordered''. Specifically, \texttt{swim} uses a ``bottom-up'' version:
 \begin{lstlisting}
 Definition weak_heapOrdered2 (L : list A) (j : nat) : Prop :=
@@ -85,6 +87,8 @@ The parameter \texttt{k} is used to support Floyd's \texttt{heapify}: it bounds 
 Gallina versions, thereby delegating all associated heap-ordering proofs to the Gallina versions.
 
 The insertion and remove functions we verify are in fact ``non-checking'' versions (\texttt{insert\_nc} and \texttt{remove\_nc}): their preconditions assume there is room in the heap to add or an item in the heap to remove.  In the context of Dijkstra and Prim, these preconditions can be proven to hold.  The associated verifications involve a little separation logic hackery (specifically, to \textsc{Frame} away the ``junk'' part of the heap-array from the ``live'' part), but are straightforward using VST.  We avoid the overflow issue in \texttt{sink} by bounding the maximum capacity of the heap: $2\cdot(\texttt{capacity} - 1) \leq \texttt{max\_unsigned}$.  We require users to prove this bound on heap creation, and thereafter handle it under the hood.
+
+\lstset{style=myTinyStyle}
 
 \subsection{Bottom-up heapify and heapsort}
 
