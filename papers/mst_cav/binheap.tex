@@ -39,7 +39,7 @@ void sink (unsigned int k, Item arr[], unsigned int available) {
   if (j+1 < available && less(j+1, j, arr)) j++; $\label{code:sinkplusplus}$
   if (less(k, j, arr)) break; exch(k, j, arr); k = j;        } }
 \end{lstlisting}
-These functions involve a number of complexities, both at the algorithms level and at the semantics-of-C level.  At the C level, there is the potential for a rather subtle bug in the macros \texttt{ROOT\_IDX}, \texttt{PARENT}, etc.  Abstractly, these are simple: the root is in index 0; the children of $x$ at roughly $2x$ and the parent at roughly $\frac{x}{2}$, with $\pm1$ as necessary.  The danger is thinking that because the variables are \texttt{unsigned int}, all arithmetic will occur in this domain; in fact we must force the associated constants into \texttt{unsigned int} as well:
+These functions involve a number of complexities, both at the algorithms level and at the semantics-of-C level.  At the C level, there is the potential for a rather subtle bug in the macros \texttt{ROOT\_IDX}, \texttt{PARENT}, etc.  Abstractly, these are simple: the root is in index 0; the children of $x$ at roughly $2x$ and the parent at roughly~$\frac{x}{2}$, with $\pm1$ as necessary.  The danger is thinking that because the variables are \texttt{unsigned int}, all arithmetic will occur in this domain; in fact we must force the associated constants into \texttt{unsigned int} as well:
 \[
 \begin{array}{@{}l@{~~}|@{~}l@{}}
 \begin{minipage}{0.475\textwidth}
@@ -104,10 +104,16 @@ Given that in \S\ref{sec:heapinsertremove} we already generalized the specificat
 
 \subsection{Modifying an element's priority}
 
-In contrast to \texttt{heapify} and \texttt{heapsort}, standard algorithms textbooks are vague on the implementation of decrease-key~\cite{clrs,sedgewick}.  The idea is to equip each item with an \texttt{unsigned int} ``tag'' in addition to the existing \texttt{int} priority. A secondary array \texttt{key\_table} maps tags to the current heap-array location of the associated item.  This tag will be returned from \texttt{insert} and given to \texttt{edit\_priority} to identify which element's priority should be modified.  To keep everything linked together properly, the \texttt{key\_table} is modified during the \texttt{exch}ange function.
+In contrast to \texttt{heapify} and \texttt{heapsort}, standard algorithms textbooks are vague on the implementation of \texttt{edit\_pri}ority~\cite{clrs,sedgewick}.  The idea is that, during \texttt{insert}, each item is associated not only with its usual \texttt{int} priority
+but also a unique \texttt{unsigned int} ``key''. 
+This key is generated during \texttt{insert} and returned to the user.
+Internally, the binary heap maintains a secondary array \texttt{key\_table} that maps each key to the current heap-array location of the associated item.  
+The user calls \texttt{edit\_pri} by supplying the \emph{key} of the item
+they wish to modify, and the binary heap uses the key to 
+locate the item. To keep everything linked together properly, the \texttt{key\_table} is modified during the \texttt{exch}ange function.
 
-One detail entirely missing from standard textbooks is how to generate the tags on insert.  The initial idea is to have a global counter starting at 0, which is then increased on each insert.  Unfortunately, this is unsound: during (very) long runs involving both \texttt{insert} and \texttt{remove-min}, this tag counter will overflow.  Although overflow is defined in C for \texttt{unsigned int}, this overflow is fatal algorithmically: multiple items could be assigned the same tag.
+One detail entirely missing from standard textbooks is how to generate the keys on insert.  The initial idea is to have a global counter starting at 0, which is then increased on each insert.  Unfortunately, this is unsound: during (very) long runs involving both \texttt{insert} and \texttt{remove-min}, this key counter will overflow.  Although overflow is defined in C for \texttt{unsigned int}, this overflow is fatal algorithmically: multiple items could be assigned the same key.
 
-A better method is to store a tag field within each heap-item in the main array.  These tags are initialized to $0..(\texttt{capacity}-1)$, and thereafter are never modified other than when two cells are swapped during \texttt{exch}.  An invariant can then be maintained: the tags from the ``live'' and ``junk'' parts of the main heap array always form an exact permutation of $0..(\texttt{capacity}-1)$.  On insertion, we can then ``recycle'' the tag of the first ``junk'' item.
+A better method is to store a key field within each heap-item in the main array.  These keys are initialized to $0..(\texttt{capacity}-1)$, and thereafter are never modified other than when two cells are swapped during \texttt{exch}.  An invariant can then be maintained: the keys from the ``live'' and ``junk'' parts of the main heap array always form an exact permutation of $0..(\texttt{capacity}-1)$.  On insertion, we ``recycle'' the key of the first ``junk'' item.
 
 %The VST proofs of the C code are only slightly more challenging since the key complexities are encapsulated into the \texttt{exch} function.
