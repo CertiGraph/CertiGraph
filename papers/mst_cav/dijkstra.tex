@@ -3,7 +3,7 @@
 
 Figure~\ref{fig:decorated} shows the code and proof
 sketch of Dijkstra's algorithm.  
-Red text in an annotation indicates changes compared to  
+{\color{red}Red} text in an annotation indicates changes compared to the
 annotation immediately prior.
 Our code is implemented exactly
 as suggested by CLRS~\cite{clrs}, so we refer readers there for a
@@ -58,7 +58,7 @@ graph~$\gamma$, which in turn exposes an interface in the language of graph theo
 }
 
 Dijkstra's algorithm uses a PQ to greedily choose the 
-cheapest unoptimized vertex, as on line~\ref{code:pop}. Of course, the 
+cheapest unoptimized vertex, as on line~\ref{code:pop}. The 
 best-known distances to vertices are expected to improve as 
 various edges are relaxed, and such improvements need to be logged in the PQ:
 Dijkstra's algorithm implicitly demands of its~PQ the relatively 
