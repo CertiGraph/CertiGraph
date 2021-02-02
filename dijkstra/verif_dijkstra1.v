@@ -1437,7 +1437,7 @@ Section DijkstraProof.
 
             forward_if.
             ++ rename H22 into Htemp.
-               assert (0 <= cost <= Int.max_signed / size). {
+               assert (0 <= cost <= Int.max_signed / size - 1). {
                  pose proof (edge_representable g (u, i)).
                  rewrite Heqcost in *.
                  apply (valid_edge_bounds g).
@@ -1664,7 +1664,7 @@ Section DijkstraProof.
                        H45 H46 H47 PNkeys_ptr PNpriq_ptr.
                  
                  assert (elabel g (u, i) < inf). {
-                   apply Z.le_lt_trans with (m := Int.max_signed / size);
+                   apply Z.le_lt_trans with (m := Int.max_signed / size - 1);
                      trivial.
                    apply H22.
                    apply (inf_further_restricted g).
