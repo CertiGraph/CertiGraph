@@ -6,7 +6,7 @@ the longest optimal path has $\texttt{size}-1$ links and so the
 most expensive possible path costs no more than \texttt{INT\_MAX}.
 However, this has two flaws.  First, since we are writing real code in~C,
 rather than pseudocode in an idealized setting, we must reserve some
-concrete \texttt{int} value \texttt{inf} for ``infinity'', with 
+concrete \texttt{int} value \texttt{inf} for ``infinity'', with
 the semantics that if the best-known distance to a vertex~\m{x}
 is \texttt{inf}, then~\m{x} is as-yet unreachable.
 A consequence of this is that reachable destination vertices cannot have a
@@ -42,5 +42,6 @@ Our code uses signed \texttt{int} rather than \texttt{unsigned int} so we have u
 Our solution is twofold.  First, we restrict the maximum edge cost to $\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}}\right\rfloor - 1$, which in the 4-bit setting just described forces an edge cost of no more than~4.  Consider modifying figure~\ref{fig:overflow} to
 have edge weights of~4~rather than~5s~and~6s.  After processing vertices~A~and~B, the distances to~B~and~C are no more than~4~and~8 respectively.  When we process vertex~C, the comparison on line~\ref{code:overflow} is thus between the previous best cost to~B~(4) and the candidate best cost to~B~via~C~(12); there is no overflow and the code behaves as advertised.
 
-The second part of our solution is that we require in the function precondition that $\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor - 1 < \texttt{inf} \le \texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$.  As long as $\texttt{size} > 1$, this is perfectly realizable  by setting \texttt{inf} to $\texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$, \emph{i.e.} in the 4-bit machine we set \texttt{inf} to $11$.  When $\texttt{size} = 1$, this inequality is not realizable; our verification is thus not applicable to single-vertex graphs, a special case for which the shortest-path problem is in any event rather uninteresting.
-
+The second part of our solution is that we require in the function precondition that $\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor - 1 < \texttt{inf} \le \texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$.  As long as $\texttt{size} > 1$, this is perfectly realizable  by setting \texttt{inf} to $\texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$, \emph{i.e.} in the 4-bit machine we set \texttt{inf} to $11$.  It may be surprising that infinity has a nontrivial upper bound.  The reason is that line~\ref{code:overflow} implicitly assumes that $\infty + \texttt{cost} = \infty$, which certainly is not true for machine integers!
+Lastly, when $\texttt{size} = 1$, the range bound on infinity collapses and \texttt{inf} becomes unrealizable.  
+Our verification is thus not applicable to single-vertex graphs, a special case for which the shortest-path problem is in any event rather uninteresting.
