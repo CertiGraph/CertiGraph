@@ -56,7 +56,8 @@ next-cheapest unexamined vertex, as in line~\ref{code:pop}. Of course, the
 best-known distances to vertices are expected to improve as the algorithm
 proceeds, and such improvements need to be logged in the PQ:
 Dijkstra's algorithm implicitly demands of its~PQ the relatively 
-nonstandard \texttt{decrease\_key} operation.\footnote{A popular \cite{blah, blah, blah} 
+nonstandard \texttt{decrease\_key} 
+operation.\footnote{A popular \cite{blah,blah,blah} 
 workaround gets by with a simpler PQ (or even without a PQ).  
 Note that \texttt{dist} already tracks the best-known cost 
 to any vertex (line~\ref{code:update1}). Maintain a list of  
@@ -123,32 +124,31 @@ this is trivial from $\m{dijk\_correct}$. For~\m{u} itself, we reach the heart o
 one hop from a popped vertex ``\emph{mom}''. Initially this is trivial since $\m{i}=0$, and we restore it as \m{i} increments by updating costs when they can be improved, as in lines~\ref{code:update1}~and~\ref{code:update2}.
 \item $\m{inv\_unseen}$ (less than \m{i}): no finite-cost path is known from any popped vertex to $\m{dst}$. As above, this is restored as \m{i} increments.
 \item $\m{inv\_unpopped\_weak}$ (between \m{i} and \texttt{size}):
-$\m{dst}$ is reachable in one hop from a popped ``\emph{mom}'' vertex.
-However, the path to $\m{dst}$ specifically does not go via~\m{u}.
-This fact is key: as $\m{i}$ increments, we strengthen this 
-into $\m{inv\_unpopped}$.
+$\m{dst}$ is reachable in one hop from a popped ``\emph{mom}'' vertex,
+with further improvements possible via \m{u}.
+This fact is key: as~$\m{i}$ increments, we strengthen this 
+into $\m{inv\_unpopped}$ after considering whether the popping of
+\m{u} improves the best-known cost of \m{dst}.
 \item $\m{inv\_unseen\_weak}$ (between \m{i} and \texttt{size}):
 no finite-cost path is known from any popped vertex to
 $\m{dst}$, but there may be one from \m{u}.
-This fact is strengthened into either 
-$\m{inv\_unpopped}$ or $\m{inv\_unseen}$ as $\m{i}$
-increments.
+Again, as $\m{i}$ increments, we consider whether the popping 
+of \m{u} reveals a finite-cost path to~\m{dst}. 
+This is strengthened into
+$\m{inv\_unpopped}$ if so, and into
+$\m{inv\_unseen}$ if not.
 \end{enumerate}
-
-\note[cut?]{The formal definitions for the above predicates can be found in the Appendix.}
-%, and the key subdefinitions upon which they rely, 
-
-At the end of the \texttt{for} loop, the fourth and fifth cases fall away 
-(\texttt{i = size}), and the PQ and the \m{dist} and \m{prev} arrays
-have ``caught up'' to the pop on line~\ref{code:pop}.
-This allows us
-to infer the \texttt{while} invariant $\m{dijk\_correct}$ from 
-the \texttt{for} invariant
-$\m{dijk\_correct\_weak}$, and thus continue the \texttt{while} loop.
-The \texttt{while} loop itself breaks when all the vertices have been popped
+At the end of the \texttt{for} loop on line \ref{code:caughtup},
+the fourth and fifth cases fall away 
+(\texttt{i~=~size}), and the PQ and the \m{dist} and \m{prev} arrays
+finish ``catching up'' to the pop on line~\ref{code:pop}.
+This allows us to infer 
+the \texttt{while} invariant $\m{dijk\_correct}$, 
+and thus continue the \texttt{while} loop.
+The \texttt{while} loop itself breaks when all vertices have been popped
 and processed. The second and third clauses of the \texttt{while} loop invariant
-$\m{dijk\_correct}$ then fall away:
-all vertices are either optimally reachable or altogether unreachable. 
+$\m{dijk\_correct}$ then fall away, as seen on line \ref{code:end}:
+all vertices are in \m{inv\_popped}, either optimally reachable or altogether unreachable.
 We are done.
 
 \hide{
