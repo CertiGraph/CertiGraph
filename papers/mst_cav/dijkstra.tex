@@ -10,9 +10,9 @@ an array pointer \texttt{x} with its contents $\vec{v}$, is standard and unexcit
 $\mathsf{PQ}(\texttt{pq},\m{heap})$ is the spatial 
 representation of our priority queue;
 we do nothing spatially interesting with the PQ.
-\hide{An $\mathsf{Item}(\texttt{i},\m{(key, pri, data)})$
-is just an item from the priority queue.
-} %end hide
+%An $\mathsf{Item}(\texttt{i},\m{(key, pri, data)})$
+%is just an item from the priority queue.
+
 Of greater interest is $\mathsf{AdjMat}(\texttt{g},\gamma)$, which
 links the concrete memory values of~\texttt{g} to an abstract mathematical
 graph~$\gamma$, which in turn exposes an interface in the 
@@ -49,7 +49,8 @@ graph~$\gamma$, which in turn exposes an interface in the language of graph theo
 \vspace{1em}
 \p{graph\_rep}(\gamma, \m{g\_addr}) &\defeq \underset{\m{v} \in \gamma}{\bigstar} \m{v}  \mapsto\p{list\_rep}(\gamma, \m{v}, \m{g\_addr})
 \end{split}
-\end{equation*}}
+\end{equation*}
+}
 
 Dijkstra's algorithm uses a PQ to greedily choose the 
 cheapest unoptimized vertex, as on line~\ref{code:pop}. Of course, the 
@@ -221,6 +222,10 @@ and $\m{inv\_popped}$ are preserved as-is, modulo the popping of
 $\m{u}$ as discussed above. The key edit is in $\m{inv\_unpopped}$. blah blah blah
 
 }
+
+\label{sec:overflow}
+  \input{overflow.tex}
+
 
 
 
