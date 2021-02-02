@@ -46,19 +46,16 @@ We discuss two observations. First, in spite of the many pen-and-paper proofs of
 
 The remainder of this paper is organized as follows:
 \begin{itemize}
-    \item[\S\ref{sec:undirected}] We explain how our undirected graph and forest definitions within the context of a fundamenetally directed graph library to enable verification of Prim's and Kruskal's algorithms
-    \item[\S\ref{sec:structure}] We discuss modularity within the graph library as a follow-up from Kruskal's, demonstrating VST's and CertiGraph's ability to build incrementally larger systems.
-    \item[\S\ref{sec:dijkstra}] We briefly present and explain
-    our~C~implementation of Dijkstra's algorithm and the key loop invariants
-    we use to certify its specification.
-    \item[\S\ref{sec:overflow}] We explain how overflow can occur and give a
-    refinement to the precondition of the function that restricts edge weights
-    and the standard \texttt{INF} definition
-    appropriately in a way that prevents said overflow.
-    \item[\S\ref{sec:prim}] We present Prim's algorithm and discuss our findings on its ability to operate on disconnected graphs by simply dissociating a vertex's membership in the priority queue from its weight.
-    \item[\S\ref{sec:kruskal}] We present Kruskal's algorithm and discuss the nuances between different graph representations, as well as the reuse of previously independently verified programs.
-    \item[\S\ref{sec:conclusion}] We conclude by putting this result in the context of our
-    previous and ongoing work. We discuss related work in certifying the three graph algorithms, and revisit standard algorithms textbook presentations.
+    \item[\S\ref{sec:undirected}] We explain our extensions to CertiGraph: edge-labeled graphs, undirected graphs, and spacial representations of such graphs.
+%    \item[\S\ref{sec:structure}] We discuss modularity within the graph library as a follow-up from Kruskal's, demonstrating VST's and CertiGraph's ability to build incrementally larger systems.
+    \item[\S\ref{sec:dijkstra}] We explain our verification of Dijkstra's algorithm in some detail, discuss a potential overflow, and refine the precondition to avoid it. %~implementation of  and the key loop invariants we use to certify its specification.
+%    \item[\S\ref{sec:overflow}] We explain how overflow can occur and give a refinement to the precondition of the function that restricts edge weights and the standard \texttt{INF} definition appropriately in a way that prevents said overflow.
+    \item[\S\ref{sec:mst}] We overview our verifications of the MST algorithms of Prim and Kruskal, focusing on high-level points such as our strengthened specification for Prim's.
+%    's algorithm and discuss our findings on its ability to operate on disconnected graphs by simply dissociating a vertex's membership in the priority queue from its weight.
+%    \item[\S\ref{sec:kruskal}] We present 's algorithm and discuss the nuances between different graph representations, as well as the reuse of previously independently verified programs.
+    \item[\S\ref{sec:binheap}] We overview our verification of binary heaps, including a discussion of Floyd's bottom-up heap construction and the edit-priority operation.
+    \item[\S\ref{sec:conclusion}] We discuss related work, outline future research directions, and conclude.
+%    putting this result in the context of our previous and ongoing work. We discuss related work in certifying the three graph algorithms, and revisit standard algorithms textbook presentations.
 \end{itemize}
 
-\noindent Our code is available at \url{https://github.com/anshumanmohan/CertiGraph}.
+\noindent All of our results are completely machine-checked in Coq~\cite{CITE}.%  Our code is available at \url{https://github.com/anshumanmohan/CertiGraph}.
