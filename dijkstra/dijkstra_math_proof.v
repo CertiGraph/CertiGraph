@@ -363,7 +363,7 @@ Section DijkstraMathLemmas.
     }
 
     assert (elabel g (mom', child') < inf). {
-      apply Z.le_lt_trans with (m := Int.max_signed / size).
+      apply Z.le_lt_trans with (m := Int.max_signed / size - 1).
       apply valid_edge_bounds; trivial.
       apply (inf_further_restricted g).
     }
@@ -389,14 +389,14 @@ Section DijkstraMathLemmas.
   Lemma evalid_dijk:
     forall (g: @DijkGG size inf) a b cost,
       cost = elabel g (a,b) ->
-      0 <= cost <= Int.max_signed / size ->
+      0 <= cost <= Int.max_signed / size - 1 ->
       evalid g (a,b).
   Proof.
     intros.
     rewrite (evalid_meaning g); split.
     1: apply edge_representable.
     destruct H0.
-    apply Z.le_lt_trans with (m := Int.max_signed / size);
+    apply Z.le_lt_trans with (m := Int.max_signed / size - 1);
       trivial.
     rewrite H in H1; trivial.
     apply (inf_further_restricted g).

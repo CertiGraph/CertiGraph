@@ -28,7 +28,7 @@ Section MathDijkGraph.
        *)
       forall e,
         evalid g e ->
-        0 <= elabel g e <= Int.max_signed / size;
+        0 <= elabel g e <= (Int.max_signed / size) - 1;
 
     cts: (* cost_to_self *)
       forall v, vvalid g v -> elabel g (v, v) = 0;
@@ -38,7 +38,7 @@ Section MathDijkGraph.
     (* because sizeof tint = 4 *)
     
     ifr: (* inf is further restricted *)
-      Int.max_signed / size < inf <= Int.max_signed - (Int.max_signed / size)
+      (Int.max_signed / size) - 1 < inf <= Int.max_signed - (Int.max_signed / size) + 1
                                                         
     }.
 
@@ -85,19 +85,7 @@ Section MathDijkGraph.
       0 < inf < Int.max_signed.
   Proof.
     intros.
-    pose proof (inf_further_restricted g).
-    pose proof (size_representable g).
-    split. 
-    - apply Z.le_lt_trans with
-          (m := Int.max_signed / size);
-        [apply Z.div_pos|]; rep_lia.
-    - destruct H as [_ ?].
-      apply Z.le_lt_trans with
-          (m := Int.max_signed - Int.max_signed/size); trivial.
-      assert (0 < Int.max_signed / size). {
-        apply Z.div_str_pos; trivial.
-      }
-      lia.
+    apply (inf_representable g).
   Qed.
 
   (* And now some lemmas that come from soundness plugins. *)
@@ -146,9 +134,11 @@ Section MathDijkGraph.
     destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
     - specialize (H e0). 
       split; trivial. rep_lia.
-      apply Z.le_trans with (m := (Int.max_signed / size)); trivial.
+      apply Z.le_trans with (m := (Int.max_signed / size) - 1); trivial.
       apply H.
       pose proof (size_representable g).
+      apply Z.le_trans with (m := Int.max_signed / size).
+      lia.
       apply div_pos_le; lia.
     - rewrite H0 in n.
       replace (elabel g e) with inf by trivial.
