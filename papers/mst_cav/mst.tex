@@ -81,7 +81,6 @@
 \lstdefinestyle{myTinyStyle}{
 	%   language=Coq,
 	basicstyle=\normalfont\fontsize{7.0}{7.3}\tt,
-	keywordstyle=\color{green}, % Blue clashes with the cyan links. Change if you want.
 	stepnumber=1,
 	tabsize=2,
 	numbers=none,
@@ -98,6 +97,21 @@
 	basicstyle=\footnotesize\ttfamily,
 	keywordstyle=\color{blue}, numbers=left,
 	numberstyle=\tiny, numbersep=5pt, boxpos=t
+}
+
+\lstdefinestyle{CoqStyle}{
+%	language=Coq,
+    keywords={forall,Prop,Type,Inductive,Require,Import,Definition,Fixpoint,match,with,end,let,in,fix,if,then,else},
+	basicstyle=\footnotesize\ttfamily,
+    keywordstyle=\color{blue},
+	stepnumber=1,
+	tabsize=2,
+    numbers=none,
+    numberstyle=\tiny,
+    numbersep=5pt,
+	showspaces=false,
+    escapechar=`,
+	showstringspaces=false
 }
 
 \lstset{style=myTinyStyle}
