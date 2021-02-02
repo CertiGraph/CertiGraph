@@ -11,7 +11,7 @@ $\color{OliveGreen}//~\braces{\p{AdjMat}(\texttt{g},\gamma) *
  PQ* pq = pq_make(size); int i, j, u, cost;
  for (i = 0; i < size; i++) 
  { dist[i] = inf; prev[i] = inf; keys[i] = pq_push(pq, inf, i); } $\label{code:assigninf}$
- dist[src] = 0; prev[src] = src; pq_edit_pri(pq, keys[src], 0);
+ dist[src] = 0; prev[src] = src; pq_edit_priority(pq, keys[src], 0);
 $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}, \m{keys},\m{heap}}.~\p{AdjMat}(\texttt{g},\gamma) * {\color{red}\p{PQ}(\texttt{pq},\m{heap})} * \mathsf{array}(\texttt{dist},{\color{red}\m{dist}}) * \null \\
 \mathsf{array}(\texttt{prev}, {\color{red}\m{prev}}) * 
 {\color{red}\mathsf{array}(\texttt{keys}, \m{keys}}) * 
@@ -31,7 +31,7 @@ $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{poppe
    if (cost < inf) {
     if (dist[i] > dist[u] + cost) { $\label{code:overflow}$
      dist[i] = dist[u] + cost; prev[i] = u; $\label{code:update1}$ 
-     pq_edit_pri(pq, keys[i], dist[i]); $\label{code:update2}$
+     pq_edit_priority(pq, keys[i], dist[i]); $\label{code:update2}$
   }}} $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''},\m{heap''}}.~\p{AdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},\m{\color{red}heap''}) *
   \mathsf{array}(\texttt{dist},\m{\color{red}dist''}) * \null \\
   \mathsf{array}(\texttt{prev}, \m{\color{red}prev''}) *

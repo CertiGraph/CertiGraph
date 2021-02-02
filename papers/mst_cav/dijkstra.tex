@@ -59,7 +59,7 @@ cheapest unoptimized vertex, as on line~\ref{code:pop}. Of course, the
 best-known distances to vertices are expected to improve as 
 various edges are relaxed, and such improvements need to be logged in the PQ:
 Dijkstra's algorithm implicitly demands of its~PQ the relatively 
-nonstandard \texttt{decrease\_pri} 
+nonstandard \texttt{decrease\_priority} 
 operation.\footnote{A popular \cite{blah,blah,blah} 
 workaround gets by with a simpler PQ (or even without a PQ).  
 Note that \texttt{dist} already tracks the best-known cost 
@@ -69,7 +69,7 @@ Find the cheapest unoptimized vertex by
 iterating over \texttt{dist} while rejecting optimized items. 
 Neat, but far too slow.}
 This motivates our ``advanced''~PQ~(\S\ref{sec:binheap}),
-which supports this efficiently via a general \texttt{pq\_edit\_pri} operation.
+which supports this efficiently via a general \texttt{pq\_edit\_priority} operation.
 % each \texttt{pop\_min} now takes $\bigO(n)$ time.
 
 
