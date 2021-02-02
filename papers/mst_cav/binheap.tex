@@ -108,6 +108,7 @@ void heapsort_rev(Item* arr, unsigned int size) {
 Given that in \S\ref{sec:heapinsertremove} we already generalized the specification for \texttt{sink} to handle a portion of the array being unordered, the verification of these functions is straightforward.  There is, however, the possibility of a subtle underflow on line~\ref{code:parentunderflow}, in the case when building an empty heap (\emph{i.e.}, $\texttt{size}=0$).  In turn, this means that \texttt{heapsort\_rev} as given above cannot sort empty lists; in our ``basic'' implementation we strengthen the precondition accordingly, whereas in our ``Kruskal'' implementation we add a line before~\ref{code:buildheapsort} that \texttt{return}s when $\texttt{size}=0$.  We use a max-heap for Kruskal because heapsort yields a \emph{reverse} sorted list.
 
 \subsection{Modifying an element's priority}
+\label{sec:modpri}
 
 In contrast to \texttt{heapify} and \texttt{heapsort}, standard algorithms textbooks are vague on the implementation of \texttt{edit\_priority}~\cite{clrs,sedgewick}.  The idea is that, during \texttt{insert}, each item is associated not only with its usual \texttt{int} priority
 but also a unique \texttt{unsigned int} ``key''.
