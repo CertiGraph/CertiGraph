@@ -1,4 +1,4 @@
-\subsection{Overview}
+\subsection{Verified Dijkstra's algorithm in C}
 \label{sec:dijkoverview}
 
 Figure~\ref{fig:decorated} shows the code and proof
@@ -15,7 +15,6 @@ representation of our priority queue;
 we do nothing spatially interesting with the PQ.
 %An $\mathsf{Item}(\texttt{i},\m{(key, pri, data)})$
 %is just an item from the priority queue.
-
 Of greater interest is $\mathsf{AdjMat}(\texttt{g},\gamma)$, which
 links the concrete memory values of~\texttt{g} to an abstract mathematical
 graph~$\gamma$, which in turn exposes an interface in the 
@@ -226,7 +225,7 @@ $\m{u}$ as discussed above. The key edit is in $\m{inv\_unpopped}$. blah blah bl
 
 }
 
-\subsection{Overflow}
+\subsection{Overflow in Dijkstra's algorithm}
 \label{sec:dijkoverflow}
 \input{overflow.tex}
 
