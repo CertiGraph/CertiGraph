@@ -71,7 +71,7 @@ vertices that have been optimized.
 Find the cheapest unoptimized vertex by 
 iterating over \texttt{dist} while rejecting optimized items. 
 Neat, but far too slow.}
-This motivates our ``advanced''~PQ~(\S\ref{sec:binheap}),
+This motivates our ``advanced''~PQ~(\S\ref{sec:modpri}),
 which supports this efficiently via a general \texttt{pq\_edit\_priority} operation.
 % each \texttt{pop\_min} now takes $\bigO(n)$ time.
 
