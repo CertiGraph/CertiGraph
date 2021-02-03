@@ -11,7 +11,7 @@ $\color{OliveGreen}//~\braces{\p{AdjMat}(\texttt{g},\gamma) *
  PQ* pq = pq_make(size); int i, j, u, cost;
  for (i = 0; i < size; i++) 
  { dist[i] = inf; prev[i] = inf; keys[i] = pq_push(pq, inf, i); } $\label{code:assigninf}$
- dist[src] = 0; prev[src] = src; pq_edit_priority(pq,keys[src],0);
+ dist[src] = 0; prev[src] = src; pq_edit_priority(pq,keys[src], 0);
 $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}, \m{keys},\m{heap}}.~\p{AdjMat}(\texttt{g},\gamma) * {\color{red}\p{PQ}(\texttt{pq},\m{heap})} * \mathsf{array}(\texttt{dist},{\color{red}\m{dist}}) * \null \\
 \mathsf{array}(\texttt{prev}, {\color{red}\m{prev}}) * 
 {\color{red}\mathsf{array}(\texttt{keys}, \m{keys}}) * 
@@ -19,12 +19,13 @@ $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}
 {\color{red}\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}}$ $\label{code:whileinv}$
  while (pq_size(pq) > 0) {
   pq_pop(pq, temp); u = temp->data; $\label{code:pop}$
-$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{popped'}, \m{heap'}, \m{i}, \texttt{u}_{key}, \texttt{u}_{pri}}.~\p{AdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},{\color{red}\m{heap'}}) * \null \\
+$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{popped'}, \m{heap'}, \m{i}, \texttt{u}_{key}}.~\p{AdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},{\color{red}\m{heap'}}) * \null \\
 \mathsf{array}(\texttt{dist},\m{\color{red}dist'}) * 
 \mathsf{array}(\texttt{prev}, \m{\color{red}prev'}) * 
 \mathsf{array}(\texttt{keys}, \m{keys}) * \null \\
-\mathsf{Item}(\texttt{temp}, \m{\color{red}(\texttt{u}_{key}, \texttt{u}_{pri}, \texttt{u})}) /| 
-\m{\color{red}min(\texttt{u}, \m{heap'})} /| \null \\
+\mathsf{Item}(\texttt{temp}, \m{\color{red}(\texttt{u}_{key}, \texttt{dist[u]}, \texttt{u})}) /| 
+\m{\color{red}min(\texttt{dist[u]}, \m{heap'})} /| 
+{\color{red}\m{heap'} = \m{heap} - (\texttt{u}_{key}, \texttt{dist[u]}, \texttt{u})} /| \null \\
 {\color{red}\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped'}, \m{prev'}, \m{dist'}, \m{i}, \texttt{u})}}$ $\label{code:forinv}$
   for (i = 0; i < size; i++) {
    cost = getCell(g, u, i); $\label{code:cost}$
@@ -32,12 +33,13 @@ $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{poppe
     if (dist[i] > dist[u] + cost) { $\label{code:overflow}$
      dist[i] = dist[u] + cost; prev[i] = u; $\label{code:update1}$ 
      pq_edit_priority(pq, keys[i], dist[i]); $\label{code:update2}$
-  }}} $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''},\m{heap''}}.~\p{AdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},\m{\color{red}heap''}) *
+  }}} $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''},\m{heap''},\texttt{i}_{key},\texttt{i}_{oldpri}}.~\p{AdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},\m{\color{red}heap''}) *
   \mathsf{array}(\texttt{dist},\m{\color{red}dist''}) * \null \\
   \mathsf{array}(\texttt{prev}, \m{\color{red}prev''}) *
   \mathsf{array}(\texttt{keys}, \m{keys}) *
   \mathsf{Item}(\texttt{temp}, \m{(\texttt{u}_{key}, \texttt{u}_{pri}, \texttt{u})}) /| \null \\
-  \m{min(\texttt{u}, \m{heap'})} /|
+  \m{min(\texttt{u}_{pri}, \m{heap'})} /|
+  {\color{red}\m{heap''} = \m{heap'} - (\texttt{i}_{key}, \texttt{i}_{oldpri}, \texttt{i}) + (\texttt{i}_{key}, \texttt{dist[i]}, \texttt{i})} /| \null \\
   {\m{\color{red}dijk\_correct}(\gamma, \texttt{src}, \m{popped'}, \m{\color{red}prev''}, \m{\color{red}dist''})}}$ $\label{code:caughtup}$
  } $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist^{\circ}}, \m{prev^{\circ}}, \m{popped^{\circ}}, \m{heap^{\circ}}}.~\p{AdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},\m{\color{red}heap^{\circ}}) * \null \\
  \mathsf{array}(\texttt{dist},\m{\color{red}dist^{\circ}}) * 

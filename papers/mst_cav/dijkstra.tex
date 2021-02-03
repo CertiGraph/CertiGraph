@@ -1,3 +1,7 @@
+We verify a standard C implementation of Dijkstra's algorithm.
+First, we sketch our proof in some detail with an emphasis on our loop invariants.
+Second, we uncover and solve a subtle overflow bug.
+
 \subsection{Verified Dijkstra's algorithm in C}
 \label{sec:dijkoverview}
 
@@ -14,10 +18,10 @@ and two allocated arrays \texttt{dist} and \texttt{prev}.
 The spatial predicate $\mathsf{array}(\texttt{x},\vec{v})$, which connects 
 an array pointer \texttt{x} with its contents $\vec{v}$, is standard and unexciting.
 $\mathsf{PQ}(\texttt{pq},\m{heap})$ is the spatial 
-representation of our priority queue (PQ);
+representation of our priority queue (PQ) and
+$\mathsf{Item}(\texttt{i},\m{(key, pri, data)})$
+lays out a struct that we use to interact with the PQ;
 we leave the management of the PQ to the operations described in~\S\ref{sec:binheap}.
-%An $\mathsf{Item}(\texttt{i},\m{(key, pri, data)})$
-%is just an item from the priority queue.
 Of greater interest is $\mathsf{AdjMat}(\texttt{g},\gamma)$, which
 links the concrete memory values of~\texttt{g} to an abstract mathematical
 graph~$\gamma$, which in turn exposes an interface in the 
@@ -79,8 +83,8 @@ of decreased performance.}.
 %iterating over \texttt{dist} while rejecting optimized items. 
 %Neat, but far too slow.
 
-\note{The key to the verification is the loop
-invariants on lines~\ref{code:whileinv} and~\ref{code:forinv}.  The pure \texttt{while} invariant $\m{dijk\_correct}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist})$ essentially unfolds into:}
+The key to the verification is the loop
+invariants on lines~\ref{code:whileinv} and~\ref{code:forinv}.  The pure \texttt{while} invariant $\m{dijk\_correct}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist})$ essentially unfolds into:
 \[
 \begin{array}{l}
 \forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{size} -> \m{inv\_popped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
