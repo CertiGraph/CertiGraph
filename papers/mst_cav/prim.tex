@@ -6,11 +6,11 @@ for each u in G.V
   u.parent = NIL
 r.key = 0
 Q = G.V
-while Q
+while Q is nonempty
   u = EXTRACT-MIN(Q)
   for each v in G.Adj[u]
     if v in Q and w(u,v) < v.key
-      v.pi = u
+      v.parent = u
       v.key = w(u,v)
 \end{BVerbatim}
 \quad\quad
@@ -21,11 +21,11 @@ for each u in G.V
   u.parent = NIL
 
 Q = G.V
-while Q
+while Q is nonempty
   u = EXTRACT-MIN(Q)
   for each v in G.Adj[u]
     if v in Q and w(u,v) < v.key
-      v.pi = u
+      v.parent = u
       v.key = w(u,v)
 \end{BVerbatim}
 \caption{Left: abstract Prim's algorithm from CLRS~\cite{clrs}. Right: the algorithm omitting the root, which is unnecessary. Note that CLRS does not explicitly define \texttt{EXTRACT-MIN}}
