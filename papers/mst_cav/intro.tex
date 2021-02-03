@@ -3,19 +3,19 @@ the cost-minimal paths from a distinguished \emph{source} vertex
 source to all reachable vertices in a directed graph. Prim's~\cite{prim} and Kruskal's~\cite{kruskal} algorithms return minimal spanning trees for undirected graphs.
 These algorithms are classic and ubiquitous, appearing widely in textbooks~\cite{clrs,DBLP:books/daglib/0022194,heineman2008algorithms,rozen,kepnergilbert,sedgewick} as well as in real routing protocol libraries.
 
-In addition to decades of use and textbook analysis, recent efforts have implemented one or more of these algorithms in proof 
-assistants and formally proved claims about their behavior \cite{Mizar,ACL2,Coq,cite,cite,cite}.  A reasonable person might think that all 
-that could be said had been.  However, we have found this not to be the case.  Generally speaking, textbook code glosses over a cornucopia 
-of issues that routinely crop up in real-world settings: under/overflows, integration with performant data structures, manual memory (de-)allocation, 
-error handling, casts, memory alignment issues, and so forth.  On the other hand, previous work with formal checkers tends to operate entirely 
+In addition to decades of use and textbook analysis, recent efforts have implemented one or more of these algorithms in proof
+assistants and formally proved claims about their behavior \cite{Mizar,ACL2,Coq,cite,cite,cite}.  A reasonable person might think that all
+that could be said had been.  However, we have found this not to be the case.  Generally speaking, textbook code glosses over a cornucopia
+of issues that routinely crop up in real-world settings: under/overflows, integration with performant data structures, manual memory (de-)allocation,
+error handling, casts, memory alignment issues, and so forth.  On the other hand, previous work with formal checkers tends to operate entirely
 within idealized formal environments---which likewise leads them to ignore the same kinds of issues.
 
 In our work, we provide~C~implementations of each of these algorithms, and prove in Coq~\cite{coq} the full functional correctness of same with respect to
 the formal semantics of CompCert~C~\cite{leroy:compcert}.  Although our~C~code is developed from standard textbooks, we uncover a number of subtleties, including:
 \begin{itemize}
-\item[\S\ref{sec:dijkoverflow}] an overflow in Dijkstra's algorithm whose avoidance requires a nontrivial refinement to the algorithm's precondition to bound edge weights,
-\item[\S\ref{sec:prim}] that the specification of Prim's algorithm can be strengthened to apply to disconnected graphs without any change to the code,
-\item[\S\ref{sec:prim}] the presence of a wholly unneeded line of code in Prim's algorithm,
+\item[\S\ref{sec:dijkoverflow}] an overflow in Dijkstra's algorithm whose avoidance requires a nontrivial refinement to the algorithm's precondition to bound edge weights;
+\item[\S\ref{sec:prim}] that the specification of Prim's algorithm can be strengthened to apply to disconnected graphs without any change to the code;
+\item[\S\ref{sec:prim}] the presence of a wholly unneeded line of code in Prim's algorithm, and an associated unneeded function argument;
 \item[\S\ref{sec:binheap}] several potential overflows in binary heaps equipped with Floyd's linear-time build-heap function and an edit-priority operation.
 \end{itemize}
 All of these appear to be absent from algorithmic and formal methods literature.
@@ -39,7 +39,7 @@ We implement textbook~C~code~\cite{clrs} in CompCert~C~ so that
 we can use  and
 Wang~\emph{et al.}'s recent framework for verifying graph algorithms .
 
-We discuss two observations. First, in spite of the many pen-and-paper proofs of these algorithms, we expose a subtle overflow issue in Dijkstra's~C~code and make a nontrivial 
+We discuss two observations. First, in spite of the many pen-and-paper proofs of these algorithms, we expose a subtle overflow issue in Dijkstra's~C~code and make a nontrivial
 
  so that users know when the code will calculate the correct paths. In addition, we disprove an informal but common notion that Prim's algorithm cannot work on disconnected graphs. We demonstrate that it can return a minimum spanning forest, and further that the root parameter is unnecessary.
 }

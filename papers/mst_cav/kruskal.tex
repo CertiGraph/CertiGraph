@@ -1,4 +1,5 @@
-
+\subsection{Verified Kruskal's Algorithm in C}
+\label{sec:kruskal}
 
 \subsection{Reusing previously verified union-find} %%why is there such an absurdly large space?
 Kruskal's algorithm requires a union-find data structure to keep track of the state of connectedness in the partial forest. Since CertiGraph had published several verified union-find implementations, we decide to make use of them. However, as these implementations had no client using them until now, we discovered that the postconditions of the union-find calls were difficult to use for Kruskal's verification. The union-find implementations were verified prior to our introduction of undirected graph properties, thus were not designed with connectedness in mind.
