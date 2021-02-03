@@ -93,7 +93,7 @@ The insertion and remove functions we verify are in fact ``non-checking'' versio
 
 \subsection{Bottom-up heapify and heapsort}
 
-Floyd's bottom-up procedure for constructing a binary heap in linear type, and using a binary heap to sort, are classics of the literature~\cite{clrs,sedgewick}.  Happily, while the asymptotic bound on heap construction is nontrivial, the implementations of both are basically repeated calls to \texttt{sink} (and exchanges to remove the root):
+Floyd's bottom-up procedure for constructing a binary heap in linear time, and using a binary heap to sort, are classics of the literature~\cite{clrs,sedgewick}.  Happily, while the asymptotic bound on heap construction is nontrivial, the implementations of both are basically repeated calls to \texttt{sink} (and exchanges to remove the root):
 \begin{lstlisting}
 void build_heap(Item arr[], unsigned int size) {
  unsigned int start = PARENT(size); $\label{code:parentunderflow}$
