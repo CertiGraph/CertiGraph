@@ -43,5 +43,29 @@ Our solution is twofold.  First, we restrict the maximum edge cost to $\left\lfl
 have edge weights of~4~rather than~5s~and~6s.  After processing vertices~A~and~B, the distances to~B~and~C are no more than~4~and~8 respectively.  When we process vertex~C, the comparison on line~\ref{code:overflow} is thus between the previous best cost to~B~(4) and the candidate best cost to~B~via~C~(12); there is no overflow and the code behaves as advertised.
 
 The second part of our solution is that we require in the function precondition that $\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor - 1 < \texttt{inf} \le \texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$.  As long as $\texttt{size} > 1$, this is perfectly realizable  by setting \texttt{inf} to $\texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$, \emph{i.e.} in the 4-bit machine we set \texttt{inf} to $11$.  It may be surprising that infinity has a nontrivial upper bound.  The reason is that line~\ref{code:overflow} implicitly assumes that $\infty + \texttt{cost} = \infty$, which certainly is not true for machine integers!
-Lastly, when $\texttt{size} = 1$, the range bound on infinity collapses and \texttt{inf} becomes unrealizable.  
+Lastly, when $\texttt{size} = 1$, the range bound on infinity collapses and \texttt{inf} becomes unrealizable.
 Our verification is thus not applicable to single-vertex graphs, a special case for which the shortest-path problem is, in any event, rather uninteresting.
+
+\subsection{Related work on Dijkstra in algorithms and formal methods}
+\label{sec:relworkdijkstra}
+  %The above bound is novel, and discussion of the potential for overflow in Dijkstra's algorithm largely nonexistant.
+We were not able to find a reference that gives a robust, precise,
+and full description of the overflow issue we describe above.
+Dijkstra's original paper ignores the issue~\cite{DBLP:journals/nm/Dijkstra59}, as does the landmark algorithms textbook CLRS~\cite{clrs}. %does not address overflow. %, although---arguably---this is unnecessary in pseudocode
+Sedgewick's book on graph algorithms in~C~\cite{sedgewick} likewise does not address overflow, and \note{moreover gives~C~code
+that contains exactly the bug we identify}.  Skiena's \emph{Algorithm Design Manual} likewise
+glosses over the issue, both
+in pseudocode and~C~\cite{DBLP:books/daglib/0022194}; he sets \texttt{inf} to \texttt{INT\_MAX}, so his code will overflow on 
+line~\ref{code:overflow} when adding $\texttt{inf} + \texttt{cost}$.
+To its credit, Heineman \emph{et al.}'s \emph{Algorithms in a Nutshell}~\cite{heineman2008algorithms} mentions overflow as a possibility and
+proposes casting \note{the computations in line~\ref{code:overflow}} to \texttt{long} to avoid them in~C; this cast avoids the problem of 
+$\texttt{inf} + \texttt{cost}$ being less than \texttt{cost} due to overflow.  However, Heineman's code will overflow when the cumulative edge weights are too high as in figure~\ref{fig:overflow}; no bounds on edge weights is given. %, leaving users in the fog.
+
+%\emph{et al.} do not bound the input edge weights, so overflow can still occur .
+%, and users are left in the fog of confusion for knowing exactly when the algorithm works.
+
+Chen verified Dijkstra in Mizar~\cite{chen2003dijkstra}, Gordon \emph{et al.} formalized the reachability property in HOL~\cite{gordon2003executing}, Moore and Zhang verified it in ACL2~\cite{Moore2005}, Mange and Kuhn verified it in Jahob~\cite{mange2007verifying}, and Klasen verified it in KeY~\cite{klasen2010verifying}.  Liu \emph{et al.} took an alternative SMT-based approach to verify a Java implementation of Dijkstra~\cite{6200101}.  The most recent effort (2019) is by Lammich \emph{et al.}, working within Isabelle/HOL~\cite{DBLP:journals/afp/LammichN19}.  
+In general the existing mechanized proofs on Dijkstra verify code defined within idealized formal environments, \emph{e.g.} with unbounded integers rather than machine \texttt{int}s \note{and a distinguished non-integer value for infinity}.  None of the pervious formal work mentions the overflow we uncover.
+
+% and thus glosses over certain real-world issues, including, as best we
+%can tell, the overflow issue we identified. 

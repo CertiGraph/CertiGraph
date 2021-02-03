@@ -31,16 +31,7 @@ can tell, do not \emph{e.g.} handle the overflow issue we identified.
 
 
 \paragraph{Shortest-path in algorithms textbooks.}
-We were not able to find a standard textbook that gives a robust, precise,
-and full description of the overflow issue we describe in~\S\ref{sec:overflow}.
-The landmark CLRS~\cite{clrs} does not address overflow, although---arguably---this is unnecessary in pseudocode.  Sedgewick's book on graph algorithms in~C~\cite{sedgewick} likewise does not address overflow, and moreover gives~C~code
-that contains exactly the bug we identify.  Skiena's \emph{Algorithm Design Manual} likewise
-glosses over the issue, both
-in pseudocode and~C~\cite{DBLP:books/daglib/0022194}.
-To its credit, Heineman \emph{et al.}'s \emph{Algorithms in a Nutshell}~\cite{heineman2008algorithms} mentions overflow as a possibility and
-proposes casting certain computations to \texttt{long} to avoid them in~C.  However, Heineman
-\emph{et al.} do not give a
-nontrivial bound on the input edge weights, leaving users in the fog for exactly when the algorithm works.
+
 
 \paragraph{Other verifications of minimum-spanning algorithms}In 2019, Lammich et al provided a verification of Prim's and Dijkstra's algorithms~\cite{DBLP:journals/afp/LammichN19}. Haslbeck et al, with Lammich in the same team, verified Kruskal's algorithm in a separate paper~\cite{DBLP:journals/afp/HaslbeckLB19}. The main highlights of their papers are writing efficient data structures in Isabelle/HOL and extracting them to executable code. In Lammich et al, their Prim's implementation explicitly expects a connected graph, and they do not reason about the disconnected case.
 
@@ -71,7 +62,7 @@ Being in pseudocode and idealized environments, these works do not need to discu
 \paragraph{Conclusion.}
 We described a machine-checked proof of correctness for Dijkstra’s
 shortest-path algorithm written in real~C from classic textbook code.
-We showed this code suffers from an overflow bug and described a precise 
-precondition on edge weights to avoid it.  We put this result 
+We showed this code suffers from an overflow bug and described a precise
+precondition on edge weights to avoid it.  We put this result
 in the context of our ongoing work.
-}
+} 

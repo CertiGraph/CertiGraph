@@ -1,12 +1,12 @@
 We verify a standard C implementation of Dijkstra's algorithm.
-First, we sketch our proof in some detail with an emphasis on our loop invariants.
-Second, we uncover and solve a subtle overflow bug.
+First, we sketch our proof in some detail with an emphasis on our loop invariants,
+before uncovering and handling a subtle overflow bug.
 
 \subsection{Verified Dijkstra's algorithm in C}
 \label{sec:dijkoverview}
 
 Figure~\ref{fig:decorated} shows the code and proof
-sketch of Dijkstra's algorithm.  
+sketch of Dijkstra's algorithm.
 {\color{red}Red} text in an annotation indicates changes compared to the
 annotation immediately prior.
 Our code is implemented exactly
@@ -15,32 +15,32 @@ general discussion of the algorithm.
 The adjacency-matrix-represented graph~$\gamma$ of \texttt{size} vertices
 is passed as the parameter \texttt{g} along with the source vertex \texttt{src}
 and two allocated arrays \texttt{dist} and \texttt{prev}.
-The spatial predicate $\mathsf{array}(\texttt{x},\vec{v})$, which connects 
+The spatial predicate $\mathsf{array}(\texttt{x},\vec{v})$, which connects
 an array pointer \texttt{x} with its contents $\vec{v}$, is standard and unexciting.
-$\mathsf{PQ}(\texttt{pq},\m{heap})$ is the spatial 
+$\mathsf{PQ}(\texttt{pq},\m{heap})$ is the spatial
 representation of our priority queue (PQ) and
 $\mathsf{Item}(\texttt{i},\m{(key, pri, data)})$
 lays out a struct that we use to interact with the PQ;
 we leave the management of the PQ to the operations described in~\S\ref{sec:binheap}.
 Of greater interest is $\mathsf{AdjMat}(\texttt{g},\gamma)$, which
 links the concrete memory values of~\texttt{g} to an abstract mathematical
-graph~$\gamma$, which in turn exposes an interface in the 
+graph~$\gamma$, which in turn exposes an interface in the
 language of graph theory (vertices, edges, labels, \emph{etc.}).
-As discussed in \S\ref{blah}, we develop three variations of 
-adjacency-matrix representation. 
-Thanks to some careful engineering, the C code and 
-the Coq verification are both almost completely agnostic to 
-the form of representation. The only variation between implementations 
-is when reading a cell (line~\ref{code:cost}), so we 
-refactor this out into a straightforward helper method and 
+As discussed in \S\ref{blah}, we develop three variations of
+adjacency-matrix representation.
+Thanks to some careful engineering, the C code and
+the Coq verification are both almost completely agnostic to
+the form of representation. The only variation between implementations
+is when reading a cell (line~\ref{code:cost}), so we
+refactor this out into a straightforward helper method and
 verify it separately.
 
 \input{poster_code_dijk.tex}
 
 
-\hide{In general, these spatial representations are simple enough 
+\hide{In general, these spatial representations are simple enough
 that they pose no special
-challenge in the proof. Therefore, in our discussion below, we 
+challenge in the proof. Therefore, in our discussion below, we
 will not focus on issues such as making sure an array dereference is in bounds.
 } %hide
 
@@ -61,26 +61,26 @@ graph~$\gamma$, which in turn exposes an interface in the language of graph theo
 \end{equation*}
 }
 
-Dijkstra's algorithm uses a PQ to greedily choose the 
-cheapest unoptimized vertex on line~\ref{code:pop}. The 
-best-known distances to vertices are expected to improve as 
+Dijkstra's algorithm uses a PQ to greedily choose the
+cheapest unoptimized vertex on line~\ref{code:pop}. The
+best-known distances to vertices are expected to improve as
 various edges are relaxed, and such improvements need to be logged in the PQ:
 Dijkstra's algorithm implicitly assumes that its~PQ supports the additional
 operation \texttt{decrease\_priority}.
 Our ``advanced''~PQ~(\S\ref{sec:modpri})
-supports this operation in logarithmic time with the 
+supports this operation in logarithmic time with the
 \texttt{pq\_edit\_priority} function\footnote{Because
 \texttt{decrease\_priority} is relatively complex to implement,
-several popular~\cite{blah,blah,blah} 
+several popular~\cite{blah,blah,blah}
 workarounds use simpler PQs at the cost
 of decreased performance.}.
 % each \texttt{pop\_min} now takes $\bigO(n)$ time.
 
-%Note that \texttt{dist} already tracks the best-known cost 
-%to any vertex (line~\ref{code:update1}). Maintain a list of  
-%vertices that have been optimized. 
-%Find the cheapest unoptimized vertex by 
-%iterating over \texttt{dist} while rejecting optimized items. 
+%Note that \texttt{dist} already tracks the best-known cost
+%to any vertex (line~\ref{code:update1}). Maintain a list of
+%vertices that have been optimized.
+%Find the cheapest unoptimized vertex by
+%iterating over \texttt{dist} while rejecting optimized items.
 %Neat, but far too slow.
 
 The key to the verification is the loop
@@ -97,8 +97,8 @@ categories:
 \begin{enumerate}
 \item $\m{inv\_popped}$: $\m{dst}$ has been fully processed and
 popped from the PQ.
-Either \m{dst} is unreachable, meaning that there exists no finite-cost path from 
-\m{src}~to~\m{dst}, or \m{dst} is reachable, meaning that a globally optimal 
+Either \m{dst} is unreachable, meaning that there exists no finite-cost path from
+\m{src}~to~\m{dst}, or \m{dst} is reachable, meaning that a globally optimal
 path from $\m{src}$~to~$\m{dst}$ exists, the cost of this path is logged in
 \m{dist}, all vertices visited by the path are also popped,
 and the links of the path are logged in~\m{prev}.
@@ -112,11 +112,11 @@ logs the path cost via \m{mom} as the best-known cost.
 \item $\m{inv\_unseen}$: no finite-cost path exists from any popped vertex to
 $\m{dst}$.
 \end{enumerate}
-After line~\ref{code:pop}, 
-the above invariant is no longer true: a minimum-cost item~\m{u} has been 
-popped from the PQ, and so the \m{dist} and \m{prev} arrays need to be 
+After line~\ref{code:pop},
+the above invariant is no longer true: a minimum-cost item~\m{u} has been
+popped from the PQ, and so the \m{dist} and \m{prev} arrays need to be
 updated to account for this pop. The \texttt{for} loop does exactly this repair work.
-Its pure invariant 
+Its pure invariant
 $\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{u}, \m{i})$ essentially unfolds into:
 \[
 \begin{array}{l}
@@ -131,8 +131,8 @@ We now have five cases, many of which are familiar from $\m{dijk\_correct}$:
 \begin{enumerate}
 \item $\m{inv\_popped}$: $\m{dst}$ has been fully processed and
 popped from the PQ.  For all ``previously-popped vertices'' (\emph{i.e., }except for~\m{u}),
-this is trivial from $\m{dijk\_correct}$. For~\m{u} itself, we reach the heart of Dijkstra's correctness: 
-the locally-optimal path to the cheapest unpopped vertex is 
+this is trivial from $\m{dijk\_correct}$. For~\m{u} itself, we reach the heart of Dijkstra's correctness:
+the locally-optimal path to the cheapest unpopped vertex is
 \emph{globally} optimal.
 %the cost to the unpopped vertex with minimum cost cannot be further improved.  %The associated entailment is not trivial.
 \item $\m{inv\_unpopped}$ (less than \m{i}): $\m{dst}$ is reachable in
@@ -141,24 +141,24 @@ one hop from a popped vertex \m{mom}. Initially this is trivial since $\m{i}=0$,
 \item $\m{inv\_unpopped\_weak}$ (between \m{i} and \texttt{size}):
 $\m{dst}$ is reachable in one hop from a previously-popped vertex \m{mom},
 with further improvements possible via~\m{u}.
-This fact is key: as~$\m{i}$ increments, we strengthen it 
+This fact is key: as~$\m{i}$ increments, we strengthen it
 into $\m{inv\_unpopped}$ after considering whether routing via
 \m{u} improves the best-known cost to~\m{dst}.
 \item $\m{inv\_unseen\_weak}$ (between \m{i} and \texttt{size}):
 no finite-cost path exists from any previously-popped vertex to
 $\m{dst}$, but there may be one from~\m{u}.
-As~$\m{i}$ increments, we consider whether routing via~\m{u} 
-reveals a finite-cost path to~\m{dst}. 
+As~$\m{i}$ increments, we consider whether routing via~\m{u}
+reveals a finite-cost path to~\m{dst}.
 This is strengthened into
 $\m{inv\_unpopped}$ if so, and into
 $\m{inv\_unseen}$ if not.
 \end{enumerate}
 At the end of the \texttt{for} loop on line \ref{code:caughtup},
-the fourth and fifth cases fall away 
+the fourth and fifth cases fall away
 (\texttt{\m{i}~=~size}), and the PQ and the \m{dist} and \m{prev} arrays
 finish ``catching up'' to the pop on line~\ref{code:pop}.
-This allows us to infer 
-the \texttt{while} invariant $\m{dijk\_correct}$, 
+This allows us to infer
+the \texttt{while} invariant $\m{dijk\_correct}$,
 and thus continue the \texttt{while} loop.
 The \texttt{while} loop itself breaks when all vertices have been popped
 and processed. The second and third clauses of the \texttt{while} loop invariant
