@@ -52,20 +52,17 @@ Our verification is thus not applicable to single-vertex graphs, a special case 
 We were not able to find a reference that gives a robust, precise,
 and full description of the overflow issue we describe above.
 Dijkstra's original paper ignores the issue~\cite{DBLP:journals/nm/Dijkstra59}, as does the landmark algorithms textbook CLRS~\cite{clrs}. %does not address overflow. %, although---arguably---this is unnecessary in pseudocode
-Sedgewick's book on graph algorithms in~C~\cite{sedgewick} likewise does not address overflow, and \note{moreover gives~C~code
-that contains exactly the bug we identify}.  Skiena's \emph{Algorithm Design Manual} likewise
-glosses over the issue, both
-in pseudocode and~C~\cite{DBLP:books/daglib/0022194}; he sets \texttt{inf} to \texttt{INT\_MAX}, so his code will overflow on 
+Sedgewick's book on graph algorithms in~C~\cite{sedgewick} sidesteps the overflow in line~\ref{code:overflow} by requiring weights be in \texttt{double}, which \emph{does} have a well-defined positive infinity value.  However, Sedgewick's sidestep entails enduring the inevitable round-off intrinsic to floating-point arithmetic, and so his algorithm computes approximate optimal costs rather than exact ones.  Sedgewick does not specify any bounds on input edge weights, and accordingly does not (and cannot) provide any bound on this accumulated error.  Sedgewick is silent on how to handle an \texttt{int}-weighted input graph.  Skiena's \emph{Algorithm Design Manual}~\cite{DBLP:books/daglib/0022194} contains exactly the bug we identify: he sets \texttt{inf} to \texttt{INT\_MAX}, so his code will overflow on
 line~\ref{code:overflow} when adding $\texttt{inf} + \texttt{cost}$.
-To its credit, Heineman \emph{et al.}'s \emph{Algorithms in a Nutshell}~\cite{heineman2008algorithms} mentions overflow as a possibility and
-proposes casting \note{the computations in line~\ref{code:overflow}} to \texttt{long} to avoid them in~C; this cast avoids the problem of 
-$\texttt{inf} + \texttt{cost}$ being less than \texttt{cost} due to overflow.  However, Heineman's code will overflow when the cumulative edge weights are too high as in figure~\ref{fig:overflow}; no bounds on edge weights is given. %, leaving users in the fog.
+To its credit, Heineman \emph{et al.}'s \emph{Algorithms in a Nutshell}~\cite{heineman2008algorithms} takes \texttt{int} edge weights as inputs and mentions overflow as a possibility.  To avoid this overflow, Heineman \emph{et al.} performs the arithmetic in line~\ref{code:overflow} in \texttt{long} to avoid this overflow.  However, Heineman does not give any bounds on edge weights, and when the cumulative edge weights are too high then his code fails silently. %; readers are left in the dark. % for the precondition needed to run the algorithm. %, leaving users in the fog.
+
+%; this cast avoids the problem of $\texttt{inf} + \texttt{cost}$ being less than \texttt{cost} due to overflow
 
 %\emph{et al.} do not bound the input edge weights, so overflow can still occur .
 %, and users are left in the fog of confusion for knowing exactly when the algorithm works.
 
 Chen verified Dijkstra in Mizar~\cite{chen2003dijkstra}, Gordon \emph{et al.} formalized the reachability property in HOL~\cite{gordon2003executing}, Moore and Zhang verified it in ACL2~\cite{Moore2005}, Mange and Kuhn verified it in Jahob~\cite{mange2007verifying}, and Klasen verified it in KeY~\cite{klasen2010verifying}.  Liu \emph{et al.} took an alternative SMT-based approach to verify a Java implementation of Dijkstra~\cite{6200101}.  The most recent effort (2019) is by Lammich \emph{et al.}, working within Isabelle/HOL~\cite{DBLP:journals/afp/LammichN19}.  
-In general the existing mechanized proofs on Dijkstra verify code defined within idealized formal environments, \emph{e.g.} with unbounded integers rather than machine \texttt{int}s \note{and a distinguished non-integer value for infinity}.  None of the pervious formal work mentions the overflow we uncover.
+In general the existing mechanized proofs on Dijkstra verify code defined within idealized formal environments, \emph{e.g.} with unbounded integers rather than machine \texttt{int}s and a distinguished non-integer value for infinity.  None of the previous formal work mentions the overflow we uncover.
 
 % and thus glosses over certain real-world issues, including, as best we
 %can tell, the overflow issue we identified. 

@@ -1,12 +1,13 @@
 Here we discuss our verifications of the classic MST algorithms Prim and Kruskal.  Although our machine-checked proofs are about real~C~code, in this section we take a higher-level approach than we did in \S\ref{sec:dijkstra}, focusing on our key algorithmic findings and overall experience.  Accordingly, we only provide pseudocode for Prim's algorithm rather than a decorated program and do not show any code for Kruskal's.  Our development contains our~C~code and formal proofs~\cite{blah}.
 
-\subsection{Base algorithm of Prim's returning a forest}
+\subsection{Verified Prim's Algorithm in C}
+\label{sec:prim}
 
 \begin{figure}
 \[
 \begin{array}{@{}l@{~~}|@{~}l@{}}
 \begin{minipage}{0.5\textwidth}
-\begin{lstlisting}
+\begin{lstlisting} %[mathescape=true,showlines=true]
 MST-PRIM(G,w,r):
  for each u in G.V
   u.key = INF
@@ -18,7 +19,7 @@ MST-PRIM(G,w,r):
   for each v in G.Adj[u]
    if v $\in$ Q and w(u,v) $<$ v.key
     v.parent = u
-    v.key = w(u,v) $\hide{\label{code:primeditpri}}$
+    v.key = w(u,v) $\hide{code:primeditpri}$
 \end{lstlisting} \end{minipage} &
 \begin{minipage}{0.5\textwidth}
 %\lstset{firstnumber=3}
@@ -43,9 +44,12 @@ MST-NOROOT-PRIM(G,w):
 \label{fig:prims}
 \end{figure}
 
-We put the pseudocode for Prim's algorithm in figure~\ref{fig:prims}; the code on the left-hand side is directly from CLRS, whereas the code on the right omits line~\ref{code:primsetroot} and will be discussed shortly.  Note that line~\ref{code:primeditpri} contains an implicit call to the PQ's \texttt{edit\_priority}.  Since the pseudocode only compares keys (\emph{i.e.}, edge weights) rather than doing arithmetic on them \emph{\`a la} Dijkstra, there are no potential overflows and it is reasonable to set \texttt{INF} to \texttt{INT\_MAX} in~C.
+We put the pseudocode for Prim's algorithm in figure~\ref{fig:prims}; the code on the left-hand side is directly from CLRS, whereas the code on the right omits line~\ref{code:primsetroot} and will be discussed in~\S\ref{sec:primforest}.  Note that line~\ref{code:primeditpri} contains an implicit call to the PQ's \texttt{edit\_priority}.  Since the pseudocode only compares keys (\emph{i.e.}, edge weights) rather than doing arithmetic on them \emph{\`a la} Dijkstra, there are no potential overflows and it is reasonable to set \texttt{INF} to \texttt{INT\_MAX} in~C.
 
-Indeed, our initial verifications of~C~code were largely ``turning the crank'' once we had developed the definitions and associated lemma support for pure/abstract undirected graphs, trees, etc. \note{discussed in \S\ref{sec:undirected}}.  Accordingly, from an engineering perspective, our initial contribution was a demonstration that this new graph machinery was sufficient to verify real code.  We also demonstrated that our pure reasoning was isolated from our spatial reasoning by verifying three versions of~C~code with slightly different memory layouts for adjacency matrices with the same pure theorems (our proof base for these versions differs by less than 1\%, exactly for the portion of the~C~code that accesses the graph representation in memory).  By reusing much pure and spatial reasoning that had been originally developed for our verification of Dijkstra, we also demonstrated that our extensions to CertiGraph \note{described in \S\ref{sec:undirected}} were generic rather than verification-specific.
+Indeed, our initial verifications of~C~code were largely ``turning the crank'' once we had developed the definitions and associated lemma support for pure/abstract undirected graphs, trees, etc. \note{discussed in \S\ref{sec:undirected}}.  Accordingly, from an engineering perspective, our initial contribution was a demonstration that this new graph machinery was sufficient to verify real code.  \note{We also demonstrated that our pure reasoning was isolated from our spatial reasoning by verifying three versions of~C~code with slightly different memory layouts for adjacency matrices with the same pure theorems (our proof base for these versions differs by less than 1\%, exactly for the portion of the~C~code that accesses the graph representation in memory)}.  By reusing much pure and spatial reasoning that had been originally developed for our verification of Dijkstra, we also demonstrated that our extensions to CertiGraph \note{described in \S\ref{sec:undirected}} were generic rather than verification-specific.
+
+\subsection{Base algorithm of Prim's returning a forest}
+\label{sec:primforest}
 
 %  We make two immediate observations on CLRS's pseudocode: first, that they do not give an explicit definition for
 
