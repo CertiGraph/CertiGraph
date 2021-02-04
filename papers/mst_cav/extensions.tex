@@ -60,21 +60,88 @@ As a result of this definition, all graphs defined by CertiGraph are \textit{dir
 
 
 
-\subsubsection{Our ``undirected'' definitions.}
-
+\subsubsection{Our basic ``undirected'' definitions.}
 %Our definitions are largely based on CLRS~\cite{clrs}.
 Two vertices \m{u} and \m{v} are \texttt{adjacent} if there exists
 an edge between them in either direction; vertices are self-adjacent.
-An undirected path (\texttt{upath}) is list of vertices that are 
-pairwise adjacent. Two vertices are \texttt{connected} when a \texttt{upath}
+An valid \texttt{upath} (undirected path) is list of 
+\note[say more? cut?]{valid} 
+vertices that form a  
+pairwise-adjacent chain. Two vertices are \texttt{connected} when a valid \texttt{upath}
 features them as head and foot; essentially this is the transitive 
 closure of \texttt{adjacenct}.
 %A similar approach is proposed in Halsbeck~\cite{DBLP:journals/afp/HaslbeckLB19}.
-A \texttt{simple\_upath} is a \texttt{upath} that has no duplicate vertices. 
-An undirected cycle (\texttt{ucycle}) is a \texttt{upath} whose first 
-and last vertices are the same.  A \texttt{simple\_ucycle} is a cycle whose
+
+\subsubsection{Bridging with directedness.}
+The definitions above sync up nicely with preexisting directed
+definitions. 
+\note[cut?]{Intuitively, undirectedness is more lax than directedness, 
+and so it is unsurprising that these connections are just straightforward
+weakenings of directed properties.}
+For example, a directed \texttt{path : VType * list EdgeType}
+is valid when the \texttt{src} of the first edge in the list 
+is the vertex supplied, and the subsequent edges are linked up 
+in \texttt{src}/\texttt{dst} pairs
+as one may expect. A straightforward lemma shows that 
+any valid \texttt{path} is a valid \texttt{upath}, after projecting the
+\texttt{list EdgeType} to \texttt{list VertexType}.
+Similarly, the directed idiom \texttt{reachable~g~u~v} claims the 
+existence of a \texttt{path} from~\texttt{u}~to~\texttt{v}, and this very easily
+weakens to say \texttt{connected~g~u~v}.
+
+\subsubsection{Building out an infrastructure.}
+With our basic undirectedness definitions at hand and with the assurance
+of mathematical compatability, we can begin in earnest. We flesh out definitions, 
+\emph{e.g.} for minimum spanning trees
+
+A \texttt{simple\_upath} is a valid \texttt{upath} that has no duplicate vertices. 
+An undirected cycle (\texttt{ucycle}) is a valid \texttt{upath} whose first 
+and last vertices are the same.  A \texttt{simple\_ucycle} is a \texttt{ucycle} whose
 only duplicate is the first/last vertex.
 % Note that the definition of path varies between textbooks and papers. For example, \textit{Discrete Mathematics and its Applications}~\cite{rozen} defines paths as a sequence of edges with an implicit sequence of vertices, whereas CLRS, which we have followed, defines it as a sequence of vertices with an implicit sequence of edges. 
+
+
+
+\hide{
+Definition connected_graph (g: PGraph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
+
+Definition simple_upath g p := valid_upath g p /\ NoDup p.
+
+Definition ucycle g p l :=
+match p with
+| nil => False
+| u::nil => False
+| u::v::p' => connected_by_path g p u u /\ fits_upath g l p /\ NoDup l
+end.
+
+Definition uforest g := (forall e, evalid g e -> strong_evalid g e) /\ (*strong evalid*)
+  (forall p l, ~ simple_ucycle g p l). (*no undirected cycles*)
+
+Definition utree g := uforest g /\ connected_graph g.
+
+Definition spanning t g :=
+  forall u v, connected g u v <-> connected t u v.
+
+Definition spanning_uforest t g :=
+  is_partial_graph t g /\ (*t is a partial graph of g*)
+  uforest t /\ (*it is also a forest*)
+  spanning t g. (*that is spanning...*)
+
+Definition labeled_spanning_uforest (t g: LGraph) :=
+  spanning_uforest t g /\
+  preserve_vlabel t g /\ preserve_elabel t g.
+
+minimum spanning forest msf g :=
+labeled_spanning_forest msf g /\
+forall msf' g,
+labeled_spanning_uforest msf' g -> sum_DE Z.add t 0 <= sum_DE Z.add msf' 0)
+% english
+
+
+}
+
+
+
 
 \hide{
 Let $g$ be a graph. A valid edge $e$ in $g$ is an adjacent edge (or \textit{adj\_edge} for short) of valid vertices $u$ and $v$ if those are its $src$ and $dst$. $u$ and $v$ are \textit{adjacent} if such an edge exists in $g$.
