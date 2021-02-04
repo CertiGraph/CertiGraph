@@ -10,7 +10,7 @@ of issues that routinely crop up in real-world settings: under/overflows, integr
 error handling, casts, memory alignment issues, and so forth.  On the other hand, previous work with formal checkers tends to operate entirely
 within idealized formal environments---which likewise leads them to ignore the same kinds of issues.
 
-In our work, we provide~C~implementations of each of these algorithms, and prove in Coq~\cite{coq} the full functional correctness of same with respect to
+In our work, we provide~C~implementations of each of these algorithms, and prove in Coq~\cite{Coq} the full functional correctness of same with respect to
 the formal semantics of CompCert~C~\cite{leroy:compcert}.  Although our~C~code is developed from standard textbooks, we uncover a number of subtleties, including:
 \begin{itemize}
 \item[\S\ref{sec:dijkoverflow}] an overflow in Dijkstra's algorithm whose avoidance requires a nontrivial refinement to the algorithm's precondition to bound edge weights;

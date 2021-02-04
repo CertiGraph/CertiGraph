@@ -6,4 +6,15 @@ Kruskal's algorithm requires a union-find data structure to keep track of the st
 
 To that end, we have extended lemmas about the results of union-find operations as an analog to connectivity. We are pleased to say that no change was required for Wang's existing union-find definitions, lemmas, specifications and verification. Instead, we proved that their existing postconditions mathematically imply an analog to connectivity in undirected graphs. In other words, Wang's verified postconditions were \textit{not} incorrect or poor, they just required mathematical translation into what we wanted in the context of Kruskal's.
 
-We mention this to emphasise the modularity and buildability of VST and CertiGraph infrastructure - that we were able to use previously, independently proven code in a bigger system later. The internal details and verification of the union-find system are independent from that of Kruskal's, whose proof only required the preconditions and postconditions of whichever union-find implementation we decide to use. 
+We mention this to emphasise the modularity and buildability of VST and CertiGraph infrastructure - that we were able to use previously, independently proven code in a bigger system later. The internal details and verification of the union-find system are independent from that of Kruskal's, whose proof only required the preconditions and postconditions of whichever union-find implementation we decide to use.
+
+\subsection{Related work on Kruskal in algorithms and formal methods}
+\ref{sec:relworkprim}
+
+Haslbeck \emph{et al.} verified Kruskal's algorithm in a separate paper~\cite{DBLP:journals/afp/HaslbeckLB19}.
+
+In Lammich et al, their Prim's implementation explicitly expects a connected graph, and they do not reason about the disconnected case.
+
+Guttman generalised minimum spanning tree algorithms using Stone relation algebras~\cite{DBLP:journals/jlp/Guttmann18}, and provided a verified proof of Kruskal's algorithm formatted in said algebras.  Working in an idealized formal environment, they do not require the development of explicit data structures such as priority-queues and union-find, as these are captured as equivalence relations in their algebra.
+
+Guttman later proved this by relying on their proof of Kruskal's. We use the same assertion in our proof of Prim's, but in our case, Kruskal's is defined in the spatial layer of our library, not the mathematical-layer, and it would be unwieldy to bring it back up. Instead, we show in the mathematical layer that every finite graph has a finite, nonempty list of spanning forests. Thus there exists a minimum spanning forest by simply taking the minimal-weight forest in this list. 
