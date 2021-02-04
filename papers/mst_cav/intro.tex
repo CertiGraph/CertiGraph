@@ -20,7 +20,7 @@ the formal semantics of CompCert~C~\cite{leroy:compcert}.  Although our~C~code i
 \end{itemize}
 All of these appear to be absent from algorithmic and formal methods literature.
 
-We wish to develop general and reusable techniques for verifying graph-manipulating programs written in real programming languages.  This is a significant challenge, and so we choose to leverage and/or extend three large existing proof developments to state and prove the full functional correctness of our code in Coq: CompCert, the Verified Software Toolchain~\cite{appel:programlogics} (VST), and the CertiGraph project~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our primary extensions are to the latter, and include:
+We wish to develop general and reusable techniques for verifying graph-manipulating programs written in real programming languages.  This is a significant challenge, and so we choose to leverage and/or extend three large existing proof developments to state and prove the full functional correctness of our code in Coq: CompCert, the Verified Software Toolchain~\cite{appel:programlogics} (VST) separation logic~\cite{o2001local} deductive verifier, and the CertiGraph project~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our primary extensions are to the latter, and include:
 \begin{enumerate}
 \item pure/abstract reasoning for graphs with edge labels, including specialized support for graphs that label edges with costs (\emph{e.g.} a distinguished edge-label value for ``infinity'' that indicates invalid/absent edges);
 \item pure reasoning for undirected graphs (\emph{e.g.}, notions of connectedness);
