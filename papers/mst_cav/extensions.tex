@@ -1,3 +1,7 @@
+\note{We detail the major extensions we made to the 
+CertiGraph library. The following two sections then take advantage of 
+these extensions to complete three verifications.}
+
 \subsection{Undirectedness in a directed world}
 
 The CertiGraph library presented in~\cite{DBLP:journals/pacmpl/WangCMH19} 
@@ -41,9 +45,6 @@ modulo some mathematical bridging.
 % It also allows us to use CertiGraph's rich set of lemmas about the addition and removal of edges.
 % This is backed by our observation that undirected graph properties are largely mathematical in nature, 
 
-% The property of undirectedness requires no special conditions when it comes to spatial representation in separation logic, and so we seamlessly share spatial representations and related lemmas across directed and undirected graphs.
-% The above line is mine (Anshuman's) but I think it's a distraction to put it here. Let's discuss later.
-
 \hide{\begin{lstlisting}
 Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 	vvalid : Ensemble Vertex;
@@ -53,11 +54,10 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 }.
 \end{lstlisting}
 }% end hide
+% Anshuman: keeping this in hide in case you want to show it to explain 
+% "how very ingrained" directedness is in CertiGraph.
 
-\hide{In CertiGraph, every graph has the four following basic functions: $vvalid$ which determines which vertices are valid in the graph; $evalid$ which determines which edges are valid in the graph, and $src$ and $dst$ map each edge to vertices. For example, an edge $e$ in graph $g$ pointing from vertex $u$ to $v$ will have $src$ $g$ $e$ $=$ $u$ and $dst$ $g$ $e$ $=$ $v$. What these functions actually are, is defined during the actual construction of a graph.
-
-As a result of this definition, all graphs defined by CertiGraph are \textit{directed} - each edge in the graph has a clear direction defined by the $src$ and $dst$ functions. This makes sense in the first use cases of CertiGraph, especially when reasoning about C pointers.}% end hide
-
+% This makes sense in the first use cases of CertiGraph, especially when reasoning about C pointers.
 
 
 \subsubsection{Our basic ``undirected'' definitions.}
@@ -71,14 +71,15 @@ pairwise-adjacent chain. Two vertices are \texttt{connected} when a valid \textt
 features them as head and foot; essentially this is the transitive 
 closure of \texttt{adjacenct}.
 %A similar approach is proposed in Halsbeck~\cite{DBLP:journals/afp/HaslbeckLB19}.
+% Note that the definition of path varies between textbooks and papers. For example, \textit{Discrete Mathematics and its Applications}~\cite{rozen} defines paths as a sequence of edges with an implicit sequence of vertices, whereas CLRS, which we have followed, defines it as a sequence of vertices with an implicit sequence of edges. 
 
 \subsubsection{Bridging with directedness.}
 The definitions above sync up nicely with preexisting directed
 definitions. 
 \note[cut?]{Intuitively, undirectedness is more lax than directedness, 
-and so it is unsurprising that these connections are just straightforward
+and so it is unsurprising that these connections are straightforward
 weakenings of directed properties.}
-For example, a directed \texttt{path : VType * list EdgeType}
+For example, a directed \texttt{path~: VType~* list~EdgeType}
 is valid when the \texttt{src} of the first edge in the list 
 is the vertex supplied, and the subsequent edges are linked up 
 in \texttt{src}/\texttt{dst} pairs
@@ -86,149 +87,113 @@ as one may expect. A straightforward lemma shows that
 any valid \texttt{path} is a valid \texttt{upath}, after projecting the
 \texttt{list EdgeType} to \texttt{list VertexType}.
 Similarly, the directed idiom \texttt{reachable~g~u~v} claims the 
-existence of a \texttt{path} from~\texttt{u}~to~\texttt{v}, and this very easily
-weakens to say \texttt{connected~g~u~v}.
+existence of a \texttt{path} in~\texttt{g} from~\texttt{u}~to~\texttt{v}, 
+and this easily weakens to give \texttt{connected~g~u~v}.
 
-\subsubsection{Building out an infrastructure.}
+\subsubsection{Building out our undirectedness infrastructure.}
 With our basic undirectedness definitions at hand and with the assurance
-of mathematical compatability, we can begin in earnest. We flesh out definitions, 
-\emph{e.g.} for minimum spanning trees
+of mathematical compatability with prior directed work, we can begin in 
+earnest. We flesh out a number of definitions that culminate in 
+\texttt{minimum\_spanning\_forest}, which is exactly the our postcondition
+of both Prim's and Kruskal's algorithms.\footnote{That Prim's algorithm has
+a \emph{forest} in its postcondition should raise an eyebrow. We defend this claim
+in~\S\ref{sec:primforest}.}
 
-A \texttt{simple\_upath} is a valid \texttt{upath} that has no duplicate vertices. 
+%A \texttt{simple\_upath} is a valid \texttt{upath} that has no duplicate vertices. 
 An undirected cycle (\texttt{ucycle}) is a valid \texttt{upath} whose first 
 and last vertices are the same.  A \texttt{simple\_ucycle} is a \texttt{ucycle} whose
-only duplicate is the first/last vertex.
-% Note that the definition of path varies between textbooks and papers. For example, \textit{Discrete Mathematics and its Applications}~\cite{rozen} defines paths as a sequence of edges with an implicit sequence of vertices, whereas CLRS, which we have followed, defines it as a sequence of vertices with an implicit sequence of edges. 
-
-
-
-\hide{
-Definition connected_graph (g: PGraph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
-
-Definition simple_upath g p := valid_upath g p /\ NoDup p.
-
-Definition ucycle g p l :=
-match p with
-| nil => False
-| u::nil => False
-| u::v::p' => connected_by_path g p u u /\ fits_upath g l p /\ NoDup l
-end.
-
-Definition uforest g := (forall e, evalid g e -> strong_evalid g e) /\ (*strong evalid*)
-  (forall p l, ~ simple_ucycle g p l). (*no undirected cycles*)
-
-Definition utree g := uforest g /\ connected_graph g.
-
-Definition spanning t g :=
-  forall u v, connected g u v <-> connected t u v.
-
-Definition spanning_uforest t g :=
-  is_partial_graph t g /\ (*t is a partial graph of g*)
-  uforest t /\ (*it is also a forest*)
-  spanning t g. (*that is spanning...*)
-
-Definition labeled_spanning_uforest (t g: LGraph) :=
-  spanning_uforest t g /\
-  preserve_vlabel t g /\ preserve_elabel t g.
-
-minimum spanning forest msf g :=
-labeled_spanning_forest msf g /\
-forall msf' g,
-labeled_spanning_uforest msf' g -> sum_DE Z.add t 0 <= sum_DE Z.add msf' 0)
-% english
-
-
-}
-
-
-
-
-\hide{
-Let $g$ be a graph. A valid edge $e$ in $g$ is an adjacent edge (or \textit{adj\_edge} for short) of valid vertices $u$ and $v$ if those are its $src$ and $dst$. $u$ and $v$ are \textit{adjacent} if such an edge exists in $g$.
+only duplicate is the first/last vertex. A \texttt{connected\_graph}
+has the property that any two valid vertices in the graph are \texttt{connected}.
+We proceed with:
+\lstset{style=CoqStyle}
 \begin{lstlisting}
-Definition adj_edge (g: PreGraph V E) (e: E) (u v: V) :=
-	strong_evalid g e /\
-	((src g e = u /\ dst g e = v) \/
-	 (src g e = v /\ dst g e = u)).
+Definition uforest g := 
+ ($\forall$ e, evalid g e -> strong_evalid g e) $/|$
+ ($\forall$ p l, $\lnot$simple_ucycle g p l).
 
-Definition adjacent (g: PreGraph V E) (u v: V) :=
-	exists e: E, adj_edge g e u v.
+Definition spanning g g' := 
+ $\forall$ u v, connected g u v <-> connected g' u v.
+
+Definition spanning_uforest f g :=
+  is_partial_graph f g $/|$ uforest f $/|$ spanning f g. 
 \end{lstlisting}
+Trees are easy to define:
+\texttt{utree~g~:= uforest~g} $\wedge$ \texttt{connected\_graph~g.}
+The \texttt{strong\_evalid} predicate means that the 
+\texttt{src} and \texttt{dst} of the edge are also valid, so
+\emph{e.g.} a valid edge cannot point to a deleted/absent vertex.
+The second predicate is the critical constraint, saying that a
+forest has no simple undirected cycles. The other definitions presented
+are straightforward from there, and 
+\texttt{minimum\_spanning\_forest f g} means that the total edge cost 
+of~\texttt{f} is \note[minimal among other... struggling to phrase this.]{minimal}.
 
-A valid undirected path, or \textit{upath}, in $g$ is a list of vertices such that each vertex in the list is adjacent with the subsequent vertex. An empty path, $nil$, is by default a valid $upath$. A singleton path $[v]$ is also a valid $upath$ if $v$ is a valid vertex.
-\begin{lstlisting}
-Fixpoint valid_upath (g: PreGraph V E) (p: upath) : Prop :=
-match p with
-| nil => True
-| u :: nil => vvalid g u
-| u :: ((v :: _) as p') => adjacent g u v /\ valid_upath g p'
-end.
-\end{lstlisting}
+\hide{We also highlight a difference in our definition compared to mathematical textbooks. Prim's and Kruskal's algorithms are presented as minimum-spanning \textit{tree} algorithms, and often have the implicit assumption that the graph is fully connected. They may or may not discuss forests - CLRS does not, while \textit{Discrete Mathematics} informally defines forests as ``containing no simple circuits that are not necessarily connected [...] and have the property that each of their connected components is a tree." In short, these sources define forests from ``bottom-up" using trees. We define them ``top-down" instead, recognising forests as acyclic graphs and trees as connected forests. This definition was also used by Lammich et al~\cite{DBLP:journals/afp/LammichN19}.}
+% Anshuman: I've hidden this for now, may cut or shorten a lot after discussion.
 
-\begin{figure}[H]
-	\begin{center}
-	\begin{tikzpicture} [auto, node distance =1.5 cm and 1.5cm ,on grid, semithick, state/.style ={ circle}]
-		\node[state] (V0) {$\m{v_0}$};
-		\node[state] (V1) [right=of V0] {$\m{v_1}$};
-		\draw [->] (V0) edge node[above=0.15 cm] {$\m{e_0}$} (V1);
-		\node[state] (V2) [right=of V1] {$\m{v_2}$};
-		\node[state] (V3) [right=of V2] {$\m{v_3}$};
-		\draw [->] (V3) edge node[above=0.15 cm] {$\m{e_1}$} (V2);
-	\end{tikzpicture}
-	\end{center}
-	\caption{We ignore the direction of $e_0$, and by our definition the existence of an edge between them means $v_0$ and $v_1$ are adjacent and therefore connected, as is $v_2$ and $v_3$. This allows us to handle the ordering of $e_{0}.u$ and $e_{0}.v$ in C code easily, as seen later in the edge list representation}
-\end{figure}
 
-Two vertices $u$ and $v$ are \textit{connected by p} if $p$ is a valid $upath$ in $g$ with the head vertex $u$ and last vertex $v$. They are \textit{connected} if such a $upath$ exists. By the above, every valid vertex in $g$ is trivially connected to itself.
-\begin{lstlisting}
-Definition connected_by_path g (p: upath) (n : V) :=
-	fun n' => valid_upath g p /\
-		hd_error p = Some n /\ last_error p = Some n'.
+\subsection{New spatial representations for edge-labeled graphs}
 
-Definition connected (g: PreGraph V E) (n : V) :=
-	fun n' => exists p, connected_by_path g p n n'.
-\end{lstlisting}
-}% end hide
+In service of our new verifications, we develop spatial support in separation 
+logic for two new styles of graph representation:
+adjacency matrices and edge lists. These styles are particularly
+amenable to graphs that label their edges, and so are suited to
+the algorithms we are working with.
 
-\subsection{Defining forests before trees}
 
-CLRS defines a tree as ``a (connected) graph with no simple undirected cycles" - in other words, a connected, acyclic graph. We use the same definition:
-\begin{lstlisting}
-Definition uforest g:=
-	(forall e, evalid g e -> strong_evalid g e) /\
-	(forall p l, $\neg$ simple_ucycle g p l).
-\end{lstlisting}
-Our definition contains two propositions. The first constrains a forest to have no excess, ``dangling" edges. Although CertiGraph was designed to reason about such edges, we do not want to tolerate them in our forests. The second is the key ``no simple undirected cycles".
-\begin{figure}[H]
-	\begin{tikzpicture} [auto, node distance =1.5 cm and 1.5cm ,on grid, semithick, state/.style ={ circle}]
-		\node[state] (V0) {$\m{v_0}$};
-		\node[state] (V1) [right=of V0] {$\m{v_1}$};
-		\node[state] (V2) [below=of V0] {$\m{v_2}$};
-		\node[state] (?1) [above=of V0] {$?$};
-		\node[state] (?2) [right=of V1] {$?$};
-		\node[state] (?3) [below right=of ?2] {$?$};
-		\path (V0) edge node[above=0.15 cm] {$5$} (V1);
-		\path (V0) edge node[left=0.15 cm] {$6$} (V2);
-		\path (V0) edge node[left=0.15 cm] {$-1$} (?1);
-		\path (?2) edge node[above right=0.15 cm] {$2$} (?3);
-	\end{tikzpicture}
-	\caption{The above is not a forest, due to the ``dangling" edges leading to invalid vertices (? being a placeholder)}
-\end{figure}
-We also highlight a difference in our definition compared to mathematical textbooks. Prim's and Kruskal's algorithms are presented as minimum-spanning \textit{tree} algorithms, and often have the implicit assumption that the graph is fully connected. They may or may not discuss forests - CLRS does not, while \textit{Discrete Mathematics} informally defines forests as ``containing no simple circuits that are not necessarily connected [...] and have the property that each of their connected components is a tree." In short, these sources define forests from ``bottom-up" using trees. We define them ``top-down" instead, recognising forests as acyclic graphs and trees as connected forests. This definition was also used by Lammich et al~\cite{DBLP:journals/afp/LammichN19}.
-\begin{lstlisting}
-Definition connected_graph (g: PGraph) :=
-	forall u v, vvalid g u -> vvalid g v -> connected g u v.
+\subsubsection{Adjacency matrices.}
 
-Definition utree g := uforest g /\ connected_graph g.
-\end{lstlisting} 
+Adjacency matrices are a useful way to represent graphs
+in problems where efficient label reads are required, but 
+manipulations such as sorting edges by weight are not. 
+We support the three most common 
+flavors of adjacency matrix representation:
+stack-allocated 2D~array \texttt{int~graph[size][size]},
+a stack-allocated 1D~array \texttt{int~graph[size$\times$size]}, 
+and a heap-allocated 2D~array \texttt{int~**graph}. 
+To the casual observer, these are essentially interchangeable, but 
+that is a mistake when thinking spatially. Apart from the obvious 
+arithmetic that the second flavor does to access cells, there is a 
+more subtle point: the first and second can
+assume a contiguous block of memory, but the third needs to allocate
+a ``spine'' and then separately allocate each array within the spine.
+For a taste, the spatial representation of the first looks like:
+\vspace{-0.5em}
+\begin{equation*}
+\begin{split}
+\m{arr\_addr} ((\m{block}, \m{offset}), \m{i}) &\defeq
+  (\m{block}, \m{offset} + (\m{i} \times \texttt{sizeof}(\texttt{int}) \times \texttt{size})) \\
+\p{arr\_rep}(\gamma, \m{i}, \m{base\_ptr}) &\defeq \mathsf{array}(\mathsf{graph2mat}(\gamma)[\m{i}], \m{arr\_addr}(\m{base\_ptr}, \m{i})) \\
+\vspace{1em}
+\p{graph\_rep}(\gamma, \m{g\_addr}) &\defeq \underset{\m{v} \in \gamma}{\bigstar} \m{v}  \mapsto\p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
+\end{split}
+\end{equation*}
+Of particular note are $\mathsf{graph2mat}$, which performs two projections to
+drag out the graph's nested edge labels into a 2D matrix, and 
+\m{arr\_addr}, which in this instance is able to simply compute
+the address of any array \m{i} by adding to the base address of the graph.
+When representing the heap-allocated 2D~array, we still benefit from 
+$\mathsf{graph2mat}$'s projections but \m{arr\_addr} is powerless: no relationship
+between the addresses of individual arrays is guaranteed.
+Instead, we require that the user provide a list of base addresses
+of each array. 
 
-\subsection{Undirected adjacency matrix representation}
+While handling these spatial wrinkles, we develop utilities easily that 
+unfold and refold the adjacency matrix, thus smoothing user 
+experience when reading and writing arrays and cells. Of course
+these utilities themselves vary by flavor of representation, but 
+the net effect is that users of our adjacency matrices really can 
+be agnostic to the style of representation they are using 
+(see \S\ref{sec:dijkoverview}).
 
-We chose a symmetrical matrix representation for the undirected graph to be used in Prim's algorithm. This bears similarities to the adjacency matrix used in Dijkstra's, allowing us to reuse many properties about adjacency matrices.
+The property of undirectedness requires no special condition 
+when it comes to spatial representation in separation logic, 
+and so we share spatial representations and utilities 
+across directed and undirected graphs.
 
-We observe one quirk about a symmetric undirected matrix. In our abstract graphs, which are fundamentally directed, the abstract edges $(u,v)$ and $(v,u)$ where $u \neq v$ are clearly distinct from each other. However, in a symmetric matrix both $g[u][v]$ and $g[v][u]$ will be marked, thus it is unclear which edge is in the graph. To disambiguate, we impose the following condition: If $g[u][v]$ and $g[v][u]$ are marked, and $u \leq v$, then we consider $(u,v)$ to be the valid edge; if $v \textless u$, then $(v,u)$ is the valid edge.
+\hide{We observe one quirk about a symmetric undirected matrix. In our abstract graphs, which are fundamentally directed, the abstract edges $(u,v)$ and $(v,u)$ where $u \neq v$ are clearly distinct from each other. However, in a symmetric matrix both $g[u][v]$ and $g[v][u]$ will be marked, thus it is unclear which edge is in the graph. To disambiguate, we impose the following condition: If $g[u][v]$ and $g[v][u]$ are marked, and $u \leq v$, then we consider $(u,v)$ to be the valid edge; if $v \textless u$, then $(v,u)$ is the valid edge.}
 
-\subsection{Edge list representation, multi-graph trimming, and subtle differences of graphs in different representations}
+\subsubsection{Edge list representation, multi-graph trimming, and subtle differences of graphs in different representations}
 Kruskal's algorithm differs from Prim's in that it directly operates on the edges of the input graph, rather than Prim's vertex-based approaches. Consequently, in C implementations it is useful to pass the graph in as a list of graph edges, rather than an adjacency matrix or list. This also simplifies the sorting necessary in Kruskal's.
 
 We define a simple edge list representation in C below, and observe mathematical differences between the graphs that can be represented by an edge list and an adjacency-matrix representation. As mentioned in the Prim's section, in a symmetric adjacency matrix, $g[u][v])$ and $g[v][u]$ are considered the same edge; however, this is not true for an edge list, where every edge is effectively an ordered pair due to the memory positions of the data. As a result, this edge list can contain multiple edges between two vertices whereas a 2D adjacency matrix cannot. Further, we prove that Kruskal's algorithm can handle such inputs and still return a minimal spanning forest.

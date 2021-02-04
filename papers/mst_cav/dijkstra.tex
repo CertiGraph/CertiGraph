@@ -44,23 +44,6 @@ challenge in the proof. Therefore, in our discussion below, we
 will not focus on issues such as making sure an array dereference is in bounds.
 } %hide
 
-% move to Section 2. expand 3x to discuss various reps
-\hide{Our spatial graph predicate is more interesting, in
-that it nests arrays and connects the concrete memory values to an abstract mathematical
-graph~$\gamma$, which in turn exposes an interface in the language of graph theory
-(vertices, edges, labels, etc.).
-\vspace{-0.5em}
-\begin{equation*}
-\begin{split}
-\m{list\_addr} ((\m{block}, \m{offset}), \m{index}) &\defeq
-  (\m{block}, \m{offset} + (\m{index} \times \texttt{sizeof}(\texttt{int}) \times \texttt{SIZE})) \\
-\p{list\_rep}(\gamma, \m{i}, \m{base\_ptr}) &\defeq \mathsf{array}(\mathsf{graph2matrix}(\gamma)[\m{i}], \m{list\_addr}(\m{base\_ptr}, \m{i})) \\
-\vspace{1em}
-\p{graph\_rep}(\gamma, \m{g\_addr}) &\defeq \underset{\m{v} \in \gamma}{\bigstar} \m{v}  \mapsto\p{list\_rep}(\gamma, \m{v}, \m{g\_addr})
-\end{split}
-\end{equation*}
-}
-
 Dijkstra's algorithm uses a PQ to greedily choose the
 cheapest unoptimized vertex on line~\ref{code:pop}. The
 best-known distances to vertices are expected to improve as
