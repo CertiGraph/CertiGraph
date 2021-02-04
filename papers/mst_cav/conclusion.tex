@@ -1,3 +1,37 @@
+\subsection{Related work}
+
+We have already discussed work directly related Dijkstra's (\S\ref{sec:relworkdijkstra}), Prim's (\S\ref{sec:relworkprim}), and Kruskal's (\S\ref{sec:relworkkruskal}) algorithms in detail, including work from both the algorithms and formal methods literature.  Briefly to the point of unreasonableness, our observations about Dijkstra's overflow and Prim's specification are novel, and existing formal proofs focus on code working within idealized environments rather than handling the real-world considerations that we do.  We have also already discussed the three formal developments we
+build upon and extend: CompCert, VST, and CertiGraph (\S\ref{sec:stats}).  Our goal now is to discuss mechanized graph reasoning and verification more broadly.
+
+\paragraph{Reasoning about mathematical graphs.}
+There is a 30+ year history of mechanizing graph theory, beginning at least with Wong~\cite{wong1991} and Chou~\cite{chou1994formal} and continuing to the present day; Wang discusses many such efforts~\cite[\S3.3]{shengyi:thesis}.  The two abstract frameworks that seem closest to ours are those by Noschinski~\cite{Noschinski2015}; and by Lammich and Nipkow~\cite{DBLP:journals/afp/LammichN19}.  The latter is particularly relevant to our work, because they too start with a directed graph library and must extend it to handle undirected graphs so that they can verify Prim's algorithm.
+
+\paragraph{More-automated verification.}
+Broadly speaking, mechanized verification of software falls in a spectrum between more-automated-but-less-precise verifications and less-automated-but-more-precise verifications.  Although VST contains some automation, we fall within the latter camp.  In the former camp, landmark initial separation logic~\cite{o2001local} tools such as Smallfoot~\cite{berdine:smallfoot} have grown into Facebook's industrial-strength Infer~\cite{calcagno2015moving}.  Other notable relatively-automated separation logic-based tools include HIP/SLEEK~\cite{chin:hipsleek}, Bedrock~\cite{chlipala:bedrock}, and VerCors~\cite{DBLP:conf/fm/BlomH14}.  Boogie~\cite{barnett2005boogie}, \textsc{Blast}~\cite{DBLP:journals/sttt/BeyerHJM07}, Dafny~\cite{leino10}, and KeY~\cite{DBLP:series/lncs/10001} are examples of more-automated solutions that do not use separation logic.  In \S\ref{sec:relworkdijkstra} we discuss how some of these more-automated approaches have been applied to verify Dijkstra's algorithm. Petrank and Hawblitzel's Boogie-based verification of a garbage collector~\cite{gcexample2} gives another more-automated verification of a graph algorithm.
+
+We are not confident that more-automated tools would be able to replicate our work easily.  We prove full functional correctness, whereas many more-automated tools prove only more limited properties.  Moreover, our full functional correctness results rely upon a meaningful amount of domain-specific knowledge about graphs, which automated tools usually lack.  Even if we restrict ourselves to more limited domains such as overflows, several more automated efforts did not uncover the overflow we did (\S\ref{sec:relworkdijkstra}).  The proof that certain bounds on edge weights and \texttt{inf} suffice depends on an intimate understanding of Dijkstra's algorithm (in particular, that it explores one edge beyond the optimum paths); overall the problem seems challenging in highly-automated settings.  The more powerful specification we discover for Prim's algorithm in \S\ref{sec:primforest} is likewise not something a tool is likely to discover: human insight appears necessary, at least given the current state of machine learning techniques.
+
+In contrast, several of the potential overflows in our binary heap might be uncovered by more-automated approaches, especially those related to the \texttt{PARENT} and \texttt{LEFT\_CHILD} macros from \S\ref{sec:heapinsertremove}.  Although the arithmetic involves both addition/subtraction and multiplication/division, we suspect a tool such as Z3~\cite{moura2008} could handle it. \hide{; the multiplication/division always has the constant \texttt{2u} for an operand.}  Moreover, a sufficiently-precise tool would probably spot the necessity of forcing the internal constants into \texttt{unsigned int}.  The issue of sound key generation described in~\S\ref{sec:modpri} might be a bit trickier.  On the one hand, \texttt{unsigned int} overflow is defined in~C, so real code sometimes relies upon it.  Accordingly, merely observing that the counter could overflow does not guarantee that the code is necessarily buggy.  On the other hand, some tools might flag it anyway out of caution (\emph{i.e.} right answer, wrong reason).
+
+\paragraph{Less-automated verification.}
+Although as discussed above some more-automated tools have been applied to verify graph algorithms, the problem domain is sufficiently complex that many of the verifications discussed in \S\ref{sec:relworkdijkstra}, \S\ref{sec:relworkprim}, and \S\ref{sec:relworkkruskal} use less-automated techniques.  Two basic approaches are popular.  Approach A: write the algorithm in the native language of a proof assistant and then use tactics to reason about it.  Approach B: write the algorithm in another language with a precisely defined semantics, and then use tactics to reason about it.  We take approach B due to our use of VST; one of VST's more popular competitors in this style is ``Iris Proof Mode''~\cite{DBLP:conf/popl/KrebbersTB17}.  In contrast, Lammich \emph{et al.} have produced a series results verifying a variety of graph algorithms that generally take approach A~\cite{DBLP:conf/itp/Lammich14,DBLP:journals/afp/LammichN19,DBLP:journals/afp/HaslbeckLB19,cite,cite,cite}.  Lammich has also verified
+
+%dijkstra_shortest_path-afp
+
+Generally speaking, the most comprehensive work on v
+
+
+other authors less push-button approaches are still popular.
+
+\paragraph{Verifying graph algorithms}
+
+
+
+%\note{Being in pseudocode and , these works do not need to discuss the application of the algorithms on "strange", non-simple graph inputs. Our C implementation does account for such inputs to a small extent, such as the edge list containing multiple edges between two vertices in Kruskal's.}
+
+\paragraph{Other graph proof libraries.} Krishna et al~\cite{DBLP:conf/esop/KrishnaSW20} has developed a flow algebraic framework to reason about local and global properties of \textit{flow graphs} in the program heap. Their flow algebra is designed to mainly tackle local reasoning of global graphs in program heaps, tackling similar issues to Wang et al ~\cite{DBLP:journals/pacmpl/WangCMH19}, but in this paper, local reasoning is not required. Their flow algebra is said to be compatible with existing separation logics, although actual implementation and integration with SL tools appears to be an ongoing progress.
+%In a related vein, Paulin and Filli\^atre verified Floyd's algorithm in Coq~\cite{paulin}
+
 \subsection{Previous work} We have long been interested in
 the verification of graph-manipulating programs written in~C~\cite{hobor:ramification}.
 We fortified our techniques to handle realistic (CompCert~\cite{leroy:compcert})~C~to a machine-checked level of rigour~\cite{DBLP:journals/pacmpl/WangCMH19}.  Novel features of the present result include a previously-untried adjacency matrices spatial graph representation as well as non-trivial edge labels between graph nodes. % for the first time. %, used to represent cost. %; both are new for us.
@@ -17,15 +51,6 @@ well-defined in~C~when the associated nodes are present in the mathematical grap
 advantage of having end-to-end machine-checked examples such as the one we presented above is
 that they guide the automation efforts by providing precise goals that are known to be strong
 enough to verify real code.}
-
-\subsection{Related work}
-
-We have already discussed work directly related Dijkstra's (\S\ref{sec:relworkdijkstra}), Prim's (\S\ref{sec:relworkprim}), and Kruskal's (\S\ref{sec:relworkkruskal}) algorithms in detail, including work from both the algorithms and formal methods literature.  Briefly to the point of unreasonableness, our observations about Dijkstra's overflow and Prim's specification are novel, and existing formal proofs focus on code working within idealized environments rather than handling the real-world considerations that we do.  Our goal now is to discuss mechanized graph reasoning and verification more broadly.
-
-\note{Being in pseudocode and , these works do not need to discuss the application of the algorithms on "strange", non-simple graph inputs. Our C implementation does account for such inputs to a small extent, such as the edge list containing multiple edges between two vertices in Kruskal's.}
-
-\paragraph{Other graph proof libraries.} Krishna et al~\cite{DBLP:conf/esop/KrishnaSW20} has developed a flow algebraic framework to reason about local and global properties of \textit{flow graphs} in the program heap. Their flow algebra is designed to mainly tackle local reasoning of global graphs in program heaps, tackling similar issues to Wang et al ~\cite{DBLP:journals/pacmpl/WangCMH19}, but in this paper, local reasoning is not required. Their flow algebra is said to be compatible with existing separation logics, although actual implementation and integration with SL tools appears to be an ongoing progress.
-%In a related vein, Paulin and Filli\^atre verified Floyd's algorithm in Coq~\cite{paulin}
 
 %@misc{paulin,
 %title={The {C}oq proof assistant},
