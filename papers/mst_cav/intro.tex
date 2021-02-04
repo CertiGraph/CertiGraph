@@ -14,13 +14,13 @@ In our work, we provide~C~implementations of each of these algorithms, and prove
 the formal semantics of CompCert~C~\cite{leroy:compcert}.  Although our~C~code is developed from standard textbooks, we uncover a number of subtleties, including:
 \begin{itemize}
 \item[\S\ref{sec:dijkoverflow}] an overflow in Dijkstra's algorithm whose avoidance requires a nontrivial refinement to the algorithm's precondition to bound edge weights;
-\item[\S\ref{sec:prim}] that the specification of Prim's algorithm can be strengthened to apply to disconnected graphs without any change to the code;
-\item[\S\ref{sec:prim}] the presence of a wholly unneeded line of code in Prim's algorithm, and an associated unneeded function argument;
+\item[\S\ref{sec:primforest}] that the specification of Prim's algorithm can be strengthened to apply to disconnected graphs without any change to textbook (pseudo-)code;
+\item[\S\ref{sec:primforest}] the presence of a wholly unneeded line of (pseduo-)code in Prim's algorithm, and an associated unneeded function argument;
 \item[\S\ref{sec:binheap}] several potential overflows in binary heaps equipped with Floyd's linear-time build-heap function and an edit-priority operation.
 \end{itemize}
 All of these appear to be absent from algorithmic and formal methods literature.
 
-We wish to develop general and reusable techniques for verifying graph-manipulating programs.  Accordingly, we leverage and/or extend three large existing formal Coq developments to state and prove the full functional correctness of our code in Coq: CompCert, the Verified Software Toolchain~\cite{appel:programlogics}, and the CertiGraph project~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our primary extensions are to the latter, and include:
+We wish to develop general and reusable techniques for verifying graph-manipulating programs written in real programming languages.  This is a significant challenge, and so we choose to leverage and/or extend three large existing proof developments to state and prove the full functional correctness of our code in Coq: CompCert, the Verified Software Toolchain~\cite{appel:programlogics}, and the CertiGraph project~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our primary extensions are to the latter, and include:
 \begin{enumerate}
 \item pure/abstract reasoning for graphs with edge labels, including specialized support for graphs that label edges with costs (\emph{e.g.} a distinguished edge-label value for ``infinity'' that indicates invalid/absent edges);
 \item pure reasoning for undirected graphs (\emph{e.g.}, notions of connectedness);
