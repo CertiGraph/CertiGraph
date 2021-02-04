@@ -20,27 +20,9 @@ enough to verify real code.}
 
 \subsection{Related work}
 
-\paragraph{Other verifications of shortest-path.}
-Chen verified Dijkstra in Mizar~\cite{chen2003dijkstra}, Gordon \emph{et al.} formalized the reachability property in HOL~\cite{gordon2003executing}, Moore and Zhang verified it in ACL2~\cite{Moore2005}, Mange and Kuhn verified it in Jahob~\cite{mange2007verifying}, and Klasen verified it in KeY~\cite{klasen2010verifying}.  Liu \emph{et al.} took an alternative SMT-based approach to verify a Java implementation of Dijkstra~\cite{6200101}.  In general the above work operates within
-idealized formal environments and thus gloss over certain real-world issues, and so, as best we
-can tell, do not \emph{e.g.} handle the overflow issue we identified.
+We have already discussed work directly related Dijkstra's (\S\ref{sec:relworkdijkstra}), Prim's (\S\ref{sec:relworkprim}), and Kruskal's (\S\ref{sec:relworkkruskal}) algorithms in detail, including work from both the algorithms and formal methods literature.  Briefly to the point of unreasonableness, our observations about Dijkstra's overflow and Prim's specification are novel, and existing formal proofs focus on code working within idealized environments rather than handling the real-world considerations that we do.  Our goal now is to discuss mechanized graph reasoning and verification more broadly.
 
-%However, because they operate entirely within ,
-%these works inadvertently gloss over certain classes of issues
-%that routinely crop up in real-world settings.
-
-
-\paragraph{Shortest-path in algorithms textbooks.}
-
-
-\paragraph{Other verifications of minimum-spanning algorithms}
-\paragraph{Prim's in algorithms textbooks.} 
-
-%The textbooks we reviewed did not recognise Prim's ability to return forests. CLRS does not discuss disconnected graphs and spanning forests. \textit{Discrete Mathematics and Its Applications}~\cite{rozen} leaves modifying Prim's to return forests as an exercise to the reader. \textit{The Algorithm Design Manual, Second Edition}~\cite{DBLP:books/daglib/0022194} suggests Boruvka’s algorithm, and a combination with Prim's for complexity. \textit{Graph Algorithms in the Language of Linear Algebra}~\cite{kepnergilbert} recommends running Prim's on each component of the disconnected graph.
-
-
-
-Being in pseudocode and idealized environments, these works do not need to discuss the application of the algorithms on "strange", non-simple graph inputs. Our C implementation does account for such inputs to a small extent, such as the edge list containing multiple edges between two vertices in Kruskal's.
+\note{Being in pseudocode and , these works do not need to discuss the application of the algorithms on "strange", non-simple graph inputs. Our C implementation does account for such inputs to a small extent, such as the edge list containing multiple edges between two vertices in Kruskal's.}
 
 \paragraph{Other graph proof libraries.} Krishna et al~\cite{DBLP:conf/esop/KrishnaSW20} has developed a flow algebraic framework to reason about local and global properties of \textit{flow graphs} in the program heap. Their flow algebra is designed to mainly tackle local reasoning of global graphs in program heaps, tackling similar issues to Wang et al ~\cite{DBLP:journals/pacmpl/WangCMH19}, but in this paper, local reasoning is not required. Their flow algebra is said to be compatible with existing separation logics, although actual implementation and integration with SL tools appears to be an ongoing progress.
 %In a related vein, Paulin and Filli\^atre verified Floyd's algorithm in Coq~\cite{paulin}
