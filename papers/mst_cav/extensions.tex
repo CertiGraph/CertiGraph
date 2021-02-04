@@ -128,7 +128,7 @@ forest has no simple undirected cycles. The other definitions presented
 are straightforward from there, and 
 \texttt{minimum\_spanning\_forest f g} means that the total edge cost 
 of~\texttt{f} is \note[minimal among other... struggling to phrase this.]{minimal}.
-For completeness, trees are just a special kind of forest:
+\note[need better transition]{For completeness}, trees are just a special kind of forest:
 \texttt{utree~g~:= uforest~g} $\wedge$ \texttt{connected\_graph~g.}
 
 \hide{We also highlight a difference in our definition compared to mathematical textbooks. Prim's and Kruskal's algorithms are presented as minimum-spanning \textit{tree} algorithms, and often have the implicit assumption that the graph is fully connected. They may or may not discuss forests - CLRS does not, while \textit{Discrete Mathematics} informally defines forests as ``containing no simple circuits that are not necessarily connected [...] and have the property that each of their connected components is a tree." In short, these sources define forests from ``bottom-up" using trees. We define them ``top-down" instead, recognising forests as acyclic graphs and trees as connected forests. This definition was also used by Lammich et al~\cite{DBLP:journals/afp/LammichN19}.}
