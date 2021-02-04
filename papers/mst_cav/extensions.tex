@@ -195,11 +195,8 @@ across directed and undirected graphs.
 
 \subsubsection{Edge lists.}
 
-Edge lists are the graph representation of choice when 
-taking an edge-first approach
-(\emph{e.g.} sorting edges, \emph{a la} Kruskal) 
-rather than a vertex-first approach.
-A straightforward~C implementation 
+Edge lists are the representation of choice 
+for sparse graphs. A straightforward~C implementation 
 defines an \texttt{edge} as a 
 \texttt{struct} containing \texttt{src}, \texttt{dst}, and 
 \texttt{weight}, and then defines a \texttt{graph} as a 
@@ -223,4 +220,46 @@ follows this pattern:
 \hide{We observe mathematical differences between the graphs that can be represented by an edge list and an adjacency-matrix representation. As mentioned in the Prim's section, in a symmetric adjacency matrix, $g[u][v])$ and $g[v][u]$ are considered the same edge; however, this is not true for an edge list, where every edge is effectively an ordered pair due to the memory positions of the data. As a result, this edge list can contain multiple edges between two vertices whereas a 2D adjacency matrix cannot. Further, we prove that Kruskal's algorithm can handle such inputs and still return a minimal spanning forest.
 } % end hide
 % Well we can't say the above if it's not true... 
+
+\subsection{Pure reasoning for adjacency matrix-represented graphs}
+
+We discussed above the spatial representation of an adjacency 
+matrix, but not every mathematical graph is fits that mould.
+We supply a unified, reusable, and extendable \emph{soundness condition} 
+\texttt{SoundAdjMat} that a graph must satisfy in order for it 
+to be represented as an adjacency matrix.
+
+\texttt{SoundAdjMat} is premised on the \texttt{size} of the graph
+and a distinguished number \texttt{inf}.
+First, we restrict soundness to finite graphs having 
+vertices of type \texttt{Z}, edges of \texttt{Z*Z}, and 
+edge labels of \texttt{Z}. 
+We ask that the parameters \texttt{size} and \texttt{inf} be
+strictly positive and representable on the machine. 
+Further, we give semantics to \texttt{src} and \texttt{dst} 
+(\m{fst} and \m{snd} respectively)
+and \texttt{vvalid} (a valid vertex is indexed between $0$ and \texttt{size-1}).
+Most critical, however, is the semantics of \texttt{evalid}:
+a valid edge must have a machine-representable label and that label
+cannot have value \texttt{inf}; an invalid edge \emph{must} have label \texttt{inf}.
+
+The restriction on edge labels is necessary because we are working 
+with labeled adjacency matrices. An unlabeled 
+adjacency matrix can get by with labels of $0$/$1$ to 
+indicate the absence/presence of an edge, but in a labeled 
+setting, any label could be bona-fide depending on the use case. 
+The solution is to 
+allow the user the choice of a distinguished number \texttt{inf},
+which thereafter indicates the \emph{absence} of an edge.
+
+\note{Add a little about undirected, after discussing with Aquinas.}
+
+In our verifications, 
+the soundness condition of DijkstraGraph is \texttt{SoundAdjMat}
+along with a few further constraints. An obvious constraint is that Dijkstra 
+requires positive edge weights; further restrictions on 
+\texttt{size} and \texttt{inf} are discussed in~\S\ref{sec:dijkoverflow}.
+PrimGraph uses the \texttt{SoundUAdjMat} wholesale and places no further restrictions
+on it.
+
 
