@@ -20,7 +20,7 @@ the formal semantics of CompCert~C~\cite{leroy:compcert}.  Although our~C~code i
 \end{itemize}
 All of these appear to be absent from algorithmic and formal methods literature.
 
-We wish to develop general and reusable techniques for verifying graph-manipulating programs written in real programming languages.  This is a significant challenge, and so we choose to leverage and/or extend three large existing proof developments to state and prove the full functional correctness of our code in Coq: CompCert, the Verified Software Toolchain~\cite{appel:programlogics}, and the CertiGraph project~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our primary extensions are to the latter, and include:
+We wish to develop general and reusable techniques for verifying graph-manipulating programs written in real programming languages.  This is a significant challenge, and so we choose to leverage and/or extend three large existing proof developments to state and prove the full functional correctness of our code in Coq: CompCert, the Verified Software Toolchain~\cite{appel:programlogics} (VST), and the CertiGraph project~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our primary extensions are to the latter, and include:
 \begin{enumerate}
 \item pure/abstract reasoning for graphs with edge labels, including specialized support for graphs that label edges with costs (\emph{e.g.} a distinguished edge-label value for ``infinity'' that indicates invalid/absent edges);
 \item pure reasoning for undirected graphs (\emph{e.g.}, notions of connectedness);
@@ -50,7 +50,7 @@ The remainder of this paper is organized as follows:
 %    \item[\S\ref{sec:structure}] We discuss modularity within the graph library as a follow-up from Kruskal's, demonstrating VST's and CertiGraph's ability to build incrementally larger systems.
     \item[\S\ref{sec:dijkstra}] We explain our verification of Dijkstra's algorithm in some detail, discuss a potential overflow, and refine the precondition to avoid it. %~implementation of  and the key loop invariants we use to certify its specification.
 %    \item[\S\ref{sec:overflow}] We explain how overflow can occur and give a refinement to the precondition of the function that restricts edge weights and the standard \texttt{INF} definition appropriately in a way that prevents said overflow.
-    \item[\S\ref{sec:mst}] We overview our verifications of the MST algorithms of Prim and Kruskal, focusing on high-level points such as our strengthened specification for Prim's.
+    \item[\S\ref{sec:mst}] We overview our verifications of the Minimum Spanning Tree/Forest algorithms of Prim and Kruskal, focusing on high-level points such as our strengthened specification for Prim's.
 %    's algorithm and discuss our findings on its ability to operate on disconnected graphs by simply dissociating a vertex's membership in the priority queue from its weight.
 %    \item[\S\ref{sec:kruskal}] We present 's algorithm and discuss the nuances between different graph representations, as well as the reuse of previously independently verified programs.
     \item[\S\ref{sec:binheap}] We overview our verification of binary heaps, including a discussion of Floyd's bottom-up heap construction and the edit-priority operation.

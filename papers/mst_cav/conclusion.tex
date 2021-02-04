@@ -1,3 +1,17 @@
+\subsection{Related work}
+
+We have already discussed work directly related Dijkstra's (\S\ref{sec:relworkdijkstra}), Prim's (\S\ref{sec:relworkprim}), and Kruskal's (\S\ref{sec:relworkkruskal}) algorithms in detail, including work from both the algorithms and formal methods literature.  Briefly to the point of unreasonableness, our observations about Dijkstra's overflow and Prim's specification are novel, and existing formal proofs focus on code working within idealized environments rather than handling the real-world considerations that we do.  We have also already discussed the three formal developments we
+build upon and extend: CompCert, VST, and CertiGraph (\S\ref{sec:stats}).  Our goal now is to discuss mechanized graph reasoning and verification more broadly.
+
+\paragraph{Reasoning about mathematical graphs}
+
+There is a 30-year history of reasoning about mathematical graphs, beginning with 
+
+\note{Being in pseudocode and , these works do not need to discuss the application of the algorithms on "strange", non-simple graph inputs. Our C implementation does account for such inputs to a small extent, such as the edge list containing multiple edges between two vertices in Kruskal's.}
+
+\paragraph{Other graph proof libraries.} Krishna et al~\cite{DBLP:conf/esop/KrishnaSW20} has developed a flow algebraic framework to reason about local and global properties of \textit{flow graphs} in the program heap. Their flow algebra is designed to mainly tackle local reasoning of global graphs in program heaps, tackling similar issues to Wang et al ~\cite{DBLP:journals/pacmpl/WangCMH19}, but in this paper, local reasoning is not required. Their flow algebra is said to be compatible with existing separation logics, although actual implementation and integration with SL tools appears to be an ongoing progress.
+%In a related vein, Paulin and Filli\^atre verified Floyd's algorithm in Coq~\cite{paulin}
+
 \subsection{Previous work} We have long been interested in
 the verification of graph-manipulating programs written in~C~\cite{hobor:ramification}.
 We fortified our techniques to handle realistic (CompCert~\cite{leroy:compcert})~C~to a machine-checked level of rigour~\cite{DBLP:journals/pacmpl/WangCMH19}.  Novel features of the present result include a previously-untried adjacency matrices spatial graph representation as well as non-trivial edge labels between graph nodes. % for the first time. %, used to represent cost. %; both are new for us.
@@ -17,15 +31,6 @@ well-defined in~C~when the associated nodes are present in the mathematical grap
 advantage of having end-to-end machine-checked examples such as the one we presented above is
 that they guide the automation efforts by providing precise goals that are known to be strong
 enough to verify real code.}
-
-\subsection{Related work}
-
-We have already discussed work directly related Dijkstra's (\S\ref{sec:relworkdijkstra}), Prim's (\S\ref{sec:relworkprim}), and Kruskal's (\S\ref{sec:relworkkruskal}) algorithms in detail, including work from both the algorithms and formal methods literature.  Briefly to the point of unreasonableness, our observations about Dijkstra's overflow and Prim's specification are novel, and existing formal proofs focus on code working within idealized environments rather than handling the real-world considerations that we do.  Our goal now is to discuss mechanized graph reasoning and verification more broadly.
-
-\note{Being in pseudocode and , these works do not need to discuss the application of the algorithms on "strange", non-simple graph inputs. Our C implementation does account for such inputs to a small extent, such as the edge list containing multiple edges between two vertices in Kruskal's.}
-
-\paragraph{Other graph proof libraries.} Krishna et al~\cite{DBLP:conf/esop/KrishnaSW20} has developed a flow algebraic framework to reason about local and global properties of \textit{flow graphs} in the program heap. Their flow algebra is designed to mainly tackle local reasoning of global graphs in program heaps, tackling similar issues to Wang et al ~\cite{DBLP:journals/pacmpl/WangCMH19}, but in this paper, local reasoning is not required. Their flow algebra is said to be compatible with existing separation logics, although actual implementation and integration with SL tools appears to be an ongoing progress.
-%In a related vein, Paulin and Filli\^atre verified Floyd's algorithm in Coq~\cite{paulin}
 
 %@misc{paulin,
 %title={The {C}oq proof assistant},
