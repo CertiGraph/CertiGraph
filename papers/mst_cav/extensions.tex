@@ -183,12 +183,13 @@ unfold and refold the adjacency matrix, thus smoothing user
 experience when reading and writing arrays and cells. Of course
 these utilities themselves vary by flavor of representation, but 
 the net effect is that users of our adjacency matrices really can 
-be agnostic to the style of representation they are using.
+be agnostic to the style of representation they are using 
+(see \S\ref{sec:dijkoverview}).
 
-The property of undirectedness requires no special conditions 
+The property of undirectedness requires no special condition 
 when it comes to spatial representation in separation logic, 
-and so we seamlessly share spatial representations and related 
-lemmas across directed and undirected graphs.
+and so we share spatial representations and utilities 
+across directed and undirected graphs.
 
 \hide{We observe one quirk about a symmetric undirected matrix. In our abstract graphs, which are fundamentally directed, the abstract edges $(u,v)$ and $(v,u)$ where $u \neq v$ are clearly distinct from each other. However, in a symmetric matrix both $g[u][v]$ and $g[v][u]$ will be marked, thus it is unclear which edge is in the graph. To disambiguate, we impose the following condition: If $g[u][v]$ and $g[v][u]$ are marked, and $u \leq v$, then we consider $(u,v)$ to be the valid edge; if $v \textless u$, then $(v,u)$ is the valid edge.}
 
