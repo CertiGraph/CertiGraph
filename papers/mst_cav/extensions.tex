@@ -1,6 +1,50 @@
-\subsection{Overlaying undirected graphs on top of a directed graph library}
+\subsection{Undirectedness in a directed world}
 
-\begin{lstlisting}
+The CertiGraph library presented in~\cite{DBLP:journals/pacmpl/WangCMH19} 
+supports only directed graphs, baking direction-reliant 
+idioms 
+% properties?
+% constructs?
+such as 
+\texttt{src} and \texttt{dst} : \texttt{EdgeType} $\rightarrow$ \texttt{VertexType}
+deep into its development.
+Our challenge is to add support for undirected graphs. 
+
+One approach is to handle undirected edges entirely separately 
+from directed edges, \emph{e.g.} using Coq \texttt{Ensemble}s. 
+This has the benefit of allowing 
+mixed graphs, which contain directed and undirected edges simultaneously. 
+Sadly, CertiGraph's tried-and-tested suite of pure formalized graph theory is
+% fundamentally 
+% hopelessly
+incompatible with such undirected edges, and so a new 
+``tower'' of development is necessary. 
+This is unpleasant both because it forces us to start
+from scratch and because it creates 
+a
+%an insurmountable
+%divide
+fissure 
+within an otherwise unified library. 
+
+The approach we take is more harmonious: 
+we observe that every directed graph can be treated as an undirected 
+graph by ignoring edge direction.
+As we will soon detail, we develop a lightweight layer of 
+``undirected flavored'' definitions atop of the existing 
+``directed flavored'' definitions, state and prove connections 
+between these, and are off to the races. 
+We sacrifice the ability to represent mixed graphs---a given
+graph needs to either consider edge direction or ignore~it---but 
+we gain full access to CertiGraph's graph theory formalizations 
+modulo some mathematical bridging.
+% It also allows us to use CertiGraph's rich set of lemmas about the addition and removal of edges.
+% This is backed by our observation that undirected graph properties are largely mathematical in nature, 
+
+% The property of undirectedness requires no special conditions when it comes to spatial representation in separation logic, and so we seamlessly share spatial representations and related lemmas across directed and undirected graphs.
+% The above line is mine (Anshuman's) but I think it's a distraction to put it here. Let's discuss later.
+
+\hide{\begin{lstlisting}
 Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 	vvalid : Ensemble Vertex;
 	evalid : Ensemble Edge;
@@ -8,18 +52,31 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 	dst : Edge -> Vertex
 }.
 \end{lstlisting}
-In CertiGraph, every graph has the four following basic functions: $vvalid$ which determines which vertices are valid in the graph; $evalid$ which determines which edges are valid in the graph, and $src$ and $dst$ map each edge to vertices. For example, an edge $e$ in graph $g$ pointing from vertex $u$ to $v$ will have $src$ $g$ $e$ $=$ $u$ and $dst$ $g$ $e$ $=$ $v$. What these functions actually are, is defined during the actual construction of a graph.
+}% end hide
 
-As a result of this definition, all graphs defined by CertiGraph are \textit{directed} - each edge in the graph has a clear direction defined by the $src$ and $dst$ functions. This makes sense in the first use cases of CertiGraph, especially when reasoning about C pointers.
+\hide{In CertiGraph, every graph has the four following basic functions: $vvalid$ which determines which vertices are valid in the graph; $evalid$ which determines which edges are valid in the graph, and $src$ and $dst$ map each edge to vertices. For example, an edge $e$ in graph $g$ pointing from vertex $u$ to $v$ will have $src$ $g$ $e$ $=$ $u$ and $dst$ $g$ $e$ $=$ $v$. What these functions actually are, is defined during the actual construction of a graph.
 
-How then to reason about undirected graphs in a directed graph library? A naive idea is to consider undirected edges as a separate category from directed edges, by introducing new \texttt{Ensemble}s for undirected edges. This has the benefit of reasoning with mixed graphs that contains both directed and undirected edges. However, the graphs we wish to study are either directed or undirected, so it will be unwieldy for a graph to have to maintain ensembles for both kinds of edges, when it will never use one kind. Furthermore, it requires us to recreate many fundamental operations for manipulating edges, ignoring the already robust suite of lemmas Wang et al already have for $evalid$, $src$ and $dst$.
+As a result of this definition, all graphs defined by CertiGraph are \textit{directed} - each edge in the graph has a clear direction defined by the $src$ and $dst$ functions. This makes sense in the first use cases of CertiGraph, especially when reasoning about C pointers.}% end hide
 
-Instead, we rely on the observation that \textit{every directed graph can be treated as an undirected graph} by simply ignoring the directions of the edges, thus holds certain undirected graph properties. This is backed by our observation that undirected graph properties are largely mathematical in nature, and depending on the representation, have few to no spatial requirements in separation logic. It also allows us to use CertiGraph's rich set of lemmas about the addition and removal of edges.
 
-\subsection{Undirected graph properties}
 
-Here we give a quick explanation of the main undirected definitions and properties relevant to this paper. Our definitions are largely based on CLRS~\cite{clrs}.
+\subsubsection{Our ``undirected'' definitions.}
 
+%Our definitions are largely based on CLRS~\cite{clrs}.
+Two vertices \m{u} and \m{v} are \texttt{adjacent} if there exists
+an edge between them in either direction; vertices are self-adjacent.
+An undirected path (\texttt{upath}) is list of vertices that are 
+pairwise adjacent. Two vertices are \texttt{connected} when a \texttt{upath}
+features them as head and foot; essentially this is the transitive 
+closure of \texttt{adjacenct}.
+%A similar approach is proposed in Halsbeck~\cite{DBLP:journals/afp/HaslbeckLB19}.
+A \texttt{simple\_upath} is a \texttt{upath} that has no duplicate vertices. 
+An undirected cycle (\texttt{ucycle}) is a \texttt{upath} whose first 
+and last vertices are the same.  A \texttt{simple\_ucycle} is a cycle whose
+only duplicate is the first/last vertex.
+% Note that the definition of path varies between textbooks and papers. For example, \textit{Discrete Mathematics and its Applications}~\cite{rozen} defines paths as a sequence of edges with an implicit sequence of vertices, whereas CLRS, which we have followed, defines it as a sequence of vertices with an implicit sequence of edges. 
+
+\hide{
 Let $g$ be a graph. A valid edge $e$ in $g$ is an adjacent edge (or \textit{adj\_edge} for short) of valid vertices $u$ and $v$ if those are its $src$ and $dst$. $u$ and $v$ are \textit{adjacent} if such an edge exists in $g$.
 \begin{lstlisting}
 Definition adj_edge (g: PreGraph V E) (e: E) (u v: V) :=
@@ -30,7 +87,6 @@ Definition adj_edge (g: PreGraph V E) (e: E) (u v: V) :=
 Definition adjacent (g: PreGraph V E) (u v: V) :=
 	exists e: E, adj_edge g e u v.
 \end{lstlisting}
-A similar approach is proposed in Halsbeck~\cite{DBLP:journals/afp/HaslbeckLB19}.
 
 A valid undirected path, or \textit{upath}, in $g$ is a list of vertices such that each vertex in the list is adjacent with the subsequent vertex. An empty path, $nil$, is by default a valid $upath$. A singleton path $[v]$ is also a valid $upath$ if $v$ is a valid vertex.
 \begin{lstlisting}
@@ -41,6 +97,7 @@ match p with
 | u :: ((v :: _) as p') => adjacent g u v /\ valid_upath g p'
 end.
 \end{lstlisting}
+
 \begin{figure}[H]
 	\begin{center}
 	\begin{tikzpicture} [auto, node distance =1.5 cm and 1.5cm ,on grid, semithick, state/.style ={ circle}]
@@ -54,6 +111,7 @@ end.
 	\end{center}
 	\caption{We ignore the direction of $e_0$, and by our definition the existence of an edge between them means $v_0$ and $v_1$ are adjacent and therefore connected, as is $v_2$ and $v_3$. This allows us to handle the ordering of $e_{0}.u$ and $e_{0}.v$ in C code easily, as seen later in the edge list representation}
 \end{figure}
+
 Two vertices $u$ and $v$ are \textit{connected by p} if $p$ is a valid $upath$ in $g$ with the head vertex $u$ and last vertex $v$. They are \textit{connected} if such a $upath$ exists. By the above, every valid vertex in $g$ is trivially connected to itself.
 \begin{lstlisting}
 Definition connected_by_path g (p: upath) (n : V) :=
@@ -63,9 +121,7 @@ Definition connected_by_path g (p: upath) (n : V) :=
 Definition connected (g: PreGraph V E) (n : V) :=
 	fun n' => exists p, connected_by_path g p n n'.
 \end{lstlisting}
-An undirected cycle, or $ucycle$, is a $upath$ whose first and last vertices are the same. A $simple$ $upath$ is a valid $upath$ that has no duplicate vertices - no vertex is visited twice. A $simple$ $ucycle$ is a cycle whose tail has no duplicate vertices - the only ``duplicates" in the cycle are the first and last vertices.
-
-Note that the definition of path varies between textbooks and papers. For example, \textit{Discrete Mathematics and its Applications}~\cite{rozen} defines paths as a sequence of edges with an implicit sequence of vertices, whereas CLRS, which we have followed, defines it as a sequence of vertices with an implicit sequence of edges. We opted to follow CLRS' definition as our textbook of comparison.
+}% end hide
 
 \subsection{Defining forests before trees}
 

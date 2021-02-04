@@ -13,10 +13,11 @@ $\color{OliveGreen}//~\braces{\p{AdjMat}(\texttt{g},\gamma) *
  { dist[i] = inf; prev[i] = inf; keys[i] = pq_push(pq,inf,i); } $\label{code:assigninf}$
  dist[src]= 0; prev[src]= src; pq_edit_priority(pq,keys[src],0);
  while (pq_size(pq) > 0) {
-$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}, \m{heap}}.~\p{AdjMat}(\texttt{g},\gamma) * {\color{red}\p{PQ}(\texttt{pq},\m{heap})} * \mathsf{array}(\texttt{dist},{\color{red}\m{dist}}) * \null \\
+$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}, \m{heap}}.~\p{AdjMat}(\texttt{g},\gamma) * {\color{red}\p{PQ}(\texttt{pq},\m{heap})} * 
+{\color{red}\mathsf{Item}(\texttt{temp}, \_)} * \null \\
+\mathsf{array}(\texttt{dist},{\color{red}\m{dist}}) *
 \mathsf{array}(\texttt{prev}, {\color{red}\m{prev}}) * 
-{\color{red}\mathsf{array}(\texttt{keys}, \m{keys}}) * 
-{\color{red}\mathsf{Item}(\texttt{temp}, \_)} /| \null \\
+{\color{red}\mathsf{array}(\texttt{keys}, \m{keys}}) /| \null \\
 {\color{red}\m{linked\_correctly}(\gamma, \m{heap}, \m{keys}, \m{dist}, \m{popped})} /| \null \\
 {\color{red}\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}}$ $\label{code:whileinv}$
   pq_pop(pq, temp); u = temp->data; $\label{code:pop}$

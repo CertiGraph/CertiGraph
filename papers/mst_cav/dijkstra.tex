@@ -83,7 +83,12 @@ of decreased performance.}.
 %iterating over \texttt{dist} while rejecting optimized items.
 %Neat, but far too slow.
 
-The key to the verification is the loop
+The first nine lines are standard setup. 
+The \emph{keys} array, assigned on line~\ref{code:assigninf}, 
+is thereafter a mathematical constant.
+The pure predicate \m{linked\_correctly} contains the plumbing connecting the 
+various mathematical arrays.
+The verification turns on the loop
 invariants on lines~\ref{code:whileinv} and~\ref{code:forinv}.  The pure \texttt{while} invariant $\m{dijk\_correct}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist})$ essentially unfolds into:
 \[
 \begin{array}{l}
@@ -153,7 +158,7 @@ This is strengthened into
 $\m{inv\_unpopped}$ if so, and into
 $\m{inv\_unseen}$ if not.
 \end{enumerate}
-At the end of the \texttt{for} loop on line \ref{code:caughtup},
+At the end of the \texttt{for} loop
 the fourth and fifth cases fall away
 (\texttt{\m{i}~=~size}), and the PQ and the \m{dist} and \m{prev} arrays
 finish ``catching up'' to the pop on line~\ref{code:pop}.
@@ -163,7 +168,7 @@ and thus continue the \texttt{while} loop.
 The \texttt{while} loop itself breaks when all vertices have been popped
 and processed. The second and third clauses of the \texttt{while} loop invariant
 $\m{dijk\_correct}$ then fall away, as seen on line \ref{code:end}:
-all vertices are in \m{inv\_popped}, either optimally reachable or altogether unreachable.
+all vertices satisfy \m{inv\_popped}, and are either optimally reachable or altogether unreachable.
 We are done.
 
 \hide{
