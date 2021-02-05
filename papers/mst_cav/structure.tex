@@ -25,9 +25,9 @@ On the other hand, working within existing developments involves some challenges
 %In addition, we have worked to improve on the modularity of the mathematical layer, ensuring that similar graph properties and lemmas can be reused by different proofs with little need for repetition.
 
 Our new contributions to CertiGraph include pieces that are reused
-repeatedly and pieces that are more bespoke. We give a sense of both the
+repeatedly and pieces that are more bespoke. Below, we give a sense of both the
 size of our development and the mileage we get out of our own work via reuse.
-Items on one row are very similar (within 1\%) of each other.
+Items placed together on one row are very similar (within 1\%) of each other.
 
 \[
 \begin{array}{@{}c@{}|@{}c@{}}
@@ -37,16 +37,16 @@ Items on one row are very similar (within 1\%) of each other.
 \text{name} & \text{reused} & \text{LoC} \\
 \hline
 \text{MathAdjMat} & \text{6x} & \text{165} \\
-\text{Undirected} & \text{4x} & \text{2,140} \\
+\text{Undirected} & \text{4x} & \text{2,139} \\
 \text{MathUAdjMat} & \text{3x} & \text{1,024} \\
-\text{SpaceAdjMat1+2+3} & \text{2x each} & \text{500} \\
-\text{EdgeListGraph} & \text{1x} & \text{910} \\
-\text{MathDijkGraph} & \text{3x} & \text{180} \\
-\text{DijkPureProof} & \text{3x} & \text{1,730} \\
-\text{UndirectedUF } & \text{1x} & \text{200} \\
-\text{BinaryHeapModel} & \text{1x} & \text{1,800} \\
+\text{SpaceAdjMat1+2+3} & \text{6x} & \text{499} \\
+\text{EdgeListGraph} & \text{1x} & \text{911} \\
+\text{MathDijkGraph} & \text{3x} & \text{165} \\
+\text{DijkPureProof} & \text{3x} & \text{2,124} \\
+\text{UndirectedUF} & \text{1x} & \text{183} \\
+\text{BinaryHeapModel} & \text{1x} & \text{1,870} \\
 \hline
-\text{Total} & & \text{??} \\
+\text{Total} & & \text{9080} \\
 \end{array}
 \]
 \end{minipage} &
@@ -55,17 +55,18 @@ Items on one row are very similar (within 1\%) of each other.
 \begin{array}{@{~\quad}l@{\qquad}r@{\quad}r@{\quad}r@{\quad}l@{}}
 \text{name} &  \text{LoC} \\
 \hline
-\text{DijkSpec1+2+3} & \text{300} \\
-\text{VerifDijk1+2+3} & \text{5,400} \\
+\text{DijkSpec1+2+3} & \text{301} \\
+\text{VerifDijk1+2+3} & \text{3,554} \\
+
 \text{PrimSpec1+2+3+4} & \text{508} \\
-\text{VerifPrim1+2+3+4} & \text{7,500} \\
+\text{VerifPrim1+2+3+4} & \text{7,455} \\
 \text{KruskalSpec} & \text{302} \\
-\text{VerifKruskal} & \text{1,600} \\
-\text{VerifHeapSort} & \text{570} \\
+\text{VerifKruskal} & \text{1,606} \\
+\text{VerifHeapSort} & \text{568} \\
 \text{VerifBasicBinaryHeap} & \text{777} \\
-\text{VerifAdvBinaryHeap} & \text{2,190} \\
+\text{VerifAdvBinaryHeap} & \text{2,253} \\
 \hline
-\text{Total} & \text{??} \\
+\text{Total} & \text{17,234} \\
 \end{array}
 \]
 \end{minipage}
