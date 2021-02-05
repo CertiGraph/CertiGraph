@@ -1,6 +1,47 @@
 \note{We detail the major extensions we made to the 
 CertiGraph library.}
 
+
+\subsection{Pure reasoning for adjacency matrix-represented graphs}
+
+We discussed above the spatial representation of an adjacency 
+matrix, but not every mathematical graph fits that mould.
+We supply a unified, reusable, and extendable \emph{soundness condition} 
+\texttt{SoundAdjMat} that a graph must satisfy in order for it 
+to be represented as an adjacency matrix.
+
+\texttt{SoundAdjMat} is premised on the \texttt{size} of the graph
+and a distinguished number \texttt{inf}.
+First, we restrict soundness to finite graphs having 
+vertices of type \texttt{Z}, edges of \texttt{Z*Z}, and 
+edge labels of \texttt{Z}. 
+We ask that the parameters \texttt{size} and \texttt{inf} be
+strictly positive and representable on the machine. 
+Further, we give semantics to \texttt{src} and \texttt{dst} 
+(\m{fst} and \m{snd} respectively)
+and \texttt{vvalid} (a valid vertex is indexed between $0$ and \texttt{size-1}).
+Most critical, however, is the semantics of \texttt{evalid}:
+a valid edge must have a machine-representable label and that label
+cannot have value \texttt{inf}; an invalid edge \emph{must} have label \texttt{inf}.
+
+The restriction on edge labels is necessary because we are working 
+with labeled adjacency matrices. An unlabeled 
+adjacency matrix can get by with labels of $0$/$1$ to 
+indicate the absence/presence of an edge, but in a labeled 
+setting, any label could be bona-fide depending on the use case. 
+The solution is to 
+allow the user the choice of a distinguished number \texttt{inf},
+which thereafter indicates the \emph{absence} of an edge.
+
+In our verifications, 
+the soundness condition of DijkstraGraph is \texttt{SoundAdjMat}
+along with a few further constraints. An obvious constraint is that Dijkstra 
+requires positive edge weights; further restrictions on 
+\texttt{size} and \texttt{inf} are discussed in~\S\ref{sec:dijkoverflow}.
+
+
+
+
 \subsection{Undirectedness in a directed world}
 
 The CertiGraph library presented in~\cite{DBLP:journals/pacmpl/WangCMH19} 
@@ -128,6 +169,9 @@ of~\texttt{f} is \note[minimal among other... struggling to phrase this.]{minima
 \hide{We also highlight a difference in our definition compared to mathematical textbooks. Prim's and Kruskal's algorithms are presented as minimum-spanning \textit{tree} algorithms, and often have the implicit assumption that the graph is fully connected. They may or may not discuss forests - CLRS does not, while \textit{Discrete Mathematics} informally defines forests as ``containing no simple circuits that are not necessarily connected [...] and have the property that each of their connected components is a tree." In short, these sources define forests from ``bottom-up" using trees. We define them ``top-down" instead, recognising forests as acyclic graphs and trees as connected forests. This definition was also used by Lammich et al~\cite{DBLP:journals/afp/LammichN19}.}
 % Anshuman: I've hidden this for now, may cut or shorten a lot after discussion.
 
+\note{...SoundUAdjMat...
+PrimGraph uses the \texttt{SoundUAdjMat} wholesale and places no further restrictions
+on it.}
 
 \subsection{New spatial representations for edge-labeled graphs}
 
@@ -223,45 +267,6 @@ follows this pattern:
 } % end hide
 % Well we can't say the above if it's not true... 
 
-\subsection{Pure reasoning for adjacency matrix-represented graphs}
-
-We discussed above the spatial representation of an adjacency 
-matrix, but not every mathematical graph fits that mould.
-We supply a unified, reusable, and extendable \emph{soundness condition} 
-\texttt{SoundAdjMat} that a graph must satisfy in order for it 
-to be represented as an adjacency matrix.
-
-\texttt{SoundAdjMat} is premised on the \texttt{size} of the graph
-and a distinguished number \texttt{inf}.
-First, we restrict soundness to finite graphs having 
-vertices of type \texttt{Z}, edges of \texttt{Z*Z}, and 
-edge labels of \texttt{Z}. 
-We ask that the parameters \texttt{size} and \texttt{inf} be
-strictly positive and representable on the machine. 
-Further, we give semantics to \texttt{src} and \texttt{dst} 
-(\m{fst} and \m{snd} respectively)
-and \texttt{vvalid} (a valid vertex is indexed between $0$ and \texttt{size-1}).
-Most critical, however, is the semantics of \texttt{evalid}:
-a valid edge must have a machine-representable label and that label
-cannot have value \texttt{inf}; an invalid edge \emph{must} have label \texttt{inf}.
-
-The restriction on edge labels is necessary because we are working 
-with labeled adjacency matrices. An unlabeled 
-adjacency matrix can get by with labels of $0$/$1$ to 
-indicate the absence/presence of an edge, but in a labeled 
-setting, any label could be bona-fide depending on the use case. 
-The solution is to 
-allow the user the choice of a distinguished number \texttt{inf},
-which thereafter indicates the \emph{absence} of an edge.
-
-\note{Add a little about undirected, after discussing with Aquinas.}
-
-In our verifications, 
-the soundness condition of DijkstraGraph is \texttt{SoundAdjMat}
-along with a few further constraints. An obvious constraint is that Dijkstra 
-requires positive edge weights; further restrictions on 
-\texttt{size} and \texttt{inf} are discussed in~\S\ref{sec:dijkoverflow}.
-PrimGraph uses the \texttt{SoundUAdjMat} wholesale and places no further restrictions
-on it.
+\lstset{style=myTinyStyle}
 
 
