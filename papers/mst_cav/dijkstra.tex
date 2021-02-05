@@ -26,7 +26,7 @@ Of greater interest is $\mathsf{AdjMat}(\texttt{g},\gamma)$, which
 links the concrete memory values of~\texttt{g} to an abstract mathematical
 graph~$\gamma$, which in turn exposes an interface in the
 language of graph theory (vertices, edges, labels, \emph{etc.}).
-As discussed in \S\ref{blah}, we develop three variations of
+As discussed in \S\ref{sec:newspatial}, we develop three variations of
 adjacency-matrix representation.
 Thanks to some careful engineering, the C code and
 the Coq verification are both almost completely agnostic to
@@ -54,8 +54,8 @@ Our ``advanced''~PQ~(\S\ref{sec:modpri})
 supports this operation in logarithmic time with the
 \texttt{pq\_edit\_priority} function\footnote{Because
 \texttt{decrease\_priority} is relatively complex to implement,
-several popular~\cite{blah,blah,blah}
-workarounds use simpler PQs at the cost
+several popular
+workarounds (\emph{e.g.}~\cite{arthur}) use simpler PQs at the cost
 of decreased performance.}.
 % each \texttt{pop\_min} now takes $\bigO(n)$ time.
 

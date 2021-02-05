@@ -1,10 +1,10 @@
 Dijkstra's eponymous shortest-path algorithm~\cite{DBLP:journals/nm/Dijkstra59} finds
 the cost-minimal paths from a distinguished \emph{source} vertex
-source to all reachable vertices in a directed graph. Prim's~\cite{prim} and Kruskal's~\cite{kruskal} algorithms return minimal spanning trees for undirected graphs.
+source to all reachable vertices in a directed graph. Prim's~\cite{prim2:prim} and Kruskal's~\cite{kruskal} algorithms return minimal spanning trees for undirected graphs.
 These algorithms are classic and ubiquitous, appearing widely in textbooks~\cite{clrs,DBLP:books/daglib/0022194,heineman2008algorithms,rozen,kepnergilbert,sedgewick} as well as in real routing protocol libraries.
 
 In addition to decades of use and textbook analysis, recent efforts have implemented one or more of these algorithms in proof
-assistants and formally proved claims about their behavior \cite{Mizar,ACL2,Coq,cite,cite,cite}.  A reasonable person might think that all
+assistants and formally proved claims about their behavior \cite{chen2003dijkstra,Moore2005,arthur,cite,cite}.  A reasonable person might think that all
 that could be said had been.  However, we have found this not to be the case.  Generally speaking, textbook code glosses over a cornucopia
 of issues that routinely crop up in real-world settings: under/overflows, integration with performant data structures, manual memory (de-)allocation,
 error handling, casts, memory alignment issues, and so forth.  On the other hand, previous work with formal checkers tends to operate entirely
@@ -59,4 +59,4 @@ The remainder of this paper is organized as follows:
 %    putting this result in the context of our previous and ongoing work. We discuss related work in certifying the three graph algorithms, and revisit standard algorithms textbook presentations.
 \end{itemize}
 
-\noindent All of our results are completely machine-checked in Coq~\cite{CITE}.%  Our code is available at \url{https://github.com/anshumanmohan/CertiGraph}.
+\noindent All of our results are completely machine-checked in Coq~\cite{Coq}.%  Our code is available at \url{https://github.com/anshumanmohan/CertiGraph}.
