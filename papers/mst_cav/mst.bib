@@ -215,17 +215,6 @@ abstract="We briefly describe a mechanically checked proof of Dijkstra's shortes
 isbn="978-3-540-31820-0"
 }
 
-@article{dijkstra_shortest_path-afp,
-  author  = {Benedikt Nordhoff and Peter Lammich},
-  title   = {Dijkstra's Shortest Path Algorithm},
-  journal = {Archive of Formal Proofs},
-  month   = jan,
-  year    = 2012,
-  note    = {\url{http://isa-afp.org/entries/Dijkstra_Shortest_Path.shtml},
-            Formal proof development},
-  ISSN    = {2150-914x},
-}
-
 @article{DBLP:journals/nm/Dijkstra59,
   author    = {Edsger W. Dijkstra},
   title     = {A note on two problems in connexion with graphs},
@@ -243,18 +232,61 @@ isbn="978-3-540-31820-0"
 @article{DBLP:journals/afp/LammichN19,
   author    = {Peter Lammich and
                Tobias Nipkow},
-  title     = {Purely Functional, Simple, and Efficient Implementation of Prim and
-               Dijkstra},
-  journal   = {Arch. Formal Proofs},
-  volume    = {2019},
+  editor    = {John Harrison and
+               John O'Leary and
+               Andrew Tolmach},
+  title     = {Proof Pearl: Purely Functional, Simple and Efficient Priority Search
+               Trees and Applications to Prim and Dijkstra},
+  booktitle = {10th International Conference on Interactive Theorem Proving, {ITP}
+               2019, September 9-12, 2019, Portland, OR, {USA}},
+  series    = {LIPIcs},
+  volume    = {141},
+  pages     = {23:1--23:18},
+  publisher = {Schloss Dagstuhl - Leibniz-Zentrum f{\"{u}}r Informatik},
   year      = {2019},
-  url       = {https://www.isa-afp.org/entries/Prim\_Dijkstra\_Simple.html},
-  timestamp = {Mon, 25 May 2020 09:13:23 +0200},
-  biburl    = {https://dblp.org/rec/journals/afp/LammichN19.bib},
+  url       = {https://doi.org/10.4230/LIPIcs.ITP.2019.23},
+  doi       = {10.4230/LIPIcs.ITP.2019.23},
+  timestamp = {Mon, 23 Sep 2019 17:27:15 +0200},
+  biburl    = {https://dblp.org/rec/conf/itp/LammichN19.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+%Prim-and-Kruskal-related
+
+@inproceedings{DBLP:conf/itp/LammichS16,
+  author    = {Peter Lammich and
+               S. Reza Sefidgar},
+  editor    = {Jasmin Christian Blanchette and
+               Stephan Merz},
+  title     = {Formalizing the Edmonds-Karp Algorithm},
+  booktitle = {Interactive Theorem Proving - 7th International Conference, {ITP}
+               2016, Nancy, France, August 22-25, 2016, Proceedings},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {9807},
+  pages     = {219--234},
+  publisher = {Springer},
+  year      = {2016},
+  url       = {https://doi.org/10.1007/978-3-319-43144-4\_14},
+  doi       = {10.1007/978-3-319-43144-4\_14},
+  timestamp = {Sat, 19 Oct 2019 20:25:49 +0200},
+  biburl    = {https://dblp.org/rec/conf/itp/LammichS16.bib},
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 
-%Prim-and-Kruskal-related
+@article{DBLP:journals/jar/LammichS19,
+  author    = {Peter Lammich and
+               S. Reza Sefidgar},
+  title     = {Formalizing Network Flow Algorithms: {A} Refinement Approach in Isabelle/HOL},
+  journal   = {J. Autom. Reason.},
+  volume    = {62},
+  number    = {2},
+  pages     = {261--280},
+  year      = {2019},
+  url       = {https://doi.org/10.1007/s10817-017-9442-4},
+  doi       = {10.1007/s10817-017-9442-4},
+  timestamp = {Wed, 02 Sep 2020 13:29:40 +0200},
+  biburl    = {https://dblp.org/rec/journals/jar/LammichS19.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
 
 @inproceedings{DBLP:journals/afp/HaslbeckLB19,
   author    = {Maximilian P. L. Haslbeck and
@@ -727,6 +759,21 @@ isbn="978-3-540-44802-0"
   title = {Graph Decomposition and Local Reasoning},
   note = {under submission},
   year = {2010}
+}
+
+@inproceedings{reynolds2002separation,
+ author = {Reynolds, John C.},
+ title = {{Separation Logic: A Logic for Shared Mutable Data Structures}},
+ booktitle = {Proceedings of the 17th Annual IEEE Symposium on Logic in Computer Science},
+ series = {LICS '02},
+ year = {2002},
+ isbn = {0-7695-1483-9},
+ pages = {55--74},
+ numpages = {20},
+ url = {http://dl.acm.org/citation.cfm?id=645683.664578},
+ acmid = {664578},
+ publisher = {IEEE Computer Society},
+ address = {Washington, DC, USA},
 }
 
 @inproceedings{arthur,
