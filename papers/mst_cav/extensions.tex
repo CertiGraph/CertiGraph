@@ -13,7 +13,7 @@ such as
 deep into its development.
 Our challenge is to add support for undirected graphs. 
 
-One approach is to handle undirected edges entirely separately 
+\hide{One approach is to handle undirected edges entirely separately 
 from directed edges, \emph{e.g.} using Coq \texttt{Ensemble}s. 
 This has the benefit of allowing 
 mixed graphs, which contain directed and undirected edges simultaneously. 
@@ -28,7 +28,7 @@ a
 %an insurmountable
 %divide
 fissure 
-within an otherwise unified library. 
+within an otherwise unified library.}%end hide
 
 The approach we take is more harmonious: 
 we observe that every directed graph can be treated as an undirected 
@@ -37,9 +37,7 @@ As we will soon detail, we develop a lightweight layer of
 ``undirected flavored'' definitions atop of the existing 
 ``directed flavored'' definitions, state and prove connections 
 between these, and are off to the races. 
-We sacrifice the ability to represent mixed graphs---a given
-graph needs to either consider edge direction or ignore~it---but 
-we gain full access to CertiGraph's graph theory formalizations 
+We retain full access to CertiGraph's graph theory formalizations 
 modulo some mathematical bridging.
 % It also allows us to use CertiGraph's rich set of lemmas about the addition and removal of edges.
 % This is backed by our observation that undirected graph properties are largely mathematical in nature, 
@@ -159,11 +157,13 @@ For a taste, the spatial representation of the first looks like:
 \vspace{-0.5em}
 \begin{equation*}
 \begin{split}
-\m{arr\_addr} ((\m{block}, \m{offset}), \m{i}) &\defeq
+\m{arr\_addr} ((\m{block}, \m{offset}), \m{i},\texttt{size}) \defeq~&
   (\m{block}, \m{offset} + (\m{i} \times \texttt{sizeof}(\texttt{int}) \times \texttt{size})) \\
-\p{arr\_rep}(\gamma, \m{i}, \m{base\_ptr}) &\defeq \mathsf{array}(\mathsf{graph2mat}(\gamma)[\m{i}], \m{arr\_addr}(\m{base\_ptr}, \m{i})) \\
+\mathsf{array}(\m{ptr},\m{list}) \defeq~& \underset{\m{i} \in [0, \lvert\m{row}\rvert)}{\bigstar} (\m{ptr} + \m{i}) \mapsto \m{list}[\m{i}]) \\
+\p{arr\_rep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
+&\mathsf{array}(\m{arr\_addr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
 \vspace{1em}
-\p{graph\_rep}(\gamma, \m{g\_addr}) &\defeq \underset{\m{v} \in \gamma}{\bigstar} \m{v}  \mapsto\p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
+\p{graph\_rep}(\gamma, \m{g\_addr}) \defeq~& \underset{\m{v} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
 \end{split}
 \end{equation*}
 Of particular note are $\mathsf{graph2mat}$, which performs two projections to
@@ -202,13 +202,15 @@ defines an \texttt{edge} as a
 \texttt{weight}, and then defines a \texttt{graph} as a 
 \texttt{struct} containing 
 the graph's size, the number of edges in the graph, 
-and an array of \texttt{edge}s. Ours spatial representation 
+and an array of \texttt{edge}s. Our spatial representation 
 follows this pattern:
 \vspace{-0.5em}
 \begin{equation*}
 \begin{split}
-\p{graph\_rep}(\gamma, \m{g\_addr}, &\m{e\_addr})~\defeq \\
-&\mathsf{struct}\big((\texttt{size}, \lvert\gamma.E\rvert,\p{array}(\gamma.\texttt{edges},\m{e\_addr})),\m{g\_addr}\big)
+\p{graph\_rep}(\gamma, \m{g\_addr}, &\m{e\_addr})~\defeq~ \\
+&(\m{g\_addr} \mapsto \lvert\gamma.V\rvert, \lvert\gamma.E\rvert, \m{e\_addr})
+\ast
+\p{array}(\m{e\_addr},\gamma.E)
 \end{split}
 \end{equation*}
 
@@ -224,7 +226,7 @@ follows this pattern:
 \subsection{Pure reasoning for adjacency matrix-represented graphs}
 
 We discussed above the spatial representation of an adjacency 
-matrix, but not every mathematical graph is fits that mould.
+matrix, but not every mathematical graph fits that mould.
 We supply a unified, reusable, and extendable \emph{soundness condition} 
 \texttt{SoundAdjMat} that a graph must satisfy in order for it 
 to be represented as an adjacency matrix.
