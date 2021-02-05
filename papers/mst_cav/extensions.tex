@@ -25,9 +25,9 @@ so we develop a unified, reusable, and extendable \texttt{sound}ness condition
 \texttt{SoundAdjMat} that a graph must satisfy in order for it
 to be represented as an adjacency matrix.
 
-\texttt{SoundAdjMat} is parameterized with the graph's \texttt{size} and a distinguished number \texttt{inf}.
+\texttt{SoundAdjMat} is parameterized by the graph's \texttt{size} and a distinguished number \texttt{inf}.
 We restrict most fields in the tuple:
-($\mathcal{V}\defeq\mathbb{Z}$, $\mathcal{E}\defeq\mathbb{Z} \times \mathbb{Z}$, $\texttt{vvalid}\defeq\lambda v.0 \le v < \texttt{size}$, $\texttt{evalid}\defeq\ldots$, $\texttt{src}\defeq\m{fst}$, $\texttt{dst}\defeq\m{snd}$, $\texttt{vlabel}\defeq\texttt{\_}$, $\texttt{elabel}\defeq\texttt{\_}$, $\texttt{sound}\defeq\ldots$).  We also restrict the carrier type of vertex labels to \texttt{unit} and edge labels to $\mathbb{Z}$.
+($\mathcal{V}=\mathbb{Z}$,\ $\mathcal{E}=\mathbb{Z} \times \mathbb{Z}$,\ $\texttt{vvalid}=\lambda v.~\mbox{$0 \le v < \texttt{size}$}$,\ $\texttt{evalid}=\ldots$,\ $\texttt{src}=\m{fst}$,\ $\texttt{dst}=\m{snd}$,\ $\texttt{vlabel}$,\ $\texttt{elabel}$,\ $\texttt{sound}=\ldots$).  We also restrict the carrier type of vertex labels to \texttt{unit} and edge labels to $\mathbb{Z}$.
 We require the parameters \texttt{size} and \texttt{inf} be
 strictly positive and representable on the machine.
 %Further, we give semantics to \texttt{vvalid}: a valid vertex is indexed
@@ -49,8 +49,7 @@ require subtly different \texttt{inf}s.
 as an adjacency matrix, but it can be extended with further
 algorithm-specific restrictions before
 being plugged in for \texttt{sound}. Dijkstra's algorithm
-requires positive edge weights and further restrictions on
-\texttt{size} and \texttt{inf} that we discuss in~\S\ref{sec:dijkoverflow}.
+requires positive edge weights, and---as we will discuss in~\S\ref{sec:dijkoverflow}---nontrivial restrictions on \texttt{size} and \texttt{inf}.
 
 \subsection{New spatial representations for edge-labeled graphs}
 \label{sec:newspatial}
