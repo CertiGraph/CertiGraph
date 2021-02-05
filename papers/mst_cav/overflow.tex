@@ -35,7 +35,7 @@ overflow on lines~\ref{code:overflow}~and~\ref{code:update1}.
 \end{figure}
 
 Consider applying Dijkstra's algorithm on a hypothetical 4-bit unsigned machine to
-the graph in figure~\ref{fig:overflow}.  The \texttt{size} of the graph is 3 nodes, and so the na\"ive edge-weight upper bound is $\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}-1}\right\rfloor = \left\lfloor\frac{15}{3-1}\right\rfloor = 7$, for example as in the graph pictured in figure~\ref{fig:overflow}.  Indeed, a glance at the figure is enough to tell that the true distance from the source~A~to vertices~B~and~C~are~5~and~10 respectively---both of which are representable with 4 bits, and so na\"ively all seems well.  %Unfortunately, Dijkstra's algorithm does not exactly work like that.
+the graph in figure~\ref{fig:overflow}.  The \texttt{size} of the graph is 3 nodes, and so the na\"ive edge-weight upper bound is $\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}-1}\right\rfloor = \left\lfloor\frac{15}{3-1}\right\rfloor = 7$, for example as in the graph pictured in figure~\ref{fig:overflow}.  Indeed, a glance at the figure is enough to tell that the true distance from the source~A~to vertices~B~and~C~are~5~and~10 respectively. Both~5 and~10 are representable with 4 bits, and so na\"ively all seems well.  %Unfortunately, Dijkstra's algorithm does not exactly work like that.
 Indeed, after processing vertices~A~and~B, 5~and~10~\emph{are} the costs reflected in the \texttt{dist} array for~B~and~C respectively---\emph{but unfortunately vertex~C~is still in the priority queue}.  After vertex~C~is popped on line~\ref{code:pop}, we fetch its neighbors in the \texttt{for} loop; the cost from C~to~B~(6)~is fetched on line~\ref{code:cost}.  On line~\ref{code:overflow} the currently optimal cost to~B~(5) is compared with the sum of the optimal cost to~C~(10) plus the just-retrieved cost of the edge from~C~to~B~(6).  Since $10+6$ overflows in 4-bit arithmetic, the comparison is not between~5~and~16 but in fact between~5~and~0!  Thus the code decides that a new cheaper path from~A~to~B~exists (in particular, A$\leadsto$B$\leadsto$C$\leadsto$B) and then trashes the \texttt{dist} and \texttt{prev} arrays on line~\ref{code:update1}.
 
 Our code uses signed \texttt{int} rather than \texttt{unsigned int} so we have undefined behavior rather than defined-but-wrong behavior, but the essence of the overflow is identical.
@@ -44,7 +44,9 @@ have edge weights of~4~rather than~5s~and~6s.  After processing vertices~A~and~B
 
 The second part of our solution is that we require in the function precondition that $\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor - 1 < \texttt{inf} \le \texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$.  As long as $\texttt{size} > 1$, this is perfectly realizable  by setting \texttt{inf} to $\texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$, \emph{i.e.} in the 4-bit machine we set \texttt{inf} to $11$.  It may be surprising that infinity has a nontrivial upper bound.  The reason is that line~\ref{code:overflow} implicitly assumes that $\infty + \texttt{cost} = \infty$, which certainly is not true for machine integers!
 Lastly, when $\texttt{size} = 1$, the range bound on infinity collapses and \texttt{inf} becomes unrealizable.
-Our verification is thus not applicable to single-vertex graphs, a special case for which the shortest-path problem is, in any event, rather uninteresting.
+Our verification is thus not applicable to single-vertex graphs, a special case for which the shortest-path problem is rather uninteresting. We place these new 
+restrictions into Dijktra's soundness condition, in addition to the standard
+\texttt{SoundAdjMat} from~\S\ref{sec:adjmatpure}.
 
 \subsection{Related work on Dijkstra in algorithms and formal methods}
 \label{sec:relworkdijkstra}

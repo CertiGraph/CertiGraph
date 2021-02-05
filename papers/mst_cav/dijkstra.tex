@@ -1,6 +1,7 @@
 We verify a standard C implementation of Dijkstra's algorithm.
-First, we sketch our proof in some detail with an emphasis on our loop invariants,
-before uncovering and handling a subtle overflow bug.
+We first sketch our proof in some detail with an emphasis on our loop invariants,
+then uncover and remedy a subtle overflow bug, and finish with a discussion 
+of related work.
 
 \subsection{Verified Dijkstra's algorithm in C}
 \label{sec:dijkoverview}
@@ -26,8 +27,9 @@ Of greater interest is $\mathsf{AdjMat}(\texttt{g},\gamma)$, which
 links the concrete memory values of~\texttt{g} to an abstract mathematical
 graph~$\gamma$, which in turn exposes an interface in the
 language of graph theory (vertices, edges, labels, \emph{etc.}).
-As discussed in \S\ref{sec:newspatial}, we develop three variations of
-adjacency-matrix representation.
+We develop three variations of
+adjacency-matrix representation (see~\S\ref{sec:newspatial}) and
+we verify Dijkstra using each of them. 
 Thanks to some careful engineering, the C code and
 the Coq verification are both almost completely agnostic to
 the form of representation. The only variation between implementations
@@ -83,8 +85,8 @@ invariants on lines~\ref{code:whileinv} and~\ref{code:forinv}.  The pure \texttt
 That is, a destination vertex $\m{dst}$ falls into one of three
 categories:
 \begin{enumerate}
-\item $\m{inv\_popped}$: $\m{dst}$ has been fully processed and
-popped from the PQ.
+\item $\m{inv\_popped}$: $\m{dst}$ has been popped from the PQ
+and fully processed.
 Either \m{dst} is unreachable, meaning that there exists no finite-cost path from
 \m{src}~to~\m{dst}, or \m{dst} is reachable, meaning that a globally optimal
 path from $\m{src}$~to~$\m{dst}$ exists, the cost of this path is logged in
