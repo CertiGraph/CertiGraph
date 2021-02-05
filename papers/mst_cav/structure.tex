@@ -24,17 +24,17 @@ On the other hand, working within existing developments involves some challenges
 
 %In addition, we have worked to improve on the modularity of the mathematical layer, ensuring that similar graph properties and lemmas can be reused by different proofs with little need for repetition.
 
-Our new contributions to CertiGraph include pieces that are reused
+Our contributions to CertiGraph include pieces that are reused
 repeatedly and pieces that are more bespoke. Below, we give a sense of both the
-size of our development and the mileage we get out of our own work via reuse.
-Items placed together on one row are very similar (within 1\%) of each other.
+size of our development (lines of formal Coq proof) and the mileage we get out of our own work via reuse.
+Items ``added with $+$'' are very similar (within 1\%) of each other; Prim \#4 is the version that does not set the root, \emph{i.e.} on the right in figure~\ref{fig:prims}.
 
 \[
 \begin{array}{@{}c@{}|@{}c@{}}
 \begin{minipage}{0.51\textwidth}
 \[
 \begin{array}{@{}l@{\qquad}c@{\quad}r@{\quad}r@{\quad}l@{}}
-\text{name} & \text{reused} & \text{LoC} \\
+\text{Name} & \text{Used} & \text{LoC} \\
 \hline
 \text{MathAdjMat} & \text{6x} & \text{165} \\
 \text{Undirected} & \text{4x} & \text{2,139} \\
@@ -46,14 +46,14 @@ Items placed together on one row are very similar (within 1\%) of each other.
 \text{UndirectedUF} & \text{1x} & \text{183} \\
 \text{BinaryHeapModel} & \text{1x} & \text{1,870} \\
 \hline
-\text{Total} & & \text{9080} \\
+\text{Total (pure/spatial)} & & \text{9,080} \\
 \end{array}
 \]
 \end{minipage} &
 \begin{minipage}{0.48\textwidth}
 \[
 \begin{array}{@{~\quad}l@{\qquad}r@{\quad}r@{\quad}r@{\quad}l@{}}
-\text{name} &  \text{LoC} \\
+\text{Name} &  \text{LoC} \\
 \hline
 \text{DijkSpec1+2+3} & \text{301} \\
 \text{VerifDijk1+2+3} & \text{3,554} \\
@@ -66,9 +66,11 @@ Items placed together on one row are very similar (within 1\%) of each other.
 \text{VerifBasicBinaryHeap} & \text{777} \\
 \text{VerifAdvBinaryHeap} & \text{2,253} \\
 \hline
-\text{Total} & \text{17,234} \\
+\text{Total (verifications)} & \text{17,234} \\
 \end{array}
 \]
 \end{minipage}
 \end{array}
 \]
+
+In total we have 26,314 novel lines of Coq proof to verify 1,155 lines of~C~code divided among 12 files, including 3 variants of Dijkstra, 4 variants of Prim, 1 of Kruskal (which includes its \texttt{heapsort}), and 2 binary heaps. 
