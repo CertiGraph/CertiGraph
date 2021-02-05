@@ -1,62 +1,61 @@
-
-A graph in CertiGraph is, after unfolding away some modularity
-in the proof base, a tuple: 
-($\mathcal{V}$, $\mathcal{E}$, \texttt{vvalid}, \texttt{evalid}, 
-\texttt{src}, \texttt{dst}, \texttt{vlabel}, \texttt{elabel}, \texttt{glabel}, 
-\texttt{sound}). $\mathcal{V}$/$\mathcal{E}$ are the carrier 
+We begin with the briefest of introductions to CertiGraph's core structure and then detail our extensions we make to various levels of
+CertiGraph in service of our Dijkstra, Prim, and Kruskal verifications.
+Ignoring modularity and eliding elements not used in our work, 
+a mathematical graph in CertiGraph is a tuple:
+($\mathcal{V}$, $\mathcal{E}$, \texttt{vvalid}, \texttt{evalid},
+\texttt{src}, \texttt{dst}, \texttt{vlabel}, \texttt{elabel}, 
+\texttt{sound}). $\mathcal{V}$/$\mathcal{E}$ are the carrier
 types of vertices/edges, \texttt{vvalid}/\texttt{evalid}
-place restrictions specifying whether a vertex/edge is valid, and
-\texttt{src}/\texttt{dst} map edges to their source/destination.
-Labels are allowed on vertices, edges, and the graph, and 
-a \texttt{sound}ness condition allows custom application-specific 
-restrictions on graphs~\cite{DBLP:journals/pacmpl/WangCMH19}. 
-A mathematical graph is connected to the graph manipulated 
-by the~C program in memory via a spatial predicate stated in separation logic.
-We explain here the extensions we made to various levels of 
-CertiGraph in service of our verifications.
+place restrictions specifying whether a vertex/edge is 
+valid\footnote{Validity denotes presence in the graph: \emph{e.g.}, if we are using $\mathbb{Z}$ as the carrier type $\mathcal{V}$, and have
+only 7 vertices, then $\texttt{vvalid}(x)$ is probably the proposition $0 \le x < 7$).},
+and $\texttt{src}/\texttt{dst} : \mathcal{E} \to \mathcal{V}$ map edges to their source/destination.
+Labels are allowed on vertices and edges, and
+a \texttt{sound}ness condition allows custom application-specific
+restrictions~\cite{DBLP:journals/pacmpl/WangCMH19}.
+Mathematical graphs connect to graphs in computer memory via spatial predicates in separation logic.
+%We explain here the extensions we made .
 
 \subsection{Pure reasoning for adjacency matrix-represented graphs}
 \label{sec:adjmatpure}
 
 Two of our algorithms operate over graphs represented as adjacency matrices.
-Not every legal graph can be represented as an adjacency matrix, 
-so we develop a unified, reusable, and extendable soundness condition
-\texttt{SoundAdjMat} that a graph must satisfy in order for it 
+Not every legal graph can be represented as an adjacency matrix,
+so we develop a unified, reusable, and extendable \texttt{sound}ness condition
+\texttt{SoundAdjMat} that a graph must satisfy in order for it
 to be represented as an adjacency matrix.
 
-\texttt{SoundAdjMat} is premised on the graph' \texttt{size}
-and a distinguished number \texttt{inf}.
-First, we set a few
-fields in the tuple: 
-(\texttt{Z}, \texttt{Z*Z}, \texttt{\_}, \texttt{\_}, \m{fst}, \m{snd}, \texttt{unit}, \texttt{Z}, \texttt{unit}, \texttt{\_}).
-We ask that the parameters \texttt{size} and \texttt{inf} be
-strictly positive and representable on the machine. 
-Further, we give semantics to \texttt{vvalid}: a valid vertex is indexed 
-between $0$ and \texttt{size-1}.
+\texttt{SoundAdjMat} is parameterized with the graph's \texttt{size} and a distinguished number \texttt{inf}.
+We restrict most fields in the tuple:
+($\mathcal{V}\defeq\mathbb{Z}$, $\mathcal{E}\defeq\mathbb{Z} \times \mathbb{Z}$, $\texttt{vvalid}\defeq\lambda v.0 \le v < \texttt{size}$, $\texttt{evalid}\defeq\ldots$, $\texttt{src}\defeq\m{fst}$, $\texttt{dst}\defeq\m{snd}$, $\texttt{vlabel}\defeq\texttt{\_}$, $\texttt{elabel}\defeq\texttt{\_}$, $\texttt{sound}\defeq\ldots$).  We also restrict the carrier type of vertex labels to \texttt{unit} and edge labels to $\mathbb{Z}$.
+We require the parameters \texttt{size} and \texttt{inf} be
+strictly positive and representable on the machine.
+%Further, we give semantics to \texttt{vvalid}: a valid vertex is indexed
+%between $0$ and \texttt{size-1}.
 Most critical, however, is the semantics of \texttt{evalid}:
 a valid edge must have a machine-representable label and that label
 cannot have value \texttt{inf}; an invalid edge \emph{must} have label \texttt{inf}.
 Last, the graph must be finite.
 
-The restriction on edge labels is necessary because we are working 
+The restriction on edge labels is necessary because we are working
 with labeled adjacency matrices on a real system: we need to set aside
 a distinguished number \texttt{inf} such that edgeweight \texttt{inf}
 indicates the \emph{absence} of an edge. We cannot
-prescribe some \texttt{inf} because user needs can vary widely. For 
-instance, our verifications of Dijkstra's and Prim's algorithm 
+prescribe some \texttt{inf} because client needs can vary widely. For
+instance, our verifications of Dijkstra's and Prim's algorithms
 require subtly different \texttt{inf}s.
 
-\texttt{SoundAdjMat} guarantees spatial representability 
-as an adjacency matrix, but it can be extended with further 
+\texttt{SoundAdjMat} guarantees spatial representability
+as an adjacency matrix, but it can be extended with further
 algorithm-specific restrictions before
-being plugged in for \texttt{sound}. For instance, Dijkstra's algorithm 
-requires positive edge weights and further restrictions on 
+being plugged in for \texttt{sound}. Dijkstra's algorithm
+requires positive edge weights and further restrictions on
 \texttt{size} and \texttt{inf} that we discuss in~\S\ref{sec:dijkoverflow}.
 
 \subsection{New spatial representations for edge-labeled graphs}
 \label{sec:newspatial}
 
-In service of our new verifications, we develop spatial support in separation 
+In service of our new verifications, we develop spatial support in separation
 logic for two new styles of graph representation:
 adjacency matrices and edge lists. These styles are particularly
 amenable to graphs that label their edges.
@@ -65,16 +64,16 @@ amenable to graphs that label their edges.
 \subsubsection{Adjacency matrices.}
 
 Adjacency matrices are a useful way to represent graphs
-when efficient label reads are required. 
-We support three common 
+when efficient label reads are required.
+We support three common
 flavors of adjacency matrix representation:
 a stack-allocated 2D~array \texttt{int~graph[size][size]},
-a stack-allocated 1D~array \texttt{int~graph[size$\times$size]}, 
-and a heap-allocated 2D~array \texttt{int~**graph}. 
-To the casual observer, these are essentially interchangeable, but 
-that is a mistake when thinking spatially. Apart from the 
-arithmetic that the second flavor uses to access cells, there is a 
-more subtle point: the first and second enjoy a contiguous block of 
+a stack-allocated 1D~array \texttt{int~graph[size$\times$size]},
+and a heap-allocated 2D~array \texttt{int~**graph}.
+To the casual observer, these are essentially interchangeable, but
+that is a mistake when thinking spatially. Apart from the
+arithmetic that the second flavor uses to access cells, there is a
+more subtle point: the first and second enjoy a contiguous block of
 memory, but the third is not contiguous: it is essentially an allocated
 a ``spine'' with pointers to separately-allocated arrays representing rows.
 For a taste, the spatial representation of the first is:
@@ -91,24 +90,24 @@ For a taste, the spatial representation of the first is:
 \end{split}
 \end{equation*}
 We use the separation logic $\ast$ in its iterated form
-to say that the arrays are separate in memory. 
+to say that the arrays are separate in memory.
 Of particular note are $\mathsf{graph2mat}$, which performs two projections to
-drag out the graph's nested edge labels into a 2D matrix, and 
+drag out the graph's nested edge labels into a 2D matrix, and
 \m{arr\_addr}, which in this instance is able to simply compute
 the address of any legal row \m{i} from the base address of the graph.
-When representing the heap-allocated 2D~array, we still use 
-$\mathsf{graph2mat}$ but \m{arr\_addr} is powerless: 
+When representing the heap-allocated 2D~array, we still use
+$\mathsf{graph2mat}$ but \m{arr\_addr} is powerless:
 we know nothing about the relationship
 between the addresses of individual arrays.
 Instead, we require that the user provide a list containing the base addresses
-of each allocated array. 
+of each allocated array.
 
-While ironing out these spatial wrinkles, we develop utilities that easily 
-unfold and refold our adjacency matrices, thus smoothing user 
+While ironing out these spatial wrinkles, we develop utilities that easily
+unfold and refold our adjacency matrices, thus smoothing user
 experience when reading and writing arrays and cells. Of course
-these utilities themselves vary by flavor of representation, but 
-the net effect is that users of our adjacency matrices really can 
-be agnostic to the style of representation they are using 
+these utilities themselves vary by flavor of representation, but
+the net effect is that users of our adjacency matrices really can
+be agnostic to the style of representation they are using
 (see \S\ref{sec:dijkoverview}).
 
 
@@ -118,14 +117,14 @@ be agnostic to the style of representation they are using
 
 \subsubsection{Edge lists.}
 
-Edge lists are the representation of choice 
-for sparse graphs. Our~C implementation 
-defines an \texttt{edge} as a 
-\texttt{struct} containing \texttt{src}, \texttt{dst}, and 
-\texttt{weight}, and defines a \texttt{graph} as a 
-\texttt{struct} containing 
-the graph's size, edge count, 
-and an array of \texttt{edge}s. Our spatial representation 
+Edge lists are the representation of choice
+for sparse graphs. Our~C implementation
+defines an \texttt{edge} as a
+\texttt{struct} containing \texttt{src}, \texttt{dst}, and
+\texttt{weight}, and defines a \texttt{graph} as a
+\texttt{struct} containing
+the graph's size, edge count,
+and an array of \texttt{edge}s. Our spatial representation
 follows this pattern:
 \vspace{-0.5em}
 \begin{equation*}
@@ -136,8 +135,8 @@ follows this pattern:
 \p{array}(\m{e\_addr},\gamma.E)
 \end{split}
 \end{equation*}
-We abuse notation slightly here: we simplify \m{g\_addr}'s target 
-from a \texttt{struct} to a tuple, and also overload the \p{array} predicate to represent 
+We abuse notation slightly here: we simplify \m{g\_addr}'s target
+from a \texttt{struct} to a tuple, and also overload the \p{array} predicate to represent
 an array of \texttt{structs}.
 
 % Need to discuss the above.
@@ -147,45 +146,45 @@ an array of \texttt{structs}.
 
 \hide{We observe mathematical differences between the graphs that can be represented by an edge list and an adjacency-matrix representation. As mentioned in the Prim's section, in a symmetric adjacency matrix, $g[u][v])$ and $g[v][u]$ are considered the same edge; however, this is not true for an edge list, where every edge is effectively an ordered pair due to the memory positions of the data. As a result, this edge list can contain multiple edges between two vertices whereas a 2D adjacency matrix cannot. Further, we prove that Kruskal's algorithm can handle such inputs and still return a minimal spanning forest.
 } % end hide
-% Well we can't say the above if it's not true... 
+% Well we can't say the above if it's not true...
 
 
 \subsection{Undirectedness in a directed world}
 \label{sec:newundirected}
 
-The CertiGraph library presented in~\cite{DBLP:journals/pacmpl/WangCMH19} 
-supports only directed graphs, and, as we have seen, bakes 
-direction-reliant idioms 
+The CertiGraph library presented in~\cite{DBLP:journals/pacmpl/WangCMH19}
+supports only directed graphs, and, as we have seen, bakes
+direction-reliant idioms
 such as \texttt{src} and \texttt{dst} deep into its development.
 Our challenge is to add support for undirected graphs atop of this.
 
-\hide{One approach is to handle undirected edges entirely separately 
-from directed edges, \emph{e.g.} using Coq \texttt{Ensemble}s. 
-This has the benefit of allowing 
-mixed graphs, which contain directed and undirected edges simultaneously. 
+\hide{One approach is to handle undirected edges entirely separately
+from directed edges, \emph{e.g.} using Coq \texttt{Ensemble}s.
+This has the benefit of allowing
+mixed graphs, which contain directed and undirected edges simultaneously.
 Sadly, CertiGraph's tried-and-tested suite of pure formalized graph theory is
-% fundamentally 
+% fundamentally
 % hopelessly
-incompatible with such undirected edges, and so a new 
-``tower'' of development is necessary. 
+incompatible with such undirected edges, and so a new
+``tower'' of development is necessary.
 This is unpleasant both because it forces us to start
-from scratch and because it creates 
+from scratch and because it creates
 a
 %an insurmountable
 %divide
-fissure 
+fissure
 within an otherwise unified library.}%end hide
 
-Our approach is to observe that every directed graph can be 
+Our approach is to observe that every directed graph can be
 treated as an undirected graph by ignoring edge direction.
-We develop a lightweight layer of 
-``undirected flavored'' definitions atop of the existing 
-``directed flavored'' definitions, state and prove connections 
-between these, and then build the undirected infrastructure we need. 
-The result is that we retain full access to CertiGraph's graph theory formalizations 
+We develop a lightweight layer of
+``undirected flavored'' definitions atop of the existing
+``directed flavored'' definitions, state and prove connections
+between these, and then build the undirected infrastructure we need.
+The result is that we retain full access to CertiGraph's graph theory formalizations
 modulo some mathematical bridging.
 % It also allows us to use CertiGraph's rich set of lemmas about the addition and removal of edges.
-% This is backed by our observation that undirected graph properties are largely mathematical in nature, 
+% This is backed by our observation that undirected graph properties are largely mathematical in nature,
 
 \hide{\begin{lstlisting}
 Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
@@ -196,52 +195,52 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 }.
 \end{lstlisting}
 }% end hide
-% Anshuman: keeping this in hide in case you want to show it to explain 
+% Anshuman: keeping this in hide in case you want to show it to explain
 % "how very ingrained" directedness is in CertiGraph.
 
 % This makes sense in the first use cases of CertiGraph, especially when reasoning about C pointers.
 
 
-Our basic ``undirected flavored'' definitions are 
+Our basic ``undirected flavored'' definitions are
 relatively standard.
 %Our definitions are largely based on CLRS~\cite{clrs}.
 Vertices \m{u} and \m{v} are \texttt{adjacent} if there is
 an edge between them in either direction; vertices are self-adjacent.
-An valid \texttt{upath} (undirected path) is list of 
-valid vertices that form a  
+An valid \texttt{upath} (undirected path) is list of
+valid vertices that form a
 pairwise-adjacent chain. Two vertices are \texttt{connected} when a valid \texttt{upath}
-features them as head and foot (essentially the transitive 
+features them as head and foot (essentially the transitive
 closure of \texttt{adjacenct}).
 %A similar approach is proposed in Halsbeck~\cite{DBLP:journals/afp/HaslbeckLB19}.
-% Note that the definition of path varies between textbooks and papers. For example, \textit{Discrete Mathematics and its Applications}~\cite{rozen} defines paths as a sequence of edges with an implicit sequence of vertices, whereas CLRS, which we have followed, defines it as a sequence of vertices with an implicit sequence of edges. 
+% Note that the definition of path varies between textbooks and papers. For example, \textit{Discrete Mathematics and its Applications}~\cite{rozen} defines paths as a sequence of edges with an implicit sequence of vertices, whereas CLRS, which we have followed, defines it as a sequence of vertices with an implicit sequence of edges.
 
 % \subsubsection{Our basic ``undirected'' definitions.}
 The definitions above sync up nicely with preexisting ``directed
-flavored'' definitions. 
-\note[cut?]{Intuitively, undirectedness is more lax than directedness, 
+flavored'' definitions.
+\note[cut?]{Intuitively, undirectedness is more lax than directedness,
 and so it is unsurprising that these connections are straightforward
 weakenings of directed properties.}
 For example, a directed \texttt{path~: VType~* list~EdgeType}
-is valid when the \texttt{src} of the first edge in the list 
-is the vertex supplied, and the subsequent edges are linked up 
+is valid when the \texttt{src} of the first edge in the list
+is the vertex supplied, and the subsequent edges are linked up
 in \texttt{src}/\texttt{dst} pairs
-as one may expect. A straightforward lemma shows that 
+as one may expect. A straightforward lemma shows that
 any valid \texttt{path} is a valid \texttt{upath}, after projecting the
 \texttt{list EdgeType} to \texttt{list VertexType}.
-The directed idiom \texttt{reachable~g~u~v} claims the 
-existence of a \texttt{path} in~\texttt{g} from~\texttt{u}~to~\texttt{v}, 
+The directed idiom \texttt{reachable~g~u~v} claims the
+existence of a \texttt{path} in~\texttt{g} from~\texttt{u}~to~\texttt{v},
 and this easily weakens to give \texttt{connected~g~u~v}.
 
 % \subsubsection{Building out our undirectedness infrastructure.}
 With our basic undirectedness definitions at hand and with the assurance
-of mathematical compatability with prior directed work, we can begin in 
-earnest. We flesh out a number of definitions that culminate in 
+of mathematical compatability with prior directed work, we can begin in
+earnest. We flesh out a number of definitions that culminate in
 \texttt{minimum\_spanning\_forest}, which is exactly our postcondition
 of both Prim's and Kruskal's algorithms.\footnote{That Prim's postcondition has
 a \emph{forest} should raise an eyebrow. See~\S\ref{sec:primforest}.}
 
-%A \texttt{simple\_upath} is a valid \texttt{upath} that has no duplicate vertices. 
-An undirected cycle (\texttt{ucycle}) is a valid \texttt{upath} whose first 
+%A \texttt{simple\_upath} is a valid \texttt{upath} that has no duplicate vertices.
+An undirected cycle (\texttt{ucycle}) is a valid \texttt{upath} whose first
 and last vertices are the same.  A \texttt{simple\_ucycle} is a \texttt{ucycle} whose
 only duplicate is the first/last vertex. A \texttt{connected\_graph}
 has the property that any two valid vertices are \texttt{connected}.
@@ -249,39 +248,39 @@ has the property that any two valid vertices are \texttt{connected}.
 We proceed:
 \lstset{style=CoqStyle}
 \begin{lstlisting}
-Definition uforest g := 
+Definition uforest g :=
  ($\forall$ e, evalid g e -> strong_evalid g e) $/|$
  ($\forall$ p l, $\lnot$simple_ucycle g p l).
 
-Definition spanning g g' := 
+Definition spanning g g' :=
  $\forall$ u v, connected g u v <-> connected g' u v.
 
 Definition spanning_uforest f g :=
-  is_partial_graph f g $/|$ uforest f $/|$ spanning f g. 
+  is_partial_graph f g $/|$ uforest f $/|$ spanning f g.
 \end{lstlisting}
 Trees are easy to define:
 \texttt{utree~g~:= uforest~g} $\wedge$ \texttt{connected\_graph~g.}
-The \texttt{strong\_evalid} predicate means that the 
+The \texttt{strong\_evalid} predicate means that the
 \texttt{src} and \texttt{dst} of the edge are also valid, so
 \emph{e.g.} a valid edge cannot point to a deleted/absent vertex.
 The second predicate is the critical constraint, saying that a
 forest has no simple undirected cycles. The other definitions presented
-are straightforward from there, and 
-\texttt{minimum\_spanning\_forest f g} means that the total edge cost 
+are straightforward from there, and
+\texttt{minimum\_spanning\_forest f g} means that the total edge cost
 of~\texttt{f} is \note[minimal among other... struggling to phrase this.]{minimal}.
 
 \hide{We also highlight a difference in our definition compared to mathematical textbooks. Prim's and Kruskal's algorithms are presented as minimum-spanning \textit{tree} algorithms, and often have the implicit assumption that the graph is fully connected. They may or may not discuss forests - CLRS does not, while \textit{Discrete Mathematics} informally defines forests as ``containing no simple circuits that are not necessarily connected [...] and have the property that each of their connected components is a tree." In short, these sources define forests from ``bottom-up" using trees. We define them ``top-down" instead, recognising forests as acyclic graphs and trees as connected forests. This definition was also used by Lammich et al~\cite{DBLP:journals/afp/LammichN19}.}
 % Anshuman: I've hidden this for now, may cut or shorten a lot after discussion.
 
-Our undirected work is also compatible with our new developments 
-in~\S\ref{sec:adjmatpure} and~\S\ref{sec:newspatial}. 
-An adjacency matrix-representable undirected graph  
+Our undirected work is also compatible with our new developments
+in~\S\ref{sec:adjmatpure} and~\S\ref{sec:newspatial}.
+An adjacency matrix-representable undirected graph
 has all the pure properties we covered in \texttt{SoundAdjMat},
 and also has symmetry across the left diagonal.
 We extend \texttt{SoundAdjMat} into
-\texttt{Sound{\color{red}U}AdjMat} by adding the condition that 
-all valid edges have src $\le$ dst. This effectively ``turns off'' the 
-matrix on one half of the diagonal and avoids double-counting. Prim's algorithm uses 
+\texttt{Sound{\color{red}U}AdjMat} by adding the condition that
+all valid edges have src $\le$ dst. This effectively ``turns off'' the
+matrix on one half of the diagonal and avoids double-counting. Prim's algorithm uses
 \texttt{SoundUAdjMat} and places no further restrictions.
 Further, spatial representations and fold/unfold utilities are shared
 across directed and undirected adjacency matrices.
