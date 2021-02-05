@@ -29,7 +29,7 @@ We wish to develop general and reusable techniques for verifying graph-manipulat
 \item[\S\ref{sec:newspatial}] spatial representations and associated reasoning for edge-labeled graphs (several flavors of adjacency matrices as well as edge lists);
 \item[\S\ref{sec:newundirected}] pure reasoning for undirected graphs (\emph{e.g.}, notions of connectedness).
 \end{enumerate}
-We prove that our pure and spatial thrusts are well-isolated from each other by verifying several implementations (of each of Dijkstra and Prim) that represent graphs differently in memory but reuse the entire pure portion of the proof.  We show that our spatial reasoning is generic by reusing graph representations across Dijkstra and Prim.  Our verification of Kruskal proves that we can reason about two graphs simultaneously: a directed graph with vertex labels for union-find and an undirected graph with edge labels for which we are building a spanning forest.
+We prove that our pure and spatial thrusts are well-isolated from each other by verifying several implementations (of each of Dijkstra and Prim) that represent graphs differently in memory but reuse the entire pure portion of the proof.  Likewise, we show that our spatial reasoning is generic by reusing graph representations across Dijkstra and Prim.  Our verification of Kruskal proves that we can reason about two graphs simultaneously: a directed graph with vertex labels for union-find and an undirected graph with edge labels for which we are building a spanning forest.
 In addition to our verification of Dijkstra, Prim, and Kruskal, we develop increased lemma support for the preexisting CertiGraph union-find example~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our extension to ``base VST'' (\emph{e.g.}, verifications that do not involve graphs) primarily consist of our verified binary heap.
 
 % Many textbooks and classic lecture notes discuss their proofs in pen and paper. Further, the algorithms have been in
@@ -49,7 +49,9 @@ We discuss two observations. First, in spite of the many pen-and-paper proofs of
 
 The remainder of this paper is organized as follows:
 \begin{itemize}
-    \item[\S\ref{sec:extensions}] We explain our extensions to CertiGraph: edge-labeled graphs, undirected graphs, and spatial representations of such graphs.
+    \item[\S\ref{sec:extensions}] We explain our extensions to CertiGraph: 
+    edge-labeled graphs, spatial representations of such graphs, and 
+    undirected graphs.
 %    \item[\S\ref{sec:structure}] We discuss modularity within the graph library as a follow-up from Kruskal's, demonstrating VST's and CertiGraph's ability to build incrementally larger systems.
     \item[\S\ref{sec:dijkstra}] We explain our verification of Dijkstra's algorithm in some detail, discuss a potential overflow, and refine the precondition to avoid it. %~implementation of  and the key loop invariants we use to certify its specification.
 %    \item[\S\ref{sec:overflow}] We explain how overflow can occur and give a refinement to the precondition of the function that restricts edge weights and the standard \texttt{INF} definition appropriately in a way that prevents said overflow.
