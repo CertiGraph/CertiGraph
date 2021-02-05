@@ -55,18 +55,14 @@ requires positive edge weights and further restrictions on
 \subsection{New spatial representations for edge-labeled graphs}
 \label{sec:newspatial}
 
-In service of our new verifications, we develop spatial support in separation
-logic for two new styles of graph representation:
-adjacency matrices and edge lists. These styles are particularly
-amenable to graphs that label their edges.
-
+We give predicates for adjacency matrices and edge lists
+for edge-labeled graphs.
 
 \subsubsection{Adjacency matrices.}
 
-Adjacency matrices are a useful way to represent graphs
-when efficient label reads are required.
+Adjacency matrices enable efficient label access for edge-labeled graphs.
 We support three common
-flavors of adjacency matrix representation:
+adjacency matrix representations:
 a stack-allocated 2D~array \texttt{int~graph[size][size]},
 a stack-allocated 1D~array \texttt{int~graph[size$\times$size]},
 and a heap-allocated 2D~array \texttt{int~**graph}.
@@ -74,33 +70,30 @@ To the casual observer, these are essentially interchangeable, but
 that is a mistake when thinking spatially. Apart from the
 arithmetic that the second flavor uses to access cells, there is a
 more subtle point: the first and second enjoy a contiguous block of
-memory, but the third is not contiguous: it is essentially an allocated
-a ``spine'' with pointers to separately-allocated arrays representing rows.
+memory, but the third does not: it is an allocated ``spine'' with pointers to separately-allocated rows.
 For a taste, the spatial representation of the first is:
 \vspace{-0.5em}
 \begin{equation*}
 \begin{split}
-\m{arr\_addr} ((\m{block}, \m{offset}), \m{i},\texttt{size}) \defeq~&
-  (\m{block}, \m{offset} + (\m{i} \times \texttt{sizeof}(\texttt{int}) \times \texttt{size})) \\
-\mathsf{array}(\m{ptr},\m{list}) \defeq~& \underset{\m{i} \in [0, \lvert\m{row}\rvert)}{\bigstar} (\m{ptr} + \m{i}) \mapsto \m{list}[\m{i}]) \\
+\m{arr\_addr} (\m{ptr}, \m{i},\texttt{size}) \defeq~&
+  \m{ptr} + (\m{i} \times \hide{\texttt{sizeof}(\texttt{int}) \times} \texttt{size}) \\
+\mathsf{array}(\m{ptr},\m{list}) \defeq~& \underset{\m{i} \in [0, \lvert\m{list}\rvert)}{\bigstar} (\m{ptr} + \m{i}) \mapsto \m{list}[\m{i}]) \\
 \p{arr\_rep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
 &\mathsf{array}(\m{arr\_addr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
 \vspace{1em}
-\p{graph\_rep}(\gamma, \m{g\_addr}) \defeq~& \underset{\m{v} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
+\p{graph\_rep}(\gamma, \m{g\_addr}, \_) \defeq~& \underset{\m{v} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
 \end{split}
 \end{equation*}
 We use the separation logic $\ast$ in its iterated form
-to say that the arrays are separate in memory.
+to say that the arrays are separate in memory.  We elide details relating to object sizes, pointer alignment, and so forth, although our formal proofs handle such matters.
 Of particular note are $\mathsf{graph2mat}$, which performs two projections to
 drag out the graph's nested edge labels into a 2D matrix, and
-\m{arr\_addr}, which in this instance is able to simply compute
+\m{arr\_addr}, which in this instance simply computes
 the address of any legal row \m{i} from the base address of the graph.
-When representing the heap-allocated 2D~array, we still use
-$\mathsf{graph2mat}$ but \m{arr\_addr} is powerless:
-we know nothing about the relationship
-between the addresses of individual arrays.
-Instead, we require that the user provide a list containing the base addresses
-of each allocated array.
+Notice that this $\p{graph\_rep}$ predicate ignores its third argument.
+To represent a heap-allocated 2D~array we can still use $\mathsf{graph2mat}$
+but can no longer use address arithmetic; the third
+parameter is then a list of pointers to the row sub-arrays.
 
 While ironing out these spatial wrinkles, we develop utilities that easily
 unfold and refold our adjacency matrices, thus smoothing user
@@ -251,10 +244,8 @@ We proceed:
 Definition uforest g :=
  ($\forall$ e, evalid g e -> strong_evalid g e) $/|$
  ($\forall$ p l, $\lnot$simple_ucycle g p l).
-
 Definition spanning g g' :=
  $\forall$ u v, connected g u v <-> connected g' u v.
-
 Definition spanning_uforest f g :=
   is_partial_graph f g $/|$ uforest f $/|$ spanning f g.
 \end{lstlisting}
