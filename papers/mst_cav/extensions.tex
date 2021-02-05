@@ -1,45 +1,151 @@
-\note{We detail the major extensions we made to the 
-CertiGraph library.}
 
+A graph in CertiGraph is, after unfolding away some modularity
+in the proof base, a tuple: 
+($\mathcal{V}$, $\mathcal{E}$, \texttt{vvalid}, \texttt{evalid}, 
+\texttt{src}, \texttt{dst}, \texttt{vlabel}, \texttt{elabel}, \texttt{glabel}, 
+\texttt{sound}). $\mathcal{V}$/$\mathcal{E}$ are the carrier 
+types of vertices/edges, \texttt{vvalid}/\texttt{evalid}
+place restrictions specifying whether a vertex/edge is valid, and
+\texttt{src}/\texttt{dst} map edges to their source/destination.
+Labels are allowed on vertices, edges, and the graph, and 
+a \texttt{sound}ness condition allows custom application-specific 
+restrictions on graphs~\cite{DBLP:journals/pacmpl/WangCMH19}. 
+A mathematical graph is connected to the graph manipulated 
+by the~C program in memory via a spatial predicate stated in separation logic.
+We explain here the extensions we made to various levels of 
+CertiGraph in service of our verifications.
 
 \subsection{Pure reasoning for adjacency matrix-represented graphs}
 
-We discussed above the spatial representation of an adjacency 
-matrix, but not every mathematical graph fits that mould.
-We supply a unified, reusable, and extendable \emph{soundness condition} 
+Two of our algorithms operate over graphs represented as adjacency matrices.
+Not every legal graph can be represented as an adjacency matrix, 
+so we develop a unified, reusable, and extendable soundness condition
 \texttt{SoundAdjMat} that a graph must satisfy in order for it 
 to be represented as an adjacency matrix.
 
-\texttt{SoundAdjMat} is premised on the \texttt{size} of the graph
+\texttt{SoundAdjMat} is premised on the graph' \texttt{size}
 and a distinguished number \texttt{inf}.
-First, we restrict soundness to finite graphs having 
-vertices of type \texttt{Z}, edges of \texttt{Z*Z}, and 
-edge labels of \texttt{Z}. 
+First, we set a few
+fields in the tuple: 
+(\texttt{Z}, \texttt{Z*Z}, \texttt{\_}, \texttt{\_}, \m{fst}, \m{snd}, \texttt{unit}, \texttt{Z}, \texttt{unit}, \texttt{\_}).
 We ask that the parameters \texttt{size} and \texttt{inf} be
 strictly positive and representable on the machine. 
-Further, we give semantics to \texttt{src} and \texttt{dst} 
-(\m{fst} and \m{snd} respectively)
-and \texttt{vvalid} (a valid vertex is indexed between $0$ and \texttt{size-1}).
+Further, we give semantics to \texttt{vvalid}: a valid vertex is indexed 
+between $0$ and \texttt{size-1}.
 Most critical, however, is the semantics of \texttt{evalid}:
 a valid edge must have a machine-representable label and that label
 cannot have value \texttt{inf}; an invalid edge \emph{must} have label \texttt{inf}.
+Last, the graph must be finite.
 
 The restriction on edge labels is necessary because we are working 
-with labeled adjacency matrices. An unlabeled 
-adjacency matrix can get by with labels of $0$/$1$ to 
-indicate the absence/presence of an edge, but in a labeled 
-setting, any label could be bona-fide depending on the use case. 
-The solution is to 
-allow the user the choice of a distinguished number \texttt{inf},
-which thereafter indicates the \emph{absence} of an edge.
+with labeled adjacency matrices on a real system: we need to set aside
+a distinguished number \texttt{inf} such that edgeweight \texttt{inf}
+indicates the \emph{absence} of an edge. We cannot
+prescribe some \texttt{inf} because user needs can vary widely. For 
+instance, our verifications of Dijkstra's and Prim's algorithm 
+require subtly different \texttt{inf}s.
 
-In our verifications, 
-the soundness condition of DijkstraGraph is \texttt{SoundAdjMat}
-along with a few further constraints. An obvious constraint is that Dijkstra 
-requires positive edge weights; further restrictions on 
-\texttt{size} and \texttt{inf} are discussed in~\S\ref{sec:dijkoverflow}.
+\texttt{SoundAdjMat} guarantees spatial representability 
+as an adjacency matrix, but it can be extended with further 
+algorithm-specific restrictions before
+being plugged in for \texttt{sound}. For instance, Dijkstra's algorithm 
+requires positive edge weights and further restrictions on 
+\texttt{size} and \texttt{inf} that we discuss in~\S\ref{sec:dijkoverflow}.
+
+\subsection{New spatial representations for edge-labeled graphs}
+
+In service of our new verifications, we develop spatial support in separation 
+logic for two new styles of graph representation:
+adjacency matrices and edge lists. These styles are particularly
+amenable to graphs that label their edges.
 
 
+\subsubsection{Adjacency matrices.}
+
+Adjacency matrices are a useful way to represent graphs
+when efficient label reads are required. 
+We support three common 
+flavors of adjacency matrix representation:
+a stack-allocated 2D~array \texttt{int~graph[size][size]},
+a stack-allocated 1D~array \texttt{int~graph[size$\times$size]}, 
+and a heap-allocated 2D~array \texttt{int~**graph}. 
+To the casual observer, these are essentially interchangeable, but 
+that is a mistake when thinking spatially. Apart from the 
+arithmetic that the second flavor uses to access cells, there is a 
+more subtle point: the first and second enjoy a contiguous block of 
+memory, but the third is not contiguous: it is essentially an allocated
+a ``spine'' with pointers to separately-allocated arrays representing rows.
+For a taste, the spatial representation of the first is:
+\vspace{-0.5em}
+\begin{equation*}
+\begin{split}
+\m{arr\_addr} ((\m{block}, \m{offset}), \m{i},\texttt{size}) \defeq~&
+  (\m{block}, \m{offset} + (\m{i} \times \texttt{sizeof}(\texttt{int}) \times \texttt{size})) \\
+\mathsf{array}(\m{ptr},\m{list}) \defeq~& \underset{\m{i} \in [0, \lvert\m{row}\rvert)}{\bigstar} (\m{ptr} + \m{i}) \mapsto \m{list}[\m{i}]) \\
+\p{arr\_rep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
+&\mathsf{array}(\m{arr\_addr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
+\vspace{1em}
+\p{graph\_rep}(\gamma, \m{g\_addr}) \defeq~& \underset{\m{v} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
+\end{split}
+\end{equation*}
+We use the separation logic $\ast$ in its iterated form
+to say that the arrays are separate in memory. 
+Of particular note are $\mathsf{graph2mat}$, which performs two projections to
+drag out the graph's nested edge labels into a 2D matrix, and 
+\m{arr\_addr}, which in this instance is able to simply compute
+the address of any legal row \m{i} from the base address of the graph.
+When representing the heap-allocated 2D~array, we still use 
+$\mathsf{graph2mat}$ but \m{arr\_addr} is powerless: 
+we know nothing about the relationship
+between the addresses of individual arrays.
+Instead, we require that the user provide a list containing the base addresses
+of each allocated array. 
+
+While ironing out these spatial wrinkles, we develop utilities that easily 
+unfold and refold our adjacency matrices, thus smoothing user 
+experience when reading and writing arrays and cells. Of course
+these utilities themselves vary by flavor of representation, but 
+the net effect is that users of our adjacency matrices really can 
+be agnostic to the style of representation they are using 
+(see \S\ref{sec:dijkoverview}).
+
+
+\hide{We observe one quirk about a symmetric undirected matrix. In our abstract graphs, which are fundamentally directed, the abstract edges $(u,v)$ and $(v,u)$ where $u \neq v$ are clearly distinct from each other. However, in a symmetric matrix both $g[u][v]$ and $g[v][u]$ will be marked, thus it is unclear which edge is in the graph. To disambiguate, we impose the following condition: If $g[u][v]$ and $g[v][u]$ are marked, and $u \leq v$, then we consider $(u,v)$ to be the valid edge; if $v \textless u$, then $(v,u)$ is the valid edge.
+}%end hide
+% discuss with Aquinas
+
+\subsubsection{Edge lists.}
+
+Edge lists are the representation of choice 
+for sparse graphs. Our~C implementation 
+defines an \texttt{edge} as a 
+\texttt{struct} containing \texttt{src}, \texttt{dst}, and 
+\texttt{weight}, and defines a \texttt{graph} as a 
+\texttt{struct} containing 
+the graph's size, edge count, 
+and an array of \texttt{edge}s. Our spatial representation 
+follows this pattern:
+\vspace{-0.5em}
+\begin{equation*}
+\begin{split}
+\p{graph\_rep}(\gamma, \m{g\_addr}, &\m{e\_addr})~\defeq~ \\
+&\big(\m{g\_addr} \mapsto (\lvert\gamma.V\rvert, \lvert\gamma.E\rvert, \m{e\_addr})\big)
+\ast
+\p{array}(\m{e\_addr},\gamma.E)
+\end{split}
+\end{equation*}
+We abuse notation slightly here: we simplify \m{g\_addr}'s target 
+from a \texttt{struct} to a tuple, and also overload the \p{array} predicate to represent 
+an array of \texttt{structs}.
+
+% Need to discuss the above.
+% data_at sh (t_wedgearray_graph) (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
+%         data_at sh (tarray t_struct_edge MAX_EDGES)
+%           (map wedge_to_cdata glist ++ (Vundef_cwedges (MAX_EDGES - numE g))) (pointer_val_val orig_eptr)
+
+\hide{We observe mathematical differences between the graphs that can be represented by an edge list and an adjacency-matrix representation. As mentioned in the Prim's section, in a symmetric adjacency matrix, $g[u][v])$ and $g[v][u]$ are considered the same edge; however, this is not true for an edge list, where every edge is effectively an ordered pair due to the memory positions of the data. As a result, this edge list can contain multiple edges between two vertices whereas a 2D adjacency matrix cannot. Further, we prove that Kruskal's algorithm can handle such inputs and still return a minimal spanning forest.
+} % end hide
+% Well we can't say the above if it's not true... 
 
 
 \subsection{Undirectedness in a directed world}
@@ -173,105 +279,11 @@ of~\texttt{f} is \note[minimal among other... struggling to phrase this.]{minima
 PrimGraph uses the \texttt{SoundUAdjMat} wholesale and places no further restrictions
 on it.}
 
-\subsection{New spatial representations for edge-labeled graphs}
-
-In service of our new verifications, we develop spatial support in separation 
-logic for two new styles of graph representation:
-adjacency matrices and edge lists. These styles are particularly
-amenable to graphs that label their edges, and so are suited to
-the algorithms we are working with.
-
-
-\subsubsection{Adjacency matrices.}
-
-Adjacency matrices are a useful way to represent graphs
-in problems where efficient label reads are required. 
-We support the three most common 
-flavors of adjacency matrix representation:
-a stack-allocated 2D~array \texttt{int~graph[size][size]},
-a stack-allocated 1D~array \texttt{int~graph[size$\times$size]}, 
-and a heap-allocated 2D~array \texttt{int~**graph}. 
-To the casual observer, these are essentially interchangeable, but 
-that is a mistake when thinking spatially. Apart from the 
-arithmetic that the second flavor uses to access cells, there is a 
-more subtle point: the first and second enjoy a contiguous block of 
-memory, but the third needs to allocate
-a ``spine'' and then separately allocate each array within the spine.
-For a taste, the spatial representation of the first is:
-\vspace{-0.5em}
-\begin{equation*}
-\begin{split}
-\m{arr\_addr} ((\m{block}, \m{offset}), \m{i},\texttt{size}) \defeq~&
-  (\m{block}, \m{offset} + (\m{i} \times \texttt{sizeof}(\texttt{int}) \times \texttt{size})) \\
-\mathsf{array}(\m{ptr},\m{list}) \defeq~& \underset{\m{i} \in [0, \lvert\m{row}\rvert)}{\bigstar} (\m{ptr} + \m{i}) \mapsto \m{list}[\m{i}]) \\
-\p{arr\_rep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
-&\mathsf{array}(\m{arr\_addr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
-\vspace{1em}
-\p{graph\_rep}(\gamma, \m{g\_addr}) \defeq~& \underset{\m{v} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
-\end{split}
-\end{equation*}
-We use the separation logic $\ast$ in its iterated form
-to say that the arrays are separate in memory. 
-Of particular note are $\mathsf{graph2mat}$, which performs two projections to
-drag out the graph's nested edge labels into a 2D matrix, and 
-\m{arr\_addr}, which in this instance is able to simply compute
-the address of any array \m{i} from the base address of the graph.
-When representing the heap-allocated 2D~array, we still use 
-$\mathsf{graph2mat}$ but \m{arr\_addr} is powerless: 
-we know nothing about the relationship
-between the addresses of individual arrays.
-Instead, we require that the user provide a list containing the base addresses
-of each allocated array. 
-
-While ironing out these spatial wrinkles, we develop utilities that easily 
-unfold and refold our adjacency matrices, thus smoothing user 
-experience when reading and writing arrays and cells. Of course
-these utilities themselves vary by flavor of representation, but 
-the net effect is that users of our adjacency matrices really can 
-be agnostic to the style of representation they are using 
-(see \S\ref{sec:dijkoverview}).
-
 The property of undirectedness requires no special condition 
 when it comes to spatial representation in separation logic, 
 and so we share spatial representations and utilities 
 across directed and undirected adjacency matrices.
 
-\hide{We observe one quirk about a symmetric undirected matrix. In our abstract graphs, which are fundamentally directed, the abstract edges $(u,v)$ and $(v,u)$ where $u \neq v$ are clearly distinct from each other. However, in a symmetric matrix both $g[u][v]$ and $g[v][u]$ will be marked, thus it is unclear which edge is in the graph. To disambiguate, we impose the following condition: If $g[u][v]$ and $g[v][u]$ are marked, and $u \leq v$, then we consider $(u,v)$ to be the valid edge; if $v \textless u$, then $(v,u)$ is the valid edge.
-}%end hide
-% discuss with Aquinas
-
-\subsubsection{Edge lists.}
-
-Edge lists are the representation of choice 
-for sparse graphs. A straightforward~C implementation 
-defines an \texttt{edge} as a 
-\texttt{struct} containing \texttt{src}, \texttt{dst}, and 
-\texttt{weight}, and then defines a \texttt{graph} as a 
-\texttt{struct} containing 
-the graph's size, the number of edges in the graph, 
-and an array of \texttt{edge}s. Our spatial representation 
-follows this pattern:
-\vspace{-0.5em}
-\begin{equation*}
-\begin{split}
-\p{graph\_rep}(\gamma, \m{g\_addr}, &\m{e\_addr})~\defeq~ \\
-&\big(\m{g\_addr} \mapsto (\lvert\gamma.V\rvert, \lvert\gamma.E\rvert, \m{e\_addr})\big)
-\ast
-\p{array}(\m{e\_addr},\gamma.E)
-\end{split}
-\end{equation*}
-We abuse notation slightly here: we simplify \m{g\_addr}'s target 
-to a tuple, and overload the \p{array} predicate to represent 
-an array of \texttt{structs}.
-
-% Need to discuss the above.
-% data_at sh (t_wedgearray_graph) (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
-%         data_at sh (tarray t_struct_edge MAX_EDGES)
-%           (map wedge_to_cdata glist ++ (Vundef_cwedges (MAX_EDGES - numE g))) (pointer_val_val orig_eptr)
-
-\hide{We observe mathematical differences between the graphs that can be represented by an edge list and an adjacency-matrix representation. As mentioned in the Prim's section, in a symmetric adjacency matrix, $g[u][v])$ and $g[v][u]$ are considered the same edge; however, this is not true for an edge list, where every edge is effectively an ordered pair due to the memory positions of the data. As a result, this edge list can contain multiple edges between two vertices whereas a 2D adjacency matrix cannot. Further, we prove that Kruskal's algorithm can handle such inputs and still return a minimal spanning forest.
-} % end hide
-% Well we can't say the above if it's not true... 
 
 \lstset{style=myTinyStyle}
 
