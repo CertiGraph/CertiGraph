@@ -19,7 +19,7 @@ The Kruskal-specific implementation is stripped down to the bare minimum require
 \label{sec:heapinsertremove}
 
 Because we are juggling three implementations, we take some care to factor our verification to maximize reuse.  First, each C implementation has its own exchange and comparison functions that handle the nitty-gritty of the payload and choose between a min or max heap.  The following lines are from the ``basic'' implementation, in which the ``payload'' (\texttt{data} field) is of type \texttt{void*}:
-\begin{lstlisting}[firstnumber=18]
+\begin{lstlisting}[firstnumber=5]
 void exch(unsigned int j, unsigned int k, Item arr[]) {
  int priority = arr[j].priority; void* data = arr[j].data;
  arr[j].priority = arr[k].priority; arr[j].data = arr[k].data;
@@ -28,7 +28,7 @@ int less(unsigned int j, unsigned int k, Item arr[]) {
  return (arr[j].priority <= arr[k].priority); }
 \end{lstlisting}
 These C functions are specified as refinements of Gallina functions that exchange polymorphic data in lists and compare objects in an abstract preordered set; we verify them in VST after a little irksome engineering.  The payoff is that the key heap operations, which, following Sedgewick~\cite{sedgewick}, we call \texttt{swim} and \texttt{sink}, can use identical~C code (up to alpha renaming) in all three implementations:
-\begin{lstlisting}[firstnumber=24]
+\begin{lstlisting}[firstnumber=last]
 void swim(unsigned int k, Item arr[]) {
  while (k > ROOT_IDX && less (k, PARENT(k), arr)) {
   exch(k, PARENT(k), arr); k = PARENT(k);         } }
@@ -60,14 +60,14 @@ A second C-semantics issue is the potential for overflow within \texttt{LEFT\_CH
 \lstset{style=CoqStyle}
 
 At the algorithmic level, both the \texttt{swim} and \texttt{sink} functions involve nontrivial loop invariants; \texttt{sink} is complicated by the further need to support Floyd's \texttt{heapify}, during which a large portion of the array is unordered.  Accordingly, we build Gallina models of both functions and show that they restore heap order given a mostly-ordered input heap.  There are two different versions of ``mostly-ordered''. Specifically, \texttt{swim} uses a ``bottom-up'' version:
-\begin{lstlisting}[firstnumber=9]
+\begin{lstlisting}[firstnumber=5]
 Definition weak_heapOrdered2 (L : list A) (j : nat) : Prop :=
  (forall i b, i <> j -> nth_error L i = Some b ->
    forall a, nth_error L (parent i) = Some a -> a <<= b) /\
  (grandsOk L j root_idx).
 \end{lstlisting}
 whereas \texttt{sink} uses a ``top-down'' version:
-\begin{lstlisting}[firstnumber=13]
+\begin{lstlisting}[firstnumber=last]
 Definition weak_heapOrdered_bounded (L:list A) (k:nat) (j:nat) :=
  (forall i a, i >= k -> i <> j -> nth_error L i = Some a ->
   (forall b, nth_error L (left_child i) = Some b -> a <<= b) /\
@@ -76,7 +76,7 @@ Definition weak_heapOrdered_bounded (L:list A) (k:nat) (j:nat) :=
 \end{lstlisting}
 The parameter \texttt{j} indicates a ``hole'', at which the heap may not be heap-ordered; \texttt{grandsOk} bridges this hole by
 ordering the parent and the children of \texttt{j}:
-\begin{lstlisting}[firstnumber=5]
+\begin{lstlisting}
 Definition grandsOk (L : list A) (j : nat) (k : nat) : Prop :=
   j <> root_idx -> parent j >= k ->
     forall gs bb, parent gs = j -> nth_error L gs = Some bb ->
@@ -93,7 +93,7 @@ The insertion and remove functions we verify are in fact ``non-checking'' versio
 \label{sec:heapsort}
 
 Floyd's bottom-up procedure for constructing a binary heap in linear time, and using a binary heap to sort, are classics of the literature~\cite{clrs,sedgewick}.  Happily, while the asymptotic bound on heap construction is nontrivial, the implementations of both are basically repeated calls to \texttt{sink} (and exchanges to remove the root):
-\begin{lstlisting}[firstnumber=32]
+\begin{lstlisting}[firstnumber=19]
 void build_heap(Item arr[], unsigned int size) {
  unsigned int start = PARENT(size); $\label{code:parentunderflow}$
  while(1) { sink(start, arr, size);
