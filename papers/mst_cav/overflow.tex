@@ -30,8 +30,10 @@ overflow on lines~\ref{code:overflow}~and~\ref{code:update1}.
   \node at (15,0.6) {5};
   \node at (16,-2.4) {6};
 \end{tikzpicture}
+\vspace*{-1.25em}
 \caption{A graph that will result in overflow on a 4-bit machine.}
 \label{fig:overflow}
+\vspace*{-1.75em}
 \end{figure}
 
 Consider applying Dijkstra's algorithm on a hypothetical 4-bit unsigned machine to
@@ -44,7 +46,7 @@ have edge weights of~4~rather than~5s~and~6s.  After processing vertices~A~and~B
 
 The second part of our solution is that we require in the function precondition that $\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor - 1 < \texttt{inf} \le \texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$.  As long as $\texttt{size} > 1$, this is perfectly realizable  by setting \texttt{inf} to $\texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$, \emph{i.e.} in the 4-bit machine we set \texttt{inf} to $11$.  It may be surprising that infinity has a nontrivial upper bound.  The reason is that line~\ref{code:overflow} implicitly assumes that $\infty + \texttt{cost} = \infty$, which certainly is not true for machine integers!
 Lastly, when $\texttt{size} = 1$, the range bound on infinity collapses and \texttt{inf} becomes unrealizable.
-Our verification is thus not applicable to single-vertex graphs, a special case for which the shortest-path problem is rather uninteresting. We place these new 
+Our verification is thus not applicable to single-vertex graphs, a special case for which the shortest-path problem is rather uninteresting. We place these new
 restrictions into Dijktra's soundness condition, in addition to the standard
 \texttt{SoundAdjMat} from~\S\ref{sec:adjmatpure}.
 
@@ -67,4 +69,5 @@ Chen verified Dijkstra in Mizar~\cite{chen2003dijkstra}, Gordon \emph{et al.} fo
 In general the existing mechanized proofs on Dijkstra verify code defined within idealized formal environments, \emph{e.g.} with unbounded integers rather than machine \texttt{int}s and a distinguished non-integer value for infinity.  None of the previous formal work mentions the overflow we uncover.
 
 % and thus glosses over certain real-world issues, including, as best we
-%can tell, the overflow issue we identified. 
+%can tell, the overflow issue we identified.
+
