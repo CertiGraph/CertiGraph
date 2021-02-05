@@ -4,8 +4,8 @@ Binary heaps are a classic data structure for imperative programs~\cite{clrs,sed
 
 Binary heaps are a good fit for our graph algorithms because Dijkstra's and Prim's algorithms need to edit priorities, and a constant-space \texttt{heapsort} is appropriate for the sparse edge-list-represented graphs typically targeted by Kruskal's.  The~C language has poor support for polymorphic higher-order functions, and a binary heap that supports \texttt{edit\_priority} is half as fast as a binary heap that does not.  Accordingly, we implement binary heaps in C three times:
 \[
-\begin{array}{l@{\qquad}c@{\quad}c@{\quad}c@{\quad}l}
-\text{name} & \text{heap order} & \texttt{edit\_priority} & \texttt{heapify} & \text{payload} \\
+\begin{array}{l@{\quad}c@{\quad}c@{\quad}c@{\quad}l}
+\text{Name} & \text{Heap order} & \texttt{edit\_priority} & \texttt{heapify} & \text{Payload} \\
 \hline
 \text{basic} & \text{min} & \text{no} & \text{yes} & \texttt{void*} \\
 \text{advanced} & \text{min} & \text{yes} & \text{no} & \texttt{int} \\
