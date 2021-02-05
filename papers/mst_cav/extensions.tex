@@ -260,7 +260,7 @@ Definition spanning_uforest f g :=
 The \texttt{strong\_evalid} predicate means that the
 \texttt{src} and \texttt{dst} of the edge are also valid, so
 \emph{e.g.} a valid edge cannot point to a deleted/absent vertex.
-The second predicate is the critical constraint: a
+The second conjunct of \texttt{uforest} is critical: a
 forest has no undirected cycles. The other definitions 
 are straightforward from there, and
 \texttt{minimum\_spanning\_forest f g} means that no other spanning forest has

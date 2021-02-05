@@ -30,17 +30,17 @@ $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{heap'
 \m{\color{red}min(\texttt{dist[u]}, \m{heap'})} /| \null \\
 {\m{linked\_correctly}(\gamma, \m{\color{red}heap'}, \m{keys}, \m{\color{red}dist'},
 {\color{red}\m{popped} \uplus \{\texttt{u}\}})} /| \null \\
-{\color{red}\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped} \uplus \{\texttt{u}\}, \m{prev'}, \m{dist'}, \texttt{i}, \texttt{u})}}$ $\label{code:forinv}$
+{\color{red}\m{dijk\_correct\_weak}({\color{OliveGreen}\gamma, \texttt{src}}, \m{popped} \uplus \{\texttt{u}\}, \m{prev'}, \m{dist'}, \texttt{i}, \texttt{u})}}$ $\label{code:forinv}$
    cost = getCell(g, u, i); $\label{code:cost}$
    if (cost < inf) {
     if (dist[i] > dist[u] + cost) { $\label{code:overflow}$
      dist[i] = dist[u] + cost; prev[i] = u; $\label{code:update1}$
      pq_edit_priority(pq, keys[i], dist[i]); $\label{code:update2}$
-  }}}} $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''}}.~\p{AdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},\m{\color{red}\emptyset}) * {\mathsf{Item}(\texttt{temp}, \_)} * \null \\
+  }}}} $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''}}.~\p{AdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},\m{\color{red}\emptyset}) * {\mathsf{Item}(\texttt{temp}, {\color{red}\_})} * \null \\
  \mathsf{array}(\texttt{dist},\m{\color{red}dist''}) *
  \mathsf{array}(\texttt{prev}, \m{\color{red}prev''}) *
  \mathsf{array}(\texttt{keys}, \m{keys}) /| \null \\
-{\color{red}\forall \m{dst}.~0 \le \m{dst} < \texttt{size} -> \m{inv\_popped}}(\gamma, \m{src}, \m{\color{red}\gamma.V}, \m{\color{red}prev''}, \m{\color{red}dist''}, \m{dst})}$ $\label{code:end}$
+{\color{red}\forall \m{dst}.~0 \le \m{dst} < \texttt{size} -> \m{inv\_popped}}(\gamma, \m{src}, {\color{red}\m{\gamma.V}, \m{prev''}, \m{dist''}, \m{dst}})}$ $\label{code:end}$
  freeN (temp); pq_free (pq); freeN (keys); return; }
 \end{lstlisting}
 \vspace{-1em}
