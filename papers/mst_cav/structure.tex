@@ -24,12 +24,42 @@ On the other hand, working within existing developments involves some challenges
 
 %In addition, we have worked to improve on the modularity of the mathematical layer, ensuring that similar graph properties and lemmas can be reused by different proofs with little need for repetition.
 
-\subsection{Size of our development}
-Our new contributions to CertiGraph include approximately:
-\begin{itemize}
-\item2000 lines of lemmas of undirected graph properties
-\item200 lines to link unionfind properties with undirected graph properties
-\item1500 lines for mathematical properties of graphs that fit in symmetric matrices, including a proof of the existence of minimal spanning forests
-\item900 lines for that of edge lists
-\item1800 lines \textit{each} for the verification of Prim's and Kruskal's algorithms, including the mathematical proofs of the resultant forest's minimality and helper C functions.
-\end{itemize} 
+Our new contributions to CertiGraph include pieces that are reused 
+repeatedly and pieces that are more bespoke. We give a sense of both the 
+size of our development and the mileage we get out of our own work via reuse. 
+Items on one row are very similar (within 1\%) of each other.
+
+\[
+\begin{array}{l@{\qquad}c@{\quad}c@{\quad}c@{\quad}l}
+\text{name} & \text{reused} & \text{LoC} \\
+\hline
+\text{Undirected} & \text{4x} & \text{2140} \\
+\text{MathAdjMat} & \text{6x} & \text{165} \\
+\text{MathUAdjMat} & \text{3x} & \text{1024} \\
+\text{SpaceAdjMat1+2+3} & \text{2x each} & \text{500} \\
+\text{MathDijkGraph} & \text{3x} & \text{180} \\
+\text{DijkPureProof} & \text{3x} & \text{1730} \\
+\hline
+\text{Total} & & \text{??} \\
+\end{array}
+\]
+
+\[
+\begin{array}{l@{\qquad}c@{\quad}c@{\quad}c@{\quad}l}
+\text{name} &  \text{LoC} \\
+\hline
+\text{DijkSpec1+2+3} & \text{300} \\
+\text{VerifDijk1+2+3} & \text{5400} \\
+\text{PrimSpec1+2+3+4} & \text{508} \\
+\text{VerifPrim1+2+3+4} & \text{7500} \\
+\text{KruskalSpec} & \text{302} \\
+\text{VerifKruskal} & \text{1600} \\
+\text{BinaryHeapModel} & \text{1800} \\
+\text{EdgeListGraph} & \text{910} \\
+\text{VerifHeapSort} & \text{570} \\
+\text{VerifBasicBinaryHeap} & \text{777} \\
+\text{VerifAdvBinaryHeap} & \text{2190} \\
+\hline
+\text{Total} & \text{??} \\
+\end{array}
+\]
