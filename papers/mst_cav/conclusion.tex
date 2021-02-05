@@ -4,7 +4,7 @@ We have already discussed work directly related to Dijkstra's (\S\ref{sec:relwor
 build upon and extend: CompCert, VST, and CertiGraph (\S\ref{sec:stats}).  Our goal now is to discuss mechanized graph reasoning and verification more broadly.
 
 \paragraph{Reasoning about mathematical graphs.}
-There is a 30+ year history of mechanizing graph theory, beginning at least with Wong~\cite{wong1991} and Chou~\cite{chou1994formal} and continuing to the present day; Wang discusses many such efforts~\cite[\S3.3]{shengyi:thesis}.  The two abstract frameworks that seem closest to ours are those by Noschinski~\cite{Noschinski2015}; and by Lammich and Nipkow~\cite{DBLP:journals/afp/LammichN19}.  \note{The latter is particularly relevant to our work, because they too start with a directed graph library and must extend it to handle undirected graphs so that they can verify Prim's algorithm.}
+There is a 30+ year history of mechanizing graph theory, beginning at least with Wong~\cite{wong1991} and Chou~\cite{chou1994formal} and continuing to the present day; Wang discusses many such efforts~\cite[\S3.3]{shengyi:thesis}.  The two abstract frameworks that seem closest to ours are those by Noschinski~\cite{Noschinski2015}; and by Lammich and Nipkow~\cite{DBLP:journals/afp/LammichN19}.  The latter is particularly related to our work, because they too start with a directed graph library and must extend it to handle undirected graphs so that they can verify Prim's algorithm.
 
 \paragraph{More-automated verification.}
 Broadly speaking, mechanized verification of software falls in a spectrum between more-automated-but-less-precise verifications and less-automated-but-more-precise verifications.  Although VST contains some automation, we fall within the latter camp.  In the former camp, landmark initial separation logic~\cite{reynolds2002separation} tools such as Smallfoot~\cite{berdine:smallfoot} have grown into Facebook's industrial-strength Infer~\cite{calcagno2015moving}.  Other notable relatively-automated separation logic-based tools include HIP/SLEEK~\cite{chin:hipsleek}, Bedrock~\cite{chlipala:bedrock}, and VerCors~\cite{DBLP:conf/fm/BlomH14}.  More-automated solutions that use techniques other than separation logic include Boogie~\cite{barnett2005boogie}, \textsc{Blast}~\cite{DBLP:journals/sttt/BeyerHJM07}, Dafny~\cite{leino10}, and KeY~\cite{DBLP:series/lncs/10001}.  In \S\ref{sec:relworkdijkstra} we discuss how some of these more-automated approaches have been applied to verify Dijkstra's algorithm. Petrank and Hawblitzel's Boogie-based verification of a garbage collector~\cite{gcexample2} gives another more-automated verification of a graph algorithm.
@@ -49,7 +49,7 @@ enough to verify real code.
 
 % such as the adjacency-matrix representation used in this result, as well as associated lemmas;
 
-%are interested in increasing the amount of automation in our approach.  
+%are interested in increasing the amount of automation in our approach.
 
 %\paragraph{Verifying graph algorithms}
 
@@ -61,11 +61,11 @@ enough to verify real code.
 
 %\note{Being in pseudocode and , these works do not need to discuss the application of the algorithms on "strange", non-simple graph inputs. Our C implementation does account for such inputs to a small extent, such as the edge list containing multiple edges between two vertices in Kruskal's.}
 
-%\paragraph{Other graph proof libraries.} 
+%\paragraph{Other graph proof libraries.}
 
-%\cite{DBLP:conf/esop/KrishnaSW20} 
+%\cite{DBLP:conf/esop/KrishnaSW20}
 
-%, tackling similar issues to Wang et al ~\cite{DBLP:journals/pacmpl/WangCMH19}, but in this paper, local reasoning is not required. 
+%, tackling similar issues to Wang et al ~\cite{DBLP:journals/pacmpl/WangCMH19}, but in this paper, local reasoning is not required.
 %In a related vein, Paulin and Filli\^atre verified Floyd's algorithm in Coq~\cite{paulin}
 %
 %\subsection{Previous work} We have long been interested in

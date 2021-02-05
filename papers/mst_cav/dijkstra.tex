@@ -1,6 +1,6 @@
 We verify a standard C implementation of Dijkstra's algorithm.
 We first sketch our proof in some detail with an emphasis on our loop invariants,
-then uncover and remedy a subtle overflow bug, and finish with a discussion 
+then uncover and remedy a subtle overflow bug, and finish with a discussion
 of related work.
 
 \subsection{Verified Dijkstra's algorithm in C}
@@ -29,13 +29,14 @@ graph~$\gamma$, which in turn exposes an interface in the
 language of graph theory (vertices, edges, labels, \emph{etc.}).
 We develop three variations of
 adjacency-matrix representation (see~\S\ref{sec:newspatial}) and
-we verify Dijkstra using each of them. 
+we verify Dijkstra using each of them.
 Thanks to some careful engineering, the C code and
 the Coq verification are both almost completely agnostic to
 the form of representation. The only variation between implementations
 is when reading a cell (line~\ref{code:cost}), so we
 refactor this out into a straightforward helper method and
-verify it separately.
+verify it separately; accordingly, the proof bases for the three variants differ by less than 1\%.
+%\note{We also demonstrated that our pure reasoning was isolated from our spatial reasoning by verifying three versions of~C~code with slightly different memory layouts for adjacency matrices with the same pure theorems (our proof base for these versions differs by , exactly for the portion of the~C~code that accesses the graph representation in memory)}
 
 \input{poster_code_dijk.tex}
 
@@ -68,10 +69,10 @@ of decreased performance.}.
 %iterating over \texttt{dist} while rejecting optimized items.
 %Neat, but far too slow.
 
-The first nine lines are standard setup. 
-The \emph{keys} array, assigned on line~\ref{code:assigninf}, 
+The first nine lines are standard setup.
+The \emph{keys} array, assigned on line~\ref{code:assigninf},
 is thereafter a mathematical constant.
-The pure predicate \m{linked\_correctly} contains the plumbing connecting the 
+The pure predicate \m{linked\_correctly} contains the plumbing connecting the
 various mathematical arrays.
 The verification turns on the loop
 invariants on lines~\ref{code:whileinv} and~\ref{code:forinv}.  The pure \texttt{while} invariant $\m{dijk\_correct}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist})$ essentially unfolds into:
