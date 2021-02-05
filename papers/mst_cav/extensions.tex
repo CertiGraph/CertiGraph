@@ -188,16 +188,16 @@ Adjacency matrices are a useful way to represent graphs
 in problems where efficient label reads are required. 
 We support the three most common 
 flavors of adjacency matrix representation:
-stack-allocated 2D~array \texttt{int~graph[size][size]},
+a stack-allocated 2D~array \texttt{int~graph[size][size]},
 a stack-allocated 1D~array \texttt{int~graph[size$\times$size]}, 
 and a heap-allocated 2D~array \texttt{int~**graph}. 
 To the casual observer, these are essentially interchangeable, but 
-that is a mistake when thinking spatially. Apart from the obvious 
-arithmetic that the second flavor does to access cells, there is a 
-more subtle point: the first and second can
-assume a contiguous block of memory, but the third needs to allocate
+that is a mistake when thinking spatially. Apart from the 
+arithmetic that the second flavor uses to access cells, there is a 
+more subtle point: the first and second enjoy a contiguous block of 
+memory, but the third needs to allocate
 a ``spine'' and then separately allocate each array within the spine.
-For a taste, the spatial representation of the first looks like:
+For a taste, the spatial representation of the first is:
 \vspace{-0.5em}
 \begin{equation*}
 \begin{split}
@@ -210,18 +210,21 @@ For a taste, the spatial representation of the first looks like:
 \p{graph\_rep}(\gamma, \m{g\_addr}) \defeq~& \underset{\m{v} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
 \end{split}
 \end{equation*}
+We use the separation logic $\ast$ in its iterated form
+to say that the arrays are separate in memory. 
 Of particular note are $\mathsf{graph2mat}$, which performs two projections to
 drag out the graph's nested edge labels into a 2D matrix, and 
 \m{arr\_addr}, which in this instance is able to simply compute
-the address of any array \m{i} by adding to the base address of the graph.
-When representing the heap-allocated 2D~array, we still benefit from 
-$\mathsf{graph2mat}$'s projections but \m{arr\_addr} is powerless: no relationship
-between the addresses of individual arrays is guaranteed.
-Instead, we require that the user provide a list of base addresses
-of each array. 
+the address of any array \m{i} from the base address of the graph.
+When representing the heap-allocated 2D~array, we still use 
+$\mathsf{graph2mat}$ but \m{arr\_addr} is powerless: 
+we know nothing about the relationship
+between the addresses of individual arrays.
+Instead, we require that the user provide a list containing the base addresses
+of each allocated array. 
 
-While handling these spatial wrinkles, we develop utilities that easily 
-unfold and refold the adjacency matrix, thus smoothing user 
+While ironing out these spatial wrinkles, we develop utilities that easily 
+unfold and refold our adjacency matrices, thus smoothing user 
 experience when reading and writing arrays and cells. Of course
 these utilities themselves vary by flavor of representation, but 
 the net effect is that users of our adjacency matrices really can 
@@ -231,7 +234,7 @@ be agnostic to the style of representation they are using
 The property of undirectedness requires no special condition 
 when it comes to spatial representation in separation logic, 
 and so we share spatial representations and utilities 
-across directed and undirected graphs.
+across directed and undirected adjacency matrices.
 
 \hide{We observe one quirk about a symmetric undirected matrix. In our abstract graphs, which are fundamentally directed, the abstract edges $(u,v)$ and $(v,u)$ where $u \neq v$ are clearly distinct from each other. However, in a symmetric matrix both $g[u][v]$ and $g[v][u]$ will be marked, thus it is unclear which edge is in the graph. To disambiguate, we impose the following condition: If $g[u][v]$ and $g[v][u]$ are marked, and $u \leq v$, then we consider $(u,v)$ to be the valid edge; if $v \textless u$, then $(v,u)$ is the valid edge.
 }%end hide
@@ -252,11 +255,14 @@ follows this pattern:
 \begin{equation*}
 \begin{split}
 \p{graph\_rep}(\gamma, \m{g\_addr}, &\m{e\_addr})~\defeq~ \\
-&(\m{g\_addr} \mapsto \lvert\gamma.V\rvert, \lvert\gamma.E\rvert, \m{e\_addr})
+&\big(\m{g\_addr} \mapsto (\lvert\gamma.V\rvert, \lvert\gamma.E\rvert, \m{e\_addr})\big)
 \ast
 \p{array}(\m{e\_addr},\gamma.E)
 \end{split}
 \end{equation*}
+We abuse notation slightly here: we simplify \m{g\_addr}'s target 
+to a tuple, and overload the \p{array} predicate to represent 
+an array of \texttt{structs}.
 
 % Need to discuss the above.
 % data_at sh (t_wedgearray_graph) (Vint (Int.repr (size)), (Vint (Int.repr (numE g)), pointer_val_val orig_eptr)) (pointer_val_val orig_gptr);
