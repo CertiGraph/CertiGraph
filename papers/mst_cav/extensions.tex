@@ -16,6 +16,7 @@ We explain here the extensions we made to various levels of
 CertiGraph in service of our verifications.
 
 \subsection{Pure reasoning for adjacency matrix-represented graphs}
+\label{sec:adjmatpure}
 
 Two of our algorithms operate over graphs represented as adjacency matrices.
 Not every legal graph can be represented as an adjacency matrix, 
@@ -53,6 +54,7 @@ requires positive edge weights and further restrictions on
 \texttt{size} and \texttt{inf} that we discuss in~\S\ref{sec:dijkoverflow}.
 
 \subsection{New spatial representations for edge-labeled graphs}
+\label{sec:newspatial}
 
 In service of our new verifications, we develop spatial support in separation 
 logic for two new styles of graph representation:
@@ -151,14 +153,10 @@ an array of \texttt{structs}.
 \subsection{Undirectedness in a directed world}
 
 The CertiGraph library presented in~\cite{DBLP:journals/pacmpl/WangCMH19} 
-supports only directed graphs, baking direction-reliant 
-idioms 
-% properties?
-% constructs?
-such as 
-\texttt{src} and \texttt{dst} : \texttt{EdgeType} $\rightarrow$ \texttt{VertexType}
-deep into its development.
-Our challenge is to add support for undirected graphs. 
+supports only directed graphs, and, as we have seen, bakes 
+direction-reliant idioms 
+such as \texttt{src} and \texttt{dst} deep into its development.
+Our challenge is to add support for undirected graphs atop of this.
 
 \hide{One approach is to handle undirected edges entirely separately 
 from directed edges, \emph{e.g.} using Coq \texttt{Ensemble}s. 
@@ -177,14 +175,13 @@ a
 fissure 
 within an otherwise unified library.}%end hide
 
-The approach we take is more harmonious: 
-we observe that every directed graph can be treated as an undirected 
-graph by ignoring edge direction.
-As we will soon detail, we develop a lightweight layer of 
+Our approach is to observe that every directed graph can be 
+treated as an undirected graph by ignoring edge direction.
+We develop a lightweight layer of 
 ``undirected flavored'' definitions atop of the existing 
 ``directed flavored'' definitions, state and prove connections 
-between these, and are off to the races. 
-We retain full access to CertiGraph's graph theory formalizations 
+between these, and then build the undirected infrastructure we need. 
+The result is that we retain full access to CertiGraph's graph theory formalizations 
 modulo some mathematical bridging.
 % It also allows us to use CertiGraph's rich set of lemmas about the addition and removal of edges.
 % This is backed by our observation that undirected graph properties are largely mathematical in nature, 
@@ -204,22 +201,22 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 % This makes sense in the first use cases of CertiGraph, especially when reasoning about C pointers.
 
 
-\subsubsection{Our basic ``undirected'' definitions.}
+Our basic ``undirected flavored'' definitions are 
+relatively standard.
 %Our definitions are largely based on CLRS~\cite{clrs}.
-Two vertices \m{u} and \m{v} are \texttt{adjacent} if there exists
+Vertices \m{u} and \m{v} are \texttt{adjacent} if there is
 an edge between them in either direction; vertices are self-adjacent.
 An valid \texttt{upath} (undirected path) is list of 
-\note[say more? cut?]{valid} 
-vertices that form a  
+valid vertices that form a  
 pairwise-adjacent chain. Two vertices are \texttt{connected} when a valid \texttt{upath}
-features them as head and foot; essentially this is the transitive 
-closure of \texttt{adjacenct}.
+features them as head and foot (essentially the transitive 
+closure of \texttt{adjacenct}).
 %A similar approach is proposed in Halsbeck~\cite{DBLP:journals/afp/HaslbeckLB19}.
 % Note that the definition of path varies between textbooks and papers. For example, \textit{Discrete Mathematics and its Applications}~\cite{rozen} defines paths as a sequence of edges with an implicit sequence of vertices, whereas CLRS, which we have followed, defines it as a sequence of vertices with an implicit sequence of edges. 
 
-\subsubsection{Bridging with directedness.}
-The definitions above sync up nicely with preexisting directed
-definitions. 
+% \subsubsection{Our basic ``undirected'' definitions.}
+The definitions above sync up nicely with preexisting ``directed
+flavored'' definitions. 
 \note[cut?]{Intuitively, undirectedness is more lax than directedness, 
 and so it is unsurprising that these connections are straightforward
 weakenings of directed properties.}
@@ -230,25 +227,25 @@ in \texttt{src}/\texttt{dst} pairs
 as one may expect. A straightforward lemma shows that 
 any valid \texttt{path} is a valid \texttt{upath}, after projecting the
 \texttt{list EdgeType} to \texttt{list VertexType}.
-Similarly, the directed idiom \texttt{reachable~g~u~v} claims the 
+The directed idiom \texttt{reachable~g~u~v} claims the 
 existence of a \texttt{path} in~\texttt{g} from~\texttt{u}~to~\texttt{v}, 
 and this easily weakens to give \texttt{connected~g~u~v}.
 
-\subsubsection{Building out our undirectedness infrastructure.}
+% \subsubsection{Building out our undirectedness infrastructure.}
 With our basic undirectedness definitions at hand and with the assurance
 of mathematical compatability with prior directed work, we can begin in 
 earnest. We flesh out a number of definitions that culminate in 
-\texttt{minimum\_spanning\_forest}, which is exactly the our postcondition
-of both Prim's and Kruskal's algorithms.\footnote{That Prim's algorithm has
-a \emph{forest} in its postcondition should raise an eyebrow. We defend this claim
-in~\S\ref{sec:primforest}.}
+\texttt{minimum\_spanning\_forest}, which is exactly our postcondition
+of both Prim's and Kruskal's algorithms.\footnote{That Prim's postcondition has
+a \emph{forest} should raise an eyebrow. See~\S\ref{sec:primforest}.}
 
 %A \texttt{simple\_upath} is a valid \texttt{upath} that has no duplicate vertices. 
 An undirected cycle (\texttt{ucycle}) is a valid \texttt{upath} whose first 
 and last vertices are the same.  A \texttt{simple\_ucycle} is a \texttt{ucycle} whose
 only duplicate is the first/last vertex. A \texttt{connected\_graph}
-has the property that any two valid vertices in the graph are \texttt{connected}.
-We proceed with:
+has the property that any two valid vertices are \texttt{connected}.
+\texttt{is\_partial\_graph f g} means everything in \texttt{f} is in \texttt{g}.
+We proceed:
 \lstset{style=CoqStyle}
 \begin{lstlisting}
 Definition uforest g := 
@@ -275,13 +272,17 @@ of~\texttt{f} is \note[minimal among other... struggling to phrase this.]{minima
 \hide{We also highlight a difference in our definition compared to mathematical textbooks. Prim's and Kruskal's algorithms are presented as minimum-spanning \textit{tree} algorithms, and often have the implicit assumption that the graph is fully connected. They may or may not discuss forests - CLRS does not, while \textit{Discrete Mathematics} informally defines forests as ``containing no simple circuits that are not necessarily connected [...] and have the property that each of their connected components is a tree." In short, these sources define forests from ``bottom-up" using trees. We define them ``top-down" instead, recognising forests as acyclic graphs and trees as connected forests. This definition was also used by Lammich et al~\cite{DBLP:journals/afp/LammichN19}.}
 % Anshuman: I've hidden this for now, may cut or shorten a lot after discussion.
 
-\note{...SoundUAdjMat...
-PrimGraph uses the \texttt{SoundUAdjMat} wholesale and places no further restrictions
-on it.}
-
-The property of undirectedness requires no special condition 
-when it comes to spatial representation in separation logic, 
-and so we share spatial representations and utilities 
+Our undirected work is also compatible with our new developments 
+in~\S\ref{sec:adjmatpure} and~\S\ref{sec:newspatial}. 
+An adjacency matrix-representable undirected graph  
+has all the pure properties we covered in \texttt{SoundAdjMat},
+and also has symmetry across the left diagonal.
+We extend \texttt{SoundAdjMat} into
+\texttt{Sound{\color{red}U}AdjMat} by adding the condition that 
+all valid edges have src $\le$ dst. This effectively ``turns off'' the 
+matrix on one half of the diagonal and avoids double-counting. Prim's algorithm uses 
+\texttt{SoundUAdjMat} and places no further restrictions.
+Further, spatial representations and fold/unfold utilities are shared
 across directed and undirected adjacency matrices.
 
 
