@@ -23,22 +23,6 @@ Section DijkstraSpec.
   Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
   Definition Vprog : varspecs. mk_varspecs prog. Defined.
   Global Existing Instance CompSpecs.
-
-  (*
-  Definition freeN_spec {CS: compspecs} :=
-    DECLARE _freeN
-    WITH sh: share, p: pointer_val, n: Z, contents: list Z
-    PRE [tptr tvoid]
-    PROP ()
-    PARAMS (pointer_val_val p)
-    GLOBALS ()
-    SEP (data_at sh (tarray tint n)
-                 (map Vint (map Int.repr contents))
-                 (pointer_val_val p) *
-        free_tok (pointer_val_val p) (sizeof tint * n))
-  POST [tvoid]
-    PROP () LOCAL () SEP (emp).
-   *)
   
   Definition getCell_spec :=
     DECLARE _getCell
@@ -55,13 +39,11 @@ Section DijkstraSpec.
            Vint (Int.repr u);
            Vint (Int.repr i))
       GLOBALS ()
-      SEP (@SpaceAdjMatGraph size CompSpecs sh id g 
-                             (pointer_val_val graph_ptr) addresses)
+      SEP (@SpaceAdjMatGraph size CompSpecs sh id g (pointer_val_val graph_ptr) addresses)
     POST [tint]
       PROP ()
       RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_mat size g id))))) 
-      SEP (@SpaceAdjMatGraph size CompSpecs sh id g 
-                             (pointer_val_val graph_ptr) addresses).    
+      SEP (@SpaceAdjMatGraph size CompSpecs sh id g (pointer_val_val graph_ptr) addresses).    
   
   Definition dijkstra_spec :=
     DECLARE _dijkstra
@@ -83,8 +65,7 @@ Section DijkstraSpec.
              Vint (Int.repr size);
              Vint (Int.repr inf))
       GLOBALS ()
-      SEP (@SpaceAdjMatGraph size CompSpecs sh id g 
-                             (pointer_val_val graph_ptr) addresses;
+      SEP (@SpaceAdjMatGraph size CompSpecs sh id g (pointer_val_val graph_ptr) addresses;
           data_at_ Tsh (tarray tint size) (pointer_val_val dist_ptr);
           data_at_ Tsh (tarray tint size) (pointer_val_val prev_ptr))
     POST [tvoid]
@@ -95,8 +76,7 @@ Section DijkstraSpec.
                vvalid g dst ->
                @inv_popped size inf g src popped prev dist dst)
       LOCAL ()
-      SEP (@SpaceAdjMatGraph size CompSpecs sh id g 
-                             (pointer_val_val graph_ptr) addresses;
+      SEP (@SpaceAdjMatGraph size CompSpecs sh id g (pointer_val_val graph_ptr) addresses;
           data_at Tsh (tarray tint size) (map Vint (map Int.repr prev)) (pointer_val_val prev_ptr);
           data_at Tsh (tarray tint size) (map Vint (map Int.repr dist)) (pointer_val_val dist_ptr)).
 
