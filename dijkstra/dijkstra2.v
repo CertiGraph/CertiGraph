@@ -15,123 +15,140 @@ Module Info.
   Definition normalized := true.
 End Info.
 
-Definition ___builtin_annot : ident := 9%positive.
-Definition ___builtin_annot_intval : ident := 10%positive.
-Definition ___builtin_bswap : ident := 2%positive.
-Definition ___builtin_bswap16 : ident := 4%positive.
-Definition ___builtin_bswap32 : ident := 3%positive.
-Definition ___builtin_bswap64 : ident := 1%positive.
-Definition ___builtin_clz : ident := 35%positive.
-Definition ___builtin_clzl : ident := 36%positive.
-Definition ___builtin_clzll : ident := 37%positive.
-Definition ___builtin_ctz : ident := 38%positive.
-Definition ___builtin_ctzl : ident := 39%positive.
-Definition ___builtin_ctzll : ident := 40%positive.
-Definition ___builtin_debug : ident := 51%positive.
-Definition ___builtin_fabs : ident := 5%positive.
-Definition ___builtin_fmadd : ident := 43%positive.
-Definition ___builtin_fmax : ident := 41%positive.
-Definition ___builtin_fmin : ident := 42%positive.
-Definition ___builtin_fmsub : ident := 44%positive.
-Definition ___builtin_fnmadd : ident := 45%positive.
-Definition ___builtin_fnmsub : ident := 46%positive.
-Definition ___builtin_fsqrt : ident := 6%positive.
-Definition ___builtin_membar : ident := 11%positive.
-Definition ___builtin_memcpy_aligned : ident := 7%positive.
-Definition ___builtin_read16_reversed : ident := 47%positive.
-Definition ___builtin_read32_reversed : ident := 48%positive.
-Definition ___builtin_sel : ident := 8%positive.
-Definition ___builtin_va_arg : ident := 13%positive.
-Definition ___builtin_va_copy : ident := 14%positive.
-Definition ___builtin_va_end : ident := 15%positive.
-Definition ___builtin_va_start : ident := 12%positive.
-Definition ___builtin_write16_reversed : ident := 49%positive.
-Definition ___builtin_write32_reversed : ident := 50%positive.
-Definition ___compcert_i64_dtos : ident := 20%positive.
-Definition ___compcert_i64_dtou : ident := 21%positive.
-Definition ___compcert_i64_sar : ident := 32%positive.
-Definition ___compcert_i64_sdiv : ident := 26%positive.
-Definition ___compcert_i64_shl : ident := 30%positive.
-Definition ___compcert_i64_shr : ident := 31%positive.
-Definition ___compcert_i64_smod : ident := 28%positive.
-Definition ___compcert_i64_smulh : ident := 33%positive.
-Definition ___compcert_i64_stod : ident := 22%positive.
-Definition ___compcert_i64_stof : ident := 24%positive.
-Definition ___compcert_i64_udiv : ident := 27%positive.
-Definition ___compcert_i64_umod : ident := 29%positive.
-Definition ___compcert_i64_umulh : ident := 34%positive.
-Definition ___compcert_i64_utod : ident := 23%positive.
-Definition ___compcert_i64_utof : ident := 25%positive.
-Definition ___compcert_va_composite : ident := 19%positive.
-Definition ___compcert_va_float64 : ident := 18%positive.
-Definition ___compcert_va_int32 : ident := 16%positive.
-Definition ___compcert_va_int64 : ident := 17%positive.
-Definition ___stringlit_1 : ident := 95%positive.
-Definition ___stringlit_2 : ident := 96%positive.
-Definition ___stringlit_3 : ident := 97%positive.
-Definition ___stringlit_4 : ident := 98%positive.
-Definition ___stringlit_5 : ident := 104%positive.
-Definition ___stringlit_6 : ident := 105%positive.
-Definition _a : ident := 73%positive.
-Definition _adjustWeight : ident := 66%positive.
-Definition _argc : ident := 108%positive.
-Definition _argv : ident := 109%positive.
-Definition _check_symmetric_matrix : ident := 72%positive.
-Definition _cost : ident := 81%positive.
-Definition _curr : ident := 100%positive.
-Definition _dijkstra : ident := 107%positive.
-Definition _dist : ident := 103%positive.
-Definition _free : ident := 87%positive.
-Definition _freeN : ident := 53%positive.
-Definition _freePQ : ident := 68%positive.
-Definition _getCell : ident := 78%positive.
-Definition _getPaths : ident := 106%positive.
-Definition _graph : ident := 70%positive.
-Definition _i : ident := 63%positive.
-Definition _inf : ident := 60%positive.
-Definition _init : ident := 56%positive.
-Definition _initialise_list : ident := 76%positive.
-Definition _initialise_matrix : ident := 74%positive.
-Definition _j : ident := 71%positive.
-Definition _key : ident := 82%positive.
-Definition _list : ident := 75%positive.
-Definition _main : ident := 69%positive.
-Definition _mallocN : ident := 52%positive.
-Definition _minVertex : ident := 61%positive.
-Definition _minWeight : ident := 62%positive.
-Definition _newWeight : ident := 65%positive.
-Definition _out : ident := 83%positive.
-Definition _parent : ident := 80%positive.
-Definition _popMin : ident := 64%positive.
-Definition _pq : ident := 55%positive.
-Definition _pq_emp : ident := 67%positive.
-Definition _prev : ident := 101%positive.
-Definition _prim : ident := 86%positive.
-Definition _printPath : ident := 102%positive.
-Definition _print_graph : ident := 99%positive.
-Definition _printf : ident := 90%positive.
-Definition _push : ident := 59%positive.
-Definition _r : ident := 79%positive.
-Definition _rand : ident := 88%positive.
-Definition _random : ident := 92%positive.
-Definition _setup : ident := 93%positive.
-Definition _size : ident := 54%positive.
-Definition _srand : ident := 89%positive.
-Definition _src : ident := 94%positive.
-Definition _time : ident := 91%positive.
-Definition _u : ident := 77%positive.
-Definition _v : ident := 84%positive.
-Definition _v__1 : ident := 85%positive.
-Definition _vertex : ident := 57%positive.
-Definition _weight : ident := 58%positive.
-Definition _t'1 : ident := 110%positive.
-Definition _t'2 : ident := 111%positive.
-Definition _t'3 : ident := 112%positive.
-Definition _t'4 : ident := 113%positive.
-Definition _t'5 : ident := 114%positive.
-Definition _t'6 : ident := 115%positive.
-Definition _t'7 : ident := 116%positive.
-Definition _t'8 : ident := 117%positive.
+Definition ___builtin_annot : ident := 18%positive.
+Definition ___builtin_annot_intval : ident := 19%positive.
+Definition ___builtin_bswap : ident := 11%positive.
+Definition ___builtin_bswap16 : ident := 13%positive.
+Definition ___builtin_bswap32 : ident := 12%positive.
+Definition ___builtin_bswap64 : ident := 10%positive.
+Definition ___builtin_clz : ident := 44%positive.
+Definition ___builtin_clzl : ident := 45%positive.
+Definition ___builtin_clzll : ident := 46%positive.
+Definition ___builtin_ctz : ident := 47%positive.
+Definition ___builtin_ctzl : ident := 48%positive.
+Definition ___builtin_ctzll : ident := 49%positive.
+Definition ___builtin_debug : ident := 60%positive.
+Definition ___builtin_fabs : ident := 14%positive.
+Definition ___builtin_fmadd : ident := 52%positive.
+Definition ___builtin_fmax : ident := 50%positive.
+Definition ___builtin_fmin : ident := 51%positive.
+Definition ___builtin_fmsub : ident := 53%positive.
+Definition ___builtin_fnmadd : ident := 54%positive.
+Definition ___builtin_fnmsub : ident := 55%positive.
+Definition ___builtin_fsqrt : ident := 15%positive.
+Definition ___builtin_membar : ident := 20%positive.
+Definition ___builtin_memcpy_aligned : ident := 16%positive.
+Definition ___builtin_read16_reversed : ident := 56%positive.
+Definition ___builtin_read32_reversed : ident := 57%positive.
+Definition ___builtin_sel : ident := 17%positive.
+Definition ___builtin_va_arg : ident := 22%positive.
+Definition ___builtin_va_copy : ident := 23%positive.
+Definition ___builtin_va_end : ident := 24%positive.
+Definition ___builtin_va_start : ident := 21%positive.
+Definition ___builtin_write16_reversed : ident := 58%positive.
+Definition ___builtin_write32_reversed : ident := 59%positive.
+Definition ___compcert_i64_dtos : ident := 29%positive.
+Definition ___compcert_i64_dtou : ident := 30%positive.
+Definition ___compcert_i64_sar : ident := 41%positive.
+Definition ___compcert_i64_sdiv : ident := 35%positive.
+Definition ___compcert_i64_shl : ident := 39%positive.
+Definition ___compcert_i64_shr : ident := 40%positive.
+Definition ___compcert_i64_smod : ident := 37%positive.
+Definition ___compcert_i64_smulh : ident := 42%positive.
+Definition ___compcert_i64_stod : ident := 31%positive.
+Definition ___compcert_i64_stof : ident := 33%positive.
+Definition ___compcert_i64_udiv : ident := 36%positive.
+Definition ___compcert_i64_umod : ident := 38%positive.
+Definition ___compcert_i64_umulh : ident := 43%positive.
+Definition ___compcert_i64_utod : ident := 32%positive.
+Definition ___compcert_i64_utof : ident := 34%positive.
+Definition ___compcert_va_composite : ident := 28%positive.
+Definition ___compcert_va_float64 : ident := 27%positive.
+Definition ___compcert_va_int32 : ident := 25%positive.
+Definition ___compcert_va_int64 : ident := 26%positive.
+Definition ___stringlit_1 : ident := 103%positive.
+Definition ___stringlit_2 : ident := 104%positive.
+Definition ___stringlit_3 : ident := 105%positive.
+Definition ___stringlit_4 : ident := 106%positive.
+Definition ___stringlit_5 : ident := 112%positive.
+Definition ___stringlit_6 : ident := 113%positive.
+Definition _argc : ident := 121%positive.
+Definition _argv : ident := 122%positive.
+Definition _arr : ident := 66%positive.
+Definition _capacity : ident := 5%positive.
+Definition _cells : ident := 77%positive.
+Definition _cost : ident := 119%positive.
+Definition _curr : ident := 108%positive.
+Definition _data : ident := 3%positive.
+Definition _dijkstra : ident := 120%positive.
+Definition _dist : ident := 111%positive.
+Definition _exch : ident := 70%positive.
+Definition _fa : ident := 76%positive.
+Definition _first_available : ident := 6%positive.
+Definition _free : ident := 93%positive.
+Definition _freeN : ident := 63%positive.
+Definition _getCell : ident := 116%positive.
+Definition _getPaths : ident := 114%positive.
+Definition _graph : ident := 98%positive.
+Definition _heap_cells : ident := 7%positive.
+Definition _i : ident := 89%positive.
+Definition _inf : ident := 99%positive.
+Definition _item : ident := 84%positive.
+Definition _j : ident := 64%positive.
+Definition _k : ident := 65%positive.
+Definition _key : ident := 1%positive.
+Definition _key1 : ident := 68%positive.
+Definition _key2 : ident := 69%positive.
+Definition _key_table : ident := 8%positive.
+Definition _keys : ident := 118%positive.
+Definition _less : ident := 73%positive.
+Definition _lookup : ident := 67%positive.
+Definition _main : ident := 92%positive.
+Definition _malloc : ident := 61%positive.
+Definition _mallocN : ident := 62%positive.
+Definition _newpri : ident := 79%positive.
+Definition _oldpri : ident := 82%positive.
+Definition _pq : ident := 71%positive.
+Definition _pq_edit_priority : ident := 83%positive.
+Definition _pq_free : ident := 91%positive.
+Definition _pq_insert : ident := 86%positive.
+Definition _pq_insert_nc : ident := 78%positive.
+Definition _pq_make : ident := 90%positive.
+Definition _pq_remove_min : ident := 87%positive.
+Definition _pq_remove_min_nc : ident := 85%positive.
+Definition _pq_size : ident := 72%positive.
+Definition _prev : ident := 109%positive.
+Definition _printPath : ident := 110%positive.
+Definition _print_graph : ident := 107%positive.
+Definition _printf : ident := 96%positive.
+Definition _priority : ident := 2%positive.
+Definition _rand : ident := 94%positive.
+Definition _random : ident := 100%positive.
+Definition _setup : ident := 101%positive.
+Definition _sink : ident := 75%positive.
+Definition _size : ident := 88%positive.
+Definition _srand : ident := 95%positive.
+Definition _src : ident := 102%positive.
+Definition _structItem : ident := 4%positive.
+Definition _structPQ : ident := 9%positive.
+Definition _swim : ident := 74%positive.
+Definition _table : ident := 80%positive.
+Definition _target : ident := 81%positive.
+Definition _temp : ident := 117%positive.
+Definition _time : ident := 97%positive.
+Definition _u : ident := 115%positive.
+Definition _t'1 : ident := 123%positive.
+Definition _t'10 : ident := 132%positive.
+Definition _t'11 : ident := 133%positive.
+Definition _t'12 : ident := 134%positive.
+Definition _t'2 : ident := 124%positive.
+Definition _t'3 : ident := 125%positive.
+Definition _t'4 : ident := 126%positive.
+Definition _t'5 : ident := 127%positive.
+Definition _t'6 : ident := 128%positive.
+Definition _t'7 : ident := 129%positive.
+Definition _t'8 : ident := 130%positive.
+Definition _t'9 : ident := 131%positive.
 
 Definition v___stringlit_4 := {|
   gvar_info := (tarray tschar 22);
@@ -266,7 +283,7 @@ Definition f_setup := {|
                                    (Econst_int (Int.repr 50) tint) tint)
                       (Ssequence
                         (Sset _t'4
-                          (Ecast (Econst_int (Int.repr 1879048192) tint)
+                          (Ecast (Econst_int (Int.repr 1879048193) tint)
                             tint))
                         (Sset _t'3 (Ecast (Etempvar _t'4 tint) tint)))
                       (Ssequence
@@ -322,7 +339,7 @@ Definition f_print_graph := {|
                             (Econst_int (Int.repr 8) tint) tint)
                           (Etempvar _j tint) tint) (tptr tint)) tint))
                   (Sifthenelse (Ebinop Oeq (Etempvar _t'1 tint)
-                                 (Econst_int (Int.repr 1879048192) tint)
+                                 (Econst_int (Int.repr 1879048193) tint)
                                  tint)
                     (Scall None
                       (Evar _printf (Tfunction (Tcons (tptr tschar) Tnil)
@@ -419,7 +436,7 @@ Definition f_getPaths := {|
               (Sset _t'1
                 (Ecast
                   (Ebinop Olt (Etempvar _t'3 tint)
-                    (Econst_int (Int.repr 1879048192) tint) tint) tbool)))
+                    (Econst_int (Int.repr 1879048193) tint) tint) tbool)))
             (Sset _t'1 (Econst_int (Int.repr 0) tint)))
           (Sifthenelse (Etempvar _t'1 tint)
             (Ssequence
@@ -473,131 +490,168 @@ Definition f_dijkstra := {|
   fn_params := ((_graph, (tptr tint)) :: (_src, tint) ::
                 (_dist, (tptr tint)) :: (_prev, (tptr tint)) :: nil);
   fn_vars := nil;
-  fn_temps := ((_pq, (tptr tint)) :: (_i, tint) :: (_j, tint) ::
-               (_u, tint) :: (_cost, tint) :: (_t'4, tint) :: (_t'3, tint) ::
-               (_t'2, tint) :: (_t'1, (tptr tint)) :: (_t'8, tint) ::
-               (_t'7, tint) :: (_t'6, tint) :: (_t'5, tint) :: nil);
+  fn_temps := ((_temp, (tptr (Tstruct _structItem noattr))) ::
+               (_keys, (tptr tint)) ::
+               (_pq, (tptr (Tstruct _structPQ noattr))) :: (_i, tint) ::
+               (_j, tint) :: (_u, tint) :: (_cost, tint) :: (_t'6, tint) ::
+               (_t'5, tuint) :: (_t'4, tuint) ::
+               (_t'3, (tptr (Tstruct _structPQ noattr))) ::
+               (_t'2, (tptr tvoid)) :: (_t'1, (tptr tvoid)) ::
+               (_t'12, tint) :: (_t'11, tint) :: (_t'10, tint) ::
+               (_t'9, tint) :: (_t'8, tint) :: (_t'7, tint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
     (Scall (Some _t'1)
-      (Evar _init (Tfunction (Tcons tint Tnil) (tptr tint) cc_default))
-      ((Econst_int (Int.repr 8) tint) :: nil))
-    (Sset _pq (Etempvar _t'1 (tptr tint))))
+      (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
+      ((Esizeof (Tstruct _structItem noattr) tuint) :: nil))
+    (Sset _temp
+      (Ecast (Etempvar _t'1 (tptr tvoid))
+        (tptr (Tstruct _structItem noattr)))))
   (Ssequence
     (Ssequence
-      (Sset _i (Econst_int (Int.repr 0) tint))
-      (Sloop
+      (Scall (Some _t'2)
+        (Evar _mallocN (Tfunction (Tcons tint Tnil) (tptr tvoid) cc_default))
+        ((Ebinop Omul (Econst_int (Int.repr 8) tint) (Esizeof tint tuint)
+           tuint) :: nil))
+      (Sset _keys (Etempvar _t'2 (tptr tvoid))))
+    (Ssequence
+      (Ssequence
+        (Scall (Some _t'3)
+          (Evar _pq_make (Tfunction (Tcons tuint Tnil)
+                           (tptr (Tstruct _structPQ noattr)) cc_default))
+          ((Econst_int (Int.repr 8) tint) :: nil))
+        (Sset _pq (Etempvar _t'3 (tptr (Tstruct _structPQ noattr)))))
+      (Ssequence
         (Ssequence
-          (Sifthenelse (Ebinop Olt (Etempvar _i tint)
-                         (Econst_int (Int.repr 8) tint) tint)
-            Sskip
-            Sbreak)
+          (Sset _i (Econst_int (Int.repr 0) tint))
+          (Sloop
+            (Ssequence
+              (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                             (Econst_int (Int.repr 8) tint) tint)
+                Sskip
+                Sbreak)
+              (Ssequence
+                (Sassign
+                  (Ederef
+                    (Ebinop Oadd (Etempvar _dist (tptr tint))
+                      (Etempvar _i tint) (tptr tint)) tint)
+                  (Econst_int (Int.repr 1879048193) tint))
+                (Ssequence
+                  (Sassign
+                    (Ederef
+                      (Ebinop Oadd (Etempvar _prev (tptr tint))
+                        (Etempvar _i tint) (tptr tint)) tint)
+                    (Econst_int (Int.repr 1879048193) tint))
+                  (Ssequence
+                    (Scall (Some _t'4)
+                      (Evar _pq_insert_nc (Tfunction
+                                            (Tcons
+                                              (tptr (Tstruct _structPQ noattr))
+                                              (Tcons tint (Tcons tint Tnil)))
+                                            tuint cc_default))
+                      ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
+                       (Econst_int (Int.repr 1879048193) tint) ::
+                       (Etempvar _i tint) :: nil))
+                    (Sassign
+                      (Ederef
+                        (Ebinop Oadd (Etempvar _keys (tptr tint))
+                          (Etempvar _i tint) (tptr tint)) tint)
+                      (Etempvar _t'4 tuint))))))
+            (Sset _i
+              (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint)
+                tint))))
+        (Ssequence
+          (Sassign
+            (Ederef
+              (Ebinop Oadd (Etempvar _dist (tptr tint)) (Etempvar _src tint)
+                (tptr tint)) tint) (Econst_int (Int.repr 0) tint))
           (Ssequence
             (Sassign
               (Ederef
-                (Ebinop Oadd (Etempvar _dist (tptr tint)) (Etempvar _i tint)
-                  (tptr tint)) tint) (Econst_int (Int.repr 1879048192) tint))
+                (Ebinop Oadd (Etempvar _prev (tptr tint))
+                  (Etempvar _src tint) (tptr tint)) tint)
+              (Etempvar _src tint))
             (Ssequence
-              (Sassign
-                (Ederef
-                  (Ebinop Oadd (Etempvar _prev (tptr tint))
-                    (Etempvar _i tint) (tptr tint)) tint)
-                (Econst_int (Int.repr 1879048192) tint))
-              (Scall None
-                (Evar _push (Tfunction
-                              (Tcons tint
-                                (Tcons tint (Tcons (tptr tint) Tnil))) tvoid
-                              cc_default))
-                ((Etempvar _i tint) ::
-                 (Econst_int (Int.repr 1879048192) tint) ::
-                 (Etempvar _pq (tptr tint)) :: nil)))))
-        (Sset _i
-          (Ebinop Oadd (Etempvar _i tint) (Econst_int (Int.repr 1) tint)
-            tint))))
-    (Ssequence
-      (Sassign
-        (Ederef
-          (Ebinop Oadd (Etempvar _dist (tptr tint)) (Etempvar _src tint)
-            (tptr tint)) tint) (Econst_int (Int.repr 0) tint))
-      (Ssequence
-        (Sassign
-          (Ederef
-            (Ebinop Oadd (Etempvar _prev (tptr tint)) (Etempvar _src tint)
-              (tptr tint)) tint) (Etempvar _src tint))
-        (Ssequence
-          (Scall None
-            (Evar _adjustWeight (Tfunction
-                                  (Tcons tint
-                                    (Tcons tint (Tcons (tptr tint) Tnil)))
-                                  tvoid cc_default))
-            ((Etempvar _src tint) :: (Econst_int (Int.repr 0) tint) ::
-             (Etempvar _pq (tptr tint)) :: nil))
-          (Ssequence
-            (Sloop
               (Ssequence
-                (Ssequence
-                  (Scall (Some _t'2)
-                    (Evar _pq_emp (Tfunction
-                                    (Tcons tint
-                                      (Tcons tint (Tcons (tptr tint) Tnil)))
-                                    tint cc_default))
-                    ((Econst_int (Int.repr 8) tint) ::
-                     (Econst_int (Int.repr 1879048192) tint) ::
-                     (Etempvar _pq (tptr tint)) :: nil))
-                  (Sifthenelse (Eunop Onotbool (Etempvar _t'2 tint) tint)
-                    Sskip
-                    Sbreak))
-                (Ssequence
+                (Sset _t'12
+                  (Ederef
+                    (Ebinop Oadd (Etempvar _keys (tptr tint))
+                      (Etempvar _src tint) (tptr tint)) tint))
+                (Scall None
+                  (Evar _pq_edit_priority (Tfunction
+                                            (Tcons
+                                              (tptr (Tstruct _structPQ noattr))
+                                              (Tcons tint (Tcons tint Tnil)))
+                                            tvoid cc_default))
+                  ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
+                   (Etempvar _t'12 tint) :: (Econst_int (Int.repr 0) tint) ::
+                   nil)))
+              (Ssequence
+                (Sloop
                   (Ssequence
-                    (Scall (Some _t'3)
-                      (Evar _popMin (Tfunction
-                                      (Tcons tint
-                                        (Tcons tint (Tcons (tptr tint) Tnil)))
-                                      tint cc_default))
-                      ((Econst_int (Int.repr 8) tint) ::
-                       (Econst_int (Int.repr 1879048192) tint) ::
-                       (Etempvar _pq (tptr tint)) :: nil))
-                    (Sset _u (Etempvar _t'3 tint)))
-                  (Ssequence
-                    (Sset _i (Econst_int (Int.repr 0) tint))
-                    (Sloop
+                    (Ssequence
+                      (Scall (Some _t'5)
+                        (Evar _pq_size (Tfunction
+                                         (Tcons
+                                           (tptr (Tstruct _structPQ noattr))
+                                           Tnil) tuint cc_default))
+                        ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
+                         nil))
+                      (Sifthenelse (Ebinop Ogt (Etempvar _t'5 tuint)
+                                     (Econst_int (Int.repr 0) tint) tint)
+                        Sskip
+                        Sbreak))
+                    (Ssequence
+                      (Scall None
+                        (Evar _pq_remove_min_nc (Tfunction
+                                                  (Tcons
+                                                    (tptr (Tstruct _structPQ noattr))
+                                                    (Tcons
+                                                      (tptr (Tstruct _structItem noattr))
+                                                      Tnil)) tvoid
+                                                  cc_default))
+                        ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
+                         (Etempvar _temp (tptr (Tstruct _structItem noattr))) ::
+                         nil))
                       (Ssequence
-                        (Sifthenelse (Ebinop Olt (Etempvar _i tint)
-                                       (Econst_int (Int.repr 8) tint) tint)
-                          Sskip
-                          Sbreak)
+                        (Sset _u
+                          (Efield
+                            (Ederef
+                              (Etempvar _temp (tptr (Tstruct _structItem noattr)))
+                              (Tstruct _structItem noattr)) _data tint))
                         (Ssequence
-                          (Ssequence
-                            (Scall (Some _t'4)
-                              (Evar _getCell (Tfunction
-                                               (Tcons (tptr tint)
-                                                 (Tcons tint
-                                                   (Tcons tint Tnil))) tint
-                                               cc_default))
-                              ((Etempvar _graph (tptr tint)) ::
-                               (Etempvar _u tint) :: (Etempvar _i tint) ::
-                               nil))
-                            (Sset _cost (Etempvar _t'4 tint)))
-                          (Sifthenelse (Ebinop Olt (Etempvar _cost tint)
-                                         (Econst_int (Int.repr 1879048192) tint)
-                                         tint)
+                          (Sset _i (Econst_int (Int.repr 0) tint))
+                          (Sloop
                             (Ssequence
-                              (Sset _t'5
-                                (Ederef
-                                  (Ebinop Oadd (Etempvar _dist (tptr tint))
-                                    (Etempvar _i tint) (tptr tint)) tint))
+                              (Sifthenelse (Ebinop Olt (Etempvar _i tint)
+                                             (Econst_int (Int.repr 8) tint)
+                                             tint)
+                                Sskip
+                                Sbreak)
                               (Ssequence
-                                (Sset _t'6
-                                  (Ederef
-                                    (Ebinop Oadd (Etempvar _dist (tptr tint))
-                                      (Etempvar _u tint) (tptr tint)) tint))
-                                (Sifthenelse (Ebinop Ogt (Etempvar _t'5 tint)
-                                               (Ebinop Oadd
-                                                 (Etempvar _t'6 tint)
-                                                 (Etempvar _cost tint) tint)
+                                (Ssequence
+                                  (Scall (Some _t'6)
+                                    (Evar _getCell (Tfunction
+                                                     (Tcons (tptr tint)
+                                                       (Tcons tint
+                                                         (Tcons tint Tnil)))
+                                                     tint cc_default))
+                                    ((Etempvar _graph (tptr tint)) ::
+                                     (Etempvar _u tint) ::
+                                     (Etempvar _i tint) :: nil))
+                                  (Sset _cost (Etempvar _t'6 tint)))
+                                (Sifthenelse (Ebinop Olt
+                                               (Etempvar _cost tint)
+                                               (Econst_int (Int.repr 1879048193) tint)
                                                tint)
                                   (Ssequence
+                                    (Sset _t'7
+                                      (Ederef
+                                        (Ebinop Oadd
+                                          (Etempvar _dist (tptr tint))
+                                          (Etempvar _i tint) (tptr tint))
+                                        tint))
                                     (Ssequence
                                       (Sset _t'8
                                         (Ederef
@@ -605,52 +659,89 @@ Definition f_dijkstra := {|
                                             (Etempvar _dist (tptr tint))
                                             (Etempvar _u tint) (tptr tint))
                                           tint))
-                                      (Sassign
-                                        (Ederef
-                                          (Ebinop Oadd
-                                            (Etempvar _dist (tptr tint))
-                                            (Etempvar _i tint) (tptr tint))
-                                          tint)
-                                        (Ebinop Oadd (Etempvar _t'8 tint)
-                                          (Etempvar _cost tint) tint)))
-                                    (Ssequence
-                                      (Sassign
-                                        (Ederef
-                                          (Ebinop Oadd
-                                            (Etempvar _prev (tptr tint))
-                                            (Etempvar _i tint) (tptr tint))
-                                          tint) (Etempvar _u tint))
-                                      (Ssequence
-                                        (Sset _t'7
-                                          (Ederef
-                                            (Ebinop Oadd
-                                              (Etempvar _dist (tptr tint))
-                                              (Etempvar _i tint) (tptr tint))
-                                            tint))
-                                        (Scall None
-                                          (Evar _adjustWeight (Tfunction
-                                                                (Tcons tint
-                                                                  (Tcons tint
-                                                                    (Tcons
-                                                                    (tptr tint)
-                                                                    Tnil)))
-                                                                tvoid
-                                                                cc_default))
-                                          ((Etempvar _i tint) ::
-                                           (Etempvar _t'7 tint) ::
-                                           (Etempvar _pq (tptr tint)) :: nil)))))
+                                      (Sifthenelse (Ebinop Ogt
+                                                     (Etempvar _t'7 tint)
+                                                     (Ebinop Oadd
+                                                       (Etempvar _t'8 tint)
+                                                       (Etempvar _cost tint)
+                                                       tint) tint)
+                                        (Ssequence
+                                          (Ssequence
+                                            (Sset _t'11
+                                              (Ederef
+                                                (Ebinop Oadd
+                                                  (Etempvar _dist (tptr tint))
+                                                  (Etempvar _u tint)
+                                                  (tptr tint)) tint))
+                                            (Sassign
+                                              (Ederef
+                                                (Ebinop Oadd
+                                                  (Etempvar _dist (tptr tint))
+                                                  (Etempvar _i tint)
+                                                  (tptr tint)) tint)
+                                              (Ebinop Oadd
+                                                (Etempvar _t'11 tint)
+                                                (Etempvar _cost tint) tint)))
+                                          (Ssequence
+                                            (Sassign
+                                              (Ederef
+                                                (Ebinop Oadd
+                                                  (Etempvar _prev (tptr tint))
+                                                  (Etempvar _i tint)
+                                                  (tptr tint)) tint)
+                                              (Etempvar _u tint))
+                                            (Ssequence
+                                              (Sset _t'9
+                                                (Ederef
+                                                  (Ebinop Oadd
+                                                    (Etempvar _keys (tptr tint))
+                                                    (Etempvar _i tint)
+                                                    (tptr tint)) tint))
+                                              (Ssequence
+                                                (Sset _t'10
+                                                  (Ederef
+                                                    (Ebinop Oadd
+                                                      (Etempvar _dist (tptr tint))
+                                                      (Etempvar _i tint)
+                                                      (tptr tint)) tint))
+                                                (Scall None
+                                                  (Evar _pq_edit_priority 
+                                                  (Tfunction
+                                                    (Tcons
+                                                      (tptr (Tstruct _structPQ noattr))
+                                                      (Tcons tint
+                                                        (Tcons tint Tnil)))
+                                                    tvoid cc_default))
+                                                  ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
+                                                   (Etempvar _t'9 tint) ::
+                                                   (Etempvar _t'10 tint) ::
+                                                   nil))))))
+                                        Sskip)))
                                   Sskip)))
-                            Sskip)))
-                      (Sset _i
-                        (Ebinop Oadd (Etempvar _i tint)
-                          (Econst_int (Int.repr 1) tint) tint))))))
-              Sskip)
-            (Ssequence
-              (Scall None
-                (Evar _freePQ (Tfunction (Tcons (tptr tvoid) Tnil) tvoid
-                                cc_default))
-                ((Etempvar _pq (tptr tint)) :: nil))
-              (Sreturn None))))))))
+                            (Sset _i
+                              (Ebinop Oadd (Etempvar _i tint)
+                                (Econst_int (Int.repr 1) tint) tint)))))))
+                  Sskip)
+                (Ssequence
+                  (Scall None
+                    (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid
+                                   cc_default))
+                    ((Etempvar _temp (tptr (Tstruct _structItem noattr))) ::
+                     nil))
+                  (Ssequence
+                    (Scall None
+                      (Evar _pq_free (Tfunction
+                                       (Tcons
+                                         (tptr (Tstruct _structPQ noattr))
+                                         Tnil) tvoid cc_default))
+                      ((Etempvar _pq (tptr (Tstruct _structPQ noattr))) ::
+                       nil))
+                    (Ssequence
+                      (Scall None
+                        (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil)
+                                       tvoid cc_default))
+                        ((Etempvar _keys (tptr tint)) :: nil))
+                      (Sreturn None))))))))))))
 |}.
 
 Definition f_main := {|
@@ -738,7 +829,14 @@ Definition f_main := {|
 |}.
 
 Definition composites : list composite_definition :=
-nil.
+(Composite _structItem Struct
+   ((_key, tuint) :: (_priority, tint) :: (_data, tint) :: nil)
+   noattr ::
+ Composite _structPQ Struct
+   ((_capacity, tuint) :: (_first_available, tuint) ::
+    (_heap_cells, (tptr (Tstruct _structItem noattr))) ::
+    (_key_table, (tptr tuint)) :: nil)
+   noattr :: nil).
 
 Definition global_definitions : list (ident * globdef fundef type) :=
 ((___stringlit_4, Gvar v___stringlit_4) ::
@@ -1009,38 +1107,44 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_external "time"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons (tptr tint) Tnil) tint cc_default)) ::
- (_init,
-   Gfun(External (EF_external "init"
-                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
-     (Tcons tint Tnil) (tptr tint) cc_default)) ::
- (_push,
-   Gfun(External (EF_external "push"
-                   (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
-                     AST.Tvoid cc_default))
-     (Tcons tint (Tcons tint (Tcons (tptr tint) Tnil))) tvoid cc_default)) ::
- (_popMin,
-   Gfun(External (EF_external "popMin"
-                   (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
-                     AST.Tint cc_default))
-     (Tcons tint (Tcons tint (Tcons (tptr tint) Tnil))) tint cc_default)) ::
- (_adjustWeight,
-   Gfun(External (EF_external "adjustWeight"
-                   (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
-                     AST.Tvoid cc_default))
-     (Tcons tint (Tcons tint (Tcons (tptr tint) Tnil))) tvoid cc_default)) ::
- (_pq_emp,
-   Gfun(External (EF_external "pq_emp"
-                   (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
-                     AST.Tint cc_default))
-     (Tcons tint (Tcons tint (Tcons (tptr tint) Tnil))) tint cc_default)) ::
- (_freePQ,
-   Gfun(External (EF_external "freePQ"
-                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
-     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_mallocN,
    Gfun(External (EF_external "mallocN"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
+ (_freeN,
+   Gfun(External (EF_external "freeN"
+                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
+     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
+ (_pq_remove_min_nc,
+   Gfun(External (EF_external "pq_remove_min_nc"
+                   (mksignature (AST.Tint :: AST.Tint :: nil) AST.Tvoid
+                     cc_default))
+     (Tcons (tptr (Tstruct _structPQ noattr))
+       (Tcons (tptr (Tstruct _structItem noattr)) Tnil)) tvoid cc_default)) ::
+ (_pq_insert_nc,
+   Gfun(External (EF_external "pq_insert_nc"
+                   (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
+                     AST.Tint cc_default))
+     (Tcons (tptr (Tstruct _structPQ noattr)) (Tcons tint (Tcons tint Tnil)))
+     tuint cc_default)) ::
+ (_pq_edit_priority,
+   Gfun(External (EF_external "pq_edit_priority"
+                   (mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil)
+                     AST.Tvoid cc_default))
+     (Tcons (tptr (Tstruct _structPQ noattr)) (Tcons tint (Tcons tint Tnil)))
+     tvoid cc_default)) ::
+ (_pq_size,
+   Gfun(External (EF_external "pq_size"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons (tptr (Tstruct _structPQ noattr)) Tnil) tuint cc_default)) ::
+ (_pq_make,
+   Gfun(External (EF_external "pq_make"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tuint Tnil) (tptr (Tstruct _structPQ noattr)) cc_default)) ::
+ (_pq_free,
+   Gfun(External (EF_external "pq_free"
+                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
+     (Tcons (tptr (Tstruct _structPQ noattr)) Tnil) tvoid cc_default)) ::
  (_setup, Gfun(Internal f_setup)) ::
  (_print_graph, Gfun(Internal f_print_graph)) ::
  (_printPath, Gfun(Internal f_printPath)) ::
@@ -1051,26 +1155,26 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_main :: _dijkstra :: _getCell :: _getPaths :: _printPath :: _print_graph ::
- _setup :: _mallocN :: _freePQ :: _pq_emp :: _adjustWeight :: _popMin ::
- _push :: _init :: _time :: _printf :: _srand :: _rand :: _free ::
- ___builtin_debug :: ___builtin_write32_reversed ::
- ___builtin_write16_reversed :: ___builtin_read32_reversed ::
- ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
- ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
- ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
- ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
- ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
- ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
- ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
- ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
- ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
- ___compcert_va_composite :: ___compcert_va_float64 ::
- ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
- ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
- ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
- ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
- ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
- ___builtin_bswap :: ___builtin_bswap64 :: nil).
+ _setup :: _pq_free :: _pq_make :: _pq_size :: _pq_edit_priority ::
+ _pq_insert_nc :: _pq_remove_min_nc :: _freeN :: _mallocN :: _time ::
+ _printf :: _srand :: _rand :: _free :: ___builtin_debug ::
+ ___builtin_write32_reversed :: ___builtin_write16_reversed ::
+ ___builtin_read32_reversed :: ___builtin_read16_reversed ::
+ ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
+ ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
+ ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
+ ___builtin_clzl :: ___builtin_clz :: ___compcert_i64_umulh ::
+ ___compcert_i64_smulh :: ___compcert_i64_sar :: ___compcert_i64_shr ::
+ ___compcert_i64_shl :: ___compcert_i64_umod :: ___compcert_i64_smod ::
+ ___compcert_i64_udiv :: ___compcert_i64_sdiv :: ___compcert_i64_utof ::
+ ___compcert_i64_stof :: ___compcert_i64_utod :: ___compcert_i64_stod ::
+ ___compcert_i64_dtou :: ___compcert_i64_dtos :: ___compcert_va_composite ::
+ ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
+ ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
+ ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
+ ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
+ ___builtin_fsqrt :: ___builtin_fabs :: ___builtin_bswap16 ::
+ ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.
