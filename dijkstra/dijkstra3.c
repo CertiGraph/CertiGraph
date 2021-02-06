@@ -2,15 +2,12 @@
 #include <limits.h>
 #include <stdio.h>
 #include <time.h>
-#include "../priq/priq_arr.h"
+#include "../binheap/binary_heap_pro.h"
 
 #define SIZE 8  // number of vertices
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
-#define INF  1879048192 // INT_MAX - INT_MAX/SIZE
-
-extern void * mallocN (int n);
-extern void freeN (void *p);
+#define INF  1879048193 // INT_MAX - INT_MAX/SIZE + 1
  
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */
@@ -73,30 +70,35 @@ int getCell (int graph[SIZE][SIZE], int u, int i) {
 }
 
 void dijkstra (int graph[SIZE][SIZE], int src, int *dist, int *prev) {
-    int* pq = init(SIZE);
+    Item* temp = (Item*) mallocN(sizeof(Item));
+    int* keys = mallocN (SIZE * sizeof (int));
+    PQ* pq = pq_make(SIZE); 
     int i, j, u, cost;
     for (i = 0; i < SIZE; i++) {
         dist[i] = INF;  // Best-known distance from src to i
         prev[i] = INF;  // Last vertex visited before i
-        push(i, INF, pq);  // Everybody goes in the queue  
+        keys[i] = pq_insert_nc(pq, INF, i); // Insert everyone, plus store keys locally
     }
     dist[src] = 0;
     prev[src] = src;
-    adjustWeight(src, 0, pq); // special values for src
-    while (!pq_emp(SIZE, INF, pq)) {
-        u = popMin(SIZE, INF, pq);  // src -> u is optimal. relax u's neighbors, then done with u.
+    pq_edit_priority(pq, keys[src], 0); // special value for src
+    while (pq_size(pq) > 0) {
+        pq_remove_min_nc(pq, temp);
+        u = temp->data; // src -> u is optimal. relax u's neighbors, then done with u.
         for (i = 0; i < SIZE; i++) {
             cost = getCell(graph, u, i); 
             if (cost < INF) { // i.e. node i is a neighbor of mine
                 if (dist[i] > dist[u] + cost) {  // if we can improve the best-known dist from src to i
                     dist[i] = dist[u] + cost;  // improve it
                     prev[i] = u;  // note that we got there via 'u'
-                    adjustWeight(i, dist[i], pq); // and stash the improvement in the PQ
+                    pq_edit_priority(pq, keys[i], dist[i]); // and stash the improvement in the PQ
                 }
             }
         }
     }
-    freePQ(pq);
+    freeN (temp);
+    pq_free (pq);
+    freeN (keys);
     return;
 }
 
