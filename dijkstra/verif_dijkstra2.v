@@ -1,5 +1,4 @@
 Require Import CertiGraph.graph.SpaceAdjMatGraph2.
-Require Export CertiGraph.priq.is_empty_lemmas.
 Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
@@ -227,32 +226,7 @@ Section DijkstraProof.
              @SpaceAdjMatGraph size CompSpecs sh id g
                                (pointer_val_val graph_ptr);
              free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
-  
-
-  Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
-  Proof.
-    start_function.
-    pose proof (size_further_restricted g).
-    rename H2 into Hsz.
-    unfold SpaceAdjMatGraph, SpaceAdjMatGraph'.
-    rewrite <- size_eq.
-    assert (0 <= u * size + i < size * size). {
-      split.
-      - apply Z.add_nonneg_nonneg; try ulia.
-        apply Z.mul_nonneg_nonneg; try ulia.
-      - replace size with (size - 1 + 1) at 2 by lia.
-        rewrite Z.mul_add_distr_r, Z.mul_1_l.
-        apply Z.add_le_lt_mono; try ulia.
-        apply Zmult_le_compat_r; ulia.
-    }
-    assert (0 <= u * size + i <
-            Zlength (map Int.repr (@graph_to_list size g id))). {
-      rewrite Zlength_map, (graph_to_list_Zlength _ _ size); ulia.
-    } 
-    forward. forward. entailer!. f_equal. f_equal.
-    apply graph_to_list_to_mat; ulia.
-  Qed.
-  
+    
   (* DIJKSTRA PROOF BEGINS *)
   Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
   Proof.
@@ -836,4 +810,28 @@ Section DijkstraProof.
         intros. destruct (H2 _ H10) as [? _]; trivial.
   Qed.
 
+  Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
+  Proof.
+    start_function.
+    pose proof (size_further_restricted g).
+    rename H2 into Hsz.
+    unfold SpaceAdjMatGraph, SpaceAdjMatGraph'.
+    rewrite <- size_eq.
+    assert (0 <= u * size + i < size * size). {
+      split.
+      - apply Z.add_nonneg_nonneg; try ulia.
+        apply Z.mul_nonneg_nonneg; try ulia.
+      - replace size with (size - 1 + 1) at 2 by lia.
+        rewrite Z.mul_add_distr_r, Z.mul_1_l.
+        apply Z.add_le_lt_mono; try ulia.
+        apply Zmult_le_compat_r; ulia.
+    }
+    assert (0 <= u * size + i <
+            Zlength (map Int.repr (@graph_to_list size g id))). {
+      rewrite Zlength_map, (graph_to_list_Zlength _ _ size); ulia.
+    } 
+    forward. forward. entailer!. f_equal. f_equal.
+    apply graph_to_list_to_mat; ulia.
+  Qed.
+  
 End DijkstraProof.

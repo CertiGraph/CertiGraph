@@ -228,56 +228,6 @@ Section DijkstraProof.
                                (pointer_val_val graph_ptr);
              free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
-
-  Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
-  Proof.
-    start_function.
-    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
-    assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
-      unfold graph_to_mat, vert_to_list.
-      rewrite Znth_map; repeat rewrite Zlength_map.
-      all: rewrite nat_inc_list_Zlength; lia.
-    }
-    assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_mat size g id)))) by lia.
-    assert (0 <= i < Zlength (Znth u (@graph_to_mat size g id))). {
-      rewrite Zlength_map in H1. lia.
-    }
-    Intros.
-    freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
-    unfold list_rep.
-    assert_PROP (force_val
-                   (sem_add_ptr_int
-                      tint
-                      Signed
-                      (force_val
-                         (sem_add_ptr_int
-                            (tarray tint size)
-                            Signed
-                            (pointer_val_val graph_ptr)
-                            (Vint (Int.repr u))))
-                      (Vint (Int.repr i))) =
-                 field_address
-                   (tarray tint size)
-                   [ArraySubsc i]
-                   (@list_address
-                      size
-                      CompSpecs
-                      (pointer_val_val graph_ptr)
-                      u)). {
-      entailer!.
-      unfold list_address. simpl.
-      rewrite field_address_offset.
-      1: { rewrite offset_offset_val; simpl; f_equal.
-           rewrite Z.add_0_l. f_equal. lia. }            
-      destruct H5 as [? [? [? [? ?]]]]. 
-      unfold field_compatible; split3; [| | split3]; simpl; auto.
-    }
-    forward. forward. thaw FR.
-    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
-    entailer!.
-  Qed.
-
-  
   (* DIJKSTRA PROOF BEGINS *)
 
   Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
@@ -861,6 +811,54 @@ Section DijkstraProof.
         forward.
         Exists prev dist popped. entailer!.
         intros. destruct (H2 _ H10) as [? _]; trivial.
+  Qed.
+
+  Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
+  Proof.
+    start_function.
+    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
+    assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
+      unfold graph_to_mat, vert_to_list.
+      rewrite Znth_map; repeat rewrite Zlength_map.
+      all: rewrite nat_inc_list_Zlength; lia.
+    }
+    assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_mat size g id)))) by lia.
+    assert (0 <= i < Zlength (Znth u (@graph_to_mat size g id))). {
+      rewrite Zlength_map in H1. lia.
+    }
+    Intros.
+    freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
+    unfold list_rep.
+    assert_PROP (force_val
+                   (sem_add_ptr_int
+                      tint
+                      Signed
+                      (force_val
+                         (sem_add_ptr_int
+                            (tarray tint size)
+                            Signed
+                            (pointer_val_val graph_ptr)
+                            (Vint (Int.repr u))))
+                      (Vint (Int.repr i))) =
+                 field_address
+                   (tarray tint size)
+                   [ArraySubsc i]
+                   (@list_address
+                      size
+                      CompSpecs
+                      (pointer_val_val graph_ptr)
+                      u)). {
+      entailer!.
+      unfold list_address. simpl.
+      rewrite field_address_offset.
+      1: { rewrite offset_offset_val; simpl; f_equal.
+           rewrite Z.add_0_l. f_equal. lia. }            
+      destruct H5 as [? [? [? [? ?]]]]. 
+      unfold field_compatible; split3; [| | split3]; simpl; auto.
+    }
+    forward. forward. thaw FR.
+    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
+    entailer!.
   Qed.
 
 End DijkstraProof.
