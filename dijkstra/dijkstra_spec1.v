@@ -93,6 +93,4 @@ Section DijkstraSpec.
                        pq_edit_priority_spec;
                        pq_free_spec]).
 
-
-
 End DijkstraSpec.
