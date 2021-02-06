@@ -62,25 +62,25 @@ A second C-semantics issue is the potential for overflow within \texttt{LEFT\_CH
 At the algorithmic level, both the \texttt{swim} and \texttt{sink} functions involve nontrivial loop invariants; \texttt{sink} is complicated by the further need to support Floyd's \texttt{heapify}, during which a large portion of the array is unordered.  Accordingly, we build Gallina models of both functions and show that they restore heap order given a mostly-ordered input heap.  There are two different versions of ``mostly-ordered''. Specifically, \texttt{swim} uses a ``bottom-up'' version:
 \begin{lstlisting}[firstnumber=5]
 Definition weak_heapOrdered2 (L : list A) (j : nat) : Prop :=
- (forall i b, i <> j -> nth_error L i = Some b ->
-   forall a, nth_error L (parent i) = Some a -> a <<= b) /\
+ ($\forall$ i b, i $\neq$ j $\rightarrow$ nth_error L i = Some b $\rightarrow$
+   $\forall$ a, nth_error L (parent i) = Some a $\rightarrow$ a $\preceq$ b) $\wedge$
  (grandsOk L j root_idx).
 \end{lstlisting}
 whereas \texttt{sink} uses a ``top-down'' version:
 \begin{lstlisting}[firstnumber=last]
 Definition weak_heapOrdered_bounded (L:list A) (k:nat) (j:nat) :=
- (forall i a, i >= k -> i <> j -> nth_error L i = Some a ->
-  (forall b, nth_error L (left_child i) = Some b -> a <<= b) /\
-  (forall c, nth_error L (right_child i) = Some c -> a <<= c)) /\
+ ($\forall$ i a, i $\ge$ k $\rightarrow$ i $\neq$ j $\rightarrow$ nth_error L i = Some a $\rightarrow$
+  ($\forall$ b, nth_error L (left_child i) = Some b $\rightarrow$ a $\preceq$ b) $\wedge$
+  ($\forall$ c, nth_error L (right_child i) = Some c $\rightarrow$ a $\preceq$ c)) $\wedge$
  (grandsOk L j k).
 \end{lstlisting}
 The parameter \texttt{j} indicates a ``hole'', at which the heap may not be heap-ordered; \texttt{grandsOk} bridges this hole by
 ordering the parent and the children of \texttt{j}:
 \begin{lstlisting}
 Definition grandsOk (L : list A) (j : nat) (k : nat) : Prop :=
-  j <> root_idx -> parent j >= k ->
-    forall gs bb, parent gs = j -> nth_error L gs = Some bb ->
-      forall a, nth_error L (parent j) = Some a -> a <<= bb.
+  j $\neq$ root_idx $\rightarrow$ parent j $\geq$ k $\rightarrow$
+    $\forall$ gs bb, parent gs = j $\rightarrow$ nth_error L gs = Some bb $\rightarrow$
+      $\forall$ a, nth_error L (parent j) = Some a $\rightarrow$ a $\preceq$ bb.
 \end{lstlisting}
 The parameter \texttt{k} is used to support Floyd's \texttt{heapify}: it bounds the portion of the list in which elements are heap-ordered (with the exception of \texttt{j}).  The proofs that the Gallina \texttt{swim} and \texttt{sink} can restore (bounded) heap-orderedness involve a number of edge cases, but given the above definitions go through.  The invariants of the~C~versions of \texttt{swim} and \texttt{sink} are stated via the associated
 Gallina versions, thereby delegating all heap-ordering proofs to the Gallina versions.

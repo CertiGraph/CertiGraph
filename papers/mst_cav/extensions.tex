@@ -248,10 +248,10 @@ We proceed:
 \lstset{style=CoqStyle}
 \begin{lstlisting}
 Definition uforest g :=
- ($\forall$ e, evalid g e -> strong_evalid g e) $/|$
+ ($\forall$ e, evalid g e $\rightarrow$ strong_evalid g e) $/|$
  ($\forall$ p l, $\lnot$ucycle g p l).
 Definition spanning g g' :=
- $\forall$ u v, connected g u v <-> connected g' u v.
+ $\forall$ u v, connected g u v $\leftrightarrow$ connected g' u v.
 Definition spanning_uforest f g :=
   is_partial_graph f g $/|$ uforest f $/|$ spanning f g.
 \end{lstlisting}
