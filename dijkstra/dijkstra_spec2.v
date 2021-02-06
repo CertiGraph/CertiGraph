@@ -2,7 +2,8 @@ Require Import CertiGraph.graph.SpaceAdjMatGraph2.
 Require Import CertiGraph.dijkstra.dijkstra_env.
 
 (* A separate file with the underlying PQ spec-ed out *)
-Require Export CertiGraph.priq.priq_arr_specs.
+Require Export CertiGraph.binheap.binary_heap_malloc_spec.	
+Require Export CertiGraph.binheap.spec_binary_heap_pro.
 
 (* Dijkstra-specific imports *)
 Require Import CertiGraph.dijkstra.MathDijkGraph.
@@ -80,14 +81,16 @@ Section DijkstraSpec.
           data_at Tsh (tarray tint size) (map Vint (map Int.repr dist)) (pointer_val_val dist_ptr)).
   
   Definition Gprog : funspecs :=
-    ltac:(with_library prog
-                       [(@init_spec size _);
-                       (@push_spec size inf _);
-                       (@pq_emp_spec size inf _);
-                       (@adjustWeight_spec size inf _);
-                       (@popMin_spec size inf Z_EqDec _);
-                       freePQ_spec;
+    ltac:(with_library prog [
                        getCell_spec;
-                       dijkstra_spec]).
+                       dijkstra_spec;
+                       mallocN_spec;
+                       freeN_spec;
+                       pq_remove_min_nc_spec;
+                       pq_insert_nc_spec; 
+                       pq_size_spec;
+                       pq_make_spec;
+                       pq_edit_priority_spec;
+                       pq_free_spec]).
 
 End DijkstraSpec.
