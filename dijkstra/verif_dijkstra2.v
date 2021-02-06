@@ -94,13 +94,14 @@ Section DijkstraProof.
                      (tarray tint size)
                      (map Vint (map Int.repr dist))
                      (pointer_val_val dist_ptr);
-             @SpaceAdjMatGraph size CompSpecs sh id g  
+             @SpaceAdjMatGraph size CompSpecs sh id g
                                (pointer_val_val graph_ptr);
              free_tok (pointer_val_val priq_ptr) (sizeof tint * size)).
   
-  Definition dijk_forloop_break_inv (g: @DijkGG size inf) sh
-                                    src dist_ptr prev_ptr priq_ptr
-                                    graph_ptr :=
+  Definition dijk_forloop_break_inv
+             (g: @DijkGG size inf) sh
+             src dist_ptr prev_ptr
+             priq_ptr graph_ptr :=
     EX prev: list V,
     EX priq: list Z,
     EX dist: list Z,
@@ -253,7 +254,6 @@ Section DijkstraProof.
   Qed.
   
   (* DIJKSTRA PROOF BEGINS *)
-  
   Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
   Proof.
     start_function.
@@ -837,4 +837,3 @@ Section DijkstraProof.
   Qed.
 
 End DijkstraProof.
-                                   
