@@ -466,11 +466,21 @@ Definition keys_valid (h : list heap_item) :=
 Definition proj_keys h :=
   map heap_item_key (heap_items h).
 
+Definition proj_payloads h :=
+  map heap_item_payload (heap_items h).
+
 Lemma proj_keys_Zlength: forall h,
     Zlength (proj_keys h) = heap_size h.
 Proof.
   intros. unfold proj_keys, heap_size. now rewrite Zlength_map.
 Qed.
+
+Definition keys_dist_linked_correctly i keys dist h :=
+  forall k,
+    Znth i keys = k ->
+    find_item_by_key (heap_items h) k =
+    [(k, Znth i dist, Int.repr i)] \/
+    ~ In k (proj_keys h).
 
 Lemma Subsequence_In: forall A (l1 l2 : list A),
   Subsequence l1 l2 ->
@@ -875,9 +885,10 @@ Proof.
 Qed.
 
 Lemma valid_heap_NoDup_keys: forall p h,
-  valid_pq p h |-- !!(NoDup (map heap_item_key (heap_items h))).
+    valid_pq p h |-- !!(NoDup (proj_keys h)).
 Proof.
-  intros. unfold valid_pq, linked_heap_array. Intros arr junk arr2 lookup. entailer!.
+  intros. unfold valid_pq, linked_heap_array, proj_keys.
+  Intros arr junk arr2 lookup. entailer!.
   destruct H3. clear H4 H5.
   apply NoDup_nth_error. intros.
   remember (nth_error (map heap_item_key (heap_items h)) i). destruct o. 
@@ -1051,6 +1062,45 @@ Proof.
   simpl. case Z.eq_dec; intro; simpl. subst k1. split; trivial.
   case Z.eq_dec; auto; intro; simpl. contradiction.
   case Z.eq_dec; simpl; split; auto.
+Qed.
+
+Lemma update_pri_by_key_keys_unaffected:
+  forall l key newpri,
+    map heap_item_key (update_pri_by_key l key newpri) = map heap_item_key l.
+Proof.
+  intros. induction l; trivial.
+  simpl. rewrite IHl. f_equal.
+  unfold update_pri_by_key, update_pri_if_key, heap_item_key.
+  destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
+Qed.
+
+Lemma update_pri_by_key_payloads_unaffected:
+  forall l key newpri,
+    map heap_item_payload (update_pri_by_key l key newpri) = map heap_item_payload l.
+Proof.
+  intros. induction l; trivial.
+  simpl. rewrite IHl. f_equal.
+  unfold update_pri_by_key, update_pri_if_key, heap_item_payload, heap_item_key.
+  destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
+Qed.
+
+Lemma In_update_pri_by_key: forall i L k np,
+    In i (update_pri_by_key L k np) ->
+    (In i L /\ heap_item_key i <> k) \/
+    (exists oi, In oi L /\ 
+                heap_item_key i = k /\ 
+                heap_item_payload i = heap_item_payload oi /\ 
+                heap_item_key i = heap_item_key oi /\
+                heap_item_priority i = np).
+Proof.
+  intros.
+  unfold update_pri_by_key in H.
+  rewrite in_map_iff in H. destruct H as [oi [? ?]].
+  revert H. unfold update_pri_if_key. case Z.eq_dec; intros.
+  2: left; subst; auto.
+  right. exists oi. split; trivial. subst i.
+  unfold heap_item_key, heap_item_payload, heap_item_priority in *.
+  simpl. tauto.
 Qed.
 
 (*
