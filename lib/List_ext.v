@@ -59,6 +59,15 @@ Proof.
 unfold incl; intros. apply (Permutation_in (l:=l1)); auto.
 Qed.
 
+Lemma Permutation_cons_In: forall {A} (l1 l2: list A) a,
+    Permutation l1 (a :: l2) -> In a l1.
+Proof.
+  intros.
+  pose proof (in_eq a l2).
+  apply Permutation_sym in H.
+  apply (Permutation_in _ H); trivial.
+Qed.
+
 Lemma In_tail: forall A (a : A) L, In a (tl L) -> In a L.
 Proof. induction L; simpl; auto. Qed.
 

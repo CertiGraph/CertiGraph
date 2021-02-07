@@ -47,7 +47,15 @@ Section DijkstraMathLemmas.
     simpl in H0. lia.
   Qed.
 
-  (** MISC HELPER LEMMAS **)
+  Lemma Int_signed_strip:
+    forall a b, Int.signed a = Int.signed b -> a = b.
+  Proof.
+    intros.
+    pose proof (Int.signed_eq a b). unfold zeq in H0.
+    destruct (Z.eq_dec (Int.signed a) (Int.signed b)).
+    simpl in H0. apply int_eq_e; trivial.
+    exfalso. apply n. trivial.
+  Qed.
 
   (* Four Dijkstra-specific path-cost lemmas *)
     Lemma path_cost_app_cons:
@@ -109,7 +117,6 @@ Section DijkstraMathLemmas.
     rewrite Z.mod_small in H1; trivial.
     pose proof (Int.eqm_small_eq _ _ H1 H H0); trivial.
   Qed.
-
 
   Lemma popped_noninf_has_path:
     forall (g: @DijkGG size inf) mom src popped prev (dist: list Z),

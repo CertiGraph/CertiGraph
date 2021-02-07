@@ -17,97 +17,19 @@ Section DijkstraProof.
   Context {size: Z}.
   Context {inf: Z}.
   Context {Z_EqDec : EquivDec.EqDec Z eq}.
+
+  Definition src_picked_first h src (popped: list V) :=
+    0 < Zlength (heap_items h) ->
+    popped = [] ->
+    forall min_item,
+      In min_item (heap_items h) ->
+      Forall (cmp_rel min_item) (heap_items h) ->
+      src = Int.signed (heap_item_payload min_item).
   
-  Lemma Permutation_cons_In: forall {A} (l1 l2: list A) a,
-      Permutation l1 (a :: l2) -> In a l1.
-  Proof.
-    intros.
-    pose proof (in_eq a l2).
-    apply Permutation_sym in H.
-    apply (Permutation_in _ H); trivial.
-  Qed.
+  Definition in_heap_or_popped (popped: list V) (h: heap) :=
+    forall i_item,
+      (In (Int.signed (heap_item_payload i_item)) popped -> ~ In i_item (heap_items h)).
 
-  Lemma update_pri_by_key_keys_unaffected:
-  forall l key newpri,
-    map heap_item_key (update_pri_by_key l key newpri) = map heap_item_key l.
-  Proof.
-    intros. induction l; trivial.
-    simpl. rewrite IHl. f_equal.
-    unfold update_pri_by_key, update_pri_if_key, heap_item_key.
-    destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
-  Qed.
-  
-  Lemma update_pri_by_key_payloads_unaffected:
-  forall l key newpri,
-    map heap_item_payload (update_pri_by_key l key newpri) = map heap_item_payload l.
-  Proof.
-    intros. induction l; trivial.
-    simpl. rewrite IHl. f_equal.
-    unfold update_pri_by_key, update_pri_if_key, heap_item_payload, heap_item_key.
-    destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
-  Qed.
-  
-  Lemma Int_signed_strip:
-    forall a b, Int.signed a = Int.signed b -> a = b.
-  Proof.
-    intros.
-    pose proof (Int.signed_eq a b). unfold zeq in H0.
-    destruct (Z.eq_dec (Int.signed a) (Int.signed b)).
-    simpl in H0. apply int_eq_e; trivial.
-    exfalso. apply n. trivial.
-  Qed.
-  (* why was that so awful? *)
-
-  Lemma In_update_pri_by_key: forall i L k np,
-      In i (update_pri_by_key L k np) ->
-      (In i L /\ heap_item_key i <> k) \/
-      (exists oi, In oi L /\ 
-                  heap_item_key i = k /\ 
-                  heap_item_payload i = heap_item_payload oi /\ 
-                  heap_item_key i = heap_item_key oi /\
-                  heap_item_priority i = np).
-  Proof.
-    intros.
-    unfold update_pri_by_key in H.
-    rewrite in_map_iff in H. destruct H as [oi [? ?]].
-    revert H. unfold update_pri_if_key. case Z.eq_dec; intros.
-    2: left; subst; auto.
-    right. exists oi. split; trivial. subst i.
-    unfold heap_item_key, heap_item_payload, heap_item_priority in *.
-    simpl. tauto.
-  Qed.
-
-
-  Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell
-                                 (@getCell_spec size inf).
-  Proof.
-    start_function.
-    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
-    assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
-      unfold graph_to_mat, vert_to_list.
-      rewrite Znth_map; repeat rewrite Zlength_map.
-      all: rewrite nat_inc_list_Zlength; lia.
-    }
-    assert (0 <= i < Zlength (map Int.repr
-                                  (Znth u (@graph_to_mat size g id)))) by lia.
-    assert (0 <= i < Zlength (Znth u (@graph_to_mat size g id))). {
-      rewrite Zlength_map in H1. lia.
-    }
-    Intros.
-    freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
-    unfold list_rep.
-    forward. forward. forward. thaw FR.
-    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
-    cancel.
-  Qed.
-
-  Definition keys_dist_linked_correctly i keys dist h :=
-    forall k,
-      Znth i keys = k ->
-      find_item_by_key (heap_items h) k =
-      [(k, Znth i dist, Int.repr i)] \/
-      ~ In k (proj_keys h).
-  
   Definition dijk_setup_loop_inv g sh src dist_ptr
              prev_ptr priq_ptr keys_ptr temp_ptr arr addresses :=
     EX i : Z,
@@ -116,7 +38,6 @@ Section DijkstraProof.
     EX dist_and_prev : list int,
     PROP (heap_capacity h = size;
          heap_size h = i;
-         (* Permutation keys (proj_keys h); *)
          forall j,
            0 <= j < i ->
            keys_dist_linked_correctly j keys dist_and_prev h;
@@ -191,17 +112,6 @@ Section DijkstraProof.
         free_tok (pointer_val_val keys_ptr) (size * sizeof tint);
         free_tok (pointer_val_val temp_ptr) (sizeof (Tstruct _structItem noattr))).
 
-  Definition src_picked_first h src (popped: list V) :=
-    0 < Zlength (heap_items h) ->
-    popped = [] ->
-    forall min_item,
-      In min_item (heap_items h) ->
-      Forall (cmp_rel min_item) (heap_items h) ->
-      src = Int.signed (heap_item_payload min_item).
-  
-  Definition in_heap_or_popped (popped: list V) (h: heap) :=
-    forall i_item,
-      (In (Int.signed (heap_item_payload i_item)) popped -> ~ In i_item (heap_items h)).
 
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src keys
              dist_ptr prev_ptr keys_ptr priq_ptr graph_ptr temp_ptr addresses :=
@@ -217,7 +127,6 @@ Section DijkstraProof.
 
       popped <> [] -> In src popped;
       heap_capacity h = size;
-      (* Permutation keys (proj_keys h); *)
       
       forall i,
         vvalid g i ->
@@ -227,26 +136,6 @@ Section DijkstraProof.
 
       in_heap_or_popped popped h;      
 
-      (* TODO:
-         commenting out the two below for now, but I'll have to see
-         if I need some new versions of these in the proofs later on *)
-
-      (* A fact about the relationship b/w
-         the priq and popped arrays *)
-      (*
-      forall v,
-        vvalid g v ->
-        In v popped <-> Znth v priq = Z.add inf 1;
-       *)
-      
-      (* A fact about the relationship b/w 
-         dist and priq arrays *)
-      (*
-      forall dst, vvalid g dst ->
-                  ~ In dst popped ->
-                  Znth dst priq = Znth dst dist;
-       *)
-      
       (* Information about the ranges of the three arrays *)
       @inrange_prev size inf prev;
       @inrange_dist inf dist;
@@ -393,30 +282,14 @@ Section DijkstraProof.
            
       (* a useful fact about u *)
       In u popped';
-
-      (*
-      (* A fact about the relationship b/w 
-         priq and popped arrays *)
-      forall v,
-        vvalid g v ->
-        In v popped' <-> Znth v priq' = Z.add inf 1;
-      
-      (* A fact about the relationship b/w 
-         dist and priq arrays *)
-      forall dst,
-        vvalid g dst ->
-        ~ In dst popped' ->
-        Znth dst priq' = Znth dst dist';
-       *)
       
       (* the lengths of the threee arrays *)
       Zlength dist' = size;
       Zlength prev' = size;
       heap_capacity h' = size;
                                                            
-      (* and ranges of the three arrays *)
+      (* and ranges of the two arrays *)
       @inrange_prev size inf prev';
-      (* @inrange_priq inf priq'; *)
       @inrange_dist inf dist';
 
       forall i,
@@ -1846,7 +1719,29 @@ Section DijkstraProof.
         intros. destruct (H7 _ H15) as [? _]; trivial.
   Time Qed.
 
-  (* Print Assumptions body_dijkstra. *)
+  
+  Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell
+                                 (@getCell_spec size inf).
+  Proof.
+    start_function.
+    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
+    assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
+      unfold graph_to_mat, vert_to_list.
+      rewrite Znth_map; repeat rewrite Zlength_map.
+      all: rewrite nat_inc_list_Zlength; lia.
+    }
+    assert (0 <= i < Zlength (map Int.repr
+                                  (Znth u (@graph_to_mat size g id)))) by lia.
+    assert (0 <= i < Zlength (Znth u (@graph_to_mat size g id))). {
+      rewrite Zlength_map in H1. lia.
+    }
+    Intros.
+    freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
+    unfold list_rep.
+    forward. forward. forward. thaw FR.
+    rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
+    cancel.
+  Qed.
 
 
 End DijkstraProof.

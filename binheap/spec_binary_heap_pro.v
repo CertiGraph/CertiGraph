@@ -110,7 +110,7 @@ Definition pq_insert_nc_spec :=
   POST [tuint]
   EX h' : heap, EX key : Z,
     PROP (heap_capacity h = heap_capacity h';
-          Permutation ((key, Int.repr priority, data) :: heap_items h) (heap_items h'))
+          Permutation (((key, Int.repr priority, data): heap_item) :: heap_items h) (heap_items h'))
     LOCAL (temp ret_temp (Vint (Int.repr key)))
     SEP (valid_pq pq h').
 
