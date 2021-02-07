@@ -15,7 +15,7 @@
 /*   Dijkstra's Algorithm to find the shortest path   */
 /*  from a single source to all possible destinations */
 /*  This implementation uses a noncontiguous matrix   */
-/* ************************************************** */
+/* ************************************************** */ 
 
 /* *************************** */
 /* Setting up a random problem */
