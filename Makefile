@@ -176,9 +176,9 @@ vstandme7:
 vstandme3:
 	cd $(VST_DIR) && make $(VST_CRITICAL_FILES:%.v=%.vo) -j3 && cd - && make -j3
 
-.PHONY: mst
-mst:
-	make priq/verif_priq_arr.vo \
+.PHONY: cav
+cav:
+	make binheap/verif_binary_heap.vo binheap/verif_binary_heap_pro.vo \
 	prim/verif_prim1.vo prim/verif_prim2.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo \
 	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
 	kruskal/verif_sort.v kruskal/verif_kruskal_edgelist.vo -kj7
