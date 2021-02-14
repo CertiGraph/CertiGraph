@@ -35,3 +35,4 @@ poster.run.xml
 *.key
 sumlist.c
 sumlist.v
+*.*.gz
