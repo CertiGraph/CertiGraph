@@ -17,6 +17,7 @@
 \usepackage{stmaryrd}
 \usepackage[absolute,overlay]{textpos}
 \usepackage[export]{adjustbox} % for subfigures
+\usepackage[normalem]{ulem} % for strikeout
 
 \definecolor{lightg}{RGB}{217,232,225}
 \definecolor{darkg}{RGB}{6,81,42}
@@ -59,7 +60,7 @@
 \newcommand{\wand}{%
  \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
   \mathord{-}\hspace*{-0.36em}\mathord{\scon}$\hspace*{-0.005em}}}}
-\newcommand{\defeq}{\mathbin{\overset{\mathrm{def}}{=}}}
+\newcommand{\defeq}{\mathbin{\stackrel{\Delta}{=}}}
 \newcommand{\emphd}[1]{{\bfseries #1}}
 \newcommand{\emphr}[2]{\alert<#1>{#2}}
 \newcommand{\bracket}[1]{[#1]}
@@ -81,7 +82,7 @@
 \AtBeginSection[]
 {
   \begin{frame}
-    \frametitle{This Work}
+    \frametitle{Outline}
     \tableofcontents[currentsection]
   \end{frame}
 }
@@ -103,7 +104,12 @@
   \titlepage
 \end{frame}
 
-\begin{frame}{Motivation: A Precondition for Dijkstra}
+\begingroup
+    \AtBeginSection[]{}
+\section{CertiGraph: Motivation and Overview}
+\endgroup
+
+\begin{frame}{Motivation: A precondition for Dijkstra}
 
 Longest optimal path has \texttt{size-1} links \\
 \pause so $0 \le \texttt{elabel}(\gamma, \m{e}) \le \lfloor\texttt{MAX/(size-1)}\rfloor$ 
@@ -239,7 +245,7 @@ $\lfloor\texttt{MAX/size}\rfloor$ \texttt{ * (size-1) = MAX - }$\lfloor\texttt{M
 }
 \end{frame}
 
-\begin{frame}{Motivation: A Precondition for Dijkstra}
+\begin{frame}{Motivation: A precondition for Dijkstra}
 
 There are many ways to fix this!
 \\ \hspace{1em} Refactor troublesome addition as subtraction
@@ -253,10 +259,7 @@ and bugs such as this one are often overlooked
 
 \end{frame}
 
-\begingroup
-    \AtBeginSection[]{}
-\section{CertiGraph}
-\begin{frame}{CertiGraph: Problem Scope}
+\begin{frame}{CertiGraph: problem scope}
 \includegraphics[scale=0.09]{vst_logo}
 \hspace{2em} \includegraphics[scale=0.12]{compcert_logo}
 \hspace{2em} \includegraphics[scale=0.2]{paper_screen}
@@ -270,14 +273,12 @@ VST + CompCert + \underline{CertiGraph}
 \\\hspace{1em}expressed with mathematical graphs
 
 \end{frame}
-\endgroup
 
-
-\begin{frame}{CertiGraph: Workflow}
+\begin{frame}{CertiGraph: workflow}
   \input{workflow.tex}
 \end{frame}
 
-\begin{frame}{CertiGraph: Math Graph Architecture}
+\begin{frame}{CertiGraph: math graph architecture}
   
 \centering
 \colorbox{lightg}{\scalebox{.85}{\input{architecture.tex}}}
@@ -288,95 +289,102 @@ VST + CompCert + \underline{CertiGraph}
 \texttt{sound})
 \end{frame}
 
+\begin{frame}
+\frametitle{Outline}
+\tableofcontents
+\end{frame}
+
 \section{Mathematical Adjacency Matrices}
+
+\begin{frame}{Constraining a representable graph}
+What graphs are representable as adjacency matrices? \\
+\pause \bigskip
+\vspace{-2em}
+\begin{align*}
+\Big(\hspace{0.5em}\mathcal{V}&=\mathbb{Z}, \\
+\mathcal{E}&=\mathcal{V} \times \mathcal{V}, \\
+\texttt{vvalid}&=\lambda v.~0 \le v < \texttt{size}, \\ 
+\texttt{evalid}&=\ldots, \\
+\texttt{src}&=\m{fst}, \\
+\texttt{dst}&=\m{snd}, \\
+\texttt{vlabel}&=\ldots, \\
+\texttt{elabel}&=\ldots, \\
+\alert{\texttt{sound}}&=\alert{\texttt{SoundAdjMat}}\hspace{0.5em}\Big) 
+\end{align*}
+
+\end{frame}
+
+\begin{frame}[fragile]{A unified, reusable soundness condition}
+
+\begin{Verbatim}
+Class SoundAdjMat size inf g := {
+  sr: 0 < size <= MAX;
+  ir: MIN <= inf <= MAX; 
+  vm: forall v, vvalid g v <-> 0 <= v < size;
+  em: forall e, evalid g e <-> 
+                (MIN <= elabel g e <= MAX /\ 
+                 elabel g e < inf);
+  iew: forall e, ~evalid g e <-> elabel g e = inf;
+  fin: FiniteGraph g
+}.
+\end{Verbatim}
+
+\pause \bigskip
+
+Need more?
+\begin{Verbatim}
+Class SoundDijk size inf g := {
+  sadjmat: SoundAdjMat size inf g;
+  further: ...
+}
+\end{Verbatim}
+
+\end{frame}
+
 
 \section{Spatial Representations in Separation Logic}
 
+\begin{frame}{Laying out graphs in memory}
+We support three flavors of adjacency matrix: \\
+\hspace{1em}stack-allocated 2D~array \texttt{int~graph[size][size]} \\
+\hspace{1em}stack-allocated 1D~array \texttt{int~graph[size$\times$size]} \\
+\hspace{1em}heap-allocated 2D~array \texttt{int~**graph}
+
+\bigskip \pause
+The first, in memory: 
+\vspace{-0.8em}
+\begin{equation*}
+\begin{split}
+\m{arr\_addr} (\m{ptr}, \m{i},\texttt{size}) \defeq~&
+  \m{ptr} + (\m{i} \times \hide{\texttt{sizeof}(\texttt{int}) \times} \texttt{size}) \\
+\mathsf{array}(\m{ptr},\m{list}) \defeq~& \underset{\m{i}\hspace{0.1em} \in [0, \lvert\m{list}\rvert)}{\bigstar} (\m{ptr} + \m{i}) \mapsto \m{list}[\m{i}]) \\
+\p{arr\_rep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
+&\mathsf{array}(\m{arr\_addr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
+\vspace{1em}
+\p{adjmat\_rep}(\gamma, \m{g\_addr}, \_) \defeq~& \underset{\m{v}\hspace{0.1em} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
+\end{split}
+\end{equation*}
+
+\end{frame}
+
+
 \section{Shortest Path: Dijkstra}
 
-\section{Undirectedness in a Directed World}
+\begin{frame}[fragile]{\texttt{SoundDijk} and Spatial Representation of DijkGraph}
+\begin{Verbatim}
+Class SoundDijk size inf g := {
+  sadjmat: SoundAdjMat size inf g;
+  veb: forall e, evalid g e ->
+                 0 <= elabel g e <= (MAX / size) - 1;
+  ifr: (MAX / size) - 1 < inf <= MAX - (MAX / size) + 1
+}.
+\end{Verbatim}
 
-\section{Minimum Spanning Forest: Prim and Kruskal}
+\bigskip \pause
 
-\hide{
-\begin{frame}{Challenges}
-
-Using CompCert C, which 
-\\ \hspace{1em} is executable and realistic 
-\\ \hspace{1em} but has real-world complications
-
-\bigskip
-
-Aiming for full functional correctness
-
-\bigskip
-
-Maintaining modularity and reuse
-\end{frame}
-}%end hide
-
-\begin{frame}{Instantiating DijkGraph}
-A PreGraph is a hextuple (\texttt{VType}, \texttt{EType}, \texttt{vvalid}, \texttt{evalid}, \texttt{src}, \texttt{dst})
-\vspace{-1.5em}
-\begin{flushleft}
-\begin{equation*}
-\begin{split}
-\textbf{Dijk\_PG($\gamma$) $\defeq$ \null} & \texttt{VType := Z} \\
-                    &\texttt{EType := VType * VType} \\
-                    &\texttt{src := fst} \\
-                    &\texttt{dst := snd} \\ 
-                    &\forall \m{v}.~\texttt{vvalid}(\gamma, \m{v}) \bi 0 \le \m{v} < {\sz} \\
-                    &\forall \m{s,d}.~\texttt{evalid}(\gamma, \m{(s,d)}) \bi \texttt{vvalid}(\gamma, \m{s}) \wedge \texttt{vvalid}(\gamma, \m{d})
-\end{split}
-\end{equation*}
-\end{flushleft}
-\end{frame}
-
-\begin{frame}[fragile]{Instantiating DijkGraph}
-A LabeledGraph is a quadruple (PreGraph, \texttt{VL}, \texttt{EL}, \texttt{GL})
-\vspace{-1.5em}
-\begin{flushleft}
-\begin{equation*}
-\begin{split}
-\textbf{Dijk\_LG($\gamma$) $\defeq$ \null} &\text{Dijk\_PG as shown} \\
-                  &\texttt{VL := list EL} \\
-                  &\texttt{EL := Z} \\
-                  &\texttt{GL := unit} 
-\end{split}
-\end{equation*}
-\end{flushleft}
-\end{frame}
-
-\begin{frame}[fragile]{Instantiating DijkGraph}
-A GeneralGraph adds arbitrary soundness conditions
-\vspace{-1.5em}
-\begin{flushleft}
-\begin{equation*}
-\begin{split}
-\textbf{DijkGraph($\gamma$) $\defeq$ \null} &\text{Dijk\_LG as shown, and } \\
-                    &FiniteGraph(\gamma) \wedge \null \\
-                    &\forall \m{i,j}.~\texttt{vvalid}(\gamma, \m{i}) \wedge \texttt{vvalid}(\gamma, \m{j}) \Rightarrow \\
-                    &\qquad \m{i} = \m{j} \Rightarrow \texttt{elabel}(\gamma,(\m{i},{j})) = 0 \wedge \null \\
-                    &\qquad \m{i} \neq \m{j} \Rightarrow 0 \le \texttt{elabel}(\gamma,(\m{i},{j})) \le \alert<2>{\lfloor \texttt{MAX/size} \rfloor} \wedge \null \\
-                    &\cdots
-\end{split}
-\end{equation*}
-\end{flushleft}
-\end{frame}
-
-\begin{frame}{Representing DijkGraph in Memory}
-\begin{equation*}
-\begin{split}
-\p{list\_rep}(\gamma, \m{i}) &\defeq \texttt{data\_at  array  graph2mat}(\gamma)[\m{i}] \texttt{  list\_addr}(\gamma, \m{i}) \\
-\vspace{1em}
-\p{graph\_rep}(\gamma) &\defeq \underset{\texttt{vvalid}(\gamma,\m{v})}{\bigstar} \m{v}  \mapsto\p{list\_rep}(\gamma, \m{v})
-\end{split}
-\end{equation*}
-
-\bigskip
-
-\pause 
-\quad Relies on restrictions placed at the Math level
+Nothing fancy spatially, use \p{adjmat\_rep} wholesale \\
+We verify Dijkstra 3 times: \\
+\hspace{1em}reuse math proof, 1\% fiddles in verif
 
 \end{frame}
 
@@ -567,7 +575,23 @@ $\color{OliveGreen}//~\braces{{\color{mymaroon}\exists \m{dist^{\circ}}, \m{prev
 \end{center}
 \end{frame}
 
-\begin{frame}{Prim: Extending to Undirectedness}
+\section{Undirectedness in a Directed World}
+
+\begin{frame}[fragile]{Weakening}
+
+Build undirected idioms:
+
+\begin{Verbatim}
+Definition adj_edge g e u v :=
+  ((src g e = u /\ dst g e = v) \/ 
+   (src g e = v /\ dst g e = u)).
+\end{Verbatim}
+
+Plus \texttt{upath}, \texttt{connected}, \emph{etc.}
+
+\end{frame}
+
+\begin{frame}{Extending to undirectedness}
 
 Consider the AdjMat representation of a directed graph: \\
 \centering
@@ -575,7 +599,7 @@ Consider the AdjMat representation of a directed graph: \\
 
 \end{frame}
 
-\begin{frame}{Prim: Extending to Undirectedness}
+\begin{frame}{Extending to undirectedness}
 
 Versus the AdjMat representation of an undirected graph: \\
 \centering
@@ -583,7 +607,7 @@ Versus the AdjMat representation of an undirected graph: \\
 
 \end{frame}
 
-\begin{frame}[fragile]{Prim: Extending to Undirectedness}
+\begin{frame}[fragile]{Extending to undirectedness}
 
 Prevent double-counting:
 \begin{Verbatim}
@@ -592,20 +616,16 @@ Class SoundUAdjMat (g: UAdjMatLG) := {
   undirec: forall e, evalid g e -> src g e <= dst g e;
 }.
 \end{Verbatim}
-
-\pause \bigskip
-Build undirected idioms:
-\begin{Verbatim}
-Definition adj_edge g e u v :=
-  ((src g e = u /\ dst g e = v) \/ 
-   (src g e = v /\ dst g e = u)).
-\end{Verbatim}
-Plus \texttt{upath}, \texttt{connected}, \emph{etc.}
 \end{frame}
 
 \begin{frame}{Recall: Math Graph Architecture}
   \centering
   \colorbox{lightg}{\input{architecture.tex}}
+\end{frame}
+
+\section{Minimum Spanning Forest: Prim and Kruskal}
+
+\begin{frame}{Prim: minimum spanning \sout{trees} forests}
 \end{frame}
 
 \begin{frame}{Kruskal: EdgeList Representation}
@@ -649,6 +669,7 @@ But the undirected idioms carry over
   \includegraphics[scale=0.33]{krus}
 \end{frame}
 
+\hide{
 \begin{frame}{Possible Next Steps}
 Verify PQ with \texttt{decrease-key} \\
 AdjList representation for Dijkstra, Prim \\
@@ -660,4 +681,5 @@ Bellman-Ford using EdgeList \\
 \includegraphics[scale=0.035]{sunset} \\
 \vspace{-2em}{\color{white}Thanks!}\hspace{1em}
 \end{frame}
+}%end hide
 \end{document}
