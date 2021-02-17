@@ -78,18 +78,185 @@
 \newcommand{\p}[1]{\ensuremath{\mathsf{#1}}} % predicate font
 \newcommand{\bi}{\Leftrightarrow} % equivalence of expressions
 
+\AtBeginSection[]
+{
+  \begin{frame}
+    \frametitle{This Work}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
 
-\title[Expanding CertiGraph]{Expanding CertiGraph: Dijkstra, Prim, and Kruskal}
-\author[Mohan, Leow, Hobor]{\underline{Anshuman Mohan}, Wei Xiang Leow, Aquinas Hobor}
+\setbeamertemplate{section in toc}{%
+  \inserttocsectionnumber.~\inserttocsection}
+\setbeamercolor{subsection in toc}{bg=white,fg=structure}
+\setbeamertemplate{subsection in toc}{%
+  \hspace{1.2em}{\rule[0.3ex]{3pt}{3pt}}~\inserttocsubsection\par}
+
+
+\title[Verifying Dijkstra, Prim, Kruskal]{Functional Correctness of Dijkstra's, Prim's, \\ and Kruskal's Algorithms in C}
+\author[]{\underline{Anshuman Mohan} \\ Leow Wei Xiang \\ Aquinas Hobor}
 %\institute[NUS]{\includegraphics[height=0.12\textwidth]{NUS_logo_full-horizontal.jpg}}
-  \date[Cornell PLDG]{Cornell PLDG \\ \today}
+  \date[]{Cornell PLDG \\ \today}
 
 \begin{document}
 \begin{frame}[plain]
   \titlepage
 \end{frame}
 
-\begin{frame}{Saluting the Mothership}
+\begin{frame}{Motivation: A Precondition for Dijkstra}
+
+Longest optimal path has \texttt{size-1} links \\
+\pause so $0 \le \texttt{elabel}(\gamma, \m{e}) \le \lfloor\texttt{MAX/(size-1)}\rfloor$ 
+
+\bigskip \pause
+\texttt{MAX} = 7, \texttt{size} = 3, so $0 \le \texttt{elabel}(\gamma, \m{e}) \le 3$.
+
+\bigskip
+
+{\centering
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}}]
+
+  \node at (1.5,-0.2) {3};
+  \node at (4.9,-0.2) {3};
+  \node at (6,-0.6) {3};
+
+
+\uncover<3>{
+\node at (0.3, 0.3) {\small A @ 0};
+\node at (3.7, 0.3) {\small B @ \ifty};
+\node at (6.8, 0.3) {\small C @ \ifty}; 
+  \node[vad] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);}
+ 
+\uncover<4>{
+\node at (0.3, 0.3) {\small A @ 0};
+\node at (3.7, 0.3) {\small B @ \ifty};
+\node at (6.8, 0.3) {\small C @ \ifty};  
+  \node[vad] (A) at (0,0) {};
+  \node[inv] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);}
+
+\uncover<5>{
+\node at (0.3, 0.3) {\small A @ 0};
+\node at (3.5, 0.3) {\small B @ 3};
+\node at (6.8, 0.3) {\small C @ \ifty};  
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+  }
+
+\uncover<6>{ 
+\node at (0.3, 0.3) {\small A @ 0};
+\node at (3.5, 0.3) {\small B @ 3};
+\node at (6.8, 0.3) {\small C @ \ifty};  
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[inv] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\uncover<7>{ 
+\node at (0.3, 0.3) {\small A @ 0};
+\node at (3.5, 0.3) {\small B @ 3};
+\node at (6.6, 0.3) {\small C @ 6};  
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[vad] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\uncover<8>{ 
+\node at (0.3, 0.3) {\small A @ 0};
+\node at (3.5, 0.3) {\small B @ 3};
+\node at (6.6, 0.3) {\small C @ 6};  
+\node at (5, -1.5) {if $3 > 9$ then relax C $\leadsto$ B};
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[vad] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\uncover<9>{ 
+\node at (0.3, 0.3) {\small A @ 0};
+\node at (3.5, 0.3) {\small B @ 3};
+\node at (6.6, 0.3) {\small C @ 6};  
+\node at (5, -1.5) {if $3 > \alert{1}$ then relax C $\leadsto$ B};
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[vad] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\uncover<10->{ 
+\node at (0.3, 0.3) {\small A @ 0};
+\node at (3.5, 0.3) {\small B @ \alert{1}};
+\node at (6.6, 0.3) {\small C @ 6}; 
+\node at (5, -1.5) {if $3 > 1$ then \alert{relax C $\leadsto$ B}};
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[vad] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\end{tikzpicture}
+
+}
+\hide{
+\bigskip
+
+\uncover<11->{
+One solution: Conservatively set upper bound to $\lfloor\texttt{MAX/size}\rfloor$}
+
+\bigskip
+
+\uncover<12->{
+Max path cost is then  
+$\lfloor\texttt{MAX/size}\rfloor$ \texttt{ * (size-1) = MAX - }$\lfloor\texttt{MAX/size}\rfloor$}
+}
+\end{frame}
+
+\begin{frame}{Motivation: A Precondition for Dijkstra}
+
+There are many ways to fix this!
+\\ \hspace{1em} Refactor troublesome addition as subtraction
+\\ \hspace{1em} Never look back into optimized part
+\\ \hspace{1em} Your suggestion here
+
+\bigskip
+
+\pause Sadly, intuition supports \texttt{inf = MAX} \\
+and bugs such as this one are often overlooked
+
+\end{frame}
+
+\begingroup
+    \AtBeginSection[]{}
+\section{CertiGraph}
+\begin{frame}{CertiGraph: Problem Scope}
 \includegraphics[scale=0.09]{vst_logo}
 \hspace{2em} \includegraphics[scale=0.12]{compcert_logo}
 \hspace{2em} \includegraphics[scale=0.2]{paper_screen}
@@ -98,30 +265,40 @@
 VST + CompCert + \underline{CertiGraph}
 
 \bigskip
-A Coq library to verify executable code
+\hspace{1em}Verify executable code
 \\\hspace{1em}against realistic specifications
-\\\hspace{2em}expressed with mathematical graphs
+\\\hspace{1em}expressed with mathematical graphs
 
 \end{frame}
+\endgroup
 
-\begin{frame}{This Work}
-\includegraphics[scale=0.09]{vst_logo}
-\hspace{2em} \includegraphics[scale=0.12]{compcert_logo}
-\hspace{2em} \includegraphics[scale=0.2]{paper_screen}
 
-\bigskip
-
-We verify Dijkstra, Prim, Kruskal
-
-\bigskip \pause
-
-In doing so, we:
-\\ \hspace{1em} Test existing features [Dijk labels edges]
-\\ \hspace{1em} Expand into undirectedness [Prim, Krus]
-\\ \hspace{1em} Make nontrivial calls to verified methods [Krus calls UF]
-
+\begin{frame}{CertiGraph: Workflow}
+  \input{workflow.tex}
 \end{frame}
 
+\begin{frame}{CertiGraph: Math Graph Architecture}
+  
+\centering
+\colorbox{lightg}{\scalebox{.85}{\input{architecture.tex}}}
+  
+\vspace{1em}
+($\mathcal{V}$, $\mathcal{E}$, \texttt{vvalid}, \texttt{evalid},
+\texttt{src}, \texttt{dst}, \texttt{vlabel}, \texttt{elabel}, 
+\texttt{sound})
+\end{frame}
+
+\section{Mathematical Adjacency Matrices}
+
+\section{Spatial Representations in Separation Logic}
+
+\section{Shortest Path: Dijkstra}
+
+\section{Undirectedness in a Directed World}
+
+\section{Minimum Spanning Forest: Prim and Kruskal}
+
+\hide{
 \begin{frame}{Challenges}
 
 Using CompCert C, which 
@@ -136,17 +313,7 @@ Aiming for full functional correctness
 
 Maintaining modularity and reuse
 \end{frame}
-
-\begin{frame}{Workflow}
-  \input{workflow.tex}
-\end{frame}
-
-
-\subsection{Math Graph Architecture}
-\begin{frame}{Math Graph Architecture}
-  \centering
-  \colorbox{lightg}{\input{architecture.tex}}
-\end{frame}
+}%end hide
 
 \begin{frame}{Instantiating DijkGraph}
 A PreGraph is a hextuple (\texttt{VType}, \texttt{EType}, \texttt{vvalid}, \texttt{evalid}, \texttt{src}, \texttt{dst})
@@ -399,156 +566,6 @@ $\color{OliveGreen}//~\braces{{\color{mymaroon}\exists \m{dist^{\circ}}, \m{prev
 \end{adjustbox}
 \end{center}
 \end{frame}
-
-\begin{frame}{Overflow Strikes Again}
-
-The longest optimal path has \texttt{size-1} links \\
-\hspace{1em} \pause so say we set \texttt{elabel}'s upper bound to $\lfloor\texttt{MAX/(size-1)}\rfloor$ 
-
-\bigskip \pause
-\texttt{MAX} = 7, \texttt{size} = 3, so $0 \le \texttt{elabel}(\gamma, \m{e}) \le 3$.
-
-\bigskip
-
-{\centering
-\begin{tikzpicture}
-[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
- inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
- inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
- ->/.style={thick, arrows={-Stealth}}]
-
-  \node at (1.5,-0.2) {3};
-  \node at (4.9,-0.2) {3};
-  \node at (6,-0.6) {3};
-
-
-\uncover<3>{
-\node at (0.3, 0.3) {\small A @ 0};
-\node at (3.7, 0.3) {\small B @ \ifty};
-\node at (6.8, 0.3) {\small C @ \ifty}; 
-  \node[vad] (A) at (0,0) {};
-  \node[inf] (B) [right = 3 of A] {};
-  \node[inf] (C) [right = 3 of B] {};
-  \draw [->, dashed, myred] (A) -- (B);
-  \draw [->, dashed, myred] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);}
- 
-\uncover<4>{
-\node at (0.3, 0.3) {\small A @ 0};
-\node at (3.7, 0.3) {\small B @ \ifty};
-\node at (6.8, 0.3) {\small C @ \ifty};  
-  \node[vad] (A) at (0,0) {};
-  \node[inv] (B) [right = 3 of A] {};
-  \node[inf] (C) [right = 3 of B] {};
-  \draw [->, dashed, myred] (A) -- (B);
-  \draw [->, dashed, myred] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);}
-
-\uncover<5>{
-\node at (0.3, 0.3) {\small A @ 0};
-\node at (3.5, 0.3) {\small B @ 3};
-\node at (6.8, 0.3) {\small C @ \ifty};  
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[inf] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->, dashed, myred] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
-  }
-
-\uncover<6>{ 
-\node at (0.3, 0.3) {\small A @ 0};
-\node at (3.5, 0.3) {\small B @ 3};
-\node at (6.8, 0.3) {\small C @ \ifty};  
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[inv] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->, dashed, myred] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
-}
-
-\uncover<7>{ 
-\node at (0.3, 0.3) {\small A @ 0};
-\node at (3.5, 0.3) {\small B @ 3};
-\node at (6.6, 0.3) {\small C @ 6};  
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[vad] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
-}
-
-\uncover<8>{ 
-\node at (0.3, 0.3) {\small A @ 0};
-\node at (3.5, 0.3) {\small B @ 3};
-\node at (6.6, 0.3) {\small C @ 6};  
-\node at (5, -1.5) {if $3 > 9$ then relax C $\leadsto$ B};
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[vad] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
-}
-
-\uncover<9>{ 
-\node at (0.3, 0.3) {\small A @ 0};
-\node at (3.5, 0.3) {\small B @ 3};
-\node at (6.6, 0.3) {\small C @ 6};  
-\node at (5, -1.5) {if $3 > \alert{1}$ then relax C $\leadsto$ B};
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[vad] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
-}
-
-\uncover<10->{ 
-\node at (0.3, 0.3) {\small A @ 0};
-\node at (3.5, 0.3) {\small B @ \alert{1}};
-\node at (6.6, 0.3) {\small C @ 6}; 
-\node at (5, -1.5) {if $3 > 1$ then \alert{relax C $\leadsto$ B}};
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[vad] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
-}
-
-\end{tikzpicture}
-
-}
-
-\bigskip
-
-\uncover<11->{
-One solution: Conservatively set upper bound to $\lfloor\texttt{MAX/size}\rfloor$}
-
-\bigskip
-
-\uncover<12->{
-Max path cost is then  
-$\lfloor\texttt{MAX/size}\rfloor$ \texttt{ * (size-1) = MAX - }$\lfloor\texttt{MAX/size}\rfloor$}
-\end{frame}
-
-\begin{frame}{Overflow Strikes Again}
-
-There are other ways to fix this!
-\\ \pause \hspace{1em} Refactor troublesome addition as subtraction
-\\ \pause \hspace{1em} Never look back into optimized part
-\\ \pause \hspace{1em} Your suggestion here
-\\ \pause \hspace{1em} Your suggestion here
-
-\bigskip
-
-\pause Sadly, intuition supports \texttt{inf = MAX}
-
-\end{frame}
-
 
 \begin{frame}{Prim: Extending to Undirectedness}
 
