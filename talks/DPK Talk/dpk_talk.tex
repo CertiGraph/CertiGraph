@@ -399,7 +399,7 @@ Class SoundDijk size inf g := {
   sadjmat: SoundAdjMat size inf g;
   veb: forall e, evalid g e ->
                  0 <= elabel g e <= (MAX / size) - 1;
-  ifr: (MAX / size) - 1 < inf <= MAX - (MAX / size) + 1
+  ifr: (MAX / size) - 1 < inf <= MAX - ((MAX / size) - 1)
 }.
 \end{Verbatim}
 
@@ -566,7 +566,7 @@ ${\color{OliveGreen}\braces{{\color{mymaroon}\exists \m{dist''}, \m{prev''}}.~..
 \begin{frame}[fragile]{Undirectedness in a directed world}
 
 CertiGraph is fundamentally directed \\
-Recall \texttt{src} and \texttt{src} are baked right in \\
+Recall \texttt{src} and \texttt{dst} are baked right in \\
 Challenge: build undirectedness atop of this
 
 \pause \bigskip
@@ -602,7 +602,8 @@ By design, $\texttt{reachable}^{d}$ weakens easily into $\texttt{connected}^{u}$
 \begin{frame}[fragile]{Building an undirected infrastructure}
 
 A \texttt{upath} is the edge-sequence connecting two \texttt{connected} vertices \\
-A \texttt{ucycle} is a \texttt{upath} with \m{head} = \m{foot}
+A \texttt{ucycle} is a \texttt{upath} with \m{head} = \m{foot} \\
+\texttt{is\_partial\_graph f g} means that everything in \texttt{f} is also in \texttt{g}
 \bigskip \pause
 \begin{lstlisting}
 Definition uforest g := $\forall$ p l, $\lnot$ucycle g p l.
@@ -753,10 +754,12 @@ Manipulate two graphs simultaneously: \\
   \includegraphics[scale=0.33]{krus}
 \end{frame}
 
+\hide{
 \begin{frame}{A note on modularity}
 \centering
   \includegraphics[scale=0.33]{simple}
 \end{frame}
+} %end hide
 
 \begin{frame}{A note on modularity}
 \uncover<2>{\vspace{0.5em}Thanks!}
