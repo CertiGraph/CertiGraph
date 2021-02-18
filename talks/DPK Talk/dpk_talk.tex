@@ -18,6 +18,29 @@
 \usepackage[absolute,overlay]{textpos}
 \usepackage[export]{adjustbox} % for subfigures
 \usepackage[normalem]{ulem} % for strikeout
+\usepackage{listings}
+
+\lstdefinestyle{myTinyStyle}{
+	%   language=Coq,
+	basicstyle=\tiny,
+	stepnumber=1,
+	tabsize=2,
+	numbers=none,
+	numberstyle=\tiny,
+	numbersep=5pt,
+	showspaces=false,
+	showstringspaces=false,
+	language=C,
+	morecomment=[l][{\color{OliveGreen}}]{//},
+	sensitive=true,
+	mathescape=true,
+	escapechar=`,
+	basicstyle=\tt,
+	keywordstyle=\color{black},
+	numbersep=5pt, boxpos=t
+}
+
+\lstset{style=myTinyStyle}
 
 \definecolor{lightg}{RGB}{217,232,225}
 \definecolor{darkg}{RGB}{6,81,42}
@@ -323,7 +346,7 @@ Class SoundAdjMat size inf g := {
   vm: forall v, vvalid g v <-> 0 <= v < size;
   em: forall e, evalid g e <-> 
                 (MIN <= elabel g e <= MAX /\ 
-                 elabel g e < inf);
+                 elabel g e <> inf);
   iew: forall e, ~evalid g e <-> elabel g e = inf;
   fin: FiniteGraph g
 }.
@@ -361,7 +384,7 @@ The first, in memory:
 \p{arr\_rep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
 &\mathsf{array}(\m{arr\_addr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
 \vspace{1em}
-\p{adjmat\_rep}(\gamma, \m{g\_addr}, \_) \defeq~& \underset{\m{v}\hspace{0.1em} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
+\p{AdjMat}(\gamma, \m{g\_addr}, \_) \defeq~& \underset{\m{v}\hspace{0.1em} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
 \end{split}
 \end{equation*}
 
@@ -370,7 +393,7 @@ The first, in memory:
 
 \section{Shortest Path: Dijkstra}
 
-\begin{frame}[fragile]{\texttt{SoundDijk} and Spatial Representation of DijkGraph}
+\begin{frame}[fragile]{Dijkstra: \texttt{SoundDijk} and spatial representation}
 \begin{Verbatim}
 Class SoundDijk size inf g := {
   sadjmat: SoundAdjMat size inf g;
@@ -382,118 +405,80 @@ Class SoundDijk size inf g := {
 
 \bigskip \pause
 
-Nothing fancy spatially, use \p{adjmat\_rep} wholesale \\
+Nothing fancy spatially, use \p{AdjMat} wholesale \\
 We verify Dijkstra 3 times: \\
-\hspace{1em}reuse math proof, 1\% fiddles in verif
+\hspace{1em}reuse math proof entirely \\
+\hspace{1em}1\% fiddles in verif
 
-\end{frame}
+\end{frame} 
 
-\begin{frame}[fragile]{Code and Specification}
+\begin{frame}[fragile]{Dijkstra: code and specification}
 
 \begin{Verbatim}
-void dijkstra (int **graph, int src, int *dist, 
+void dijkstra (int **g, int src, int *dist, 
                int *prev, int size, int inf {
 \end{Verbatim}
-$\braces{\p{AdjMat}(\gamma) *
+$\braces{\p{AdjMat}(\texttt{g},\gamma) *
 \mathsf{array}(\texttt{dist}, \_) * \mathsf{array}(\texttt{prev}, \_)}$
 \pause
 \begin{Verbatim}
- int pq = init(size); int i, j, u, cost;
+ int pq = init(size); int i, u, cost;
  for (i = 0; i < size; i++)
  {  dist[i] = inf; prev[i] = inf; push(i, inf, pq);  }
  dist[src] = 0; prev[src] = src; dec_key(src, 0, pq);
+ while (size(pq)) { ...
 \end{Verbatim}
 \pause
-$\braces{{\color{mymaroon}\exists \m{dist}, \m{prev}, \m{popped}}.~\p{AdjMat}(\gamma) * {\color{mymaroon}\p{PQ}(\texttt{pq})} * \mathsf{array}(\texttt{dist},{\color{mymaroon}\m{dist}}) * \null \\ \mathsf{array}(\texttt{prev}, {\color{mymaroon}\m{prev}}) \wedge
+$\braces{{\color{mymaroon}\exists \m{dist}, \m{prev}, \m{popped}}.~\p{AdjMat}(\texttt{g},\gamma) * {\color{mymaroon}\p{PQ}(\texttt{pq})} * \mathsf{array}(\texttt{dist},{\color{mymaroon}\m{dist}}) * \null \\ \mathsf{array}(\texttt{prev}, {\color{mymaroon}\m{prev}}) \wedge
+{\color{mymaroon}\m{linked\_correctly}(\gamma, \texttt{pq}, \m{dist}, \m{popped})} \wedge \null \\ 
 {\color{mymaroon}\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}}$
-\begin{Verbatim}
- // big while loop
-\end{Verbatim}
 \end{frame}
 
-\begin{frame}[fragile]{Code and Specification}
-$\braces{\exists \m{dist}, \m{prev}, \m{popped}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) * \mathsf{array}(\texttt{dist},\m{dist}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev}) \wedge
+\begin{frame}[fragile]{Dijkstra: code and specification}
+\begin{Verbatim}
+ while (size(pq)) {
+\end{Verbatim}
+$\braces{... \wedge \m{linked\_correctly}(\gamma, \texttt{pq}, \m{dist}, \m{popped}) \wedge \null \\
 \m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}$
 \pause
 \begin{Verbatim}
- while (!pq_emp(pq)) {
   u = popMin(pq);
 \end{Verbatim}
-\pause 
-$\color{OliveGreen}//~\braces{{\color{mymaroon}\exists \m{dist'}, \m{prev'}, \m{popped'}, \m{i}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) * \null \\
+\pause
+\begin{Verbatim}
+  for (i = 0; i < size; i++) {
+\end{Verbatim}
+$\color{OliveGreen}\braces{{\color{mymaroon}\exists \m{dist'}, \m{prev'}}.~... *
 \mathsf{array}(\texttt{dist},\m{\color{mymaroon}dist'}) * \mathsf{array}(\texttt{prev}, \m{\color{mymaroon}prev'}) \wedge \null \\
-{\color{mymaroon}\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped'}, \m{prev'}, \m{dist'}, \m{i}, \texttt{u})}}$
+\m{linked\_correctly}(\gamma, \texttt{\color{mymaroon}pq}, \m{\color{mymaroon}dist'}, \m{popped} \uplus \{\texttt{u}\}) \wedge \null \\
+{\color{mymaroon}\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped} \uplus \{\texttt{u}\}, \m{prev'}, \m{dist'}, \texttt{i}, \texttt{u})}}$
 \pause
 \begin{Verbatim}
-  for (i = 0; i < size; i++) {
   cost = getCell(graph, u, i);
-  if (cost < inf) {
-   if (dist[i] > dist[u] + cost) {
+  if (cost < inf) {   if (dist[i] > dist[u] + cost) {
     dist[i] = dist[u] + cost; prev[i] = u;
     dec_key(i, dist[i], pq); 
- }}} // for
+ }}} /* for */  
 \end{Verbatim}
 \pause
-$\braces{{\color{mymaroon}\exists \m{dist''}, \m{prev''}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) *
-  \mathsf{array}(\texttt{dist},\m{\color{mymaroon}dist''}) * \null \\
-  \mathsf{array}(\texttt{prev}, \m{\color{mymaroon}prev''}) \wedge
-  {\color{mymaroon}\m{dijk\_correct}(\gamma, \texttt{src}, \m{popped'}, \m{prev''}, \m{dist''})}}$
-\end{frame}
-
-\begin{frame}[fragile]{Code and Specification}
-$\braces{\exists \m{dist}, \m{prev}, \m{popped}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) * \mathsf{array}(\texttt{dist},\m{dist}) * \null \\ \mathsf{array}(\texttt{prev}, \m{prev}) \wedge
-\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}$
+\vspace{-1.7em}
 \begin{Verbatim}
- while (!pq_emp(pq)) {
-  u = popMin(pq);
-  for (i = 0; i < size; i++) {
-  cost = getCell(graph, u, i);
-  if (cost < inf) {
-   if (dist[i] > dist[u] + cost) {
-    dist[i] = dist[u] + cost; prev[i] = u;
-    dec_key(i, dist[i], pq); 
-  }}} // for
+                 } /* while */
 \end{Verbatim}
+\pause
+${\color{OliveGreen}\braces{{\color{mymaroon}\exists \m{dist''}, \m{prev''}}.~... * \p{PQ}(\m{\color{mymaroon}\emptyset}) *
+ \mathsf{array}(\texttt{dist},\m{\color{mymaroon}dist''}) *
+ \mathsf{array}(\texttt{prev}, \m{\color{mymaroon}prev''}) \wedge \null \\
+{\color{mymaroon}\forall \m{dst}.~0 \le \m{dst} < \texttt{size} \rightarrow \m{inv\_popped}}(\gamma, \m{src}, {\color{mymaroon}\m{\gamma.V}, \m{prev''}, \m{dist''}, \m{dst}})}}$
 \pause
 \begin{Verbatim}
- } // while
+ freePQ (pq); return;  }
 \end{Verbatim}
-\pause
-$\color{OliveGreen}//~\braces{{\color{mymaroon}\exists \m{dist^{\circ}}, \m{prev^{\circ}}, \m{popped^{\circ}}}.~\p{AdjMat}(\gamma) * \p{PQ}(\texttt{pq}) * \null \\
-\mathsf{array}(\texttt{dist},\m{\color{mymaroon}dist^{\circ}}) * 
-\mathsf{array}(\texttt{prev}, \m{\color{mymaroon}prev^{\circ}}) \wedge \null \\
-{\color{mymaroon}\m{all\_popped(popped^{\circ})}} \wedge
-{\color{mymaroon}\m{dijk\_correct}(\gamma,\texttt{src},\m{popped^{\circ}},\m{prev^{\circ}},\m{dist^{\circ}})}}$
-\pause
-\begin{Verbatim}
- freePQ (pq); return;
-}
-\end{Verbatim}
-\end{frame}
-
-
-\begin{frame}{dijk\_correct}
-
-\begin{equation*}
-\begin{split}
-\m{dijk\_correct}(\gamma, \m{src}, &\m{popped}, \m{prev}, \m{dist}) \; \defeq \; \\
-\forall \m{d}.~vvalid(\gamma, \m{d}) \Rightarrow \\
-\alert<2>{\big( \m{d} \in \m{popped} \; \Rightarrow} \; & \\ 
-& \hspace{-5em} \exists \m{path}.~\m{path\_correct}(\gamma, \m{prev}, \m{path}, \m{src}, \m{d}) \wedge \null \\
-& \hspace{-5em} \m{path\_globally\_optimal}(\gamma, \m{dist}, \m{path}) \alert<2>{\big)} \wedge \null \\
-\alert<3>{\big( \m{dist}[\m{d}] < \ifty \; \Rightarrow} \; & \\ 
-& \hspace{-5em} \texttt{let }\m{m} \texttt{ := } \m{prev}[\m{d}] \texttt{ in } \m{m} \in \m{popped}(\m{priq}) \wedge \null \\
-& \hspace{-5em} \forall \m{m'} \in \m{popped}(\m{priq}).~\m{cost}(\m{p2m} \texttt{+} (m, d)) \le \m{cost}(\m{p2m'} \texttt{+} (m', d)) \alert<3>{\big)} \wedge \null \\
-\alert<4>{\big( \m{dist}[\m{d}] = \ifty \; \Rightarrow} \; & \\ 
-& \hspace{-5em} \forall \m{m} \in \m{popped}(\m{priq}).~\m{cost}(\m{p2m} \texttt{+} (m, d)) = \ifty \alert<4>{\big)}
-\end{split}
-\end{equation*}
 
 \end{frame}
-
 
 \newcommand{\s}{11}
-\begin{frame}{Key Transformation: Growing the Subgraph}
+\begin{frame}{Dijkstra: intuition, and the key transformation}
 
 \begin{center}
 \begin{adjustbox}{scale=0.50}
@@ -532,6 +517,7 @@ $\color{OliveGreen}//~\braces{{\color{mymaroon}\exists \m{dist^{\circ}}, \m{prev
 \end{center}
 \end{frame}
 
+\hide{
 \begin{frame}{dijk\_correct\_weak}
 
 \begin{equation*}
@@ -548,8 +534,9 @@ $\color{OliveGreen}//~\braces{{\color{mymaroon}\exists \m{dist^{\circ}}, \m{prev
 \end{equation*}
 
 \end{frame}
+} % end hide
 
-\begin{frame}{Postcondition}
+\begin{frame}{Dijkstra: postcondition}
 
 \begin{center}
 \begin{adjustbox}{scale=0.50}
@@ -568,7 +555,6 @@ $\color{OliveGreen}//~\braces{{\color{mymaroon}\exists \m{dist^{\circ}}, \m{prev
   \uncover<2>{
     \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
   \draw[popped] (1.5,1.5) -- (3.5, 1.5) -- (3.5, 0) -- (7.5, 0) -- (7.5, 1.5) -- (9.5,1.5) -- (9.5, 4.0) -- (11, 4.0) -- (11, 8.0) -- (9.5, 8.0) -- (9.5,9.5) -- (6.5, 9.5) -- (6.5, 11) -- (0, 11) -- (0, 3) -- (1.5, 3) -- cycle;
-  \node at (1.4,1) {\Huge d$_3$};   
   \node at (4.4,4) {\Huge \color{white}d$_1$}; } 
 \end{tikzpicture}
 \end{adjustbox}
@@ -577,96 +563,208 @@ $\color{OliveGreen}//~\braces{{\color{mymaroon}\exists \m{dist^{\circ}}, \m{prev
 
 \section{Undirectedness in a Directed World}
 
-\begin{frame}[fragile]{Weakening}
+\begin{frame}[fragile]{Undirectedness in a directed world}
 
-Build undirected idioms:
+CertiGraph is fundamentally directed \\
+Recall \texttt{src} and \texttt{src} are baked right in \\
+Challenge: build undirectedness atop of this
 
+\pause \bigskip
+
+Solution: \\
+\hspace{1em} Build lightweight undirected-flavored idioms \\
+\hspace{1em} Prove connections to existing directed-flavored idioms \\
+\hspace{1em} Build undirected infrasctructure
+
+\end{frame}
+
+\begin{frame}{Weakening directed into undirected}
+
+\m{x} and \m{y} are $\texttt{adjacent}^{u}$ if there is an edge between them: \\
+\hspace{1em} \m{x} $\rightarrow$ \m{y} or \m{y} $\rightarrow$ \m{x} \\
+
+\pause \bigskip
+
+$\texttt{connected}^{u}$ is the transitive closure of $\texttt{adjacent}^{u}$: \\
+\hspace{1em} \m{x} $\rightsquigarrow$ \m{a} $\leftarrow$ \m{b} $\leftarrow$ \m{c} $\leftsquigarrow$ \m{y} \\
+
+\pause \bigskip
+
+We already have $\texttt{reachable}^{d}$: \\
+\hspace{1em} \m{x} $\rightsquigarrow$ \m{y}
+
+\pause \bigskip
+
+By design, $\texttt{reachable}^{d}$ weakens easily into $\texttt{connected}^{u}$
+
+\end{frame}
+
+\begin{frame}[fragile]{Building an undirected infrastructure}
+
+A \texttt{upath} is the edge-sequence connecting two \texttt{connected} vertices \\
+A \texttt{ucycle} is a \texttt{upath} with \m{head} = \m{foot}
+\bigskip \pause
+\begin{lstlisting}
+Definition uforest g := $\forall$ p l, $\lnot$ucycle g p l.
+
+Definition spanning g g' :=
+ $\forall$ u v, connected g u v $\leftrightarrow$ connected g' u v.
+
+Definition spanning_uforest f g :=
+  is_partial_graph f g $\wedge$ uforest f $\wedge$ spanning f g.
+\end{lstlisting}
+
+\bigskip \pause
+And \texttt{minimum\_spanning\_forest f g} means that \\
+\texttt{f} minimizes total edge cost among other \texttt{spanning\_uforest}s of \texttt{g}
+
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{SoundUAdjMat}, the undirected soundness condition}
+
+Consider the adjacency matrix representation of an undirected graph: \\
+
+{\centering
+\includegraphics[scale=0.5]{undirected}
+
+}
+
+\bigskip \pause
+A little trick prevents double-counting:
 \begin{Verbatim}
-Definition adj_edge g e u v :=
-  ((src g e = u /\ dst g e = v) \/ 
-   (src g e = v /\ dst g e = u)).
-\end{Verbatim}
-
-Plus \texttt{upath}, \texttt{connected}, \emph{etc.}
-
-\end{frame}
-
-\begin{frame}{Extending to undirectedness}
-
-Consider the AdjMat representation of a directed graph: \\
-\centering
-\includegraphics[scale=0.7]{directed}
-
-\end{frame}
-
-\begin{frame}{Extending to undirectedness}
-
-Versus the AdjMat representation of an undirected graph: \\
-\centering
-\includegraphics[scale=0.7]{undirected}
-
-\end{frame}
-
-\begin{frame}[fragile]{Extending to undirectedness}
-
-Prevent double-counting:
-\begin{Verbatim}
-Class SoundUAdjMat (g: UAdjMatLG) := {
-  sadjmat: @SoundAdjMat size inf g;
+Class SoundUAdjMat size inf g := {
+  sadjmat: SoundAdjMat size inf g;
   undirec: forall e, evalid g e -> src g e <= dst g e;
 }.
 \end{Verbatim}
 \end{frame}
 
-\begin{frame}{Recall: Math Graph Architecture}
+\begin{frame}{Recall: architecture is (de)composable}
   \centering
-  \colorbox{lightg}{\input{architecture.tex}}
+  \colorbox{lightg}{\scalebox{.85}{\input{architecture.tex}}}
 \end{frame}
 
 \section{Minimum Spanning Forest: Prim and Kruskal}
 
-\begin{frame}{Prim: minimum spanning \sout{trees} forests}
+\begin{frame}[fragile]{Prim: missing the forest for the trees}
+
+\begin{minipage}{0.48\textwidth}
+\begin{lstlisting}
+MST-PRIM(G,w,r):
+ for each u in G.V
+  u.key = INF
+  u.parent = NIL $\hide{code:primsetinitparent}$
+ r.key = 0 $\label{code:primsetroot}$
+ Q = G.V
+ while Q $\neq$ $\emptyset$
+  u = EXTRACT-MIN(Q) $\hide{code:primextractmin}$
+  foreach v in G.Adj[u]
+   if (v $\in$ Q and 
+       w(u,v) $<$ v.key)
+    v.parent = u
+    v.key = w(u,v) $\hide{code:primeditpri}$
+\end{lstlisting} \end{minipage}
+\begin{minipage}{0.5\textwidth}
+\pause
+Prim assumes a connected graph \\
+\bigskip \pause
+Why not an unconnected graph? \\
+\bigskip \pause
+\texttt{u} can now be extracted @ \texttt{INF} \\ 
+\bigskip \pause
+meaning \texttt{u} is the root of a new tree!
+\end{minipage}
+
 \end{frame}
 
-\begin{frame}{Kruskal: EdgeList Representation}
-Extend spatial support to accommodate EdgeList representation
+\begin{frame}[fragile]{Prim: an unnecessary argument; a simpler spec}
+
+\begin{minipage}{0.48\textwidth}
+\begin{lstlisting}
+MST-PRIM(G,w,r):
+ for each u in G.V
+  u.key = INF
+  u.parent = NIL $\hide{code:primsetinitparent}$
+ r.key = 0 $\label{code:primsetroot}$
+ Q = G.V
+ while Q $\neq$ $\emptyset$
+  u = EXTRACT-MIN(Q) $\hide{code:primextractmin}$
+  foreach v in G.Adj[u]
+   if (v $\in$ Q and 
+       w(u,v) $<$ v.key)
+    v.parent = u
+    v.key = w(u,v) $\hide{code:primeditpri}$
+\end{lstlisting} \end{minipage}
+\begin{minipage}{0.5\textwidth}
+\begin{lstlisting}
+MST-PRIM(G,w):
+ for each u in G.V
+  u.key = INF
+  u.parent = NIL $\hide{code:primsetinitparent}$
+
+ Q = G.V
+ while Q $\neq$ $\emptyset$
+  u = EXTRACT-MIN(Q) $\hide{code:primextractmin}$
+  foreach v in G.Adj[u]
+   if (v $\in$ Q and 
+       w(u,v) $<$ v.key)
+    v.parent = u
+    v.key = w(u,v) $\hide{code:primeditpri}$
+\end{lstlisting} 
+\end{minipage} 
+\end{frame}
+
+
+\begin{frame}{Kruskal: challenges and nonchallenges}
+Extend spatial support: \\
+\hspace{1em} lay out edgelist-represented graphs in memory \\
+\hspace{1em} develop fold-unfold utilities in separation logic
 
 \bigskip
 
-The double-counting restriction must be lifted: \\
-\hspace{1em}an EdgeList-represented graph can have bona fide multi-connections
+The undirected development carries over wholesale
 
 \bigskip
 
-But the undirected idioms carry over
+Manipulate two graphs simultaneously: \\
+\hspace{1em}directed graph with vertex labels (stores parents and ranks) \\
+\hspace{1em}undirected graph with edge labels (for which we construct an MSF)
 \end{frame}
 
-\begin{frame}{Kruksal: Layering Undirectedness Atop Union-Find}
-  Consider performing \texttt{union u w} \\
-  Note: \texttt{reachable} is directed, \texttt{connected} is undirected \\
+\begin{frame}{Kruksal: layering undirectedness atop of union-find}
+  We have just performed $\texttt{union}^{d}$ \m{a} \m{b} \\
   \vspace{2em}
-  \centering
+  {\centering
   \input{bitree_bigraph.tex}
+  
+  }
+ \pause \bigskip
+  What can we say about $\texttt{connected}^{u}$ \m{a} \m{b}? \\
+  How about $\texttt{connected}^{u}$ \m{c} \m{b}?
 \end{frame}
 
-\begin{frame}{A Note on Modularity}
+\begin{frame}{A note on modularity}
 \centering
   \includegraphics[scale=0.33]{key}
 \end{frame}
 
-\begin{frame}{A Note on Modularity}
+\begin{frame}{A note on modularity}
+\centering
+  \includegraphics[scale=0.33]{krus}
+\end{frame}
+
+\begin{frame}{A note on modularity}
 \centering
   \includegraphics[scale=0.33]{simple}
 \end{frame}
 
-\begin{frame}{A Note on Modularity}
-\centering
-  \includegraphics[scale=0.33]{dijk_prim}
-\end{frame}
+\begin{frame}{A note on modularity}
+\uncover<2>{\vspace{0.5em}Thanks!}
 
-\begin{frame}{A Note on Modularity}
-\centering
-  \includegraphics[scale=0.33]{krus}
+{\centering
+  \includegraphics[scale=0.33]{dijk_prim}
+  
+}
 \end{frame}
 
 \hide{
