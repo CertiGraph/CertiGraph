@@ -1,0 +1,830 @@
+% !TEX TS-program = XeLaTeX
+
+\documentclass[usenames, xcolor=dvipsnames]{beamer}
+%% \documentclass[professionalfonts, xcolor=table, handout]{beamer}
+%% \usepackage{pgfpages}
+%% \pgfpagesuselayout{4 on 1}[a4paper,border shrink=5mm, landscape]
+\usepackage{fontspec}
+\usepackage{amsmath,amssymb}
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\usepackage{tikz}
+\usetikzlibrary{positioning, matrix, arrows.meta, shapes.geometric, calc,
+  decorations.pathmorphing, decorations.pathreplacing, fit, shapes.multipart}
+\usepackage{mathabx}
+\usepackage{mathtools}
+\usepackage{mathpartir}
+\usepackage{fancyvrb}
+\usepackage{stmaryrd}
+\usepackage[absolute,overlay]{textpos}
+\usepackage[export]{adjustbox} % for subfigures
+\usepackage[normalem]{ulem} % for strikeout
+\usepackage{listings}
+
+\lstdefinestyle{myTinyStyle}{
+	%   language=Coq,
+	basicstyle=\tiny,
+	stepnumber=1,
+	tabsize=2,
+	numbers=none,
+	numberstyle=\tiny,
+	numbersep=5pt,
+	showspaces=false,
+	showstringspaces=false,
+	language=C,
+	morecomment=[l][{\color{OliveGreen}}]{//},
+	sensitive=true,
+	mathescape=true,
+	escapechar=`,
+	basicstyle=\tt,
+	keywordstyle=\color{black},
+	numbersep=5pt, boxpos=t
+}
+
+\lstset{style=myTinyStyle}
+
+\definecolor{lightg}{RGB}{217,232,225}
+\definecolor{darkg}{RGB}{6,81,42}
+\definecolor{myred}{rgb}{0.0, 0.42, 0.24}
+\colorlet{mypink}{myred!50!white}
+\definecolor{mymaroon}{rgb}{0.86, 0.08, 0.24}
+
+\defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+% \setmainfont{Libertinus Serif}
+% \setsansfont{Libertinus Sans}
+% \setmonofont{Menlo Regular}
+\usetheme{Madrid}
+\useoutertheme{infolines} % Alternatively: miniframes, infolines, split
+\useinnertheme{circles}
+
+% \setbeamertemplate{enumerate item}[default]
+\usecolortheme[named=myred]{structure}
+% \usecolortheme{spruce}
+\usefonttheme{serif}
+\setbeamerfont*{frametitle}{series=\bfseries}
+\setbeamercolor{alerted text}{fg=mymaroon}
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{emphC}{fg=myred}
+% \setbeamercolor{block title}{bg = darkg, fg=white!80}
+% \setbeamercolor{block body}{bg = lightg, fg=black}
+\setbeamercolor{itemize item}{fg=black}
+\setbeamercolor{description item}{fg=myred}
+
+\newcommand{\sz}{\texttt{size}}
+\newcommand{\ifty}{\texttt{inf}}
+\newcommand{\scon}{\mathbin{\ast}}
+\usepackage{scalerel}
+\renewcommand{\bigstar}{\raisebox{-0.24em}{{\scaleobj{2.5}{\scon}}}}
+
+\newcommand{\ocon}{%
+  \mathbin{\mbox{$\mathrlap{\cup}\hspace*{.15em}
+      \raisebox{.01em}[0ex][0ex]{$\scon$}$\hspace*{.07em}}}}
+\newcommand{\medocon}{
+  \raisebox{-0.3ex}{\resizebox{0.63em}{!}{$\scon$}} \hspace{-2.4ex} \bigcup}
+\newcommand{\wand}{%
+ \mathrel{\mbox{$\hspace*{-0.03em}\mathord{-}\hspace*{-0.66em}
+  \mathord{-}\hspace*{-0.36em}\mathord{\scon}$\hspace*{-0.005em}}}}
+\newcommand{\defeq}{\mathbin{\stackrel{\Delta}{=}}}
+\newcommand{\emphd}[1]{{\bfseries #1}}
+\newcommand{\emphr}[2]{\alert<#1>{#2}}
+\newcommand{\bracket}[1]{[#1]}
+\newcommand{\hide}[1]{}
+\newcommand{\braces}[1]{\color{OliveGreen}\left\{\begin{array}{l@{}} \!\!\! #1 \end{array}\right\}}
+\newcommand{\s}{11}
+
+\makeatletter\let\frametextheight\beamer@frametextheight\makeatother
+\newcommand\credit[1]{%
+  \begin{textblock*}{\paperwidth}(0pt,\textheight)
+    \raggedleft #1\hspace{.5em}
+\end{textblock*}}
+\newcommand{\pguards}[1]{\llbracket #1 \rrbracket}
+\newcommand{\xmark}{\ding{55}}%
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\m}[1]{\ensuremath{\mathit{#1}}} % math font
+\newcommand{\p}[1]{\ensuremath{\mathsf{#1}}} % predicate font
+\newcommand{\bi}{\Leftrightarrow} % equivalence of expressions
+
+\AtBeginSection[]
+{
+  \begin{frame}
+    \frametitle{Outline}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+\setbeamertemplate{section in toc}{%
+  \inserttocsectionnumber.~\inserttocsection}
+\setbeamercolor{subsection in toc}{bg=white,fg=structure}
+\setbeamertemplate{subsection in toc}{%
+  \hspace{1.2em}{\rule[0.3ex]{3pt}{3pt}}~\inserttocsubsection\par}
+
+
+\title[Verifying Dijkstra, Prim, Kruskal]{Functional Correctness of Dijkstra's, Prim's, \\ and Kruskal's Algorithms in C}
+\author[]{\underline{Anshuman Mohan} \\ Leow Wei Xiang \\ Aquinas Hobor}
+%\institute[NUS]{\includegraphics[height=0.12\textwidth]{NUS_logo_full-horizontal.jpg}}
+  \date[]{Cornell PLDG \\ \today}
+
+\begin{document}
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begingroup
+    \AtBeginSection[]{}
+\section{CertiGraph: Motivation and Overview}
+\endgroup
+
+\begin{frame}{Motivation: A precondition for Dijkstra}
+
+In a graph with \texttt{size} vertices, \\
+the longest optimal path has \texttt{size-1} links \\
+\uncover<2->{so an edge-label is, at most, $\lfloor\texttt{MAX/(size-1)}\rfloor$}
+
+\bigskip \uncover<3->{
+\texttt{MAX} = 7, \texttt{size} = 3, so every edge-label $\le 3$.}
+
+\bigskip
+
+{\centering
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}}]
+
+\uncover<3->{
+  \node at (1.5,-0.2) {3};
+  \node at (4.9,-0.2) {3};
+  \node at (6,-0.6) {3};
+  }
+
+\uncover<1,2>{
+\node at (0.1, 0.3) {\small A};
+\node at (3.2, 0.3) {\small B};
+\node at (6.3, 0.3) {\small C}; 
+  \node[inf] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);}
+
+
+\uncover<3>{
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.7, 0.3) {\small B (cost \ifty)};
+\node at (6.8, 0.3) {\small C (cost \ifty)}; 
+  \node[vad] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);}
+ 
+\uncover<4>{
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.7, 0.3) {\small B (cost \ifty)};
+\node at (6.8, 0.3) {\small C (cost \ifty)};  
+  \node[vad] (A) at (0,0) {};
+  \node[inv] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);}
+
+\uncover<5>{
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.5, 0.3) {\small B (cost 3)};
+\node at (6.8, 0.3) {\small C (cost \ifty)};  
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+  }
+
+\uncover<6>{ 
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.5, 0.3) {\small B (cost 3)};
+\node at (6.8, 0.3) {\small C (cost \ifty)};  
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[inv] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\uncover<7>{ 
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.5, 0.3) {\small B (cost 3)};
+\node at (6.6, 0.3) {\small C (cost 6)};  
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[vad] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\uncover<8>{ 
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.5, 0.3) {\small B (cost 3)};
+\node at (6.6, 0.3) {\small C (cost 6)};  
+\node at (5, -1.5) {if $3 > 9$ then relax C $\leadsto$ B};
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[vad] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\uncover<9>{ 
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.5, 0.3) {\small B (cost 3)};
+\node at (6.6, 0.3) {\small C (cost 6)};  
+\node at (5, -1.5) {if $3 > \alert{1}$ then relax C $\leadsto$ B};
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[vad] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\uncover<10->{ 
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.5, 0.3) {\small B (cost \alert{1})};
+\node at (6.6, 0.3) {\small C (cost 6)}; 
+\node at (5, -1.5) {if $3 > 1$ then \alert{relax C $\leadsto$ B}};
+  \node[vad] (A) at (0,0) {};
+  \node[vad] (B) [right = 3 of A] {};
+  \node[vad] (C) [right = 3 of B] {};
+  \draw [->] (A) -- (B);
+  \draw [->] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\end{tikzpicture}
+
+}
+\hide{
+\bigskip
+
+\uncover<11->{
+One solution: Conservatively set upper bound to $\lfloor\texttt{MAX/size}\rfloor$}
+
+\bigskip
+
+\uncover<12->{
+Max path cost is then  
+$\lfloor\texttt{MAX/size}\rfloor$ \texttt{ * (size-1) = MAX - }$\lfloor\texttt{MAX/size}\rfloor$}
+}
+\end{frame}
+
+\begin{frame}{Motivation: A precondition for Dijkstra}
+
+There are many ways to fix this!
+\\ \hspace{1em} Refactor troublesome addition as subtraction
+\\ \hspace{1em} Never look back into optimized part
+\\ \hspace{1em} Your suggestion here
+
+\bigskip
+
+\pause Sadly, intuition supports \texttt{inf = MAX} \\
+and bugs such as this one are often overlooked
+
+\end{frame}
+
+\begin{frame}{CertiGraph: problem scope}
+\includegraphics[scale=0.09]{vst_logo}
+\hspace{2em} \includegraphics[scale=0.12]{compcert_logo}
+\hspace{2em} \includegraphics[scale=0.2]{paper_screen}
+
+\bigskip
+VST + CompCert + \underline{CertiGraph}
+
+\bigskip
+\hspace{1em}Verify executable code
+\\\hspace{1em}against realistic specifications
+\\\hspace{1em}expressed with mathematical graphs
+
+\end{frame}
+
+\begin{frame}{CertiGraph: workflow}
+  \input{workflow.tex}
+\end{frame}
+
+\begin{frame}{CertiGraph: pure math graphs}
+  \begin{align*}
+\Big(\hspace{0.5em}\mathcal{V}& \texttt{: Type}, \\
+\mathcal{E}& \texttt{: Type}, \\
+\texttt{vvalid}& \texttt{: }\mathcal{V} \rightarrow \texttt{Prop}, \\ 
+\texttt{evalid}& \texttt{: }\mathcal{E} \rightarrow \texttt{Prop}, \\
+\texttt{src}& \texttt{: }\mathcal{E} \rightarrow \mathcal{V}, \\
+\texttt{dst}& \texttt{: }\mathcal{E} \rightarrow \mathcal{V}, \\
+\texttt{vlabel}& \texttt{: }\mathcal{V} \rightarrow \mathcal{L_V}, \\
+\texttt{elabel}& \texttt{: }\mathcal{E} \rightarrow \mathcal{L_E}, \\
+\texttt{sound}&\texttt{: Prop} \hspace{0.5em} \Big) 
+\end{align*}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Outline}
+\tableofcontents
+\end{frame}
+
+\section{Mathematical Adjacency Matrices}
+
+\begin{frame}{Constraining a representable graph}
+What graphs are representable as adjacency matrices? \\
+\pause \bigskip
+\vspace{-2em}
+\begin{align*}
+\Big(\hspace{0.5em}\mathcal{V}&\defeq\mathbb{Z}, \\
+\mathcal{E}&\defeq\mathcal{V} \times \mathcal{V}, \\
+\texttt{vvalid}&\defeq\lambda v.~0 \le v < \texttt{size}, \\ 
+\texttt{evalid}&\defeq\ldots, \\
+\texttt{src}&\defeq\m{fst}, \hspace{0.5em}\texttt{dst}\defeq\m{snd}, \\
+\texttt{vlabel}&\defeq\ldots, \\
+\texttt{elabel}&\defeq\ldots, \\
+\alert{\texttt{sound}}&\defeq\alert{\texttt{SoundAdjMat}}\hspace{0.5em}\Big) 
+\end{align*}
+
+\end{frame}
+
+\begin{frame}[fragile]{A unified, reusable soundness condition}
+
+\begin{lstlisting}
+Class SoundAdjMat size inf g := {
+  sr: 0 < size <= MAX;
+  ir: MIN <= inf <= MAX; 
+  vm: forall v, vvalid g v <-> 0 <= v < size;
+  em: forall e, evalid g e <-> 
+                (MIN <= elabel g e <= MAX /\ 
+                 elabel g e <> inf);
+  iew: forall e, ~evalid g e <-> elabel g e = inf;
+  fin: FiniteGraph g
+}.
+\end{lstlisting}
+
+\pause \bigskip
+
+Need more?
+\begin{lstlisting}
+Class SoundDijk size inf g := {
+  sadjmat: SoundAdjMat size inf g;
+  further: ...
+}
+\end{lstlisting}
+
+\end{frame}
+
+
+\section{Spatial Representations in Separation Logic}
+
+\begin{frame}[fragile]{Laying out graphs in memory}
+We support three flavors of adjacency matrix: \\
+\hspace{1em}stack-allocated 2D~array \texttt{int~graph[size][size]} \\
+\hspace{1em}stack-allocated 1D~array \texttt{int~graph[size$\times$size]} \\
+\hspace{1em}heap-allocated 2D~array \texttt{int~**graph}
+
+\bigskip \pause
+
+\begin{minipage}{0.33\textwidth}
+hello
+\end{minipage} \begin{minipage}{0.33\textwidth}
+hello
+\end{minipage}\begin{minipage}{0.33\textwidth}
+hello
+\end{minipage} 
+
+\end{frame}
+
+
+\section{Shortest Path: Dijkstra}
+
+\begin{frame}[fragile]{Dijkstra: \texttt{SoundDijk} and spatial representation}
+\begin{lstlisting}
+Class SoundDijk size inf g := {
+  sadjmat: SoundAdjMat size inf g;
+  veb: forall e, evalid g e ->
+                 0 <= elabel g e <= (MAX / size) - 1;
+  ifr: (MAX / size) - 1 < inf <= MAX - ((MAX / size) - 1)
+}.
+\end{lstlisting}
+
+\bigskip \pause
+
+Nothing fancy spatially, use \p{AdjMat} wholesale \\
+We verify Dijkstra 3 times: \\
+\hspace{1em} reuse math proof entirely \\
+\hspace{1em} small variations (1\% loc) between spatial representations
+
+\end{frame} 
+
+\begin{frame}[fragile]{Dijkstra: code and specification}
+
+\begin{lstlisting}
+void dijkstra (int **g, int src, int *dist, 
+               int *prev, int size, int inf {
+ /* init pq, fill out dist and prev */
+ while (size(pq)) {
+\end{lstlisting}
+\pause
+$\braces{{\exists \m{dist}, \m{prev}, \m{popped}}.~ 
+\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}$
+\end{frame}
+
+\begin{frame}{Dijkstra: intuition for \m{dijk\_correct}}
+
+\begin{center}
+\begin{adjustbox}{scale=0.50}
+\begin{tikzpicture}[on grid,
+  popped/.style={rounded corners=15pt, line width=1pt, draw, fill=myred},
+  fringe/.style={rounded corners=15pt, line width=1pt, draw, fill=mypink},
+  popping/.style={rounded corners=15pt, line width=1pt, draw, dashed, fill=mymaroon},
+  unseen/.style={rounded corners=15pt, line width=1pt, draw}]
+  \uncover<1>{
+  \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
+  \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5,9.5) -- (1.5,9.5) -- cycle;
+  \draw[popped] (3,3) -- (8,3) -- (6,6) -- (3,8) -- cycle;
+  \node at (1.4,1) {\Huge d$_3$};   
+  \node at (2.9,2.5) {\Huge d$_2$};   
+  \node at (4.4,4) {\Huge \color{white}d$_1$};}
+  \end{tikzpicture}
+\end{adjustbox}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]{Dijkstra: code and specification}
+\begin{lstlisting}
+ while (size(pq)) {
+\end{lstlisting}
+$\braces{\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}$
+\pause
+\begin{lstlisting}
+  u = popMin(pq);
+\end{lstlisting}
+\pause
+\begin{lstlisting}
+  for (i = 0; i < size; i++) {
+\end{lstlisting}
+$\braces{\exists \m{dist'}, \m{prev'}~
+\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped} \uplus \{\texttt{u}\}, \m{prev'}, \m{dist'}, \texttt{i}, \texttt{u})}$
+
+\end{frame}
+
+\begin{frame}{Dijkstra: intuition for \m{dijk\_correct\_weak}}
+
+\begin{center}
+\begin{adjustbox}{scale=0.50}
+\begin{tikzpicture}[on grid,
+  popped/.style={rounded corners=15pt, line width=1pt, draw, fill=myred},
+  fringe/.style={rounded corners=15pt, line width=1pt, draw, fill=mypink},
+  popping/.style={rounded corners=15pt, line width=1pt, draw, dashed, fill=mymaroon},
+  unseen/.style={rounded corners=15pt, line width=1pt, draw}]
+  \uncover<1>{
+  \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
+  \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5,9.5) -- (1.5,9.5) -- cycle;
+  \draw[popped] (3,3) -- (8,3) -- (6,6) -- (3,8) -- cycle;
+  \node at (1.4,1) {\Huge d$_3$};   
+  \node at (2.9,2.5) {\Huge d$_2$};   
+  \node at (4.4,4) {\Huge \color{white}d$_1$}; 
+  \node at (6.6,7) {\Huge u};}
+  \uncover<2>{
+    \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
+  \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5,9.5) -- (1.5,9.5) -- cycle;
+  \draw[popping] (3,3) -- (8,3) -- (8,8) -- (3,8) -- cycle;
+  \draw[popped] (3,3) -- (8,3) -- (6,6) -- (3,8) -- cycle;
+  \node at (1.4,1) {\Huge d$_3$};   
+  \node at (2.9,2.5) {\Huge d$_2$};   
+  \node at (4.4,4) {\Huge \color{white}d$_1$}; 
+  \node at (6.6,7) {\Huge u}; }
+\end{tikzpicture}
+\end{adjustbox}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Dijkstra: code and specification}
+\begin{lstlisting}
+ while (size(pq)) {
+\end{lstlisting}
+$\braces{\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}$
+\begin{lstlisting}
+  u = popMin(pq);
+  for (i = 0; i < size; i++) {
+\end{lstlisting}
+$\color{OliveGreen}\braces{{\exists \m{dist'}, \m{prev'}}.~
+{\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped} \uplus \{\texttt{u}\}, \m{prev'}, \m{dist'}, \texttt{i}, \texttt{u})}}$
+\pause
+\begin{lstlisting}
+  cost = getCell(graph, u, i);
+  if (cost < inf && dist[i] > dist[u] + cost) {
+    dist[i] = dist[u] + cost; prev[i] = u;
+    dec_key(i, dist[i], pq); 
+ }} /* for */  
+\end{lstlisting}
+
+\end{frame}
+
+\begin{frame}{Dijkstra: intuition for recovering \m{dijk\_correct}}
+
+\begin{center}
+\begin{adjustbox}{scale=0.50}
+\begin{tikzpicture}[on grid,
+  popped/.style={rounded corners=15pt, line width=1pt, draw, fill=myred},
+  fringe/.style={rounded corners=15pt, line width=1pt, draw, fill=mypink},
+  popping/.style={rounded corners=15pt, line width=1pt, draw, dashed, fill=mymaroon},
+  unseen/.style={rounded corners=15pt, line width=1pt, draw}]
+  \uncover<1>{
+  \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
+  \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5,9.5) -- (1.5,9.5) -- cycle;
+  \draw[popped] (3,3) -- (8,3) -- (6,6) -- (3,8) -- cycle;
+  \node at (1.4,1) {\Huge d$_3$};   
+  \node at (2.9,2.5) {\Huge d$_2$};   
+  \node at (4.4,4) {\Huge \color{white}d$_1$}; 
+  \node at (6.6,7) {\Huge u};}
+  \uncover<2>{
+    \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
+  \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5,9.5) -- (1.5,9.5) -- cycle;
+  \draw[popping] (3,3) -- (8,3) -- (8,8) -- (3,8) -- cycle;
+  \draw[popped] (3,3) -- (8,3) -- (6,6) -- (3,8) -- cycle;
+  \node at (1.4,1) {\Huge d$_3$};   
+  \node at (2.9,2.5) {\Huge d$_2$};   
+  \node at (4.4,4) {\Huge \color{white}d$_1$}; 
+  \node at (6.6,7) {\Huge u}; }
+  \uncover<3>{
+    \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
+  \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5, 4.0) -- (10.5, 4.0) -- (10.5, 5.0) -- (9.5, 5.0) -- (9.5,9.5) -- (6.5, 9.5) -- (6.5, 10.5) -- (5.5, 10.5) -- (5.5, 9.5) -- (1.5,9.5) -- cycle;
+  \draw[popped] (3,3) -- (8,3) -- (8,8) -- (3,8) -- cycle;
+  \node at (1.4,1) {\Huge d$_3$};   
+  \node at (2.9,2.5) {\Huge d$_2$};   
+  \node at (4.4,4) {\Huge \color{white}d$_1$}; 
+  \node at (6.6,7) {\Huge \color{white}u}; }
+\end{tikzpicture}
+\end{adjustbox}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Dijkstra: code and specification}
+\begin{lstlisting}
+ while (size(pq)) {
+\end{lstlisting}
+$\braces{\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}$
+\begin{lstlisting}
+  u = popMin(pq);
+  for (i = 0; i < size; i++) {
+\end{lstlisting}
+$\color{OliveGreen}\braces{{\exists \m{dist'}, \m{prev'}}.~
+{\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped} \uplus \{\texttt{u}\}, \m{prev'}, \m{dist'}, \texttt{i}, \texttt{u})}}$
+\begin{lstlisting}
+  cost = getCell(graph, u, i);
+  if (cost < inf && dist[i] > dist[u] + cost) {
+    dist[i] = dist[u] + cost; prev[i] = u;
+    dec_key(i, dist[i], pq); 
+ }} /* for */  
+\end{lstlisting}
+\pause
+\vspace{-2.3em}
+\begin{lstlisting}
+                 } /* while */
+\end{lstlisting}
+\pause
+$\braces{\exists \m{dist''}, \m{prev''}.~
+\forall \m{dst}.~0 \le \m{dst} < \texttt{size} \rightarrow \null \\ 
+\m{inv\_popped}(\gamma, \m{src}, \m{\gamma.V}, \m{prev''}, \m{dist''}, \m{dst})}$
+\pause
+\begin{lstlisting}
+ freePQ (pq); return;  
+\end{lstlisting}
+
+\end{frame}
+
+\hide{
+\begin{frame}{dijk\_correct\_weak}
+
+\begin{equation*}
+\begin{split}
+&\hspace{-1em}\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{i}, \m{u}) \; \defeq \; \forall \m{d}.~ \\
+&\alert<2>{\big( vvalid(\gamma, \m{d}) \; \Rightarrow} \; \m{d} \in \m{popped} \; \Rightarrow \; \ldots \alert<2>{\big)} \wedge \\
+&\alert<2>{\Big( 0 \le dst < i \; \Rightarrow} \; 
+\big( \m{dist}[\m{d}] < \ifty \; \Rightarrow \ldots \big) \wedge
+\big( \m{dist}[\m{d}] = \ifty \; \Rightarrow \ldots \big) \alert<2>{\Big)} \wedge \null \\
+&\alert<3>{\Big( i \le dst < size \; \Rightarrow} \; \null \\
+&\hspace{1em}\big( \m{dist}[\m{d}] < \ifty \; \Rightarrow \ldots \alert<4>{\wedge m \neq u \wedge m' \neq u} \big) \wedge \null \\
+&\hspace{1em}\big( \m{dist}[\m{d}] = \ifty \; \Rightarrow \ldots \alert<4>{\wedge m \neq u} \big) \alert<3>{\Big)} \\
+\end{split}
+\end{equation*}
+
+\end{frame}
+} % end hide
+
+\begin{frame}{Dijkstra: postcondition}
+
+\begin{center}
+\begin{adjustbox}{scale=0.50}
+\begin{tikzpicture}[on grid,
+  popped/.style={rounded corners=15pt, line width=1pt, draw, fill=myred},
+  fringe/.style={rounded corners=15pt, line width=1pt, draw, fill=mypink},
+  popping/.style={rounded corners=15pt, line width=1pt, draw, dashed, fill=mymaroon},
+  unseen/.style={rounded corners=15pt, line width=1pt, draw}]
+  \uncover<1>{
+    \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
+  \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5, 4.0) -- (10.5, 4.0) -- (10.5, 5.0) -- (9.5, 5.0) -- (9.5,9.5) -- (6.5, 9.5) -- (6.5, 10.5) -- (5.5, 10.5) -- (5.5, 9.5) -- (1.5,9.5) -- cycle;
+  \draw[popped] (3,3) -- (8,3) -- (8,8) -- (3,8) -- cycle;
+  \node at (1.4,1) {\Huge d$_3$};   
+  \node at (2.9,2.5) {\Huge d$_2$};   
+  \node at (4.4,4) {\Huge \color{white}d$_1$}; }
+  \uncover<2>{
+    \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
+  \draw[popped] (1.5,1.5) -- (3.5, 1.5) -- (3.5, 0) -- (7.5, 0) -- (7.5, 1.5) -- (9.5,1.5) -- (9.5, 4.0) -- (11, 4.0) -- (11, 8.0) -- (9.5, 8.0) -- (9.5,9.5) -- (6.5, 9.5) -- (6.5, 11) -- (0, 11) -- (0, 3) -- (1.5, 3) -- cycle;
+  \node at (4.4,4) {\Huge \color{white}d$_1$}; } 
+\end{tikzpicture}
+\end{adjustbox}
+\end{center}
+\end{frame}
+
+\section{Undirectedness in a Directed World}
+
+\begin{frame}[fragile]{Undirectedness in a directed world}
+
+CertiGraph is fundamentally directed \\
+We layer undirectedness atop of this
+
+\pause \bigskip
+
+\hspace{1em} Build lightweight undirected definitions \\
+\hspace{1em} Prove connections to existing directed definitions \\
+\hspace{1em} Grow undirected infrastructure
+
+\end{frame}
+
+\begin{frame}{Weakening directed into undirected}
+
+\m{x} and \m{y} are $\texttt{adjacent}^{u}$ if there is an edge between them: \\
+\hspace{1em} \m{x} $\rightarrow$ \m{y} or \m{y} $\rightarrow$ \m{x} \\
+
+\pause \bigskip
+
+$\texttt{connected}^{u}$ is the transitive closure of $\texttt{adjacent}^{u}$: \\
+\hspace{1em} \m{x} $\rightsquigarrow$ \m{a} $\leftarrow$ \m{b} $\leftarrow$ \m{c} $\leftsquigarrow$ \m{y} \\
+
+\pause \bigskip
+
+We already have $\texttt{reachable}^{d}$: \hspace{0.5em} \m{x} $\rightsquigarrow$ \m{y} \\
+\pause
+By design, $\texttt{reachable}^{d}$ weakens easily into $\texttt{connected}^{u}$
+
+\pause \bigskip
+
+$\texttt{connected}^{u}$ is powerful enough to define \\
+$\texttt{cycle}^{u}$, $\texttt{forest}^{u}$, $\texttt{spanning}^{u}$, and
+$\texttt{minimum\_spanning\_forest}^{u}$
+
+\end{frame}
+
+\hide{
+\begin{frame}[fragile]{Building an undirected infrastructure}
+
+A \texttt{upath} is the edge-sequence connecting two \texttt{connected} vertices \\
+A \texttt{ucycle} is a \texttt{upath} with \m{head} = \m{foot} \\
+\texttt{is\_partial\_graph f g} means that everything in \texttt{f} is also in \texttt{g}
+\bigskip \pause
+\begin{lstlisting}
+Definition uforest g := $\forall$ p l, $\lnot$ucycle g p l.
+
+Definition spanning g g' :=
+ $\forall$ u v, connected g u v $\leftrightarrow$ connected g' u v.
+
+Definition spanning_uforest f g :=
+  is_partial_graph f g $\wedge$ uforest f $\wedge$ spanning f g.
+\end{lstlisting}
+
+\bigskip \pause
+And \texttt{minimum\_spanning\_forest f g} means that \\
+\texttt{f} minimizes total edge cost among other \texttt{spanning\_uforest}s of \texttt{g}
+
+\end{frame}
+} % end hide
+
+\begin{frame}[fragile]{\texttt{SoundUAdjMat}, the undirected soundness condition}
+
+Consider the adjacency matrix representation of an undirected graph: \\
+
+{\centering
+\includegraphics[scale=0.5]{undirected}
+
+}
+
+\bigskip \pause
+A little trick prevents double-counting:
+\begin{lstlisting}
+Class SoundUAdjMat size inf g := {
+  sadjmat: SoundAdjMat size inf g;
+  undirec: forall e, evalid g e -> src g e <= dst g e;
+}.
+\end{lstlisting}
+\end{frame}
+
+\section{Minimum Spanning Forest: Prim and Kruskal}
+
+\begin{frame}[fragile]{Prim: missing the forest for the trees}
+
+\begin{minipage}{0.48\textwidth}
+\begin{lstlisting}
+MST-PRIM(G,w,r):
+ for each u in G.V
+  u.key = INF
+  u.parent = NIL $\hide{code:primsetinitparent}$
+ r.key = 0 $\label{code:primsetroot}$
+ Q = G.V
+ while Q $\neq$ $\emptyset$
+  u = EXTRACT-MIN(Q) $\hide{code:primextractmin}$
+  for each v in G.Adj[u]
+   if (v $\in$ Q and 
+       w(u,v) $<$ v.key)
+    v.parent = u
+    v.key = w(u,v) $\hide{code:primeditpri}$
+\end{lstlisting} \end{minipage}
+\begin{minipage}{0.5\textwidth}
+\pause
+Prim assumes a connected graph \\
+\bigskip \pause
+Why not an unconnected graph? \\
+\bigskip \pause
+\texttt{u} can now be extracted at cost \texttt{INF} \\ 
+\bigskip \pause
+meaning \texttt{u} is the root of a new tree!
+\end{minipage}
+
+\end{frame}
+
+\begin{frame}[fragile]{Prim: an unnecessary argument; a simpler spec}
+
+\begin{minipage}{0.48\textwidth}
+\begin{lstlisting}
+MST-PRIM(G,w,r):
+ for each u in G.V
+  u.key = INF
+  u.parent = NIL $\hide{code:primsetinitparent}$
+ r.key = 0 $\label{code:primsetroot}$
+ Q = G.V
+ while Q $\neq$ $\emptyset$
+  u = EXTRACT-MIN(Q) $\hide{code:primextractmin}$
+  for each v in G.Adj[u]
+   if (v $\in$ Q and 
+       w(u,v) $<$ v.key)
+    v.parent = u
+    v.key = w(u,v) $\hide{code:primeditpri}$
+\end{lstlisting} \end{minipage}
+\begin{minipage}{0.5\textwidth}
+\begin{lstlisting}
+MST-PRIM-NOROOT(G,w):
+ for each u in G.V
+  u.key = INF
+  u.parent = NIL $\hide{code:primsetinitparent}$
+
+ Q = G.V
+ while Q $\neq$ $\emptyset$
+  u = EXTRACT-MIN(Q) $\hide{code:primextractmin}$
+  for each v in G.Adj[u]
+   if (v $\in$ Q and 
+       w(u,v) $<$ v.key)
+    v.parent = u
+    v.key = w(u,v) $\hide{code:primeditpri}$
+\end{lstlisting} 
+\end{minipage} 
+\end{frame}
+
+
+\begin{frame}{Kruskal: challenges and nonchallenges}
+Extend spatial support: \\
+\hspace{1em} lay out edgelist-represented graphs in memory \\
+\hspace{1em} develop fold-unfold utilities in separation logic
+
+\bigskip
+
+The undirected development carries over wholesale
+
+\bigskip
+
+Manipulate two graphs simultaneously: \\
+\hspace{1em}directed graph with vertex labels (stores parents and ranks) \\
+\hspace{1em}undirected graph with edge labels (for which we construct an MSF)
+\end{frame}
+
+\begin{frame}{Kruksal: layering undirectedness atop of union-find}
+  We have just performed $\texttt{union}^{d}$ \m{a} \m{b} \\
+  \vspace{2em}
+  {\centering
+  \input{bitree_bigraph.tex}
+  
+  }
+ \pause \bigskip
+  What can we say about $\texttt{connected}^{u}$ \m{a} \m{b}? $\texttt{connected}^{u}$ \m{c} \m{b}?
+\end{frame}
+
+\end{document}
