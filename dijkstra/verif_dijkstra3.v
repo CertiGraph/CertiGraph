@@ -1,5 +1,4 @@
 Require Import CertiGraph.graph.SpaceAdjMatGraph3.
-Require Export CertiGraph.priq.is_empty_lemmas.
 Require Import CertiGraph.dijkstra.dijkstra_env.
 Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
