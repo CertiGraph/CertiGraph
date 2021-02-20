@@ -102,7 +102,7 @@ PRIM_FILES = \
   prim1.v prim_spec1.v verif_prim1.v \
   prim2.v prim_spec2.v verif_prim2.v \
   prim3.v prim_spec3.v verif_prim3.v \
-  noroot_prim3.v noroot_prim_spec3.v verif_noroot_prim3.v 
+  noroot_prim.v noroot_prim_spec.v verif_noroot_prim.v 
 
 DIJKSTRA_FILES = \
   dijkstra1.v dijkstra_spec1.v verif_dijkstra1.v \
@@ -179,7 +179,7 @@ vstandme3:
 .PHONY: cav
 cav:
 	make binheap/verif_binary_heap.vo binheap/verif_binary_heap_pro.vo \
-	prim/verif_prim1.vo prim/verif_prim2.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo \
+	prim/verif_prim1.vo prim/verif_prim2.vo prim/verif_prim3.vo prim/verif_noroot_prim.vo \
 	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
 	kruskal/verif_sort.v kruskal/verif_kruskal_edgelist.vo -kj7
 

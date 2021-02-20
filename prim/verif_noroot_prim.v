@@ -4,7 +4,7 @@ Require Export CertiGraph.priq.is_empty_lemmas.
 Require Import CertiGraph.graph.MathUAdjMatGraph. 
 Require Import CertiGraph.prim.prim_constants.
 Require Import CertiGraph.graph.SpaceUAdjMatGraph3.
-Require Import CertiGraph.prim.noroot_prim_spec3.
+Require Import CertiGraph.prim.noroot_prim_spec.
 
 Local Open Scope Z.
 
