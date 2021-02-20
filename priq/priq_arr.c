@@ -1,15 +1,12 @@
 #include <stdlib.h>
 #include "priq_arr.h"
 
-// extern void * mallocN (int n);
-// extern void freeN (void *p);
-
 /* ****************************** */
 /*    Array Masquerading as PQ    */
 /* ****************************** */
 
 int* init (int size) {
-    int* pq = malloc (size * sizeof *pq);
+    int* pq = mallocN (size * sizeof *pq);
     return pq;
 }
 
