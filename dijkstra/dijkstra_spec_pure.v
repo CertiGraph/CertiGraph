@@ -30,10 +30,9 @@ Section DijkstraSpecPure.
   Definition inv_popped (g: DijkGG) src (popped prev: list V) (dist: list Z) dst :=
     In dst popped ->
     (Znth dst dist = inf /\ (* if I'm unreachable *)
-     (forall p, (* I'm unreachable via all paths *)
-         valid_path g p ->
+     (forall p, (* no valid path connects src to me *)
          path_ends g p src dst ->
-         path_cost g p >= inf))
+         ~ valid_path g p))
     \/
     (exists p, (* else, I'm optimal *)
         path_correct g prev dist src dst p /\
