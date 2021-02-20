@@ -225,7 +225,8 @@ the longest optimal path has \texttt{size-1} links \\
 \uncover<2->{so an edge-label is, at most, $\lfloor\texttt{MAX/(size-1)}\rfloor$}
 
 \bigskip \uncover<3->{
-\texttt{MAX} = 7, \texttt{size} = 3, so every edge-label $\le 3$.}
+Consider a $4$-bit machine and unsigned integers \\
+\texttt{MAX} = 15, \texttt{size} = 3, so every edge-label $\le 7$.}
 
 \bigskip
 
@@ -235,9 +236,9 @@ the longest optimal path has \texttt{size-1} links \\
  ->/.style={thick, arrows={-Stealth}}]
 
 \uncover<3->{
-  \node at (1.5,-0.2) {3};
-  \node at (4.9,-0.2) {3};
-  \node at (6,-0.6) {3};
+  \node at (1.5,-0.2) {5};
+  \node at (4.9,-0.2) {5};
+  \node at (6,-0.6) {6};
   }
 
 \uncover<1,2>{
@@ -264,7 +265,7 @@ the longest optimal path has \texttt{size-1} links \\
  
 \uncover<4>{
 \node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.5, 0.3) {\small B (cost 3)};
+\node at (3.5, 0.3) {\small B (cost 5)};
 \node at (6.8, 0.3) {\small C (cost \ifty)};  
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
@@ -276,8 +277,8 @@ the longest optimal path has \texttt{size-1} links \\
 
 \uncover<5>{ 
 \node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.5, 0.3) {\small B (cost 3)};
-\node at (6.6, 0.3) {\small C (cost 6)};  
+\node at (3.5, 0.3) {\small B (cost 5)};
+\node at (6.6, 0.3) {\small C (cost 10)};  
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
   \node[inf] (C) [right = 3 of B] {};
@@ -288,9 +289,9 @@ the longest optimal path has \texttt{size-1} links \\
 
 \uncover<6>{ 
 \node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.5, 0.3) {\small B (cost 3)};
-\node at (6.6, 0.3) {\small C (cost 6)};  
-\node at (5, -1.5) {if $3 > 9$ then relax C $\leadsto$ B};
+\node at (3.5, 0.3) {\small B (cost 5)};
+\node at (6.6, 0.3) {\small C (cost 10)};  
+\node at (5, -1.5) {if $5 > 16$ then relax C $\leadsto$ B};
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
   \node[inf] (C) [right = 3 of B] {};
@@ -301,9 +302,9 @@ the longest optimal path has \texttt{size-1} links \\
 
 \uncover<7>{ 
 \node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.5, 0.3) {\small B (cost 3)};
-\node at (6.6, 0.3) {\small C (cost 6)};  
-\node at (5, -1.5) {if $3 > \alert{1}$ then relax C $\leadsto$ B};
+\node at (3.5, 0.3) {\small B (cost 5)};
+\node at (6.6, 0.3) {\small C (cost 10)};  
+\node at (5, -1.5) {if $5 > \alert{0}$ then relax C $\leadsto$ B};
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
   \node[inf] (C) [right = 3 of B] {};
@@ -314,9 +315,9 @@ the longest optimal path has \texttt{size-1} links \\
 
 \uncover<8->{ 
 \node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.5, 0.3) {\small B (cost \alert{1})};
-\node at (6.6, 0.3) {\small C (cost 6)}; 
-\node at (5, -1.5) {if $3 > 1$ then \alert{relax C $\leadsto$ B}};
+\node at (3.5, 0.3) {\small B (cost \alert{0})};
+\node at (6.6, 0.3) {\small C (cost 10)}; 
+\node at (5, -1.5) {if $5 > 0$ then \alert{relax C $\leadsto$ B}};
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
   \node[inf] (C) [right = 3 of B] {};
@@ -671,16 +672,16 @@ We support three flavors of adjacency matrix: \\
 \end{minipage} 
 }
 
-\uncover<3>{
+\uncover<3->{
 \vspace{-5em}
 The first, in memory:
 \begin{align*}
-\m{arraddr} (\m{ptr}, \m{i},\texttt{size}) \defeq~&
-  \m{ptr} + (\m{i} \times \hide{\texttt{sizeof}(\texttt{int}) \times} \texttt{size}) \\
-\p{arrrep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
-&\mathsf{array}(\mathit{arraddr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
+\uncover<5>{\m{arraddr} (\m{ptr}, \m{i},\texttt{size}) \defeq~&
+  \m{ptr} + (\m{i} \times \hide{\texttt{sizeof}(\texttt{int}) \times} \texttt{size}) \\ }
+\uncover<4->{\p{rowrep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\ 
+&\mathsf{array}(\mathit{arraddr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\ }
 \vspace{1em}
-\p{AdjMat}(\gamma, \m{gaddr}, \_) \defeq~& \underset{\m{v}\hspace{0.1em}\in \gamma}{\bigstar} \p{arrrep}(\gamma, \m{v}, \m{gaddr})
+\p{AdjMat}(\gamma, \m{gaddr}, \_) \defeq~& \underset{\m{v}\hspace{0.1em}\in \gamma}{\bigstar} \p{rowrep}(\gamma, \m{v}, \m{gaddr})
 \end{align*}
 }
 
@@ -729,14 +730,22 @@ $\braces{{\exists \m{dist}, \m{prev}, \m{popped}}.~
   popped/.style={rounded corners=15pt, line width=1pt, draw, fill=myred},
   fringe/.style={rounded corners=15pt, line width=1pt, draw, fill=mypink},
   popping/.style={rounded corners=15pt, line width=1pt, draw, dashed, fill=mymaroon},
-  unseen/.style={rounded corners=15pt, line width=1pt, draw}]
+  unseen/.style={rounded corners=15pt, line width=1pt, draw},
+   every text node part/.style={align=left}]
+
   \uncover<1>{
   \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
   \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5,9.5) -- (1.5,9.5) -- cycle;
   \draw[popped] (3,3) -- (8,3) -- (6,6) -- (3,8) -- cycle;
-  \node at (1.4,1) {\Huge d$_3$};   
-  \node at (2.9,2.5) {\Huge d$_2$};   
-  \node at (4.4,4) {\Huge \color{white}d$_1$};}
+  \node at (1.4,0.8) {\Huge unseen};   
+  \node at (2.9,2.3) {\Huge fringe};   
+  \node at (4.5,3.8) {\Huge \color{white}popped};
+  \node at (-6,5) {\LARGE popped $\defeq$ globally optimal path known \\
+  \hspace{1.1em}\LARGE fringe $\defeq$ locally optimal path known: \\
+  \hspace{6.7em}\LARGE popped parent + one hop \\
+  \hspace{0.4em}\LARGE unseen $\defeq$ no path exists from \\
+  \hspace{6.7em}\LARGE popped area + one hop}; }  
+
   \end{tikzpicture}
 \end{adjustbox}
 \end{center}
@@ -769,23 +778,31 @@ $\braces{\exists \m{dist'}, \m{prev'}~
   popped/.style={rounded corners=15pt, line width=1pt, draw, fill=myred},
   fringe/.style={rounded corners=15pt, line width=1pt, draw, fill=mypink},
   popping/.style={rounded corners=15pt, line width=1pt, draw, dashed, fill=mymaroon},
-  unseen/.style={rounded corners=15pt, line width=1pt, draw}]
+  unseen/.style={rounded corners=15pt, line width=1pt, draw},
+  every text node part/.style={align=left}]
   \uncover<1>{
   \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
   \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5,9.5) -- (1.5,9.5) -- cycle;
   \draw[popped] (3,3) -- (8,3) -- (6,6) -- (3,8) -- cycle;
-  \node at (1.4,1) {\Huge d$_3$};   
-  \node at (2.9,2.5) {\Huge d$_2$};   
-  \node at (4.4,4) {\Huge \color{white}d$_1$}; 
+  \node at (1.4,0.8) {\Huge unseen};   
+  \node at (2.9,2.3) {\Huge fringe};   
+  \node at (4.5,3.8) {\Huge \color{white}popped};
   \node at (6.6,7) {\Huge u};}
+\uncover<1->{  
+\node at (-6,5) {\LARGE popped $\defeq$ globally optimal path known \\
+  \hspace{1.1em}\LARGE fringe $\defeq$ locally optimal path known: \\
+  \hspace{6.7em}\LARGE popped parent + one hop \\
+  \hspace{0.4em}\LARGE unseen $\defeq$ no path exists from \\
+  \hspace{6.7em}\LARGE popped area + one hop \\
+  \hspace{3.8em}\LARGE u $\defeq$ cheapest in the fringe}; }  
   \uncover<2>{
     \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
   \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5,9.5) -- (1.5,9.5) -- cycle;
   \draw[popping] (3,3) -- (8,3) -- (8,8) -- (3,8) -- cycle;
   \draw[popped] (3,3) -- (8,3) -- (6,6) -- (3,8) -- cycle;
-  \node at (1.4,1) {\Huge d$_3$};   
-  \node at (2.9,2.5) {\Huge d$_2$};   
-  \node at (4.4,4) {\Huge \color{white}d$_1$}; 
+  \node at (1.4,0.8) {\Huge unseen};   
+  \node at (2.9,2.3) {\Huge fringe};   
+  \node at (4.5,3.8) {\Huge \color{white}popped};
   \node at (6.6,7) {\Huge u}; }
 \end{tikzpicture}
 \end{adjustbox}
@@ -819,31 +836,41 @@ $\color{OliveGreen}\braces{{\exists \m{dist'}, \m{prev'}}.~
   popped/.style={rounded corners=15pt, line width=1pt, draw, fill=myred},
   fringe/.style={rounded corners=15pt, line width=1pt, draw, fill=mypink},
   popping/.style={rounded corners=15pt, line width=1pt, draw, dashed, fill=mymaroon},
-  unseen/.style={rounded corners=15pt, line width=1pt, draw}]
+  unseen/.style={rounded corners=15pt, line width=1pt, draw},
+  every text node part/.style={align=left}]
+
   \uncover<1>{
   \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
   \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5,9.5) -- (1.5,9.5) -- cycle;
   \draw[popped] (3,3) -- (8,3) -- (6,6) -- (3,8) -- cycle;
-  \node at (1.4,1) {\Huge d$_3$};   
-  \node at (2.9,2.5) {\Huge d$_2$};   
-  \node at (4.4,4) {\Huge \color{white}d$_1$}; 
+  \node at (1.4,0.8) {\Huge unseen};   
+  \node at (2.9,2.3) {\Huge fringe};   
+  \node at (4.5,3.8) {\Huge \color{white}popped};
   \node at (6.6,7) {\Huge u};}
+  \uncover<1->{   
+  \node at (-6,5) {\LARGE popped $\defeq$ globally optimal path known \\
+  \hspace{1.1em}\LARGE fringe $\defeq$ locally optimal path known: \\
+  \hspace{6.7em}\LARGE popped parent + one hop \\
+  \hspace{0.4em}\LARGE unseen $\defeq$ no path exists from \\
+  \hspace{6.7em}\LARGE popped area + one hop \\ 
+  \hspace{3.8em}\LARGE u $\defeq$ cheapest in the fringe}; }  
+
   \uncover<2>{
     \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
   \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5,9.5) -- (1.5,9.5) -- cycle;
   \draw[popping] (3,3) -- (8,3) -- (8,8) -- (3,8) -- cycle;
   \draw[popped] (3,3) -- (8,3) -- (6,6) -- (3,8) -- cycle;
-  \node at (1.4,1) {\Huge d$_3$};   
-  \node at (2.9,2.5) {\Huge d$_2$};   
-  \node at (4.4,4) {\Huge \color{white}d$_1$}; 
+  \node at (1.4,0.8) {\Huge unseen};   
+  \node at (2.9,2.3) {\Huge fringe};   
+  \node at (4.5,3.8) {\Huge \color{white}popped};
   \node at (6.6,7) {\Huge u}; }
   \uncover<3>{
     \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
   \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5, 4.0) -- (10.5, 4.0) -- (10.5, 5.0) -- (9.5, 5.0) -- (9.5,9.5) -- (6.5, 9.5) -- (6.5, 10.5) -- (5.5, 10.5) -- (5.5, 9.5) -- (1.5,9.5) -- cycle;
   \draw[popped] (3,3) -- (8,3) -- (8,8) -- (3,8) -- cycle;
-  \node at (1.4,1) {\Huge d$_3$};   
-  \node at (2.9,2.5) {\Huge d$_2$};   
-  \node at (4.4,4) {\Huge \color{white}d$_1$}; 
+  \node at (1.4,0.8) {\Huge unseen};   
+  \node at (2.9,2.3) {\Huge fringe};   
+  \node at (4.5,3.8) {\Huge \color{white}popped};
   \node at (6.6,7) {\Huge \color{white}u}; }
 \end{tikzpicture}
 \end{adjustbox}
@@ -907,18 +934,27 @@ $\braces{\exists \m{dist''}, \m{prev''}.~
   popped/.style={rounded corners=15pt, line width=1pt, draw, fill=myred},
   fringe/.style={rounded corners=15pt, line width=1pt, draw, fill=mypink},
   popping/.style={rounded corners=15pt, line width=1pt, draw, dashed, fill=mymaroon},
-  unseen/.style={rounded corners=15pt, line width=1pt, draw}]
+  unseen/.style={rounded corners=15pt, line width=1pt, draw},
+  every text node part/.style={align=left}]
+  
   \uncover<1>{
     \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
   \draw[fringe] (1.5,1.5) -- (9.5,1.5) -- (9.5, 4.0) -- (10.5, 4.0) -- (10.5, 5.0) -- (9.5, 5.0) -- (9.5,9.5) -- (6.5, 9.5) -- (6.5, 10.5) -- (5.5, 10.5) -- (5.5, 9.5) -- (1.5,9.5) -- cycle;
   \draw[popped] (3,3) -- (8,3) -- (8,8) -- (3,8) -- cycle;
-  \node at (1.4,1) {\Huge d$_3$};   
-  \node at (2.9,2.5) {\Huge d$_2$};   
-  \node at (4.4,4) {\Huge \color{white}d$_1$}; }
+  \node at (1.4,0.8) {\Huge unseen};   
+  \node at (2.9,2.3) {\Huge fringe};   
+  \node at (4.5,3.8) {\Huge \color{white}popped};}
+  \uncover<1->{  
+  \node at (-6,5) {\LARGE popped $\defeq$ globally optimal path known \\
+  \hspace{1.1em}\LARGE fringe $\defeq$ locally optimal path known: \\
+  \hspace{6.7em}\LARGE popped parent + one hop \\
+  \hspace{0.4em}\LARGE unseen $\defeq$ no path exists from \\
+  \hspace{6.7em}\LARGE popped area + one hop}; }  
+
   \uncover<2>{
     \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
   \draw[popped] (1.5,1.5) -- (3.5, 1.5) -- (3.5, 0) -- (7.5, 0) -- (7.5, 1.5) -- (9.5,1.5) -- (9.5, 4.0) -- (11, 4.0) -- (11, 8.0) -- (9.5, 8.0) -- (9.5,9.5) -- (6.5, 9.5) -- (6.5, 11) -- (0, 11) -- (0, 3) -- (1.5, 3) -- cycle;
-  \node at (4.4,4) {\Huge \color{white}d$_1$}; } 
+  \node at (4.5,3.8) {\Huge \color{white}popped}; } 
 \end{tikzpicture}
 \end{adjustbox}
 \end{center}
