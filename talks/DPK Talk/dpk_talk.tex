@@ -744,7 +744,7 @@ $\braces{{\exists \m{dist}, \m{prev}, \m{popped}}.~
   \hspace{1.1em}\LARGE fringe $\defeq$ locally optimal path known: \\
   \hspace{6.7em}\LARGE popped parent + one hop \\
   \hspace{0.4em}\LARGE unseen $\defeq$ no path exists from \\
-  \hspace{6.7em}\LARGE popped area + one hop}; }  
+  \hspace{6.7em}\LARGE popped parent + one hop}; }  
 
   \end{tikzpicture}
 \end{adjustbox}
@@ -793,7 +793,7 @@ $\braces{\exists \m{dist'}, \m{prev'}~
   \hspace{1.1em}\LARGE fringe $\defeq$ locally optimal path known: \\
   \hspace{6.7em}\LARGE popped parent + one hop \\
   \hspace{0.4em}\LARGE unseen $\defeq$ no path exists from \\
-  \hspace{6.7em}\LARGE popped area + one hop \\
+  \hspace{6.7em}\LARGE popped parent + one hop \\
   \hspace{3.8em}\LARGE u $\defeq$ cheapest in the fringe}; }  
   \uncover<2>{
     \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
@@ -852,7 +852,7 @@ $\color{OliveGreen}\braces{{\exists \m{dist'}, \m{prev'}}.~
   \hspace{1.1em}\LARGE fringe $\defeq$ locally optimal path known: \\
   \hspace{6.7em}\LARGE popped parent + one hop \\
   \hspace{0.4em}\LARGE unseen $\defeq$ no path exists from \\
-  \hspace{6.7em}\LARGE popped area + one hop \\ 
+  \hspace{6.7em}\LARGE popped parent + one hop \\ 
   \hspace{3.8em}\LARGE u $\defeq$ cheapest in the fringe}; }  
 
   \uncover<2>{
@@ -949,7 +949,7 @@ $\braces{\exists \m{dist''}, \m{prev''}.~
   \hspace{1.1em}\LARGE fringe $\defeq$ locally optimal path known: \\
   \hspace{6.7em}\LARGE popped parent + one hop \\
   \hspace{0.4em}\LARGE unseen $\defeq$ no path exists from \\
-  \hspace{6.7em}\LARGE popped area + one hop}; }  
+  \hspace{6.7em}\LARGE popped parent + one hop}; }  
 
   \uncover<2>{
     \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
