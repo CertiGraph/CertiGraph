@@ -329,30 +329,24 @@ Consider a $4$-bit machine and unsigned integers \\
 \end{tikzpicture}
 
 }
-\hide{
 \bigskip
+\uncover<9->{
+Must allow room for the probing edge \\ }
+\uncover<10>{so an edge-label is, at most, \alert{$\lfloor\texttt{MAX/(size-1)}\rfloor$}}
 
-\uncover<11->{
-One solution: Conservatively set upper bound to $\lfloor\texttt{MAX/size}\rfloor$}
-
-\bigskip
-
-\uncover<12->{
-Max path cost is then  
-$\lfloor\texttt{MAX/size}\rfloor$ \texttt{ * (size-1) = MAX - }$\lfloor\texttt{MAX/size}\rfloor$}
-}
 \end{frame}
 
 \begin{frame}{Motivation: A precondition for Dijkstra}
 
 There are many ways to fix this!
 \\ \hspace{1em} Refactor troublesome addition as subtraction
+\\ \hspace{1em} Coerce to \texttt{long}
+\\ \hspace{1em} Work in \texttt{float}, which has $\infty^{+}$
 \\ \hspace{1em} Never look back into optimized part
-\\ \hspace{1em} Your suggestion here
 
 \bigskip
 
-\pause Sadly, intuition supports \texttt{inf = MAX} \\
+\pause Sadly, intuition supports our misstep \\
 and bugs such as this one are often overlooked
 
 \end{frame}
@@ -386,7 +380,7 @@ VST + CompCert + \underline{CertiGraph}
 \texttt{dst}& \texttt{: }\mathcal{E} \rightarrow \mathcal{V}, \\
 \texttt{vlabel}& \texttt{: }\mathcal{V} \rightarrow \mathcal{L_V}, \\
 \texttt{elabel}& \texttt{: }\mathcal{E} \rightarrow \mathcal{L_E}, \\
-\texttt{sound}&\texttt{: Prop} \hspace{0.5em} \Big) 
+\texttt{sound}&\texttt{: Type} \hspace{0.5em} \Big) 
 \end{align*}
 
 \end{frame}
@@ -582,20 +576,22 @@ VST + CompCert + \underline{CertiGraph}
 
 
 \begin{frame}{Constraining a representable graph}
-What graphs are representable as edge-labeled adjacency matrices? \\
-\pause \bigskip
+What graphs are representable as edge-labeled adjacency matrices? 
+
+\bigskip 
+\uncover<2->{
 \vspace{-2em}
 \begin{align*}
-\Big(\hspace{0.5em}\mathcal{V}&\defeq\mathbb{Z}, \\
-\mathcal{E}&\defeq\mathcal{V} \times \mathcal{V}, \\
+\Big(\hspace{0.5em}\mathcal{\alert<3>V}&\defeq\mathbb{\alert<3>Z}, \\
+\mathcal{\alert<4>E}&\defeq\alert<4>{\mathcal{V} \times \mathcal{V}}, \\
 \texttt{vvalid}&\defeq\ldots, \\ 
 \texttt{evalid}&\defeq\ldots, \\
-\texttt{src}&\defeq\m{fst}, \hspace{0.5em}\texttt{dst}\defeq\m{snd}, \\
+\texttt{\alert<5>{src}}&\defeq\m{\alert<5>{fst}}, \hspace{0.5em}\texttt{\alert<5>{dst}}\defeq\m{\alert<5>{snd}}, \\
 \texttt{vlabel}&\defeq\ldots, \\
 \texttt{elabel}&\defeq\ldots, \\
-\alert{\texttt{sound}}&\defeq\alert{\texttt{SoundAdjMat}}\hspace{0.5em}\Big) 
+\alert<6>{\texttt{sound}}&\defeq\alert<6>{\texttt{SoundAdjMat size inf}}\hspace{0.5em}\Big) 
 \end{align*}
-
+}
 \end{frame}
 
 \begin{frame}[fragile]{A unified, reusable soundness condition}
@@ -634,21 +630,27 @@ We support three flavors of adjacency matrix: \\
 
 \bigskip
 
-\uncover<2>{
+\uncover<2-3>{
 
 \begin{minipage}{0.2\textwidth}
 {\centering
 \begin{adjustbox}{scale=0.5}
-\tikz\draw grid(3,3);
-
+\begin{tikzpicture}
+\draw grid(3,3);
+\uncover<3>{\draw[red, thick, yshift=2cm] grid(1,1);}
+\end{tikzpicture}
 \end{adjustbox}
 
 }
 \end{minipage} \begin{minipage}{0.45\textwidth}
 {\centering
 \begin{adjustbox}{scale=0.5}
-\tikz\draw grid(9,1);
 
+\begin{tikzpicture}
+\draw grid(9,1);
+\uncover<3>{\draw[red, thick] grid(1,1);}
+
+\end{tikzpicture}
 \end{adjustbox}
 
 }
@@ -659,6 +661,7 @@ We support three flavors of adjacency matrix: \\
 
 \draw grid(1,3);
 \draw [xshift=1.5cm, yshift=2.5cm]grid(3,1);
+\uncover<3>{\draw [red, thick, xshift=0cm, yshift=2cm]grid(1,1);}
 \draw [xshift=1.5cm, yshift=1cm]grid(3,1);
 \draw [xshift=1.5cm, yshift=-.5cm]grid(3,1);
 \node at (1.4, 1.5) {\Huge $\rightsquigarrow$};   
@@ -672,13 +675,13 @@ We support three flavors of adjacency matrix: \\
 \end{minipage} 
 }
 
-\uncover<3->{
+\uncover<4-6>{
 \vspace{-5em}
 The first, in memory:
 \begin{align*}
-\uncover<5>{\m{arraddr} (\m{ptr}, \m{i},\texttt{size}) \defeq~&
+\uncover<6>{\m{arraddr} (\m{ptr}, \m{i},\texttt{size}) \defeq~&
   \m{ptr} + (\m{i} \times \hide{\texttt{sizeof}(\texttt{int}) \times} \texttt{size}) \\ }
-\uncover<4->{\p{rowrep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\ 
+\uncover<5->{\p{rowrep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\ 
 &\mathsf{array}(\mathit{arraddr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\ }
 \vspace{1em}
 \p{AdjMat}(\gamma, \m{gaddr}, \_) \defeq~& \underset{\m{v}\hspace{0.1em}\in \gamma}{\bigstar} \p{rowrep}(\gamma, \m{v}, \m{gaddr})
@@ -695,8 +698,8 @@ The first, in memory:
 Class SoundDijk size inf g := {
   sadjmat: SoundAdjMat size inf g;
   efr: $\forall$e, evalid g e $\rightarrow$
-           0 $\le$ elabel g e $\le$ (MAX/size)-1;
-  ifr: (MAX/size)-1 $<$ inf $\le$ MAX - ((MAX/size)-1)
+           0 $\le$ elabel g e $\le$ (MAX/size);
+  ifr: (MAX/size) * size $\le$ inf 
 }.
 \end{lstlisting}
 
@@ -952,9 +955,15 @@ $\braces{\exists \m{dist''}, \m{prev''}.~
   \hspace{6.7em}\LARGE popped parent + one hop}; }  
 
   \uncover<2>{
-    \draw[unseen] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
+    \draw[fringe] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
   \draw[popped] (1.5,1.5) -- (3.5, 1.5) -- (3.5, 0) -- (7.5, 0) -- (7.5, 1.5) -- (9.5,1.5) -- (9.5, 4.0) -- (11, 4.0) -- (11, 8.0) -- (9.5, 8.0) -- (9.5,9.5) -- (6.5, 9.5) -- (6.5, 11) -- (0, 11) -- (0, 3) -- (1.5, 3) -- cycle;
-  \node at (4.5,3.8) {\Huge \color{white}popped}; } 
+  \node at (4.5,3.8) {\Huge \color{white}popped}; 
+  \node at (1.5,.8) {\Huge fringe}; } 
+
+  \uncover<3>{
+    \draw[popped] (0,0) -- (\s,0) -- (\s,\s) -- (0,\s) -- cycle;
+  \node at (4.5,3.8) {\Huge \color{white}popped}; }
+  
 \end{tikzpicture}
 \end{adjustbox}
 \end{center}
@@ -1142,10 +1151,10 @@ Class SoundUAdjMat size inf g := {
 \tikz\draw grid(5,5)foreach[count=~]\l in 
 {  , A, B, C, D, E,
  A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
- B, $\alert{\times}$, $\infty$, 4, 6, $\infty$,
- C, $\alert{\times}$, $\alert{\times}$, $\infty$, 1, 2,
- D, $\alert{\times}$, $\alert{\times}$, $\alert{\times}$, $\infty$, 1, 
- E, $\alert{\times}$, $\alert{\times}$, $\alert{\times}$, $\alert{\times}$, $\infty$}
+ B, $\alert{\infty}$, $\infty$, 4, 6, $\infty$,
+ C, $\alert{\infty}$, $\alert{\infty}$, $\infty$, 1, 2,
+ D, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\infty$, 1, 
+ E, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\infty$}
 {({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
 \end{adjustbox}
 
@@ -1169,6 +1178,7 @@ Class SoundUAdjMat size inf g := {
 
 \begin{frame}[fragile]{Prim: missing the forest for the trees}
 
+\begin{minipage}{0.60\textwidth}
 \begin{lstlisting}
 MST-PRIM(G,w,r):
  for each u in G.V
@@ -1178,17 +1188,17 @@ MST-PRIM(G,w,r):
  while PQ $\neq$ $\emptyset$
   u = EXTRACT-MIN(PQ) 
   for each v in G.Adj[u]
-   /* elided: potentially add 
-      v and (u, v) to MST */
+   if (v $\in$ Q and 
+       w(u,v) $<$ v.key)
+    v.parent = u
+    v.key = w(u,v) $\hide{code:primeditpri}$
 \end{lstlisting} 
 
 \bigskip \pause
 \uncover<2-3>{
 Prim typically assumes a connected graph}
-
+\end{minipage} \begin{minipage}{0.35\textwidth}
 \uncover<2->{
-\vspace{-16em}
-\hspace{17em}
 {\centering
 \begin{adjustbox}{scale=0.8}
 \begin{tikzpicture}
@@ -1239,11 +1249,13 @@ Prim typically assumes a connected graph}
 \end{adjustbox}
 
 }}
+\end{minipage}
 
 \end{frame}
 
 \begin{frame}[fragile]{Prim: missing the forest for the trees}
 
+\begin{minipage}{0.60\textwidth}
 \begin{lstlisting}
 MST-PRIM(G,w,r):
  for each u in G.V
@@ -1253,18 +1265,18 @@ MST-PRIM(G,w,r):
  while PQ $\neq$ $\emptyset$
   $\alert<6->{\texttt{u = EXTRACT-MIN(PQ)}}$ 
   for each v in G.Adj[u]
-   /* elided: potentially add 
-      v and (u, v) to MST */
+   if (v $\in$ Q and 
+       w(u,v) $<$ v.key)
+    v.parent = u
+    v.key = w(u,v) $\hide{code:primeditpri}$
 \end{lstlisting} 
 
 \bigskip \vspace{-1em}
 How about an unconnected graph? \\
 \uncover<6->{D can now be extracted at cost \texttt{inf} \\ } 
-\uncover<7->{meaning D is the root of a new tree!}
-
+\uncover<7->{\hspace{-.35em}meaning D is the root of a new tree!}
+\end{minipage} \begin{minipage}{0.35\textwidth}
 \uncover<2->{
-\vspace{-18em}
-\hspace{17em}
 {\centering
 \begin{adjustbox}{scale=0.9}
 \begin{tikzpicture}
@@ -1310,6 +1322,7 @@ How about an unconnected graph? \\
 \end{adjustbox}
 
 }}
+\end{minipage}
 
 \end{frame}
 
@@ -1377,6 +1390,28 @@ Manipulate two graphs simultaneously: \\
   }
  \pause \bigskip
   What can we say about $\texttt{connected}^{u}$ \m{a} \m{b}? $\texttt{connected}^{u}$ \m{c} \m{b}?
+\end{frame}
+
+\begin{frame}{Contributions}
+\uncover<1->{
+Mathematical, spatial support for adjacency matrices \\
+Mathematical, spatial support for edge lists \\
+Mathematical support for undirected graphs \\ }
+\bigskip
+\uncover<2->{
+Dijkstra's algorithm: nontrivial overflow \\ }
+\uncover<3->{
+Prim's algorithm: nontrivial improvement in spec \\ }
+\uncover<4->{
+Kruskal's algorithm: library handles directed $+$ undirected \\ }
+\bigskip
+\uncover<5->{
+Development is modular and general \\
+High effort---largely because we work with C---but good reuse}
+\bigskip
+\uncover<6->{
+\flushright
+Thanks!}
 \end{frame}
 
 \end{document}
