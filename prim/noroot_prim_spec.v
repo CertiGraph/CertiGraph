@@ -3,7 +3,7 @@ Require Export CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.graph.MathUAdjMatGraph.
 Require Import CertiGraph.prim.prim_constants.
 Require Import CertiGraph.graph.SpaceUAdjMatGraph3.
-Require Export CertiGraph.prim.noroot_prim3.
+Require Export CertiGraph.prim.noroot_prim.
 
 Local Open Scope Z_scope.
 

@@ -67,13 +67,13 @@ Definition ___compcert_va_float64 : ident := 18%positive.
 Definition ___compcert_va_int32 : ident := 16%positive.
 Definition ___compcert_va_int64 : ident := 17%positive.
 Definition _adjustWeight : ident := 66%positive.
-Definition _freeN : ident := 53%positive.
+Definition _free : ident := 52%positive.
 Definition _freePQ : ident := 68%positive.
 Definition _i : ident := 63%positive.
 Definition _inf : ident := 60%positive.
 Definition _init : ident := 56%positive.
 Definition _main : ident := 69%positive.
-Definition _mallocN : ident := 52%positive.
+Definition _mallocN : ident := 53%positive.
 Definition _minVertex : ident := 61%positive.
 Definition _minWeight : ident := 62%positive.
 Definition _newWeight : ident := 65%positive.
@@ -220,7 +220,7 @@ Definition f_freePQ := {|
   fn_temps := nil;
   fn_body :=
 (Scall None
-  (Evar _freeN (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
+  (Evar _free (Tfunction (Tcons (tptr tvoid) Tnil) tvoid cc_default))
   ((Etempvar _pq (tptr tvoid)) :: nil))
 |}.
 
@@ -472,14 +472,11 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
+ (_free, Gfun(External EF_free (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_mallocN,
    Gfun(External (EF_external "mallocN"
                    (mksignature (AST.Tint :: nil) AST.Tint cc_default))
      (Tcons tint Tnil) (tptr tvoid) cc_default)) ::
- (_freeN,
-   Gfun(External (EF_external "freeN"
-                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
-     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
  (_init, Gfun(Internal f_init)) :: (_push, Gfun(Internal f_push)) ::
  (_popMin, Gfun(Internal f_popMin)) ::
  (_adjustWeight, Gfun(Internal f_adjustWeight)) ::
@@ -488,7 +485,7 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_freePQ :: _pq_emp :: _adjustWeight :: _popMin :: _push :: _init ::
- _freeN :: _mallocN :: ___builtin_debug :: ___builtin_write32_reversed ::
+ _mallocN :: _free :: ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
  ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::

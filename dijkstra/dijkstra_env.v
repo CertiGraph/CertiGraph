@@ -9,7 +9,6 @@ Require Export VST.msl.seplog.
 Require Export VST.msl.iter_sepcon.
 Require Export CertiGraph.floyd_ext.share.
 Require Export CertiGraph.lib.List_ext.
-Require Export CertiGraph.lib.find_lemmas.
 Require Export CertiGraph.lib.Coqlib.
 Require Export CertiGraph.lib.EquivDec_ext.
 Require Export CertiGraph.graph.graph_model.

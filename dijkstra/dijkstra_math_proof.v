@@ -496,7 +496,7 @@ Section DijkstraMathLemmas.
       rewrite (edge_dst_snd g); trivial.
   Qed.
 
-  Lemma inv_popped_add_u:
+(*  Lemma inv_popped_add_u:
     forall (g: @DijkGG size inf) src dst u popped prev (priq dist: list Z),
       dijkstra_correct g src popped prev dist ->
       Znth src dist = 0 ->
@@ -810,7 +810,7 @@ Section DijkstraMathLemmas.
           apply min_in_list.
           1: apply incl_refl.
           rewrite <- Znth_0_hd; [apply Znth_In|]; ulia.
-  Qed.
+  Qed.*)
 
 
 
