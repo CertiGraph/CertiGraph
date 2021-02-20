@@ -631,15 +631,58 @@ We support three flavors of adjacency matrix: \\
 \hspace{1em}stack-allocated 1D~array \texttt{int~graph[size$\times$size]} \\
 \hspace{1em}heap-allocated 2D~array \texttt{int~**graph}
 
-\bigskip \pause
+\bigskip
 
-\begin{minipage}{0.33\textwidth}
-hello
-\end{minipage} \begin{minipage}{0.33\textwidth}
-hello
-\end{minipage}\begin{minipage}{0.33\textwidth}
-hello
+\uncover<2>{
+
+\begin{minipage}{0.2\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.5}
+\tikz\draw grid(3,3);
+
+\end{adjustbox}
+
+}
+\end{minipage} \begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.5}
+\tikz\draw grid(9,1);
+
+\end{adjustbox}
+
+}
+\end{minipage}\begin{minipage}{0.25\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.5}
+\begin{tikzpicture}
+
+\draw grid(1,3);
+\draw [xshift=1.5cm, yshift=2.5cm]grid(3,1);
+\draw [xshift=1.5cm, yshift=1cm]grid(3,1);
+\draw [xshift=1.5cm, yshift=-.5cm]grid(3,1);
+\node at (1.4, 1.5) {\Huge $\rightsquigarrow$};   
+\node at (1.4, 2.7) {\Huge $\rightsquigarrow$};   
+\node at (1.4, 0.2) {\Huge $\rightsquigarrow$};   
+
+\end{tikzpicture}
+\end{adjustbox}
+
+}
 \end{minipage} 
+}
+
+\uncover<3>{
+\vspace{-5em}
+The first, in memory:
+\begin{align*}
+\m{arraddr} (\m{ptr}, \m{i},\texttt{size}) \defeq~&
+  \m{ptr} + (\m{i} \times \hide{\texttt{sizeof}(\texttt{int}) \times} \texttt{size}) \\
+\p{arrrep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
+&\mathsf{array}(\mathit{arraddr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
+\vspace{1em}
+\p{AdjMat}(\gamma, \m{gaddr}, \_) \defeq~& \underset{\m{v}\hspace{0.1em}\in \gamma}{\bigstar} \p{arrrep}(\gamma, \m{v}, \m{gaddr})
+\end{align*}
+}
 
 \end{frame}
 
