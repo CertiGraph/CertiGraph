@@ -714,7 +714,7 @@ We verify Dijkstra 3 times: \\
 \begin{lstlisting}
 void dijkstra (int **g, int src, int *dist, 
                int *prev, int size, int inf {
- /* init PQ, fill out dist and prev */
+ /* elided: init PQ, fill out dist and prev */
  while (size(pq)) {
 \end{lstlisting}
 \pause
@@ -822,7 +822,7 @@ $\color{OliveGreen}\braces{{\exists \m{dist'}, \m{prev'}}.~
 {\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped} \uplus \{\texttt{u}\}, \m{prev'}, \m{dist'}, \texttt{i}, \texttt{u})}}$
 \pause
 \begin{lstlisting}
-  /* potentially relax the edge (u,i) */
+  /* elided: potentially relax edge (u,i) */
  }} /* for */  
 \end{lstlisting}
 
@@ -889,7 +889,7 @@ $\braces{\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}$
 $\color{OliveGreen}\braces{{\exists \m{dist'}, \m{prev'}}.~
 {\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped} \uplus \{\texttt{u}\}, \m{prev'}, \m{dist'}, \texttt{i}, \texttt{u})}}$
 \begin{lstlisting}
-  /* potentially relax the edge (u,i) */
+  /* elided: potentially relax edge (u,i) */
  }} /* for */  
 \end{lstlisting}
 \pause
@@ -1172,14 +1172,14 @@ Class SoundUAdjMat size inf g := {
 \begin{lstlisting}
 MST-PRIM(G,w,r):
  for each u in G.V
-  /* set up PQ, key, 
-     parent */
+  /* elided: set up PQ, 
+     key, parent */
  r.key = 0
  while PQ $\neq$ $\emptyset$
   u = EXTRACT-MIN(PQ) 
   for each v in G.Adj[u]
-   /* potentially add v 
-      and (u, v) to MST */
+   /* elided: potentially add 
+      v and (u, v) to MST */
 \end{lstlisting} 
 
 \bigskip \pause
@@ -1247,14 +1247,14 @@ Prim typically assumes a connected graph}
 \begin{lstlisting}
 MST-PRIM(G,w,r):
  for each u in G.V
-  /* set up PQ, key, 
-     parent */
+  /* elided: set up PQ, 
+     key, parent */
  r.key = 0
  while PQ $\neq$ $\emptyset$
   $\alert<6->{\texttt{u = EXTRACT-MIN(PQ)}}$ 
   for each v in G.Adj[u]
-   /* potentially add v 
-      and (u, v) to MST */
+   /* elided: potentially add 
+      v and (u, v) to MST */
 \end{lstlisting} 
 
 \bigskip \vspace{-1em}
