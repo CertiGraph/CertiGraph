@@ -8,7 +8,7 @@ $\color{OliveGreen}//~\braces{\p{AdjMat}(\texttt{g},\gamma) *
 \mathsf{array}(\texttt{dist}, \_) * \mathsf{array}(\texttt{prev}, \_)}$
  Item* temp = (Item*) mallocN(sizeof(Item));
  int* keys = mallocN (size * sizeof (int));
- PQ* pq = pq_make(size); int i, j, u, cost;
+ PQ* pq = pq_make(size); int i, u, cost;
  for (i = 0; i < size; i++)
  { dist[i] = inf; prev[i] = inf; keys[i] = pq_push(pq,inf,i); } $\label{code:assigninf}$
  dist[src]= 0; prev[src]= src; pq_edit_priority(pq,keys[src],0);
