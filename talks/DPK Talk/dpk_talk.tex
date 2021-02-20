@@ -133,7 +133,92 @@
 \section{CertiGraph: Motivation and Overview}
 \endgroup
 
-\begin{frame}{Motivation: A precondition for Dijkstra}
+\begin{frame}{Refresher: Dijkstra, Prim, Kruskal}
+
+{\centering
+\begin{adjustbox}{scale=0.9}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
+ 
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D}; 
+\node at (3.2, -3.5) {\small E}; 
+\node[inf] (A) at (1.5,1.5) {};  
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+% names
+  \uncover<1,2>{\node at (1.5,-4.2) {\small Dijkstra's algorithm (1959) \\ 
+  \small one-to-all shortest paths};}
+  \uncover<3,4>{\node at (1.5,-4.2) {\small Prim's algorithm (1930, 1957, 1959) \\
+  \small prune connected graph to MST};}
+  \uncover<5,6>{\node at (1.5,-4.2) {\small Kruskal's algorithm (1956) \\ 
+  \small prune graph to MSF};}
+
+%edge labels 
+\node at (.75,1.1) {3};
+\node at (1.5,0.25) {4};
+\node at (1.5,-2.89) {1};
+\uncover<1-3>{\node at (-0.2,-1.5) {6};
+			\node at (3.35,-1.5) {2};}
+\uncover<1-4>{\node at (1.4,-1.5) {1};}
+\uncover<3,5>{\node at (2.3,1.1) {9};}
+
+%edges for Dijkstra
+\uncover<1,2>{
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (D) -- (E);  
+  \draw [->, dashed, myred] (B) -- (D);
+  \draw [->, dashed, myred] (E) -- (C);
+  \draw [->, dashed, myred] (C) -- (D);
+ }
+\uncover<2>{
+  \draw [->, myred] (A) -- (B);
+  \draw [->, myred] (B) -- (C);
+  \draw [->, myred] (D) -- (E);  
+  \draw [->, myred] (C) -- (D);
+ }
+  
+ %undirected
+ \uncover<3,5>{
+  \draw [thick, dashed, myred] (B) -- (A);
+  \draw [thick, dashed, myred] (C) -- (B);
+  \draw [thick, dashed, myred] (E) -- (D);}
+ \uncover<4,6>{
+  \draw [thick, myred] (B) -- (A);
+  \draw [thick, myred] (C) -- (B);
+  \draw [thick, myred] (E) -- (D);}
+
+\uncover<3>{
+ \draw [thick, dashed, myred] (C) -- (D);
+ }
+ \uncover<4>{
+ \draw [thick, myred] (C) -- (D);
+ }
+ \uncover<3>{
+  \draw [thick, dashed, myred] (B) -- (D);
+  \draw [thick, dashed, myred] (E) -- (C);
+}
+ \uncover<3,5>{
+ \draw [thick, dashed, myred] (A) -- (C);
+ }
+\end{tikzpicture}
+\end{adjustbox}
+
+}% end centering
+\end{frame}
+
+\begin{frame}{Motivation: a precondition for Dijkstra}
 
 In a graph with \texttt{size} vertices, \\
 the longest optimal path has \texttt{size-1} links \\
@@ -146,9 +231,7 @@ the longest optimal path has \texttt{size-1} links \\
 
 {\centering
 \begin{tikzpicture}
-[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
- inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
- inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+[inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
  ->/.style={thick, arrows={-Stealth}}]
 
 \uncover<3->{
@@ -172,7 +255,7 @@ the longest optimal path has \texttt{size-1} links \\
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.7, 0.3) {\small B (cost \ifty)};
 \node at (6.8, 0.3) {\small C (cost \ifty)}; 
-  \node[vad] (A) at (0,0) {};
+  \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
   \node[inf] (C) [right = 3 of B] {};
   \draw [->, dashed, myred] (A) -- (B);
@@ -181,36 +264,38 @@ the longest optimal path has \texttt{size-1} links \\
  
 \uncover<4>{
 \node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.7, 0.3) {\small B (cost \ifty)};
-\node at (6.8, 0.3) {\small C (cost \ifty)};  
-  \node[vad] (A) at (0,0) {};
-  \node[inv] (B) [right = 3 of A] {};
-  \node[inf] (C) [right = 3 of B] {};
-  \draw [->, dashed, myred] (A) -- (B);
-  \draw [->, dashed, myred] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);}
-
-\uncover<5>{
-\node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost 3)};
 \node at (6.8, 0.3) {\small C (cost \ifty)};  
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
+  \node[inf] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
   \node[inf] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
+  \draw [->, myred] (A) -- (B);
   \draw [->, dashed, myred] (B) -- (C);
   \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
   }
 
+\uncover<5>{ 
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.5, 0.3) {\small B (cost 3)};
+\node at (6.6, 0.3) {\small C (cost 6)};  
+  \node[inf] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, myred] (A) -- (B);
+  \draw [->, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
 \uncover<6>{ 
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost 3)};
-\node at (6.8, 0.3) {\small C (cost \ifty)};  
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[inv] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->, dashed, myred] (B) -- (C);
+\node at (6.6, 0.3) {\small C (cost 6)};  
+\node at (5, -1.5) {if $3 > 9$ then relax C $\leadsto$ B};
+  \node[inf] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, myred] (A) -- (B);
+  \draw [->, myred] (B) -- (C);
   \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
 }
 
@@ -218,51 +303,26 @@ the longest optimal path has \texttt{size-1} links \\
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost 3)};
 \node at (6.6, 0.3) {\small C (cost 6)};  
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[vad] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
-}
-
-\uncover<8>{ 
-\node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.5, 0.3) {\small B (cost 3)};
-\node at (6.6, 0.3) {\small C (cost 6)};  
-\node at (5, -1.5) {if $3 > 9$ then relax C $\leadsto$ B};
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[vad] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
-}
-
-\uncover<9>{ 
-\node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.5, 0.3) {\small B (cost 3)};
-\node at (6.6, 0.3) {\small C (cost 6)};  
 \node at (5, -1.5) {if $3 > \alert{1}$ then relax C $\leadsto$ B};
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[vad] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->] (B) -- (C);
+  \node[inf] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, myred] (A) -- (B);
+  \draw [->, myred] (B) -- (C);
   \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
 }
 
-\uncover<10->{ 
+\uncover<8->{ 
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost \alert{1})};
 \node at (6.6, 0.3) {\small C (cost 6)}; 
 \node at (5, -1.5) {if $3 > 1$ then \alert{relax C $\leadsto$ B}};
-  \node[vad] (A) at (0,0) {};
-  \node[vad] (B) [right = 3 of A] {};
-  \node[vad] (C) [right = 3 of B] {};
-  \draw [->] (A) -- (B);
-  \draw [->] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+  \node[inf] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, myred] (A) -- (B);
+  \draw [->, myred] (B) -- (C);
+  \draw [->, mymaroon] (C.south) .. controls ++(0, -1) .. (B);
 }
 
 \end{tikzpicture}
@@ -337,14 +397,197 @@ VST + CompCert + \underline{CertiGraph}
 
 \section{Mathematical Adjacency Matrices}
 
+\begin{frame}{Refresher: adjacency matrices}
+
+\begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.9}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
+ 
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D}; 
+\node at (3.2, -3.5) {\small E}; 
+\node[inf] (A) at (1.5,1.5) {};  
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (D) -- (E);  
+  \draw [->, dashed, myred] (B) -- (D);
+  \draw [->, dashed, myred] (E) -- (C);
+  \draw [->, dashed, myred] (C) -- (D);
+ 
+\end{tikzpicture}
+\end{adjustbox}
+
+}
+\end{minipage} \begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.9}
+\tikz\draw grid(5,5)foreach[count=~]\l in 
+{  , A, B, C, D, E,
+ A, 0, 1, 0, 0, 0,
+ B, 0, 0, 1, 1, 0,
+ C, 0, 0, 0, 1, 0,
+ D, 0, 0, 0, 0, 1, 
+ E, 0, 0, 1, 0, 0}
+{({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
+
+\end{adjustbox}
+
+}
+\end{minipage}
+
+\vspace{0.9em}
+\centering 0 means absence, 1 means presence
+
+\end{frame}
+
+\begin{frame}{Issue with edge-labeled adjacency matrices}
+\begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.9}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
+ 
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D}; 
+\node at (3.2, -3.5) {\small E}; 
+\node[inf] (A) at (1.5,1.5) {};  
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+\node at (.75,1.1) {3};
+\node at (1.5,0.25) {4};
+\node at (1.5,-2.89) {1};
+\node at (-0.2,-1.5) {6};
+\node at (3.35,-1.5) {2};
+\node at (1.4,-1.5) {1};
+
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (D) -- (E);  
+  \draw [->, dashed, myred] (B) -- (D);
+  \draw [->, dashed, myred] (E) -- (C);
+  \draw [->, dashed, myred] (C) -- (D);
+ 
+\end{tikzpicture}
+\end{adjustbox}
+
+}
+\end{minipage} \begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.9}
+\tikz\draw grid(5,5)foreach[count=~]\l in 
+{  , A, B, C, D, E,
+ A, ?, 3, ?, ?, ?,
+ B, ?, ?, 4, 6, ?,
+ C, ?, ?, ?, 1, ?,
+ D, ?, ?, ?, ?, 1, 
+ E, ?, ?, 2, ?, ?}
+{({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
+\end{adjustbox}
+
+}
+
+\end{minipage}
+
+\vspace{0.9em}
+\uncover<2>{\centering Inadvertently created a fully-connected graph!}
+
+\end{frame}
+
+\begin{frame}{Supporting edge-labeled adjacency matrices}
+\begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.9}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
+ 
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D}; 
+\node at (3.2, -3.5) {\small E}; 
+\node[inf] (A) at (1.5,1.5) {};  
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+\node at (.75,1.1) {3};
+\node at (1.5,0.25) {4};
+\node at (1.5,-2.89) {1};
+\node at (-0.2,-1.5) {6};
+\node at (3.35,-1.5) {2};
+\node at (1.4,-1.5) {1};
+
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (D) -- (E);  
+  \draw [->, dashed, myred] (B) -- (D);
+  \draw [->, dashed, myred] (E) -- (C);
+  \draw [->, dashed, myred] (C) -- (D);
+ 
+\end{tikzpicture}
+\end{adjustbox}
+
+}
+\end{minipage} \begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.9}
+\tikz\draw grid(5,5)foreach[count=~]\l in 
+{  , A, B, C, D, E,
+ A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
+ B, $\infty$, $\infty$, 4, 6, $\infty$,
+ C, $\infty$, $\infty$, $\infty$, 1, $\infty$,
+ D, $\infty$, $\infty$, $\infty$, $\infty$, 1, 
+ E, $\infty$, $\infty$, 2, $\infty$, $\infty$}
+{({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
+\end{adjustbox}
+
+}
+
+\end{minipage}
+
+\vspace{0.9em}
+\uncover<2>{\centering Precondition: $\exists \infty.~$no bona-fide edge has cost $\infty$}
+\end{frame}
+
+
 \begin{frame}{Constraining a representable graph}
-What graphs are representable as adjacency matrices? \\
+What graphs are representable as edge-labeled adjacency matrices? \\
 \pause \bigskip
 \vspace{-2em}
 \begin{align*}
 \Big(\hspace{0.5em}\mathcal{V}&\defeq\mathbb{Z}, \\
 \mathcal{E}&\defeq\mathcal{V} \times \mathcal{V}, \\
-\texttt{vvalid}&\defeq\lambda v.~0 \le v < \texttt{size}, \\ 
+\texttt{vvalid}&\defeq\ldots, \\ 
 \texttt{evalid}&\defeq\ldots, \\
 \texttt{src}&\defeq\m{fst}, \hspace{0.5em}\texttt{dst}\defeq\m{snd}, \\
 \texttt{vlabel}&\defeq\ldots, \\
@@ -358,14 +601,12 @@ What graphs are representable as adjacency matrices? \\
 
 \begin{lstlisting}
 Class SoundAdjMat size inf g := {
-  sr: 0 < size <= MAX;
-  ir: MIN <= inf <= MAX; 
-  vm: forall v, vvalid g v <-> 0 <= v < size;
-  em: forall e, evalid g e <-> 
-                (MIN <= elabel g e <= MAX /\ 
-                 elabel g e <> inf);
-  iew: forall e, ~evalid g e <-> elabel g e = inf;
-  fin: FiniteGraph g
+  sr: 0 $<$ size $\le$ MAX;
+  ir: MIN $\le$ inf $\le$ MAX; 
+  vm: $\forall$v, vvalid g v $\leftrightarrow$ 0 $\le$ v $<$ size;
+  em: $\forall$e, evalid g e $\leftrightarrow$ (MIN $\le$ elabel g e $\le$ MAX $\wedge$ 
+                         elabel g e $\neq$ inf);
+  iew: $\forall$e, $\neg$evalid g e $\leftrightarrow$ elabel g e = inf
 }.
 \end{lstlisting}
 
@@ -375,8 +616,8 @@ Need more?
 \begin{lstlisting}
 Class SoundDijk size inf g := {
   sadjmat: SoundAdjMat size inf g;
-  further: ...
-}
+  further: /* restrictions */
+}.
 \end{lstlisting}
 
 \end{frame}
@@ -409,9 +650,9 @@ hello
 \begin{lstlisting}
 Class SoundDijk size inf g := {
   sadjmat: SoundAdjMat size inf g;
-  veb: forall e, evalid g e ->
-                 0 <= elabel g e <= (MAX / size) - 1;
-  ifr: (MAX / size) - 1 < inf <= MAX - ((MAX / size) - 1)
+  efr: $\forall$e, evalid g e $\rightarrow$
+           0 $\le$ elabel g e $\le$ (MAX/size)-1;
+  ifr: (MAX/size)-1 $<$ inf $\le$ MAX - ((MAX/size)-1)
 }.
 \end{lstlisting}
 
@@ -420,7 +661,7 @@ Class SoundDijk size inf g := {
 Nothing fancy spatially, use \p{AdjMat} wholesale \\
 We verify Dijkstra 3 times: \\
 \hspace{1em} reuse math proof entirely \\
-\hspace{1em} small variations (1\% loc) between spatial representations
+\hspace{1em} spatial variations handled under the hood
 
 \end{frame} 
 
@@ -429,7 +670,7 @@ We verify Dijkstra 3 times: \\
 \begin{lstlisting}
 void dijkstra (int **g, int src, int *dist, 
                int *prev, int size, int inf {
- /* init pq, fill out dist and prev */
+ /* init PQ, fill out dist and prev */
  while (size(pq)) {
 \end{lstlisting}
 \pause
@@ -521,10 +762,7 @@ $\color{OliveGreen}\braces{{\exists \m{dist'}, \m{prev'}}.~
 {\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped} \uplus \{\texttt{u}\}, \m{prev'}, \m{dist'}, \texttt{i}, \texttt{u})}}$
 \pause
 \begin{lstlisting}
-  cost = getCell(graph, u, i);
-  if (cost < inf && dist[i] > dist[u] + cost) {
-    dist[i] = dist[u] + cost; prev[i] = u;
-    dec_key(i, dist[i], pq); 
+  /* potentially relax the edge (u,i) */
  }} /* for */  
 \end{lstlisting}
 
@@ -581,10 +819,7 @@ $\braces{\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}$
 $\color{OliveGreen}\braces{{\exists \m{dist'}, \m{prev'}}.~
 {\m{dijk\_correct\_weak}(\gamma, \texttt{src}, \m{popped} \uplus \{\texttt{u}\}, \m{prev'}, \m{dist'}, \texttt{i}, \texttt{u})}}$
 \begin{lstlisting}
-  cost = getCell(graph, u, i);
-  if (cost < inf && dist[i] > dist[u] + cost) {
-    dist[i] = dist[u] + cost; prev[i] = u;
-    dec_key(i, dist[i], pq); 
+  /* potentially relax the edge (u,i) */
  }} /* for */  
 \end{lstlisting}
 \pause
@@ -596,9 +831,8 @@ $\color{OliveGreen}\braces{{\exists \m{dist'}, \m{prev'}}.~
 $\braces{\exists \m{dist''}, \m{prev''}.~
 \forall \m{dst}.~0 \le \m{dst} < \texttt{size} \rightarrow \null \\ 
 \m{inv\_popped}(\gamma, \m{src}, \m{\gamma.V}, \m{prev''}, \m{dist''}, \m{dst})}$
-\pause
 \begin{lstlisting}
- freePQ (pq); return;  
+ freePQ (pq); return;  } /* func */
 \end{lstlisting}
 
 \end{frame}
@@ -681,7 +915,7 @@ By design, $\texttt{reachable}^{d}$ weakens easily into $\texttt{connected}^{u}$
 \pause \bigskip
 
 $\texttt{connected}^{u}$ is powerful enough to define \\
-$\texttt{cycle}^{u}$, $\texttt{forest}^{u}$, $\texttt{spanning}^{u}$, and
+$\texttt{cycle}^{u}$, $\texttt{forest}^{u}$, $\texttt{spanning}^{u}$, $\ldots$ ,
 $\texttt{minimum\_spanning\_forest}^{u}$
 
 \end{frame}
@@ -712,65 +946,304 @@ And \texttt{minimum\_spanning\_forest f g} means that \\
 
 \begin{frame}[fragile]{\texttt{SoundUAdjMat}, the undirected soundness condition}
 
-Consider the adjacency matrix representation of an undirected graph: \\
-
+\begin{minipage}{0.45\textwidth}
 {\centering
-\includegraphics[scale=0.5]{undirected}
+\begin{adjustbox}{scale=0.8}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
+ 
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D}; 
+\node at (3.2, -3.5) {\small E}; 
+\node[inf] (A) at (1.5,1.5) {};  
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+\node at (.75,1.1) {3};
+\node at (1.5,0.25) {4};
+\node at (1.5,-2.89) {1};
+\node at (-0.2,-1.5) {6};
+\node at (3.35,-1.5) {2};
+\node at (1.4,-1.5) {1};
+
+  \draw [thick, dashed, myred] (A) -- (B);
+  \draw [thick, dashed, myred] (B) -- (C);
+  \draw [thick, dashed, myred] (D) -- (E);  
+  \draw [thick, dashed, myred] (B) -- (D);
+  \draw [thick, dashed, myred] (E) -- (C);
+  \draw [thick, dashed, myred] (C) -- (D);
+ 
+\end{tikzpicture}
+\end{adjustbox}
 
 }
+\end{minipage} \begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.8}
+\tikz\draw grid(5,5)foreach[count=~]\l in 
+{  , A, B, C, D, E,
+ A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
+ B, 3, $\infty$, 4, 6, $\infty$,
+ C, $\infty$, 4, $\infty$, 1, 2,
+ D, $\infty$, 6, 1, $\infty$, 1, 
+ E, $\infty$, $\infty$, 2, 1, $\infty$}
+{({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
+\end{adjustbox}
+
+}
+\end{minipage}
 
 \bigskip \pause
+
 A little trick prevents double-counting:
+
 \begin{lstlisting}
 Class SoundUAdjMat size inf g := {
   sadjmat: SoundAdjMat size inf g;
-  undirec: forall e, evalid g e -> src g e <= dst g e;
+  undirec: $\forall$e, evalid g e $\rightarrow$ src g e $\le$ dst g e;
 }.
 \end{lstlisting}
+
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{SoundUAdjMat}, the undirected soundness condition}
+
+\begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.8}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
+ 
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D}; 
+\node at (3.2, -3.5) {\small E}; 
+\node[inf] (A) at (1.5,1.5) {};  
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+\node at (.75,1.1) {3};
+\node at (1.5,0.25) {4};
+\node at (1.5,-2.89) {1};
+\node at (-0.2,-1.5) {6};
+\node at (3.35,-1.5) {2};
+\node at (1.4,-1.5) {1};
+
+  \draw [thick, dashed, myred] (A) -- (B);
+  \draw [thick, dashed, myred] (B) -- (C);
+  \draw [thick, dashed, myred] (D) -- (E);  
+  \draw [thick, dashed, myred] (B) -- (D);
+  \draw [thick, dashed, myred] (E) -- (C);
+  \draw [thick, dashed, myred] (C) -- (D);
+ 
+\end{tikzpicture}
+\end{adjustbox}
+
+}
+\end{minipage} \begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.8}
+\tikz\draw grid(5,5)foreach[count=~]\l in 
+{  , A, B, C, D, E,
+ A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
+ B, $\alert{\times}$, $\infty$, 4, 6, $\infty$,
+ C, $\alert{\times}$, $\alert{\times}$, $\infty$, 1, 2,
+ D, $\alert{\times}$, $\alert{\times}$, $\alert{\times}$, $\infty$, 1, 
+ E, $\alert{\times}$, $\alert{\times}$, $\alert{\times}$, $\alert{\times}$, $\infty$}
+{({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
+\end{adjustbox}
+
+}
+\end{minipage}
+
+\bigskip
+
+A little trick prevents double-counting:
+
+\begin{lstlisting}
+Class SoundUAdjMat size inf g := {
+  sadjmat: SoundAdjMat size inf g;
+  undirec: $\forall$e, evalid g e $\rightarrow$ $\alert{\m{fst} \texttt{ e} \le \m{snd} \texttt{ e}}$;
+}.
+\end{lstlisting}
+
 \end{frame}
 
 \section{Minimum Spanning Forest: Prim and Kruskal}
 
 \begin{frame}[fragile]{Prim: missing the forest for the trees}
 
-\begin{minipage}{0.48\textwidth}
 \begin{lstlisting}
 MST-PRIM(G,w,r):
  for each u in G.V
-  u.key = INF
-  u.parent = NIL $\hide{code:primsetinitparent}$
- r.key = 0 $\label{code:primsetroot}$
- Q = G.V
- while Q $\neq$ $\emptyset$
-  u = EXTRACT-MIN(Q) $\hide{code:primextractmin}$
+  /* set up PQ, key, 
+     parent */
+ r.key = 0
+ while PQ $\neq$ $\emptyset$
+  u = EXTRACT-MIN(PQ) 
   for each v in G.Adj[u]
-   if (v $\in$ Q and 
-       w(u,v) $<$ v.key)
-    v.parent = u
-    v.key = w(u,v) $\hide{code:primeditpri}$
-\end{lstlisting} \end{minipage}
-\begin{minipage}{0.5\textwidth}
-\pause
-Prim assumes a connected graph \\
+   /* potentially add v 
+      and (u, v) to MST */
+\end{lstlisting} 
+
 \bigskip \pause
-Why not an unconnected graph? \\
-\bigskip \pause
-\texttt{u} can now be extracted at cost \texttt{INF} \\ 
-\bigskip \pause
-meaning \texttt{u} is the root of a new tree!
-\end{minipage}
+\uncover<2-3>{
+Prim typically assumes a connected graph}
+
+\uncover<2->{
+\vspace{-16em}
+\hspace{17em}
+{\centering
+\begin{adjustbox}{scale=0.8}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
+ 
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D}; 
+\node at (3.2, -3.5) {\small E}; 
+\node[inf] (A) at (1.5,1.5) {};  
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+\node at (.75,1.1) {3};
+\node at (1.5,0.25) {4};
+\node at (1.5,-2.89) {1};
+\node at (1.4,-1.5) {1};
+\uncover<2>{\node at (2.3,1.1) {9};
+		    \node at (-0.2,-1.5) {6};
+	             \node at (3.35,-1.5) {2};
+			}
+
+ \uncover<2>{
+  \draw [thick, dashed, myred] (B) -- (A);
+  \draw [thick, dashed, myred] (C) -- (B);
+  \draw [thick, dashed, myred] (E) -- (D);
+  \draw [thick, dashed, myred] (C) -- (D);
+   \draw [thick, dashed, myred] (B) -- (D);
+  \draw [thick, dashed, myred] (E) -- (C);
+  \draw [thick, dashed, myred] (A) -- (C);
+  }
+  \uncover<3>{
+  \draw [thick, myred] (B) -- (A);
+  \draw [thick, myred] (C) -- (B);
+  \draw [thick, myred] (E) -- (D);
+  \draw [thick, myred] (C) -- (D);
+ }
+
+\end{tikzpicture}
+\end{adjustbox}
+
+}}
 
 \end{frame}
+
+\begin{frame}[fragile]{Prim: missing the forest for the trees}
+
+\begin{lstlisting}
+MST-PRIM(G,w,r):
+ for each u in G.V
+  /* set up PQ, key, 
+     parent */
+ r.key = 0
+ while PQ $\neq$ $\emptyset$
+  $\alert<6->{\texttt{u = EXTRACT-MIN(PQ)}}$ 
+  for each v in G.Adj[u]
+   /* potentially add v 
+      and (u, v) to MST */
+\end{lstlisting} 
+
+\bigskip \vspace{-1em}
+How about an unconnected graph? \\
+\uncover<6->{D can now be extracted at cost \texttt{inf} \\ } 
+\uncover<7->{meaning D is the root of a new tree!}
+
+\uncover<2->{
+\vspace{-18em}
+\hspace{17em}
+{\centering
+\begin{adjustbox}{scale=0.9}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
+ 
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D}; 
+\node at (3.2, -3.5) {\small E}; 
+\node[inf] (A) at (1.5,1.5) {};  
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+%edge labels 
+\node at (.75,1.1) {3};
+\node at (1.5,0.25) {4};
+\node at (1.5,-2.89) {1};
+\uncover<2-4>{\node at (2.3,1.1) {9};}
+ 
+ %undirected
+ \uncover<2->{
+  \draw [thick, dashed, myred] (B) -- (A);
+  \draw [thick, dashed, myred] (C) -- (B);
+  \draw [thick, dashed, myred] (E) -- (D);
+  }
+  \uncover<2-4>{
+  \draw [thick, dashed, myred] (A) -- (C);
+ }
+ \uncover<3->{\draw [thick, myred] (B) -- (A);}
+ \uncover<4->{\draw [thick, myred] (C) -- (B);}
+ \uncover<8>{\draw [thick, myred] (E) -- (D);}
+
+ 
+\end{tikzpicture}
+\end{adjustbox}
+
+}}
+
+\end{frame}
+
 
 \begin{frame}[fragile]{Prim: an unnecessary argument; a simpler spec}
 
 \begin{minipage}{0.48\textwidth}
 \begin{lstlisting}
-MST-PRIM(G,w,r):
+MST-PRIM(G,w,$\alert{\texttt{r}}$):
  for each u in G.V
   u.key = INF
   u.parent = NIL $\hide{code:primsetinitparent}$
- r.key = 0 $\label{code:primsetroot}$
+ $\alert{\texttt{r.key = 0}}$
  Q = G.V
  while Q $\neq$ $\emptyset$
   u = EXTRACT-MIN(Q) $\hide{code:primextractmin}$
