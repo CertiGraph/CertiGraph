@@ -77,7 +77,7 @@ Section DijkstraSpecPure.
       In mom' popped ->
       Znth dst dist <= Znth mom' dist + elabel g (mom', dst).
   
-  Definition inv_unseen (g : @DijkGG size inf) (src: V)
+  Definition inv_unseen (g : DijkGG) (src: V)
              (popped prev: list V) (dist: list Z) (dst : V) :=
     ~ In dst popped ->
     Znth dst dist = inf ->
@@ -85,7 +85,7 @@ Section DijkstraSpecPure.
       vvalid g m ->
       (* I. acyclic p2m -> *)
       In m popped ->
-      path_ends g p2m src m -> (* m is in popped using 2nd disj *)
+      path_correct g prev dist src m p2m ->
       ~ valid_path g (path_glue p2m (m, [(m, dst)])).
   (* II. path_cost (path_glue p2m (m, [(m, dst)])) >= inf *)
 
@@ -94,7 +94,7 @@ Section DijkstraSpecPure.
   (* every path has an acyclic subpath that still connects src to dst *)
   
 
-  Definition inv_unseen_weak (g : @DijkGG size inf) (src: V)
+  Definition inv_unseen_weak (g : DijkGG) (src: V)
              (popped prev: list V) (dist: list Z) (dst u : V) :=
     ~ In dst popped ->
     Znth dst dist = inf ->
@@ -102,7 +102,7 @@ Section DijkstraSpecPure.
       vvalid g m ->
       In m popped ->
       m <> u ->
-      path_ends g p2m src m ->
+      path_correct g prev dist src m p2m ->
       ~ valid_path g (path_glue p2m (m, [(m, dst)])). 
 
   Definition dijkstra_correct (g : DijkGG) src popped prev dist : Prop :=

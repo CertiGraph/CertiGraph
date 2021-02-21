@@ -1554,6 +1554,7 @@ Section DijkstraProof.
                      apply H_inv_unseen_weak; trivial.
             ++  (* i was not a neighbor of u.
                  We must prove the for loop's invariant holds *)
+              rewrite <- inf_eq in H22.
               forward.
               Exists prev' dist' popped' h'.
               thaw FR.
@@ -1608,8 +1609,7 @@ Section DijkstraProof.
                             simpl in H35. apply H35.
                             lia.
                           }
-                          simpl id in *.
-                          rewrite <- inf_eq in H22. ulia.
+                          simpl id in *. ulia.
                      }
                      apply H43; trivial.
                  --- apply H_inv_unpopped; lia.
@@ -1631,12 +1631,16 @@ Section DijkstraProof.
                    apply H35.
                    ulia.
                  }
-                 admit.
-                 (*
-                   rewrite path_cost_glue_one_step.
-                 destruct H38 as [? _].
-                 pose proof (path_cost_pos _ _ H38).
-                 simpl id in *. rewrite <- inf_eq in H22. ulia. *)      
+                 intro.
+                 apply Z.ge_le, Zle_not_lt in H22; apply H22.
+                 assert (In (u, i) (snd p2m ++ snd (u, [(u, i)]))). {
+                   simpl. apply in_or_app.
+                   right. simpl. left; trivial.
+                 }
+                 pose proof (valid_path_evalid _ _ _ _ H40 H41).
+                 apply valid_edge_bounds in H42.
+                 pose proof (inf_gt_largest_edge g).
+                 apply Z.le_lt_trans with (m := Int.max_signed / size); simpl id; ulia.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)

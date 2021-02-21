@@ -1575,7 +1575,7 @@ Section DijkstraProof.
                      
                      assert (0 <= u < size) by lia.
                      simpl id in *.
-                     intro. (* not enough? *)
+                     (* not enough? *)
                      admit.
                  --- intros.
                      assert (i <= dst < size) by lia.
@@ -1658,13 +1658,17 @@ Section DijkstraProof.
                    apply (sublist.Forall_Znth _ _ u) in H35.
                    apply H35.
                    ulia.
+                 } 
+                 intro.
+                 apply Z.ge_le, Zle_not_lt in H22; apply H22.
+                 assert (In (u, i) (snd p2m ++ snd (u, [(u, i)]))). {
+                   simpl. apply in_or_app.
+                   right. simpl. left; trivial.
                  }
-                 admit. (* not enough *)
-                 (*
-                 rewrite path_cost_glue_one_step.
-                 destruct H38 as [? _].
-                 pose proof (path_cost_pos _ _ H38).
-                 simpl id in *. ulia. *)
+                 pose proof (valid_path_evalid _ _ _ _ H40 H41).
+                 apply valid_edge_bounds in H42.
+                 pose proof (inf_gt_largest_edge g).
+                 apply Z.le_lt_trans with (m := Int.max_signed / size); simpl id; ulia.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
