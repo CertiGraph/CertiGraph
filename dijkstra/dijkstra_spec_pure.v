@@ -12,7 +12,9 @@ Section DijkstraSpecPure.
 
   Definition path_correct (g: @DijkGG size inf)
              (prev: list V) (dist: list Z) src dst p : Prop  :=
-    valid_path g p /\
+    valid_path g p /\        (* I. II. add acyclic p here? 
+                                or... p's cost is bounded somehow
+                              *)
     path_ends g p src dst /\
     path_cost g p < inf /\ 
     Znth dst dist = path_cost g p /\
@@ -81,9 +83,16 @@ Section DijkstraSpecPure.
     Znth dst dist = inf ->
     forall m p2m,
       vvalid g m ->
+      (* I. acyclic p2m -> *)
       In m popped ->
-      path_ends g p2m src m ->
-      ~ valid_path g (path_glue p2m (m, [(m, dst)])). 
+      path_ends g p2m src m -> (* m is in popped using 2nd disj *)
+      ~ valid_path g (path_glue p2m (m, [(m, dst)])).
+  (* II. path_cost (path_glue p2m (m, [(m, dst)])) >= inf *)
+
+  (* p2m has size-2 edges at most
+     (path_glue p2m (m, [(m, dst)])) has size-1 at most *)
+  (* every path has an acyclic subpath that still connects src to dst *)
+  
 
   Definition inv_unseen_weak (g : @DijkGG size inf) (src: V)
              (popped prev: list V) (dist: list Z) (dst u : V) :=
