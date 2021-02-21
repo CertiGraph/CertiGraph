@@ -10,15 +10,32 @@ Section DijkstraSpecPure.
   Context {V_EqDec : EquivDec.EqDec V eq}. 
   Context {E_EqDec : EquivDec.EqDec E eq}. 
 
+  Definition acyclic_path (g: @DijkGG size inf) p := NoDup (epath_to_vpath g p).
+
+  Lemma NoDup_one: forall A (n: A), NoDup [n].
+  Proof.
+    intros. apply NoDup_cons. 
+    inversion 1. apply NoDup_nil.
+  Qed.
+        
+  Lemma acyclic_nil_path:
+    forall g p, acyclic_path g (p, []).
+  Proof.
+    intros. unfold acyclic_path. simpl.
+    apply NoDup_one.
+  Qed.
+    
   Definition path_correct (g: @DijkGG size inf)
              (prev: list V) (dist: list Z) src dst p : Prop  :=
-    valid_path g p /\        (* I. II. add acyclic p here? 
-                                or... p's cost is bounded somehow
-                              *)
+    valid_path g p /\
+    (* I. II. add acyclic p here? 
+       or... p's cost is bounded somehow
+     *)
     path_ends g p src dst /\
     path_cost g p < inf /\ 
     Znth dst dist = path_cost g p /\
-    Forall (fun (x: E) => Znth (snd x) prev = fst x) (snd p).
+    Forall (fun (x: E) => Znth (snd x) prev = fst x) (snd p) /\
+    acyclic_path g p.
 
   Definition path_globally_optimal (g: @DijkGG size inf) src dst p : Prop :=
     forall p', valid_path g p' ->
