@@ -1564,6 +1564,15 @@ Section DijkstraProof.
                      subst m.
                      rename p2m into p2u.
                      rewrite H38 in H_non_improvement.
+
+                     (* in H_non_improvement:
+                        Znth u dist' must be the culprit.
+                        it is disobeying upp bnd of (size-1)*(max/size)
+                        this can only be because it is disobeying acyclic!
+                      *)
+                     
+                     intro.
+                     
                      assert (0 <= u < size) by lia.
                      simpl id in *.
                      intro. (* not enough? *)
