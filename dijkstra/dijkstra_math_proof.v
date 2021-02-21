@@ -805,13 +805,16 @@ Section DijkstraMathLemmas.
      *)
     destruct (H_inv_popped _ H4 H5) as [[? ?] | [optp2m [? [? ?]]]].
     - (* m was popped @ inf *)
-      destruct H6 as [? [? _]].
-      specialize (H8 p2m H9). contradiction.
+      specialize (H8 p2m H6).
+      intro. apply H8.
+      assert (paths_meet g p2m (m, [(m, dst)])). {
+        apply (path_ends_meet _ _ _ src m dst); trivial.
+        red. simpl. rewrite (edge_dst_snd g). simpl. split; trivial.
+      }
+      apply (valid_path_split _ _ _ H10 H9).
     - (* m was popped @ < inf *)
       (* Since optp2m is optimal, it cannot be worse than p2m.
          We will strengthen the goal and then prove it. *)
-      destruct H6 as [? [? _]].
-      specialize (H9 p2m H6 H10).
       assert (0 <= dst < i). {
         assert (dst <> i). {
           intro. subst dst.
@@ -822,8 +825,7 @@ Section DijkstraMathLemmas.
       }
       apply (vvalid_meaning g) in H_i_valid.
       rewrite upd_Znth_diff in H3; try ulia.
-      red in H_inv_unseen.
-      apply (H_inv_unseen _ H11 H2 H3 _ optp2m); trivial.
+      apply (H_inv_unseen); trivial.
   Qed.
 
   Lemma inv_unseen_weak_newcost:
@@ -850,13 +852,16 @@ Section DijkstraMathLemmas.
      *)
     destruct (H_inv_popped _ H4 H5) as [[? ?] | [optp2m [? [? ?]]]].
     - (* m was popped @ inf *)
-      destruct H7 as [? [? _]].
-      specialize (H9 p2m H10). contradiction.
+      specialize (H9 p2m H7).
+      intro. apply H9.
+      assert (paths_meet g p2m (m, [(m, dst)])). {
+        apply (path_ends_meet _ _ _ src m dst); trivial.
+        red. simpl. rewrite (edge_dst_snd g). simpl. split; trivial.
+      }
+      apply (valid_path_split _ _ _ H11 H10).
     - (* m was popped @ < inf *)
       (* Since optp2m is optimal, it cannot be worse than p2m.
          We will strengthen the goal and then prove it. *)
-      destruct H7 as [? [? _]].
-      specialize (H10 p2m H7 H11).
       assert (dst <> i). {
         intro. subst dst.
         rewrite (vvalid_meaning g i) in H_i_valid.
@@ -865,8 +870,7 @@ Section DijkstraMathLemmas.
       rewrite (vvalid_meaning g i) in H_i_valid.
       rewrite upd_Znth_diff in H3; try ulia.
       assert (i <= dst < size) by lia.
-      red in H_inv_unseen_weak.
-      apply (H_inv_unseen_weak _ H13 H2 H3 m optp2m); trivial.
+      apply H_inv_unseen_weak; trivial.
   Qed.           
 
   Lemma inv_unpopped_new_dst:
@@ -1228,14 +1232,18 @@ Section DijkstraMathLemmas.
       1: {
         (* i was unseen *)
         assert (i <= i < size) by lia.
-        (* rewrite H_priq_dist_link in H11; trivial. *)
-        pose proof (H_inv_unseen_weak
+        destruct Hrem as [_ [Hrem _]].
+        exfalso.
+        apply (H_inv_unseen_weak
                       _ H28 H10 H11 mom'
                       p2mom' H17 H18 n0 Hrem).
-        exfalso. apply H29.
-        simpl.
+        apply valid_path_merge; trivial.
+        2: { simpl.
         rewrite (edge_src_fst g); split; trivial.
         apply strong_evalid_dijk; ulia.
+        }
+        apply (path_ends_meet _ _ _ src mom' i); trivial.
+        red. simpl. rewrite (edge_dst_snd g). simpl. split; trivial.
       }
       
       (* Now we know that i was seen but unpopped. 
@@ -1276,14 +1284,20 @@ Section DijkstraMathLemmas.
       destruct H11.
       1: {
         (* i was unseen *)
+        destruct Hrem as [_ [Hrem _]].
         assert (i <= i < size) by lia.
         pose proof (H_inv_unseen_weak
                       _ H29 H10 H11 mom' p2mom'
                       H17 H18 H28 Hrem).
         exfalso. apply H30.
-        simpl.
-        rewrite (edge_src_fst g); split; trivial.
-        apply strong_evalid_dijk; ulia.
+        apply valid_path_merge; trivial.
+        2: {
+          simpl.
+          rewrite (edge_src_fst g); split; trivial.
+          apply strong_evalid_dijk; ulia.
+        }
+        apply (path_ends_meet _ _ _ src mom' i); trivial.
+        red. simpl. rewrite (edge_dst_snd g). simpl. split; trivial.
       }
       assert (i <= i < size) by lia.
       destruct (H_inv_unpopped_weak i H29 H10 H11).
@@ -1498,10 +1512,16 @@ Section DijkstraMathLemmas.
       + (* dist[child'] = inf. This is impossible *)
         exfalso.
         destruct (H _ H35) as [_ [_ ?]].
+        destruct H37 as [Hb [H37 _]].
         specialize (H44 H29 H43 mom' optp2mom' H34 H28 H37).
         exfalso. apply H44.
-        simpl.
-        rewrite (edge_src_fst g); split; trivial.
+        apply valid_path_merge; trivial.
+        2: {
+          simpl.
+          rewrite (edge_src_fst g); split; trivial.
+        }
+        apply (path_ends_meet _ _ _ src mom' child'); trivial.
+        red. simpl. rewrite (edge_dst_snd g). simpl. split; trivial.
       + (* dist[child'] < inf. We use inv_unpopped *)
         destruct (H _ H35) as [_ [? _]].
         red in H44.
