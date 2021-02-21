@@ -83,7 +83,7 @@ Section DijkstraSpecPure.
       vvalid g m ->
       In m popped ->
       path_correct g prev dist src m p2m ->
-      ~ valid_path g (m, [(m, dst)]). 
+      ~ valid_path g (path_glue p2m (m, [(m, dst)])). 
 
   Definition inv_unseen_weak (g : DijkGG) (src: V)
              (popped prev: list V) (dist: list Z) (dst u : V) :=
@@ -94,7 +94,7 @@ Section DijkstraSpecPure.
       In m popped ->
       m <> u ->
       path_correct g prev dist src m p2m ->
-      ~ valid_path g (m, [(m, dst)]). 
+      ~ valid_path g (path_glue p2m (m, [(m, dst)])). 
 
   Definition dijkstra_correct (g : DijkGG) src popped prev dist : Prop :=
     forall dst,

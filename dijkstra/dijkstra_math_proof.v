@@ -370,9 +370,9 @@ Section DijkstraMathLemmas.
     }
 
     assert (elabel g (mom', child') < inf). {
-      apply Z.le_lt_trans with (m := Int.max_signed / size - 1).
+      apply Z.le_lt_trans with (m := Int.max_signed / size).
       apply valid_edge_bounds; trivial.
-      apply (inf_further_restricted g).
+      apply (inf_gt_largest_edge g).
     }
     
     split3; [| |split3; [| |split3;
@@ -392,21 +392,21 @@ Section DijkstraMathLemmas.
       rewrite path_cost_path_glue in H3; trivial.
       rewrite one_step_path_Znth in H3. ulia.
   Qed.
-
+  
   Lemma evalid_dijk:
     forall (g: @DijkGG size inf) a b cost,
       cost = elabel g (a,b) ->
-      0 <= cost <= Int.max_signed / size - 1 ->
+      0 <= cost <= Int.max_signed / size ->
       evalid g (a,b).
   Proof.
     intros.
     rewrite (evalid_meaning g); split.
     1: apply edge_representable.
     destruct H0.
-    apply Z.le_lt_trans with (m := Int.max_signed / size - 1);
+    apply Z.le_lt_trans with (m := Int.max_signed / size);
       trivial.
     rewrite H in H1; trivial.
-    apply (inf_further_restricted g).
+    apply (inf_gt_largest_edge g).
   Qed.
 
   Lemma inv_popped_add_src:

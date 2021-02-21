@@ -28,17 +28,14 @@ Section MathDijkGraph.
        *)
       forall e,
         evalid g e ->
-        0 <= elabel g e <= (Int.max_signed / size) - 1;
-
-    cts: (* cost_to_self *)
-      forall v, vvalid g v -> elabel g (v, v) = 0;
+        0 <= elabel g e <= Int.max_signed / size;
 
     sfr: (* size is further restricted *)
       size * 4 <= Int.max_signed;
     (* because sizeof tint = 4 *)
     
     ifr: (* inf is further restricted *)
-      (Int.max_signed / size) - 1 < inf <= Int.max_signed - (Int.max_signed / size) + 1
+      (Int.max_signed / size) * size <= inf
                                                         
     }.
 
@@ -70,9 +67,6 @@ Section MathDijkGraph.
   (* For the four Dijkstra-specific plugins, we create getters: *)
   Definition valid_edge_bounds (g: DijkGG) :=
     @veb g (SoundDijk_DijkGG g).
-
-  Definition cost_to_self (g: DijkGG) :=
-    @cts g (SoundDijk_DijkGG g).
 
   Definition size_further_restricted (g: DijkGG) :=
     @sfr g (SoundDijk_DijkGG g).
@@ -134,7 +128,7 @@ Section MathDijkGraph.
     destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
     - specialize (H e0). 
       split; trivial. rep_lia.
-      apply Z.le_trans with (m := (Int.max_signed / size) - 1); trivial.
+      apply Z.le_trans with (m := (Int.max_signed / size)).
       apply H.
       pose proof (size_representable g).
       apply Z.le_trans with (m := Int.max_signed / size).
@@ -161,5 +155,14 @@ Section MathDijkGraph.
     split; trivial.
     apply edge_representable.
   Qed.
+
+  Lemma inf_gt_largest_edge:
+    forall (g: DijkGG),
+    Int.max_signed / size < inf.
+  Proof.
+    intros.
+    pose proof (inf_further_restricted g).
+    destruct (size_representable g) as [? _].
+  Admitted.
   
 End MathDijkGraph.
