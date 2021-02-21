@@ -948,6 +948,7 @@ Section DijkstraProof.
           assert (Htemp: 0 <= u < Zlength dist) by lia.
           pose proof (Znth_dist_cases _ _ Htemp H10).
           clear Htemp.
+          destruct H19; [admit|]. (* by connectedness *)
           
           (* This is the priq array with which
            we will enter the for loop.
@@ -1008,7 +1009,7 @@ Section DijkstraProof.
                2: {
                  intros.
                  replace (heap_capacity h) with size in *.
-                 apply inv_popped_add_u'; try ulia.
+                 apply inv_popped_add_u; try ulia.
                  1: apply H4; inversion 1.
                  rewrite <- Heql in *.
                  intros.
@@ -1072,24 +1073,22 @@ Section DijkstraProof.
                replace u with src in * by now apply Hl.  
                intros. intro.
                simpl in H21; destruct H21; [|lia].
-               subst dst; clear H20.
-               destruct H19; [left | right].
-               ** exfalso. rewrite H19 in H2. ulia.
-               ** exists (src, []). split3.
-                  --- split3; [| |split3]; trivial.
-                      +++ split; trivial.
-                      +++ rewrite path_cost.path_cost_zero; ulia.
-                      +++ apply Forall_forall.
-                          inversion 1.
-                  --- unfold path_in_popped.
-                      intros. 
-                      inversion H20.
-                      +++ simpl in H21. 
-                          subst step. simpl; left; trivial.
-                      +++ destruct H21 as [? [? _]].
-                          inversion H21.
-                  --- red. intros. rewrite path_cost.path_cost_zero; try ulia.
-                      apply path_cost_pos; trivial.
+               subst dst; clear H20. right.
+               exists (src, []). split3.
+               ** split3; [| |split3]; trivial.
+                  --- split; trivial.
+                  --- rewrite path_cost.path_cost_zero; ulia.
+                  --- apply Forall_forall.
+                      inversion 1.
+               ** unfold path_in_popped.
+                  intros. 
+                  inversion H20.
+                  --- simpl in H21. 
+                      subst step. simpl; left; trivial.
+                  --- destruct H21 as [? [? _]].
+                      inversion H21.
+               ** red. intros. rewrite path_cost.path_cost_zero; try ulia.
+                  apply path_cost_pos; trivial.
   
             ++ intros.
                apply (vvalid_meaning g) in H20.
@@ -1540,14 +1539,16 @@ Section DijkstraProof.
 
                      assert (i <= i < size) by lia.
                      destruct (Z.eq_dec m u).
-                     2: now apply (H_inv_unseen_weak _ H42) with (m:=m).
+                     2: {
+                       red in H_inv_unseen_weak.
+                       apply (H_inv_unseen_weak _ H42 H37 H38 m p2m); trivial.
+                     }
                      subst m.
                      rename p2m into p2u.
                      rewrite H38 in H_non_improvement.
                      assert (0 <= u < size) by lia.
-                     rewrite path_cost_glue_one_step.
                      destruct H41 as [_ [_ [_ [? _]]]].
-                     simpl id in *. ulia.
+                     simpl id in *. admit.
                  --- intros.
                      assert (i <= dst < size) by lia.
                      apply H_inv_unseen_weak; trivial.
@@ -1620,19 +1621,16 @@ Section DijkstraProof.
                  assert (i <= i < size) by lia.
                  unfold inv_unseen; intros.
                  destruct (Z.eq_dec m u).
-                 2: now apply (H_inv_unseen_weak _ H24)
-                   with (m:=m).
-                 
-                 subst m.
-                 assert (0 <= Znth u dist'). {
-                   apply (sublist.Forall_Znth _ _ u) in H35.
-                   apply H35.
-                   ulia.
+                 2: {
+                   red in H_inv_unseen_weak.
+                   apply (H_inv_unseen_weak _ H24 H25 H26 m p2m); trivial.
                  }
+                 admit.
+                 (*
                  rewrite path_cost_glue_one_step.
                  destruct H38 as [? _].
                  pose proof (path_cost_pos _ _ H38).
-                 simpl id in *. rewrite <- inf_eq in H22. ulia.
+                 simpl id in *. rewrite <- inf_eq in H22. ulia. *)
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
@@ -1702,8 +1700,9 @@ Section DijkstraProof.
         forward. thaw FR.
         Exists prev dist popped. entailer!.
         intros. destruct (H7 _ H15) as [? _]; trivial.
-        Time Qed.
-
+        (* Time Qed. *)
+  Admitted.
+        
   Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
   Proof.
     start_function.
