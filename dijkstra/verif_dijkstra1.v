@@ -1093,11 +1093,12 @@ Section DijkstraProof.
                subst dst; clear H20.
                right.
                exists (src, []). split3.
-               ** split3; [| |split3]; trivial.
+               ** split3; [| |split3; [| |split]]; trivial.
                   --- split; trivial.
                   --- rewrite path_cost.path_cost_zero; ulia.
                   --- apply Forall_forall.
                       inversion 1.
+                  --- apply acyclic_nil_path.
                ** unfold path_in_popped.
                   intros. 
                   inversion H20.
@@ -1571,11 +1572,9 @@ Section DijkstraProof.
                         this can only be because it is disobeying acyclic!
                       *)
                      
-                     intro.
-                     
-                     assert (0 <= u < size) by lia.
+                     intros _.
                      simpl id in *.
-                     (* not enough? *)
+                     red in H41.
                      admit.
                  --- intros.
                      assert (i <= dst < size) by lia.

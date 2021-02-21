@@ -418,11 +418,12 @@ Section DijkstraMathLemmas.
   Proof.
     intros. right.
     exists (src, []); split3; trivial.
-    - split3; [| | split3]; trivial.
+    - split3; [| | split3; [| |split]]; trivial.
       + split; trivial.
       + unfold path_cost. simpl.
         apply (inf_bounds g).
       + rewrite Forall_forall; intros; simpl in H3; lia.
+      + apply acyclic_nil_path.
     - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
       + simpl in H3.
         simpl. left; lia.
@@ -442,10 +443,10 @@ Section DijkstraMathLemmas.
       path_correct g prev dist src u (fst p2mom, snd p2mom +:: (mom, u)).
   Proof.
     intros.
-    destruct H as [? [[? ?] [? [? ?]]]].
+    destruct H as [? [[? ?] [? [? [? Ha]]]]].
     assert (path_cost g p2mom + elabel g (mom, u) < inf) by
         ulia. 
-    split3; [| | split3]; trivial.
+    split3; [| | split3; [| |split]]; trivial.
     - apply (valid_path_app_cons g); trivial;
         try rewrite <- surjective_pairing; trivial.
     - apply (path_ends_app_cons g); trivial.
@@ -461,7 +462,8 @@ Section DijkstraMathLemmas.
         rewrite (surjective_pairing x) in *.
         inversion H10.
         simpl. rewrite <- H12, <- H13. ulia.
-  Qed.
+    - admit.
+  Admitted.
 
   Lemma in_path_app_cons:
     forall (g: @DijkGG size inf) step p2a src a b,
@@ -656,8 +658,8 @@ Section DijkstraMathLemmas.
     destruct (H1 dst H0 H5)
       as [? | [p2dst [? [? ?]]]]; [left | right]; trivial.
     exists p2dst. split3; trivial.
-    - destruct H8 as [? [? [? [? ?]]]].
-      split3; [| | split3]; trivial.
+    - destruct H8 as [? [? [? [? [? Ha]]]]].
+      split3; [| | split3; [| |split]]; trivial.
       1: rewrite upd_Znth_diff; ulia.
       rewrite Forall_forall; intros.
       pose proof (In_links_snd_In_path g _ _ H15).
