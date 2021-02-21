@@ -75,17 +75,17 @@ Section DijkstraSpecPure.
       In mom' popped ->
       Znth dst dist <= Znth mom' dist + elabel g (mom', dst).
   
-  Definition inv_unseen (g : DijkGG) (src: V)
+  Definition inv_unseen (g : @DijkGG size inf) (src: V)
              (popped prev: list V) (dist: list Z) (dst : V) :=
     ~ In dst popped ->
     Znth dst dist = inf ->
     forall m p2m,
       vvalid g m ->
       In m popped ->
-      path_correct g prev dist src m p2m ->
+      path_ends g p2m src m ->
       ~ valid_path g (path_glue p2m (m, [(m, dst)])). 
 
-  Definition inv_unseen_weak (g : DijkGG) (src: V)
+  Definition inv_unseen_weak (g : @DijkGG size inf) (src: V)
              (popped prev: list V) (dist: list Z) (dst u : V) :=
     ~ In dst popped ->
     Znth dst dist = inf ->
@@ -93,7 +93,7 @@ Section DijkstraSpecPure.
       vvalid g m ->
       In m popped ->
       m <> u ->
-      path_correct g prev dist src m p2m ->
+      path_ends g p2m src m ->
       ~ valid_path g (path_glue p2m (m, [(m, dst)])). 
 
   Definition dijkstra_correct (g : DijkGG) src popped prev dist : Prop :=

@@ -1565,9 +1565,8 @@ Section DijkstraProof.
                      rename p2m into p2u.
                      rewrite H38 in H_non_improvement.
                      assert (0 <= u < size) by lia.
-                     destruct H41 as [_ [_ [_ [? _]]]].
                      simpl id in *.
-                     intro. simpl in H44.
+                     intro. (* not enough? *)
                      admit.
                  --- intros.
                      assert (i <= dst < size) by lia.
@@ -1651,7 +1650,7 @@ Section DijkstraProof.
                    apply H35.
                    ulia.
                  }
-                 admit.
+                 admit. (* not enough *)
                  (*
                  rewrite path_cost_glue_one_step.
                  destruct H38 as [? _].
