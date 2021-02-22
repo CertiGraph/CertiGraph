@@ -35,7 +35,7 @@ Section MathDijkGraph.
     (* because sizeof tint = 4 *)
     
     ifr: (* inf is further restricted *)
-      (Int.max_signed / size) * size <= inf
+      (Int.max_signed / size) * size < inf
                                                         
     }.
 
@@ -162,7 +162,10 @@ Section MathDijkGraph.
   Proof.
     intros.
     pose proof (inf_further_restricted g).
-    destruct (size_representable g) as [? _].
-  Admitted.
+    pose proof (size_representable g).
+    apply Z.le_lt_trans with (m := Int.max_signed / size * size); trivial.
+    apply Z.le_mul_diag_r; [|lia].
+    apply Z.div_str_pos; trivial.
+  Qed.
   
 End MathDijkGraph.
