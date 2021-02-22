@@ -33,6 +33,20 @@ Section DijkstraMathLemmas.
     Forall (fun x => 0 <= x <= (size - 1) * (Int.max_signed / size)
                      \/ x = inf) dist.
 
+  Lemma inf_bounded_above_dist: forall (g: @DijkGG size inf),
+      (size - 1) * (Int.max_signed / size) < inf.
+  Proof.
+    intros.
+    pose proof (inf_further_restricted g).
+    apply Z.lt_le_trans with (m := Int.max_signed / size * size);
+      trivial.
+    apply Z.le_lt_trans with (m := (size - 1) * (Int.max_signed / size));
+      [lia|].
+    rewrite Z.mul_comm. apply Zmult_lt_compat_l.
+    apply Z.div_str_pos. apply (size_representable g).
+    lia.
+  Qed.
+
   Lemma Forall_upd_Znth: forall (l: list Z) i new F,
       0 <= i < Zlength l ->
       Forall F l -> F new ->
@@ -1612,12 +1626,9 @@ Section DijkstraMathLemmas.
         destruct (H _ H35) as [_ [? _]].
         red in H44.
         assert (Znth child' dist < inf). {
-          pose proof (inf_further_restricted g).
-          apply Z.lt_le_trans with (m := Int.max_signed / size * size);
-            trivial.
-          clear -H43.
-          admit. (* gonna need to special-case size = 1 *)
-        }                    
+          pose proof (inf_bounded_above_dist g).
+          lia.
+        }
         specialize (H44 H29 H45).
         destruct H44 as [? | [_ [? [? [? [? [? ?]]]]]]].
         * (* child' = src. Again, impossible *)
@@ -1632,6 +1643,6 @@ Section DijkstraMathLemmas.
           2: destruct H37 as [_ [_ [_ [? _]]]]; ulia.
           rewrite <- H19, <- H11.
           apply H_u_best; trivial.
-  Admitted.
+  Qed.
   
 End DijkstraMathLemmas.
