@@ -133,7 +133,7 @@ Section DijkstraProof.
 
       (* Information about the ranges of the three arrays *)
       @inrange_prev size inf prev;
-      @inrange_dist inf dist;
+      @inrange_dist size inf dist;
 
             forall i,
         vvalid g i ->
@@ -282,7 +282,7 @@ Section DijkstraProof.
                                                            
       (* and ranges of the two arrays *)
       @inrange_prev size inf prev';
-      @inrange_dist inf dist';
+      @inrange_dist size inf dist';
 
             forall i,
         vvalid g i ->
@@ -793,8 +793,12 @@ Section DijkstraProof.
         * red. intros. inversion H4.
         * red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
-        * red; apply Forall_upd_Znth;
-            try apply Forall_list_repeat; ulia.
+        * red; apply Forall_upd_Znth.
+          1: rewrite Zlength_list_repeat; lia.
+          try apply Forall_list_repeat; try ulia.
+          left. pose proof (size_representable g).
+          split; [reflexivity|].
+          apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; lia. 
         * intros.
           apply (Permutation_map heap_item_key) in H_ha_hb_rel.
           rewrite update_pri_by_key_keys_unaffected in H_ha_hb_rel.
@@ -961,6 +965,12 @@ Section DijkstraProof.
            dijkstra_correct.
            *)
 
+          assert (Haa: (size - 1) * (Int.max_signed / size) <= Int.max_signed). {
+            apply Z.le_trans with (m := size * (Int.max_signed / size)).
+            - apply Zmult_le_compat_r.
+              lia. apply Z.div_pos; lia. 
+            - apply Z.mul_div_le. lia.
+          }
 
           forward_for_simple_bound
             size
@@ -1011,6 +1021,10 @@ Section DijkstraProof.
                  intros.
                  replace (heap_capacity h) with size in *.
                  apply inv_popped_add_u; try ulia.
+                 1: {
+                   pose proof (inf_bounded_above_dist g).
+                   lia.
+                 }
                  1: apply H4; inversion 1.
                  rewrite <- Heql in *.
                  intros.
@@ -1068,7 +1082,7 @@ Section DijkstraProof.
                    assert (In (Znth i dist) dist). {
                      apply Znth_In. lia.
                    }
-                   specialize (H10 _ H26).
+                   specialize (H10 _ H26). destruct H10; [|ulia].
                    ulia.
                }
                replace u with src in * by now apply Hl.  
@@ -1078,7 +1092,6 @@ Section DijkstraProof.
                exists (src, []). split3.
                ** split3; [| |split3; [| |split]]; trivial.
                   --- split; trivial.
-                  --- rewrite path_cost.path_cost_zero; ulia.
                   --- apply Forall_forall.
                       inversion 1.
                   --- apply acyclic_nil_path.
@@ -1284,6 +1297,11 @@ Section DijkstraProof.
             rename H42 into Hw.
             rename H43 into Ha'.
 
+            assert (Htemp: 0 <= u < Zlength dist') by lia.
+            pose proof (Znth_dist_cases _ _ Htemp H35).
+            clear Htemp.
+            destruct H22 as [? | Hbb]; [admit|]. (* by connectedness *)
+
             forward_call (sh, g, graph_ptr, addresses, u, i).            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
 
@@ -1311,12 +1329,16 @@ Section DijkstraProof.
                assert (0 <= Znth u dist' <= inf). {
                  assert (0 <= u < Zlength dist') by lia.
                  apply (sublist.Forall_Znth _ _ _ H23) in H35.
-                 assumption.
+                 destruct H35; [|lia].
+                 pose proof (inf_bounded_above_dist g).
+                 lia.
                }
                assert (0 <= Znth i dist' <= inf). {
                  assert (0 <= i < Zlength dist') by lia.
                  apply (sublist.Forall_Znth _ _ _ H24) in H35.
-                 assumption.
+                 destruct H35; [|lia].
+                 pose proof (inf_bounded_above_dist g).
+                 lia.
                }
                assert (0 <= Znth u dist' + cost <= Int.max_signed). {
                  (* IMPORTANT:
@@ -1325,8 +1347,7 @@ Section DijkstraProof.
                   inf's upper bound
                   *)
                  pose proof (inf_further_restricted g).
-                 admit.
-                 (* lia. *)
+                 ulia.
                }
                thaw FR.
                forward. forward. forward_if.
@@ -1411,8 +1432,12 @@ Section DijkstraProof.
                       inversion H31.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
-                  --- apply Forall_upd_Znth;  ulia.
-                  --- apply Forall_upd_Znth;  ulia.
+                  --- apply Forall_upd_Znth; ulia.
+                  --- apply Forall_upd_Znth; try ulia.
+                      left. destruct icases; [|ulia].
+                      admit.
+                  (* interesting case *)
+                      
                   --- specialize (He _ H39 H40).
                       unfold proj_keys in He |- *.
                       apply (Permutation_map heap_item_key) in H36.
@@ -1556,7 +1581,12 @@ Section DijkstraProof.
                      
                      intros _.
                      simpl id in *.
-                     red in H41.
+                     apply Z.ge_le in H_non_improvement.
+                     apply Zle_not_lt in H_non_improvement.
+                     apply H_non_improvement.
+                     pose proof (inf_bounded_above_dist g).
+                     pose proof (inf_further_restricted g).
+                     (* need to change ifr? *)
                      admit.
                  --- intros.
                      assert (i <= dst < size) by lia.
@@ -1599,7 +1629,7 @@ Section DijkstraProof.
                      right. split3; [| |split3; [| |split3]]; trivial.
                      
                      intros.
-                     destruct (@Znth_dist_cases inf mom' dist')
+                     destruct (@Znth_dist_cases size inf mom' dist')
                        as [e | e]; trivial.
                      1: apply (vvalid_meaning g) in H45; ulia.
                      1: { rewrite e.
@@ -1615,8 +1645,7 @@ Section DijkstraProof.
                      1: { subst mom'.
                           assert (0 <= Znth u dist'). {
                             apply (sublist.Forall_Znth _ _ u) in H35.
-                            simpl in H35. apply H35.
-                            lia.
+                            destruct H35; lia. lia.
                           }
                           simpl id in *. ulia.
                      }
@@ -1637,8 +1666,7 @@ Section DijkstraProof.
                  subst m.
                  assert (0 <= Znth u dist'). {
                    apply (sublist.Forall_Znth _ _ u) in H35.
-                   apply H35.
-                   ulia.
+                   destruct H35; lia. lia.
                  }
                  intro.
                  apply Z.ge_le, Zle_not_lt in H22; apply H22.
