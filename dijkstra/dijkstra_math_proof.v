@@ -30,7 +30,8 @@ Section DijkstraMathLemmas.
     Forall (fun x => 0 <= x < size \/ x = inf) prev.
 
   Definition inrange_dist dist :=
-    Forall (fun x => 0 <= x <= inf) dist.
+    Forall (fun x => 0 <= x <= (size - 1) * (Int.max_signed / size)
+                     \/ x = inf) dist.
 
   Lemma Forall_upd_Znth: forall (l: list Z) i new F,
       0 <= i < Zlength l ->
@@ -51,11 +52,10 @@ Section DijkstraMathLemmas.
       0 <= i < Zlength dist ->
       inrange_dist dist ->
       Znth i dist = inf \/
-      0 <= Znth i dist < inf.
+      0 <= Znth i dist <= (size - 1) * (Int.max_signed / size).
   Proof.
     intros.
-    apply (sublist.Forall_Znth _ _ _ H) in H0.
-    simpl in H0. lia.
+    apply (sublist.Forall_Znth _ _ _ H) in H0. ulia.
   Qed.
 
   Lemma Int_signed_strip:
@@ -1004,7 +1004,9 @@ Section DijkstraMathLemmas.
       pose proof (edge_cost_pos g (mom', i)).
       ulia.
     }
-    destruct (H_inv_popped _ H15 H16); [ulia|].  
+    destruct (H_inv_popped _ H15 H16) as [[? ?] | ?].
+    1: pose proof (edge_cost_pos g (mom', i)); ulia.
+
     destruct H17 as [p2mom' [? [? ?]]].
     assert (Hrem := H17).
     
@@ -1243,7 +1245,9 @@ Section DijkstraMathLemmas.
     }
 
     destruct (H_inv_popped _ H17 H18) as
-        [? | [p2mom' [? [? ?]]]]; [ulia|].
+        [[? ?] | [p2mom' [? [? ?]]]].
+    1: pose proof (edge_cost_pos g (mom', i)); ulia.
+
     assert (Hrem:= H21).
     destruct H21 as [? [? [? ?]]].
     pose proof (path_ends_In_path_dst _ _ _ _ H24).
@@ -1452,7 +1456,12 @@ Section DijkstraMathLemmas.
     
     split3.
     - apply path_correct_app_cons; trivial.
-      + admit.
+      + replace (Znth mom dist + elabel g (mom, u))
+          with (Znth u dist).
+        (* red in H1. *)
+        apply (sublist.Forall_Znth _ _ u) in H1.
+        destruct H1; try ulia.
+        apply (vvalid_meaning g) in H4; lia.
       + lia.
       + intro. apply H3, H14; trivial.
     - unfold path_in_popped. intros.
@@ -1580,7 +1589,7 @@ Section DijkstraMathLemmas.
       assert (0 <= Znth mom' dist). {
         rewrite (vvalid_meaning g) in H34.
         apply (sublist.Forall_Znth _ _ mom') in H1.
-        apply H1. ulia.
+        destruct H1; ulia. ulia. 
       }
       assert (Htemp: 0 <= child' < Zlength dist). {
         apply (vvalid_meaning g) in H35; trivial. ulia. 
@@ -1602,7 +1611,14 @@ Section DijkstraMathLemmas.
       + (* dist[child'] < inf. We use inv_unpopped *)
         destruct (H _ H35) as [_ [? _]].
         red in H44.
-        specialize (H44 H29 H43).
+        assert (Znth child' dist < inf). {
+          pose proof (inf_further_restricted g).
+          apply Z.lt_le_trans with (m := Int.max_signed / size * size);
+            trivial.
+          clear -H43.
+          admit. (* gonna need to special-case size = 1 *)
+        }                    
+        specialize (H44 H29 H45).
         destruct H44 as [? | [_ [? [? [? [? [? ?]]]]]]].
         * (* child' = src. Again, impossible *)
           exfalso.
@@ -1611,7 +1627,7 @@ Section DijkstraMathLemmas.
           destruct H37 as [_ [[? _] _]]. left.
           rewrite (surjective_pairing optp2mom') in *; simpl.
           simpl in H37; lia.
-        * specialize (H49 mom' H34 H28).
+        * specialize (H50 mom' H34 H28).
           apply Z.le_trans with (m := Znth child' dist); trivial.
           2: destruct H37 as [_ [_ [_ [? _]]]]; ulia.
           rewrite <- H19, <- H11.
