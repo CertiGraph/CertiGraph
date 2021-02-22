@@ -471,7 +471,8 @@ Section DijkstraMathLemmas.
     - split3; [| | split3; [| |split]]; trivial.
       + split; trivial.
       + unfold path_cost. simpl.
-        apply (inf_bounds g).
+        pose proof (size_representable g).
+        apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; lia.
       + rewrite Forall_forall; intros; simpl in H3; lia.
       + apply acyclic_nil_path.
     - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
@@ -487,7 +488,7 @@ Section DijkstraMathLemmas.
     forall (g: @DijkGG size inf) src u mom p2mom prev dist,
       path_correct g prev dist src mom p2mom ->
       Znth u dist = Znth mom dist + elabel g (mom, u) ->
-      Znth mom dist + elabel g (mom, u) < inf ->
+      Znth mom dist + elabel g (mom, u) <= (size - 1) * (Int.max_signed / size) ->
       strong_evalid g (mom, u) ->
       Znth u prev = mom ->
       ~ In_path g u p2mom ->
@@ -496,8 +497,8 @@ Section DijkstraMathLemmas.
     intros.
     rename H4 into Hb.
     destruct H as [? [? [? [? [? Ha]]]]].
-    assert (path_cost g p2mom + elabel g (mom, u) < inf) by
-        ulia. 
+    assert (path_cost g p2mom + elabel g (mom, u) <=
+            (size - 1) * (Int.max_signed / size)) by ulia. 
     split3; [| | split3; [| |split]]; trivial.
     - destruct H4; apply (valid_path_app_cons g); trivial;
         try rewrite <- surjective_pairing; trivial.
@@ -1450,8 +1451,10 @@ Section DijkstraMathLemmas.
     }
     
     split3.
-    - apply path_correct_app_cons; trivial. lia.
-      intro. apply H3, H14; trivial.
+    - apply path_correct_app_cons; trivial.
+      + admit.
+      + lia.
+      + intro. apply H3, H14; trivial.
     - unfold path_in_popped. intros.
       destruct H13 as [? [? _]].
       apply (in_path_app_cons _ _ _ src) in H17; trivial.
@@ -1613,6 +1616,6 @@ Section DijkstraMathLemmas.
           2: destruct H37 as [_ [_ [_ [? _]]]]; ulia.
           rewrite <- H19, <- H11.
           apply H_u_best; trivial.
-  Qed.
+  Admitted.
   
 End DijkstraMathLemmas.
