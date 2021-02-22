@@ -1435,9 +1435,9 @@ Section DijkstraProof.
                   --- apply Forall_upd_Znth; ulia.
                   --- apply Forall_upd_Znth; try ulia.
                       left. destruct icases; [|ulia].
-                      admit.
-                  (* interesting case *)
-                      
+                      assert (0 <= Znth u dist' <= (size-2) * (Int.max_signed / size)) by admit.
+                      (* interesting case *)
+                      lia.                                            
                   --- specialize (He _ H39 H40).
                       unfold proj_keys in He |- *.
                       apply (Permutation_map heap_item_key) in H36.
