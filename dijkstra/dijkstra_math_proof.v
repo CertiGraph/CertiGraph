@@ -38,7 +38,7 @@ Section DijkstraMathLemmas.
   Proof.
     intros.
     pose proof (inf_further_restricted g).
-    apply Z.lt_le_trans with (m := Int.max_signed / size * size);
+    apply Z.lt_trans with (m := Int.max_signed / size * size);
       trivial.
     apply Z.le_lt_trans with (m := (size - 1) * (Int.max_signed / size));
       [lia|].

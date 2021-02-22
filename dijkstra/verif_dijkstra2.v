@@ -1586,8 +1586,7 @@ Section DijkstraProof.
                      apply H_non_improvement.
                      pose proof (inf_bounded_above_dist g).
                      pose proof (inf_further_restricted g).
-                     (* need to change ifr? *)
-                     admit.
+                     lia.
                  --- intros.
                      assert (i <= dst < size) by lia.
                      apply H_inv_unseen_weak; trivial.
