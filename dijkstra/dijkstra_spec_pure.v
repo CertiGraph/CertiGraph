@@ -32,7 +32,7 @@ Section DijkstraSpecPure.
        or... p's cost is bounded somehow
      *)
     path_ends g p src dst /\
-    path_cost g p < inf /\ 
+    path_cost g p <= (size-1) * (Int.max_signed / size) /\ 
     Znth dst dist = path_cost g p /\
     Forall (fun (x: E) => Znth (snd x) prev = fst x) (snd p) /\
     acyclic_path g p.
