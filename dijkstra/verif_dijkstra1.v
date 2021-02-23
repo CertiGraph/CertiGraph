@@ -1109,7 +1109,8 @@ Section DijkstraProof.
                exists (src, []). split3.
                ** split3; [| |split3; [| |split]]; trivial.
                   --- split; trivial.
-                  --- rewrite path_cost.path_cost_zero; ulia.
+                  --- rewrite path_cost.path_cost_zero.
+                      admit.
                   --- apply Forall_forall.
                       inversion 1.
                   --- apply acyclic_nil_path.
@@ -1454,9 +1455,23 @@ Section DijkstraProof.
                   --- apply Forall_upd_Znth; ulia.
                   --- apply Forall_upd_Znth; try ulia.
                       left. destruct icases; [|ulia].
-                      assert (0 <= Znth u dist' <= (size-2) * (Int.max_signed / size)) by admit.
-                      (* interesting case *)
-                      lia.                      
+                      assert (0 <= Znth u dist' <= (size-2) * (Int.max_signed / size)). {
+                        assert (vvalid g u). {
+                          apply (vvalid_meaning g); trivial.
+                        }
+                        destruct (H_inv_popped _ H40 H31) as [? | [? [? [? ?]]]];
+                                               try ulia.
+                        destruct H41 as [? [? [? [? [? ?]]]]].
+                        rewrite <- H46 in H45.
+                        split; try ulia.
+                        apply Z.le_trans with (m := (Zlength popped' - 1) * (Int.max_signed / size)); trivial.
+                        apply Z.mul_le_mono_nonneg_r; trivial.
+                        apply Z.div_pos; lia.
+               
+                        admit.
+                      }  
+                      lia.
+                        
                   --- specialize (He _ H39 H40).
                       unfold proj_keys in He |- *.
                       apply (Permutation_map heap_item_key) in H36.

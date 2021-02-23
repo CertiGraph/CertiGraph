@@ -189,7 +189,7 @@ Section DijkstraMathLemmas.
       Znth mom dist < inf ->
       vvalid g mom ->
       exists p2mom : path,
-        path_correct g prev dist src mom p2mom /\
+        path_correct g popped prev dist src mom p2mom /\
         (forall step : Z,
             In_path g step p2mom ->
             In step popped) /\
@@ -486,7 +486,9 @@ Section DijkstraMathLemmas.
       + split; trivial.
       + unfold path_cost. simpl.
         pose proof (size_representable g).
-        apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; lia.
+        apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; try ulia.
+        rewrite Zlength_cons.
+        admit.
       + rewrite Forall_forall; intros; simpl in H3; lia.
       + apply acyclic_nil_path.
     - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
@@ -496,23 +498,23 @@ Section DijkstraMathLemmas.
     - unfold path_globally_optimal; intros.
       unfold path_cost at 1; simpl.
       apply path_cost_pos; trivial.
-  Qed.
+  Admitted.
 
   Lemma path_correct_app_cons:
-    forall (g: @DijkGG size inf) src u mom p2mom prev dist,
-      path_correct g prev dist src mom p2mom ->
+    forall (g: @DijkGG size inf) src u mom p2mom popped prev dist,
+      path_correct g popped prev dist src mom p2mom ->
       Znth u dist = Znth mom dist + elabel g (mom, u) ->
-      Znth mom dist + elabel g (mom, u) <= (size - 1) * (Int.max_signed / size) ->
+      Znth mom dist + elabel g (mom, u) <= (Zlength popped - 1) * (Int.max_signed / size) ->
       strong_evalid g (mom, u) ->
       Znth u prev = mom ->
       ~ In_path g u p2mom ->
-      path_correct g prev dist src u (path_glue p2mom (mom, [(mom, u)])).
+      path_correct g popped prev dist src u (path_glue p2mom (mom, [(mom, u)])).
   Proof.
     intros.
     rename H4 into Hb.
     destruct H as [? [? [? [? [? Ha]]]]].
     assert (path_cost g p2mom + elabel g (mom, u) <=
-            (size - 1) * (Int.max_signed / size)) by ulia. 
+            (Zlength popped - 1) * (Int.max_signed / size)) by ulia. 
     split3; [| | split3; [| |split]]; trivial.
     - destruct H4; apply (valid_path_app_cons g); trivial;
         try rewrite <- surjective_pairing; trivial.
@@ -638,7 +640,8 @@ Section DijkstraMathLemmas.
     red in H8.
     apply (H8 H2 H3 m p2m); trivial.
     destruct H5; [lia | trivial].
-  Qed.
+    admit.
+  Admitted.
 
   Lemma list_repeat1:
     forall {A} (a: A),
@@ -843,13 +846,13 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma path_correct_upd_dist:
-    forall (g: @DijkGG size inf) src i m dist prev newcost p2m,
+    forall (g: @DijkGG size inf) src i m popped dist prev newcost p2m,
       vvalid g i ->
       vvalid g m ->
       Zlength dist = size ->
       m <> i ->
-      path_correct g prev (upd_Znth i dist newcost) src m p2m ->
-      path_correct g prev dist src m p2m.
+      path_correct g popped prev (upd_Znth i dist newcost) src m p2m ->
+      path_correct g popped prev dist src m p2m.
   Proof.
     intros.
     destruct H3 as [? [? [? [? ?]]]].
@@ -1430,8 +1433,10 @@ Section DijkstraMathLemmas.
         [left | right].
       - split; trivial.
       - exists x; split3; trivial.
-        unfold path_in_popped. intros.
-        specialize (H10 _ H12). simpl; right; trivial.
+        2: { unfold path_in_popped. intros.
+             specialize (H10 _ H12). simpl; right; trivial.
+        }
+        admit.
     }
 
     (* now we must show that u is a valid entrant *)
@@ -1470,11 +1475,13 @@ Section DijkstraMathLemmas.
     
     split3.
     - apply path_correct_app_cons; trivial.
+      + admit.
       + replace (Znth mom dist + elabel g (mom, u))
           with (Znth u dist).
         (* red in H1. *)
         apply (sublist.Forall_Znth _ _ u) in H1.
         destruct H1; try ulia.
+        admit.
         apply (vvalid_meaning g) in H4; lia.
       + lia.
       + intro. apply H3, H14; trivial.
@@ -1643,6 +1650,6 @@ Section DijkstraMathLemmas.
           2: destruct H37 as [_ [_ [_ [? _]]]]; ulia.
           rewrite <- H19, <- H11.
           apply H_u_best; trivial.
-  Qed.
+  Admitted.
   
 End DijkstraMathLemmas.
