@@ -1109,8 +1109,7 @@ Section DijkstraProof.
                exists (src, []). split3.
                ** split3; [| |split3; [| |split]]; trivial.
                   --- split; trivial.
-                  --- rewrite path_cost.path_cost_zero.
-                      admit.
+                  --- rewrite path_cost.path_cost_zero. simpl. lia.
                   --- apply Forall_forall.
                       inversion 1.
                   --- apply acyclic_nil_path.
