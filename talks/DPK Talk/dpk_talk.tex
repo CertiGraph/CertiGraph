@@ -222,11 +222,11 @@
 
 In a graph with \texttt{size} vertices, \\
 the longest optimal path has \texttt{size-1} links \\
-\uncover<2->{so an edge-label is, at most, $\lfloor\texttt{MAX/(size-1)}\rfloor$}
+\uncover<2->{so an edge-cost is, at most, $\lfloor\texttt{MAX/(size-1)}\rfloor$}
 
 \bigskip \uncover<3->{
 Consider a $4$-bit machine and unsigned integers \\
-\texttt{MAX} = 15, \texttt{size} = 3, so every edge-label $\le 7$.}
+\texttt{MAX} = 15, \texttt{size} = 3, so every edge-cost $\le 7$.}
 
 \bigskip
 
@@ -254,8 +254,8 @@ Consider a $4$-bit machine and unsigned integers \\
 
 \uncover<3>{
 \node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.7, 0.3) {\small B (cost \ifty)};
-\node at (6.8, 0.3) {\small C (cost \ifty)}; 
+\node at (3.7, 0.3) {\small B (cost $\infty$)};
+\node at (6.8, 0.3) {\small C (cost $\infty$)}; 
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
   \node[inf] (C) [right = 3 of B] {};
@@ -266,7 +266,7 @@ Consider a $4$-bit machine and unsigned integers \\
 \uncover<4>{
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost 5)};
-\node at (6.8, 0.3) {\small C (cost \ifty)};  
+\node at (6.8, 0.3) {\small C (cost $\infty$)};  
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
   \node[inf] (C) [right = 3 of B] {};
@@ -332,7 +332,7 @@ Consider a $4$-bit machine and unsigned integers \\
 \bigskip
 \uncover<9->{
 Must allow room for the probe edge \includegraphics[scale=.08]{nye} \\ }
-\uncover<10>{so an edge-label is, at most, \alert{$\lfloor\texttt{MAX/size}\rfloor$}}
+\uncover<10>{so an edge-cost is, at most, \alert{$\lfloor\texttt{MAX/size}\rfloor$}}
 
 \end{frame}
 
