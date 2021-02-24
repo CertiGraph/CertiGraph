@@ -331,7 +331,7 @@ Consider a $4$-bit machine and unsigned integers \\
 }
 \bigskip
 \uncover<9->{
-Must allow room for the probing edge \\ }
+Must allow room for the probe edge \includegraphics[scale=.08]{nye} \\ }
 \uncover<10>{so an edge-label is, at most, \alert{$\lfloor\texttt{MAX/size}\rfloor$}}
 
 \end{frame}
@@ -698,8 +698,8 @@ The first, in memory:
 Class SoundDijk size inf g := {
   sadjmat: SoundAdjMat size inf g;
   efr: $\forall$e, evalid g e $\rightarrow$
-           0 $\le$ elabel g e $\le$ $\alert<1>{\texttt{(MAX/size)}}$;
-  ifr: $\alert<2>{\texttt{(MAX/(size-1)) * size}}$ $<$ inf 
+           0 $\le$ elabel g e $\le$ $\alert<2>{\texttt{(MAX/size)}}$;
+  ifr: $\alert<3>{\texttt{(MAX/(size-1)) * size}}$ $<$ inf 
 }.
 \end{lstlisting}
 
@@ -708,9 +708,9 @@ Class SoundDijk size inf g := {
 [inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
  ->/.style={thick, arrows={-Stealth}}]
 
-  \node at (1.5,-0.2) {\alert<2>5};
-  \node at (4.9,-0.2) {\alert<2>5};
-  \node at (6,-0.6) {\alert<1>6};
+  \node at (1.5,-0.2) {\alert<3>5};
+  \node at (4.9,-0.2) {\alert<3>5};
+  \node at (6,-0.6) {\alert<2>6};
  
 \node at (0.1, 0.3) {\small A};
 \node at (3.2, 0.3) {\small B};
@@ -726,8 +726,8 @@ Class SoundDijk size inf g := {
   
  }
  
- \uncover<1->{\hspace{1.8em}\texttt{efr: }Leave room for probing link} \\
- \uncover<2>{\hspace{1.8em}\texttt{ifr: }Bona-fide costs must dodge \texttt{inf}} 
+ \uncover<2->{\hspace{1.8em}\texttt{efr: }Leave room for probing link} \\
+ \uncover<3>{\hspace{1.8em}\texttt{ifr: }Bona-fide costs must dodge \texttt{inf}} 
 
 
 \end{frame} 
@@ -1302,7 +1302,7 @@ MST-PRIM(G,w,r):
 \bigskip \vspace{-1em}
 How about an unconnected graph? \\
 \uncover<4->{D can now be extracted at cost \texttt{inf} \\ } 
-\uncover<5->{\hspace{-.35em}meaning D is the root of a new tree!}
+\uncover<5->{\hspace{-.35em}meaning D is the root of a new tree \includegraphics[scale=.08]{nye}}
 \end{minipage} \begin{minipage}{0.35\textwidth}
 \uncover<2->{
 {\centering
@@ -1417,7 +1417,7 @@ Manipulate two graphs simultaneously: \\
   
   }
  \pause \bigskip
-  What can we say about $\texttt{connected}^{u}$ \m{a} \m{b}? $\texttt{connected}^{u}$ \m{c} \m{b}?
+  What can we say about $\texttt{connected}^{u}$ \m{a} \m{b}? \uncover<3>{$\texttt{connected}^{u}$ \m{c} \m{b}?}
 \end{frame}
 
 \begin{frame}{Contributions}
@@ -1438,7 +1438,7 @@ High effort---largely because we work with C---but good reuse}
 \bigskip
 \uncover<6->{
 \flushright
-Thanks!}
+Thanks! \hspace{2em}}
 \end{frame}
 
 \end{document}
