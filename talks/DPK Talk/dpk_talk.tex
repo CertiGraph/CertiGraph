@@ -332,7 +332,7 @@ Consider a $4$-bit machine and unsigned integers \\
 \bigskip
 \uncover<9->{
 Must allow room for the probing edge \\ }
-\uncover<10>{so an edge-label is, at most, \alert{$\lfloor\texttt{MAX/(size-1)}\rfloor$}}
+\uncover<10>{so an edge-label is, at most, \alert{$\lfloor\texttt{MAX/size}\rfloor$}}
 
 \end{frame}
 
@@ -508,7 +508,7 @@ VST + CompCert + \underline{CertiGraph}
 \end{minipage}
 
 \vspace{0.9em}
-\uncover<2>{\centering Inadvertently created a fully-connected graph!}
+\uncover<2>{\centering Inadvertently created a strongly-connected graph!}
 
 \end{frame}
 
@@ -693,24 +693,52 @@ The first, in memory:
 
 \section{Shortest Path: Dijkstra}
 
-\begin{frame}[fragile]{Dijkstra: \texttt{SoundDijk} and spatial representation}
+\begin{frame}[fragile]{Dijkstra: \texttt{SoundDijk}}
 \begin{lstlisting}
 Class SoundDijk size inf g := {
   sadjmat: SoundAdjMat size inf g;
   efr: $\forall$e, evalid g e $\rightarrow$
-           0 $\le$ elabel g e $\le$ (MAX/size);
-  ifr: (MAX/size) * size $\le$ inf 
+           0 $\le$ elabel g e $\le$ $\alert<1>{\texttt{(MAX/size)}}$;
+  ifr: $\alert<2>{\texttt{(MAX/(size-1)) * size}}$ $<$ inf 
 }.
 \end{lstlisting}
 
-\bigskip \pause
+{\centering
+\begin{tikzpicture}
+[inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}}]
 
+  \node at (1.5,-0.2) {\alert<2>5};
+  \node at (4.9,-0.2) {\alert<2>5};
+  \node at (6,-0.6) {\alert<1>6};
+ 
+\node at (0.1, 0.3) {\small A};
+\node at (3.2, 0.3) {\small B};
+\node at (6.3, 0.3) {\small C}; 
+  \node[inf] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+ 
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+\end{tikzpicture}
+  
+ }
+ 
+ \uncover<1->{\hspace{1.8em}\texttt{efr: }Leave room for probing link} \\
+ \uncover<2>{\hspace{1.8em}\texttt{ifr: }Bona-fide costs must dodge inf} 
+
+
+\end{frame} 
+
+\begin{frame}{Dijkstra: spatial representation}
 Nothing fancy spatially, use \p{AdjMat} wholesale \\
 We verify Dijkstra 3 times: \\
 \hspace{1em} reuse math proof entirely \\
 \hspace{1em} spatial variations handled under the hood
 
-\end{frame} 
+\end{frame}
 
 \begin{frame}[fragile]{Dijkstra: code and specification}
 
@@ -986,7 +1014,7 @@ We layer undirectedness atop of this
 
 \begin{frame}{Weakening directed into undirected}
 
-\m{x} and \m{y} are $\texttt{adjacent}^{u}$ if there is an edge between them: \\
+\m{x} and \m{y} are $\texttt{adjacent}^{u}$ if there is an $\texttt{edge}^{d}$ between them: \\
 \hspace{1em} \m{x} $\rightarrow$ \m{y} or \m{y} $\rightarrow$ \m{x} \\
 
 \pause \bigskip
@@ -1263,7 +1291,7 @@ MST-PRIM(G,w,r):
      key, parent */
  r.key = 0
  while PQ $\neq$ $\emptyset$
-  $\alert<6->{\texttt{u = EXTRACT-MIN(PQ)}}$ 
+  $\alert<4->{\texttt{u = EXTRACT-MIN(PQ)}}$ 
   for each v in G.Adj[u]
    if (v $\in$ Q and 
        w(u,v) $<$ v.key)
@@ -1273,8 +1301,8 @@ MST-PRIM(G,w,r):
 
 \bigskip \vspace{-1em}
 How about an unconnected graph? \\
-\uncover<6->{D can now be extracted at cost \texttt{inf} \\ } 
-\uncover<7->{\hspace{-.35em}meaning D is the root of a new tree!}
+\uncover<4->{D can now be extracted at cost \texttt{inf} \\ } 
+\uncover<5->{\hspace{-.35em}meaning D is the root of a new tree!}
 \end{minipage} \begin{minipage}{0.35\textwidth}
 \uncover<2->{
 {\centering
@@ -1302,7 +1330,7 @@ How about an unconnected graph? \\
 \node at (.75,1.1) {3};
 \node at (1.5,0.25) {4};
 \node at (1.5,-2.89) {1};
-\uncover<2-4>{\node at (2.3,1.1) {9};}
+\uncover<2>{\node at (2.3,1.1) {9};}
  
  %undirected
  \uncover<2->{
@@ -1310,12 +1338,12 @@ How about an unconnected graph? \\
   \draw [thick, dashed, myred] (C) -- (B);
   \draw [thick, dashed, myred] (E) -- (D);
   }
-  \uncover<2-4>{
+  \uncover<2>{
   \draw [thick, dashed, myred] (A) -- (C);
  }
  \uncover<3->{\draw [thick, myred] (B) -- (A);}
- \uncover<4->{\draw [thick, myred] (C) -- (B);}
- \uncover<8>{\draw [thick, myred] (E) -- (D);}
+ \uncover<3->{\draw [thick, myred] (C) -- (B);}
+ \uncover<6>{\draw [thick, myred] (E) -- (D);}
 
  
 \end{tikzpicture}
@@ -1394,16 +1422,15 @@ Manipulate two graphs simultaneously: \\
 
 \begin{frame}{Contributions}
 \uncover<1->{
-Mathematical, spatial support for adjacency matrices \\
-Mathematical, spatial support for edge lists \\
-Mathematical support for undirected graphs \\ }
+Math, spatial support for adjacency matrices, edge lists \\
+Harmonious math support for undirected graphs \\ }
 \bigskip
 \uncover<2->{
-Dijkstra's algorithm: nontrivial overflow \\ }
+Dijkstra: nontrivial overflow \\ }
 \uncover<3->{
-Prim's algorithm: nontrivial improvement in spec \\ }
+Prim: nontrivial improvement in spec \\ }
 \uncover<4->{
-Kruskal's algorithm: library handles directed $+$ undirected \\ }
+Kruskal: library handles directed $+$ undirected \\ }
 \bigskip
 \uncover<5->{
 Development is modular and general \\
