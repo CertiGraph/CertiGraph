@@ -1481,9 +1481,12 @@ Section DijkstraProof.
                         apply Z.le_trans with (m := (Zlength popped' - 1) * (Int.max_signed / size)); trivial.
                         apply Z.mul_le_mono_nonneg_r; trivial.
                         apply Z.div_pos; lia.
-               
-                        admit.
-                      }  
+
+                        pose proof (not_in_popped_popped_short g i popped'
+                                                               H_i_valid Hae
+                                                               Had H_i_not_popped).
+                        ulia.
+                      }
                       lia.
                         
                   --- specialize (He _ H39 H40).
