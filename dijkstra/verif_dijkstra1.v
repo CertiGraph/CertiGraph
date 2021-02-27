@@ -972,17 +972,36 @@ Section DijkstraProof.
             intro. apply (H8 min_item); trivial.
             subst u. trivial.
           }
-                    
-          assert (Htemp: 0 <= u < Zlength dist) by lia.
-          pose proof (Znth_dist_cases _ _ Htemp H10).
-          clear Htemp.
-          destruct H19; [admit|].
-          (* from connectedness *)
+
+          assert (H19 : 0 <= Znth u dist <= (size - 1) * (Int.max_signed / size)). {
+            destruct popped.
+            1: (* if popped = nil, then src is being popped *)
+              admit.
+            
+
+            
+            assert (Htemp: 0 <= u < Zlength dist) by lia.
+            pose proof (Znth_dist_cases _ _ Htemp H10).
+            clear Htemp.
+            destruct H19; trivial. exfalso.
+            destruct (H1 _ H_u_valid) as [_ [_ ?]].
+            specialize (H20 H18 H19).
+            destruct (Hconn u H_u_valid) as [[src' links2u] [? ?]].
+            replace src' with src in *.
+            2: destruct H21; simpl in H21; auto.
+            assert (v :: popped <> []) by inversion 1.  
+            specialize (H4 H23).
+            pose proof (path_leaving_popped g links2u src u (v::popped)
+                                            H22 H21 H4 H18).
+            destruct H24 as [? [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]].
+            admit.
+          }          
           
-          (* This is the priq array with which
+          
+          (* This is the popped array with which
            we will enter the for loop.
            The dist and prev arrays are the same.
-           Naturally, going in with this new priq
+           Naturally, going in with this new popped
            and the old dist and prev means that
            dijkstra_correct is currently broken.
            The for loop will repair this and restore
@@ -1330,10 +1349,29 @@ Section DijkstraProof.
             rename H44 into Hw.
             rename H45 into Ha'.
 
-            assert (Htemp: 0 <= u < Zlength dist') by lia.
-            pose proof (Znth_dist_cases _ _ Htemp H35).
-            clear Htemp.
-            destruct H22 as [? | Hbb]; [admit|]. (* by connectedness *)
+            assert (Hbb: 0 <= Znth u dist' <= (size - 1) * (Int.max_signed / size)). {
+              assert (Htemp: 0 <= u < Zlength dist') by lia.
+              pose proof (Znth_dist_cases _ _ Htemp H35).
+              clear Htemp.
+              destruct H22; trivial.
+              exfalso.
+              destruct (H_inv_popped _ H_u_valid H31) as [[? ?]|?].
+              - red in Hconn.
+                destruct (Hconn _ H_u_valid) as [p [? ?]].
+                apply (H24 _ H25); trivial.
+              - destruct H23 as [p [[_ [_ [? [? _]]]] _]].
+                rewrite <- H24, H22 in H23.
+                pose proof (inf_further_restricted g).
+                assert (0 <= size) by ulia.
+                red in Had. rewrite Forall_forall in Had.
+                pose proof (one size H26 popped' Hae Had).
+                apply Zlt_not_le in H25.
+                apply H25.
+                rewrite Z.mul_comm.
+                apply Z.le_trans with (m := (Zlength popped' - 1) * (Int.max_signed / size)); trivial.
+                apply Z.mul_le_mono_nonneg_r.
+                apply Z.div_pos; lia. ulia.
+            }
             
             forward_call (sh, g, graph_ptr, addresses, u, i).            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
