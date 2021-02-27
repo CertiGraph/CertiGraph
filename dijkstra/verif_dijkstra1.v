@@ -139,6 +139,8 @@ Section DijkstraProof.
       (* Information about the ranges of the three arrays *)
       @inrange_prev size inf prev;
       @inrange_dist size inf dist;
+      @inrange_popped size popped;
+      NoDup popped;
 
       forall i,
         vvalid g i ->
@@ -288,9 +290,11 @@ Section DijkstraProof.
       Zlength prev' = size;
       heap_capacity h' = size;
                                                            
-      (* and ranges of the two arrays *)
+      (* and ranges of the three arrays *)
       @inrange_prev size inf prev';
       @inrange_dist size inf dist';
+      @inrange_popped size popped';
+      NoDup popped';
 
       forall i,
         vvalid g i ->
@@ -357,6 +361,7 @@ Section DijkstraProof.
   Proof.
     start_function.
     rename H1 into Hsz'.
+    rename H2 into Hconn.
     pose proof (size_further_restricted g).
     pose proof (inf_bounds g).
     rename H1 into Hsz.
@@ -705,7 +710,7 @@ Section DijkstraProof.
         }
         
         split3; [| |split3; [| |split3; [| |split3;
-                                            [| |split3; [| |split3]]]]].
+                                            [| |split3; [| |split3; [| |split3]]]]]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
@@ -812,6 +817,8 @@ Section DijkstraProof.
           left. pose proof (size_representable g).
           split; [reflexivity|].
           apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; lia. 
+        * red. apply Forall_nil.
+        * apply NoDup_nil.
         * intros.
           apply (Permutation_map heap_item_key) in H_ha_hb_rel.
           rewrite update_pri_by_key_keys_unaffected in H_ha_hb_rel.
@@ -878,11 +885,13 @@ Section DijkstraProof.
         Intros prev dist popped hc.
         (* may need a link between hc and hb? *)
 
-        rename H11 into Hd.
-        rename H12 into Hk.
-        rename H13 into Hs.
-        rename H14 into Ht.
-        rename H15 into Hz.
+        rename H11 into Hab.
+        rename H12 into Hac.
+        rename H13 into Hd.
+        rename H14 into Hk.
+        rename H15 into Hs.
+        rename H16 into Ht.
+        rename H17 into Hz.
                 
         assert_PROP (Zlength prev = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
@@ -1026,7 +1035,7 @@ Section DijkstraProof.
             
             split3; [| | split3; [| |split3; [| |split3;
                                                  [| |split3; [| |split3;
-                    [| |split]]]]]]; trivial.
+                    [| |split3; [| |split]]]]]]]; trivial.
             ++ (* if popped = [], then 
                 prove inv_popped for [u].
                 if popped <> [], then we're set
@@ -1139,6 +1148,10 @@ Section DijkstraProof.
             ++ red. intros. inversion H21.
 
             ++ apply in_eq.
+
+            ++ admit.
+
+            ++ admit.
 
             ++ intros. rewrite not_in_cons in H21; destruct H21.
                specialize (Hd _ H20 H22).
@@ -1307,13 +1320,15 @@ Section DijkstraProof.
             rename H34 into H_h'_cap.
             rename H35 into H34.
             rename H36 into H35.
-            rename H37 into He.
-            rename H38 into Hf.
-            rename H39 into Hl.
-            rename H40 into Ho.
-            rename H41 into Hv.
-            rename H42 into Hw.
-            rename H43 into Ha'.
+            rename H37 into Had.
+            rename H38 into Hae.
+            rename H39 into He.
+            rename H40 into Hf.
+            rename H41 into Hl.
+            rename H42 into Ho.
+            rename H43 into Hv.
+            rename H44 into Hw.
+            rename H45 into Ha'.
 
             assert (Htemp: 0 <= u < Zlength dist') by lia.
             pose proof (Znth_dist_cases _ _ Htemp H35).

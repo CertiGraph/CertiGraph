@@ -24,6 +24,11 @@ Section DijkstraSpecPure.
     intros. unfold acyclic_path. simpl.
     apply NoDup_one.
   Qed.
+
+  Definition connected_dir (g: @DijkGG size inf) src :=
+    forall v,
+      vvalid g v ->
+      exists p, path_ends g p src v /\ valid_path g p.
     
   Definition path_correct (g: @DijkGG size inf)
              (popped prev: list V) (dist: list Z) src dst p : Prop  :=
