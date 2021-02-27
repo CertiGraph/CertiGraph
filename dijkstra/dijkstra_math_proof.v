@@ -27,6 +27,94 @@ Proof.
   intros. rewrite Zlength_cons.
   pose proof (Zlength_nonneg l). lia.
 Qed.
+
+Lemma one:
+  forall size,
+    0 <= size ->
+    forall L,
+      NoDup L ->
+      (forall j, In j L -> 0 <= j < size) ->
+      Zlength L <= size.
+Proof.
+  intros ? ?.
+  rename H into Ha.
+  rewrite <- (Z2Nat.id size) in *; trivial.
+  remember (Z.to_nat size) as size_n.
+  clear Heqsize_n Ha.
+  induction size_n; intros.
+  - destruct L.
+    + rewrite Zlength_nil. apply Nat2Z.is_nonneg.
+    + exfalso. specialize (H0 z (in_eq _ _)). lia.
+  - destruct (in_dec Z.eq_dec (Z.of_nat size_n) L);
+      [rename i into H1 | rename n into H1].
+    + apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst L.
+      apply NoDup_remove in H. destruct H.
+      assert (forall j : Z, In j (l1 ++ l2) -> 0 <= j < Z.of_nat size_n). {
+        intros.
+        assert (In j (l1 ++ Z.of_nat size_n :: l2)). {
+          apply in_or_app. apply in_app_or in H2.
+          destruct H2; auto. right. right. trivial.
+        }
+        specialize (H0 _ H3).
+        rewrite Nat2Z.inj_succ in H0.
+        assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n) by lia.
+        destruct H4; auto.
+        subst j. contradiction.
+      }
+      specialize (IHsize_n (l1 ++ l2) H H2).
+      rewrite Zlength_app in *. rewrite Zlength_cons. simpl. lia.
+    + rewrite Nat2Z.inj_succ.
+      assert (forall j, In j L -> 0 <= j < Z.of_nat size_n). {
+        intros. specialize (H0 _ H2).
+        rewrite Nat2Z.inj_succ in H0.
+        assert (0 <= j < (Z.of_nat size_n) \/ j = (Z.of_nat size_n)) by lia.
+        destruct H3; auto. subst. contradiction.
+      }
+      specialize (IHsize_n _ H H2). lia.
+Qed.
+
+Lemma two:
+  forall i size,
+    0 <= i < size ->
+    forall L,
+      NoDup L ->
+      (forall j, In j L -> 0 <= j < size /\ j <> i) ->
+      Zlength L <= size - 1.
+Proof.
+  intros ? ? ?.
+  rewrite <- (Z2Nat.id size) in *; try lia.
+  remember (Z.to_nat size) as size_n.
+  clear Heqsize_n.
+  induction size_n; intros.
+  1: lia.
+  replace (Z.of_nat (S size_n) - 1) with (Z.of_nat size_n) by lia.
+  assert (i = Z.of_nat size_n \/ 0 <= i < Z.of_nat size_n) by lia.
+  destruct H2. subst i.
+  apply one. lia. apply H0. intros. specialize (H1 _ H2). lia.
+  destruct (in_dec Z.eq_dec (Z.of_nat size_n) L);
+    [rename i0 into H3 | rename n into H3].
+  - apply in_split in H3. destruct H3 as [l1 [l2 ?]]. subst L.
+    apply NoDup_remove in H0. destruct H0.
+    assert (forall j, In j (l1 ++ l2) -> 0 <= j < Z.of_nat size_n /\ j <> i). {
+      intros.
+      assert (In j (l1 ++ Z.of_nat size_n :: l2)). {
+        apply in_or_app. apply in_app_or in H4.
+        destruct H4; auto. right. right. trivial.
+      }
+      specialize (H1 _ H5).
+      assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n) by lia.
+      destruct H6. lia.
+      subst j. contradiction.
+    }
+    specialize (IHsize_n H2 (l1 ++ l2) H0 H4).
+    rewrite Zlength_app in *. rewrite Zlength_cons. lia.
+  - assert (forall j, In j L -> 0 <= j < Z.of_nat size_n /\ j <> i). {
+      intros. specialize (H1 _ H4).
+      assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n) by lia.
+      destruct H5. lia. subst. contradiction.
+    }
+    specialize (IHsize_n H2 _ H0 H4). lia.
+Qed.
         
 Section DijkstraMathLemmas.
 
@@ -43,7 +131,24 @@ Section DijkstraMathLemmas.
 
   Definition inrange_popped popped :=
     Forall (fun x => 0 <= x < size) popped.
-
+  
+  Lemma not_in_popped_popped_short:
+    forall (g: @DijkGG size inf) i popped,
+      vvalid g i ->
+      NoDup popped ->
+      inrange_popped popped ->
+      ~ In i popped ->
+      Zlength popped <= size - 1.
+  Proof.
+    intros.
+    apply (vvalid_meaning g) in H.
+    apply (two i); trivial.
+    intros. split.
+    - red in H1. rewrite Forall_forall in H1.
+      apply H1; trivial.
+    - intro. subst j; contradiction.
+  Qed.
+  
   Lemma inf_bounded_above_dist: forall (g: @DijkGG size inf),
       (size - 1) * (Int.max_signed / size) < inf.
   Proof.
