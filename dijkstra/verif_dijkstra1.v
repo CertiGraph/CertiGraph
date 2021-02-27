@@ -981,22 +981,43 @@ Section DijkstraProof.
 
             
             assert (Htemp: 0 <= u < Zlength dist) by lia.
-            pose proof (Znth_dist_cases _ _ Htemp H10).
+            red in H10. apply (Forall_Znth _ _ u Htemp) in H10.
+            simpl in H10. destruct H10; [trivial | exfalso].
             clear Htemp.
-            destruct H19; trivial. exfalso.
             destruct (H1 _ H_u_valid) as [_ [_ ?]].
-            specialize (H20 H18 H19).
-            destruct (Hconn u H_u_valid) as [[src' links2u] [? ?]].
+
+            clear -Hconn Hequ H19 H18 H10 H4 H_u_valid.
+
+            assert (Hai: v :: popped <> []) by inversion 1.  
+            specialize (H4 Hai). clear Hai.
+
+            specialize (H19 H18 H10).
+
+            destruct (Hconn u H_u_valid) as
+                [[src' links2u] [Haf [Hag Hah]]].
             replace src' with src in *.
-            2: destruct H21; simpl in H21; auto.
-            assert (v :: popped <> []) by inversion 1.  
-            specialize (H4 H23).
-            pose proof (path_leaving_popped g links2u src u (v::popped)
-                                            H22 H21 H4 H18).
-            destruct H24 as [? [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]].
+            2: destruct Haf as [Haf _]; simpl in Haf; auto.
+            clear Hconn.
+
+            (* 
+               H19 says NO mom + 1hop is valid 
+               Haf gives a path that is valid, but we need to
+               dig out the inner mom
+             *)
+               
+            pose proof (path_leaving_popped_stronger
+                          g links2u src u (v::popped)
+                          Hag Haf H4 H18 Hah).
+            rename H into Haj.
+
+            (* Okay now we have the mom in the links2u path,
+               but there is the annoying matter of p2. *)
+
+            (* destruct Haj as *)
+                (* [? [? [? [? [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]]. *)
+            
             admit.
-          }          
-          
+          }
           
           (* This is the popped array with which
            we will enter the for loop.
@@ -1065,6 +1086,7 @@ Section DijkstraProof.
                  replace (heap_capacity h) with size in *.
                  apply inv_popped_add_u; try ulia.
                  1: {
+                   apply not_in_cons in H18.
                    pose proof (inf_bounded_above_dist g).
                    lia.
                  }
@@ -1357,7 +1379,7 @@ Section DijkstraProof.
               exfalso.
               destruct (H_inv_popped _ H_u_valid H31) as [[? ?]|?].
               - red in Hconn.
-                destruct (Hconn _ H_u_valid) as [p [? ?]].
+                destruct (Hconn _ H_u_valid) as [p [? [? ?]]].
                 apply (H24 _ H25); trivial.
               - destruct H23 as [p [[_ [_ [? [? _]]]] _]].
                 rewrite <- H24, H22 in H23.
