@@ -1149,9 +1149,9 @@ Section DijkstraProof.
 
             ++ apply in_eq.
 
-            ++ admit.
+            ++ red. apply Forall_cons; trivial.
 
-            ++ admit.
+            ++ apply NoDup_cons; trivial.
 
             ++ intros. rewrite not_in_cons in H21; destruct H21.
                specialize (Hd _ H20 H22).
