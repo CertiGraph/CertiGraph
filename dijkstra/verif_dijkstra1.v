@@ -1005,16 +1005,18 @@ Section DijkstraProof.
                dig out the inner mom
              *)
                
-            pose proof (path_leaving_popped_stronger
-                          g links2u src u (v::popped)
-                          Hag Haf H4 H18 Hah).
-            rename H into Haj.
+            destruct (path_leaving_popped_stronger
+                        g links2u src u (v::popped))
+              as
+                [p1
+                   [mom'
+                      [child'
+                         [p2
+                            [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]];
+              trivial.
 
             (* Okay now we have the mom in the links2u path,
                but there is the annoying matter of p2. *)
-
-            (* destruct Haj as *)
-                (* [? [? [? [? [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]]. *)
             
             admit.
           }
