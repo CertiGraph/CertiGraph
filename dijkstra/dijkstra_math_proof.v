@@ -41,6 +41,9 @@ Section DijkstraMathLemmas.
     Forall (fun x => 0 <= x <= (size - 1) * (Int.max_signed / size)
                      \/ x = inf) dist.
 
+  Definition inrange_popped popped :=
+    Forall (fun x => 0 <= x < size) popped.
+
   Lemma inf_bounded_above_dist: forall (g: @DijkGG size inf),
       (size - 1) * (Int.max_signed / size) < inf.
   Proof.
