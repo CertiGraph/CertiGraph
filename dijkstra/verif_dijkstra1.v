@@ -1540,20 +1540,18 @@ Section DijkstraProof.
                         }
                         destruct (H_inv_popped _ H40 H31) as [? | [? [? [? ?]]]];
                                                try ulia.
-                        destruct H41 as [? [? [? [? [? ?]]]]].
-                        rewrite <- H46 in H45.
+                        destruct H41 as [_ [_ [? [? _]]]].
+                        rewrite <- H44 in *.
                         split; try ulia.
-                        apply Z.le_trans with (m := (size - 1) * (Int.max_signed / size)); trivial.
-                        admit. admit.
-                        (*
-                        
-                        apply Z.mul_le_mono_nonneg_r; trivial.
-                        apply Z.div_pos; lia.
-
                         pose proof (not_in_popped_popped_short g i popped'
                                                                H_i_valid Hae
                                                                Had H_i_not_popped).
-                        ulia. *)                               
+                          (* use acyclic:
+                             forall p, 
+                             acyclic p ->
+                             path_cost p <= (Zlength p - 1) * edge_wt_max
+                           *)
+                        admit.                               
                       }
                       lia.
                         
