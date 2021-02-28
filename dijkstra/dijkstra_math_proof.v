@@ -747,7 +747,7 @@ Section DijkstraMathLemmas.
       vvalid g dst ->
       inv_unseen_weak g src (u :: popped) prev dist dst u.
   Proof.
-    intros.
+    intros. red.
     intro. intros.
     assert (e: dst <> u) by (simpl in H2; lia).
     apply not_in_cons in H2; destruct H2 as [_ ?].
@@ -758,6 +758,18 @@ Section DijkstraMathLemmas.
     split3; [| |split3; [| |split]]; trivial.
     rewrite Zlength_cons_sub_1 in H10.
     rewrite <- H11 in *.
+
+    (* dead  *)
+    (* path_correct should not rely on popped
+       and just have size instead.
+       in the critical point, use acyclic:
+       forall p, plen = foo, acyclic p, 
+       path_cost p <= foo * edge_wt_max
+     *)
+
+    pose proof (not_in_popped_popped_short g dst popped).
+    
+    clear -H2 H10 H14.
 
     assert (vvalid g u) by admit.
     assert (Znth u dist < inf) by admit.
