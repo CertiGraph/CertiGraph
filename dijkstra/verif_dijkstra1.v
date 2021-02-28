@@ -1167,7 +1167,9 @@ Section DijkstraProof.
                exists (src, []). split3.
                ** split3; [| |split3; [| |split]]; trivial.
                   --- split; trivial.
-                  --- rewrite path_cost.path_cost_zero. simpl. lia.
+                  --- rewrite path_cost.path_cost_zero.
+                      apply Z.mul_nonneg_nonneg. lia.
+                      apply Z.div_pos; lia.
                   --- apply Forall_forall.
                       inversion 1.
                   --- apply acyclic_nil_path.
@@ -1395,11 +1397,7 @@ Section DijkstraProof.
                 red in Had. rewrite Forall_forall in Had.
                 pose proof (one size H26 popped' Hae Had).
                 apply Zlt_not_le in H25.
-                apply H25.
-                rewrite Z.mul_comm.
-                apply Z.le_trans with (m := (Zlength popped' - 1) * (Int.max_signed / size)); trivial.
-                apply Z.mul_le_mono_nonneg_r.
-                apply Z.div_pos; lia. ulia.
+                apply H25. lia.
             }
             
             forward_call (sh, g, graph_ptr, addresses, u, i).            
@@ -1545,14 +1543,17 @@ Section DijkstraProof.
                         destruct H41 as [? [? [? [? [? ?]]]]].
                         rewrite <- H46 in H45.
                         split; try ulia.
-                        apply Z.le_trans with (m := (Zlength popped' - 1) * (Int.max_signed / size)); trivial.
+                        apply Z.le_trans with (m := (size - 1) * (Int.max_signed / size)); trivial.
+                        admit. admit.
+                        (*
+                        
                         apply Z.mul_le_mono_nonneg_r; trivial.
                         apply Z.div_pos; lia.
 
                         pose proof (not_in_popped_popped_short g i popped'
                                                                H_i_valid Hae
                                                                Had H_i_not_popped).
-                        ulia.
+                        ulia. *)                               
                       }
                       lia.
                         
