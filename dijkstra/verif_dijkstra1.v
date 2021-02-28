@@ -1181,8 +1181,20 @@ Section DijkstraProof.
 
             ++ intros.
                apply (vvalid_meaning g) in H20.
-               apply (inv_unseen_weak_add_unpopped g prev _ _ src); trivial.
-
+               {
+                 intro. intros.
+                 assert (e: dst <> u) by (simpl in H21; lia).
+                 apply not_in_cons in H21; destruct H21 as [_ ?].
+                 destruct (H1 dst H20) as [_ [_ ?]].
+                 destruct H24; [lia | trivial].
+                 apply (H27 H21 H22 m p2m); trivial.
+                 destruct H26 as [? [? [? [? [? ?]]]]].
+                 split3; [| |split3; [| |split]]; trivial.
+                 rewrite Zlength_cons_sub_1 in H29.
+                 rewrite <- H30 in *.
+                 admit.
+               }
+               (* apply (inv_unseen_weak_add_unpopped g prev _ _ src); trivial. *)
             ++ intros. clear H20.
                destruct popped eqn:?.
                2: right; apply H4; inversion 1.
