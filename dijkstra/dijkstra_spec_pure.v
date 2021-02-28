@@ -31,13 +31,13 @@ Section DijkstraSpecPure.
       exists p, path_ends g p src v /\ valid_path g p /\ path_cost g p < inf.
     
   Definition path_correct (g: @DijkGG size inf)
-             (popped prev: list V) (dist: list Z) src dst p : Prop  :=
+             (prev: list V) (dist: list Z) src dst p : Prop  :=
     valid_path g p /\
     (* I. II. add acyclic p here? 
        or... p's cost is bounded somehow
      *)
     path_ends g p src dst /\
-    path_cost g p <= (Zlength popped - 1) * (Int.max_signed / size) /\ 
+    path_cost g p <= size * (Int.max_signed / size) /\ 
     Znth dst dist = path_cost g p /\
     Forall (fun (x: E) => Znth (snd x) prev = fst x) (snd p) /\
     acyclic_path g p.
@@ -59,7 +59,7 @@ Section DijkstraSpecPure.
          ~ valid_path g p))
     \/
     (exists p, (* else, I'm optimal *)
-        path_correct g popped prev dist src dst p /\
+        path_correct g prev dist src dst p /\
         path_in_popped g popped p /\
         path_globally_optimal g src dst p).
 
@@ -107,7 +107,7 @@ Section DijkstraSpecPure.
       vvalid g m ->
       (* I. acyclic p2m -> *)
       In m popped ->
-      path_correct g popped prev dist src m p2m ->
+      path_correct g prev dist src m p2m ->
       ~ valid_path g (path_glue p2m (m, [(m, dst)])).
   (* II. path_cost (path_glue p2m (m, [(m, dst)])) >= inf *)
 
@@ -124,7 +124,7 @@ Section DijkstraSpecPure.
       vvalid g m ->
       In m popped ->
       m <> u ->
-      path_correct g popped prev dist src m p2m ->
+      path_correct g prev dist src m p2m ->
       ~ valid_path g (path_glue p2m (m, [(m, dst)])). 
 
   Definition dijkstra_correct (g : DijkGG) src popped prev dist : Prop :=

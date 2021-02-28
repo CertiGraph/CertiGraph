@@ -305,7 +305,7 @@ Section DijkstraMathLemmas.
       Znth mom dist < inf ->
       vvalid g mom ->
       exists p2mom : path,
-        path_correct g popped prev dist src mom p2mom /\
+        path_correct g prev dist src mom p2mom /\
         (forall step : Z,
             In_path g step p2mom ->
             In step popped) /\
@@ -603,7 +603,6 @@ Section DijkstraMathLemmas.
       + unfold path_cost. simpl.
         pose proof (size_representable g).
         apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; try ulia.
-        rewrite Zlength_cons_sub_1; apply Zlength_nonneg.
       + rewrite Forall_forall; intros; simpl in H3; lia.
       + apply acyclic_nil_path.
     - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
@@ -616,20 +615,20 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma path_correct_app_cons:
-    forall (g: @DijkGG size inf) src u mom p2mom popped prev dist,
-      path_correct g popped prev dist src mom p2mom ->
+    forall (g: @DijkGG size inf) src u mom p2mom prev dist,
+      path_correct g prev dist src mom p2mom ->
       Znth u dist = Znth mom dist + elabel g (mom, u) ->
-      Znth mom dist + elabel g (mom, u) <= (Zlength popped - 1) * (Int.max_signed / size) ->
+      Znth mom dist + elabel g (mom, u) <= size * (Int.max_signed / size) ->
       strong_evalid g (mom, u) ->
       Znth u prev = mom ->
       ~ In_path g u p2mom ->
-      path_correct g popped prev dist src u (path_glue p2mom (mom, [(mom, u)])).
+      path_correct g prev dist src u (path_glue p2mom (mom, [(mom, u)])).
   Proof.
     intros.
     rename H4 into Hb.
     destruct H as [? [? [? [? [? Ha]]]]].
     assert (path_cost g p2mom + elabel g (mom, u) <=
-            (Zlength popped - 1) * (Int.max_signed / size)) by ulia. 
+            size * (Int.max_signed / size)) by ulia. 
     split3; [| | split3; [| |split]]; trivial.
     - destruct H4; apply (valid_path_app_cons g); trivial;
         try rewrite <- surjective_pairing; trivial.
@@ -754,38 +753,7 @@ Section DijkstraMathLemmas.
     destruct (H dst H1) as [_ [_ ?]].
     destruct H5; [lia | trivial].
     apply (H8 H2 H3 m p2m); trivial.
-    destruct H7 as [? [? [? [? [? ?]]]]].
-    split3; [| |split3; [| |split]]; trivial.
-    rewrite Zlength_cons_sub_1 in H10.
-    rewrite <- H11 in *.
-
-    (* dead  *)
-    (* path_correct should not rely on popped
-       and just have size instead.
-       in the critical point, use acyclic:
-       forall p, plen = foo, acyclic p, 
-       path_cost p <= foo * edge_wt_max
-     *)
-
-    pose proof (not_in_popped_popped_short g dst popped).
-    
-    clear -H2 H10 H14.
-
-    assert (vvalid g u) by admit.
-    assert (Znth u dist < inf) by admit.
-    destruct (H _ H14) as [_ [? _]].
-    specialize (H16 H0 H15).
-    destruct H16.
-    1: admit.
-    destruct H16 as [_ [? [? [? [? [? ?]]]]]].
-    remember (Znth u prev) as mom.
-    
-
-    
-    all: admit.
-    
-    
-  Admitted.
+  Qed.
 
   Lemma list_repeat1:
     forall {A} (a: A),
@@ -990,13 +958,13 @@ Section DijkstraMathLemmas.
   Qed.
 
   Lemma path_correct_upd_dist:
-    forall (g: @DijkGG size inf) src i m popped dist prev newcost p2m,
+    forall (g: @DijkGG size inf) src i m dist prev newcost p2m,
       vvalid g i ->
       vvalid g m ->
       Zlength dist = size ->
       m <> i ->
-      path_correct g popped prev (upd_Znth i dist newcost) src m p2m ->
-      path_correct g popped prev dist src m p2m.
+      path_correct g prev (upd_Znth i dist newcost) src m p2m ->
+      path_correct g prev dist src m p2m.
   Proof.
     intros.
     destruct H3 as [? [? [? [? ?]]]].
@@ -1577,16 +1545,8 @@ Section DijkstraMathLemmas.
         [left | right].
       - split; trivial.
       - exists x; split3; trivial.
-        2: { unfold path_in_popped. intros.
-             specialize (H10 _ H12). simpl; right; trivial.
-        }
-        destruct H9 as [? [? [? [? [? ?]]]]].
-        split3; [| |split3; [| |split]]; trivial.
-        rewrite Zlength_cons_sub_1.
-        apply Z.le_trans with (m := (Zlength popped - 1) * (Int.max_signed / size));
-          trivial.
-        pose proof (size_representable g).
-        apply Z.mul_le_mono_nonneg_r; [apply Z.div_pos|]; ulia.
+        unfold path_in_popped. intros.
+        specialize (H10 _ H12). simpl; right; trivial.
     }
 
     (* now we must show that u is a valid entrant *)
@@ -1625,21 +1585,15 @@ Section DijkstraMathLemmas.
     
     split3.
     - apply path_correct_app_cons; trivial.
-      + destruct H13 as [? [? [? [? [? ?]]]]].
-        split3; [| |split3; [| |split]]; trivial.
-        rewrite Zlength_cons_sub_1.
-        apply Z.le_trans with (m := (Zlength popped - 1) * (Int.max_signed / size));
-          trivial.
-        pose proof (size_representable g).
-        apply Z.mul_le_mono_nonneg_r; [apply Z.div_pos|]; ulia.
       + replace (Znth mom dist + elabel g (mom, u))
           with (Znth u dist).
-        (* red in H1. *)
         apply (sublist.Forall_Znth _ _ u) in H1.
         destruct H1; try ulia.
         2: apply (vvalid_meaning g) in H4; lia.
-        rewrite Zlength_cons_sub_1.
-        admit. (* sticking point *)
+        apply Z.le_trans with (m := (size - 1) * (Int.max_signed / size)); try lia.
+        pose proof (size_representable g).
+        apply Z.mul_le_mono_nonneg_r; try lia.
+        apply Z.div_pos; lia.
       + lia.
       + intro. apply H3, H14; trivial.
     - unfold path_in_popped. intros.
@@ -1807,6 +1761,6 @@ Section DijkstraMathLemmas.
           2: destruct H37 as [_ [_ [_ [? _]]]]; ulia.
           rewrite <- H19, <- H11.
           apply H_u_best; trivial.
-  Admitted.
+  Qed.
   
 End DijkstraMathLemmas.
