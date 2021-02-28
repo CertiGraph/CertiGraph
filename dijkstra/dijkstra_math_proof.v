@@ -757,7 +757,22 @@ Section DijkstraMathLemmas.
     destruct H7 as [? [? [? [? [? ?]]]]].
     split3; [| |split3; [| |split]]; trivial.
     rewrite Zlength_cons_sub_1 in H10.
-    admit. (* sticking point *)
+    rewrite <- H11 in *.
+
+    assert (vvalid g u) by admit.
+    assert (Znth u dist < inf) by admit.
+    destruct (H _ H14) as [_ [? _]].
+    specialize (H16 H0 H15).
+    destruct H16.
+    1: admit.
+    destruct H16 as [_ [? [? [? [? [? ?]]]]]].
+    remember (Znth u prev) as mom.
+    
+
+    
+    all: admit.
+    
+    
   Admitted.
 
   Lemma list_repeat1:
