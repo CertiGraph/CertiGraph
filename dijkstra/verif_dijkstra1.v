@@ -1532,29 +1532,36 @@ Section DijkstraProof.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- apply Forall_upd_Znth; ulia.
-                  --- apply Forall_upd_Znth; try ulia.
-                      left. destruct icases; [|ulia].
-                      assert (0 <= Znth u dist' <= (size-2) * (Int.max_signed / size)). {
-                        assert (vvalid g u). {
-                          apply (vvalid_meaning g); trivial.
-                        }
-                        destruct (H_inv_popped _ H40 H31) as [? | [? [? [? ?]]]];
-                                               try ulia.
-                        destruct H41 as [_ [_ [? [? _]]]].
-                        rewrite <- H44 in *.
-                        split; try ulia.
-                        pose proof (not_in_popped_popped_short g i popped'
-                                                               H_i_valid Hae
-                                                               Had H_i_not_popped).
-                          (* use acyclic:
-                             forall p, 
-                             acyclic p ->
-                             path_cost p <= (Zlength p - 1) * edge_wt_max
-                           *)
-                        admit.                               
-                      }
-                      lia.
-                        
+                  ---
+ apply Forall_upd_Znth; try ulia.
+ left. destruct icases; [|ulia].
+ assert (0 <= Znth u dist' <= (size-2) * (Int.max_signed / size)). {
+   assert (vvalid g u). {
+     apply (vvalid_meaning g); trivial.
+   }
+   destruct (H_inv_popped _ H40 H31) as [? | [p [? [? ?]]]];
+                          try ulia.
+   destruct H41 as [_ [_ [? [? [_ ?]]]]].
+   replace (Znth u dist') with (path_cost g p) in *.
+   split; try ulia.
+   pose proof (not_in_popped_popped_short g i popped'
+                                          H_i_valid Hae
+                                          Had H_i_not_popped).
+   apply Z.le_trans with
+       (m := (Zlength popped' - 1) *  (Int.max_signed / size)).
+   2: apply Z.mul_le_mono_nonneg_r; [apply Z.div_pos|]; ulia.
+
+   (* this should just be a lemma *)
+     
+   (* forall p, 
+      path_in_popped p ->
+      acyclic p ->
+      path_cost p <= (Zlength p - 1) * edge_wt_max
+    *)
+   admit.                               
+ }
+ lia.
+ 
                   --- specialize (He _ H39 H40).
                       unfold proj_keys in He |- *.
                       apply (Permutation_map heap_item_key) in H36.
