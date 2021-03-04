@@ -60,7 +60,7 @@ Section DijkstraProof.
       path_in_popped g popped (s, links) ->
       Zlength links <= Zlength popped - 1.
   Proof.
-    intros g. 
+    intros g.
     induction links; intros; destruct popped.
     + exfalso. apply (H1 s). left; trivial.
     + rewrite Zlength_nil.
@@ -68,50 +68,29 @@ Section DijkstraProof.
       apply Zlength_nonneg.
     + exfalso. apply (H1 s). left; trivial.
     + rewrite Zlength_cons_sub_1, Zlength_cons.
-      specialize (IHlinks (dst g a) popped).
+      replace s with (src g a) in * by (destruct H; lia). clear s.
+      assert (In (src g a) (v :: popped)). { apply H1. left. trivial. }
+      apply In_split in H2. destruct H2 as [l1 [l2 ?]].
+      specialize (IHlinks (dst g a) (l1 ++ l2)).
       spec IHlinks.
-      1: apply valid_path_cons with (v0 := s); trivial.
+      1: apply valid_path_cons with (v0 := (src g a)); trivial.
       spec IHlinks.
       1: apply (acyclic_path_cons _ _ _ _ H); trivial.
-      spec IHlinks.
-      { clear IHlinks.
-        
-        (* a strange claim, but we may get it from acyclic *)
-        red in H0.
-        replace s with (src g a) in *.
-        2: destruct H; lia.
-        rewrite epath_to_vpath_cons_eq in H0; trivial.
-        rewrite NoDup_cons_iff in H0.
-        destruct H0.
-        
-        red in H1 |- *.
-        intros.
-        
-        destruct (Z.eq_dec step (src g a)).
-        - subst step. exfalso.
-          (* see H4 and H0 *)
-          admit.
-        - specialize (H1 step).
-          spec H1. {
-            rewrite in_path_or_cons. right; trivial.
-            destruct H; trivial.
-          }
-          apply in_inv in H1. destruct H1; trivial.
-          
-          (* now I know nothing about v! *)
-          (* thrashing... *)
-          
-          assert (NoDup (v :: popped)) by admit.
-          (* part of thrashing. not hard to pipe through if really needed. *)
-          
-          rewrite NoDup_cons_iff in H4.
-          destruct H4.
-          subst v.
-          (* goose cooked below. not enough to get contra above *)
-          admit.
-      }
-      lia.
-  Admitted.
+      spec IHlinks. 2: { assert (Zlength (v :: popped) = Zlength (l1 ++ src g a :: l2)) by congruence.
+        repeat rewrite Zlength_app in *. repeat rewrite Zlength_cons in *. lia. }
+      clear IHlinks.
+      red in H0. rewrite H2 in *. clear H2 popped v.
+      rewrite epath_to_vpath_cons_eq in H0; trivial.
+      rewrite NoDup_cons_iff in H0. destruct H0.
+      do 2 intro. specialize (H1 step). spec H1. {
+        destruct H3. simpl in H3. right. exists a. split; auto. left. trivial.
+        destruct H3 as [e' [? ?]]. right. exists e'. simpl in *; auto. }
+      apply in_app_or in H1. apply in_or_app. destruct H1; auto.
+      destruct H1; auto. exfalso.
+      apply H0. subst step.
+      apply in_path_eq_epath_to_vpath; auto.
+      apply valid_path_tail in H. apply H.
+  Qed.
 
    Lemma path_cost_upper_bound:
      forall (g: @DijkGG size inf) src links upper,
@@ -1157,9 +1136,12 @@ Section DijkstraProof.
               spec H0; [reflexivity|].
               destruct H0.
               2: exfalso; apply H0, Hd; trivial.
-
               (* from H16, H, and H0, this should be okay?  *)
               (* Aquinas *)
+assert (Int.signed (heap_item_priority child_item) >= Int.signed (heap_item_priority min_item)). {
+apply lt_false_inv.
+red in H16. unfold cmp in H16.
+rewrite (negb_involutive_reverse (Int.lt _ _)). rewrite H16. trivial. }
               admit.
             }
 
