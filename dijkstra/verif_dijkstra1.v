@@ -1036,8 +1036,7 @@ Section DijkstraProof.
               (hitem min_item (pointer_val_val ti)).
           2: unfold hitem; trivial.
           simpl.
-          remember (Int.signed (snd min_item)) as u.
-          
+          remember (Int.signed (heap_item_payload min_item)) as u.    
           
           (* u is the minimally chosen item from the
            "seen but not popped" category of vertices *)
@@ -1078,15 +1077,18 @@ Section DijkstraProof.
               apply Z.mul_nonneg_nonneg. lia.
               apply Z.div_pos; lia.
             }
-            
+
             assert (Htemp: 0 <= u < Zlength dist) by lia.
-            red in H10. apply (Forall_Znth _ _ u Htemp) in H10.
+            rename H10 into H10'.
+            
+            pose proof (Forall_Znth _ _ u Htemp H10').
+            
             simpl in H10. destruct H10; [trivial | exfalso].
             clear Htemp.
             destruct (H1 _ H_u_valid) as [_ [_ ?]].
             
 
-            clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1.
+            clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1 H10' H12.
 
             assert (Hai: v :: popped <> []) by inversion 1.  
             specialize (H4 Hai). clear Hai.
@@ -1116,12 +1118,27 @@ Section DijkstraProof.
               apply (path_ends_valid_src _ _ u p2); trivial.
             }
 
-            destruct (Hz child' H17 H8) as [child_item [? ?]].
+            destruct (Hz child' H19 H8) as [child_item [? ?]].
 
             assert (Znth child' dist = inf). {
 
-              clear - H15 H16 Hequ H10 H6 H8 H17 H18 H19 H_u_valid Hd.
+              assert (Znth child' dist <= inf). {
+                apply (vvalid_meaning g) in H19.
+                assert (0 <= child' < Zlength dist) by lia.
 
+                apply (Forall_Znth _ _ _ H22) in H10'.
+                simpl in H10'.
+                pose proof (inf_bounded_above_dist g).
+                destruct H10'; lia.
+              }
+
+              cut (Znth child' dist >= inf).
+              intro; lia.
+              (* antisymmetry *)
+
+              rewrite <- H10.
+              
+              clear - H15 H16 Hequ H6 H8 H19 H20 H21 H_u_valid Hd H18 H12.
 
               (* setting up the Forall...*)
               apply Forall_cons with (x := min_item) in H16.
@@ -1129,10 +1146,10 @@ Section DijkstraProof.
               apply Forall_permutation with (bl := heap_items hc) in H16.
               2: symmetry; trivial.
               rewrite Forall_forall in H16.
-              specialize (H16 _ H19).
+              specialize (H16 _ H20).
               (* done *)
                            
-              pose proof (H6 child' H17).
+              pose proof (H6 child' H19).
               specialize (H (Znth child' keys)).
               spec H; [reflexivity|].
               destruct H.
@@ -1143,12 +1160,28 @@ Section DijkstraProof.
               spec H0; [reflexivity|].
               destruct H0.
               2: exfalso; apply H0, Hd; trivial.
+
+              rewrite Znth_map in H, H0.
+              2: apply (vvalid_meaning g) in H_u_valid; lia.
+              2: apply (vvalid_meaning g) in H19; lia.
+              
               (* from H16, H, and H0, this should be okay?  *)
               (* Aquinas *)
 assert (Int.signed (heap_item_priority child_item) >= Int.signed (heap_item_priority min_item)). {
 apply lt_false_inv.
 red in H16. unfold cmp in H16.
-rewrite (negb_involutive_reverse (Int.lt _ _)). rewrite H16. trivial. }
+rewrite (negb_involutive_reverse (Int.lt _ _)). rewrite H16. trivial.
+}
+
+(* cleaning up H1 requires no new magic --
+   (heap_item_priority child_item) will be Int.repr something,
+   and so then you'll have 
+   Int.signed (Int.repr something) >=
+   Int.signed (Int.repr something').
+
+Lemma Int.signed_repr strips off the Int.signed_repr.
+ *)
+
               admit.
             }
 
@@ -1156,15 +1189,14 @@ rewrite (negb_involutive_reverse (Int.lt _ _)). rewrite H16. trivial. }
               apply (path_ends_valid_dst _ src _ p1); trivial.
             }
             
-            destruct (H1 _ H22) as [? _].
-            specialize (H23 H7).
-            destruct H23 as [[? ?] | [optp2mom' [? [? ?]]]].
-            1: apply (H24 p1); trivial.
+            destruct (H1 _ H23) as [? _].
+            specialize (H24 H7).
+            destruct H24 as [[? ?] | [optp2mom' [? [? ?]]]].
+            1: apply (H25 p1); trivial.
             
-            destruct (H1 _ H17) as [_ [_ ?]].
-            red in H22.
-            apply (H26 H8 H21 mom' optp2mom'); trivial.
-            destruct H23 as [? [? _]].
+            destruct (H1 _ H19) as [_ [_ ?]].
+            apply (H27 H8 H22 mom' optp2mom'); trivial.
+            destruct H24 as [? [? _]].
             apply valid_path_merge; trivial.
             - apply (path_ends_meet _ _ _ src mom' child'); trivial.
               red. simpl. rewrite (edge_dst_snd g). split; trivial.
