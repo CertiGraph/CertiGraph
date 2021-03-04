@@ -1173,14 +1173,9 @@ red in H16. unfold cmp in H16.
 rewrite (negb_involutive_reverse (Int.lt _ _)). rewrite H16. trivial.
 }
 
-(* cleaning up H1 requires no new magic --
-   (heap_item_priority child_item) will be Int.repr something,
-   and so then you'll have 
-   Int.signed (Int.repr something) >=
-   Int.signed (Int.repr something').
-
-Lemma Int.signed_repr strips off the Int.signed_repr.
- *)
+rewrite <- Int.signed_repr.
+rewrite <- (Int.signed_repr (Znth child' dist)).
+2,3: admit.
 
               admit.
             }
