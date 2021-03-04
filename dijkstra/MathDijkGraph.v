@@ -8,8 +8,50 @@ Section MathDijkGraph.
 
   Context {size : Z}.
   Context {inf : Z}.
-  Context {V_EqDec : EqDec V eq}. 
+  Context {V_EqDec : EqDec V eq}.
   Context {E_EqDec : EqDec E eq}. 
+
+  (* Show our planned restrictions aren't too restrictive. *)
+  Lemma edges_can_be_positive:
+    0 < size <= Int.max_signed ->
+    0 < Int.max_signed / size.
+  Proof. apply Z.div_str_pos. Qed.
+
+  Lemma always_room_for_inf:
+    0 < size <= Int.max_signed ->
+    0 <= (Int.max_signed / size) * (size - 1) < Int.max_signed.
+  Proof.
+    intros. split.
+    apply Z.mul_nonneg_nonneg. apply Z.div_pos. 1,2,3: lia.
+    rewrite Z.mul_sub_distr_l, Z.mul_1_r.
+    apply Z.le_lt_trans with (Int.max_signed - Int.max_signed / size).
+    pose proof (Z.mul_div_le Int.max_signed size). lia.
+    pose proof edges_can_be_positive. lia.
+  Qed.
+
+  Lemma edges_can_be_positive':
+    0 < size * 4 <= Int.max_signed ->
+    0 < Int.max_signed / size.
+  Proof. intros. apply edges_can_be_positive. lia. Qed.
+
+  Lemma always_room_for_inf':
+    0 < size * 4 <= Int.max_signed ->
+    0 <= (Int.max_signed / size) * (size - 1) < Int.max_signed.
+  Proof. intros. apply always_room_for_inf. lia. Qed.
+
+(* Another bound we've experimented with...
+
+  Lemma bound_has_room_for_inf: forall size',
+    0 < size' <= Int.max_signed ->
+    0 <= ((Int.max_signed - 1) / size') * size' < Int.max_signed.
+  Proof.
+    intros. forget Int.max_signed as m.
+    split. apply Z.mul_nonneg_nonneg.
+    apply Z.div_pos. 1,2,3: lia.
+    pose proof (Z.mul_div_le (m - 1) size'). spec H0. lia.
+    apply Z.le_lt_trans with (m-1). 2: lia. lia.
+  Qed.
+*)
 
   (* Here is the LabeledGraph *)
   Definition DijkLG := AdjMatLG.
@@ -35,7 +77,7 @@ Section MathDijkGraph.
     (* because sizeof tint = 4 *)
     
     ifr: (* inf is further restricted *)
-      (Int.max_signed / size) * size < inf
+      (Int.max_signed / size) * (size - 1) < inf
                                                         
     }.
 
@@ -158,14 +200,19 @@ Section MathDijkGraph.
 
   Lemma inf_gt_largest_edge:
     forall (g: DijkGG),
+    1 < size -> (* experimental *)
     Int.max_signed / size < inf.
   Proof.
     intros.
     pose proof (inf_further_restricted g).
     pose proof (size_representable g).
-    apply Z.le_lt_trans with (m := Int.max_signed / size * size); trivial.
+    apply Z.le_lt_trans with (m := Int.max_signed / size * (size - 1)); trivial.
+    rewrite <- (Z.mul_1_r (Int.max_signed / size)) at 1.
+    apply Z.mul_le_mono_nonneg_l. 2: lia.
+    apply Z.div_pos; lia.
+(*
     apply Z.le_mul_diag_r; [|lia].
-    apply Z.div_str_pos; trivial.
+    apply Z.div_str_pos; trivial. *)
   Qed.
-  
+
 End MathDijkGraph.
