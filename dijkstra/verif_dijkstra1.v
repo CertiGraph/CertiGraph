@@ -52,7 +52,6 @@ Section DijkstraProof.
     destruct H; trivial.
   Qed.
 
-  (* Aquinas *)
   Lemma path_in_popped_Zlengths:
     forall (g: @DijkGG size inf) links s popped,
       valid_path g (s, links) ->
@@ -76,15 +75,23 @@ Section DijkstraProof.
       1: apply valid_path_cons with (v0 := (src g a)); trivial.
       spec IHlinks.
       1: apply (acyclic_path_cons _ _ _ _ H); trivial.
-      spec IHlinks. 2: { assert (Zlength (v :: popped) = Zlength (l1 ++ src g a :: l2)) by congruence.
-        repeat rewrite Zlength_app in *. repeat rewrite Zlength_cons in *. lia. }
+      spec IHlinks.
+      2: { assert (Zlength (v :: popped) = Zlength (l1 ++ src g a :: l2))
+          by congruence.
+           repeat rewrite Zlength_app in *.
+           repeat rewrite Zlength_cons in *. lia.
+      }
       clear IHlinks.
       red in H0. rewrite H2 in *. clear H2 popped v.
       rewrite epath_to_vpath_cons_eq in H0; trivial.
       rewrite NoDup_cons_iff in H0. destruct H0.
-      do 2 intro. specialize (H1 step). spec H1. {
-        destruct H3. simpl in H3. right. exists a. split; auto. left. trivial.
-        destruct H3 as [e' [? ?]]. right. exists e'. simpl in *; auto. }
+      do 2 intro. specialize (H1 step).
+      spec H1.
+      1: {
+        destruct H3 as [? | [e' [? ?]]].
+        - simpl in H3. right. exists a. split; auto. left. trivial.
+        - right. exists e'. simpl in *; auto.
+      }
       apply in_app_or in H1. apply in_or_app. destruct H1; auto.
       destruct H1; auto. exfalso.
       apply H0. subst step.
