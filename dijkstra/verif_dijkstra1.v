@@ -30,6 +30,108 @@ Section DijkstraProof.
     forall i_item,
       (In (Int.signed (heap_item_payload i_item)) popped -> ~ In i_item (heap_items h)).
 
+  Lemma path_cost_cons:
+    forall (g: @DijkGG size inf) src links a,
+      path_cost g (src, a :: links) = elabel g a + path_cost g (src, links).
+  Proof.
+    intros.
+    pose proof (path_cost_path_glue g (src, [a]) (src, links)).
+    unfold path_glue in H. simpl in H. rewrite H. f_equal.
+  Qed.
+  
+  Lemma acyclic_path_cons:
+    forall (g: @DijkGG size inf) links s a,
+      valid_path g (s, a :: links) ->
+      acyclic_path g (s, a :: links) ->
+      acyclic_path g (dst g a, links).
+  Proof.
+    intros.
+    red in H0 |- *.
+    rewrite epath_to_vpath_cons_eq in H0.
+    apply NoDup_cons_1 with (x := s); trivial.
+    destruct H; trivial.
+  Qed.
+  
+  Lemma path_in_popped_Zlengths:
+    forall (g: @DijkGG size inf) links s popped,
+      valid_path g (s, links) ->
+      acyclic_path g (s, links) ->
+      path_in_popped g popped (s, links) ->
+      Zlength links <= Zlength popped - 1.
+  Proof.
+    intros g. 
+    induction links; intros; destruct popped.
+    + exfalso. apply (H1 s). left; trivial.
+    + rewrite Zlength_nil.
+      rewrite Zlength_cons_sub_1.
+      apply Zlength_nonneg.
+    + exfalso. apply (H1 s). left; trivial.
+    + rewrite Zlength_cons_sub_1, Zlength_cons.
+      specialize (IHlinks (dst g a) popped).
+      spec IHlinks.
+      1: apply valid_path_cons with (v0 := s); trivial.
+      spec IHlinks.
+      1: apply (acyclic_path_cons _ _ _ _ H); trivial.
+      spec IHlinks.
+      { clear IHlinks.
+        
+        (* a strange claim, but we may get it from acyclic *)
+        red in H0.
+        replace s with (src g a) in *.
+        2: destruct H; lia.
+        rewrite epath_to_vpath_cons_eq in H0; trivial.
+        rewrite NoDup_cons_iff in H0.
+        destruct H0.
+        
+        red in H1 |- *.
+        intros.
+        
+        destruct (Z.eq_dec step (src g a)).
+        - subst step. exfalso.
+          (* see H4 and H0 *)
+          admit.
+        - specialize (H1 step).
+          spec H1. {
+            rewrite in_path_or_cons. right; trivial.
+            destruct H; trivial.
+          }
+          apply in_inv in H1. destruct H1; trivial.
+          
+          (* now I know nothing about v! *)
+          (* thrashing... *)
+          
+          assert (NoDup (v :: popped)) by admit.
+          (* part of thrashing. not hard to pipe through if really needed. *)
+          
+          rewrite NoDup_cons_iff in H4.
+          destruct H4.
+          subst v.
+          (* goose cooked below. not enough to get contra above *)
+          admit.
+      }
+      lia.
+  Admitted.
+
+   Lemma path_cost_upper_bound:
+     forall (g: @DijkGG size inf) src links upper,
+       0 <= upper ->
+       (forall e, In e links -> elabel g e <= upper) ->
+       path_cost g (src, links) <= Zlength links * upper.
+   Proof.
+     intros.
+     induction links.
+     - rewrite path_cost_zero.
+       apply Z.mul_nonneg_nonneg; ulia.
+     - rewrite path_cost_cons.
+       rewrite Zlength_cons.
+       spec IHlinks.
+       1: intros; apply H0; right; trivial.
+       specialize (H0 a). spec H0.
+       1: left; trivial.
+       lia.
+   Qed.
+
+
   Definition dijk_setup_loop_inv g sh src dist_ptr
              prev_ptr priq_ptr keys_ptr temp_ptr arr addresses :=
     EX i : Z,
@@ -1551,73 +1653,7 @@ Section DijkstraProof.
        (m := (Zlength popped' - 1) *  (Int.max_signed / size)).
    2: apply Z.mul_le_mono_nonneg_r; [apply Z.div_pos|]; ulia.
 
-   (* this should just be a lemma *)
-
-   Lemma path_cost_cons:
-     forall (g: @DijkGG size inf) src links a,
-       path_cost g (src, a :: links) = elabel g a + path_cost g (src, links).
-   Proof.
-     intros.
-     pose proof (path_cost_path_glue g (src, [a]) (src, links)).
-     unfold path_glue in H. simpl in H. rewrite H. f_equal.
-   Qed.
-
-Lemma acyclic_path_cons:
-  forall (g: @DijkGG size inf) links src a,
-    valid_path g (src, a :: links) ->
-    acyclic_path g (src, a :: links) ->
-    acyclic_path g (src, links).
-Proof.
-Admitted.
-
-   
-   Lemma path_in_popped_Zlengths:
-     forall (g: @DijkGG size inf) src links popped,
-       valid_path g (src, links) ->
-       acyclic_path g (src, links) ->
-       path_in_popped g popped (src, links) ->
-       Zlength links <= Zlength popped - 1.
-   Proof.
-     intros g src links. 
-     induction links; intros; destruct popped.
-     + exfalso. apply (H1 src). left; trivial.
-     + rewrite Zlength_nil.
-       rewrite Zlength_cons_sub_1.
-       apply Zlength_nonneg.
-     + exfalso. apply (H1 src). left; trivial.
-     + rewrite Zlength_cons_sub_1, Zlength_cons.
-       specialize (IHlinks popped).
-       spec IHlinks.
-       { admit. }
-       spec IHlinks.
-       apply (acyclic_path_cons _ _ _ _ H); trivial.
-       spec IHlinks.
-       admit.
-       lia.
-   Admitted.
-
-
-   Lemma path_cost_upper_bound:
-     forall (g: @DijkGG size inf) src links upper,
-       0 <= upper ->
-       (forall e, In e links -> elabel g e <= upper) ->
-       path_cost g (src, links) <= Zlength links * upper.
-   Proof.
-     intros.
-     induction links.
-     - rewrite path_cost_zero.
-       apply Z.mul_nonneg_nonneg; ulia.
-     - rewrite path_cost_cons.
-       rewrite Zlength_cons.
-       spec IHlinks.
-       1: intros; apply H0; right; trivial.
-       specialize (H0 a). spec H0.
-       1: left; trivial.
-       lia.
-   Qed.
-
    destruct p as [src' links].
-   
    pose proof (path_in_popped_Zlengths _ _ _ _ Haz H45 H42).
    pose proof (path_cost_upper_bound
                  g src' links (Int.max_signed / size)).
@@ -1634,7 +1670,6 @@ Admitted.
  }
   
  lia.
- 
                   --- specialize (He _ H39 H40).
                       unfold proj_keys in He |- *.
                       apply (Permutation_map heap_item_key) in H36.
