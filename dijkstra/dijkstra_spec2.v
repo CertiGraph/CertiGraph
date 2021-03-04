@@ -60,7 +60,8 @@ Section DijkstraSpec.
       PROP (0 <= src < size;
            Forall (fun list => Zlength list = size) (@graph_to_mat size g id);
            (size * size <= Int.max_signed);
-           12 * size <= Int.max_unsigned)
+           12 * size <= Int.max_unsigned;
+           connected_dir g src)
       PARAMS (pointer_val_val graph_ptr;
              Vint (Int.repr src);
              pointer_val_val dist_ptr;

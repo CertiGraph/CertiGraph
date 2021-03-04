@@ -115,7 +115,7 @@ Proof.
     }
     specialize (IHsize_n H2 _ H0 H4). lia.
 Qed.
-        
+
 Section DijkstraMathLemmas.
 
   Context {size : Z}.
@@ -587,6 +587,19 @@ Section DijkstraMathLemmas.
       trivial.
     rewrite H in H1; trivial.
     apply (inf_gt_largest_edge g).
+  Qed.
+
+  Lemma NoDup_one: forall A (n: A), NoDup [n].
+  Proof.
+    intros. apply NoDup_cons. 
+    inversion 1. apply NoDup_nil.
+  Qed.
+
+  Lemma acyclic_nil_path:
+    forall (g: @DijkGG size inf) p, acyclic_path g (p, []).
+  Proof.
+    intros. unfold acyclic_path. simpl.
+    apply NoDup_one.
   Qed.
 
   Lemma inv_popped_add_src:
@@ -1763,4 +1776,92 @@ Section DijkstraMathLemmas.
           apply H_u_best; trivial.
   Qed.
   
+  Lemma path_cost_cons:
+    forall (g: @DijkGG size inf) src links a,
+      path_cost g (src, a :: links) = elabel g a + path_cost g (src, links).
+  Proof.
+    intros.
+    pose proof (path_cost_path_glue g (src, [a]) (src, links)).
+    unfold path_glue in H. simpl in H. rewrite H. f_equal.
+  Qed.
+  
+  Lemma acyclic_path_cons:
+    forall (g: @DijkGG size inf) links s a,
+      valid_path g (s, a :: links) ->
+      acyclic_path g (s, a :: links) ->
+      acyclic_path g (dst g a, links).
+  Proof.
+    intros.
+    red in H0 |- *.
+    rewrite epath_to_vpath_cons_eq in H0.
+    apply NoDup_cons_1 with (x := s); trivial.
+    destruct H; trivial.
+  Qed.
+
+  Lemma path_cost_upper_bound:
+    forall (g: @DijkGG size inf) src links upper,
+      0 <= upper ->
+      (forall e, In e links -> elabel g e <= upper) ->
+      path_cost g (src, links) <= Zlength links * upper.
+  Proof.
+    intros.
+    induction links.
+    - rewrite path_cost_zero.
+      apply Z.mul_nonneg_nonneg; rep_lia.
+    - rewrite path_cost_cons.
+      rewrite Zlength_cons.
+      spec IHlinks.
+      1: intros; apply H0; right; trivial.
+      specialize (H0 a). spec H0.
+      1: left; trivial.
+      lia.
+  Qed.
+
+  Lemma path_in_popped_Zlengths:
+    forall (g: @DijkGG size inf) links s popped,
+      valid_path g (s, links) ->
+      acyclic_path g (s, links) ->
+      path_in_popped g popped (s, links) ->
+      Zlength links <= Zlength popped - 1.
+  Proof.
+    intros g.
+    induction links; intros; destruct popped.
+    + exfalso. apply (H1 s). left; trivial.
+    + rewrite Zlength_nil.
+      rewrite Zlength_cons_sub_1.
+      apply Zlength_nonneg.
+    + exfalso. apply (H1 s). left; trivial.
+    + rewrite Zlength_cons_sub_1, Zlength_cons.
+      replace s with (src g a) in * by (destruct H; lia). clear s.
+      assert (In (src g a) (v :: popped)). { apply H1. left. trivial. }
+                                           apply In_split in H2. destruct H2 as [l1 [l2 ?]].
+      specialize (IHlinks (dst g a) (l1 ++ l2)).
+      spec IHlinks.
+      1: apply valid_path_cons with (v0 := (src g a)); trivial.
+      spec IHlinks.
+      1: apply (acyclic_path_cons _ _ _ _ H); trivial.
+      spec IHlinks.
+      2: { assert (Zlength (v :: popped) = Zlength (l1 ++ src g a :: l2))
+          by congruence.
+           repeat rewrite Zlength_app in *.
+           repeat rewrite Zlength_cons in *. lia.
+      }
+      clear IHlinks.
+      red in H0. rewrite H2 in *. clear H2 popped v.
+      rewrite epath_to_vpath_cons_eq in H0; trivial.
+      rewrite NoDup_cons_iff in H0. destruct H0.
+      do 2 intro. specialize (H1 step).
+      spec H1.
+      1: {
+        destruct H3 as [? | [e' [? ?]]].
+        - simpl in H3. right. exists a. split; auto. left. trivial.
+        - right. exists e'. simpl in *; auto.
+      }
+      apply in_app_or in H1. apply in_or_app. destruct H1; auto.
+      destruct H1; auto. exfalso.
+      apply H0. subst step.
+      apply in_path_eq_epath_to_vpath; auto.
+      apply valid_path_tail in H. apply H.
+  Qed.
+
 End DijkstraMathLemmas.
