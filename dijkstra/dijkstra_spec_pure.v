@@ -10,13 +10,37 @@ Section DijkstraSpecPure.
   Context {V_EqDec : EquivDec.EqDec V eq}. 
   Context {E_EqDec : EquivDec.EqDec E eq}. 
 
+  Definition acyclic_path (g: @DijkGG size inf) p := NoDup (epath_to_vpath g p).
+
+  Lemma NoDup_one: forall A (n: A), NoDup [n].
+  Proof.
+    intros. apply NoDup_cons. 
+    inversion 1. apply NoDup_nil.
+  Qed.
+        
+  Lemma acyclic_nil_path:
+    forall g p, acyclic_path g (p, []).
+  Proof.
+    intros. unfold acyclic_path. simpl.
+    apply NoDup_one.
+  Qed.
+
+  Definition connected_dir (g: @DijkGG size inf) src :=
+    forall v,
+      vvalid g v ->
+      exists p, path_ends g p src v /\ valid_path g p /\ path_cost g p < inf.
+    
   Definition path_correct (g: @DijkGG size inf)
              (prev: list V) (dist: list Z) src dst p : Prop  :=
     valid_path g p /\
+    (* I. II. add acyclic p here? 
+       or... p's cost is bounded somehow
+     *)
     path_ends g p src dst /\
-    path_cost g p < inf /\ 
+    path_cost g p <= size * (Int.max_signed / size) /\ 
     Znth dst dist = path_cost g p /\
-    Forall (fun (x: E) => Znth (snd x) prev = fst x) (snd p).
+    Forall (fun (x: E) => Znth (snd x) prev = fst x) (snd p) /\
+    acyclic_path g p.
 
   Definition path_globally_optimal (g: @DijkGG size inf) src dst p : Prop :=
     forall p', valid_path g p' ->
@@ -75,17 +99,24 @@ Section DijkstraSpecPure.
       In mom' popped ->
       Znth dst dist <= Znth mom' dist + elabel g (mom', dst).
   
-  Definition inv_unseen (g : @DijkGG size inf) (src: V)
+  Definition inv_unseen (g : DijkGG) (src: V)
              (popped prev: list V) (dist: list Z) (dst : V) :=
     ~ In dst popped ->
     Znth dst dist = inf ->
     forall m p2m,
       vvalid g m ->
+      (* I. acyclic p2m -> *)
       In m popped ->
-      path_ends g p2m src m ->
-      ~ valid_path g (path_glue p2m (m, [(m, dst)])). 
+      path_correct g prev dist src m p2m ->
+      ~ valid_path g (path_glue p2m (m, [(m, dst)])).
+  (* II. path_cost (path_glue p2m (m, [(m, dst)])) >= inf *)
 
-  Definition inv_unseen_weak (g : @DijkGG size inf) (src: V)
+  (* p2m has size-2 edges at most
+     (path_glue p2m (m, [(m, dst)])) has size-1 at most *)
+  (* every path has an acyclic subpath that still connects src to dst *)
+  
+
+  Definition inv_unseen_weak (g : DijkGG) (src: V)
              (popped prev: list V) (dist: list Z) (dst u : V) :=
     ~ In dst popped ->
     Znth dst dist = inf ->
@@ -93,7 +124,7 @@ Section DijkstraSpecPure.
       vvalid g m ->
       In m popped ->
       m <> u ->
-      path_ends g p2m src m ->
+      path_correct g prev dist src m p2m ->
       ~ valid_path g (path_glue p2m (m, [(m, dst)])). 
 
   Definition dijkstra_correct (g : DijkGG) src popped prev dist : Prop :=
