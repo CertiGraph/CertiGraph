@@ -30,6 +30,109 @@ Section DijkstraProof.
     forall i_item,
       (In (Int.signed (heap_item_payload i_item)) popped -> ~ In i_item (heap_items h)).
 
+  Lemma path_cost_cons:
+    forall (g: @DijkGG size inf) src links a,
+      path_cost g (src, a :: links) = elabel g a + path_cost g (src, links).
+  Proof.
+    intros.
+    pose proof (path_cost_path_glue g (src, [a]) (src, links)).
+    unfold path_glue in H. simpl in H. rewrite H. f_equal.
+  Qed.
+  
+  Lemma acyclic_path_cons:
+    forall (g: @DijkGG size inf) links s a,
+      valid_path g (s, a :: links) ->
+      acyclic_path g (s, a :: links) ->
+      acyclic_path g (dst g a, links).
+  Proof.
+    intros.
+    red in H0 |- *.
+    rewrite epath_to_vpath_cons_eq in H0.
+    apply NoDup_cons_1 with (x := s); trivial.
+    destruct H; trivial.
+  Qed.
+
+  (* Aquinas *)
+  Lemma path_in_popped_Zlengths:
+    forall (g: @DijkGG size inf) links s popped,
+      valid_path g (s, links) ->
+      acyclic_path g (s, links) ->
+      path_in_popped g popped (s, links) ->
+      Zlength links <= Zlength popped - 1.
+  Proof.
+    intros g. 
+    induction links; intros; destruct popped.
+    + exfalso. apply (H1 s). left; trivial.
+    + rewrite Zlength_nil.
+      rewrite Zlength_cons_sub_1.
+      apply Zlength_nonneg.
+    + exfalso. apply (H1 s). left; trivial.
+    + rewrite Zlength_cons_sub_1, Zlength_cons.
+      specialize (IHlinks (dst g a) popped).
+      spec IHlinks.
+      1: apply valid_path_cons with (v0 := s); trivial.
+      spec IHlinks.
+      1: apply (acyclic_path_cons _ _ _ _ H); trivial.
+      spec IHlinks.
+      { clear IHlinks.
+        
+        (* a strange claim, but we may get it from acyclic *)
+        red in H0.
+        replace s with (src g a) in *.
+        2: destruct H; lia.
+        rewrite epath_to_vpath_cons_eq in H0; trivial.
+        rewrite NoDup_cons_iff in H0.
+        destruct H0.
+        
+        red in H1 |- *.
+        intros.
+        
+        destruct (Z.eq_dec step (src g a)).
+        - subst step. exfalso.
+          (* see H4 and H0 *)
+          admit.
+        - specialize (H1 step).
+          spec H1. {
+            rewrite in_path_or_cons. right; trivial.
+            destruct H; trivial.
+          }
+          apply in_inv in H1. destruct H1; trivial.
+          
+          (* now I know nothing about v! *)
+          (* thrashing... *)
+          
+          assert (NoDup (v :: popped)) by admit.
+          (* part of thrashing. not hard to pipe through if really needed. *)
+          
+          rewrite NoDup_cons_iff in H4.
+          destruct H4.
+          subst v.
+          (* goose cooked below. not enough to get contra above *)
+          admit.
+      }
+      lia.
+  Admitted.
+
+   Lemma path_cost_upper_bound:
+     forall (g: @DijkGG size inf) src links upper,
+       0 <= upper ->
+       (forall e, In e links -> elabel g e <= upper) ->
+       path_cost g (src, links) <= Zlength links * upper.
+   Proof.
+     intros.
+     induction links.
+     - rewrite path_cost_zero.
+       apply Z.mul_nonneg_nonneg; ulia.
+     - rewrite path_cost_cons.
+       rewrite Zlength_cons.
+       spec IHlinks.
+       1: intros; apply H0; right; trivial.
+       specialize (H0 a). spec H0.
+       1: left; trivial.
+       lia.
+   Qed.
+
+
   Definition dijk_setup_loop_inv g sh src dist_ptr
              prev_ptr priq_ptr keys_ptr temp_ptr arr addresses :=
     EX i : Z,
@@ -138,7 +241,9 @@ Section DijkstraProof.
 
       (* Information about the ranges of the three arrays *)
       @inrange_prev size inf prev;
-      @inrange_dist inf dist;
+      @inrange_dist size inf dist;
+      @inrange_popped size popped;
+      NoDup popped;
 
       forall i,
         vvalid g i ->
@@ -288,9 +393,11 @@ Section DijkstraProof.
       Zlength prev' = size;
       heap_capacity h' = size;
                                                            
-      (* and ranges of the two arrays *)
+      (* and ranges of the three arrays *)
       @inrange_prev size inf prev';
-      @inrange_dist inf dist';
+      @inrange_dist size inf dist';
+      @inrange_popped size popped';
+      NoDup popped';
 
       forall i,
         vvalid g i ->
@@ -357,6 +464,7 @@ Section DijkstraProof.
   Proof.
     start_function.
     rename H1 into Hsz'.
+    rename H2 into Hconn.
     pose proof (size_further_restricted g).
     pose proof (inf_bounds g).
     rename H1 into Hsz.
@@ -705,7 +813,7 @@ Section DijkstraProof.
         }
         
         split3; [| |split3; [| |split3; [| |split3;
-                                            [| |split3; [| |split3]]]]].
+                                            [| |split3; [| |split3; [| |split3]]]]]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
         * rewrite upd_Znth_same; ulia. 
         * rewrite upd_Znth_same; ulia.
@@ -808,7 +916,12 @@ Section DijkstraProof.
         * red; apply Forall_upd_Znth;
             try apply Forall_list_repeat; ulia.
         * red; apply Forall_upd_Znth;
-            try apply Forall_list_repeat; ulia.
+            try apply Forall_list_repeat; try ulia.
+          left. pose proof (size_representable g).
+          split; [reflexivity|].
+          apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; lia. 
+        * red. apply Forall_nil.
+        * apply NoDup_nil.
         * intros.
           apply (Permutation_map heap_item_key) in H_ha_hb_rel.
           rewrite update_pri_by_key_keys_unaffected in H_ha_hb_rel.
@@ -875,11 +988,13 @@ Section DijkstraProof.
         Intros prev dist popped hc.
         (* may need a link between hc and hb? *)
 
-        rename H11 into Hd.
-        rename H12 into Hk.
-        rename H13 into Hs.
-        rename H14 into Ht.
-        rename H15 into Hz.
+        rename H11 into Hab.
+        rename H12 into Hac.
+        rename H13 into Hd.
+        rename H14 into Hk.
+        rename H15 into Hs.
+        rename H16 into Ht.
+        rename H17 into Hz.
                 
         assert_PROP (Zlength prev = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
@@ -960,23 +1075,129 @@ Section DijkstraProof.
             intro. apply (H8 min_item); trivial.
             subst u. trivial.
           }
-                    
-          assert (Htemp: 0 <= u < Zlength dist) by lia.
-          pose proof (Znth_dist_cases _ _ Htemp H10).
-          clear Htemp.
-          destruct H19; [admit|].
-          (* from connectedness *)
-          
-          (* This is the priq array with which
+
+          assert (H19 : 0 <= Znth u dist <= (size - 1) * (Int.max_signed / size)). {
+            destruct popped.
+            1: { (* if popped = nil, then src is being popped *)
+              assert (src = u). {
+                rewrite Hequ.
+                apply H7; trivial.
+                apply Forall_permutation with (al := (min_item :: heap_items he)).
+                2: symmetry; trivial.
+                apply Forall_cons; trivial.
+                apply PreOrder_Reflexive.
+              }
+              subst src.
+              rewrite H2. split; try lia.
+              apply Z.mul_nonneg_nonneg. lia.
+              apply Z.div_pos; lia.
+            }
+            
+            assert (Htemp: 0 <= u < Zlength dist) by lia.
+            red in H10. apply (Forall_Znth _ _ u Htemp) in H10.
+            simpl in H10. destruct H10; [trivial | exfalso].
+            clear Htemp.
+            destruct (H1 _ H_u_valid) as [_ [_ ?]].
+            
+
+            clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1.
+
+            assert (Hai: v :: popped <> []) by inversion 1.  
+            specialize (H4 Hai). clear Hai.
+
+            destruct (Hconn u H_u_valid) as
+                [[src' links2u] [Haf [Hag Hah]]].
+            replace src' with src in *.
+            2: destruct Haf as [Haf _]; simpl in Haf; auto.
+            clear Hconn.
+               
+            destruct (path_leaving_popped_stronger
+                        g links2u src u (v::popped))
+              as
+                [p1
+                   [mom'
+                      [child'
+                         [p2
+                            [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]];
+              trivial.
+
+            (* child' is in heap, or is u
+               by minimality of u, child's dist-cost is inf
+               by inv_unpopped on child', child' should have < inf cost.
+             *)
+
+            assert (vvalid g child'). {
+              apply (path_ends_valid_src _ _ u p2); trivial.
+            }
+
+            destruct (Hz child' H17 H8) as [child_item [? ?]].
+
+            assert (Znth child' dist = inf). {
+
+              clear - H15 H16 Hequ H10 H6 H8 H17 H18 H19 H_u_valid Hd.
+
+
+              (* setting up the Forall...*)
+              apply Forall_cons with (x := min_item) in H16.
+              2: apply PreOrder_Reflexive.
+              apply Forall_permutation with (bl := heap_items hc) in H16.
+              2: symmetry; trivial.
+              rewrite Forall_forall in H16.
+              specialize (H16 _ H19).
+              (* done *)
+                           
+              pose proof (H6 child' H17).
+              specialize (H (Znth child' keys)).
+              spec H; [reflexivity|].
+              destruct H.
+              2: exfalso; apply H, Hd; trivial.
+
+              pose proof (H6 u H_u_valid).
+              specialize (H0 (Znth u keys)).
+              spec H0; [reflexivity|].
+              destruct H0.
+              2: exfalso; apply H0, Hd; trivial.
+
+              (* from H16, H, and H0, this should be okay?  *)
+              (* Aquinas *)
+              admit.
+            }
+
+            assert (vvalid g mom'). {
+              apply (path_ends_valid_dst _ src _ p1); trivial.
+            }
+            
+            destruct (H1 _ H22) as [? _].
+            specialize (H23 H7).
+            destruct H23 as [[? ?] | [optp2mom' [? [? ?]]]].
+            1: apply (H24 p1); trivial.
+            
+            destruct (H1 _ H17) as [_ [_ ?]].
+            red in H22.
+            apply (H26 H8 H21 mom' optp2mom'); trivial.
+            destruct H23 as [? [? _]].
+            apply valid_path_merge; trivial.
+            - apply (path_ends_meet _ _ _ src mom' child'); trivial.
+              red. simpl. rewrite (edge_dst_snd g). split; trivial.
+            - simpl. rewrite (edge_src_fst g). split; trivial.
+          } 
+
+          (* This is the popped array with which
            we will enter the for loop.
            The dist and prev arrays are the same.
-           Naturally, going in with this new priq
+           Naturally, going in with this new popped
            and the old dist and prev means that
            dijkstra_correct is currently broken.
            The for loop will repair this and restore
            dijkstra_correct.
            *)
 
+          assert (Haa: (size - 1) * (Int.max_signed / size) <= Int.max_signed). {
+            apply Z.le_trans with (m := size * (Int.max_signed / size)).
+            - apply Zmult_le_compat_r.
+              lia. apply Z.div_pos; lia. 
+            - apply Z.mul_div_le. lia.
+          }
 
           forward_for_simple_bound
             size
@@ -1014,10 +1235,10 @@ Section DijkstraProof.
               apply (Permutation_in x) in H15; trivial.
               destruct H15. subst x. reflexivity. auto.
             }
-
+            
             split3; [| | split3; [| |split3; [| |split3;
                                                  [| |split3; [| |split3;
-                    [| |split]]]]]]; trivial.
+                    [| |split3; [| |split]]]]]]]; trivial.
             ++ (* if popped = [], then 
                 prove inv_popped for [u].
                 if popped <> [], then we're set
@@ -1027,6 +1248,11 @@ Section DijkstraProof.
                  intros.
                  replace (heap_capacity h) with size in *.
                  apply inv_popped_add_u; try ulia.
+                 1: {
+                   apply not_in_cons in H18.
+                   pose proof (inf_bounded_above_dist g).
+                   lia.
+                 }
                  1: apply H4; inversion 1.
                  rewrite <- Heql in *.
                  intros.
@@ -1064,7 +1290,7 @@ Section DijkstraProof.
                    rewrite find_item_by_key_finds_item in H6; trivial.
                    inversion H6.
                    unfold heap_item_priority. simpl.
-                   rewrite Znth_map, Int.signed_repr; ulia.
+                   rewrite Znth_map, Int.signed_repr; ulia.                   
                    
                  - specialize (Ht _ H23).
                    unfold heap_item_payload in Ht.
@@ -1084,7 +1310,8 @@ Section DijkstraProof.
                    assert (In (Znth i dist) dist). {
                      apply Znth_In. lia.
                    }
-                   specialize (H10 _ H26).
+                   specialize (H10 _ H26). destruct H10; [|ulia].
+                   
                    ulia.
                }
                replace u with src in * by now apply Hl.  
@@ -1093,11 +1320,14 @@ Section DijkstraProof.
                subst dst; clear H20.
                right.
                exists (src, []). split3.
-               ** split3; [| |split3]; trivial.
+               ** split3; [| |split3; [| |split]]; trivial.
                   --- split; trivial.
-                  --- rewrite path_cost.path_cost_zero; ulia.
+                  --- rewrite path_cost.path_cost_zero.
+                      apply Z.mul_nonneg_nonneg. lia.
+                      apply Z.div_pos; lia.
                   --- apply Forall_forall.
                       inversion 1.
+                  --- apply acyclic_nil_path.
                ** unfold path_in_popped.
                   intros. 
                   inversion H20.
@@ -1115,7 +1345,6 @@ Section DijkstraProof.
             ++ intros.
                apply (vvalid_meaning g) in H20.
                apply (inv_unseen_weak_add_unpopped g prev _ _ src); trivial.
-
             ++ intros. clear H20.
                destruct popped eqn:?.
                2: right; apply H4; inversion 1.
@@ -1124,6 +1353,10 @@ Section DijkstraProof.
             ++ red. intros. inversion H21.
 
             ++ apply in_eq.
+
+            ++ red. apply Forall_cons; trivial.
+
+            ++ apply NoDup_cons; trivial.
 
             ++ intros. rewrite not_in_cons in H21; destruct H21.
                specialize (Hd _ H20 H22).
@@ -1292,14 +1525,36 @@ Section DijkstraProof.
             rename H34 into H_h'_cap.
             rename H35 into H34.
             rename H36 into H35.
-            rename H37 into He.
-            rename H38 into Hf.
-            rename H39 into Hl.
-            rename H40 into Ho.
-            rename H41 into Hv.
-            rename H42 into Hw.
-            rename H43 into Ha'.
+            rename H37 into Had.
+            rename H38 into Hae.
+            rename H39 into He.
+            rename H40 into Hf.
+            rename H41 into Hl.
+            rename H42 into Ho.
+            rename H43 into Hv.
+            rename H44 into Hw.
+            rename H45 into Ha'.
 
+            assert (Hbb: 0 <= Znth u dist' <= (size - 1) * (Int.max_signed / size)). {
+              assert (Htemp: 0 <= u < Zlength dist') by lia.
+              pose proof (Znth_dist_cases _ _ Htemp H35).
+              clear Htemp.
+              destruct H22; trivial.
+              exfalso.
+              destruct (H_inv_popped _ H_u_valid H31) as [[? ?]|?].
+              - red in Hconn.
+                destruct (Hconn _ H_u_valid) as [p [? [? ?]]].
+                apply (H24 _ H25); trivial.
+              - destruct H23 as [p [[_ [_ [? [? _]]]] _]].
+                rewrite <- H24, H22 in H23.
+                pose proof (inf_further_restricted g).
+                assert (0 <= size) by ulia.
+                red in Had. rewrite Forall_forall in Had.
+                pose proof (one size H26 popped' Hae Had).
+                apply Zlt_not_le in H25.
+                apply H25. lia.
+            }
+            
             forward_call (sh, g, graph_ptr, addresses, u, i).            
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
 
@@ -1327,12 +1582,16 @@ Section DijkstraProof.
                assert (0 <= Znth u dist' <= inf). {
                  assert (0 <= u < Zlength dist') by lia.
                  apply (sublist.Forall_Znth _ _ _ H23) in H35.
-                 assumption.
+                 destruct H35; [|lia].
+                 pose proof (inf_bounded_above_dist g).
+                 lia.
                }
                assert (0 <= Znth i dist' <= inf). {
                  assert (0 <= i < Zlength dist') by lia.
                  apply (sublist.Forall_Znth _ _ _ H24) in H35.
-                 assumption.
+                 destruct H35; [|lia].
+                 pose proof (inf_bounded_above_dist g).
+                 lia.
                }
                assert (0 <= Znth u dist' + cost <= Int.max_signed). {
                  (* IMPORTANT:
@@ -1341,8 +1600,7 @@ Section DijkstraProof.
                   inf's upper bound
                   *)
                  pose proof (inf_further_restricted g).
-                 admit.
-                 (* lia. *)
+                 ulia.
                }
                thaw FR.
                forward. forward. forward_if.
@@ -1428,8 +1686,43 @@ Section DijkstraProof.
                       inversion H31.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
-                  --- apply Forall_upd_Znth;  ulia.
-                  --- apply Forall_upd_Znth;  ulia.
+                  --- apply Forall_upd_Znth; ulia.
+                  ---
+ apply Forall_upd_Znth; try ulia.
+ left. destruct icases; [|ulia].
+ assert (0 <= Znth u dist' <= (size-2) * (Int.max_signed / size)). {
+   assert (vvalid g u). {
+     apply (vvalid_meaning g); trivial.
+   }
+   destruct (H_inv_popped _ H40 H31) as [? | [p [? [? ?]]]];
+                          try ulia.
+   destruct H41 as [Haz [_ [? [? [_ ?]]]]].
+   replace (Znth u dist') with (path_cost g p) in *.
+   split; try ulia.
+   pose proof (not_in_popped_popped_short g i popped'
+                                          H_i_valid Hae
+                                          Had H_i_not_popped).
+   apply Z.le_trans with
+       (m := (Zlength popped' - 1) *  (Int.max_signed / size)).
+   2: apply Z.mul_le_mono_nonneg_r; [apply Z.div_pos|]; ulia.
+
+   destruct p as [src' links].
+   pose proof (path_in_popped_Zlengths _ _ _ _ Haz H45 H42).
+   pose proof (path_cost_upper_bound
+                 g src' links (Int.max_signed / size)).
+   spec H48. 1: lia.
+   spec H48.
+   1: {
+     intros.
+     apply (valid_edge_bounds g).
+     apply (valid_path_evalid g src' links); trivial.
+   }
+   apply Z.le_trans with (m := (Zlength links) * (Int.max_signed / size)); trivial.
+   apply Z.mul_le_mono_nonneg_r. 2: lia.
+   apply Z.div_pos; ulia.
+ }
+  
+ lia.
                   --- specialize (He _ H39 H40).
                       unfold proj_keys in He |- *.
                       apply (Permutation_map heap_item_key) in H36.
@@ -1564,10 +1857,21 @@ Section DijkstraProof.
                      subst m.
                      rename p2m into p2u.
                      rewrite H38 in H_non_improvement.
-                     assert (0 <= u < size) by lia.
+
+                     (* in H_non_improvement:
+                        Znth u dist' must be the culprit.
+                        it is disobeying upp bnd of (size-1)*(max/size)
+                        this can only be because it is disobeying acyclic!
+                      *)
+                     
+                     intros _.
                      simpl id in *.
-                     intro. (* not enough? *)
-                     admit.
+                     apply Z.ge_le in H_non_improvement.
+                     apply Zle_not_lt in H_non_improvement.
+                     apply H_non_improvement.
+                     pose proof (inf_bounded_above_dist g).
+                     pose proof (inf_further_restricted g).
+                     lia.
                  --- intros.
                      assert (i <= dst < size) by lia.
                      apply H_inv_unseen_weak; trivial.
@@ -1609,7 +1913,7 @@ Section DijkstraProof.
                      right. split3; [| |split3; [| |split3]]; trivial.
                      
                      intros.
-                     destruct (@Znth_dist_cases inf mom' dist')
+                     destruct (@Znth_dist_cases size inf mom' dist')
                        as [e | e]; trivial.
                      1: apply (vvalid_meaning g) in H45; ulia.
                      1: { rewrite e.
@@ -1625,8 +1929,7 @@ Section DijkstraProof.
                      1: { subst mom'.
                           assert (0 <= Znth u dist'). {
                             apply (sublist.Forall_Znth _ _ u) in H35.
-                            simpl in H35. apply H35.
-                            lia.
+                            destruct H35; lia. lia.
                           }
                           simpl id in *. ulia.
                      }
@@ -1647,15 +1950,18 @@ Section DijkstraProof.
                  subst m.
                  assert (0 <= Znth u dist'). {
                    apply (sublist.Forall_Znth _ _ u) in H35.
-                   apply H35.
-                   ulia.
+                   destruct H35; lia. lia.
+                 } 
+                 intro.
+                 apply Z.ge_le, Zle_not_lt in H22; apply H22.
+                 assert (In (u, i) (snd p2m ++ snd (u, [(u, i)]))). {
+                   simpl. apply in_or_app.
+                   right. simpl. left; trivial.
                  }
-                 admit. (* not enough *)
-                 (*
-                 rewrite path_cost_glue_one_step.
-                 destruct H38 as [? _].
-                 pose proof (path_cost_pos _ _ H38).
-                 simpl id in *. ulia. *)
+                 pose proof (valid_path_evalid _ _ _ _ H40 H41).
+                 apply valid_edge_bounds in H42.
+                 pose proof (inf_gt_largest_edge g).
+                 apply Z.le_lt_trans with (m := Int.max_signed / size); simpl id; ulia.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)

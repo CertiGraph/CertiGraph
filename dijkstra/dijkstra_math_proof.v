@@ -6,6 +6,116 @@ Local Open Scope Z_scope.
 
 Ltac ulia := trivial; unfold V, DE in *; rep_lia.
 
+Lemma app_eq_single_inv:
+  forall
+    A l (a b: A),
+    l ++ [a] = [b] ->
+    l = [] /\ a = b.
+Proof.
+  intros.
+  (* generalize dependent l. *)
+  induction l.
+  - inversion H. split; trivial.
+  - simpl in H. inversion H. exfalso.
+    apply (app_not_nil l a); trivial.
+Qed.
+
+Lemma Zlength_cons_sub_1:
+  forall A (a: A) l,
+    Zlength (a :: l) - 1 = Zlength l.
+Proof.
+  intros. rewrite Zlength_cons.
+  pose proof (Zlength_nonneg l). lia.
+Qed.
+
+Lemma one:
+  forall size,
+    0 <= size ->
+    forall L,
+      NoDup L ->
+      (forall j, In j L -> 0 <= j < size) ->
+      Zlength L <= size.
+Proof.
+  intros ? ?.
+  rename H into Ha.
+  rewrite <- (Z2Nat.id size) in *; trivial.
+  remember (Z.to_nat size) as size_n.
+  clear Heqsize_n Ha.
+  induction size_n; intros.
+  - destruct L.
+    + rewrite Zlength_nil. apply Nat2Z.is_nonneg.
+    + exfalso. specialize (H0 z (in_eq _ _)). lia.
+  - destruct (in_dec Z.eq_dec (Z.of_nat size_n) L);
+      [rename i into H1 | rename n into H1].
+    + apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst L.
+      apply NoDup_remove in H. destruct H.
+      assert (forall j : Z, In j (l1 ++ l2) -> 0 <= j < Z.of_nat size_n). {
+        intros.
+        assert (In j (l1 ++ Z.of_nat size_n :: l2)). {
+          apply in_or_app. apply in_app_or in H2.
+          destruct H2; auto. right. right. trivial.
+        }
+        specialize (H0 _ H3).
+        rewrite Nat2Z.inj_succ in H0.
+        assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n) by lia.
+        destruct H4; auto.
+        subst j. contradiction.
+      }
+      specialize (IHsize_n (l1 ++ l2) H H2).
+      rewrite Zlength_app in *. rewrite Zlength_cons. simpl. lia.
+    + rewrite Nat2Z.inj_succ.
+      assert (forall j, In j L -> 0 <= j < Z.of_nat size_n). {
+        intros. specialize (H0 _ H2).
+        rewrite Nat2Z.inj_succ in H0.
+        assert (0 <= j < (Z.of_nat size_n) \/ j = (Z.of_nat size_n)) by lia.
+        destruct H3; auto. subst. contradiction.
+      }
+      specialize (IHsize_n _ H H2). lia.
+Qed.
+
+Lemma two:
+  forall i size,
+    0 <= i < size ->
+    forall L,
+      NoDup L ->
+      (forall j, In j L -> 0 <= j < size /\ j <> i) ->
+      Zlength L <= size - 1.
+Proof.
+  intros ? ? ?.
+  rewrite <- (Z2Nat.id size) in *; try lia.
+  remember (Z.to_nat size) as size_n.
+  clear Heqsize_n.
+  induction size_n; intros.
+  1: lia.
+  replace (Z.of_nat (S size_n) - 1) with (Z.of_nat size_n) by lia.
+  assert (i = Z.of_nat size_n \/ 0 <= i < Z.of_nat size_n) by lia.
+  destruct H2. subst i.
+  apply one. lia. apply H0. intros. specialize (H1 _ H2). lia.
+  destruct (in_dec Z.eq_dec (Z.of_nat size_n) L);
+    [rename i0 into H3 | rename n into H3].
+  - apply in_split in H3. destruct H3 as [l1 [l2 ?]]. subst L.
+    apply NoDup_remove in H0. destruct H0.
+    assert (forall j, In j (l1 ++ l2) -> 0 <= j < Z.of_nat size_n /\ j <> i). {
+      intros.
+      assert (In j (l1 ++ Z.of_nat size_n :: l2)). {
+        apply in_or_app. apply in_app_or in H4.
+        destruct H4; auto. right. right. trivial.
+      }
+      specialize (H1 _ H5).
+      assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n) by lia.
+      destruct H6. lia.
+      subst j. contradiction.
+    }
+    specialize (IHsize_n H2 (l1 ++ l2) H0 H4).
+    rewrite Zlength_app in *. rewrite Zlength_cons. lia.
+  - assert (forall j, In j L -> 0 <= j < Z.of_nat size_n /\ j <> i). {
+      intros. specialize (H1 _ H4).
+      assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n) by lia.
+      destruct H5. lia. subst. contradiction.
+    }
+    specialize (IHsize_n H2 _ H0 H4). lia.
+Qed.
+        
 Section DijkstraMathLemmas.
 
   Context {size : Z}.
@@ -15,11 +125,43 @@ Section DijkstraMathLemmas.
   Definition inrange_prev prev :=
     Forall (fun x => 0 <= x < size \/ x = inf) prev.
 
-  Definition inrange_priq priq :=
-    Forall (fun x => 0 <= x <= inf+1) priq.
-
   Definition inrange_dist dist :=
-    Forall (fun x => 0 <= x <= inf) dist.
+    Forall (fun x => 0 <= x <= (size - 1) * (Int.max_signed / size)
+                     \/ x = inf) dist.
+
+  Definition inrange_popped popped :=
+    Forall (fun x => 0 <= x < size) popped.
+  
+  Lemma not_in_popped_popped_short:
+    forall (g: @DijkGG size inf) i popped,
+      vvalid g i ->
+      NoDup popped ->
+      inrange_popped popped ->
+      ~ In i popped ->
+      Zlength popped <= size - 1.
+  Proof.
+    intros.
+    apply (vvalid_meaning g) in H.
+    apply (two i); trivial.
+    intros. split.
+    - red in H1. rewrite Forall_forall in H1.
+      apply H1; trivial.
+    - intro. subst j; contradiction.
+  Qed.
+  
+  Lemma inf_bounded_above_dist: forall (g: @DijkGG size inf),
+      (size - 1) * (Int.max_signed / size) < inf.
+  Proof.
+    intros.
+    pose proof (inf_further_restricted g).
+    apply Z.lt_trans with (m := Int.max_signed / size * size);
+      trivial.
+    apply Z.le_lt_trans with (m := (size - 1) * (Int.max_signed / size));
+      [lia|].
+    rewrite Z.mul_comm. apply Zmult_lt_compat_l.
+    apply Z.div_str_pos. apply (size_representable g).
+    lia.
+  Qed.
 
   Lemma Forall_upd_Znth: forall (l: list Z) i new F,
       0 <= i < Zlength l ->
@@ -40,11 +182,10 @@ Section DijkstraMathLemmas.
       0 <= i < Zlength dist ->
       inrange_dist dist ->
       Znth i dist = inf \/
-      0 <= Znth i dist < inf.
+      0 <= Znth i dist <= (size - 1) * (Int.max_signed / size).
   Proof.
     intros.
-    apply (sublist.Forall_Znth _ _ _ H) in H0.
-    simpl in H0. lia.
+    apply (sublist.Forall_Znth _ _ _ H) in H0. ulia.
   Qed.
 
   Lemma Int_signed_strip:
@@ -57,8 +198,47 @@ Section DijkstraMathLemmas.
     exfalso. apply n. trivial.
   Qed.
 
+  Lemma epath_to_vpath_path_glue_one_step:
+    forall (g: @DijkGG size inf) (a b c : V) p,
+      valid_path g p ->
+      path_ends g p a b -> 
+      Permutation (epath_to_vpath g (path_glue p (b, [(b, c)])))
+                  (c :: epath_to_vpath g p).
+  Proof.
+    intros.
+    rewrite (surjective_pairing p) in *.
+    remember (snd p) as a2b.
+    replace (fst p) with a in *.
+    2: destruct H0 as [? _]; simpl in H0; lia.
+    clear Heqa2b.
+    
+    generalize dependent H.
+    generalize dependent H0.
+    generalize dependent b.
+    generalize dependent a.
+    generalize dependent a2b.
+
+    induction a2b.
+    - intros. simpl. red in H0. simpl in H0; destruct H0 as [_ ?].
+      subst a. rewrite (edge_dst_snd g), (edge_src_fst g); simpl.
+      apply perm_swap.
+    - intros. rename a into new.
+      inversion H. clear H2.
+      unfold path_glue. simpl fst; simpl snd.
+      rewrite <- app_comm_cons.
+      repeat rewrite epath_to_vpath_cons_eq; trivial.
+      pose proof (perm_swap c a0 (epath_to_vpath g (dst g new, a2b))).
+      apply Permutation_trans with (l' := (a0 :: c :: epath_to_vpath g (dst g new, a2b))); trivial.
+      apply perm_skip.
+      apply IHa2b.
+      + red. split; trivial.
+        destruct H0. rewrite pfoot_cons in H3; trivial.
+      + apply valid_path_cons in H; trivial.
+  Qed.
+
+
   (* Four Dijkstra-specific path-cost lemmas *)
-    Lemma path_cost_app_cons:
+  Lemma path_cost_app_cons:
     forall (g: @DijkGG size inf) path e,
       path_cost g (fst path, snd path +:: e) =
       path_cost g path + elabel g e.
@@ -70,7 +250,7 @@ Section DijkstraMathLemmas.
     rewrite one_step_path_Znth; trivial.
     unfold path_glue. simpl. trivial.
   Qed.
- 
+  
   Lemma path_cost_glue_one_step:
     forall (g: @DijkGG size inf) p2m u i,
       path_cost g (path_glue p2m (u, [(u, i)])) = path_cost g p2m + elabel g (u, i).
@@ -418,11 +598,13 @@ Section DijkstraMathLemmas.
   Proof.
     intros. right.
     exists (src, []); split3; trivial.
-    - split3; [| | split3]; trivial.
+    - split3; [| | split3; [| |split]]; trivial.
       + split; trivial.
       + unfold path_cost. simpl.
-        apply (inf_bounds g).
+        pose proof (size_representable g).
+        apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; try ulia.
       + rewrite Forall_forall; intros; simpl in H3; lia.
+      + apply acyclic_nil_path.
     - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
       + simpl in H3.
         simpl. left; lia.
@@ -436,31 +618,42 @@ Section DijkstraMathLemmas.
     forall (g: @DijkGG size inf) src u mom p2mom prev dist,
       path_correct g prev dist src mom p2mom ->
       Znth u dist = Znth mom dist + elabel g (mom, u) ->
-      Znth mom dist + elabel g (mom, u) < inf ->
+      Znth mom dist + elabel g (mom, u) <= size * (Int.max_signed / size) ->
       strong_evalid g (mom, u) ->
       Znth u prev = mom ->
-      path_correct g prev dist src u (fst p2mom, snd p2mom +:: (mom, u)).
+      ~ In_path g u p2mom ->
+      path_correct g prev dist src u (path_glue p2mom (mom, [(mom, u)])).
   Proof.
     intros.
-    destruct H as [? [[? ?] [? [? ?]]]].
-    assert (path_cost g p2mom + elabel g (mom, u) < inf) by
-        ulia. 
-    split3; [| | split3]; trivial.
-    - apply (valid_path_app_cons g); trivial;
+    rename H4 into Hb.
+    destruct H as [? [? [? [? [? Ha]]]]].
+    assert (path_cost g p2mom + elabel g (mom, u) <=
+            size * (Int.max_signed / size)) by ulia. 
+    split3; [| | split3; [| |split]]; trivial.
+    - destruct H4; apply (valid_path_app_cons g); trivial;
         try rewrite <- surjective_pairing; trivial.
-    - apply (path_ends_app_cons g); trivial.
+    - destruct H4; apply (path_ends_app_cons g); trivial.
       split; trivial.
       rewrite <- (surjective_pairing p2mom); trivial.
-    - destruct H2; rewrite path_cost_app_cons; trivial; ulia.
-    - destruct H2; rewrite path_cost_app_cons; trivial; try ulia.
+    - rewrite path_cost_glue_one_step; ulia.
+    - rewrite path_cost_glue_one_step; ulia.
     - rewrite Forall_forall. intros.
-      rewrite Forall_forall in H8.
-      apply in_app_or in H10. destruct H10.
-      + apply H8; trivial.
-      + simpl in H10. destruct H10; [| lia].
+      rewrite Forall_forall in H7.
+      apply in_app_or in H9. destruct H9.
+      + apply H7; trivial.
+      + simpl in H9. destruct H9; [| lia].
         rewrite (surjective_pairing x) in *.
-        inversion H10.
-        simpl. rewrite <- H12, <- H13. ulia.
+        inversion H9.
+        simpl. rewrite <- H11, <- H12. ulia.
+    - red in Ha |- *.
+      pose proof (epath_to_vpath_path_glue_one_step
+                    g src mom u p2mom H H4).
+      symmetry in H9.
+      apply (Permutation_NoDup H9).
+      apply NoDup_cons; trivial.
+      intro.
+      apply in_path_eq_epath_to_vpath in H10; trivial.
+      contradiction.
   Qed.
 
   Lemma in_path_app_cons:
@@ -553,14 +746,13 @@ Section DijkstraMathLemmas.
       vvalid g dst ->
       inv_unseen_weak g src (u :: popped) prev dist dst u.
   Proof.
-    intros.
+    intros. red.
     intro. intros.
     assert (e: dst <> u) by (simpl in H2; lia).
     apply not_in_cons in H2; destruct H2 as [_ ?].
     destruct (H dst H1) as [_ [_ ?]].
-    red in H8.
-    apply (H8 H2 H3 m p2m); trivial.
     destruct H5; [lia | trivial].
+    apply (H8 H2 H3 m p2m); trivial.
   Qed.
 
   Lemma list_repeat1:
@@ -656,8 +848,8 @@ Section DijkstraMathLemmas.
     destruct (H1 dst H0 H5)
       as [? | [p2dst [? [? ?]]]]; [left | right]; trivial.
     exists p2dst. split3; trivial.
-    - destruct H8 as [? [? [? [? ?]]]].
-      split3; [| | split3]; trivial.
+    - destruct H8 as [? [? [? [? [? Ha]]]]].
+      split3; [| | split3; [| |split]]; trivial.
       1: rewrite upd_Znth_diff; ulia.
       rewrite Forall_forall; intros.
       pose proof (In_links_snd_In_path g _ _ H15).
@@ -805,16 +997,13 @@ Section DijkstraMathLemmas.
      *)
     destruct (H_inv_popped _ H4 H5) as [[? ?] | [optp2m [? [? ?]]]].
     - (* m was popped @ inf *)
-      specialize (H8 p2m H6).
-      intro. apply H8.
-      assert (paths_meet g p2m (m, [(m, dst)])). {
-        apply (path_ends_meet _ _ _ src m dst); trivial.
-        red. simpl. rewrite (edge_dst_snd g). simpl. split; trivial.
-      }
-      apply (valid_path_split _ _ _ H10 H9).
+      destruct H6 as [? [? _]].
+      specialize (H8 p2m H9). contradiction.
     - (* m was popped @ < inf *)
       (* Since optp2m is optimal, it cannot be worse than p2m.
          We will strengthen the goal and then prove it. *)
+      destruct H6 as [? [? _]].
+      specialize (H9 p2m H6 H10).
       assert (0 <= dst < i). {
         assert (dst <> i). {
           intro. subst dst.
@@ -825,7 +1014,17 @@ Section DijkstraMathLemmas.
       }
       apply (vvalid_meaning g) in H_i_valid.
       rewrite upd_Znth_diff in H3; try ulia.
-      apply (H_inv_unseen); trivial.
+      red in H_inv_unseen.
+      intro.
+      apply (H_inv_unseen _ H11 H2 H3 m optp2m); trivial.
+      destruct H7 as [? [? _]].
+      apply valid_path_split in H12.
+      2: { apply (path_ends_meet _ _ _ src m dst); trivial.
+           red. simpl. rewrite (edge_dst_snd g); simpl; split; trivial. }
+      destruct H12.
+      apply valid_path_merge; trivial.
+      apply (path_ends_meet _ _ _ src m dst); trivial.
+      red. simpl. rewrite (edge_dst_snd g); simpl; split; trivial. 
   Qed.
 
   Lemma inv_unseen_weak_newcost:
@@ -852,16 +1051,14 @@ Section DijkstraMathLemmas.
      *)
     destruct (H_inv_popped _ H4 H5) as [[? ?] | [optp2m [? [? ?]]]].
     - (* m was popped @ inf *)
-      specialize (H9 p2m H7).
-      intro. apply H9.
-      assert (paths_meet g p2m (m, [(m, dst)])). {
-        apply (path_ends_meet _ _ _ src m dst); trivial.
-        red. simpl. rewrite (edge_dst_snd g). simpl. split; trivial.
-      }
-      apply (valid_path_split _ _ _ H11 H10).
+      destruct H7 as [? [? _]].
+      specialize (H9 p2m H10). contradiction.
     - (* m was popped @ < inf *)
       (* Since optp2m is optimal, it cannot be worse than p2m.
          We will strengthen the goal and then prove it. *)
+      destruct H7 as [? [? _]].
+      specialize (H10 p2m H7 H11).
+
       assert (dst <> i). {
         intro. subst dst.
         rewrite (vvalid_meaning g i) in H_i_valid.
@@ -870,7 +1067,17 @@ Section DijkstraMathLemmas.
       rewrite (vvalid_meaning g i) in H_i_valid.
       rewrite upd_Znth_diff in H3; try ulia.
       assert (i <= dst < size) by lia.
-      apply H_inv_unseen_weak; trivial.
+      red in H_inv_unseen_weak.
+      intro.
+      apply (H_inv_unseen_weak _ H13 H2 H3 m optp2m); trivial.
+      destruct H8 as [? [? _]].
+      apply valid_path_split in H14.
+      2: { apply (path_ends_meet _ _ _ src m dst); trivial.
+           red. simpl. rewrite (edge_dst_snd g); simpl; split; trivial. }
+      destruct H14.
+      apply valid_path_merge; trivial.
+      apply (path_ends_meet _ _ _ src m dst); trivial.
+      red. simpl. rewrite (edge_dst_snd g); simpl; split; trivial. 
   Qed.           
 
   Lemma inv_unpopped_new_dst:
@@ -926,7 +1133,9 @@ Section DijkstraMathLemmas.
       pose proof (edge_cost_pos g (mom', i)).
       ulia.
     }
-    destruct (H_inv_popped _ H15 H16); [ulia|].  
+    destruct (H_inv_popped _ H15 H16) as [[? ?] | ?].
+    1: pose proof (edge_cost_pos g (mom', i)); ulia.
+
     destruct H17 as [p2mom' [? [? ?]]].
     assert (Hrem := H17).
     
@@ -1165,7 +1374,9 @@ Section DijkstraMathLemmas.
     }
 
     destruct (H_inv_popped _ H17 H18) as
-        [? | [p2mom' [? [? ?]]]]; [ulia|].
+        [[? ?] | [p2mom' [? [? ?]]]].
+    1: pose proof (edge_cost_pos g (mom', i)); ulia.
+
     assert (Hrem:= H21).
     destruct H21 as [? [? [? ?]]].
     pose proof (path_ends_In_path_dst _ _ _ _ H24).
@@ -1232,15 +1443,14 @@ Section DijkstraMathLemmas.
       1: {
         (* i was unseen *)
         assert (i <= i < size) by lia.
-        destruct Hrem as [_ [Hrem _]].
         exfalso.
         apply (H_inv_unseen_weak
-                      _ H28 H10 H11 mom'
-                      p2mom' H17 H18 n0 Hrem).
+                 _ H28 H10 H11 mom'
+                 p2mom' H17 H18 n0 Hrem).
         apply valid_path_merge; trivial.
         2: { simpl.
-        rewrite (edge_src_fst g); split; trivial.
-        apply strong_evalid_dijk; ulia.
+             rewrite (edge_src_fst g); split; trivial.
+             apply strong_evalid_dijk; ulia.
         }
         apply (path_ends_meet _ _ _ src mom' i); trivial.
         red. simpl. rewrite (edge_dst_snd g). simpl. split; trivial.
@@ -1284,7 +1494,6 @@ Section DijkstraMathLemmas.
       destruct H11.
       1: {
         (* i was unseen *)
-        destruct Hrem as [_ [Hrem _]].
         assert (i <= i < size) by lia.
         pose proof (H_inv_unseen_weak
                       _ H29 H10 H11 mom' p2mom'
@@ -1375,7 +1584,18 @@ Section DijkstraMathLemmas.
     }
     
     split3.
-    - apply path_correct_app_cons; trivial. lia.
+    - apply path_correct_app_cons; trivial.
+      + replace (Znth mom dist + elabel g (mom, u))
+          with (Znth u dist).
+        apply (sublist.Forall_Znth _ _ u) in H1.
+        destruct H1; try ulia.
+        2: apply (vvalid_meaning g) in H4; lia.
+        apply Z.le_trans with (m := (size - 1) * (Int.max_signed / size)); try lia.
+        pose proof (size_representable g).
+        apply Z.mul_le_mono_nonneg_r; try lia.
+        apply Z.div_pos; lia.
+      + lia.
+      + intro. apply H3, H14; trivial.
     - unfold path_in_popped. intros.
       destruct H13 as [? [? _]].
       apply (in_path_app_cons _ _ _ src) in H17; trivial.
@@ -1501,7 +1721,7 @@ Section DijkstraMathLemmas.
       assert (0 <= Znth mom' dist). {
         rewrite (vvalid_meaning g) in H34.
         apply (sublist.Forall_Znth _ _ mom') in H1.
-        apply H1. ulia.
+        destruct H1; ulia. ulia. 
       }
       assert (Htemp: 0 <= child' < Zlength dist). {
         apply (vvalid_meaning g) in H35; trivial. ulia. 
@@ -1512,20 +1732,22 @@ Section DijkstraMathLemmas.
       + (* dist[child'] = inf. This is impossible *)
         exfalso.
         destruct (H _ H35) as [_ [_ ?]].
-        destruct H37 as [Hb [H37 _]].
         specialize (H44 H29 H43 mom' optp2mom' H34 H28 H37).
         exfalso. apply H44.
+        destruct H37 as [? [? _]].
         apply valid_path_merge; trivial.
-        2: {
-          simpl.
-          rewrite (edge_src_fst g); split; trivial.
-        }
-        apply (path_ends_meet _ _ _ src mom' child'); trivial.
-        red. simpl. rewrite (edge_dst_snd g). simpl. split; trivial.
+        * apply (path_ends_meet _ _ _ src mom' child'); trivial.
+          red. simpl. rewrite (edge_dst_snd g). simpl. split; trivial.
+        * simpl.
+          rewrite (edge_src_fst g). split; trivial.
       + (* dist[child'] < inf. We use inv_unpopped *)
         destruct (H _ H35) as [_ [? _]].
         red in H44.
-        specialize (H44 H29 H43).
+        assert (Znth child' dist < inf). {
+          pose proof (inf_bounded_above_dist g).
+          lia.
+        }
+        specialize (H44 H29 H45).
         destruct H44 as [? | [_ [? [? [? [? [? ?]]]]]]].
         * (* child' = src. Again, impossible *)
           exfalso.
@@ -1534,7 +1756,7 @@ Section DijkstraMathLemmas.
           destruct H37 as [_ [[? _] _]]. left.
           rewrite (surjective_pairing optp2mom') in *; simpl.
           simpl in H37; lia.
-        * specialize (H49 mom' H34 H28).
+        * specialize (H50 mom' H34 H28).
           apply Z.le_trans with (m := Znth child' dist); trivial.
           2: destruct H37 as [_ [_ [_ [? _]]]]; ulia.
           rewrite <- H19, <- H11.
