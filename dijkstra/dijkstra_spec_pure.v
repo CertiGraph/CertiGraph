@@ -12,24 +12,11 @@ Section DijkstraSpecPure.
 
   Definition acyclic_path (g: @DijkGG size inf) p := NoDup (epath_to_vpath g p).
 
-  Lemma NoDup_one: forall A (n: A), NoDup [n].
-  Proof.
-    intros. apply NoDup_cons. 
-    inversion 1. apply NoDup_nil.
-  Qed.
-        
-  Lemma acyclic_nil_path:
-    forall g p, acyclic_path g (p, []).
-  Proof.
-    intros. unfold acyclic_path. simpl.
-    apply NoDup_one.
-  Qed.
-
   Definition connected_dir (g: @DijkGG size inf) src :=
     forall v,
       vvalid g v ->
       exists p, path_ends g p src v /\ valid_path g p /\ path_cost g p < inf.
-    
+
   Definition path_correct (g: @DijkGG size inf)
              (prev: list V) (dist: list Z) src dst p : Prop  :=
     valid_path g p /\

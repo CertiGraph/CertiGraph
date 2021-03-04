@@ -6,8 +6,6 @@ Require Import CertiGraph.dijkstra.dijkstra_spec1.
 
 Local Open Scope Z_scope.
 
-Set Nested Proofs Allowed.
-
 Section DijkstraProof.
   
   (* The invariants have been dragged out of the 
@@ -29,95 +27,6 @@ Section DijkstraProof.
   Definition in_heap_or_popped (popped: list V) (h: heap) :=
     forall i_item,
       (In (Int.signed (heap_item_payload i_item)) popped -> ~ In i_item (heap_items h)).
-
-  Lemma path_cost_cons:
-    forall (g: @DijkGG size inf) src links a,
-      path_cost g (src, a :: links) = elabel g a + path_cost g (src, links).
-  Proof.
-    intros.
-    pose proof (path_cost_path_glue g (src, [a]) (src, links)).
-    unfold path_glue in H. simpl in H. rewrite H. f_equal.
-  Qed.
-  
-  Lemma acyclic_path_cons:
-    forall (g: @DijkGG size inf) links s a,
-      valid_path g (s, a :: links) ->
-      acyclic_path g (s, a :: links) ->
-      acyclic_path g (dst g a, links).
-  Proof.
-    intros.
-    red in H0 |- *.
-    rewrite epath_to_vpath_cons_eq in H0.
-    apply NoDup_cons_1 with (x := s); trivial.
-    destruct H; trivial.
-  Qed.
-
-  Lemma path_in_popped_Zlengths:
-    forall (g: @DijkGG size inf) links s popped,
-      valid_path g (s, links) ->
-      acyclic_path g (s, links) ->
-      path_in_popped g popped (s, links) ->
-      Zlength links <= Zlength popped - 1.
-  Proof.
-    intros g.
-    induction links; intros; destruct popped.
-    + exfalso. apply (H1 s). left; trivial.
-    + rewrite Zlength_nil.
-      rewrite Zlength_cons_sub_1.
-      apply Zlength_nonneg.
-    + exfalso. apply (H1 s). left; trivial.
-    + rewrite Zlength_cons_sub_1, Zlength_cons.
-      replace s with (src g a) in * by (destruct H; lia). clear s.
-      assert (In (src g a) (v :: popped)). { apply H1. left. trivial. }
-      apply In_split in H2. destruct H2 as [l1 [l2 ?]].
-      specialize (IHlinks (dst g a) (l1 ++ l2)).
-      spec IHlinks.
-      1: apply valid_path_cons with (v0 := (src g a)); trivial.
-      spec IHlinks.
-      1: apply (acyclic_path_cons _ _ _ _ H); trivial.
-      spec IHlinks.
-      2: { assert (Zlength (v :: popped) = Zlength (l1 ++ src g a :: l2))
-          by congruence.
-           repeat rewrite Zlength_app in *.
-           repeat rewrite Zlength_cons in *. lia.
-      }
-      clear IHlinks.
-      red in H0. rewrite H2 in *. clear H2 popped v.
-      rewrite epath_to_vpath_cons_eq in H0; trivial.
-      rewrite NoDup_cons_iff in H0. destruct H0.
-      do 2 intro. specialize (H1 step).
-      spec H1.
-      1: {
-        destruct H3 as [? | [e' [? ?]]].
-        - simpl in H3. right. exists a. split; auto. left. trivial.
-        - right. exists e'. simpl in *; auto.
-      }
-      apply in_app_or in H1. apply in_or_app. destruct H1; auto.
-      destruct H1; auto. exfalso.
-      apply H0. subst step.
-      apply in_path_eq_epath_to_vpath; auto.
-      apply valid_path_tail in H. apply H.
-  Qed.
-
-   Lemma path_cost_upper_bound:
-     forall (g: @DijkGG size inf) src links upper,
-       0 <= upper ->
-       (forall e, In e links -> elabel g e <= upper) ->
-       path_cost g (src, links) <= Zlength links * upper.
-   Proof.
-     intros.
-     induction links.
-     - rewrite path_cost_zero.
-       apply Z.mul_nonneg_nonneg; ulia.
-     - rewrite path_cost_cons.
-       rewrite Zlength_cons.
-       spec IHlinks.
-       1: intros; apply H0; right; trivial.
-       specialize (H0 a). spec H0.
-       1: left; trivial.
-       lia.
-   Qed.
-
 
   Definition dijk_setup_loop_inv g sh src dist_ptr
              prev_ptr priq_ptr keys_ptr temp_ptr arr addresses :=
@@ -1725,42 +1634,43 @@ Section DijkstraProof.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- rewrite upd_Znth_Zlength; ulia.
                   --- apply Forall_upd_Znth; ulia.
-                  ---
- apply Forall_upd_Znth; try ulia.
- left. destruct icases; [|ulia].
- assert (0 <= Znth u dist' <= (size-2) * (Int.max_signed / size)). {
-   assert (vvalid g u). {
-     apply (vvalid_meaning g); trivial.
-   }
-   destruct (H_inv_popped _ H40 H31) as [? | [p [? [? ?]]]];
-                          try ulia.
-   destruct H41 as [Haz [_ [? [? [_ ?]]]]].
-   replace (Znth u dist') with (path_cost g p) in *.
-   split; try ulia.
-   pose proof (not_in_popped_popped_short g i popped'
-                                          H_i_valid Hae
-                                          Had H_i_not_popped).
-   apply Z.le_trans with
-       (m := (Zlength popped' - 1) *  (Int.max_signed / size)).
-   2: apply Z.mul_le_mono_nonneg_r; [apply Z.div_pos|]; ulia.
-
-   destruct p as [src' links].
-   pose proof (path_in_popped_Zlengths _ _ _ _ Haz H45 H42).
-   pose proof (path_cost_upper_bound
-                 g src' links (Int.max_signed / size)).
-   spec H48. 1: lia.
-   spec H48.
-   1: {
-     intros.
-     apply (valid_edge_bounds g).
-     apply (valid_path_evalid g src' links); trivial.
-   }
-   apply Z.le_trans with (m := (Zlength links) * (Int.max_signed / size)); trivial.
-   apply Z.mul_le_mono_nonneg_r. 2: lia.
-   apply Z.div_pos; ulia.
- }
-  
- lia.
+                  --- apply Forall_upd_Znth; try ulia.
+                      left. destruct icases; [|ulia].
+                      assert (0 <= Znth u dist' <= (size-2) *
+                                                   (Int.max_signed / size)). {
+                        assert (vvalid g u). {
+                          apply (vvalid_meaning g); trivial.
+                        }
+                        destruct (H_inv_popped _ H40 H31) as [? | [p [? [? ?]]]];
+                                               try ulia.
+                        destruct H41 as [Haz [_ [? [? [_ ?]]]]].
+                        replace (Znth u dist') with (path_cost g p) in *.
+                        split; try ulia.
+                        pose proof (not_in_popped_popped_short g i popped'
+                                                               H_i_valid Hae
+                                                               Had H_i_not_popped).
+                        apply Z.le_trans with
+                            (m := (Zlength popped' - 1) *  (Int.max_signed / size)).
+                        2: apply Z.mul_le_mono_nonneg_r; [apply Z.div_pos|]; ulia.
+                        
+                        destruct p as [src' links].
+                        pose proof (path_in_popped_Zlengths _ _ _ _ Haz H45 H42).
+                        pose proof (path_cost_upper_bound
+                                      g src' links (Int.max_signed / size)).
+                        spec H48. 1: lia.
+                        spec H48.
+                        1: {
+                          intros.
+                          apply (valid_edge_bounds g).
+                          apply (valid_path_evalid g src' links); trivial.
+                        }
+                        apply Z.le_trans with
+                            (m := (Zlength links) * (Int.max_signed / size));
+                          trivial.
+                        apply Z.mul_le_mono_nonneg_r. 2: lia.
+                        apply Z.div_pos; ulia.
+                      }
+                      lia.
                   --- specialize (He _ H39 H40).
                       unfold proj_keys in He |- *.
                       apply (Permutation_map heap_item_key) in H36.
