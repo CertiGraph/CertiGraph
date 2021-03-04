@@ -1087,8 +1087,7 @@ Section DijkstraProof.
             clear Htemp.
             destruct (H1 _ H_u_valid) as [_ [_ ?]].
             
-
-            clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1 H10' H12.
+            clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1 H10' H12 Hd' Ha Ht.
 
             assert (Hai: v :: popped <> []) by inversion 1.  
             specialize (H4 Hai). clear Hai.
@@ -1138,7 +1137,7 @@ Section DijkstraProof.
 
               rewrite <- H10.
               
-              clear - H15 H16 Hequ H6 H8 H19 H20 H21 H_u_valid Hd H18 H12.
+              clear - H15 H16 Hequ H6 H8 H19 H20 H21 H_u_valid Hd H18 H12 Hd' Ha Ht H10'.
 
               (* setting up the Forall...*)
               apply Forall_cons with (x := min_item) in H16.
@@ -1148,23 +1147,25 @@ Section DijkstraProof.
               rewrite Forall_forall in H16.
               specialize (H16 _ H20).
               (* done *)
-                           
+
+pose proof (find_item_by_key_finds_item _ _ H20 Hd').
+pose proof (find_item_by_key_finds_item _ _ Ha Hd').
+
               pose proof (H6 child' H19).
-              specialize (H (Znth child' keys)).
-              spec H; [reflexivity|].
-              destruct H.
-              2: exfalso; apply H, Hd; trivial.
+              specialize (H1 (Znth child' keys)).
+              spec H1; [reflexivity|].
+              destruct H1.
+              2: exfalso; apply H1, Hd; trivial.
 
               pose proof (H6 u H_u_valid).
-              specialize (H0 (Znth u keys)).
-              spec H0; [reflexivity|].
-              destruct H0.
-              2: exfalso; apply H0, Hd; trivial.
+              specialize (H2 (Znth u keys)).
+              spec H2; [reflexivity|].
+              destruct H2.
+              2: exfalso; apply H2, Hd; trivial.
 
-              rewrite Znth_map in H, H0.
+              rewrite Znth_map in H1, H2.
               2: apply (vvalid_meaning g) in H_u_valid; lia.
               2: apply (vvalid_meaning g) in H19; lia.
-              
               (* from H16, H, and H0, this should be okay?  *)
               (* Aquinas *)
 assert (Int.signed (heap_item_priority child_item) >= Int.signed (heap_item_priority min_item)). {
@@ -1172,12 +1173,29 @@ apply lt_false_inv.
 red in H16. unfold cmp in H16.
 rewrite (negb_involutive_reverse (Int.lt _ _)). rewrite H16. trivial.
 }
-
+pose proof (Ht _ Ha). pose proof (Ht _ H20).
+rewrite <- Hequ in H4.
+rewrite H4, H0 in H2.
+rewrite <- H21 in H5.
+rewrite H5, H in H1.
+destruct child_item as [[? ?] ?]. destruct min_item as [[? ?] ?].
+unfold heap_item_priority in *. simpl in H3. inversion H1. inversion H2. subst p p1.
+clear -H3 H10' H19 H12 H_u_valid.
+pose proof (inf_representable g).
+assert (Haa: (size - 1) * (Int.max_signed / size) <= Int.max_signed). {
+ pose proof (size_representable g).
+ apply Z.le_trans with (m := size * (Int.max_signed / size)).
+ - apply Zmult_le_compat_r.
+   lia. apply Z.div_pos; lia.
+ - apply Z.mul_div_le. lia. }
 rewrite <- Int.signed_repr.
-rewrite <- (Int.signed_repr (Znth child' dist)).
-2,3: admit.
-
-              admit.
+rewrite <- (Int.signed_repr (Znth child' dist)). lia.
+apply (Forall_Znth _ _ child') in H10'. 2: apply (vvalid_meaning g) in H19; lia.
+simpl in H10'. destruct H10'. rep_lia.
+rep_lia.
+apply (Forall_Znth _ _ u) in H10'. 2: apply (vvalid_meaning g) in H_u_valid; lia.
+simpl in H10'. destruct H10'. rep_lia.
+rep_lia.
             }
 
             assert (vvalid g mom'). {
@@ -1293,6 +1311,8 @@ rewrite <- (Int.signed_repr (Znth child' dist)).
                      (Znth i dist) in H25.
                  replace (Int.signed (heap_item_priority min_item)) with
                      (Znth u dist) in H25.
+unfold heap_item_payload in *.
+rewrite <- Hequ.
                  lia.
 
                  - specialize (Ht _ Ha).
