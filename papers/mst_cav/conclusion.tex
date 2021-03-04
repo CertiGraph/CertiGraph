@@ -46,7 +46,7 @@ enough to verify real code.
 \subsection{Conclusion}
 \vspace*{-0.25em}
 
-We extend the CertiGraph library to handle undirected graphs and several flavours of graphs with edge labels, both at the pure and at the spatial levels.  We have verified the full functional correctness of the three classic graph algorithms of Dijkstra, Prim, and Kruskal.  We find nontrivial bounds on edge costs and infinity for Dijkstra and provide a novel specification for Prim.  We have verified a binary heap with Floyd's \texttt{heapify} and \texttt{edit\_priority}.  
+We extend the CertiGraph library to handle undirected graphs and several flavours of graphs with edge labels, both at the pure and at the spatial levels.  We verify the full functional correctness of the three classic graph algorithms of Dijkstra, Prim, and Kruskal.  We find nontrivial bounds on edge costs and infinity for Dijkstra and provide a novel specification for Prim.  We verify a binary heap with Floyd's \texttt{heapify} and \texttt{edit\_priority}.  
 All of our code is in CompCert~C~and all of our proofs are machine-checked in Coq.
 
 %The existing library of CertiGraph verifications contains a treasure trove of \emph{precisely} what lemmas are needed to verify real graph code, which should help to guide the development of automated techniques.
