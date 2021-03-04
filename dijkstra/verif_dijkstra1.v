@@ -51,7 +51,8 @@ Section DijkstraProof.
     apply NoDup_cons_1 with (x := s); trivial.
     destruct H; trivial.
   Qed.
-  
+
+  (* Aquinas *)
   Lemma path_in_popped_Zlengths:
     forall (g: @DijkGG size inf) links s popped,
       valid_path g (s, links) ->
@@ -1097,26 +1098,18 @@ Section DijkstraProof.
             simpl in H10. destruct H10; [trivial | exfalso].
             clear Htemp.
             destruct (H1 _ H_u_valid) as [_ [_ ?]].
+            
 
-            clear -Hconn Hequ H19 H18 H10 H4 H_u_valid.
+            clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1.
 
             assert (Hai: v :: popped <> []) by inversion 1.  
             specialize (H4 Hai). clear Hai.
-
-            specialize (H19 H18 H10).
-            clear H19.
 
             destruct (Hconn u H_u_valid) as
                 [[src' links2u] [Haf [Hag Hah]]].
             replace src' with src in *.
             2: destruct Haf as [Haf _]; simpl in Haf; auto.
             clear Hconn.
-
-            (* 
-               H19 says NO mom + 1hop is valid 
-               Haf gives a path that is valid, but we need to
-               dig out the inner mom
-             *)
                
             destruct (path_leaving_popped_stronger
                         g links2u src u (v::popped))
@@ -1133,12 +1126,62 @@ Section DijkstraProof.
                by inv_unpopped on child', child' should have < inf cost.
              *)
 
-            (* Okay now we have the mom in the links2u path,
-               but there is the annoying matter of p2. *)
+            assert (vvalid g child'). {
+              apply (path_ends_valid_src _ _ u p2); trivial.
+            }
+
+            destruct (Hz child' H17 H8) as [child_item [? ?]].
+
+            assert (Znth child' dist = inf). {
+
+              clear - H15 H16 Hequ H10 H6 H8 H17 H18 H19 H_u_valid Hd.
+
+
+              (* setting up the Forall...*)
+              apply Forall_cons with (x := min_item) in H16.
+              2: apply PreOrder_Reflexive.
+              apply Forall_permutation with (bl := heap_items hc) in H16.
+              2: symmetry; trivial.
+              rewrite Forall_forall in H16.
+              specialize (H16 _ H19).
+              (* done *)
+                           
+              pose proof (H6 child' H17).
+              specialize (H (Znth child' keys)).
+              spec H; [reflexivity|].
+              destruct H.
+              2: exfalso; apply H, Hd; trivial.
+
+              pose proof (H6 u H_u_valid).
+              specialize (H0 (Znth u keys)).
+              spec H0; [reflexivity|].
+              destruct H0.
+              2: exfalso; apply H0, Hd; trivial.
+
+              (* from H16, H, and H0, this should be okay?  *)
+              (* Aquinas *)
+              admit.
+            }
+
+            assert (vvalid g mom'). {
+              apply (path_ends_valid_dst _ src _ p1); trivial.
+            }
             
-            admit.
-          }
-          
+            destruct (H1 _ H22) as [? _].
+            specialize (H23 H7).
+            destruct H23 as [[? ?] | [optp2mom' [? [? ?]]]].
+            1: apply (H24 p1); trivial.
+            
+            destruct (H1 _ H17) as [_ [_ ?]].
+            red in H22.
+            apply (H26 H8 H21 mom' optp2mom'); trivial.
+            destruct H23 as [? [? _]].
+            apply valid_path_merge; trivial.
+            - apply (path_ends_meet _ _ _ src mom' child'); trivial.
+              red. simpl. rewrite (edge_dst_snd g). split; trivial.
+            - simpl. rewrite (edge_src_fst g). split; trivial.
+          } 
+
           (* This is the popped array with which
            we will enter the for loop.
            The dist and prev arrays are the same.
