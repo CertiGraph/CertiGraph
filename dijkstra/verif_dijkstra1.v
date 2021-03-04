@@ -1077,10 +1077,20 @@ Section DijkstraProof.
 
           assert (H19 : 0 <= Znth u dist <= (size - 1) * (Int.max_signed / size)). {
             destruct popped.
-            1: (* if popped = nil, then src is being popped *)
-              admit.
-            
-
+            1: { (* if popped = nil, then src is being popped *)
+              assert (src = u). {
+                rewrite Hequ.
+                apply H7; trivial.
+                apply Forall_permutation with (al := (min_item :: heap_items he)).
+                2: symmetry; trivial.
+                apply Forall_cons; trivial.
+                apply PreOrder_Reflexive.
+              }
+              subst src.
+              rewrite H2. split; try lia.
+              apply Z.mul_nonneg_nonneg. lia.
+              apply Z.div_pos; lia.
+            }
             
             assert (Htemp: 0 <= u < Zlength dist) by lia.
             red in H10. apply (Forall_Znth _ _ u Htemp) in H10.
