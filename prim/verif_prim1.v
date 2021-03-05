@@ -198,6 +198,7 @@ Qed.
 Lemma body_prim: semax_body Vprog (@Gprog size inf Z_EqDec) f_prim (@prim_spec size inf).
 Proof.
   start_function. rename H into Hprecon_1. rename H0 into Hprecon_2.
+  rename H1 into Hprecon_3.
   pose proof (inf_representable g).
   rename H into inf_repr.
 assert (inf_repable: repable_signed inf). {

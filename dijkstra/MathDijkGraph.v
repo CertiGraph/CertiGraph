@@ -110,7 +110,7 @@ Section MathDijkGraph.
 
   Lemma inf_bounds:
     forall (g: DijkGG),
-      0 < inf < Int.max_signed.
+      0 < inf <= Int.max_signed.
   Proof.
     intros.
     apply (inf_representable g).
