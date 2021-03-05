@@ -990,7 +990,7 @@ Section DijkstraProof.
             assert (Hai: v :: popped <> []) by inversion 1.  	
             specialize (H4 Hai). clear Hai.	
             destruct (Hconn u H_u_valid) as	
-                [[src' links2u] [Haf [Hag Hah]]].	
+                [[src' links2u] [Haf Hag]].	
             replace src' with src in *.	
             2: destruct Haf as [Haf _]; simpl in Haf; auto.	
             clear Hconn.	
@@ -1003,7 +1003,7 @@ Section DijkstraProof.
                       [child'	
                          [p2	
                             [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]];	
-              trivial.	
+              trivial. admit.	
             (* child' is in heap, or is u	
                by minimality of u, child's dist-cost is inf	
                by inv_unpopped on child', child' should have < inf cost.	
@@ -1470,7 +1470,7 @@ Section DijkstraProof.
               exfalso.	
               destruct (H_inv_popped _ H_u_valid H31) as [[? ?]|?].	
               - red in Hconn.	
-                destruct (Hconn _ H_u_valid) as [p [? [? ?]]].	
+                destruct (Hconn _ H_u_valid) as [p [? ?]].	
                 apply (H24 _ H25); trivial.	
               - destruct H23 as [p [[_ [_ [? [? _]]]] _]].	
                 rewrite <- H24, H22 in H23.	
@@ -1957,7 +1957,7 @@ Section DijkstraProof.
         forward. thaw FR.
         Exists prev dist popped. entailer!.
         intros. destruct (H7 _ H15) as [? _]; trivial.
-  Time Qed.
+  Admitted.
   
   Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
   Proof.
