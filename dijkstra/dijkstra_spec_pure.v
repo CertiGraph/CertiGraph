@@ -15,7 +15,7 @@ Section DijkstraSpecPure.
   Definition connected_dir (g: @DijkGG size inf) src :=
     forall v,
       vvalid g v ->
-      exists p, path_ends g p src v /\ valid_path g p /\ path_cost g p < inf.
+      exists p, path_ends g p src v /\ valid_path g p.
 
   Definition path_correct (g: @DijkGG size inf)
              (prev: list V) (dist: list Z) src dst p : Prop  :=
