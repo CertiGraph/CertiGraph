@@ -45,7 +45,7 @@ Definition initialise_list_spec :=
   PRE [tptr tint, tint, tint]
      PROP ( writable_share Tsh;
             repable_signed a;
-            0 < size <= Int.max_signed
+          0 < size <= Int.max_signed
           )
      PARAMS ( arr; Vint (Int.repr size); Vint (Int.repr a))
      GLOBALS ()
@@ -81,7 +81,8 @@ Definition prim_spec :=
   PRE [tptr (tptr tint), tint, tint, tint, tptr tint]
      PROP ( writable_share Tsh;
             vvalid g r;
-            size * (4 * size) <= Ptrofs.max_signed
+          size * (4 * size) <= Ptrofs.max_signed;
+          inf < Int.max_signed
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr size)); (Vint (Int.repr inf)); (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()

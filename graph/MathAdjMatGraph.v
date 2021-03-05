@@ -47,7 +47,7 @@ Section Mathematical_AdjMat_Model.
     sr: (* size_representable *)
       0 < size <= Int.max_signed;
     ir: (* inf_representable *)
-      0 < inf < Int.max_signed; 
+      0 < inf <= Int.max_signed; 
     vm: (* vvalid_meaning *)
       forall v, vvalid g v <-> 0 <= v < size;
     em: (* evalid_meaning *)

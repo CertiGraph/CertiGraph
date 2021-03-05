@@ -53,7 +53,7 @@ Proof.
 Qed.
 
 Context {size_rep': 0 < size <= Int.max_signed}.
-Context {inf_rep: 0 < inf < Int.max_signed}.
+Context {inf_rep: 0 < inf <= Int.max_signed}.
 
 Definition edgeless_graph' := @edgeless_graph size inf inf_rep size_rep'.
 Definition adde := @UAdjMatGG_adde size inf.

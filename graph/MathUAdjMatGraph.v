@@ -243,7 +243,7 @@ Qed.
 
 Section EDGELESS_UADJMATGRAPH.
 
-Context {inf_bound: 0 < inf < Int.max_signed}.
+Context {inf_bound: 0 < inf <= Int.max_signed}.
 Context {size_bound: 0 < size <= Int.max_signed}.
 
 Definition edgeless_lgraph : UAdjMatLG :=
