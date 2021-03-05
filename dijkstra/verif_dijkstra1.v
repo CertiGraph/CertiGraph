@@ -4,7 +4,19 @@ Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
 Require Import CertiGraph.dijkstra.dijkstra_spec1.
 
+Set Nested Proofs Allowed.
 Local Open Scope Z_scope.
+
+(* Please move this into a much more general location, if we don't have it already! *)
+Lemma Zlength_epath_to_vpath: forall A B (EV : EqDec A eq) (EE : EqDec B eq) (g : PreGraph A B) s l,
+  Zlength (epath_to_vpath g (s,l)) = 1 + Zlength l.
+Proof.
+  intros. simpl. assert (forall l, l <> [] -> Zlength (epath_to_vpath' g l) = 1 + Zlength l). { clear.
+    induction l. contradiction. intros _. simpl. destruct l. reflexivity.
+    rewrite Zlength_cons. rewrite IHl. 2: discriminate. repeat rewrite Zlength_cons. lia. }
+  destruct l. reflexivity.
+  rewrite H. reflexivity. discriminate.
+Qed.
 
 Section DijkstraProof.
   
@@ -1007,9 +1019,13 @@ Section DijkstraProof.
             replace src' with src in *.
             2: destruct Haf as [Haf _]; simpl in Haf; auto.
             clear Hconn.
-               
-            destruct (path_leaving_popped_stronger
-                        g links2u src u (v::popped))
+
+(* valid_path_acyclic here? *)
+apply (valid_path_acyclic _ _ _ _ Haf) in Hag.
+destruct Hag as [[x links2u'] [Hag0 [Hag1 [Hag2 Hag3]]]].
+assert (x = src). { destruct Hag1. apply H. } subst x.
+destruct (path_leaving_popped_stronger
+            g links2u' src u (v::popped))
               as
                 [p1
                    [mom'
@@ -1017,7 +1033,22 @@ Section DijkstraProof.
                          [p2
                             [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]];
               trivial.
-             admit.
+{
+generalize (size_representable g); intro Hsz.
+eapply Z.le_lt_trans.
+apply path_cost_upper_bound.
+2: { intros. apply valid_edge_bounds. eapply valid_path_evalid; eauto. }
+apply Z.div_pos; rep_lia.
+pose proof (one size). spec H. lia. specialize (H _ Hag2).
+spec H.
+intros. rewrite <- (vvalid_meaning g).
+eapply valid_path_valid. apply Hag3. apply in_path_eq_epath_to_vpath; auto.
+rewrite Zlength_epath_to_vpath in H.
+pose proof (inf_further_restricted g).
+
+eapply Z.le_lt_trans. 2: apply H0. rewrite Z.mul_comm.
+apply Zmult_le_compat_l. lia.
+apply Z.div_pos; rep_lia. }
 
             (* child' is in heap, or is u
                by minimality of u, child's dist-cost is inf
@@ -1994,7 +2025,7 @@ Section DijkstraProof.
         forward. thaw FR.
         Exists prev dist popped. entailer!.
         intros. destruct (H7 _ H15) as [? _]; trivial.
-  Admitted.
+  Time Qed.
   
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell
                                  (@getCell_spec size inf).
