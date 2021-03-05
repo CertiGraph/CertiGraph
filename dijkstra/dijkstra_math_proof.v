@@ -126,7 +126,7 @@ Section DijkstraMathLemmas.
     Forall (fun x => 0 <= x < size \/ x = inf) prev.
 
   Definition inrange_dist dist :=
-    Forall (fun x => 0 <= x <= (size - 1) * (Int.max_signed / size)
+    Forall (fun x => 0 <= x <= (size - 1) * ((Int.max_signed - 1) / size)
                      \/ x = inf) dist.
 
   Definition inrange_popped popped :=
@@ -150,17 +150,16 @@ Section DijkstraMathLemmas.
   Qed.
   
   Lemma inf_bounded_above_dist: forall (g: @DijkGG size inf),
-      (size - 1) * (Int.max_signed / size) < inf.
+      (size - 1) * ((Int.max_signed - 1) / size) < inf.
   Proof.
     intros.
     pose proof (inf_further_restricted g).
-    apply Z.lt_trans with (m := Int.max_signed / size * size);
-      trivial.
-    apply Z.le_lt_trans with (m := (size - 1) * (Int.max_signed / size));
-      [lia|].
-    rewrite Z.mul_comm. apply Zmult_lt_compat_l.
-    apply Z.div_str_pos. apply (size_representable g).
-    lia.
+    apply Z.lt_trans with (m := (Int.max_signed - 1) / size * size); trivial.
+    rewrite Z.mul_comm.
+    pose proof (size_representable g).
+    apply Zmult_lt_compat_l; [|lia].
+    apply Z.div_str_pos.
+    pose proof (size_further_restricted g). ulia.
   Qed.
 
   Lemma Forall_upd_Znth: forall (l: list Z) i new F,
@@ -182,7 +181,7 @@ Section DijkstraMathLemmas.
       0 <= i < Zlength dist ->
       inrange_dist dist ->
       Znth i dist = inf \/
-      0 <= Znth i dist <= (size - 1) * (Int.max_signed / size).
+      0 <= Znth i dist <= (size - 1) * ((Int.max_signed - 1) / size).
   Proof.
     intros.
     apply (sublist.Forall_Znth _ _ _ H) in H0. ulia.
@@ -550,7 +549,7 @@ Section DijkstraMathLemmas.
     }
 
     assert (elabel g (mom', child') < inf). {
-      apply Z.le_lt_trans with (m := Int.max_signed / size).
+      apply Z.le_lt_trans with (m := (Int.max_signed - 1) / size).
       apply valid_edge_bounds; trivial.
       apply (inf_gt_largest_edge g).
     }
@@ -576,16 +575,16 @@ Section DijkstraMathLemmas.
   Lemma evalid_dijk:
     forall (g: @DijkGG size inf) a b cost,
       cost = elabel g (a,b) ->
-      0 <= cost <= Int.max_signed / size ->
+      0 <= cost <= (Int.max_signed - 1) / size ->
       evalid g (a,b).
   Proof.
     intros.
     rewrite (evalid_meaning g); split.
     1: apply edge_representable.
     destruct H0.
-    apply Z.le_lt_trans with (m := Int.max_signed / size);
+    apply Z.le_lt_trans with (m := (Int.max_signed - 1) / size);
       trivial.
-    rewrite H in H1; trivial.
+    rewrite H in H1; trivial. 
     apply (inf_gt_largest_edge g).
   Qed.
 
@@ -631,7 +630,7 @@ Section DijkstraMathLemmas.
     forall (g: @DijkGG size inf) src u mom p2mom prev dist,
       path_correct g prev dist src mom p2mom ->
       Znth u dist = Znth mom dist + elabel g (mom, u) ->
-      Znth mom dist + elabel g (mom, u) <= size * (Int.max_signed / size) ->
+      Znth mom dist + elabel g (mom, u) <= size * ((Int.max_signed - 1) / size) ->
       strong_evalid g (mom, u) ->
       Znth u prev = mom ->
       ~ In_path g u p2mom ->
@@ -641,7 +640,7 @@ Section DijkstraMathLemmas.
     rename H4 into Hb.
     destruct H as [? [? [? [? [? Ha]]]]].
     assert (path_cost g p2mom + elabel g (mom, u) <=
-            size * (Int.max_signed / size)) by ulia. 
+            size * ((Int.max_signed - 1) / size)) by ulia. 
     split3; [| | split3; [| |split]]; trivial.
     - destruct H4; apply (valid_path_app_cons g); trivial;
         try rewrite <- surjective_pairing; trivial.
@@ -1308,7 +1307,7 @@ Section DijkstraMathLemmas.
         destruct H8; simpl in H8; trivial.
   Qed.
 
-  Lemma inv_unpopped_newcost':
+  Lemma inv_unpopped_newcost:
     forall (g: @DijkGG size inf) src dst (u i: V)
            dist prev popped newcost,
       (forall dst : Z,
@@ -1332,7 +1331,7 @@ Section DijkstraMathLemmas.
       Zlength prev = size ->
       Zlength dist = size ->
       0 <= Znth u dist <= inf ->
-      0 <= elabel g (u, i) <= Int.max_signed / size ->
+      0 <= elabel g (u, i) <= (Int.max_signed - 1) / size ->
       0 <= Znth i dist <= inf ->
       newcost < Znth i dist ->
       ~ In i popped ->
@@ -1603,7 +1602,7 @@ Section DijkstraMathLemmas.
         apply (sublist.Forall_Znth _ _ u) in H1.
         destruct H1; try ulia.
         2: apply (vvalid_meaning g) in H4; lia.
-        apply Z.le_trans with (m := (size - 1) * (Int.max_signed / size)); try lia.
+        apply Z.le_trans with (m := (size - 1) * ((Int.max_signed - 1) / size)); try lia.
         pose proof (size_representable g).
         apply Z.mul_le_mono_nonneg_r; try lia.
         apply Z.div_pos; lia.
