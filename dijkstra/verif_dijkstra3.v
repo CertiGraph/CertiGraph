@@ -993,15 +993,36 @@ Section DijkstraProof.
             2: destruct Haf as [Haf _]; simpl in Haf; auto.	
             clear Hconn.	
                	
-            destruct (path_leaving_popped_stronger	
-                        g links2u src u (v::popped))	
+            (* valid_path_acyclic here? *)
+            apply (valid_path_acyclic _ _ _ _ Haf) in Hag.
+            destruct Hag as [[x links2u'] [Hag0 [Hag1 [Hag2 Hag3]]]].
+            assert (x = src). { destruct Hag1. apply H. } subst x.
+            destruct (path_leaving_popped_stronger
+                        g links2u' src u (v::popped))
               as	
                 [p1	
                    [mom'	
                       [child'	
                          [p2	
                             [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]];	
-              trivial. admit.
+              trivial.
+            { generalize (size_representable g); intro Hsz.
+              eapply Z.le_lt_trans.
+              apply path_cost_upper_bound.
+              2: { intros. apply valid_edge_bounds. eapply valid_path_evalid; eauto. }
+              apply Z.div_pos; rep_lia.
+              pose proof (one size). spec H. lia. specialize (H _ Hag2).
+              spec H.
+              intros. rewrite <- (vvalid_meaning g).
+              eapply valid_path_valid. apply Hag3. apply in_path_eq_epath_to_vpath; auto.
+              rewrite Zlength_epath_to_vpath in H.
+              pose proof (inf_further_restricted g).
+              
+              eapply Z.le_lt_trans. 2: apply H0. rewrite Z.mul_comm.
+              apply Zmult_le_compat_l. lia.
+              apply Z.div_pos; rep_lia.
+            }
+            
             (* child' is in heap, or is u	
                by minimality of u, child's dist-cost is inf	
                by inv_unpopped on child', child' should have < inf cost.	
@@ -1478,8 +1499,9 @@ Section DijkstraProof.
                 red in Had. rewrite Forall_forall in Had.	
                 pose proof (one size H26 popped' Hae Had).	
                 apply Zlt_not_le in H25.	
-                apply H25. lia.	
-            }	
+                apply H25.
+                apply Z.le_trans with (m := (size - 1) * ((Int.max_signed - 1) / size)); trivial.
+            }
 
             Transparent size.
             forward_call (sh, g, graph_ptr, addresses, u, i).            
@@ -1954,7 +1976,7 @@ Section DijkstraProof.
         forward. thaw FR.
         Exists prev dist popped. entailer!.
         intros. destruct (H7 _ H15) as [? _]; trivial.
-  Admitted.
+  Time Qed.
         
   Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
   Proof.
