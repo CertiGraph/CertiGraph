@@ -35,7 +35,24 @@ Section DijkstraProof.
       In min_item (heap_items h) ->
       Forall (cmp_rel min_item) (heap_items h) ->
       src = Int.signed (heap_item_payload min_item).
-  
+
+  Lemma exclusively_In:
+    forall (a : V) l1 l2,
+      (In a l1 <-> ~ In a l2) <->
+      (~ In a l1 <-> In a l2).
+  Proof.
+    intros.
+    destruct (in_dec Z_EqDec a l1);
+      destruct (in_dec Z_EqDec a l2);
+      split; intros; split; intros; trivial;
+        try contradiction.
+    - apply H in i. contradiction.
+    - apply <- H in i0. contradiction.
+    - apply <- H in n0. contradiction.
+    - apply H in n. contradiction.
+  Qed.
+
+  (* can be strenghtened to bidirectional later *)
   Definition in_heap_or_popped (popped: list V) (h: heap) :=
     forall i_item,
       (In (Int.signed (heap_item_payload i_item)) popped -> ~ In i_item (heap_items h)).
@@ -121,8 +138,7 @@ Section DijkstraProof.
                           g (pointer_val_val arr) addresses;
         free_tok (pointer_val_val keys_ptr) (size * sizeof tint);
         free_tok (pointer_val_val temp_ptr) (sizeof (Tstruct _structItem noattr))).
-
-
+  
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src keys
              dist_ptr prev_ptr keys_ptr priq_ptr graph_ptr temp_ptr addresses :=
     EX prev : list V,
@@ -370,10 +386,10 @@ Section DijkstraProof.
                                   f_dijkstra (@dijkstra_spec size inf).
   Proof.
     start_function.
-    rename H1 into Hsz'.
-    rename H2 into Hconn.
+    rename H0 into Hsz'.
+    rename H1 into Hconn.
+    assert (H0 : 1 = 1) by trivial.
     rewrite (vvalid_meaning g) in H.
-clear H0. assert (H0 : 1=1) by trivial.
     pose proof (size_further_restricted g).
     pose proof (inf_bounds g).
     rename H1 into Hsz.
@@ -1417,7 +1433,6 @@ apply Z.div_pos; rep_lia. }
                destruct (In_Permutation_cons _ _ H21) as [he' ?].
                pose proof (Perm_Perm_cons_Perm H15 H22).
                apply (NoDup_Perm_False H13' H23).
-               
             ++ rewrite Forall_forall. intros.
                apply (in_cons min_item) in H20.
                apply Permutation_sym in H15.
@@ -1993,16 +2008,40 @@ apply Z.div_pos; rep_lia. }
             lia.
           }
           rewrite H13. entailer!.
-          clear -H5 H14.
-          rewrite Int.unsigned_repr in H5 by trivial.
-          unfold heap_size in *.
-          pose proof (Zlength_nonneg (heap_items hc)).
-          lia.
-          apply free_hitem.
+          2: apply free_hitem.
+          assert (heap_size hc = 0). {
+            clear -H5 H14.
+            rewrite Int.unsigned_repr in H5 by trivial.
+            unfold heap_size in *.
+            pose proof (Zlength_nonneg (heap_items hc)).
+            lia.
+          }
+          remember (heap_capacity h) as size in *.
+            clear -H29 Hac Hab Hz Z_EqDec.
+          assert (forall v, vvalid g v <-> In v popped). {
+            intros. split; intros.
+            - destruct (In_dec Z_EqDec v popped); trivial.
+              specialize (Hz _ H n).
+              destruct Hz as [v_item [? _]].
+              unfold heap_size in H29.
+              apply Zlength_nil_inv in H29.
+              rewrite H29 in H0;
+                inversion H0.
+            - red in Hab.
+              rewrite Forall_forall in Hab.
+              apply Hab in H. apply (vvalid_meaning g).
+              trivial.
+          }
+          pose proof (VList_vvalid g).
+          pose proof (NoDup_VList g).
+          apply NoDup_Permutation; trivial.
+          intros. split; intros.
+          -- apply <- H0. apply <- H; trivial.
+          -- apply H, H0; trivial.
+          
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev dist popped hc.
-clear H6. assert (H6 : 1=1) by trivial.
         freeze FR := (data_at _ _ _ _)
                        (data_at _ _ _ _)
                        (data_at _ _ _ _)
@@ -2027,18 +2066,14 @@ clear H6. assert (H6 : 1=1) by trivial.
         1: rewrite Z.mul_comm; entailer!.
         forward. thaw FR.
         Exists prev dist. entailer!.
-assert (Permutation (VList g) popped). {
-Search popped.
-        intros. destruct (H7 _ H16) as [? _].
-intro. Search Permutation In.
-pose proof (Permutation_in _ H15 H18).
-specialize (H17 H19). destruct H17; auto. right.
-destruct H17 as [p [? [? ?]]]. exists p. split3; trivial.
-do 2 intro. specialize (H20 _ H22). symmetry in H15. eapply Permutation_in; eauto.
-
-red.
-
-; trivial.
+        intros. destruct (H7 _ H15) as [? _].
+        symmetry in H6.
+        intro. 
+        pose proof (Permutation_in _ H6 H17).
+        specialize (H16 H18). destruct H16; auto. right.
+        destruct H16 as [p [? [? ?]]]. exists p. split3; trivial.
+        do 2 intro. specialize (H19 _ H21).
+        symmetry in H6. eapply Permutation_in; eauto.
   Time Qed.
   
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell
