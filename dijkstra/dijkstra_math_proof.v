@@ -1863,4 +1863,19 @@ Section DijkstraMathLemmas.
       apply valid_path_tail in H. apply H.
   Qed.
 
+  Lemma sanity_check_postcondition: forall (g: @DijkGG size inf) src dist prev,
+    connected_dir g src ->
+    (forall dst, vvalid g dst -> @inv_popped size inf g src (VList g) prev dist dst) ->
+    forall dst, 
+      vvalid g dst -> (exists p,
+        path_correct g prev dist src dst p /\
+        path_in_popped g (VList g) p /\
+        path_globally_optimal g src dst p).
+  Proof.
+    intros.
+    specialize (H0 _ H1). destruct H0. apply VList_vvalid. trivial.
+    destruct H0. destruct (H _ H1) as [p [? ?]].
+    specialize (H2 _ H3). contradiction. apply H0.
+  Qed.
+
 End DijkstraMathLemmas.

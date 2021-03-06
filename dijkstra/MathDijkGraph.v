@@ -69,7 +69,7 @@ Section MathDijkGraph.
     (* because sizeof tint = 4 *)
 
     ifr: (* inf is further restricted *)
-      ((Int.max_signed - 1) / size) * size < inf
+      ((Int.max_signed - 1) / size) * size < inf  (* size - 1? *)
 
     }.
 
@@ -92,6 +92,11 @@ Section MathDijkGraph.
     Build_GeneralGraph DV DE DG SoundAdjMat g (SoundAdjMat_DijkGG g).
 
   Coercion AdjMatGG_DijkGG: DijkGG >-> AdjMatGG.
+
+  Definition AdjMatGG_FiniteGraph (g : DijkGG) : FiniteGraph g :=
+    g.
+  Coercion AdjMatGG_FiniteGraph: DijkGG >-> FiniteGraph. 
+  Existing Instance AdjMatGG_FiniteGraph.
 
   (* Great! So now when we want to access an AdjMat
      plugin, we can simply use the AdjMat getter 
@@ -206,3 +211,6 @@ Section MathDijkGraph.
   Qed.
 
 End MathDijkGraph.
+
+Existing Instance AdjMatGG_FiniteGraph.
+
