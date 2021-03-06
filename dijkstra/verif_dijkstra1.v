@@ -1562,7 +1562,12 @@ apply Z.div_pos; rep_lia. }
                 red in Had. rewrite Forall_forall in Had.
                 pose proof (one size H26 popped' Hae Had).
                 apply Zlt_not_le in H25.
-                apply H25. lia.
+                apply H25.
+                apply Z.le_trans with (m := (size - 1) * ((Int.max_signed - 1) / size)); trivial.
+                rewrite Z.mul_comm.
+                apply Z.mul_le_mono_nonneg_l.
+                apply Z.div_pos; ulia.
+                lia.
             }
             
             forward_call (sh, g, graph_ptr, addresses, u, i).            

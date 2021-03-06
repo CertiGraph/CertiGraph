@@ -630,7 +630,7 @@ Section DijkstraMathLemmas.
     forall (g: @DijkGG size inf) src u mom p2mom prev dist,
       path_correct g prev dist src mom p2mom ->
       Znth u dist = Znth mom dist + elabel g (mom, u) ->
-      Znth mom dist + elabel g (mom, u) <= size * ((Int.max_signed - 1) / size) ->
+      Znth mom dist + elabel g (mom, u) <= (size-1) * ((Int.max_signed - 1) / size) ->
       strong_evalid g (mom, u) ->
       Znth u prev = mom ->
       ~ In_path g u p2mom ->
@@ -640,7 +640,7 @@ Section DijkstraMathLemmas.
     rename H4 into Hb.
     destruct H as [? [? [? [? [? Ha]]]]].
     assert (path_cost g p2mom + elabel g (mom, u) <=
-            size * ((Int.max_signed - 1) / size)) by ulia. 
+            (size-1) * ((Int.max_signed - 1) / size)) by ulia. 
     split3; [| | split3; [| |split]]; trivial.
     - destruct H4; apply (valid_path_app_cons g); trivial;
         try rewrite <- surjective_pairing; trivial.
@@ -1601,11 +1601,7 @@ Section DijkstraMathLemmas.
           with (Znth u dist).
         apply (sublist.Forall_Znth _ _ u) in H1.
         destruct H1; try ulia.
-        2: apply (vvalid_meaning g) in H4; lia.
-        apply Z.le_trans with (m := (size - 1) * ((Int.max_signed - 1) / size)); try lia.
-        pose proof (size_representable g).
-        apply Z.mul_le_mono_nonneg_r; try lia.
-        apply Z.div_pos; lia.
+        apply (vvalid_meaning g) in H4; lia.
       + lia.
       + intro. apply H3, H14; trivial.
     - unfold path_in_popped. intros.
