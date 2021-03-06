@@ -214,7 +214,7 @@ Section DijkstraProof.
     PROP (
 
         (* This fact comes from breaking while *)
-        heap_size h = 0;
+        Permutation popped (VList g);
          
       (* And the correctness condition is established *)
       dijkstra_correct g src popped prev dist)
@@ -372,6 +372,8 @@ Section DijkstraProof.
     start_function.
     rename H1 into Hsz'.
     rename H2 into Hconn.
+    rewrite (vvalid_meaning g) in H.
+clear H0. assert (H0 : 1=1) by trivial.
     pose proof (size_further_restricted g).
     pose proof (inf_bounds g).
     rename H1 into Hsz.
@@ -2000,6 +2002,7 @@ apply Z.div_pos; rep_lia. }
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev dist popped hc.
+clear H6. assert (H6 : 1=1) by trivial.
         freeze FR := (data_at _ _ _ _)
                        (data_at _ _ _ _)
                        (data_at _ _ _ _)
@@ -2023,8 +2026,19 @@ apply Z.div_pos; rep_lia. }
         forward_call (pointer_val_val keys_pv, heap_capacity hc).
         1: rewrite Z.mul_comm; entailer!.
         forward. thaw FR.
-        Exists prev dist popped. entailer!.
-        intros. destruct (H7 _ H15) as [? _]; trivial.
+        Exists prev dist. entailer!.
+assert (Permutation (VList g) popped). {
+Search popped.
+        intros. destruct (H7 _ H16) as [? _].
+intro. Search Permutation In.
+pose proof (Permutation_in _ H15 H18).
+specialize (H17 H19). destruct H17; auto. right.
+destruct H17 as [p [? [? ?]]]. exists p. split3; trivial.
+do 2 intro. specialize (H20 _ H22). symmetry in H15. eapply Permutation_in; eauto.
+
+red.
+
+; trivial.
   Time Qed.
   
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell

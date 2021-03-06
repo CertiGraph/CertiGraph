@@ -107,7 +107,9 @@ Section Mathematical_AdjMat_Model.
   Definition finGraph (g: AdjMatGG) :=
     @fin g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
-  
+  Existing Instance finGraph.
+  Coercion finGraph: AdjMatGG >-> FiniteGraph.
+
   (* Some lemmas from the above soundness plugins *)
   
   Lemma valid_path_app_cons:
