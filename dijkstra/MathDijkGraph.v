@@ -210,7 +210,36 @@ Section MathDijkGraph.
     destruct g. destruct sound_gg. lia.
   Qed.
 
+  (* Please move this into a much more general location *)
+  Lemma Zlength_epath_to_vpath: forall A B (EV : EqDec A eq) (EE : EqDec B eq) (g : PreGraph A B) s l,
+      Zlength (epath_to_vpath g (s,l)) = 1 + Zlength l.
+Proof.
+  intros. simpl.
+  assert (forall l, l <> [] -> Zlength (epath_to_vpath' g l) = 1 + Zlength l). {
+    clear.
+    induction l. contradiction. intros _. simpl. destruct l. reflexivity.
+    rewrite Zlength_cons. rewrite IHl. 2: discriminate. repeat rewrite Zlength_cons. lia.
+  }
+  destruct l. reflexivity.
+  rewrite H. reflexivity. discriminate.
+Qed.
+
+Lemma exclusively_In:
+  forall (a : V) l1 l2,
+    (In a l1 <-> ~ In a l2) <->
+    (~ In a l1 <-> In a l2).
+Proof.
+  intros.
+  destruct (in_dec V_EqDec a l1);
+    destruct (in_dec V_EqDec a l2);
+    split; intros; split; intros; trivial;
+      try contradiction.
+  - apply H in i. contradiction.
+  - apply <- H in i0. contradiction.
+  - apply <- H in n0. contradiction.
+  - apply H in n. contradiction.
+Qed.
+
 End MathDijkGraph.
 
 Existing Instance AdjMatGG_FiniteGraph.
-
