@@ -56,8 +56,6 @@ Section DijkstraSpec.
          src : V
     PRE [tptr (tptr tint), tint, tptr tint, tptr tint, tint, tint]
       PROP (vvalid g src;
-           (* Lift next thing to AdjMat? *)
-           Forall (fun list => Zlength list = size) (@graph_to_mat size g id);
            12 * size <= Int.max_unsigned;
            connected_dir g src)
       PARAMS (pointer_val_val graph_ptr;
