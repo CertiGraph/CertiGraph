@@ -139,18 +139,6 @@ intros. exists (u,v); split. apply (evalid_strong_evalid g); auto.
 rewrite (edge_src_fst g), (edge_dst_snd g) by auto. left; simpl; auto.
 Qed.
 
-Lemma evalid_inf_iff:
-forall (g: UAdjMatGG) e, evalid g e <-> elabel g e < inf.
-Proof.
-  intros; split; intros.
-  apply (evalid_meaning g); auto.
-destruct (evalid_dec g e). 
-auto. exfalso.
-rewrite (invalid_edge_weight g) in n.
-replace (elabel g e) with inf in * by trivial.
-lia.
-Qed.
-
 Lemma weight_representable:
 forall (g: UAdjMatGG) e, Int.min_signed <= elabel g e <= Int.max_signed.
 Proof.
@@ -159,15 +147,6 @@ apply (evalid_meaning g e); auto.
 rewrite (invalid_edge_weight g) in n.
 replace (elabel g e) with inf in * by trivial.
 pose proof (inf_representable g). rep_lia. 
-Qed.
-
-Lemma weight_inf_bound:
-forall (g: UAdjMatGG) e, elabel g e <= inf.
-Proof.
-intros. destruct (evalid_dec g e).
-apply Z.lt_le_incl. apply (evalid_meaning  g e). auto.
-apply (invalid_edge_weight g) in n.
-replace (elabel g e) with inf in * by trivial. lia.
 Qed.
 
 Lemma adj_edge_form:
@@ -236,11 +215,6 @@ exists (v,u). split. apply (evalid_strong_evalid g); auto.
 rewrite (edge_src_fst g), (edge_dst_snd g); auto.
 Qed.
 
-Corollary eformat_adj_elabel: forall (g: UAdjMatGG) u v, adjacent g u v <-> elabel g (eformat (u,v)) < inf.
-Proof.
-intros. rewrite eformat_adj. apply evalid_inf_iff.
-Qed.
-
 Section EDGELESS_UADJMATGRAPH.
 
 Context {inf_bound: 0 < inf <= Int.max_signed}.
@@ -261,7 +235,7 @@ auto. auto.
 all: simpl; intros; try auto; try contradiction.
 split; intros; auto.
 split; intros. contradiction. destruct H.
-apply Zaux.Zgt_not_eq in H0. contradiction.
+apply H0; reflexivity.
 split; intros; auto.
 constructor; unfold EnumEnsembles.Enumerable.
 (*vertices*)
@@ -563,7 +537,7 @@ constructor; simpl. constructor; simpl.
 ++unfold removeValidFunc; split; intros; destruct (E_EqDec e0 e).
   destruct H. hnf in e1. contradiction.
   apply (evalid_meaning g). apply H.
-  destruct H. apply Zaux.Zgt_not_eq in H0. contradiction.
+  destruct H. exfalso. apply H0; reflexivity.
   apply (evalid_meaning g) in H; auto.
 ++ intros. red in H. destruct H.
    apply remove_edge_preserves_strong_evalid; split; auto.
@@ -706,6 +680,64 @@ Lemma sum_DE_equiv:
 Proof.
 unfold DEList; intros. apply fold_left_comm. intros; lia.
 apply Permutation_map. auto.
+Qed.
+
+Lemma partial_graph_incl:
+forall (t g: UAdjMatGG), is_partial_graph t g -> incl (EList t) (EList g).
+Proof.
+unfold incl; intros. rewrite EList_evalid in *. apply H; auto.
+Qed.
+
+Lemma exists_dec:
+forall (g: UAdjMatGG) l, (exists (t: UAdjMatGG), labeled_spanning_uforest t g /\ Permutation l (EList t)) \/
+  ~ (exists (t: UAdjMatGG), labeled_spanning_uforest t g /\ Permutation l (EList t)).
+Proof.
+intros. tauto.
+Qed.
+
+Lemma partial_lgraph_elabel_map:
+forall (t g: UAdjMatGG) l, is_partial_lgraph t g -> incl l (EList t) ->
+  map (elabel t) l = map (elabel g) l.
+Proof.
+induction l; intros. simpl; auto.
+simpl. replace (elabel g a) with (elabel t a). rewrite IHl; auto.
+apply incl_cons_inv in H0; auto.
+apply H. rewrite <- EList_evalid. apply H0. left; auto.
+Qed.
+
+Lemma Zlt_Zmin:
+forall x y, x < y -> Z.min x y = x.
+Proof. intros. rewrite Zmin_spec. destruct (zlt x y); lia. Qed.
+
+End Mathematical_Undirected_AdjMat_Model.
+
+(** ALL THE THINGS THAT RELIED ON ELABEL < INF **)
+
+(*
+Lemma evalid_inf_iff:
+forall (g: UAdjMatGG) e, evalid g e <-> elabel g e < inf.
+Proof.
+  intros; split; intros.
+  apply (evalid_meaning g); auto.
+destruct (evalid_dec g e). 
+auto. exfalso.
+rewrite (invalid_edge_weight g) in n.
+replace (elabel g e) with inf in * by trivial.
+lia.
+Qed.
+ 
+Lemma weight_inf_bound:
+forall (g: UAdjMatGG) e, elabel g e <= inf.
+Proof.
+intros. destruct (evalid_dec g e).
+apply Z.lt_le_incl. apply (evalid_meaning  g e). auto.
+apply (invalid_edge_weight g) in n.
+replace (elabel g e) with inf in * by trivial. lia.
+Qed.
+
+Corollary eformat_adj_elabel: forall (g: UAdjMatGG) u v, adjacent g u v <-> elabel g (eformat (u,v)) < inf.
+Proof.
+intros. rewrite eformat_adj. apply evalid_inf_iff.
 Qed.
 
 Lemma exists_labeled_spanning_uforest_pre:
@@ -871,35 +903,12 @@ simpl. unfold update_elabel, equiv_dec.
 destruct (E_EqDec (u,v) e). hnf in e0. subst e. unfold w; rewrite Ha; auto.
 apply Htg. simpl in H7. unfold addValidFunc in H7. destruct H7. apply H7.
 unfold complement, equiv in c. symmetry in H7; contradiction.
-Qed.
+Qed. 
 
 Corollary exists_labeled_spanning_uforest:
 forall (g: UAdjMatGG), exists (t: UAdjMatGG), labeled_spanning_uforest t g.
 Proof.
 intros. apply (exists_labeled_spanning_uforest_pre (EList g)). apply Permutation_refl.
-Qed.
-
-Lemma partial_graph_incl:
-forall (t g: UAdjMatGG), is_partial_graph t g -> incl (EList t) (EList g).
-Proof.
-unfold incl; intros. rewrite EList_evalid in *. apply H; auto.
-Qed.
-
-Lemma exists_dec:
-forall (g: UAdjMatGG) l, (exists (t: UAdjMatGG), labeled_spanning_uforest t g /\ Permutation l (EList t)) \/
-  ~ (exists (t: UAdjMatGG), labeled_spanning_uforest t g /\ Permutation l (EList t)).
-Proof.
-intros. tauto.
-Qed.
-
-Lemma partial_lgraph_elabel_map:
-forall (t g: UAdjMatGG) l, is_partial_lgraph t g -> incl l (EList t) ->
-  map (elabel t) l = map (elabel g) l.
-Proof.
-induction l; intros. simpl; auto.
-simpl. replace (elabel g a) with (elabel t a). rewrite IHl; auto.
-apply incl_cons_inv in H0; auto.
-apply H. rewrite <- EList_evalid. apply H0. left; auto.
 Qed.
 
 (* needs UAdjMatGG and NoDup_incl_ordered_powerlist, which means it should probably stay right here *) 
@@ -1016,9 +1025,4 @@ split. rewrite filter_In in H4. destruct H4. destruct (in_dec V_EqDec v1 l). aut
 split. rewrite filter_In in H5. destruct H5. destruct (in_dec V_EqDec v2 l). inversion H7. auto.
 auto.
 Qed.
-
-Lemma Zlt_Zmin:
-forall x y, x < y -> Z.min x y = x.
-Proof. intros. rewrite Zmin_spec. destruct (zlt x y); lia. Qed.
-
-End Mathematical_Undirected_AdjMat_Model.
+*)
