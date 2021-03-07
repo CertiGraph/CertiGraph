@@ -1559,6 +1559,10 @@ apply Z.div_pos; rep_lia. }
                  apply (valid_edge_bounds g).
                  rewrite (evalid_meaning g). split; trivial.
                  rewrite Int.signed_repr in Htemp; trivial.
+                 intro.
+                 rewrite <- H23 in Htemp.
+                 exfalso.
+                 apply Zlt_not_le in Htemp. apply Htemp; reflexivity.
                }
                clear Htemp.
                assert (H_ui_valid: evalid g (u,i)). {

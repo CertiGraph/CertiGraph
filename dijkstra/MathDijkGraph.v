@@ -184,7 +184,7 @@ Section MathDijkGraph.
     forall (g: DijkGG) a b,
       vvalid g a ->
       vvalid g b ->
-      elabel g (a, b) < inf ->
+      elabel g (a, b) <> inf ->
       strong_evalid g (a,b).
   Proof.
     intros.
