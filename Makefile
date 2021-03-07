@@ -98,7 +98,7 @@ KRUSKAL_FILES = \
 
 
 PRIM_FILES = \
-  prim_env.v prim_constants.v \
+  MathPrimGraph.v prim_env.v prim_constants.v \
   prim1.v prim_spec1.v verif_prim1.v \
   prim2.v prim_spec2.v verif_prim2.v \
   prim3.v prim_spec3.v verif_prim3.v \
