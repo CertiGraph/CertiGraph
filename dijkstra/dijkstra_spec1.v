@@ -26,7 +26,7 @@ Section DijkstraSpec.
   
   Definition getCell_spec :=
     DECLARE _getCell
-    WITH sh: share,
+    WITH sh: rshare,
          g: @DijkGG size inf,
          graph_ptr: pointer_val,
          addresses: list val,
@@ -47,7 +47,7 @@ Section DijkstraSpec.
 
   Definition dijkstra_spec :=
     DECLARE _dijkstra
-    WITH sh: share,
+    WITH sh: rshare,
          g: DijkGG,
          graph_ptr : pointer_val,
          addresses : list val,
