@@ -23,12 +23,12 @@ representation of our priority queue (PQ) and
 $\mathsf{Item}(\texttt{i},\m{(key, pri, data)})$
 lays out a struct that we use to interact with the PQ;
 we leave the management of the PQ to the operations described in~\S\ref{sec:binheap}.
-Of greater interest is $\mathsf{DijkAdjMat}(\texttt{g},\gamma)$, which
-links the concrete memory values of~\texttt{g} to an abstract mathematical
+Of greater interest is $\mathsf{AdjMat}(\texttt{g},\gamma)$, which as explained in~\S\ref{sec:newspatial}, links 
+the concrete memory values of~\texttt{g} to an abstract mathematical
 graph~$\gamma$, which in turn exposes an interface in the
-language of graph theory (vertices, edges, labels, \emph{etc.}).
-$\mathsf{DijkAdjMat}$ inherits from the $\mathsf{AdjMat}$ given in \S\ref{sec:newspatial}
-and further restricts edge costs as explained in \S\ref{sec:dijkoverflow}.
+language of graph theory (\emph{e.g.}, vertices, edges, labels).  Graph~$\gamma$ contains 
+the general adjacency matrix restrictions given in \S\ref{sec:adjmatpure} along with some further
+Dijkstra-specific restrictions to be explained in \S\ref{sec:dijkoverflow}.
 We verify Dijkstra
 three times using different adjacency-matrix representations as explained in \S\ref{sec:newspatial}.
 Thanks to some careful engineering, the C code and
@@ -89,7 +89,7 @@ categories:
 \begin{enumerate}
 \item $\m{inv\_popped}$: if $\m{dst} \in \m{popped}$, 
 then $\m{dst}$ has been fully processed, \emph{i.e.} \m{dst} is reachable from~$\m{src}$
-via a globally-optimal path $p$ contained entirely in $\m{popped}$.  Path $p$ has been logged in \m{prev} and $p$'s cost is given in \m{dist}.
+via a globally-optimal path $p$ whose vertices are all in $\m{popped}$.  Path $p$ has been logged in \m{prev} and $p$'s cost is given in \m{dist}.
 
 %has a globally optimal path
 %from
@@ -102,10 +102,10 @@ via a globally-optimal path $p$ contained entirely in $\m{popped}$.  Path $p$ ha
 \item $\m{inv\_unpopped}$: if $\m{dst} \not \in \m{popped}$, but its known $\m{dist}$ance is less than
 \texttt{inf}, then $\m{dst}$ is reachable in one step from a popped vertex \m{mom}.
 This route is locally optimal: we cannot improve the cost via an alternate popped vertex.
-\m{prev} logs
+Moreover, \m{prev} logs
 \m{mom} as the best-known way to reach $\m{dst}$, and \m{dist}
 logs the path cost via \m{mom} as the best-known cost.
-\item If $\m{inv\_unseen}$: $\m{dst} \not \in \m{popped}$ and its known $\m{dist}$ance is \texttt{inf}, then
+\item $\m{inv\_unseen}$: if $\m{dst} \not \in \m{popped}$ and its known $\m{dist}$ance is \texttt{inf}, then
 there is no edge from any $\m{popped}$ vertex to $\m{dst}$; in other words, $\m{dst}$ is located deeper in the graph
 than has yet been explored.
 \end{enumerate}
@@ -126,26 +126,26 @@ $\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{u},
 \]
 We now have five cases, many of which are familiar from $\m{dijk\_correct}$:
 \begin{enumerate}
-\item $\m{inv\_popped}$: $\m{dst}$ has been fully processed and
-popped from the PQ.  For all ``previously-popped vertices'' (\emph{i.e., }except for~\m{u}),
+\item $\m{inv\_popped}$: as before; if $\m{dst} \in \m{popped}$, then it has been fully processed.  
+For all ``previously-popped vertices'' (\emph{i.e., }except for~\m{u}),
 this is trivial from $\m{dijk\_correct}$. For~\m{u} itself, we reach the heart of Dijkstra's correctness:
 the locally-optimal path to the cheapest unpopped vertex is
 \emph{globally} optimal.
 %the cost to the unpopped vertex with minimum cost cannot be further improved.  %The associated entailment is not trivial.
-\item $\m{inv\_unpopped}$ (less than \m{i}): $\m{dst}$ is reachable in
-one hop from a popped vertex \m{mom}. Initially this is trivial since $\m{i}=0$, and we restore it as \m{i} increments by updating costs when they can be improved, as on lines~\ref{code:update1}~and~\ref{code:update2}.
-\item $\m{inv\_unseen}$ (less than \m{i}): no finite-cost path exists from any popped vertex to $\m{dst}$. As above, this is restored as \m{i} increments.
+\item $\m{inv\_unpopped}$ (less than \m{i}): as before; if $\m{dst}$ is reachable in
+one hop from a popped vertex \m{mom}, where now \m{mom} could be \m{u}. Initially this is trivial since $\m{i}=0$, and we restore it as \m{i} increments by updating costs when they can be improved, as on lines~\ref{code:update1}~and~\ref{code:update2}.
+\item $\m{inv\_unseen}$ (less than \m{i}): as before; some previously unseen neighbors of \m{u} may be transferred to unpopped status.  This is also restored as \m{i} increments.
 \item $\m{inv\_unpopped\_weak}$ (between \m{i} and \texttt{size}):
-$\m{dst}$ is reachable in one hop from a previously-popped vertex \m{mom},
-with further improvements possible via~\m{u}.
-This fact is key: as~$\m{i}$ increments, we strengthen it
+if $\m{dst}$ is reachable in one hop from a previously-popped vertex \m{mom},
+with potentially further improvements possible via~\m{u}.
+As~$\m{i}$ increments, we strengthen it
 into $\m{inv\_unpopped}$ after considering whether routing via
 \m{u} improves the best-known cost to~\m{dst}.
 \item $\m{inv\_unseen\_weak}$ (between \m{i} and \texttt{size}):
-no finite-cost path exists from any previously-popped vertex to
+no edge exists from any previously-popped vertex to
 $\m{dst}$, but there may be one from~\m{u}.
 As~$\m{i}$ increments, we consider whether routing via~\m{u}
-reveals a finite-cost path to~\m{dst}.
+reveals a path to~\m{dst}.
 This is strengthened into
 $\m{inv\_unpopped}$ if so, and into
 $\m{inv\_unseen}$ if not.
