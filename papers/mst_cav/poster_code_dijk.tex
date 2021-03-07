@@ -4,16 +4,16 @@
 \begin{lstlisting}[mathescape=true,showlines=true]
 void dijkstra (int **g, int src, int *dist,
                int *prev, int size, int inf {
-$\color{OliveGreen}//~\braces{\p{AdjMat}(\texttt{g},\gamma) *
-\mathsf{array}(\texttt{dist}, \_) * \mathsf{array}(\texttt{prev}, \_)}$
+$\color{OliveGreen}//~\braces{\p{DijkAdjMat}(\texttt{g},\gamma) *
+\mathsf{array}(\texttt{dist}, \_) * \mathsf{array}(\texttt{prev}, \_) /| \texttt{src} \in \gamma /| \m{connected(\gamma,\texttt{src})}}$
  Item* temp = (Item*) mallocN(sizeof(Item));
- int* keys = mallocN (size * sizeof (int));
+ int* keys = mallocN (size * sizeof (int)); $\label{code:dijkmalloc}$
  PQ* pq = pq_make(size); int i, u, cost;
  for (i = 0; i < size; i++)
  { dist[i] = inf; prev[i] = inf; keys[i] = pq_push(pq,inf,i); } $\label{code:assigninf}$
  dist[src]= 0; prev[src]= src; pq_edit_priority(pq,keys[src],0);
  while (pq_size(pq) > 0) {
-$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}, \m{heap}}.~\p{AdjMat}(\texttt{g},\gamma) * {\color{red}\p{PQ}(\texttt{pq},\m{heap})} *
+$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}, \m{heap}}.~\p{DijkAdjMat}(\texttt{g},\gamma) * {\color{red}\p{PQ}(\texttt{pq},\m{heap})} *
 {\color{red}\mathsf{Item}(\texttt{temp}, \_)} * \null \\
 \mathsf{array}(\texttt{dist},{\color{red}\m{dist}}) *
 \mathsf{array}(\texttt{prev}, {\color{red}\m{prev}}) *
@@ -22,7 +22,7 @@ $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist}, \m{prev}, \m{popped}
 {\color{red}\m{dijk\_correct}(\gamma,\texttt{src},\m{popped},\m{prev},\m{dist})}}$ $\label{code:whileinv}$
   pq_pop(pq, temp); u = temp->data; $\label{code:pop}$
   for (i = 0; i < size; i++) {
-$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{heap'}}.~\p{AdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},{\color{red}\m{heap'}}) * \null \\
+$\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{heap'}}.~\p{DijkAdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},{\color{red}\m{heap'}}) * \null \\
 \mathsf{array}(\texttt{dist},\m{\color{red}dist'}) *
 \mathsf{array}(\texttt{prev}, \m{\color{red}prev'}) *
 \mathsf{array}(\texttt{keys}, \m{keys}) * \null \\
@@ -36,11 +36,11 @@ $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{heap'
     if (dist[i] > dist[u] + cost) { $\label{code:overflow}$
      dist[i] = dist[u] + cost; prev[i] = u; $\label{code:update1}$
      pq_edit_priority(pq, keys[i], dist[i]); $\label{code:update2}$
-  }}}} $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''}}.~\p{AdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},\m{\color{red}\emptyset}) * {\mathsf{Item}(\texttt{temp}, {\color{red}\_})} * \null \\
+  }}}} $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''}}.~\p{DijkAdjMat}(\texttt{g},\gamma) * \p{PQ}(\texttt{pq},\m{\color{red}\emptyset}) * {\mathsf{Item}(\texttt{temp}, {\color{red}\_})} * \null \\
  \mathsf{array}(\texttt{dist},\m{\color{red}dist''}) *
  \mathsf{array}(\texttt{prev}, \m{\color{red}prev''}) *
  \mathsf{array}(\texttt{keys}, \m{keys}) /| \null \\
-{\color{red}\forall \m{dst}.~0 \le \m{dst} < \texttt{size} -> \m{inv\_popped}}(\gamma, \m{src}, {\color{red}\m{\gamma.V}, \m{prev''}, \m{dist''}, \m{dst}})}$ $\label{code:end}$
+{\color{red}\forall \m{dst}.~\m{dst} \in \gamma -> \m{inv\_popped}}(\gamma, \m{src}, {\color{red}\m{\gamma.V}, \m{prev''}, \m{dist''}, \m{dst}})}$ $\label{code:end}$
  freeN (temp); pq_free (pq); freeN (keys); return; }
 \end{lstlisting}
 \vspace{-1em}

@@ -23,13 +23,14 @@ representation of our priority queue (PQ) and
 $\mathsf{Item}(\texttt{i},\m{(key, pri, data)})$
 lays out a struct that we use to interact with the PQ;
 we leave the management of the PQ to the operations described in~\S\ref{sec:binheap}.
-Of greater interest is $\mathsf{AdjMat}(\texttt{g},\gamma)$, which
+Of greater interest is $\mathsf{DijkAdjMat}(\texttt{g},\gamma)$, which
 links the concrete memory values of~\texttt{g} to an abstract mathematical
 graph~$\gamma$, which in turn exposes an interface in the
 language of graph theory (vertices, edges, labels, \emph{etc.}).
-We develop three variations of
-adjacency-matrix representation (see~\S\ref{sec:newspatial}) and
-we verify Dijkstra using each of them.
+$\mathsf{DijkAdjMat}$ inherits from the $\mathsf{AdjMat}$ given in \S\ref{sec:newspatial}
+and further restricts edge costs as explained in \S\ref{sec:dijkoverflow}.
+We verify Dijkstra
+three times using different adjacency-matrix representations as explained in \S\ref{sec:newspatial}.
 Thanks to some careful engineering, the C code and
 the Coq verification are both almost completely agnostic to
 the form of representation. The only variation between implementations
@@ -77,31 +78,36 @@ various mathematical arrays.
 The verification turns on the loop
 invariants on lines~\ref{code:whileinv} and~\ref{code:forinv}.  The pure \texttt{while} invariant $\m{dijk\_correct}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist})$ essentially unfolds into:
 \[
-\begin{array}{l}
-\forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{size} -> \m{inv\_popped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
-\hspace{10.7em}\m{inv\_unpopped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
-\hspace{10.7em}\m{inv\_unseen}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst})
+\begin{array}{lcl}
+\forall \m{dst}.~\m{dst} \in \gamma & -> & \m{inv\_popped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
+&&\m{inv\_unpopped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
+&&\m{inv\_unseen}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst})
 \end{array}
 \]
 That is, a destination vertex $\m{dst}$ falls into one of three
 categories:
 \begin{enumerate}
-\item $\m{inv\_popped}$: $\m{dst}$ has been popped from the PQ
-and fully processed.
-Either \m{dst} is unreachable, meaning that there exists no finite-cost path from
-\m{src}~to~\m{dst}, or \m{dst} is reachable, meaning that a globally optimal
-path from $\m{src}$~to~$\m{dst}$ exists, the cost of this path is logged in
-\m{dist}, all vertices visited by the path are also popped,
-and the links of the path are logged in~\m{prev}.
-\item $\m{inv\_unpopped}$: $\m{dst}$ is reachable in
-one step from a popped vertex \m{mom}.
-This route is locally optimal: we cannot
-improve the cost via an alternate popped vertex.
+\item $\m{inv\_popped}$: if $\m{dst} \in \m{popped}$, 
+then $\m{dst}$ has been fully processed, \emph{i.e.} \m{dst} is reachable from~$\m{src}$
+via a globally-optimal path $p$ contained entirely in $\m{popped}$.  Path $p$ has been logged in \m{prev} and $p$'s cost is given in \m{dist}.
+
+%has a globally optimal path
+%from
+% whose edges are logged in  and whose cost is
+%; all vertices in this path are also popped.
+%is reachable, meaning that a globally optimal
+%path ~to~$\m{dst}$ exists, the cost of this path is logged , all vertices visited by the path are also popped,
+%and the links of the path are logged in.
+
+\item $\m{inv\_unpopped}$: if $\m{dst} \not \in \m{popped}$, but its known $\m{dist}$ance is less than
+\texttt{inf}, then $\m{dst}$ is reachable in one step from a popped vertex \m{mom}.
+This route is locally optimal: we cannot improve the cost via an alternate popped vertex.
 \m{prev} logs
 \m{mom} as the best-known way to reach $\m{dst}$, and \m{dist}
 logs the path cost via \m{mom} as the best-known cost.
-\item $\m{inv\_unseen}$: no finite-cost path exists from any popped vertex to
-$\m{dst}$.
+\item If $\m{inv\_unseen}$: $\m{dst} \not \in \m{popped}$ and its known $\m{dist}$ance is \texttt{inf}, then
+there is no edge from any $\m{popped}$ vertex to $\m{dst}$; in other words, $\m{dst}$ is located deeper in the graph
+than has yet been explored.
 \end{enumerate}
 After line~\ref{code:pop},
 the above invariant is no longer true: a minimum-cost item~\m{u} has been
@@ -110,12 +116,12 @@ updated to account for this pop. The \texttt{for} loop does exactly this repair 
 Its pure invariant
 $\m{dijk\_correct\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{u}, \m{i})$ essentially unfolds into:
 \[
-\begin{array}{l}
-\forall \m{dst}.~\texttt{0} \le \m{dst} < \texttt{size} -> \m{inv\_popped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
-\forall \m{dst}.~\texttt{0} \le \m{dst} < \m{i} -> \m{inv\_unpopped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
-\hspace{9em}\m{inv\_unseen}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
-\forall \m{dst}.~\m{i} \le \m{dst} < \texttt{size} -> \m{inv\_unpopped\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}, \m{u}) /| \null \\
-\hspace{10.6em}\m{inv\_unseen\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}, \m{u})
+\begin{array}{lcl}
+\big(\forall \m{dst}.~\m{dst} \in \gamma & -> & \m{inv\_popped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst})\big) /| \null \\
+\big(\forall \m{dst}.~\texttt{0} \le \m{dst} < \m{i} & -> & \m{inv\_unpopped}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) /| \null \\
+&& \m{inv\_unseen}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}) \big) /| \null \\
+\big(\forall \m{dst}.~\m{i} \le \m{dst} < \texttt{size} & -> & \m{inv\_unpopped\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}, \m{u}) /| \null \\
+&&\m{inv\_unseen\_weak}(\gamma, \m{src}, \m{popped}, \m{prev}, \m{dist}, \m{dst}, \m{u}) \big)
 \end{array}
 \]
 We now have five cases, many of which are familiar from $\m{dijk\_correct}$:
@@ -226,8 +232,6 @@ $\m{u}$ as discussed above. The key edit is in $\m{inv\_unpopped}$. blah blah bl
 
 }
 
-\subsection{Overflow in Dijkstra's algorithm}
-\label{sec:dijkoverflow}
 \input{overflow.tex}
 
 
