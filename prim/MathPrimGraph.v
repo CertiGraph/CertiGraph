@@ -8,8 +8,6 @@ Section MathPrimGraph.
   
   Context {size : Z}.
   Context {inf : Z}.
-  Context {V_EqDec : EqDec V eq}.
-  Context {E_EqDec : EqDec E eq}. 
 
   (* Here is the LabeledGraph *)
   Definition PrimLG := UAdjMatLG.
@@ -135,14 +133,56 @@ to be used as a bool, and I don't know what allows it*)
     auto.
   Qed.
 
+  Context {inf_bound: 0 < inf <= Int.max_signed}.
+  Context {size_bound: 0 < size <= Int.max_signed}.
+  
+  Definition edgeless_lgraph : PrimLG :=
+    @Build_LabeledGraph
+      V E V_EqDec E_EqDec DV DE DG
+      (@Build_PreGraph V E V_EqDec E_EqDec
+                       (fun v => 0 <= v < size)
+                       (fun e => False) fst snd)
+      (fun v => tt) (fun e => inf) tt.
+  
+  Instance SoundPrim_edgeless:
+    SoundPrim edgeless_lgraph.
+  Proof. 
+    constructor.
+    { constructor.
+      all: simpl; intros; try contradiction.
+      constructor. 
+      auto. auto. 
+      all: simpl; intros; try auto; try contradiction.
+      split; intros; auto.
+      split; intros. contradiction. destruct H.
+      apply H0; reflexivity.
+      split; intros; auto.
+      constructor; unfold EnumEnsembles.Enumerable.
+      (*vertices*)
+      exists (nat_inc_list (Z.to_nat size)); split. apply nat_inc_list_NoDup.
+      simpl. intros. rewrite nat_inc_list_in_iff. rewrite Z_to_nat_max.
+      destruct (Z.lt_trichotomy size 0). rewrite Z.max_r by lia. split; intros; lia.
+      destruct H. rewrite H. unfold Z.max; simpl. split; lia.
+      rewrite Z.max_l by lia. split; auto.
+      (*edges*)
+      exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
+    }
+    split; intros.
+    inversion H. destruct H. simpl in H0.
+    exfalso.
+    apply Zlt_not_le in H0. apply H0. reflexivity.    
+    Qed.
+
+    Definition edgeless_graph: PrimGG :=
+      @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG SoundPrim
+                          edgeless_lgraph SoundPrim_edgeless.
+  
   Lemma exists_labeled_spanning_uforest_pre:
     forall (l: list E) (g: PrimGG), Permutation l (EList g) -> exists (t: PrimGG), labeled_spanning_uforest t g.
   Proof.
-  Admitted.
-  (*
     induction l; intros.
     (*nil case*)
-    exists (@edgeless_graph size inf (inf_representable g) (size_representable g)).
+    exists edgeless_graph.
     split. split. apply edgeless_partial_lgraph. split. apply uforest'_edgeless_graph.
     unfold spanning; intros. destruct (V_EqDec u v).
     hnf in e. subst v. split; intros; apply connected_refl.
@@ -301,7 +341,6 @@ to be used as a bool, and I don't know what allows it*)
       apply Htg. simpl in H7. unfold addValidFunc in H7. destruct H7. apply H7.
       unfold complement, equiv in c. symmetry in H7; contradiction.
   Qed.
-   *)
 
   Corollary exists_labeled_spanning_uforest:
     forall (g: PrimGG), exists (t: PrimGG), labeled_spanning_uforest t g.
