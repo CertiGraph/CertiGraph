@@ -7,7 +7,7 @@
 #define SIZE 8  // number of vertices
 #define CONN 3  // the connectedness. 1 is 100%, higher numbers mean less connected
 #define INFL 50 // increase this to inflate the highest possible cost, thus creating greater ranges
-#define INF  1879048193 // INT_MAX - INT_MAX/SIZE + 1
+#define INF  2147483647 // INT_MAX
  
 /* ************************************************** */
 /*   Dijkstra's Algorithm to find the shortest path   */

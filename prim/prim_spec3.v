@@ -80,7 +80,8 @@ Definition prim_spec :=
   PRE [tptr (tarray tint size), tint, tptr tint]
      PROP ( writable_share Tsh;
             vvalid g r;
-            size * (4 * size) <= Ptrofs.max_signed
+            size * (4 * size) <= Ptrofs.max_signed;
+            inf < Int.max_signed
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()

@@ -80,7 +80,8 @@ Definition prim_spec :=
   WITH g: G, garbage: list V, gptr : pointer_val, parent_ptr : pointer_val
   PRE [tptr (tarray tint size), tptr tint]
      PROP ( writable_share Tsh;
-            size * (4 * size) <= Ptrofs.max_signed
+            size * (4 * size) <= Ptrofs.max_signed;
+            inf < Int.max_signed
           )
      PARAMS ( pointer_val_val gptr; pointer_val_val parent_ptr)
      GLOBALS ()

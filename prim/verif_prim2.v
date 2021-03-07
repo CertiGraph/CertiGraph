@@ -34,6 +34,13 @@ Qed.
     start_function.
     unfold SpaceAdjMatGraph'.
     assert (0 <= size) by lia.
+    assert (Forall (fun list : list Z => Zlength list = size) (@graph_to_mat size g eformat)). {
+      rewrite Forall_forall. intros.
+      unfold graph_to_mat in H3.
+      apply list_in_map_inv in H3. destruct H3 as [? [? _]].
+      subst x. unfold vert_to_list.
+      apply Zlength_map.
+    }
     assert ((0 <= u * 8 + i < Zlength (map Int.repr (@graph_to_list size g eformat)))). {
       rewrite Zlength_map, (graph_to_list_Zlength _ _ size); trivial.
       rewrite <- size_eq.
@@ -107,12 +114,6 @@ assert (HZlength_starting_keys: Zlength starting_keys = size). {
 unfold repable_signed in inf_repable.
 (*push all vertices into priq*)
 forward_call(tt).
-split; try lia. split. apply (Z.le_trans _ 0).
-pose proof Int.min_signed_neg; lia. lia.
-rewrite Z.mul_comm. apply (Z.le_trans _ (size * (4*size))).
-apply (Z.le_trans _ (1*(4*size))). lia. apply Z.mul_le_mono_nonneg_r; lia.
-set (k:=Int.max_signed); compute in k; subst k. set (k:=Ptrofs.max_signed) in *; compute in k; subst k. lia.
-rewrite <- size_eq in *.
 Intro priq_ptr.
 remember (pointer_val_val priq_ptr) as v_pq.
 
@@ -344,7 +345,6 @@ break: (
       (fold_right Z.min (hd 0 (upd_Znth r (list_repeat (Z.to_nat size) inf) 0))
          (upd_Znth r (list_repeat (Z.to_nat size) inf) 0)) 0). {
     intros. rewrite find_src. auto. simpl; auto.
-    rewrite inf_eq; lia. (*does find_src need 0<inf any longer*)
     lia.
   }
   (*Hinv_12 (nil <> nil) seems to be missing, autoresolved?*)
