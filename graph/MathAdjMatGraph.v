@@ -53,7 +53,7 @@ Section Mathematical_AdjMat_Model.
     em: (* evalid_meaning *)
       forall e, evalid g e <-> 
                 Int.min_signed <= elabel g e <= Int.max_signed /\
-                elabel g e < inf;
+                elabel g e <> inf;
     ese: (* evalid_strong_evalid *)
       forall e, evalid g e -> strong_evalid g e;
     iew: (* invalid_edge_weight *)

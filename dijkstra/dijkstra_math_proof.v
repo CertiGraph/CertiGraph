@@ -561,6 +561,8 @@ Section DijkstraMathLemmas.
     - apply strong_evalid_dijk; trivial.
       + apply (path_ends_valid_dst _ s _ p1); trivial.
       + apply (path_ends_valid_src _ _ u p2); trivial.
+      + intro. rewrite H14 in H13.
+        apply Zlt_not_le in H13. apply H13; reflexivity.
     - rewrite <- H4 in H3.
       apply path_cost_path_glue_lt in H3; trivial.
       destruct H3; trivial.
@@ -581,11 +583,10 @@ Section DijkstraMathLemmas.
     intros.
     rewrite (evalid_meaning g); split.
     1: apply edge_representable.
-    destruct H0.
-    apply Z.le_lt_trans with (m := (Int.max_signed - 1) / size);
-      trivial.
-    rewrite H in H1; trivial. 
-    apply (inf_gt_largest_edge g).
+    pose proof (inf_gt_largest_edge g).
+    intro.
+    replace (elabel g (a,b)) with inf in *.
+    ulia.
   Qed.
 
   Lemma NoDup_one: forall A (n: A), NoDup [n].
@@ -725,7 +726,10 @@ Section DijkstraMathLemmas.
     
     assert (evalid g (mom, dst)). {
       rewrite (evalid_meaning g). split.
-      apply (edge_representable). trivial.
+      apply (edge_representable).
+      intro.
+      replace (elabel g (mom, dst)) with inf in H7.
+      apply Zlt_not_le in H7; apply H7; reflexivity.
     }
     
     assert (Znth mom dist < inf) by
@@ -1588,6 +1592,9 @@ Section DijkstraMathLemmas.
     assert (Hg: evalid g (mom, u)). {
       rewrite (evalid_meaning g); split.
       apply edge_representable. trivial.
+      intro.
+      replace (elabel g (mom, u)) with inf in H9.
+      apply Zlt_not_le in H9; apply H9; reflexivity.
     }
     assert (strong_evalid g (mom, u)). {
       split3; trivial.
