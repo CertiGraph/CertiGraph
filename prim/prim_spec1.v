@@ -1,6 +1,6 @@
 Require Import CertiGraph.prim.prim_env.
 Require Export CertiGraph.priq.priq_arr_specs.
-Require Import CertiGraph.graph.MathUAdjMatGraph.
+Require Import CertiGraph.prim.MathPrimGraph.
 Require Import CertiGraph.graph.SpaceUAdjMatGraph1.
 Require Export CertiGraph.prim.prim1.
 
@@ -16,8 +16,8 @@ Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Global Existing Instance CompSpecs.
 
-Definition G := @UAdjMatGG size inf.
-Identity Coercion UAdjMatGG_G: G >-> UAdjMatGG.
+Definition G := @PrimGG size inf.
+Identity Coercion PrimGG_G: G >-> PrimGG.
 
 Definition getCell_spec :=
   DECLARE _getCell

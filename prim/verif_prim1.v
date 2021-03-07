@@ -1,7 +1,7 @@
 Require Import CertiGraph.prim.prim_env.
 Require Export CertiGraph.lib.find_lemmas.
 Require Export CertiGraph.priq.is_empty_lemmas.
-Require Import CertiGraph.graph.MathUAdjMatGraph. 
+Require Import CertiGraph.prim.MathPrimGraph. 
 Require Import CertiGraph.graph.SpaceUAdjMatGraph1.
 Require Import CertiGraph.prim.prim_spec1.
 
@@ -261,7 +261,7 @@ rewrite data_at__tarray.
 unfold default_val. simpl. entailer!. lia.
 split3; trivial. red. rep_lia.
 
-assert (Hrbound: 0 <= r < size). apply vert_bound in Hprecon_1; auto.
+assert (Hrbound: 0 <= r < size). apply (vert_bound g) in Hprecon_1; auto.
 rewrite <- Heqv_key.
 forward.
 assert (Hstarting_keys: forall i, 0 <= i < size -> is_int I32 Signed (Znth i (upd_Znth r (list_repeat (Z.to_nat size) (Vint (Int.repr inf))) (Vint (Int.repr 0))))). {
@@ -467,7 +467,12 @@ break: (
   remember (@edgeless_graph'
             size inf
             Hsz
-            (inf_representable g)) as elg. 
+            (inf_representable g)) as elg.
+  (* welp, need to make edgeless_graph' create a PrimGG *)
+  (* dead HERE *)
+Admitted.
+
+(*
   Exists elg.
   pose proof (finGraph elg) as fe. Exists fe.
   Exists (list_repeat (Z.to_nat size) size).
@@ -1319,7 +1324,7 @@ break: (
   Exists (adde_u).
   Exists (finGraph adde_u).
   Exists parents' keys' pq_state' (popped_vertices+::u) (remove V_EqDec u unpopped_vertices).
-  assert (HM: exists M : UAdjMatGG, minimum_spanning_forest M g /\ is_partial_lgraph adde_u M). {
+  assert (HM: exists M : PrimGG, minimum_spanning_forest M g /\ is_partial_lgraph adde_u M). {
     destruct Hinv_15 as [M [Hmsf_M Hpartial_M]]. pose proof (finGraph M).
     destruct (evalid_dec M (eformat (u, Znth u parents))).
     ****
@@ -1976,5 +1981,6 @@ entailer!.
 Global Opaque size.
 }
 Qed.
+*)
 
 End PrimProof.
