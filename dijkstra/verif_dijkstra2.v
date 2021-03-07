@@ -199,7 +199,7 @@ Section DijkstraProof.
     EX h : heap,
     PROP (
         (* This fact comes from breaking while *)
-        heap_size h = 0;
+        Permutation popped (VList g);
       (* And the correctness condition is established *)
       dijkstra_correct g src popped prev dist)
          LOCAL (temp _pq priq_ptr;
@@ -343,15 +343,16 @@ Section DijkstraProof.
                      keys_ptr;
              free_tok (pointer_val_val ti) 12;
              free_tok keys_ptr (heap_capacity h * 4)).
-
   
   (* DIJKSTRA PROOF BEGINS *)
   Lemma body_dijkstra: semax_body Vprog Gprog f_dijkstra dijkstra_spec.
   Proof.
     start_function.
-    rename H1 into size_sq_bounds.
-    rename H2 into Hsz'.
-    rename H3 into Hconn.
+    rename H0 into size_sq_bounds.
+    rename H1 into Hsz'.
+    rename H2 into Hconn.
+    assert (H0: 1 = 1) by trivial.
+    rewrite (vvalid_meaning g) in H.
     pose proof (size_further_restricted g).
     pose proof (inf_bounds g).
     rename H1 into Hsz.
@@ -1926,7 +1927,7 @@ Section DijkstraProof.
             unfold dijkstra_correct.
             split3; [auto | apply H21 | apply H23];
               try rewrite <- (vvalid_meaning g); trivial.
-            
+
         * (* After breaking from the while loop,
            prove break's postcondition *)
           forward.
@@ -1944,14 +1945,38 @@ Section DijkstraProof.
             1: rewrite <- H17, Zlength_app; lia.
             lia.
           }
-          rewrite H13. entailer!.
-          clear -H5 H14.
-          rewrite Int.unsigned_repr in H5 by trivial.
-          unfold heap_size in *.
-          pose proof (Zlength_nonneg (heap_items hc)).
-          lia.
-          rewrite H_h_cap. cancel.
-          apply free_hitem.
+          rewrite H13, H_h_cap. entailer!.
+          2: apply free_hitem.
+          assert (heap_size hc = 0). {
+            clear -H5 H14.
+            rewrite Int.unsigned_repr in H5 by trivial.
+            unfold heap_size in *.
+            pose proof (Zlength_nonneg (heap_items hc)).
+            lia.
+          }
+          remember (heap_capacity h) as size in *.
+            clear -H29 Hac Hab Hz Z_EqDec.
+          assert (forall v, vvalid g v <-> In v popped). {
+            intros. split; intros.
+            - destruct (In_dec Z_EqDec v popped); trivial.
+              specialize (Hz _ H n).
+              destruct Hz as [v_item [? _]].
+              unfold heap_size in H29.
+              apply Zlength_nil_inv in H29.
+              rewrite H29 in H0;
+                inversion H0.
+            - red in Hab.
+              rewrite Forall_forall in Hab.
+              apply Hab in H. apply (vvalid_meaning g).
+              trivial.
+          }
+          pose proof (VList_vvalid g).
+          pose proof (NoDup_VList g).
+          apply NoDup_Permutation; trivial.
+          intros. split; intros.
+          -- apply <- H0. apply <- H; trivial.
+          -- apply H, H0; trivial.
+          
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev dist popped hc.
@@ -1978,8 +2003,15 @@ Section DijkstraProof.
         forward_call (pointer_val_val keys_pv, heap_capacity hc).
         1: rewrite Z.mul_comm; entailer!.
         forward. thaw FR.
-        Exists prev dist popped. entailer!.
-        intros. destruct (H7 _ H15) as [? _]; trivial.
+        Exists prev dist. entailer!.
+        intros. destruct (H7 _ H15) as [? _].
+        symmetry in H6.
+        intro. 
+        pose proof (Permutation_in _ H6 H17).
+        specialize (H16 H18). destruct H16; auto. right.
+        destruct H16 as [p [? [? ?]]]. exists p. split3; trivial.
+        do 2 intro. specialize (H19 _ H21).
+        symmetry in H6. eapply Permutation_in; eauto.
   Time Qed.
   
   Lemma body_getCell: semax_body Vprog Gprog f_getCell getCell_spec.
@@ -1998,12 +2030,19 @@ Section DijkstraProof.
         apply Z.add_le_lt_mono; try ulia.
         apply Zmult_le_compat_r; ulia.
     }
+    assert (Forall (fun list : list Z => Zlength list = size) (@graph_to_mat size g id)). {
+      rewrite Forall_forall. intros.
+      unfold graph_to_mat in H3.
+      apply list_in_map_inv in H3. destruct H3 as [? [? _]].
+      subst x. unfold vert_to_list.
+      apply Zlength_map.
+    }
     assert (0 <= u * size + i <
             Zlength (map Int.repr (@graph_to_list size g id))). {
       rewrite Zlength_map, (graph_to_list_Zlength _ _ size); ulia.
-    } 
+    }     
     forward. forward. entailer!. f_equal. f_equal.
     apply graph_to_list_to_mat; ulia.
   Qed.
-  
+
 End DijkstraProof.
