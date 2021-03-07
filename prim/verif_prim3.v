@@ -221,6 +221,7 @@ Qed.
 Lemma body_prim: semax_body Vprog Gprog f_prim prim_spec.
 Proof.
 start_function. rename H into Hprecon_1. rename H0 into Hprecon_2.
+rename H1 into Ha.
 assert (inf_repable: repable_signed inf). { red. pose proof (inf_representable g). rep_lia. }
 assert (Hsz: 0 < size <= Int.max_signed). { apply (size_representable g). }
 assert (Hsz2: size <= Int.max_signed). { lia. }
@@ -250,11 +251,7 @@ assert (HZlength_starting_keys: Zlength starting_keys = size). {
 unfold repable_signed in inf_repable.
 (*push all vertices into priq*)
 forward_call(tt).
-split; try lia. split. apply (Z.le_trans _ 0).
-pose proof Int.min_signed_neg; lia. lia.
-rewrite Z.mul_comm. apply (Z.le_trans _ (size * (4*size))).
-apply (Z.le_trans _ (1*(4*size))). lia. apply Z.mul_le_mono_nonneg_r; lia.
-set (k:=Int.max_signed); compute in k; subst k. set (k:=Ptrofs.max_signed) in *; compute in k; subst k. lia.
+
 rewrite <- size_eq in *.
 Intro priq_ptr.
 remember (pointer_val_val priq_ptr) as v_pq.
@@ -487,7 +484,6 @@ break: (
       (fold_right Z.min (hd 0 (upd_Znth r (list_repeat (Z.to_nat size) inf) 0))
          (upd_Znth r (list_repeat (Z.to_nat size) inf) 0)) 0). {
     intros. rewrite find_src. auto. simpl; auto.
-    rewrite inf_eq; lia. (*does find_src need 0<inf any longer*)
     lia.
   }
   (*Hinv_12 (nil <> nil) seems to be missing, autoresolved?*)

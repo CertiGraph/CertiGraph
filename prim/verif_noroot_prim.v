@@ -222,7 +222,7 @@ Qed.
 
 Lemma body_prim: semax_body Vprog Gprog f_prim prim_spec.
 Proof.
-start_function. rename H into Hprecon_1.
+start_function. rename H into Hprecon_1. rename H0 into Ha.
 assert (inf_repable: repable_signed inf). {
   red. pose proof (inf_representable g). rep_lia.
 }
@@ -256,11 +256,6 @@ assert (HZlength_starting_keys: Zlength starting_keys = size). {
 unfold repable_signed in inf_repable.
 (*push all vertices into priq*)
 forward_call(tt).
-split. 2: lia. split. apply (Z.le_trans _ 0).
-pose proof Int.min_signed_neg; lia. lia.
-rewrite Z.mul_comm. apply (Z.le_trans _ (size * (4*size))).
-apply (Z.le_trans _ (1*(4*size))). lia. apply Z.mul_le_mono_nonneg_r; lia.
-set (k:=Int.max_signed); compute in k; subst k. set (k:=Ptrofs.max_signed) in *; compute in k; subst k. lia.
 
 rewrite <- size_eq in *.
 Intro priq_ptr.
