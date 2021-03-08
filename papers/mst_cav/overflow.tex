@@ -58,8 +58,12 @@ Our code uses signed \texttt{int} rather than \texttt{unsigned int} so we have u
 %the 3-vertex 32-bit example in
 
 We fold these new restrictions into the mathematical graph $\gamma$. % Dijktra's precondition as $\mathsf{DijkAdjMat}$, which inherits from $\mathsf{AdjMat}$ in~\S\ref{sec:adjmatpure}.
-In addition to the bounds discussed above, we require a few other more straightforward bounds: edge costs be non-negative, as is typical for Dijkstra; $4 \cdot \texttt{size} \le \texttt{INT\_MAX}$, to ensure that the multiplication in the \texttt{malloc} on line~\ref{code:dijkmalloc} does not overflow; and that $\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}}\right\rfloor \cdot (\texttt{size} - 1) < \texttt{inf}$, so no valid path has cost \texttt{inf}.  Whenever
+In addition to the bounds discussed above, we require a few other more straightforward bounds: edge costs be non-negative, as is typical for Dijkstra; $4 \cdot \texttt{size} \le \texttt{INT\_MAX}$, to ensure that the multiplication in the \texttt{malloc} on line~\ref{code:dijkmalloc} does not overflow; and that $\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}}\right\rfloor \cdot (\texttt{size} - 1) < \texttt{inf}$, so no valid path has cost \texttt{inf}.
+%This 
+These bounds are optimal: if the input is any less restricted, the postcondition will fail.  Indeed, the last restriction on \texttt{inf} is not meaningful when $\texttt{size} = 1$, so in that special case we further require that any (self-loop) edges cost less than $\texttt{inf}$.
+Whenever
 $0 < 4 \cdot \texttt{size} \le \texttt{INT\_MAX}$, the restrictions on \texttt{inf} are satisfiable with $\texttt{inf} \defeq \texttt{INT\_MAX}$.
+%; when $\texttt{size}=1$ we further require that
 
 %, in addition to the standard restrictions we inherit from \texttt{SoundAdjMat} ().
 
