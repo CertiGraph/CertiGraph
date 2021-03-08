@@ -1327,30 +1327,6 @@ apply Z.div_pos; rep_lia. }
             ++ intros.
                apply (vvalid_meaning g) in H20.
                apply (inv_unseen_weak_add_unpopped g prev _ _ src); trivial.
-               (*
-                 The above lemma is admitted.
-                 Below I have dragged out the logic
-                 to the top, and changed the H-numbers so
-                 that it will go through part of the way here. 
-                 Just in case you want to look at the whole context. 
-                *)
-
-            (*
-
-               red. intros.
-               assert (e: dst <> u) by (simpl in H21; lia).
-               apply not_in_cons in H21; destruct H21 as [_ ?].
-               destruct (H1 dst H20) as [_ [_ ?]].
-               destruct H24; [lia | trivial].
-               apply (H28 H21 H22 m p2m); trivial.
-
-               red in H27 |- *.
-               intros.
-
-               cut (step <> u).
-               ** intro. specialize (H27 _ H29). destruct H27; ulia.
-               ** intro. subst step. apply H18. 
-               *)
             ++ intros. clear H20.
                destruct popped eqn:?.
                2: right; apply H4; inversion 1.
