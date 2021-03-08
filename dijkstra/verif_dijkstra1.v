@@ -973,7 +973,7 @@ Section DijkstraProof.
             subst u. trivial.
           }
 
-          assert (H19 : 0 <= Znth u dist <= (size - 1) * ((Int.max_signed - 1) / size)). {
+          assert (H19 : 0 <= Znth u dist <= (size - 1) * (Int.max_signed / size)). {
             destruct popped.
             1: { (* if popped = nil, then src is being popped *)
               assert (src = u). {
@@ -999,7 +999,7 @@ Section DijkstraProof.
             clear Htemp.
             destruct (H1 _ H_u_valid) as [_ [_ ?]].
             
-            clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1 H10' H12 Hd' Ha Ht.
+            clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1 H10' H12 Hd' Ha Ht Z_EqDec.
 
             assert (Hai: v :: popped <> []) by inversion 1.  
             specialize (H4 Hai). clear Hai.
@@ -1119,12 +1119,12 @@ apply Z.div_pos; rep_lia. }
               inversion H2. subst p p1.
               clear -H3 H10' H19 H12 H_u_valid.
               pose proof (inf_representable g).
-              assert (Haa: (size - 1) * ((Int.max_signed - 1) / size) <= Int.max_signed). {
+              assert (Haa: (size - 1) * (Int.max_signed / size) <= Int.max_signed). {
                 pose proof (size_representable g).
-                apply Z.le_trans with (m := size * ((Int.max_signed - 1) / size)).
+                apply Z.le_trans with (m := size * (Int.max_signed / size)).
                 - apply Zmult_le_compat_r.
                   lia. apply Z.div_pos; lia.
-                - apply Z.le_trans with (m := Int.max_signed - 1). 
+                - apply Z.le_trans with (m := Int.max_signed). 
                   apply Z.mul_div_le. lia. lia. }
               rewrite <- Int.signed_repr.
               rewrite <- (Int.signed_repr (Znth child' dist)). lia.
@@ -1174,11 +1174,11 @@ apply Z.div_pos; rep_lia. }
            dijkstra_correct.
            *)
 
-          assert (Haa: (size - 1) * ((Int.max_signed - 1) / size) <= Int.max_signed). {
-            apply Z.le_trans with (m := size * ((Int.max_signed - 1)/ size)).
+          assert (Haa: (size - 1) * (Int.max_signed / size) <= Int.max_signed). {
+            apply Z.le_trans with (m := size * (Int.max_signed / size)).
             - apply Zmult_le_compat_r.
               lia. apply Z.div_pos; lia.
-            - apply Z.le_trans with (m := Int.max_signed - 1). 
+            - apply Z.le_trans with (m := Int.max_signed). 
               apply Z.mul_div_le. lia. lia.
           }
           
@@ -1273,8 +1273,7 @@ apply Z.div_pos; rep_lia. }
                    rewrite find_item_by_key_finds_item in H6; trivial.
                    inversion H6.
                    unfold heap_item_priority. simpl.
-                   rewrite Znth_map, Int.signed_repr; ulia.                   
-                   
+                   rewrite Znth_map, Int.signed_repr; ulia.
                  - specialize (Ht _ H23).
                    unfold heap_item_payload in Ht.
                    unfold heap_item_payload in H24.
@@ -1517,7 +1516,7 @@ apply Z.div_pos; rep_lia. }
             rename H44 into Hw.
             rename H45 into Ha'.
 
-            assert (Hbb: 0 <= Znth u dist' <= (size - 1) * ((Int.max_signed - 1) / size)). {
+            assert (Hbb: 0 <= Znth u dist' <= (size - 1) * (Int.max_signed / size)). {
               assert (Htemp: 0 <= u < Zlength dist') by lia.
               pose proof (Znth_dist_cases _ _ Htemp H35).
               clear Htemp.
@@ -1535,7 +1534,7 @@ apply Z.div_pos; rep_lia. }
                 pose proof (one size H26 popped' Hae Had).
                 apply Zlt_not_le in H25.
                 apply H25.
-                apply Z.le_trans with (m := (size - 1) * ((Int.max_signed - 1) / size)); trivial.
+                apply Z.le_trans with (m := (size - 1) * (Int.max_signed / size)); trivial.
                 rewrite Z.mul_comm.
                 apply Z.mul_le_mono_nonneg_l.
                 apply Z.div_pos; ulia.
@@ -1553,7 +1552,7 @@ apply Z.div_pos; rep_lia. }
 
             forward_if.
             ++ rename H22 into Htemp.
-               assert (0 <= cost <= (Int.max_signed - 1)/ size). {
+               assert (0 <= cost <= Int.max_signed / size). {
                  pose proof (edge_representable g (u, i)).
                  rewrite Heqcost in *.
                  apply (valid_edge_bounds g).
@@ -1564,11 +1563,17 @@ apply Z.div_pos; rep_lia. }
                  exfalso.
                  apply Zlt_not_le in Htemp. apply Htemp; reflexivity.
                }
-               clear Htemp.
                assert (H_ui_valid: evalid g (u,i)). {
-                 apply evalid_dijk with (cost0 := cost);
-                   trivial.
+                 apply evalid_dijk. simpl id in Heqcost.
+                 clear -Heqcost Htemp H22.
+                 subst cost.
+                 rewrite Int.signed_repr in Htemp.
+                 destruct H22. split. apply H. apply Htemp.
+                 split. rep_lia. transitivity (Int.max_signed / size). lia.
+                 apply div_pos_le. rep_lia.
+                 pose proof (size_representable g). lia.
                }
+               clear Htemp.
                
                assert (0 <= Znth u dist' <= inf). {
                  assert (0 <= u < Zlength dist') by lia.
@@ -1590,8 +1595,12 @@ apply Z.div_pos; rep_lia. }
                   we were forced to lower
                   inf's upper bound
                   *)
-                 pose proof (inf_further_restricted g).
-                 ulia.
+split. lia.
+clear - H22 Hbb g.
+transitivity ((size - 1) * (Int.max_signed / size) + Int.max_signed / size). lia.
+rewrite Z.mul_sub_distr_r, Z.mul_1_l, Z.sub_add.
+apply Z.mul_div_le.
+pose proof (size_representable g). lia.
                }
                thaw FR.
                forward. forward. forward_if.
@@ -1664,7 +1673,7 @@ apply Z.div_pos; rep_lia. }
                   intros.
                   (* 19 goals *)
                   --- apply inv_popped_newcost; ulia.
-                  --- apply inv_unpopped_newcost; ulia.
+                  --- apply inv_unpopped_newcost; try ulia.
                   --- now apply inv_unpopped_weak_newcost.
                   --- apply inv_unseen_newcost; ulia.
                   --- apply inv_unseen_weak_newcost; ulia. 
@@ -1681,7 +1690,7 @@ apply Z.div_pos; rep_lia. }
                   --- apply Forall_upd_Znth; try ulia.
                       left. destruct icases; [|ulia].
                       assert (0 <= Znth u dist' <= (size-2) *
-                                                   ((Int.max_signed - 1) / size)). {
+                                                   (Int.max_signed / size)). {
                         assert (vvalid g u). {
                           apply (vvalid_meaning g); trivial.
                         }
@@ -1694,13 +1703,13 @@ apply Z.div_pos; rep_lia. }
                                                                H_i_valid Hae
                                                                Had H_i_not_popped).
                         apply Z.le_trans with
-                            (m := (Zlength popped' - 1) *  ((Int.max_signed - 1) / size)).
+                            (m := (Zlength popped' - 1) *  (Int.max_signed / size)).
                         2: apply Z.mul_le_mono_nonneg_r; [apply Z.div_pos|]; ulia.
                         
                         destruct p as [src' links].
                         pose proof (path_in_popped_Zlengths _ _ _ _ Haz H45 H42).
                         pose proof (path_cost_upper_bound
-                                      g src' links ((Int.max_signed - 1) / size)).
+                                      g src' links (Int.max_signed / size)).
                         spec H48.
                         1: apply Z.div_pos; ulia.
                         spec H48.
@@ -1710,7 +1719,7 @@ apply Z.div_pos; rep_lia. }
                           apply (valid_path_evalid g src' links); trivial.
                         }
                         apply Z.le_trans with
-                            (m := (Zlength links) * ((Int.max_signed - 1) / size));
+                            (m := (Zlength links) * (Int.max_signed / size));
                           trivial.
                         apply Z.mul_le_mono_nonneg_r. 2: lia.
                         apply Z.div_pos; ulia.
@@ -1825,10 +1834,7 @@ apply Z.div_pos; rep_lia. }
                        H45 H46 H47 PNkeys_ptr PNpriq_ptr.
                  
                  assert (elabel g (u, i) < inf). {
-                   apply Z.le_lt_trans with (m := (Int.max_signed - 1) / size);
-                     trivial.
-                   apply H22.
-                   apply (inf_gt_largest_edge g).
+                   apply (inf_gt_largest_edge g). auto.
                  }
                  split3; [| |split].
                  --- intros. apply inv_unpopped_new_dst
@@ -1856,15 +1862,29 @@ apply Z.div_pos; rep_lia. }
                         it is disobeying upp bnd of (size-1)*(max/size)
                         this can only be because it is disobeying acyclic!
                       *)
-                     
-                     intros _.
-                     simpl id in *.
-                     apply Z.ge_le in H_non_improvement.
-                     apply Zle_not_lt in H_non_improvement.
-                     apply H_non_improvement.
+
                      pose proof (inf_bounded_above_dist g).
                      pose proof (inf_further_restricted g).
-                     lia.
+
+clear -Hbb H22 H_non_improvement H43 H41 H40 H39 H38 H37 g Had Hae H_i_valid.
+exfalso.
+assert (path_in_popped g popped' p2u) by admit.
+pose proof (not_in_popped_popped_short _ _ _ H_i_valid Hae Had H37).
+assert (Hsz : 0 < size). { pose proof (size_representable g). lia. }
+destruct H41 as [? [? [? [? [? ?]]]]].
+destruct p2u as [src' links]. assert (src' = src). { destruct H2. apply H2. } subst src'.
+pose proof (path_in_popped_Zlengths _ _ _ _ H1 H6 H).
+pose proof (path_cost_upper_bound g src links (Int.max_signed / size)).
+spec H8. apply Z.div_pos; ulia. 
+spec H8. intros.
+pose proof (valid_edge_bounds g e). spec H10.
+eapply valid_path_evalid; eauto. lia.
+rewrite H4 in *. clear dist' H38 H4.
+assert (Zlength links <= size - 2) by ulia.
+assert (path_cost g (src, links) <= (size - 2) * (Int.max_signed / size)). {
+transitivity (Zlength links * (Int.max_signed / size)). trivial.
+apply Z.mul_le_mono_nonneg_r; trivial. apply Z.div_pos; ulia. }
+lia.
                  --- intros.
                      assert (i <= dst < size) by lia.
                      apply H_inv_unseen_weak; trivial.
@@ -1953,8 +1973,9 @@ apply Z.div_pos; rep_lia. }
                  }
                  pose proof (valid_path_evalid _ _ _ _ H40 H41).
                  apply valid_edge_bounds in H42.
-                 pose proof (inf_gt_largest_edge g).
-                 apply Z.le_lt_trans with (m := (Int.max_signed - 1)/ size); simpl id; ulia.
+                 pose proof (inf_gt_largest_edge g (u,i)). apply H43.
+                 eapply valid_path_evalid. apply H40.
+                 apply in_or_app. right. left. reflexivity.
               ** apply H_inv_unseen_weak; lia.
           -- (* From the for loop's invariant, 
               prove the while loop's invariant. *)
@@ -2055,8 +2076,9 @@ apply Z.div_pos; rep_lia. }
         destruct H16 as [p [? [? ?]]]. exists p. split3; trivial.
         do 2 intro. specialize (H19 _ H21).
         symmetry in H6. eapply Permutation_in; eauto.
-  Time Qed.
-  
+  Admitted.
+(*  Time Qed. *)
+
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell
                                  (@getCell_spec size inf).
   Proof.
