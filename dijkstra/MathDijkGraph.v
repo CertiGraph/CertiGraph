@@ -13,19 +13,21 @@ Section MathDijkGraph.
 
   (* Show our planned restrictions aren't too restrictive. *)
   Lemma edges_can_be_positive:
-    0 < size <= Int.max_signed - 1 ->
-    0 < (Int.max_signed - 1) / size.
+    0 < size <= Int.max_signed ->
+    0 < Int.max_signed / size.
   Proof. apply Z.div_str_pos. Qed.
 
   Lemma always_room_for_inf:
-    0 < size <= Int.max_signed - 1 ->
-    0 <= ((Int.max_signed - 1) / size) * size < Int.max_signed.
+    0 < size <= Int.max_signed ->
+    0 <= (Int.max_signed / size) * (size - 1) < Int.max_signed.
   Proof.
-    intros. forget Int.max_signed as m.
+    intros. remember Int.max_signed as m.
     split. apply Z.mul_nonneg_nonneg.
     apply Z.div_pos. 1,2,3: lia.
-    pose proof (Z.mul_div_le (m - 1) size). spec H0. lia.
-    apply Z.le_lt_trans with (m-1). 2: lia. lia.
+    pose proof (Z.mul_div_le m size). spec H0. lia.
+    rewrite Z.mul_sub_distr_l, Z.mul_1_r.
+    pose proof (edges_can_be_positive). subst m. lia.
+(*    apply Z.le_lt_trans with (m-1). 2: lia. lia. *)
 (*    intros. split.
     apply Z.mul_nonneg_nonneg. apply Z.div_pos. 1,2,3: lia.
     rewrite Z.mul_sub_distr_l, Z.mul_1_r.
@@ -37,12 +39,12 @@ Section MathDijkGraph.
 
   Lemma edges_can_be_positive':
     0 < size * 4 <= Int.max_signed ->
-    0 < (Int.max_signed - 1) / size.
+    0 < Int.max_signed / size.
   Proof. intros. apply edges_can_be_positive. lia. Qed.
 
   Lemma always_room_for_inf':
     0 < size * 4 <= Int.max_signed ->
-    0 <= ((Int.max_signed - 1) / size) * size < Int.max_signed.
+    0 <= (Int.max_signed / size) * (size - 1) < Int.max_signed.
   Proof. intros. apply always_room_for_inf. lia. Qed.
 
   (* Here is the LabeledGraph *)
@@ -62,15 +64,16 @@ Section MathDijkGraph.
        *)
       forall e,
         evalid g e ->
-        0 <= elabel g e <= (Int.max_signed - 1) / size;
+        0 <= elabel g e <= Int.max_signed / size;
 
     sfr: (* size is further restricted *)
       size * 4 <= Int.max_signed;
     (* because sizeof tint = 4 *)
 
     ifr: (* inf is further restricted *)
-      ((Int.max_signed - 1) / size) * size < inf  (* size - 1? *)
+      (Int.max_signed / size) * (size - 1) < inf;  (* size - 1? *)
 
+(*    sz1: size = 1 -> ((forall e, evalid g e -> elabel g e = 0) /\ (1 < inf)) *)
     }.
 
   (* And here is the GeneralGraph that we will use *)
@@ -112,6 +115,10 @@ Section MathDijkGraph.
 
   Definition inf_further_restricted (g: DijkGG) :=
     @ifr g (SoundDijk_DijkGG g).
+
+(*  Definition size1_bound (g : DijkGG) :=
+    @sz1 g (SoundDijk_DijkGG g).
+*)
 
   Lemma inf_bounds:
     forall (g: DijkGG),
@@ -167,10 +174,10 @@ Section MathDijkGraph.
     destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
     - specialize (H e0). 
       split; trivial. rep_lia.
-      apply Z.le_trans with (m := ((Int.max_signed - 1) / size)).
+      apply Z.le_trans with (m := (Int.max_signed / size)).
       apply H.
       pose proof (size_representable g).
-      apply Z.le_trans with (m := (Int.max_signed - 1) / size).
+      apply Z.le_trans with (m := Int.max_signed / size).
       lia.
       etransitivity.
       apply div_pos_le; lia. lia.
@@ -197,19 +204,38 @@ Section MathDijkGraph.
   Qed.
 
   Lemma inf_gt_largest_edge:
-    forall (g: DijkGG),
-    (Int.max_signed - 1) / size < inf.
+    forall (g: DijkGG) e, evalid g e -> elabel g e < inf.
   Proof.
     intros.
-    pose proof (inf_further_restricted g).
     pose proof (size_representable g).
-    apply Z.le_lt_trans with (m := ((Int.max_signed - 1) / size) * size); trivial.
+    assert (size = 1 \/ size > 1) by lia. destruct H1.
+    * apply (evalid_strong_evalid g) in H. destruct H as [? [? ?]].
+      apply (vvalid_meaning g) in H2. apply (vvalid_meaning g) in H3.
+      destruct e. rewrite (edge_src_fst g) in H2. rewrite (edge_dst_snd g) in H3.
+      simpl in H2, H3. assert (v = 0 /\ v0 = 0) by lia. destruct H4. subst v v0.
+      admit.
+    * pose proof (valid_edge_bounds g _ H).
+      pose proof (inf_further_restricted g).
+      apply Z.le_lt_trans with (m := (Int.max_signed / size)). lia.
+      apply Z.le_lt_trans with (m := (Int.max_signed / size) * (size - 1)); trivial.
+      apply Z.le_mul_diag_r; [|lia].
+      apply Z.div_str_pos; trivial.
+  Admitted.
+
+(*    Int.max_signed / size < inf.
+  Proof.
+    intros.
+    pose proof (size_representable g).
+    assert (size = 1 \/ size > 1) by lia. destruct H0.
+    pose proof (size1_bound g). specialize (H1 H0).
+    pose proof (inf_further_restricted g).
+    apply Z.le_lt_trans with (m := (Int.max_signed / size) * size); trivial.
 
     apply Z.le_mul_diag_r; [|lia].
     apply Z.div_str_pos; trivial.
     destruct g. destruct sound_gg. lia.
   Qed.
-
+*)
   (* Please move this into a much more general location *)
   Lemma Zlength_epath_to_vpath: forall A B (EV : EqDec A eq) (EE : EqDec B eq) (g : PreGraph A B) s l,
       Zlength (epath_to_vpath g (s,l)) = 1 + Zlength l.
