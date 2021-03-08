@@ -92,9 +92,9 @@ Section DijkstraSpecPure.
     Znth dst dist = inf ->
     forall m p2m,
       vvalid g m ->
-      (* I. acyclic p2m -> *)
       In m popped ->
       path_correct g prev dist src m p2m ->
+      path_in_popped g popped p2m ->
       ~ valid_path g (path_glue p2m (m, [(m, dst)])).
   (* II. path_cost (path_glue p2m (m, [(m, dst)])) >= inf *)
 
@@ -112,6 +112,7 @@ Section DijkstraSpecPure.
       In m popped ->
       m <> u ->
       path_correct g prev dist src m p2m ->
+      path_in_popped g popped p2m ->
       ~ valid_path g (path_glue p2m (m, [(m, dst)])). 
 
   Definition dijkstra_correct (g : DijkGG) src popped prev dist : Prop :=
