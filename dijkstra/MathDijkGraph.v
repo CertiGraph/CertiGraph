@@ -73,7 +73,8 @@ Section MathDijkGraph.
     ifr: (* inf is further restricted *)
       (Int.max_signed / size) * (size - 1) < inf;  (* size - 1? *)
 
-(*    sz1: size = 1 -> ((forall e, evalid g e -> elabel g e = 0) /\ (1 < inf)) *)
+    sz1: (* size-1 graphs need further sanity checks since ifr is not helpful *)
+      size = 1 -> forall e, evalid g e -> elabel g e < inf
     }.
 
   (* And here is the GeneralGraph that we will use *)
@@ -116,9 +117,8 @@ Section MathDijkGraph.
   Definition inf_further_restricted (g: DijkGG) :=
     @ifr g (SoundDijk_DijkGG g).
 
-(*  Definition size1_bound (g : DijkGG) :=
+  Definition size1_bound (g : DijkGG) :=
     @sz1 g (SoundDijk_DijkGG g).
-*)
 
   Lemma inf_bounds:
     forall (g: DijkGG),
@@ -209,18 +209,14 @@ Section MathDijkGraph.
     intros.
     pose proof (size_representable g).
     assert (size = 1 \/ size > 1) by lia. destruct H1.
-    * apply (evalid_strong_evalid g) in H. destruct H as [? [? ?]].
-      apply (vvalid_meaning g) in H2. apply (vvalid_meaning g) in H3.
-      destruct e. rewrite (edge_src_fst g) in H2. rewrite (edge_dst_snd g) in H3.
-      simpl in H2, H3. assert (v = 0 /\ v0 = 0) by lia. destruct H4. subst v v0.
-      admit.
+    * apply size1_bound; trivial.
     * pose proof (valid_edge_bounds g _ H).
       pose proof (inf_further_restricted g).
       apply Z.le_lt_trans with (m := (Int.max_signed / size)). lia.
       apply Z.le_lt_trans with (m := (Int.max_signed / size) * (size - 1)); trivial.
       apply Z.le_mul_diag_r; [|lia].
       apply Z.div_str_pos; trivial.
-  Admitted.
+  Qed.
 
 (*    Int.max_signed / size < inf.
   Proof.
