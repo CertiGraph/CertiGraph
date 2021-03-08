@@ -1327,6 +1327,30 @@ apply Z.div_pos; rep_lia. }
             ++ intros.
                apply (vvalid_meaning g) in H20.
                apply (inv_unseen_weak_add_unpopped g prev _ _ src); trivial.
+               (*
+                 The above lemma is admitted.
+                 Below I have dragged out the logic
+                 to the top, and changed the H-numbers so
+                 that it will go through part of the way here. 
+                 Just in case you want to look at the whole context. 
+                *)
+
+            (*
+
+               red. intros.
+               assert (e: dst <> u) by (simpl in H21; lia).
+               apply not_in_cons in H21; destruct H21 as [_ ?].
+               destruct (H1 dst H20) as [_ [_ ?]].
+               destruct H24; [lia | trivial].
+               apply (H28 H21 H22 m p2m); trivial.
+
+               red in H27 |- *.
+               intros.
+
+               cut (step <> u).
+               ** intro. specialize (H27 _ H29). destruct H27; ulia.
+               ** intro. subst step. apply H18. 
+               *)
             ++ intros. clear H20.
                destruct popped eqn:?.
                2: right; apply H4; inversion 1.
@@ -1846,6 +1870,7 @@ pose proof (size_representable g). lia.
                      2: apply H_inv_unseen; lia.
 
                      unfold inv_unseen; intros.
+                     rename H42 into Hnew.
                      subst dst.
                      assert (i <= i < size) by lia.
                      destruct (Z.eq_dec m u).
@@ -1864,27 +1889,32 @@ pose proof (size_representable g). lia.
                       *)
 
                      pose proof (inf_bounded_above_dist g).
-                     pose proof (inf_further_restricted g).
 
-clear -Hbb H22 H_non_improvement H43 H41 H40 H39 H38 H37 g Had Hae H_i_valid.
-exfalso.
-assert (path_in_popped g popped' p2u) by admit.
-pose proof (not_in_popped_popped_short _ _ _ H_i_valid Hae Had H37).
-assert (Hsz : 0 < size). { pose proof (size_representable g). lia. }
-destruct H41 as [? [? [? [? [? ?]]]]].
-destruct p2u as [src' links]. assert (src' = src). { destruct H2. apply H2. } subst src'.
-pose proof (path_in_popped_Zlengths _ _ _ _ H1 H6 H).
-pose proof (path_cost_upper_bound g src links (Int.max_signed / size)).
-spec H8. apply Z.div_pos; ulia. 
-spec H8. intros.
-pose proof (valid_edge_bounds g e). spec H10.
-eapply valid_path_evalid; eauto. lia.
-rewrite H4 in *. clear dist' H38 H4.
-assert (Zlength links <= size - 2) by ulia.
-assert (path_cost g (src, links) <= (size - 2) * (Int.max_signed / size)). {
-transitivity (Zlength links * (Int.max_signed / size)). trivial.
-apply Z.mul_le_mono_nonneg_r; trivial. apply Z.div_pos; ulia. }
-lia.
+                     clear -Hbb H22 H_non_improvement H43 H41 H40
+                                H39 H38 H37 g Had Hae H_i_valid Hnew.
+                     exfalso.
+                     rename Hnew into H.
+                     pose proof (not_in_popped_popped_short _ _ _ H_i_valid Hae Had H37).
+                     assert (Hsz : 0 < size). {
+                       pose proof (size_representable g). lia.
+                     }
+                     destruct H41 as [? [? [? [? [? ?]]]]].
+                     destruct p2u as [src' links].
+                     assert (src' = src). {
+                       destruct H2. apply H2. }
+                     subst src'.
+                     pose proof (path_in_popped_Zlengths _ _ _ _ H1 H6 H).
+                     pose proof (path_cost_upper_bound g src links (Int.max_signed / size)).
+                     spec H8. apply Z.div_pos; ulia. 
+                     spec H8. intros.
+                     pose proof (valid_edge_bounds g e). spec H10.
+                     eapply valid_path_evalid; eauto. lia.
+                     rewrite H4 in *. clear dist' H38 H4.
+                     assert (Zlength links <= size - 2) by ulia.
+                     assert (path_cost g (src, links) <= (size - 2) * (Int.max_signed / size)). {
+                       transitivity (Zlength links * (Int.max_signed / size)). trivial.
+                       apply Z.mul_le_mono_nonneg_r; trivial. apply Z.div_pos; ulia. }
+                     lia.
                  --- intros.
                      assert (i <= dst < size) by lia.
                      apply H_inv_unseen_weak; trivial.
@@ -1955,6 +1985,7 @@ lia.
                  subst dst.
                  assert (i <= i < size) by lia.
                  unfold inv_unseen; intros.
+                 rename H39 into Hnew.
                  destruct (Z.eq_dec m u).
                  2: {
                    red in H_inv_unseen_weak.
@@ -2076,8 +2107,7 @@ lia.
         destruct H16 as [p [? [? ?]]]. exists p. split3; trivial.
         do 2 intro. specialize (H19 _ H21).
         symmetry in H6. eapply Permutation_in; eauto.
-  Admitted.
-(*  Time Qed. *)
+ Time Qed.
 
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell
                                  (@getCell_spec size inf).
