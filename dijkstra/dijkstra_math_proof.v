@@ -742,6 +742,7 @@ Section DijkstraMathLemmas.
       replace (elabel g (mom, dst)) with inf in H7.
       apply Zlt_not_le in H7; apply H7; reflexivity.
     }
+
     
     assert (Znth mom dist < inf) by
         (pose proof (valid_edge_bounds g _ H11); ulia).
@@ -766,6 +767,128 @@ Section DijkstraMathLemmas.
     simpl in H19; destruct H19; ulia.
   Qed.
 
+Lemma backwards_list_ind: forall A (P : list A -> Prop),
+  P [] ->
+  (forall (a : A) (l : list A), P l -> P (l +:: a )) ->
+     forall l : list A, P l.
+Proof.
+  intros.
+  remember (length l).
+  assert (Datatypes.length l <= n)%nat by lia. clear Heqn. revert l H1. induction n; intros.
+  destruct l. apply H. simpl in H1. lia.
+  remember (foot l). symmetry in Heqo.
+  destruct o.
+  2: apply foot_none_nil in Heqo; subst l; apply H.
+  apply foot_explicit in Heqo. destruct Heqo as [l' ?]. subst l.
+  apply H0. apply IHn. rewrite app_length in H1. simpl in H1. lia.
+Qed.
+
+Lemma pfoot_ptail: forall (g : @DijkGG size inf) l f,
+  pfoot g l = f ->
+  pfoot g (ptail g l) = f.
+Proof.
+  intros. destruct l. destruct l; auto.
+  rewrite pfoot_cons in H. apply H.
+Qed.
+
+Lemma acyclic_foot_empty: forall (g : @DijkGG size inf) src l,
+  valid_path g (src, l) ->
+  acyclic_path g (src, l) ->
+  pfoot g (src, l) = src ->
+  l = [].
+Proof.
+  destruct l; auto. intros. exfalso. assert (fst e = src). { destruct H.
+    rewrite (edge_src_fst g) in H. auto. }
+  apply pfoot_ptail in H1. simpl ptail in H1.
+  rewrite pfoot_spec in H1. destruct H1.
+  * rewrite (edge_dst_snd g) in H1. inversion H1. subst. 
+    red in H0. simpl in H0. rewrite (edge_src_fst g), (edge_dst_snd g) in H0.
+    rewrite H4 in H0. inversion H0. apply H5. left. trivial.
+  * destruct H1 as [v' [l' [e' [? ?]]]]. subst src. inversion H1. subst v' l.
+    rename H into Hx. clear H1.
+    red in H0.
+    rewrite <- (edge_src_fst g) in H2.
+    rewrite epath_to_vpath_cons_eq in H0; auto.
+    rewrite NoDup_cons_iff in H0. destruct H0 as [? _].
+    apply H. clear H H2.
+    rewrite in_path_eq_epath_to_vpath.
+    eapply path_ends_In_path_dst. split. reflexivity.
+    rewrite pfoot_last. trivial.
+    apply valid_path_tail in Hx. apply Hx.
+Qed.
+
+Lemma epath_to_vpath_eq: forall (g : @DijkGG size inf) src l,
+  valid_path g (src, l) ->
+  epath_to_vpath g (src, l) = src :: map (dst g) l.
+Proof.
+  intros g src l. revert src. induction l. reflexivity.
+  intros. simpl map. rewrite <- IHl.
+  rewrite epath_to_vpath_cons_eq. trivial.
+  simpl in H. tauto.
+  apply valid_path_tail in H. apply H.
+Qed.
+
+Lemma path_correct_unique_path: forall (g : @DijkGG size inf) prev dist src m p2m p2m',
+  path_correct g prev dist src m p2m ->
+  path_correct g prev dist src m p2m' ->
+  p2m = p2m'.
+Proof.
+  intros.
+  destruct p2m, p2m'. destruct H as [? [? [? [? [? ?]]]]]. destruct H0 as [? [? [? [? [? ?]]]]].
+  clear H2 H7 H3 H8. destruct H1, H6. simpl in H1, H3. subst v v0. f_equal. simpl snd in *.
+  revert m H H5 H4 H2 l0 H0 H10 H9 H6.
+  apply (backwards_list_ind _ (fun l => forall m, 
+    valid_path g (src, l) ->
+    acyclic_path g (src, l) ->
+    Forall (fun x : E => Znth (snd x) prev = fst x) l ->
+    pfoot g (src, l) = m ->
+    forall l0 : list E,
+    valid_path g (src, l0) ->
+    acyclic_path g (src, l0) ->
+    Forall (fun x : E => Znth (snd x) prev = fst x) l0 ->
+    pfoot g (src, l0) = m -> l = l0)); intros.
+  simpl in H2. subst m.
+  pose proof (acyclic_foot_empty _ _ _ H3 H4 H6). auto.
+  remember (foot l1). symmetry in Heqo. destruct o.
+  2: { apply foot_none_nil in Heqo. subst l1. simpl in H7. subst m.
+    symmetry in H7. eapply acyclic_foot_empty; eauto. }
+  apply foot_explicit in Heqo. destruct Heqo as [l1' ?]. subst l1.
+  assert (a = e). { destruct a, e.
+  rewrite pfoot_last, (edge_dst_snd g) in H7. rewrite pfoot_last, (edge_dst_snd g) in H3.
+  simpl snd in *. subst v0 v2.
+  rewrite Forall_forall in H2. rewrite Forall_forall in H6.
+  specialize (H2 (v,m)). specialize (H6 (v1, m)). simpl in H2, H6.
+  spec H2. apply in_or_app. right. left. trivial.
+  spec H6. apply in_or_app. right. left. trivial.
+  rewrite H2 in H6. subst v1. trivial. } subst e. f_equal.
+  rename src into src'.
+  apply (H (src g a)).
+  * rewrite valid_path_app in H0. tauto.
+  * clear -H0 H1. red in H1 |- *.
+    rewrite epath_to_vpath_eq in H1; trivial.
+    rewrite valid_path_app in H0.
+    rewrite epath_to_vpath_eq. 2: tauto.
+    rewrite map_app in H1.
+    rewrite app_comm_cons in H1.
+    apply NoDup_app_l in H1.
+    trivial.
+  * rewrite Forall_app_iff in H2. tauto.
+  * rewrite valid_path_app in H0. destruct H0.
+    simpl in H8. destruct H8. apply H8.
+  * rewrite valid_path_app in H4. tauto.
+  * clear -H4 H5. red in H5 |- *.
+    rewrite epath_to_vpath_eq in H5; trivial.
+    rewrite valid_path_app in H4.
+    rewrite epath_to_vpath_eq. 2: tauto.
+    rewrite map_app in H5.
+    rewrite app_comm_cons in H5.
+    apply NoDup_app_l in H5.
+    trivial.
+  * rewrite Forall_app_iff in H6. tauto.
+  * rewrite valid_path_app in H4. destruct H4.
+    simpl in H8. destruct H8. apply H8.
+Qed.
+
   Lemma inv_unseen_weak_add_unpopped:
     forall (g : @DijkGG size inf) prev dist popped src u dst,
       dijkstra_correct g src popped prev dist ->
@@ -773,18 +896,28 @@ Section DijkstraMathLemmas.
       vvalid g dst ->
       inv_unseen_weak g src (u :: popped) prev dist dst u.
   Proof.
-    intros. red.
-    intro. intros.
-    assert (e: dst <> u) by (simpl in H2; lia).
-    apply not_in_cons in H2; destruct H2 as [_ ?].
+    repeat intro.
+    apply not_in_cons in H2; destruct H2.
     destruct (H dst H1) as [_ [_ ?]].
     destruct H5; [ulia|].
-    apply (H9 H2 H3 m p2m); trivial.
+    apply (H11 H10 H3 m p2m); trivial.
     red in H8 |- *. intros.
-    cut (step <> u). (* how to show? needs strenghtening downstream *)
-    - intros. destruct (H8 _ H10); ulia.
-    - intro. apply H6. subst step. admit.
-  Admitted.
+    specialize (H8 _ H12). destruct H8; auto. subst step.
+exfalso.
+pose proof (in_path_split g p2m u H12).
+apply valid_path_split in H9.
+2: { exists m. destruct H7 as [_ [[? ?] _]]. split; auto. }
+destruct H9. destruct H13 as [_ ?]. simpl in H13.
+specialize (H8 H9). destruct H8 as [p1 [p2 [? ?]]].
+destruct (H _ H4) as [? _]. destruct (H15 H5).
+* destruct H16. specialize (H17 p2m). destruct H7 as [? ?]. tauto.
+* destruct H16 as [p2u' [? ?]].
+(* Well, darn.  If we'd had this lemma before, Anshuman could have saved himself a lot
+   of plumbing work... *)
+pose proof (path_correct_unique_path _ _ _ _ _ _ _ H7 H16). subst p2u'.
+destruct H17. clear -H17 H12 H0.
+specialize (H17 _ H12). contradiction.
+  Qed.
 
   Lemma list_repeat1:
     forall {A} (a: A),
