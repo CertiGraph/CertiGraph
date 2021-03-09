@@ -6,114 +6,31 @@ Local Open Scope Z_scope.
 
 Ltac ulia := trivial; unfold V, DE in *; rep_lia.
 
-Lemma app_eq_single_inv:
-  forall
-    A l (a b: A),
-    l ++ [a] = [b] ->
-    l = [] /\ a = b.
+(* find better home *)
+Lemma Int_signed_strip:
+  forall a b, Int.signed a = Int.signed b -> a = b.
 Proof.
   intros.
-  (* generalize dependent l. *)
-  induction l.
-  - inversion H. split; trivial.
-  - simpl in H. inversion H. exfalso.
-    apply (app_not_nil l a); trivial.
+  pose proof (Int.signed_eq a b). unfold zeq in H0.
+  destruct (Z.eq_dec (Int.signed a) (Int.signed b)).
+  simpl in H0. apply int_eq_e; trivial.
+  exfalso. apply n. trivial.
 Qed.
 
-Lemma Zlength_cons_sub_1:
-  forall A (a: A) l,
-    Zlength (a :: l) - 1 = Zlength l.
+(* find better home *)
+Lemma Int_repr_eq_small:
+  forall a b,
+    0 <= a < Int.modulus ->
+    0 <= b < Int.modulus ->
+    Int.repr a = Int.repr b ->
+    a = b.
 Proof.
-  intros. rewrite Zlength_cons.
-  pose proof (Zlength_nonneg l). lia.
-Qed.
-
-Lemma one:
-  forall size,
-    0 <= size ->
-    forall L,
-      NoDup L ->
-      (forall j, In j L -> 0 <= j < size) ->
-      Zlength L <= size.
-Proof.
-  intros ? ?.
-  rename H into Ha.
-  rewrite <- (Z2Nat.id size) in *; trivial.
-  remember (Z.to_nat size) as size_n.
-  clear Heqsize_n Ha.
-  induction size_n; intros.
-  - destruct L.
-    + rewrite Zlength_nil. apply Nat2Z.is_nonneg.
-    + exfalso. specialize (H0 z (in_eq _ _)). lia.
-  - destruct (in_dec Z.eq_dec (Z.of_nat size_n) L);
-      [rename i into H1 | rename n into H1].
-    + apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst L.
-      apply NoDup_remove in H. destruct H.
-      assert (forall j : Z, In j (l1 ++ l2) -> 0 <= j < Z.of_nat size_n). {
-        intros.
-        assert (In j (l1 ++ Z.of_nat size_n :: l2)). {
-          apply in_or_app. apply in_app_or in H2.
-          destruct H2; auto. right. right. trivial.
-        }
-        specialize (H0 _ H3).
-        rewrite Nat2Z.inj_succ in H0.
-        assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n) by lia.
-        destruct H4; auto.
-        subst j. contradiction.
-      }
-      specialize (IHsize_n (l1 ++ l2) H H2).
-      rewrite Zlength_app in *. rewrite Zlength_cons. simpl. lia.
-    + rewrite Nat2Z.inj_succ.
-      assert (forall j, In j L -> 0 <= j < Z.of_nat size_n). {
-        intros. specialize (H0 _ H2).
-        rewrite Nat2Z.inj_succ in H0.
-        assert (0 <= j < (Z.of_nat size_n) \/ j = (Z.of_nat size_n)) by lia.
-        destruct H3; auto. subst. contradiction.
-      }
-      specialize (IHsize_n _ H H2). lia.
-Qed.
-
-Lemma two:
-  forall i size,
-    0 <= i < size ->
-    forall L,
-      NoDup L ->
-      (forall j, In j L -> 0 <= j < size /\ j <> i) ->
-      Zlength L <= size - 1.
-Proof.
-  intros ? ? ?.
-  rewrite <- (Z2Nat.id size) in *; try lia.
-  remember (Z.to_nat size) as size_n.
-  clear Heqsize_n.
-  induction size_n; intros.
-  1: lia.
-  replace (Z.of_nat (S size_n) - 1) with (Z.of_nat size_n) by lia.
-  assert (i = Z.of_nat size_n \/ 0 <= i < Z.of_nat size_n) by lia.
-  destruct H2. subst i.
-  apply one. lia. apply H0. intros. specialize (H1 _ H2). lia.
-  destruct (in_dec Z.eq_dec (Z.of_nat size_n) L);
-    [rename i0 into H3 | rename n into H3].
-  - apply in_split in H3. destruct H3 as [l1 [l2 ?]]. subst L.
-    apply NoDup_remove in H0. destruct H0.
-    assert (forall j, In j (l1 ++ l2) -> 0 <= j < Z.of_nat size_n /\ j <> i). {
-      intros.
-      assert (In j (l1 ++ Z.of_nat size_n :: l2)). {
-        apply in_or_app. apply in_app_or in H4.
-        destruct H4; auto. right. right. trivial.
-      }
-      specialize (H1 _ H5).
-      assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n) by lia.
-      destruct H6. lia.
-      subst j. contradiction.
-    }
-    specialize (IHsize_n H2 (l1 ++ l2) H0 H4).
-    rewrite Zlength_app in *. rewrite Zlength_cons. lia.
-  - assert (forall j, In j L -> 0 <= j < Z.of_nat size_n /\ j <> i). {
-      intros. specialize (H1 _ H4).
-      assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n) by lia.
-      destruct H5. lia. subst. contradiction.
-    }
-    specialize (IHsize_n H2 _ H0 H4). lia.
+  intros.
+  apply Int_eqm_unsigned_repr',
+  Int_eqm_unsigned_spec in H1.
+  rewrite Int.unsigned_repr_eq in H1.
+  rewrite Z.mod_small in H1; trivial.
+  pose proof (Int.eqm_small_eq _ _ H1 H H0); trivial.
 Qed.
 
 Section DijkstraMathLemmas.
@@ -142,41 +59,11 @@ Section DijkstraMathLemmas.
   Proof.
     intros.
     apply (vvalid_meaning g) in H.
-    apply (two i); trivial.
+    apply (NoDup_all_bounded_Zlength' i); trivial.
     intros. split.
     - red in H1. rewrite Forall_forall in H1.
       apply H1; trivial.
     - intro. subst j; contradiction.
-  Qed.
-  
-  Lemma inf_bounded_above_dist: forall (g: @DijkGG size inf),
-      (size - 1) * (Int.max_signed / size) < inf.
-  Proof.
-    intros.
-    pose proof (inf_further_restricted g).
-    rewrite Z.mul_comm. trivial.
-  Qed.
-
-(*    apply Z.lt_trans with (m := (Int.max_signed - 1) / size * size); trivial.
-    pose proof (size_representable g).
-    apply Zmult_lt_compat_l; [|lia].
-    apply Z.div_str_pos.
-    pose proof (size_further_restricted g). ulia.
-  Qed.
-*)
-
-  Lemma Forall_upd_Znth: forall (l: list Z) i new F,
-      0 <= i < Zlength l ->
-      Forall F l -> F new ->
-      Forall F (upd_Znth i l new).
-  Proof.
-    intros. rewrite Forall_forall in *. intros.
-    destruct (eq_dec x new); [rewrite e; trivial|].
-    rewrite upd_Znth_unfold in H2; auto.
-    apply in_app_or in H2; destruct H2.
-    - apply sublist_In in H2. apply (H0 x H2).
-    - simpl in H2. destruct H2; [lia|].
-      apply sublist_In in H2. apply (H0 x H2).
   Qed.
 
   Lemma Znth_dist_cases:
@@ -190,114 +77,187 @@ Section DijkstraMathLemmas.
     apply (sublist.Forall_Znth _ _ _ H) in H0. ulia.
   Qed.
 
-  Lemma Int_signed_strip:
-    forall a b, Int.signed a = Int.signed b -> a = b.
-  Proof.
-    intros.
-    pose proof (Int.signed_eq a b). unfold zeq in H0.
-    destruct (Z.eq_dec (Int.signed a) (Int.signed b)).
-    simpl in H0. apply int_eq_e; trivial.
-    exfalso. apply n. trivial.
-  Qed.
-
-  Lemma epath_to_vpath_path_glue_one_step:
-    forall (g: @DijkGG size inf) (a b c : V) p,
-      valid_path g p ->
-      path_ends g p a b -> 
-      Permutation (epath_to_vpath g (path_glue p (b, [(b, c)])))
-                  (c :: epath_to_vpath g p).
-  Proof.
-    intros.
-    rewrite (surjective_pairing p) in *.
-    remember (snd p) as a2b.
-    replace (fst p) with a in *.
-    2: destruct H0 as [? _]; simpl in H0; lia.
-    clear Heqa2b.
-    
-    generalize dependent H.
-    generalize dependent H0.
-    generalize dependent b.
-    generalize dependent a.
-    generalize dependent a2b.
-
-    induction a2b.
-    - intros. simpl. red in H0. simpl in H0; destruct H0 as [_ ?].
-      subst a. rewrite (edge_dst_snd g), (edge_src_fst g); simpl.
-      apply perm_swap.
-    - intros. rename a into new.
-      inversion H. clear H2.
-      unfold path_glue. simpl fst; simpl snd.
-      rewrite <- app_comm_cons.
-      repeat rewrite epath_to_vpath_cons_eq; trivial.
-      pose proof (perm_swap c a0 (epath_to_vpath g (dst g new, a2b))).
-      apply Permutation_trans with (l' := (a0 :: c :: epath_to_vpath g (dst g new, a2b))); trivial.
-      apply perm_skip.
-      apply IHa2b.
-      + red. split; trivial.
-        destruct H0. rewrite pfoot_cons in H3; trivial.
-      + apply valid_path_cons in H; trivial.
-  Qed.
-
-
-  (* Four Dijkstra-specific path-cost lemmas *)
-  Lemma path_cost_app_cons:
-    forall (g: @DijkGG size inf) path e,
-      path_cost g (fst path, snd path +:: e) =
-      path_cost g path + elabel g e.
-  Proof.
-    intros.
-    replace (fst path, snd path +:: e) with
-        (path_glue path (fst e, [e])).
-    rewrite path_cost_path_glue.
-    rewrite one_step_path_Znth; trivial.
-    unfold path_glue. simpl. trivial.
-  Qed.
+  (* Path Correct *)
   
-  Lemma path_cost_glue_one_step:
-    forall (g: @DijkGG size inf) p2m u i,
-      path_cost g (path_glue p2m (u, [(u, i)])) = path_cost g p2m + elabel g (u, i).
+  Lemma path_correct_path_glue_one:
+    forall (g: @DijkGG size inf) src u mom p2mom prev dist,
+      path_correct g prev dist src mom p2mom ->
+      Znth u dist = Znth mom dist + elabel g (mom, u) ->
+      Znth mom dist + elabel g (mom, u) <= (size-1) * (Int.max_signed / size) ->
+      strong_evalid g (mom, u) ->
+      Znth u prev = mom ->
+      ~ In_path g u p2mom ->
+      path_correct g prev dist src u (path_glue p2mom (mom, [(mom, u)])).
   Proof.
     intros.
-    rewrite path_cost_path_glue, one_step_path_Znth; trivial.
+    rename H4 into Hb.
+    destruct H as [? [? [? [? [? Ha]]]]].
+    assert (path_cost g p2mom + elabel g (mom, u) <=
+            (size-1) * (Int.max_signed / size)) by ulia. 
+    split3; [| | split3; [| |split]]; trivial.
+    - destruct H4; apply (valid_path_app_cons g); trivial;
+        try rewrite <- surjective_pairing; trivial.
+    - destruct H4; apply (path_ends_app_cons g); trivial.
+      split; trivial.
+      rewrite <- (surjective_pairing p2mom); trivial.
+    - rewrite (path_cost_glue_one_step g); ulia.
+    - rewrite (path_cost_glue_one_step g).
+      rewrite <- H6. ulia.
+    - rewrite Forall_forall. intros.
+      rewrite Forall_forall in H7.
+      apply in_app_or in H9. destruct H9.
+      + apply H7; trivial.
+      + simpl in H9. destruct H9; [| lia].
+        rewrite (surjective_pairing x) in *.
+        inversion H9.
+        simpl. rewrite <- H11, <- H12. ulia.
+    - red in Ha |- *.
+      pose proof (epath_to_vpath_path_glue_one_step
+                    g src mom u p2mom H H4).
+      symmetry in H9.
+      apply (Permutation_NoDup H9).
+      apply NoDup_cons; trivial.
+      intro.
+      apply in_path_eq_epath_to_vpath in H10; trivial.
+      contradiction.
   Qed.
 
-  Lemma path_cost_pos:
-    forall (g: @DijkGG size inf) p,
-      valid_path g p ->
-      0 <= path_cost g p.
+  Lemma path_correct_unique_path: forall (g : @DijkGG size inf) prev dist src m p2m p2m',
+      path_correct g prev dist src m p2m ->
+      path_correct g prev dist src m p2m' ->
+      p2m = p2m'.
   Proof.
-    intros. apply acc_pos; [|lia].
-    intros. apply edge_cost_pos.
+  intros.
+  destruct p2m, p2m'. destruct H as [? [? [? [? [? ?]]]]]. destruct H0 as [? [? [? [? [? ?]]]]].
+  clear H2 H7 H3 H8. destruct H1, H6. simpl in H1, H3. subst v v0. f_equal. simpl snd in *.
+  revert m H H5 H4 H2 l0 H0 H10 H9 H6.
+  apply (backwards_list_ind _ (fun l => forall m, 
+    valid_path g (src, l) ->
+    acyclic_path g (src, l) ->
+    Forall (fun x : E => Znth (snd x) prev = fst x) l ->
+    pfoot g (src, l) = m ->
+    forall l0 : list E,
+    valid_path g (src, l0) ->
+    acyclic_path g (src, l0) ->
+    Forall (fun x : E => Znth (snd x) prev = fst x) l0 ->
+    pfoot g (src, l0) = m -> l = l0)); intros.
+  simpl in H2. subst m.
+  pose proof (acyclic_foot_empty g _ _ H3 H4 H6). auto.
+  remember (foot l1). symmetry in Heqo. destruct o.
+  2: { apply foot_none_nil in Heqo. subst l1. simpl in H7. subst m.
+    symmetry in H7. eapply (acyclic_foot_empty g); eauto. }
+  apply foot_explicit in Heqo. destruct Heqo as [l1' ?]. subst l1.
+  assert (a = e). { destruct a, e.
+  rewrite pfoot_last, (edge_dst_snd g) in H7. rewrite pfoot_last, (edge_dst_snd g) in H3.
+  simpl snd in *. subst v0 v2.
+  rewrite Forall_forall in H2. rewrite Forall_forall in H6.
+  specialize (H2 (v,m)). specialize (H6 (v1, m)). simpl in H2, H6.
+  spec H2. apply in_or_app. right. left. trivial.
+  spec H6. apply in_or_app. right. left. trivial.
+  rewrite H2 in H6. subst v1. trivial. } subst e. f_equal.
+  rename src into src'.
+  apply (H (src g a)).
+  * rewrite valid_path_app in H0. tauto.
+  * clear -H0 H1. red in H1 |- *.
+    rewrite epath_to_vpath_eq in H1; trivial.
+    rewrite valid_path_app in H0.
+    rewrite epath_to_vpath_eq. 2: tauto.
+    rewrite map_app in H1.
+    rewrite app_comm_cons in H1.
+    apply NoDup_app_l in H1.
+    trivial.
+  * rewrite Forall_app_iff in H2. tauto.
+  * rewrite valid_path_app in H0. destruct H0.
+    simpl in H8. destruct H8. apply H8.
+  * rewrite valid_path_app in H4. tauto.
+  * clear -H4 H5. red in H5 |- *.
+    rewrite epath_to_vpath_eq in H5; trivial.
+    rewrite valid_path_app in H4.
+    rewrite epath_to_vpath_eq. 2: tauto.
+    rewrite map_app in H5.
+    rewrite app_comm_cons in H5.
+    apply NoDup_app_l in H5.
+    trivial.
+  * rewrite Forall_app_iff in H6. tauto.
+  * rewrite valid_path_app in H4. destruct H4.
+    simpl in H8. destruct H8. apply H8.
   Qed.
 
-  Lemma path_cost_path_glue_lt:
-    forall (g: @DijkGG size inf) p1 p2 limit,
-      valid_path g p1 ->
-      valid_path g p2 ->
-      path_cost g (path_glue p1 p2) < limit ->
-      path_cost g p1 < limit /\ path_cost g p2 < limit.
+  Lemma path_correct_upd_dist:
+    forall (g: @DijkGG size inf) src i m dist prev newcost p2m,
+      vvalid g i ->
+      vvalid g m ->
+      Zlength dist = size ->
+      m <> i ->
+      path_correct g prev (upd_Znth i dist newcost) src m p2m ->
+      path_correct g prev dist src m p2m.
   Proof.
     intros.
-    rewrite path_cost_path_glue in H1.
-    pose proof (path_cost_pos _ _ H).
-    pose proof (path_cost_pos _ _ H0).
-    split; lia.
+    destruct H3 as [? [? [? [? ?]]]].
+    split3; [| |split3]; trivial.
+    apply (vvalid_meaning g) in H.
+    apply (vvalid_meaning g) in H0.
+    rewrite upd_Znth_diff in H6; lia.  
   Qed.
-  
-  (* never used, but perhaps handy *)
-  Lemma Int_repr_eq_small:
-    forall a b,
-      0 <= a < Int.modulus ->
-      0 <= b < Int.modulus ->
-      Int.repr a = Int.repr b ->
-      a = b.
+
+  (* Path in Popped *)
+  Lemma path_in_popped_path_glue:
+    forall (g: @DijkGG size inf) p1 p2 popped,
+      path_in_popped g popped p1 ->
+      path_in_popped g popped p2 ->
+      path_in_popped g popped (path_glue p1 p2).
   Proof.
-    intros.
-    apply Int_eqm_unsigned_repr',
-    Int_eqm_unsigned_spec in H1.
-    rewrite Int.unsigned_repr_eq in H1.
-    rewrite Z.mod_small in H1; trivial.
-    pose proof (Int.eqm_small_eq _ _ H1 H H0); trivial.
+    red. intros.
+    apply In_path_glue in H1. destruct H1.
+    - apply H; trivial.
+    - apply H0; trivial.
+  Qed.
+
+  Lemma path_in_popped_Zlengths:
+    forall (g: @DijkGG size inf) links s popped,
+      valid_path g (s, links) ->
+      acyclic_path g (s, links) ->
+      path_in_popped g popped (s, links) ->
+      Zlength links <= Zlength popped - 1.
+  Proof.
+    intros g.
+    induction links; intros; destruct popped.
+    + exfalso. apply (H1 s). left; trivial.
+    + rewrite Zlength_nil.
+      rewrite Zlength_cons_sub_1.
+      apply Zlength_nonneg.
+    + exfalso. apply (H1 s). left; trivial.
+    + rewrite Zlength_cons_sub_1, Zlength_cons.
+      replace s with (src g a) in * by (destruct H; lia). clear s.
+      assert (In (src g a) (v :: popped)). { apply H1. left. trivial. }
+                                           apply In_split in H2. destruct H2 as [l1 [l2 ?]].
+      specialize (IHlinks (dst g a) (l1 ++ l2)).
+      spec IHlinks.
+      1: apply valid_path_cons with (v0 := (src g a)); trivial.
+      spec IHlinks.
+      1: apply (acyclic_path_cons _ _ _ _ H); trivial.
+      spec IHlinks.
+      2: { assert (Zlength (v :: popped) = Zlength (l1 ++ src g a :: l2))
+          by congruence.
+           repeat rewrite Zlength_app in *.
+           repeat rewrite Zlength_cons in *. lia.
+      }
+      clear IHlinks.
+      red in H0. rewrite H2 in *. clear H2 popped v.
+      rewrite epath_to_vpath_cons_eq in H0; trivial.
+      rewrite NoDup_cons_iff in H0. destruct H0.
+      do 2 intro. specialize (H1 step).
+      spec H1.
+      1: {
+        destruct H3 as [? | [e' [? ?]]].
+        - simpl in H3. right. exists a. split; auto. left. trivial.
+        - right. exists e'. simpl in *; auto.
+      }
+      apply in_app_or in H1. apply in_or_app. destruct H1; auto.
+      destruct H1; auto. exfalso.
+      apply H0. subst step.
+      apply in_path_eq_epath_to_vpath; auto.
+      apply valid_path_tail in H. apply H.
   Qed.
 
   Lemma popped_noninf_has_path:
@@ -466,54 +426,6 @@ Section DijkstraMathLemmas.
           destruct H7 as [? [? ?]]. inversion H7.
   Qed.
 
-  Lemma path_ends_In_path_src:
-    forall (g: @PreGraph V E V_EqDec E_EqDec) a b a2b,
-      path_ends g a2b a b ->
-      In_path g a a2b.
-  Proof.
-    intros. left. destruct H.
-    rewrite (surjective_pairing a2b) in H.
-    simpl in H. symmetry; trivial.
-  Qed.
-
-  Lemma path_ends_In_path_dst:
-    forall (g: @PreGraph V E V_EqDec E_EqDec) a b a2b,
-      path_ends g a2b a b ->
-      In_path g b a2b.
-  Proof.
-    intros. destruct H. apply pfoot_in; trivial.
-  Qed.
-
-  Lemma path_ends_valid_src:
-    forall (g: @PreGraph V E V_EqDec E_EqDec) a b a2b,
-      valid_path g a2b ->
-      path_ends g a2b a b ->
-      vvalid g a.
-  Proof.
-    intros.
-    apply (valid_path_valid g _ _ H),
-    (path_ends_In_path_src _ _ b); trivial.
-  Qed.
-
-  Lemma path_ends_valid_dst:
-    forall (g: @PreGraph V E V_EqDec E_EqDec) a b a2b,
-      valid_path g a2b ->
-      path_ends g a2b a b ->
-      vvalid g b.
-  Proof.
-    intros.
-    apply (valid_path_valid g _ _ H),
-    (path_ends_In_path_dst _ a); trivial.
-  Qed.
-
-  Lemma path_ends_one_step:
-    forall (g: @DijkGG size inf) a b,
-      path_ends g (a, [(a, b)]) a b.
-  Proof.
-    intros. split; trivial.
-    simpl. rewrite (edge_dst_snd g); trivial.
-  Qed. 
-
   Lemma path_leaving_popped_stronger:
     forall (g: @DijkGG size inf) links s u popped,
       valid_path g (s, links) ->
@@ -542,7 +454,7 @@ Section DijkstraMathLemmas.
     assert (valid_path g (path_glue (mom', [(mom', child')]) p2)). {
       apply valid_path_merge; trivial.
       apply (path_ends_meet _ _ _ mom' child' u); trivial.
-      apply path_ends_one_step.
+      apply (path_ends_one_step g).
       simpl. rewrite (edge_src_fst g); split; trivial.
       split3; trivial.
       rewrite (edge_src_fst g); simpl; trivial.
@@ -553,12 +465,6 @@ Section DijkstraMathLemmas.
 
     assert (elabel g (mom', child') < inf). {
       apply (inf_gt_largest_edge g). trivial. }
-
-(*      apply Z.le_lt_trans with (m := Int.max_signed / size).
-      apply valid_edge_bounds; trivial.
-
-    }
-*)
 
     split3; [| |split3; [| |split3;
                             [| |split3;
@@ -576,41 +482,8 @@ Section DijkstraMathLemmas.
     - rewrite <- H4 in H3.
       apply path_cost_path_glue_lt in H3; trivial.
       destruct H3 as [_ ?].
-      rewrite path_cost_path_glue in H3; trivial.
-      rewrite one_step_path_Znth in H3. ulia.
-  Qed.
-  
-  Lemma evalid_dijk:
-    forall (g: @DijkGG size inf) a b,
-      0 <= elabel g (a,b) < inf -> (* Int.max_signed / size -> *)
-      evalid g (a,b).
-  Proof.
-    intros.
-    rewrite (evalid_meaning g); split.
-    1: apply edge_representable.
-    intro.
-    unfold AdjMatGG_DijkGG in H0. simpl in H0.
-    lia.
-  Qed.
-
-(*    pose proof (inf_gt_largest_edge g).
-    intro.
-    replace (elabel g (a,b)) with inf in *.
-    ulia.
-  Qed.
-*)
-
-  Lemma NoDup_one: forall A (n: A), NoDup [n].
-  Proof.
-    intros. apply NoDup_cons. 
-    inversion 1. apply NoDup_nil.
-  Qed.
-
-  Lemma acyclic_nil_path:
-    forall (g: @DijkGG size inf) p, acyclic_path g (p, []).
-  Proof.
-    intros. unfold acyclic_path. simpl.
-    apply NoDup_one.
+      rewrite (path_cost_path_glue g) in H3; trivial.
+      rewrite (one_step_path_Znth g) in H3. rewrite Z.add_comm. ulia.
   Qed.
 
   Lemma inv_popped_add_src:
@@ -636,81 +509,6 @@ Section DijkstraMathLemmas.
     - unfold path_globally_optimal; intros.
       unfold path_cost at 1; simpl.
       apply path_cost_pos; trivial.
-  Qed.
-
-  Lemma path_correct_app_cons:
-    forall (g: @DijkGG size inf) src u mom p2mom prev dist,
-      path_correct g prev dist src mom p2mom ->
-      Znth u dist = Znth mom dist + elabel g (mom, u) ->
-      Znth mom dist + elabel g (mom, u) <= (size-1) * (Int.max_signed / size) ->
-      strong_evalid g (mom, u) ->
-      Znth u prev = mom ->
-      ~ In_path g u p2mom ->
-      path_correct g prev dist src u (path_glue p2mom (mom, [(mom, u)])).
-  Proof.
-    intros.
-    rename H4 into Hb.
-    destruct H as [? [? [? [? [? Ha]]]]].
-    assert (path_cost g p2mom + elabel g (mom, u) <=
-            (size-1) * (Int.max_signed / size)) by ulia. 
-    split3; [| | split3; [| |split]]; trivial.
-    - destruct H4; apply (valid_path_app_cons g); trivial;
-        try rewrite <- surjective_pairing; trivial.
-    - destruct H4; apply (path_ends_app_cons g); trivial.
-      split; trivial.
-      rewrite <- (surjective_pairing p2mom); trivial.
-    - rewrite path_cost_glue_one_step; ulia.
-    - rewrite path_cost_glue_one_step; ulia.
-    - rewrite Forall_forall. intros.
-      rewrite Forall_forall in H7.
-      apply in_app_or in H9. destruct H9.
-      + apply H7; trivial.
-      + simpl in H9. destruct H9; [| lia].
-        rewrite (surjective_pairing x) in *.
-        inversion H9.
-        simpl. rewrite <- H11, <- H12. ulia.
-    - red in Ha |- *.
-      pose proof (epath_to_vpath_path_glue_one_step
-                    g src mom u p2mom H H4).
-      symmetry in H9.
-      apply (Permutation_NoDup H9).
-      apply NoDup_cons; trivial.
-      intro.
-      apply in_path_eq_epath_to_vpath in H10; trivial.
-      contradiction.
-  Qed.
-
-  Lemma in_path_app_cons:
-    forall (g: @DijkGG size inf) step p2a src a b,
-      valid_path g p2a ->
-      evalid g (a,b) ->
-      path_ends g p2a src a ->
-      In_path g step (fst p2a, snd p2a +:: (a, b)) ->
-      In_path g step p2a \/ step = b.
-  Proof.
-    intros. destruct H2; simpl in H2.
-    1: left; unfold In_path; left; trivial.
-    destruct H2 as [? [? ?]].
-    assert (evalid g x). {
-      apply in_app_or in H2. simpl in H2.
-      destruct H2 as [? | [? | ?]]; [| | lia]; [|subst;trivial].
-      rewrite (surjective_pairing p2a) in H.
-      apply (valid_path_evalid _ _ _ _ H H2).
-    }
-    rewrite (edge_src_fst g) in H3; trivial.
-    apply in_app_or in H2; simpl in H2.
-    destruct H2 as [? | [? | ?]]; [| | lia]; destruct H3.
-    - left. unfold In_path. right.
-      exists x. rewrite (edge_src_fst g); trivial.
-      split; [|left]; trivial.
-    - left. unfold In_path. right.
-      exists x. rewrite (edge_src_fst g); trivial.
-      split; [|right]; trivial.
-    - left. apply pfoot_in.
-      destruct H1. rewrite H3, <- H2; simpl; trivial.
-    - unfold In_path. right.
-      rewrite H3, <- H2; simpl; trivial.
-      rewrite (edge_dst_snd g); trivial.
   Qed.
 
   Lemma inv_unpopped_weak_add_unpopped:
@@ -742,7 +540,6 @@ Section DijkstraMathLemmas.
       replace (elabel g (mom, dst)) with inf in H7.
       apply Zlt_not_le in H7; apply H7; reflexivity.
     }
-
     
     assert (Znth mom dist < inf) by
         (pose proof (valid_edge_bounds g _ H11); ulia).
@@ -767,128 +564,6 @@ Section DijkstraMathLemmas.
     simpl in H19; destruct H19; ulia.
   Qed.
 
-Lemma backwards_list_ind: forall A (P : list A -> Prop),
-  P [] ->
-  (forall (a : A) (l : list A), P l -> P (l +:: a )) ->
-     forall l : list A, P l.
-Proof.
-  intros.
-  remember (length l).
-  assert (Datatypes.length l <= n)%nat by lia. clear Heqn. revert l H1. induction n; intros.
-  destruct l. apply H. simpl in H1. lia.
-  remember (foot l). symmetry in Heqo.
-  destruct o.
-  2: apply foot_none_nil in Heqo; subst l; apply H.
-  apply foot_explicit in Heqo. destruct Heqo as [l' ?]. subst l.
-  apply H0. apply IHn. rewrite app_length in H1. simpl in H1. lia.
-Qed.
-
-Lemma pfoot_ptail: forall (g : @DijkGG size inf) l f,
-  pfoot g l = f ->
-  pfoot g (ptail g l) = f.
-Proof.
-  intros. destruct l. destruct l; auto.
-  rewrite pfoot_cons in H. apply H.
-Qed.
-
-Lemma acyclic_foot_empty: forall (g : @DijkGG size inf) src l,
-  valid_path g (src, l) ->
-  acyclic_path g (src, l) ->
-  pfoot g (src, l) = src ->
-  l = [].
-Proof.
-  destruct l; auto. intros. exfalso. assert (fst e = src). { destruct H.
-    rewrite (edge_src_fst g) in H. auto. }
-  apply pfoot_ptail in H1. simpl ptail in H1.
-  rewrite pfoot_spec in H1. destruct H1.
-  * rewrite (edge_dst_snd g) in H1. inversion H1. subst. 
-    red in H0. simpl in H0. rewrite (edge_src_fst g), (edge_dst_snd g) in H0.
-    rewrite H4 in H0. inversion H0. apply H5. left. trivial.
-  * destruct H1 as [v' [l' [e' [? ?]]]]. subst src. inversion H1. subst v' l.
-    rename H into Hx. clear H1.
-    red in H0.
-    rewrite <- (edge_src_fst g) in H2.
-    rewrite epath_to_vpath_cons_eq in H0; auto.
-    rewrite NoDup_cons_iff in H0. destruct H0 as [? _].
-    apply H. clear H H2.
-    rewrite in_path_eq_epath_to_vpath.
-    eapply path_ends_In_path_dst. split. reflexivity.
-    rewrite pfoot_last. trivial.
-    apply valid_path_tail in Hx. apply Hx.
-Qed.
-
-Lemma epath_to_vpath_eq: forall (g : @DijkGG size inf) src l,
-  valid_path g (src, l) ->
-  epath_to_vpath g (src, l) = src :: map (dst g) l.
-Proof.
-  intros g src l. revert src. induction l. reflexivity.
-  intros. simpl map. rewrite <- IHl.
-  rewrite epath_to_vpath_cons_eq. trivial.
-  simpl in H. tauto.
-  apply valid_path_tail in H. apply H.
-Qed.
-
-Lemma path_correct_unique_path: forall (g : @DijkGG size inf) prev dist src m p2m p2m',
-  path_correct g prev dist src m p2m ->
-  path_correct g prev dist src m p2m' ->
-  p2m = p2m'.
-Proof.
-  intros.
-  destruct p2m, p2m'. destruct H as [? [? [? [? [? ?]]]]]. destruct H0 as [? [? [? [? [? ?]]]]].
-  clear H2 H7 H3 H8. destruct H1, H6. simpl in H1, H3. subst v v0. f_equal. simpl snd in *.
-  revert m H H5 H4 H2 l0 H0 H10 H9 H6.
-  apply (backwards_list_ind _ (fun l => forall m, 
-    valid_path g (src, l) ->
-    acyclic_path g (src, l) ->
-    Forall (fun x : E => Znth (snd x) prev = fst x) l ->
-    pfoot g (src, l) = m ->
-    forall l0 : list E,
-    valid_path g (src, l0) ->
-    acyclic_path g (src, l0) ->
-    Forall (fun x : E => Znth (snd x) prev = fst x) l0 ->
-    pfoot g (src, l0) = m -> l = l0)); intros.
-  simpl in H2. subst m.
-  pose proof (acyclic_foot_empty _ _ _ H3 H4 H6). auto.
-  remember (foot l1). symmetry in Heqo. destruct o.
-  2: { apply foot_none_nil in Heqo. subst l1. simpl in H7. subst m.
-    symmetry in H7. eapply acyclic_foot_empty; eauto. }
-  apply foot_explicit in Heqo. destruct Heqo as [l1' ?]. subst l1.
-  assert (a = e). { destruct a, e.
-  rewrite pfoot_last, (edge_dst_snd g) in H7. rewrite pfoot_last, (edge_dst_snd g) in H3.
-  simpl snd in *. subst v0 v2.
-  rewrite Forall_forall in H2. rewrite Forall_forall in H6.
-  specialize (H2 (v,m)). specialize (H6 (v1, m)). simpl in H2, H6.
-  spec H2. apply in_or_app. right. left. trivial.
-  spec H6. apply in_or_app. right. left. trivial.
-  rewrite H2 in H6. subst v1. trivial. } subst e. f_equal.
-  rename src into src'.
-  apply (H (src g a)).
-  * rewrite valid_path_app in H0. tauto.
-  * clear -H0 H1. red in H1 |- *.
-    rewrite epath_to_vpath_eq in H1; trivial.
-    rewrite valid_path_app in H0.
-    rewrite epath_to_vpath_eq. 2: tauto.
-    rewrite map_app in H1.
-    rewrite app_comm_cons in H1.
-    apply NoDup_app_l in H1.
-    trivial.
-  * rewrite Forall_app_iff in H2. tauto.
-  * rewrite valid_path_app in H0. destruct H0.
-    simpl in H8. destruct H8. apply H8.
-  * rewrite valid_path_app in H4. tauto.
-  * clear -H4 H5. red in H5 |- *.
-    rewrite epath_to_vpath_eq in H5; trivial.
-    rewrite valid_path_app in H4.
-    rewrite epath_to_vpath_eq. 2: tauto.
-    rewrite map_app in H5.
-    rewrite app_comm_cons in H5.
-    apply NoDup_app_l in H5.
-    trivial.
-  * rewrite Forall_app_iff in H6. tauto.
-  * rewrite valid_path_app in H4. destruct H4.
-    simpl in H8. destruct H8. apply H8.
-Qed.
-
   Lemma inv_unseen_weak_add_unpopped:
     forall (g : @DijkGG size inf) prev dist popped src u dst,
       dijkstra_correct g src popped prev dist ->
@@ -903,56 +578,30 @@ Qed.
     apply (H11 H10 H3 m p2m); trivial.
     red in H8 |- *. intros.
     specialize (H8 _ H12). destruct H8; auto. subst step.
-exfalso.
-pose proof (in_path_split g p2m u H12).
-apply valid_path_split in H9.
-2: { exists m. destruct H7 as [_ [[? ?] _]]. split; auto. }
-destruct H9. destruct H13 as [_ ?]. simpl in H13.
-specialize (H8 H9). destruct H8 as [p1 [p2 [? ?]]].
-destruct (H _ H4) as [? _]. destruct (H15 H5).
-* destruct H16. specialize (H17 p2m). destruct H7 as [? ?]. tauto.
-* destruct H16 as [p2u' [? ?]].
-(* Well, darn.  If we'd had this lemma before, Anshuman could have saved himself a lot
-   of plumbing work... *)
-pose proof (path_correct_unique_path _ _ _ _ _ _ _ H7 H16). subst p2u'.
-destruct H17. clear -H17 H12 H0.
-specialize (H17 _ H12). contradiction.
+    exfalso.
+    pose proof (in_path_split g p2m u H12).
+    apply valid_path_split in H9.
+    2: { exists m. destruct H7 as [_ [[? ?] _]]. split; auto. }
+    destruct H9. destruct H13 as [_ ?]. simpl in H13.
+    specialize (H8 H9). destruct H8 as [p1 [p2 [? ?]]].
+    destruct (H _ H4) as [? _]. destruct (H15 H5).
+    * destruct H16. specialize (H17 p2m). destruct H7 as [? ?]. tauto.
+    * destruct H16 as [p2u' [? ?]].
+      (* Well, darn.  If we'd had this lemma before, Anshuman could have saved himself a lot
+         of plumbing work... *)
+      pose proof (path_correct_unique_path _ _ _ _ _ _ _ H7 H16). subst p2u'.
+      destruct H17. clear -H17 H12 H0.
+      specialize (H17 _ H12). contradiction.
   Qed.
-
-  Lemma list_repeat1:
-    forall {A} (a: A),
-      list_repeat (Z.to_nat 1) a = [a].
-  Proof. trivial. Qed.
-
-  Lemma upd_Znth_list_repeat:
-    forall {A} i size (a b : A),
-      0 <= i < size ->
-      upd_Znth i (list_repeat (Z.to_nat i) a ++
-                              list_repeat (Z.to_nat (size - i)) b) a
-      =
-      list_repeat (Z.to_nat (i + 1)) a ++
-                  list_repeat (Z.to_nat (size - (i + 1))) b.
-  Proof.
-    intros.
-    rewrite upd_Znth_app2.
-    2: repeat rewrite Zlength_list_repeat; lia. 
-    rewrite Zlength_list_repeat by lia.
-    replace (i-i) with 0 by lia.
-    rewrite <- list_repeat_app' by lia.
-    rewrite app_assoc_reverse; f_equal.
-    rewrite upd_Znth0_old.
-    2: rewrite Zlength_list_repeat; lia.
-    rewrite Zlength_list_repeat, sublist_list_repeat by lia.
-    rewrite list_repeat1, Z.sub_add_distr. easy.
-  Qed.
-
 
   Lemma dijkstra_correct_nothing_popped:
     forall (g: @DijkGG size inf) src,
       0 <= src < size ->
-      dijkstra_correct g src [] (upd_Znth src
-                                          (list_repeat (Z.to_nat size) inf) src)
-                       (upd_Znth src (list_repeat (Z.to_nat size) inf) 0).
+      dijkstra_correct
+        g src []
+        (upd_Znth src
+                  (list_repeat (Z.to_nat size) inf) src)
+        (upd_Znth src (list_repeat (Z.to_nat size) inf) 0).
   Proof.
     intros.
     unfold dijkstra_correct, inv_popped, inv_unpopped, inv_unseen;
@@ -962,26 +611,6 @@ specialize (H17 _ H12). contradiction.
     rewrite upd_Znth_diff in H2; trivial.
     rewrite Znth_list_repeat_inrange in H2; ulia.
     all: rewrite Zlength_list_repeat; lia.
-  Qed.
-
-  Lemma In_links_snd_In_path:
-    forall (g: @DijkGG size inf) step path,
-      In step (snd path) ->
-      In_path g (snd step) path.
-  Proof.
-    intros. unfold In_path. right.
-    exists step. split; trivial.
-    right. rewrite (edge_dst_snd g); trivial.
-  Qed.
-
-  Lemma In_links_fst_In_path:
-    forall (g: @DijkGG size inf) step path,
-      In step (snd path) ->
-      In_path g (fst step) path.
-  Proof.
-    intros. unfold In_path. right.
-    exists step. split; trivial.
-    left. rewrite (edge_src_fst g); trivial.
   Qed.
 
   Lemma inv_popped_newcost:
@@ -1119,23 +748,6 @@ specialize (H17 _ H12). contradiction.
     apply H15; ulia. 
     apply (vvalid_meaning g) in H19; ulia.
     all: ulia.
-  Qed.
-
-  Lemma path_correct_upd_dist:
-    forall (g: @DijkGG size inf) src i m dist prev newcost p2m,
-      vvalid g i ->
-      vvalid g m ->
-      Zlength dist = size ->
-      m <> i ->
-      path_correct g prev (upd_Znth i dist newcost) src m p2m ->
-      path_correct g prev dist src m p2m.
-  Proof.
-    intros.
-    destruct H3 as [? [? [? [? ?]]]].
-    split3; [| |split3]; trivial.
-    apply (vvalid_meaning g) in H.
-    apply (vvalid_meaning g) in H0.
-    rewrite upd_Znth_diff in H6; lia.  
   Qed.
 
   Lemma inv_unseen_newcost:
@@ -1383,18 +995,6 @@ specialize (H17 _ H12). contradiction.
       apply pfoot_in in H25. rewrite H20 in *. trivial.
   Qed.
 
-  Lemma path_in_popped_path_glue:
-    forall (g: @DijkGG size inf) p1 p2 popped,
-      path_in_popped g popped p1 ->
-      path_in_popped g popped p2 ->
-      path_in_popped g popped (path_glue p1 p2).
-  Proof.
-    red. intros.
-    apply In_path_glue in H1. destruct H1.
-    - apply H; trivial.
-    - apply H0; trivial.
-  Qed.
-
   Lemma not_in_popped:
     forall (g: @DijkGG size inf) src u i cost prev dist popped,
       vvalid g u ->
@@ -1447,7 +1047,7 @@ specialize (H17 _ H12). contradiction.
     destruct H6 as [? [? [_ [? _]]]].
     rewrite H9, H5.
     specialize (H7 (fst p2u, snd p2u +:: (u,i))).  
-    rewrite path_cost_app_cons in H7; trivial.
+    rewrite (path_cost_app_cons g) in H7; trivial.
     rewrite H0. apply H7.
     - apply (valid_path_app_cons g).
       + rewrite <- surjective_pairing; trivial.
@@ -1753,7 +1353,7 @@ specialize (H17 _ H12). contradiction.
     }
     
     split3.
-    - apply path_correct_app_cons; trivial.
+    - apply (path_correct_path_glue_one); trivial.
       + replace (Znth mom dist + elabel g (mom, u))
           with (Znth u dist).
         apply (sublist.Forall_Znth _ _ u) in H1.
@@ -1763,7 +1363,7 @@ specialize (H17 _ H12). contradiction.
       + intro. apply H3, H14; trivial.
     - unfold path_in_popped. intros.
       destruct H13 as [? [? _]].
-      apply (in_path_app_cons _ _ _ src) in H17; trivial.
+      apply (in_path_app_cons g _ _ src) in H17; trivial.
       destruct H17.
       + specialize (H14 _ H17).
         simpl. right; trivial.
@@ -1775,7 +1375,7 @@ specialize (H17 _ H12). contradiction.
       unfold path_globally_optimal in H15.
       destruct H13 as [? [? [? [? ?]]]].
       unfold path_globally_optimal; intros.
-      rewrite path_cost_app_cons; trivial.
+      rewrite (path_cost_app_cons g); trivial.
       destruct (Z_le_gt_dec
                   (path_cost g p2mom + elabel g (mom, u))
                   (path_cost g p')); auto.
@@ -1818,8 +1418,9 @@ specialize (H17 _ H12). contradiction.
            elabel g (mom', child') +
            path_cost g p2).
       2: { rewrite <- H23.
-           do 2 rewrite path_cost_path_glue.
-           rewrite one_step_path_Znth. ulia.
+           do 2 rewrite (path_cost_path_glue g).
+           rewrite (one_step_path_Znth g).
+           symmetry. apply Z.add_assoc.
       }
       
       assert (vvalid g mom'). {
@@ -1866,21 +1467,21 @@ specialize (H17 _ H12). contradiction.
         2: { apply (path_glue_assoc g).
              apply (path_ends_meet _ _ _ src mom' child');
                trivial.
-             apply path_ends_one_step.
+             apply (path_ends_one_step g).
              apply (path_ends_meet _ _ _ mom' child' u);
                trivial.
-             apply path_ends_one_step.
+             apply (path_ends_one_step g).
         }
         apply path_cost_path_glue_lt in l; trivial.
         2: { apply valid_path_merge; trivial.
              apply (path_ends_meet _ _ _ src mom' child');
                trivial.
-             apply path_ends_one_step.
+             apply (path_ends_one_step g).
              simpl; split; trivial.
              rewrite (edge_src_fst g); trivial.
         }
         destruct l as [l _].
-        rewrite path_cost_path_glue in l; trivial.
+        rewrite (path_cost_path_glue g) in l; trivial.
       }
       
       assert (0 <= Znth mom' dist). {
@@ -1927,95 +1528,7 @@ specialize (H17 _ H12). contradiction.
           rewrite <- H19, <- H11.
           apply H_u_best; trivial.
   Qed.
-  
-  Lemma path_cost_cons:
-    forall (g: @DijkGG size inf) src links a,
-      path_cost g (src, a :: links) = elabel g a + path_cost g (src, links).
-  Proof.
-    intros.
-    pose proof (path_cost_path_glue g (src, [a]) (src, links)).
-    unfold path_glue in H. simpl in H. rewrite H. f_equal.
-  Qed.
-  
-  Lemma acyclic_path_cons:
-    forall (g: @DijkGG size inf) links s a,
-      valid_path g (s, a :: links) ->
-      acyclic_path g (s, a :: links) ->
-      acyclic_path g (dst g a, links).
-  Proof.
-    intros.
-    red in H0 |- *.
-    rewrite epath_to_vpath_cons_eq in H0.
-    apply NoDup_cons_1 with (x := s); trivial.
-    destruct H; trivial.
-  Qed.
-
-  Lemma path_cost_upper_bound:
-    forall (g: @DijkGG size inf) src links upper,
-      0 <= upper ->
-      (forall e, In e links -> elabel g e <= upper) ->
-      path_cost g (src, links) <= Zlength links * upper.
-  Proof.
-    intros.
-    induction links.
-    - rewrite path_cost_zero.
-      apply Z.mul_nonneg_nonneg; rep_lia.
-    - rewrite path_cost_cons.
-      rewrite Zlength_cons.
-      spec IHlinks.
-      1: intros; apply H0; right; trivial.
-      specialize (H0 a). spec H0.
-      1: left; trivial.
-      lia.
-  Qed.
-
-  Lemma path_in_popped_Zlengths:
-    forall (g: @DijkGG size inf) links s popped,
-      valid_path g (s, links) ->
-      acyclic_path g (s, links) ->
-      path_in_popped g popped (s, links) ->
-      Zlength links <= Zlength popped - 1.
-  Proof.
-    intros g.
-    induction links; intros; destruct popped.
-    + exfalso. apply (H1 s). left; trivial.
-    + rewrite Zlength_nil.
-      rewrite Zlength_cons_sub_1.
-      apply Zlength_nonneg.
-    + exfalso. apply (H1 s). left; trivial.
-    + rewrite Zlength_cons_sub_1, Zlength_cons.
-      replace s with (src g a) in * by (destruct H; lia). clear s.
-      assert (In (src g a) (v :: popped)). { apply H1. left. trivial. }
-                                           apply In_split in H2. destruct H2 as [l1 [l2 ?]].
-      specialize (IHlinks (dst g a) (l1 ++ l2)).
-      spec IHlinks.
-      1: apply valid_path_cons with (v0 := (src g a)); trivial.
-      spec IHlinks.
-      1: apply (acyclic_path_cons _ _ _ _ H); trivial.
-      spec IHlinks.
-      2: { assert (Zlength (v :: popped) = Zlength (l1 ++ src g a :: l2))
-          by congruence.
-           repeat rewrite Zlength_app in *.
-           repeat rewrite Zlength_cons in *. lia.
-      }
-      clear IHlinks.
-      red in H0. rewrite H2 in *. clear H2 popped v.
-      rewrite epath_to_vpath_cons_eq in H0; trivial.
-      rewrite NoDup_cons_iff in H0. destruct H0.
-      do 2 intro. specialize (H1 step).
-      spec H1.
-      1: {
-        destruct H3 as [? | [e' [? ?]]].
-        - simpl in H3. right. exists a. split; auto. left. trivial.
-        - right. exists e'. simpl in *; auto.
-      }
-      apply in_app_or in H1. apply in_or_app. destruct H1; auto.
-      destruct H1; auto. exfalso.
-      apply H0. subst step.
-      apply in_path_eq_epath_to_vpath; auto.
-      apply valid_path_tail in H. apply H.
-  Qed.
-
+    
   Lemma sanity_check_postcondition: forall (g: @DijkGG size inf) src dist prev,
     connected_dir g src ->
     (forall dst, vvalid g dst -> @inv_popped size inf g src (VList g) prev dist dst) ->

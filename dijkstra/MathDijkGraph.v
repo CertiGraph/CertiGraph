@@ -262,6 +262,63 @@ Proof.
   - apply H in n. contradiction.
 Qed.
 
+Lemma path_cost_pos:
+  forall (g: DijkGG) p,
+    valid_path g p ->
+    0 <= path_cost g p.
+Proof.
+  intros. apply acc_pos; [|Lia.lia].
+  intros. apply edge_cost_pos.
+Qed.
+
+Lemma path_cost_path_glue_lt:
+  forall (g: DijkGG) p1 p2 limit,
+    valid_path g p1 ->
+    valid_path g p2 ->
+    path_cost g (path_glue p1 p2) < limit ->
+    path_cost g p1 < limit /\ path_cost g p2 < limit.
+Proof.
+  intros.
+  rewrite (path_cost_path_glue g) in H1.
+  pose proof (path_cost_pos _ _ H).
+  pose proof (path_cost_pos _ _ H0).
+  split; lia.
+Qed.
+
+  Lemma evalid_dijk:
+    forall (g: DijkGG) a b,
+      0 <= elabel g (a,b) < inf -> 
+      evalid g (a,b).
+  Proof.
+    intros.
+    rewrite (evalid_meaning g); split.
+    1: apply edge_representable.
+    intro.  
+    unfold AdjMatGG_DijkGG in H0. simpl in H0.
+    lia.
+  Qed.
+(*    pose proof (inf_gt_largest_edge g).
+    intro.
+    replace (elabel g (a,b)) with inf in *.
+    ulia.
+  Qed.
+ *)
+
+  Lemma inf_bounded_above_dist: forall (g: DijkGG),
+      (size - 1) * (Int.max_signed / size) < inf.
+  Proof.
+    intros.
+    pose proof (inf_further_restricted g).
+    rewrite Z.mul_comm. trivial.
+  Qed.
+(*    apply Z.lt_trans with (m := (Int.max_signed - 1) / size * size); trivial.
+    pose proof (size_representable g).
+    apply Zmult_lt_compat_l; [|lia].
+    apply Z.div_str_pos.
+    pose proof (size_further_restricted g). ulia.
+  Qed.
+*)
+
 End MathDijkGraph.
 
 Existing Instance AdjMatGG_FiniteGraph.
