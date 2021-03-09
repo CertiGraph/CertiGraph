@@ -188,7 +188,7 @@ Proof.
        apply H8. left. trivial. }
   forward.
   rewrite harray_split. Intros.
-  forward_call (0, s-1, arr, arrc1). rep_lia.
+  forward_call (0, s-1, arr, arrc1). 
   destruct arrc1. rewrite Zlength_nil in H5. lia.
   generalize (foot_split_spec _ (h :: arrc1)). case foot_split. destruct o. 2: intros [? ?]; subst; discriminate.
   intros. destruct l. destruct arrc1. 2: discriminate. inversion H12. subst h0. clear H12.
@@ -222,8 +222,7 @@ Proof.
   rewrite Zexchange_head_foot.
   rewrite harray_split. Intros.
   forward_call (0, arr, (h0 :: l), s-1, 0).
-  { split. rep_lia. split. autorewrite with sublist in *. rep_lia.
-    split. rep_lia. split. intros _. rep_lia.
+  { split. autorewrite with sublist in *. rep_lia.
     apply weak_heapOrdered_bounded_root_weak_heapOrdered.
     eapply weak_heapOrdered_root.
     apply heapOrdered_cutfoot in H6. apply H6. }
@@ -284,7 +283,6 @@ Proof.
   Intros s arr_contents'.
   generalize (Permutation_Zlength _ _ _ H5); intro.
   forward_call (s, arr, arr_contents', size, s).
-  { split. lia. split. congruence. split. lia. split; auto. }
   Intros arr_contents''.
   forward_if (s > 0).
   { forward. subst s. Exists arr_contents''. entailer!.
@@ -566,7 +564,7 @@ Proof.
   forward.
   unfold harray. entailer!.
   forward_call (0, Zlength l, arr, root :: l).
-  entailer!. simpl. congruence. lia.
+  entailer!. simpl. congruence. 
   forward.
   forward.
   unfold harray at 1. (* Not delighted with this unfold... *)
@@ -606,10 +604,10 @@ Proof.
     destruct l0. 2: destruct l0; discriminate.
     inversion H. subst foot. clear H Hx.
     simpl.
-    forward_call (0, arr, @nil heap_item, 0, 0); rewrite Zlength_nil. 
+    forward_call (0, arr, @nil heap_item, 0, 0). rewrite Zlength_nil. 
       { rewrite Zexchange_eq. unfold harray. rewrite data_at_isptr. entailer. (* Surely there's a less heavy hammer way to do this? *)
         rewrite data_at_zero_array_eq; auto. entailer!. }
-      { split; auto. split; auto. split. rep_lia. split. rep_lia.
+      { split. split; inversion 1.
         apply weak_heapOrdered_bounded_root_weak_heapOrdered.
         apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
     (* Prove postcondition *)
@@ -627,10 +625,7 @@ Proof.
     assert (Zlength (h :: l) = Zlength (root :: l0)). { rewrite H5, Zlength_app, Zlength_one, Zlength_cons. lia. }
     rewrite H3, Zexchange_head_foot. rewrite harray_split.
     forward_call (0, arr, (foot :: l0), Zlength (foot :: l0), 0). entailer!.
-      { split. rewrite Zlength_cons. generalize (Zlength_nonneg l0). lia.
-        split; trivial. split. rep_lia.
-        (* Here is where we use the bound. *)
-        split. intros _. generalize (Zlength_nonneg junk); intro.
+      { split. intros _. generalize (Zlength_nonneg junk); intro.
         simpl in H2. repeat rewrite Zlength_cons in *. rewrite Zlength_app in H2. lia.
         apply weak_heapOrdered_bounded_root_weak_heapOrdered.
         apply weak_heapOrdered_root with root.

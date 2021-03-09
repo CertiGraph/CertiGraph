@@ -722,6 +722,7 @@ Proof.
 intros.
 destruct l'.
 rewrite lseg_nil_eq.
+pose proof ptr_eq_nullval.
 normalize.
 apply lseg_cons_right_null.
 rewrite lseg_cons_eq.
@@ -736,6 +737,7 @@ apply sepcon_derives; auto.
 apply sepcon_derives; auto.
 apply lseg_cons_right_neq; auto.
 Qed.
+
 
 Lemma lseg_unroll_right (ls: listspec list_structid list_link list_token): forall sh sh' l x z ,
     lseg ls sh sh' l x z = (!! (ptr_eq x z) && !! (l=nil) && emp) || lseg_cons_right ls sh sh' l x z.
@@ -1260,6 +1262,7 @@ Proof.
 intros.
 destruct l'.
 rewrite lseg_nil_eq.
+pose proof ptr_eq_nullval.
 normalize.
 apply lseg_cons_right_null.
 rewrite lseg_cons_eq.

@@ -751,7 +751,17 @@ Proof.
   destruct H2 as [lp [lq [? [? [? [? ?]]]]]].
   exists lp, lq. split5; auto.
   + firstorder.
+    cut (P x \/ Q x).
+    2: left; trivial.
+    intros. rewrite <- H0, H6 in H8.
+    destruct H8; [trivial | exfalso].
+    apply (H1 x); trivial. apply H5; trivial.
   + firstorder.
+    cut (P x \/ Q x).
+    2: right; trivial.
+    intros. rewrite <- H0, H6 in H8.
+    destruct H8; [exfalso | trivial].
+    apply (H1 x); trivial. apply H4; trivial.
   + apply NoDup_Permutation; auto.
     - apply NoDup_app_inv; auto. firstorder.
     - intro; rewrite in_app_iff. apply H6. 

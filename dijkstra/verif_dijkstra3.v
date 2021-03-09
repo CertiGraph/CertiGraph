@@ -397,7 +397,6 @@ Section DijkstraProof.
     - rename keys into keys0.
       forward. forward.
       forward_call (priq_ptr, h0, inf, Int.repr i).
-      1: lia.
       rename H7 into Hc.
       rename H8 into Hg.
       rename H9 into Hn.
@@ -920,7 +919,6 @@ Section DijkstraProof.
           forward_call (priq_ptr,
                         hc,
                         pointer_val_val ti). 
-          1: lia.
 
           (* hd is skipped because it is "head" *)
           Intros temp. destruct temp as [he min_item]. 
