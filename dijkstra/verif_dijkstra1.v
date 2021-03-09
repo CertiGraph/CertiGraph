@@ -1010,12 +1010,12 @@ Section DijkstraProof.
             2: destruct Haf as [Haf _]; simpl in Haf; auto.
             clear Hconn.
 
-(* valid_path_acyclic here? *)
-apply (valid_path_acyclic _ _ _ _ Haf) in Hag.
-destruct Hag as [[x links2u'] [Hag0 [Hag1 [Hag2 Hag3]]]].
-assert (x = src). { destruct Hag1. apply H. } subst x.
-destruct (path_leaving_popped_stronger
-            g links2u' src u (v::popped))
+            (* valid_path_acyclic here? *)
+            apply (valid_path_acyclic _ _ _ _ Haf) in Hag.
+            destruct Hag as [[x links2u'] [Hag0 [Hag1 [Hag2 Hag3]]]].
+            assert (x = src). { destruct Hag1. apply H. } subst x.
+            destruct (path_leaving_popped_stronger
+                        g links2u' src u (v::popped))
               as
                 [p1
                    [mom'
@@ -1023,23 +1023,26 @@ destruct (path_leaving_popped_stronger
                          [p2
                             [? [? [? [? [? [? [? [? [? [? [? ?]]]]]]]]]]]]]]];
               trivial.
-{
-generalize (size_representable g); intro Hsz.
-eapply Z.le_lt_trans.
-apply path_cost_upper_bound.
-2: { intros. apply valid_edge_bounds. eapply valid_path_evalid; eauto. }
-apply Z.div_pos; rep_lia.
-pose proof (one size). spec H. lia. specialize (H _ Hag2).
-spec H.
-intros. rewrite <- (vvalid_meaning g).
-eapply valid_path_valid. apply Hag3. apply in_path_eq_epath_to_vpath; auto.
-rewrite Zlength_epath_to_vpath in H.
-pose proof (inf_further_restricted g).
-
-eapply Z.le_lt_trans. 2: apply H0. rewrite Z.mul_comm.
-apply Zmult_le_compat_l. lia.
-apply Z.div_pos; rep_lia. }
-
+            {
+              generalize (size_representable g); intro Hsz.
+              eapply Z.le_lt_trans.
+              apply path_cost_upper_bound.
+              2: { intros. apply valid_edge_bounds. eapply valid_path_evalid; eauto. }
+              apply Z.div_pos; rep_lia.
+              pose proof (NoDup_all_bounded_Zlength size). spec H. lia. specialize (H _ Hag2).
+              spec H.
+              intros. rewrite <- (vvalid_meaning g).
+              eapply valid_path_valid. apply Hag3. apply in_path_eq_epath_to_vpath; auto.
+              rewrite Zlength_epath_to_vpath in H.
+              pose proof (inf_further_restricted g).
+              
+              eapply Z.le_lt_trans. 2: apply H0. rewrite Z.mul_comm.
+              apply Zmult_le_compat_l.
+              unfold path_cost.E, E in *.
+              ulia.
+              apply Z.div_pos; rep_lia.
+            }
+            
             (* child' is in heap, or is u
                by minimality of u, child's dist-cost is inf
                by inv_unpopped on child', child' should have < inf cost.
@@ -1304,7 +1307,7 @@ apply Z.div_pos; rep_lia. }
                exists (src, []). split3.
                ** split3; [| |split3; [| |split]]; trivial.
                   --- split; trivial.
-                  --- rewrite path_cost.path_cost_zero.
+                  --- rewrite (path_cost_zero g).
                       apply Z.mul_nonneg_nonneg. lia.
                       apply Z.div_pos; lia.
                   --- apply Forall_forall.
@@ -1317,7 +1320,7 @@ apply Z.div_pos; rep_lia. }
                       subst step. simpl; left; trivial.
                   --- destruct H21 as [? [? _]].
                       inversion H21.
-               ** red. intros. rewrite path_cost.path_cost_zero; try ulia.
+               ** red. intros. rewrite (path_cost_zero g); try ulia.
                   apply path_cost_pos; trivial.
   
             ++ intros.
@@ -1531,7 +1534,7 @@ apply Z.div_pos; rep_lia. }
                 pose proof (inf_further_restricted g).
                 assert (0 <= size) by ulia.
                 red in Had. rewrite Forall_forall in Had.
-                pose proof (one size H26 popped' Hae Had).
+                pose proof (NoDup_all_bounded_Zlength size H26 popped' Hae Had).
                 apply Zlt_not_le in H25.
                 apply H25.
                 apply Z.le_trans with (m := (size - 1) * (Int.max_signed / size)); trivial.
@@ -1595,12 +1598,12 @@ apply Z.div_pos; rep_lia. }
                   we were forced to lower
                   inf's upper bound
                   *)
-split. lia.
-clear - H22 Hbb g.
-transitivity ((size - 1) * (Int.max_signed / size) + Int.max_signed / size). lia.
-rewrite Z.mul_sub_distr_r, Z.mul_1_l, Z.sub_add.
-apply Z.mul_div_le.
-pose proof (size_representable g). lia.
+                 split. lia.
+                 clear - H22 Hbb g.
+                 transitivity ((size - 1) * (Int.max_signed / size) + Int.max_signed / size). lia.
+                 rewrite Z.mul_sub_distr_r, Z.mul_1_l, Z.sub_add.
+                 apply Z.mul_div_le.
+                 pose proof (size_representable g). lia.
                }
                thaw FR.
                forward. forward. forward_if.
@@ -1650,7 +1653,7 @@ pose proof (size_representable g). lia.
                   Exists popped'.
                   Exists hf.
                   repeat rewrite <- upd_Znth_map.
-                  entailer!.
+                                   entailer!.
 
                   clear H38 H39 H40 H41 H42 H43 H44 H45 H46
                         H47 H48 H49 H50
@@ -1884,7 +1887,9 @@ pose proof (size_representable g). lia.
                      spec H8. apply Z.div_pos; ulia. 
                      spec H8. intros.
                      pose proof (valid_edge_bounds g e). spec H10.
-                     eapply valid_path_evalid; eauto. lia.
+                     eapply valid_path_evalid; eauto.
+                     unfold path_cost.E, E in *.
+                     ulia.
                      rewrite H4 in *. clear dist' H38 H4.
                      assert (Zlength links <= size - 2) by ulia.
                      assert (path_cost g (src, links) <= (size - 2) * (Int.max_signed / size)). {

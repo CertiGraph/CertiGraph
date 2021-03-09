@@ -9,9 +9,7 @@ Section DijkstraSpecPure.
   Context {inf : Z}.
   Context {V_EqDec : EquivDec.EqDec V eq}. 
   Context {E_EqDec : EquivDec.EqDec E eq}. 
-
-  Definition acyclic_path (g: @DijkGG size inf) p := NoDup (epath_to_vpath g p).
-
+  
   Definition connected_dir (g: @DijkGG size inf) src :=
     forall v,
       vvalid g v ->
@@ -20,9 +18,6 @@ Section DijkstraSpecPure.
   Definition path_correct (g: @DijkGG size inf)
              (prev: list V) (dist: list Z) src dst p : Prop  :=
     valid_path g p /\
-    (* I. II. add acyclic p here? 
-       or... p's cost is bounded somehow
-     *)
     path_ends g p src dst /\
     path_cost g p <= (size - 1) * (Int.max_signed / size) /\ 
     Znth dst dist = path_cost g p /\
@@ -95,13 +90,7 @@ Section DijkstraSpecPure.
       In m popped ->
       path_correct g prev dist src m p2m ->
       path_in_popped g popped p2m ->
-      ~ valid_path g (path_glue p2m (m, [(m, dst)])).
-  (* II. path_cost (path_glue p2m (m, [(m, dst)])) >= inf *)
-
-  (* p2m has size-2 edges at most
-     (path_glue p2m (m, [(m, dst)])) has size-1 at most *)
-  (* every path has an acyclic subpath that still connects src to dst *)
-  
+      ~ valid_path g (path_glue p2m (m, [(m, dst)])).  
 
   Definition inv_unseen_weak (g : DijkGG) (src: V)
              (popped prev: list V) (dist: list Z) (dst u : V) :=
