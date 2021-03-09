@@ -640,7 +640,7 @@ assert (connected_by_path g p u v). split.
 apply valid_upath_exists_list_edges'. exists l; auto. destruct H1. auto.
 pose proof (forest_bridge1 g u v H e_evalid).
 assert (In (u,v) l). unfold bridge in H5. apply (H5 p l); auto.
-apply (fits_upath_evalid _ _ _ _ H2) in H6. subst e. contradiction.
+apply (fits_upath_evalid _ _ _ _ H2) in H6. rewrite X in *. contradiction.
 }
 Qed.
 

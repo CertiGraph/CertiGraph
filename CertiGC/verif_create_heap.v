@@ -67,7 +67,7 @@ Lemma body_create_heap: semax_body Vprog Gprog f_create_heap create_heap_spec.
 Proof.
   start_function.
   forward_call (heap_type, gv).
-  1: simpl; split; split; [lia|rep_lia| |cbv]; reflexivity. Intros h. if_tac.
+  Intros h. if_tac.
   - subst h; forward_if False; [|inversion H].
     unfold all_string_constants; Intros;
       forward_call ((gv ___stringlit_8),
@@ -86,8 +86,7 @@ Proof.
     rewrite sublist_list_repeat by lia. simpl list_repeat at 1.
     rewrite space_array_1_eq. Intros. forward_call (Ews, h, Z.shiftl 1 16, gv, sh).
     (* make succeed *)
-    + split; [apply writable_Ews | split; [assumption|]].
-      rewrite MAX_SPACE_SIZE_eq. compute; split; [discriminate | reflexivity].
+    + rewrite MAX_SPACE_SIZE_eq. compute; split; [discriminate | reflexivity].
     + Intros p0. freeze [0;1;2;3;5] FR.
       (* change back to "data_at sh heap_type v h" *)
       rewrite <- space_array_1_eq. rewrite sublist_list_repeat by lia.

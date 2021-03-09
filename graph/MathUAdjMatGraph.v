@@ -702,7 +702,7 @@ Section Mathematical_Undirected_AdjMat_Model.
     induction l; intros. simpl; auto.
     simpl. replace (elabel g a) with (elabel t a). rewrite IHl; auto.
     apply incl_cons_inv in H0; auto.
-    apply H. rewrite <- EList_evalid. apply H0. left; auto.
+    destruct H0; trivial. apply H. rewrite <- EList_evalid. apply H0. left; auto.
   Qed.
 
   Lemma Zlt_Zmin:

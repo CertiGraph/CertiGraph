@@ -109,7 +109,7 @@ Proof.
       - apply Z.le_lt_trans with (Int.max_signed / 8); [intuition | apply Z.div_lt; lia].
     } rewrite !Int.signed_repr; auto. split. 1: lia.
     assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
-  - split. auto. assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
+  - assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
   - Intros rt.
     assert (memory_block sh (V * 8) (pointer_val_val rt) = data_at_ sh (tarray vertex_type V) (pointer_val_val rt)). {
       assert (memory_block sh (V * 8) (pointer_val_val rt) = memory_block sh (sizeof (tarray vertex_type V)) (pointer_val_val rt)). {
@@ -353,5 +353,5 @@ Proof.
                  --- subst j. destruct (Z.eq_dec y_root y_root). 2: exfalso; apply n1; auto. destruct (Z.eq_dec x_root y_root). 1: exfalso; auto. destruct (Z_lt_dec x_root 0).
                      1: destruct H9; exfalso; lia. auto.
                  --- destruct (Z.eq_dec y_root j). 1: exfalso; apply n1; auto. destruct (Z.eq_dec x_root j). 1: exfalso; auto. auto.
-    + Intros g'. apply (exp_right g'). entailer!.
+    + Intros g'. Exists g'. entailer!.
 Qed.
