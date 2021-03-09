@@ -56,7 +56,6 @@ Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
 Proof.
   start_function.
   forward_call (sizeof(Tstruct _structPQ noattr)).
-    { compute; split; inversion 1. }
   Intros pq.
   sep_apply malloc_pq.
   forward_call (sizeof(tuint) * size). 
@@ -354,7 +353,6 @@ Proof.
   forward. { unfold linked_heap_array, heap_array, lookup_array. Intros. entailer!. }
   forward_call (0, Zlength l, arr, root :: l, lookup, lookup_contents).
     { entailer!. simpl. congruence. }
-    { lia. }
   Intros lookup_contents'.
   forward.
   forward.
@@ -397,12 +395,12 @@ Proof.
     destruct l0. 2: destruct l0; discriminate.
     inversion H. subst foot. clear H Hx.
     simpl.
-    forward_call (0, arr, @nil heap_item, 0, lookup, lookup_contents'); rewrite Zlength_nil. 
+    forward_call (0, arr, @nil heap_item, 0, lookup, lookup_contents');
+      try rewrite Zlength_nil. 
       { unfold linked_heap_array, heap_array. rewrite data_at_isptr. entailer. (* Surely there's a less heavy hammer way to do this? *)
         rewrite data_at_zero_array_eq; auto. entailer!. split.
-        destruct H5; trivial. repeat intro. rewrite Zlength_nil in H14. lia. }
-      { split; auto. split; auto. split. rep_lia. split. rep_lia.
-        apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
+        destruct H5; trivial. repeat intro. rewrite Zlength_nil in H15. lia. }
+      { apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
     (* Prove postcondition *)
     Intro vret. destruct vret as [vret lookup_contents''].
     Exists (n, vret) root. entailer. (* Surely there's a less heavy hammer way to do this? *)
@@ -424,21 +422,21 @@ Proof.
     apply linked_correctly_app3; trivial.
     apply linked_correctly'_shuffle with lookup_contents; trivial.
     + intros.
-      rewrite H18; trivial. intros. rewrite Zlength_one in H20. assert (j = 0) by lia. subst j.
+      rewrite H19; trivial. intros. rewrite Zlength_one in H21. assert (j = 0) by lia. subst j.
       change (Znth 0 [root]) with root.
       intro.
-      clear -Hz H21 H19.
+      clear -Hz H22 H20.
       destruct Hz.
       assert (0 <= 0 < Zlength (root :: junk)) by (rewrite Zlength_cons; rep_lia).
       destruct (H0 _ H1).
       assert (0 <= (1 + i0) < Zlength (root :: junk)) by (rewrite Zlength_cons; rep_lia).
       destruct (H0 _ H4).
-      clear -H21 H3 H6 H19.
-      rewrite Znth_0_cons, H21 in H3.
+      clear -H22 H3 H6 H20.
+      rewrite Znth_0_cons, H22 in H3.
       change (root :: junk) with ([root] ++ junk) in H6.
       rewrite Znth_app2 in H6; rewrite Zlength_one in *. 2: lia.
       replace (1 + i0 - 1) with i0 in H6 by lia. rewrite H3 in H6. lia.
-    + intros. rewrite H17; auto. rewrite Zlength_nil. lia.
+    + intros. rewrite H18; auto. rewrite Zlength_nil. lia.
   * (* main line: heap still has items in it *)
     destruct l0; inversion H. subst h0.
     assert (Zlength (h :: l) = Zlength (root :: l0)).
@@ -452,10 +450,7 @@ Proof.
       rewrite Zexchange_head_foot in H5. trivial. }
     rewrite linked_heap_array_split. Intros.
     forward_call (0, arr, (foot :: l0), Zlength (foot :: l0), lookup, lookup_contents').
-      { split. rewrite Zlength_cons. generalize (Zlength_nonneg l0). lia.
-        split; trivial. split. rep_lia.
-        (* Here is where we use the bound. *)
-        split. intros _. generalize (Zlength_nonneg junk); intro.
+      { split. intros _. generalize (Zlength_nonneg junk); intro.
         simpl in H2. repeat rewrite Zlength_cons in *. rewrite Zlength_app in H2. lia.
         apply weak_heapOrdered_root with root.
         rewrite H8, app_comm_cons in H1.

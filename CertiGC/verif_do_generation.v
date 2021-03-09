@@ -159,8 +159,7 @@ Proof.
     rewrite Znth_map by (rewrite spaces_size; rep_lia).
     rewrite <- nth_space_Znth. unfold space_tri at 2 3. thaw FR.
     assert (graph_has_gen g2 from) by (destruct H35 as [_ [? _]]; assumption).
-    rewrite (graph_rep_reset g2 from) by assumption. Intros.
-    gather_SEP (heap_rest_rep (ti_heap t_info2)) (graph_rep (reset_graph from g2)).
+    rewrite (graph_rep_reset g2 from) by assumption. Intros.     
     sep_apply (heap_rest_rep_reset g2 t_info2 from (proj1 H34) H40).
     rewrite <- heap_struct_rep_eq.
     gather_SEP (data_at _ _ _ _) (heap_struct_rep _ _ _) (heap_rest_rep _).
