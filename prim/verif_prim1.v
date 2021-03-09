@@ -259,7 +259,6 @@ forward_call (v_out, (list_repeat (Z.to_nat size) Vundef), 0).
 simpl sizeof. rewrite Z_div_mult. 
 rewrite data_at__tarray.
 unfold default_val. simpl. entailer!. lia.
-split3; trivial. red. rep_lia.
 
 assert (Hrbound: 0 <= r < size). apply (vert_bound g) in Hprecon_1; auto.
 rewrite <- Heqv_key.
@@ -284,7 +283,6 @@ assert (HZlength_starting_keys: Zlength starting_keys = size). {
 unfold repable_signed in inf_repable.
 (*push all vertices into priq*)
 forward_call(tt).
-split; lia. 
 Intro priq_ptr.
 remember (pointer_val_val priq_ptr) as v_pq.
 rewrite <- Heqv_out.
@@ -327,7 +325,7 @@ assert (Znth i starting_keys = Vint (Int.repr (Znth i (upd_Znth r (list_repeat (
   rewrite Zlength_upd_Znth. rewrite Zlength_list_repeat; lia.
 }
 forward_call (v_pq, i, Znth i (upd_Znth r (list_repeat (Z.to_nat size) inf) 0), sublist 0 i starting_keys ++ sublist i size (list_repeat (Z.to_nat size) Vundef)).
-split. auto. unfold weight_inrange_priq.
+unfold weight_inrange_priq.
 destruct (Z.eq_dec i r). subst i. rewrite upd_Znth_same. split. pose proof Int.min_signed_neg; lia.
 pose proof (inf_representable g); lia.
 rewrite Zlength_list_repeat; lia.
