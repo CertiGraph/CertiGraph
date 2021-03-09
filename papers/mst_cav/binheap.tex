@@ -108,7 +108,7 @@ Given that in \S\ref{sec:heapinsertremove} we already generalized the specificat
 \subsection{Modifying an element's priority}
 \label{sec:modpri}
 
-In contrast to \texttt{heapify} and \texttt{heapsort}, standard algorithms textbooks are vague on the implementation of \texttt{edit\_priority}~\cite{clrs,sedgewick}.  The idea is that, during \texttt{insert}, each item is associated not only with its usual \texttt{int} priority
+In contrast to \texttt{heapify} and \texttt{heapsort}, standard algorithms textbooks are vague on the implementation of \texttt{edit\_priority}~\cite{clrs,sedgewick,DBLP:books/daglib/0015106}.  The idea is that, during \texttt{insert}, each item is associated not only with its usual \texttt{int} priority
 but also a unique \texttt{unsigned int} ``key''.
 This key is generated during \texttt{insert} and returned to the client.
 Internally, the binary heap maintains a secondary array \texttt{key\_table} that maps each key to the current location of the associated item within the primary heap array. The client calls \texttt{edit\_priority} by supplying the key associated with the item
