@@ -1,11 +1,11 @@
 Here we discuss our verifications of the classic MST algorithms Prim and Kruskal.  Although our machine-checked proofs are about real~C~code, in this section we take a higher-level approach than we did in \S\ref{sec:dijkstra}, focusing on our key algorithmic findings and overall experience.  Accordingly, we only provide pseudocode for Prim's algorithm rather than a decorated program and do not show any code for Kruskal's.  Our development contains our~C~code and formal proofs~\cite{anonrepo}.
 
-\vspace*{-0.25em}
+%\vspace*{-0.25em}
 
 \subsection{Prim's Algorithm}
 \label{sec:prim}
 
-\vspace*{-0.25em}
+%\vspace*{-0.25em}
 
 \begin{figure}[t]
 \[
@@ -43,9 +43,9 @@ MST-NOROOT-PRIM(G,w):
 \end{minipage}
 \end{array}
 \]
-\vspace*{-1.25em}
+%\vspace*{-1.25em}
 \caption{Left: Prim's algorithm from CLRS~\cite{clrs}. Right: the same omitting line 5.}
-\vspace*{-1.25em}
+%\vspace*{-1.25em}
 \label{fig:prims}
 \end{figure}
 
@@ -53,14 +53,14 @@ We put the pseudocode for Prim's algorithm in figure~\ref{fig:prims}; the code o
 
 Indeed, our initial verifications of~C~code were largely ``turning the crank'' once we had the definitions and associated lemma support for pure/abstract undirected graphs, forests, \emph{etc.} discussed in \S\ref{sec:newundirected}.  Accordingly, our initial contribution was a demonstration that this new graph machinery was sufficient to verify real code.  We also proved that our extensions to CertiGraph from~\S\ref{sec:extensions} were generic rather than verification-specific by reusing much pure and spatial reasoning that had been originally developed for our verification of Dijkstra.
 
-\vspace*{-0.25em}
+%\vspace*{-0.25em}
 
 \subsection{Prim's Algorithm handles multiple components out of the box}
 \label{sec:primforest}
 
-\vspace*{-0.25em}
+%\vspace*{-0.25em}
 
-Textbook discussions of Prim's algorithm are usually limited to single-component input graphs (\emph{a.k.a.} connected graphs), producing a minimum spanning tree.  It is widely believed that Prim's is not directly applicable to graphs with multiple components, which should produce a minimum spanning forest.  For example, both Rozen~\cite{rozen} and Sedgewick~\cite{sedgewick} leave the extension to multiple components as an formal exercise for the reader, whereas Kepner and Gilbert suggest that multiple-component graphs should be handled by first finding the components and then running Prim on each component~\cite{kepnergilbert}.  This appears to be the standard solution, appearing in numerous lectures and implementations\footnote{Another standard solution is to use Kruskal's \hide{or Boruvka's~\cite{boruuvka1926jistem}} algorithm instead.}. %CLRS does not mention the case of disconnected graphs
+Textbook discussions of Prim's algorithm are usually limited to single-component input graphs (\emph{a.k.a.} connected graphs), producing a minimum spanning tree.  It is widely believed that Prim's is not directly applicable to graphs with multiple components, which should produce a minimum spanning forest.  For example, both Rozen~\cite{rozen} and Sedgewick \emph{et al.}~\cite{sedgewick,DBLP:books/daglib/0029345} leave the extension to multiple components as an formal exercise for the reader, whereas Kepner and Gilbert suggest that multiple-component graphs should be handled by first finding the components and then running Prim on each component~\cite{kepnergilbert}.  This appears to be the standard solution, appearing in numerous lectures and implementations\footnote{Another standard solution is to use Kruskal's \hide{or Boruvka's~\cite{boruuvka1926jistem}} algorithm instead.}. %CLRS does not mention the case of disconnected graphs
 
 After we completed our initial verification, a close examination of our formal invariants showed us that the algorithm \emph{exactly as given by standard textbooks} will properly handle multi-component graphs \textit{in a single run}.  The confusion starts because, in a fully connected graph, any vertex $\texttt{u}$ removed from the PQ on line~8 must have $\texttt{u.key} < \texttt{INF}$, \emph{i.e.} must be immediately reachable from the spanning tree that is in the process of being built.  However, nothing in the code relies upon this connectedness fact!  All we need is that $\texttt{u}$ is the ``closest vertex'' to the ``current component.''  If $\texttt{u.key}=\texttt{INF}$ \emph{and} \texttt{u} is a minimum of the PQ, then it simply means that the ``previous component'' is done, and we have started spanning tree construction on a new unconnected component ``rooted'' at \texttt{u}, yielding a forest.  The node $\texttt{u}$'s parent will remain \texttt{NIL}, at it was after the setup loop on line~4, indicating that it is the root of a spanning tree.  Its \texttt{key} will be $\texttt{INF}$ rather than $0$, but the \texttt{key}s are \emph{internal to Prim's algorithm}: clients only get back the spanning forest as encoded in the \texttt{parent} pointers\footnote{The \texttt{key}s simply record the edge-weight connecting a vertex to its candidate parent; recall that line~12 is really a call to the PQ's \texttt{edit\_priority}.  If a client wishes to know this edge weight, it can simply look up the edge in the graph.}.
 
@@ -70,8 +70,8 @@ A little further thought led to the realization that since Prim can handle arbit
 \subsection{Related work on Prim in algorithms and formal methods}
 \label{sec:relworkprim}
 
-Prim's algorithm was in fact first developed by the Czech mathematician Vojt\v{e}ch Jarn\'{i}k in 1930~\cite{prim1:jarnik} before being rediscovered by Robert Prim in 1957~\cite{prim2:prim} and a third time by Edsger~W.~Dijkstra in 1959~\cite{prim3:dijkstra}.  Both Prim's and Dijkstra's treatment explicitly assumes a connected graph; although we cannot read Czech, some time with Google translate suggests that Jarn\'{i}k's treatment probably does the same.  The modern textbooks we surveyed \cite{kepnergilbert,sedgewick,rozen,DBLP:books/daglib/0022194,clrs,DBLP:books/daglib/0015106} seem to derive from either Prim's or Dijkstra's treatment.
-More casual references such as Wikipedia~\cite{prim:wiki} and innumerable lecture slides are presumably derived from the textbooks cited.  We have not found any references that state that Prim's algorithm \emph{without modification} applies to multi-component graphs, even when executable code is provided: \emph{e.g.}, Heineman \emph{et al.} provide C++ code that aligns closely with our C code~\cite{heineman2008algorithms}, but do not mention that their code works equally well on multi-component graphs.  Indeed, many sources promulgate the false proposition that modifications to the algorithm are necessary to handle multi-component graphs (\emph{e.g.},~\cite{kepnergilbert,sedgewick,rozen,prim:wiki}).  Likewise, we have found no reference that removes the initialization step (line~5~in figure~\ref{fig:prims}) from the standard algorithm.
+Prim's algorithm was in fact first developed by the Czech mathematician Vojt\v{e}ch Jarn\'{i}k in 1930~\cite{prim1:jarnik} before being rediscovered by Robert Prim in 1957~\cite{prim2:prim} and a third time by Edsger~W.~Dijkstra in 1959~\cite{prim3:dijkstra}.  Both Prim's and Dijkstra's treatment explicitly assumes a connected graph; although we cannot read Czech, some time with Google translate suggests that Jarn\'{i}k's treatment probably does the same.  The textbooks we surveyed \cite{kepnergilbert,sedgewick,DBLP:books/daglib/0029345,rozen,DBLP:books/daglib/0022194,clrs,DBLP:books/daglib/0015106} seem to derive from Prim's and/or Dijkstra's treatment.
+More casual references such as Wikipedia~\cite{prim:wiki} and innumerable lecture slides are presumably derived from the textbooks cited.  We have not found any references that state that Prim's algorithm \emph{without modification} applies to multi-component graphs, even when executable code is provided: \emph{e.g.}, Heineman \emph{et al.} provide C++ code that aligns closely with our C code~\cite{heineman2008algorithms}, but do not mention that their code works equally well on multi-component graphs.  Indeed, many sources promulgate the false proposition that modifications to the algorithm are needed to handle multi-component graphs (\emph{e.g.},~\cite{kepnergilbert,sedgewick,DBLP:books/daglib/0029345,rozen,prim:wiki}).  Likewise, we have found no reference that removes the initialization step (line~5~in figure~\ref{fig:prims}) from the standard algorithm.
 
 Prim's algorithm has been the focus of a few previous formalization efforts.  Guttman formalised and proved the correctness of Prim's algorithm using Stone-Kleene relation algebras in Isabelle/HOL~\cite{DBLP:conf/ictac/Guttmann16}.  He works in an idealized formal environment that does not require the development of explicit data structures; his code does not appear to be executable.  Lammich \emph{et al.} provided a verification of Prim's algorithm~\cite{DBLP:journals/afp/LammichN19}.  Lammich \emph{et al.} also work within the idealized formal environment of Isabelle/HOL, but in contrast to Guttman develop efficient purely functional data structures and extract them to executable code.  Both Guttman and Lammich explicitly require that the input graph be connected. % and produce a tree.
 

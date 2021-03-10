@@ -1,12 +1,12 @@
 We begin with the briefest of introductions to CertiGraph's core structure and then detail our extensions we make to various levels of
 CertiGraph in service of our Dijkstra, Prim, and Kruskal verifications.
-Ignoring modularity and eliding elements not used in our work, 
+Ignoring modularity and eliding elements not used in our work,
 a mathematical graph in CertiGraph is a tuple:
 ($\mathcal{V}$, $\mathcal{E}$, \texttt{vvalid}, \texttt{evalid},
-\texttt{src}, \texttt{dst}, \texttt{vlabel}, \texttt{elabel}, 
+\texttt{src}, \texttt{dst}, \texttt{vlabel}, \texttt{elabel},
 \texttt{sound}). $\mathcal{V}$/$\mathcal{E}$ are the carrier
 types of vertices/edges, \texttt{vvalid}/\texttt{evalid}
-place restrictions specifying whether a vertex/edge is 
+place restrictions specifying whether a vertex/edge is
 valid\footnote{Validity denotes presence in the graph: \emph{e.g.}, if we are using $\mathbb{Z}$ as the carrier type $\mathcal{V}$, and have
 only 7 vertices, then $\texttt{vvalid}(x)$ is probably the proposition $0 \le x < 7$).},
 and $\texttt{src}/\texttt{dst} : \mathcal{E} \to \mathcal{V}$ map edges to their source/destination.
@@ -71,17 +71,17 @@ arithmetic that the second flavor uses to access cells, there is a
 more subtle point: the first and second enjoy a contiguous block of
 memory, but the third does not: it is an allocated ``spine'' with pointers to separately-allocated rows.
 For a taste, the spatial representation of the first is:
-\vspace{-0.5em}
+%\vspace{-0.5em}
 \begin{equation*}
-\begin{split}
-\m{arr\_addr} (\m{ptr}, \m{i},\texttt{size}) \defeq~&
+\begin{array}{r@{\quad}c@{\quad}l}
+\m{arr\_addr} (\m{ptr}, \m{i},\texttt{size}) & \defeq &
   \m{ptr} + (\m{i} \times \hide{\texttt{sizeof}(\texttt{int}) \times} \texttt{size}) \\
-\mathsf{array}(\m{ptr},\m{list}) \defeq~& \underset{\m{i} \in [0, \lvert\m{list}\rvert)}{\bigstar} (\m{ptr} + \m{i}) \mapsto \m{list}[\m{i}]) \\
-\p{arr\_rep}(\gamma, \m{i}, \m{ptr}) \defeq~& \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
-&\mathsf{array}(\m{arr\_addr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
-\vspace{1em}
-\p{graph\_rep}(\gamma, \m{g\_addr}, \_) \defeq~& \underset{\m{v} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
-\end{split}
+\mathsf{array}(\m{ptr},\m{list}) & \defeq& \underset{\m{i} \in [0, \lvert\m{list}\rvert)}{\bigstar} (\m{ptr} + \m{i}) \mapsto \m{list}[\m{i}]) \\
+\p{arr\_rep}(\gamma, \m{i}, \m{ptr}) & \defeq & \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
+&&\mathsf{array}(\m{arr\_addr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
+%\vspace{1em}
+\p{graph\_rep}(\gamma, \m{g\_addr}, \_) & \defeq & \underset{\m{v} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
+\end{array}
 \end{equation*}
 We use the separation logic $\ast$ in its iterated form
 to say that the arrays are separate in memory.  We elide details relating to object sizes, pointer alignment, and so forth, although our formal proofs handle such matters.
@@ -118,7 +118,7 @@ defines an \texttt{edge} as a
 the graph's size, edge count,
 and an array of \texttt{edge}s. Our spatial representation
 follows this pattern:
-\vspace{-0.5em}
+%\vspace{-0.5em}
 \begin{equation*}
 \begin{split}
 \p{graph\_rep}(\gamma, \m{g\_addr}, &\m{e\_addr})~\defeq~ \\
@@ -235,14 +235,14 @@ and this easily weakens to give \texttt{connected~g~u~v}.}
 \hide{
 With our basic undirectedness definitions at hand and with the assurance
 of mathematical compatability with prior directed work, we can begin in
-earnest.} 
+earnest.}
 
 
 %A \texttt{simple\_upath} is a valid \texttt{upath} that has no duplicate vertices.
 An undirected cycle (\texttt{ucycle}) is a valid non-empty \texttt{upath} whose first
 and last vertices are equal.  \hide{A \texttt{simple\_ucycle} is a \texttt{ucycle} whose
-only duplicate is the first/last vertex.} \note[not used]{A \texttt{connected\_graph}
-means that any two valid vertices are \texttt{connected}.}
+only duplicate is the first/last vertex.} A \texttt{connected\_graph}
+means that any two valid vertices are \texttt{connected}. % \note USED???
 \texttt{is\_partial\_graph f g} means everything in \texttt{f} is in \texttt{g}.
 We proceed:
 \lstset{style=CoqStyle}
@@ -261,7 +261,7 @@ The \texttt{strong\_evalid} predicate means that the
 \texttt{src} and \texttt{dst} of the edge are also valid, so
 \emph{e.g.} a valid edge cannot point to a deleted/absent vertex.
 The second conjunct of \texttt{uforest} is critical: a
-forest has no undirected cycles. The other definitions 
+forest has no undirected cycles. The other definitions
 are straightforward from there, and
 \texttt{minimum\_spanning\_forest f g} means that no other spanning forest has
 lower total edge cost than \texttt{f}.

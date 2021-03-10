@@ -27,11 +27,11 @@ Flow algebras should be compatible with existing separation logics; implementati
 
 Krishna \emph{et al.} are interested in concurrency~\cite{krishna2017go}; Raad \emph{et al.} provide another example of pen-and-paper reasoning about concurrent graph algorithms~\cite{DBLP:conf/aplas/RaadHVG16}.
 
-\vspace*{-0.25em}
+%\vspace*{-0.25em}
 
 \subsection{Future work}
 
-\vspace*{-0.25em}
+%\vspace*{-0.25em}
 
 We see several opportunities for decreasing the effort and/or increasing the automation in our approach.  At the level of Hoare tuples, we see opportunities for improved VST tactics to handle common cases we encounter in graph algorithms.  At the level of spatial predicates, we can continue to expand our library of graph constructions, for example for adjacency lists.  We also believe there are opportunities to increase modularity and automation at the interface between the spatial and the mathematical levels, \emph{e.g.} we sometimes compare~C~pointers to heap-represented graph
 nodes for equality, and due to the nature of our representations this equality check will be
@@ -42,9 +42,9 @@ The key advantage of having end-to-end machine-checked examples such as the ones
 that they guide the automation efforts by providing precise goals that are known to be strong
 enough to verify real code.
 
-\vspace*{-0.25em}
+%\vspace*{-0.25em}
 \subsection{Conclusion}
-\vspace*{-0.25em}
+%\vspace*{-0.25em}
 
 We extend the CertiGraph library to handle undirected graphs and several flavours of graphs with edge labels, both at the pure and at the spatial levels.  We verify the full functional correctness of the three classic graph algorithms of Dijkstra, Prim, and Kruskal.  We find nontrivial bounds on edge costs and infinity for Dijkstra and provide a novel specification for Prim.  We verify a binary heap with Floyd's \texttt{heapify} and \texttt{edit\_priority}.
 All of our code is in CompCert~C~and all of our proofs are machine-checked in Coq.

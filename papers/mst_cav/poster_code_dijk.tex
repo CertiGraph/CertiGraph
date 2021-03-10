@@ -43,9 +43,9 @@ $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist'}, \m{prev'}, \m{heap'
 {\color{red}\forall \m{dst}.~\m{dst} \in \gamma -> \m{inv\_popped}}(\gamma, \m{src}, {\color{red}\m{\gamma.V}, \m{prev''}, \m{dist''}, \m{dst}})}$ $\label{code:end}$
  freeN (temp); pq_free (pq); freeN (keys); return; }
 \end{lstlisting}
-\vspace{-1em}
+%\vspace{-1em}
 \caption{C code and proof sketch for Dijkstra's Algorithm.}
-\vspace{-1em}
+%\vspace{-1em}
 \label{fig:decorated}
 \end{figure}
 
@@ -60,4 +60,4 @@ $\color{OliveGreen}//~\braces{{\color{red}\exists \m{dist''}, \m{prev''},\m{heap
   \m{min(\texttt{dist[u]}, \m{heap'})} /|
   {\color{red}\m{heap''} = \m{heap'} [\texttt{keys[i]} \mapsto (\texttt{dist[i]},\texttt{i})]} /| \null \\
   {\m{\color{red}dijk\_correct}(\gamma, \texttt{src}, \m{popped'}, \m{\color{red}prev''}, \m{\color{red}dist''})}}$ $\label{code:caughtup}$
-}
+} 

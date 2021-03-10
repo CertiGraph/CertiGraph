@@ -96,7 +96,8 @@
 	mathescape=true,
 	showlines=true,
 	escapechar=`,
-	basicstyle=\scriptsize\tt,
+%	basicstyle=\scriptsize\tt,
+	basicstyle=\footnotesize\tt,
 	keywordstyle=\color{blue}, numbers=left,
 	numberstyle=\tiny, numbersep=5pt, boxpos=t
 }
@@ -115,7 +116,8 @@
     escapechar=`,
 	showstringspaces=false,
 	numbers=left,
-	basicstyle=\scriptsize\tt,
+	basicstyle=\footnotesize\tt
+%	basicstyle=\scriptsize\tt
 }
 
 \lstset{style=myTinyStyle}
@@ -144,11 +146,12 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 
 \begin{document}
 
-\hide{
+%\hide{
 	\author{Anshuman Mohan \and
 	Wei Xiang Leow \and
 %	Shengyi Wang\inst{2} \and
-	Aquinas Hobor} %\inst{1,2}}
+	Aquinas Hobor} %\inst{1,2}
+%}
 
 	%\authorrunning{A. Mohan et al.}
 % First names are abbreviated in the running head.
@@ -157,8 +160,8 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 	\institute{National University of Singapore}% \and
 %	Princeton University, USA \and
 %	Yale-NUS College, National University of Singapore}	
-}
-\author{ } \institute{ }
+%}
+%\author{ } \institute{ }
 	\maketitle
 	%\begin{frontmatter}
 	
@@ -190,12 +193,12 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 	%\author{}
 	
 	%\address{}
-	\vspace{-2em}
+%	\vspace{-2em}
 	
 	\begin{abstract}
-		\vspace{-1.2em}
+%		\vspace{-1.2em}
         We develop machine-checked verifications of the full functional correctness of C implementations of the eponymous graph algorithms of Dijkstra, Kruskal, and Prim.  We extend Wang \textit{et al.}'s CertiGraph platform \cite{DBLP:journals/pacmpl/WangCMH19} to reason about labels on edges, undirected graphs, and common spatial representations of edge-labeled graphs such as adjacency matrices and edge lists.  We certify binary heaps, including Floyd's bottom-up heap construction, heapsort, and increase/decrease priority.
-        
+
         ~~Our verifications uncover subtle overflows implicit in standard textbook code, including a nontrivial bound on edge weights necessary to execute Dijkstra's algorithm; we show that the intuitive guess fails and provide a workable refinement.  We observe that the common notion that Prim's algorithm requires a connected graph is wrong: we verify that a standard textbook implementation of Prim's algorithm can compute minimum spanning forests without finding components first.  Our verification of Kruskal's algorithm reasons about two graphs simultaneously: the undirected graph undergoing MST construction, and the directed graph representing the forest inside union-find.  Our binary heap verification exposes precise bounds for the heap to operate correctly, avoids a subtle overflow error, and shows how to recycle keys to avoid overflow.
 		\keywords{separation logic \and graph algorithms \and Coq \and VST}
 %Dijkstra's shortest-path \and Prim's algorithm \and Kruskal's algorithm \and minimum spanning trees \and verification \and CompCert \and VST}
@@ -208,7 +211,7 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 	%% main text
 %\hide{	
 	\section{Introduction}
-\vspace*{-0.25em}
+%\vspace*{-0.25em}
 	\label{sec:intro}
 	\input{intro.tex}
 	
@@ -220,9 +223,9 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 	\label{sec:dijkstra}
 	\input{dijkstra.tex}
 	
-\vspace*{-0.5em}
+%\vspace*{-0.5em}
     \section{Minimum Spanning Trees}
-\vspace*{-0.5em}
+%\vspace*{-0.5em}
     \label{sec:mst}
 	\input{prim.tex}
 	\input{kruskal.tex}
@@ -244,11 +247,11 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 %	\label{sec:vst}
 %	\input{vst.tex}
 
-\vspace*{-0.5em}
+%\vspace*{-0.5em}
 	\section{Concluding thoughts: Related and Future Work}
 	\label{sec:conclusion}
 
-\vspace*{-0.5em}
+%\vspace*{-0.5em}
 
 	\input{conclusion.tex}
 %}	

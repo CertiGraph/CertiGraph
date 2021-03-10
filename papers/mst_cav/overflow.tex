@@ -11,7 +11,7 @@ However, this has two flaws.
 
 First, since we are writing real code in~C,
 rather than pseudocode in an idealized setting, we must reserve some
-concrete \texttt{int} value \texttt{inf} for ``infinity''.  Suppose we 
+concrete \texttt{int} value \texttt{inf} for ``infinity''.  Suppose we
 set $\texttt{inf}=\texttt{INT\_MAX}$, and that $\texttt{size}-1$ divides \texttt{INT\_MAX}.  Now the longest path can have cost $(\texttt{size}-1)\cdot\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}-1}\right\rfloor = \texttt{INT\_MAX} = \texttt{inf}$.  This creates an unpleasant ambiguity: we cannot tell if the farthest vertex is unreachable, or if it is reachable with legitimate cost \texttt{INT\_MAX}.  We need to adjust our maximum edge weights to leave room for \texttt{inf}; using $\left\lfloor\frac{\texttt{INT\_MAX}-1}{\texttt{size}-1}\right\rfloor$ solves this first issue.
 
 %A consequence of this is that reachable destination vertices cannot have a
@@ -40,10 +40,10 @@ the graph in figure~\ref{fig:overflow}.  The \texttt{size} of the graph is 3 nod
   \node at (15,0.6) {$2^{31}-1$};
   \node at (15,-2.4) {$2^{31}-1$};
 \end{tikzpicture}
-\vspace*{-1em}
+%\vspace*{-1em}
 \caption{A graph that will result in overflow on a 32-bit machine.}
 \label{fig:overflow}
-\vspace*{-1.75em}
+%\vspace*{-1.75em}
 \end{figure}
 
 
@@ -51,7 +51,7 @@ After processing vertices~A~and~B, $2^{31}-1$~and~$2^{32}-2$~\emph{are} the cost
 Thus the code decides that a new cheaper path from~A~to~B~exists (in particular, A$\leadsto$B$\leadsto$C$\leadsto$B) and then trashes the \texttt{dist} and \texttt{prev} arrays on line~\ref{code:update1}.
 
 %, rather than greater than,
-%Since $(2^{32}-2)+(2^{31}-1)=3 \cdot 2^{31} - 3$ overflows in 32-bit arithmetic, the comparison is not between~$2^{31}-1$~and~$3 \cdot 2^{31} - 3$ (choosing to keep the old lower value), but in fact between~$2^{31}-1$~and~$2^{31}-3$!  
+%Since $(2^{32}-2)+(2^{31}-1)=3 \cdot 2^{31} - 3$ overflows in 32-bit arithmetic, the comparison is not between~$2^{31}-1$~and~$3 \cdot 2^{31} - 3$ (choosing to keep the old lower value), but in fact between~$2^{31}-1$~and~$2^{31}-3$!
 
 Our code uses signed \texttt{int} rather than \texttt{unsigned int} so we have undefined behavior rather than defined-but-wrong behavior, but the essence of the overflow is identical.  We ensure that the ``probing edge'' does not overflow by restricting the maximum edge cost further, from $\left\lfloor\frac{\texttt{INT\_MAX}-1}{\texttt{size}-1}\right\rfloor$ to $\left\lfloor\frac{\texttt{INT\_MAX}}{\texttt{size}}\right\rfloor$.  In  figure~\ref{fig:overflow}, edge weights should be bounded by $\left\lfloor\frac{2^{32}-1}{3}\right\rfloor=1,\!431,\!655,\!765$; call this value~$w$.  Suppose we change the edge weights in figure~\ref{fig:overflow} from $2^{31}-1$ to $w$.  Now vertex~B~has distance $w$ and~C~has distance $2 \cdot w$.  When we remove~C~from the priority queue, the comparison on line~\ref{code:overflow} is between the known best cost~to~B~(\emph{i.e.}, $w$) and the candidate best cost to~B~via~C~(\emph{i.e.}, $3 \cdot w=2^{32} - 1 = \texttt{INT\_MAX}$).  There is no overflow, so the candidate is rejected and the code behaves as advertised.
 
@@ -59,7 +59,7 @@ Our code uses signed \texttt{int} rather than \texttt{unsigned int} so we have u
 
 We fold these new restrictions into the mathematical graph $\gamma$. % Dijktra's precondition as $\mathsf{DijkAdjMat}$, which inherits from $\mathsf{AdjMat}$ in~\S\ref{sec:adjmatpure}.
 In addition to the bounds discussed above, we require a few other more straightforward bounds: edge costs be non-negative, as is typical for Dijkstra; $4 \cdot \texttt{size} \le \texttt{INT\_MAX}$, to ensure that the multiplication in the \texttt{malloc} on line~\ref{code:dijkmalloc} does not overflow; and that $\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}}\right\rfloor \cdot (\texttt{size} - 1) < \texttt{inf}$, so no valid path has cost \texttt{inf}.
-%This 
+%This
 These bounds are optimal: if the input is any less restricted, the postcondition will fail.  The last restriction on \texttt{inf} is not sufficient when $\texttt{size} = 1$, so in that special case we further require that any (self-loop) edges cost less than $\texttt{inf}$.
 Whenever
 $0 < 4 \cdot \texttt{size} \le \texttt{INT\_MAX}$, the restrictions on \texttt{inf} are satisfiable with $\texttt{inf} \defeq \texttt{INT\_MAX}$.
@@ -68,8 +68,8 @@ $0 < 4 \cdot \texttt{size} \le \texttt{INT\_MAX}$, the restrictions on \texttt{i
 %, in addition to the standard restrictions we inherit from \texttt{SoundAdjMat} ().
 
 %Our solution is twofold.  First, we restrict the maximum edge cost to , which in the 4-bit setting just described forces an edge cost of no more than~4.  Consider modifying figure~\ref{fig:overflow} to
-%have edge weights of~4~rather than~5s~and~6s.  After processing vertices~A~and~B, the distances to~B~and~C are no more than~4~and~8 respectively.  When we process vertex~C, the 
-% the previous best cost to~B~(4) and the candidate best cost to~B~via~C~(12); there is no overflow and 
+%have edge weights of~4~rather than~5s~and~6s.  After processing vertices~A~and~B, the distances to~B~and~C are no more than~4~and~8 respectively.  When we process vertex~C, the
+% the previous best cost to~B~(4) and the candidate best cost to~B~via~C~(12); there is no overflow and
 
 %\note[connected?]{The second part of our solution is that we require in the function precondition that $\left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor - 1 < \texttt{inf} \le \texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$.  As long as $\texttt{size} > 1$, this is perfectly realizable  by setting \texttt{inf} to $\texttt{INT\_MAX} - \left\lfloor \frac{\texttt{INT\_MAX}}{\texttt{size}} \right\rfloor + 1$, \emph{i.e.} in the 4-bit machine we set \texttt{inf} to $11$.  It may be surprising that infinity has a nontrivial upper bound.  The reason is that line~\ref{code:overflow} implicitly assumes that $\infty + \texttt{cost} = \infty$, which certainly is not true for machine integers!
 %Lastly, when $\texttt{size} = 1$, the range bound on infinity collapses and \texttt{inf} becomes unrealizable.
