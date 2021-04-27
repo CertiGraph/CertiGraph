@@ -176,7 +176,211 @@ to be used as a bool, and I don't know what allows it*)
     Definition edgeless_graph: PrimGG :=
       @Build_GeneralGraph V E V_EqDec E_EqDec DV DE DG SoundPrim
                           edgeless_lgraph SoundPrim_edgeless.
-  
+
+    Lemma edgeless_graph_evalid:
+      forall e, ~ evalid edgeless_graph e.
+    Proof.
+      intros. unfold edgeless_graph; simpl. auto.
+    Qed.
+
+    Lemma vert_bound:
+      forall (g: PrimGG) v, vvalid g v <-> 0 <= v < size.
+    Proof.
+      intros. apply (vvalid_meaning g).
+    Qed.
+    
+    Lemma edgeless_partial_lgraph:
+      forall (g: PrimGG), is_partial_lgraph edgeless_graph g.
+    Proof.
+      intros. split. unfold is_partial_graph.
+      split. intros. simpl. simpl in H. rewrite vert_bound. auto.
+      split. intros. pose proof (edgeless_graph_evalid e). contradiction.
+      split. intros. pose proof (edgeless_graph_evalid e). contradiction.
+      intros. pose proof (edgeless_graph_evalid e). contradiction.
+      split. unfold preserve_vlabel; intros. destruct vlabel; destruct vlabel. auto.
+      unfold preserve_elabel; intros. pose proof (edgeless_graph_evalid e). contradiction.
+    Qed.
+
+    Lemma uforest'_edgeless_graph:
+      uforest' edgeless_graph.
+    Proof.
+      split; intros.
+      (*no self-loops*)
+      apply edgeless_graph_evalid in H; contradiction.
+      split; intros.
+      (*only one edge between two vertices*)
+      destruct H. destruct H. destruct H.
+      apply edgeless_graph_evalid in H; contradiction.
+      (*no rubbish edges*)
+      split; intros.
+      apply edgeless_graph_evalid in H; contradiction.
+      (*main forest definition*)
+      unfold unique_simple_upath; intros. destruct H0 as [? [? ?]].
+      destruct p1. inversion H3. destruct p1.
+      inversion H3. inversion H4. subst u; subst v.
+      destruct H2 as [? [? ?]]. destruct p2. inversion H5.
+      destruct p2. inversion H5. subst v. auto.
+      destruct H2. destruct H2. destruct H2. destruct H2. simpl in H2. contradiction.
+      destruct H0. destruct H0. destruct H0. destruct H0. simpl in H0. contradiction.
+    Qed.
+
+    Lemma edgeless_graph_disconnected:
+      forall u v, u <> v -> ~ connected edgeless_graph u v.
+    Proof.
+      unfold not; intros.
+      destruct H0 as [p [? [? ?]]].
+      destruct p. inversion H1.
+      destruct p. inversion H1; inversion H2. subst u; subst v. contradiction.
+      destruct H0. destruct H0. destruct H0. destruct H0.
+      pose proof (edgeless_graph_evalid x). contradiction.
+    Qed.
+
+    Section REMOVE_EDGE_PRIGRAPH.
+
+    Context {g: PrimGG}.
+    Context {e: E} {evalid_e: evalid g e}.
+
+    Definition PrimGG_eremove':=
+      @Build_LabeledGraph V E V_EqDec E_EqDec unit Z unit (pregraph_remove_edge g e)
+                          (vlabel g)
+                          (fun e0 => if E_EqDec e0 e then inf else elabel g e0 )
+                          (glabel g).
+
+        Instance SoundPrim_eremove':
+      SoundPrim PrimGG_eremove'.
+    Proof.
+      constructor; simpl. constructor; simpl. constructor; simpl.
+      ++apply (size_representable g).
+      ++apply (inf_representable g).
+      ++apply (vvalid_meaning g).
+      ++unfold removeValidFunc; split; intros; destruct (E_EqDec e0 e).
+        destruct H. hnf in e1. contradiction.
+        split.
+        ** apply (evalid_meaning g). apply H.
+        ** intro.
+           pose proof (evalid_meaning g e0).
+           destruct H.
+           rewrite H1 in H. destruct H. rewrite H0 in H3.
+           apply Zlt_not_le in H3. apply H3. reflexivity.
+        ** destruct H. exfalso. apply H0; reflexivity.
+        ** admit.
+      ++ intros. red in H. destruct H.
+         apply remove_edge_preserves_strong_evalid; split; auto.
+         apply (evalid_strong_evalid g); trivial.
+      ++unfold removeValidFunc; split; intros; destruct (E_EqDec e0 e); trivial.
+        ** apply Classical_Prop.not_and_or in H.
+           destruct H.
+           apply (invalid_edge_weight g); trivial.
+           exfalso. apply H. apply c.
+        ** apply Classical_Prop.or_not_and. right.
+           unfold not. intro. apply H0. apply e1.
+        ** apply Classical_Prop.or_not_and. left.
+           apply <- (invalid_edge_weight g); trivial.
+      ++apply (edge_src_fst g).
+      ++apply (edge_dst_snd g).
+      ++apply pregraph_remove_edge_finite, PrimGG_FiniteGraph.
+      ++unfold removeValidFunc; intros. destruct H.
+        apply (undirected_edge_rep g); trivial.
+      ++ admit.
+    Admitted.
+
+
+        
+    Definition PrimGG_eremove: PrimGG :=
+      @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
+                          PrimGG_eremove' (SoundPrim_eremove').
+            
+    Lemma eremove_EList:
+      forall l, Permutation (e::l) (EList g) -> Permutation l (EList PrimGG_eremove).
+    Proof.
+      intros. assert (Hel: NoDup (e::l)). apply NoDup_Perm_EList in H; auto.
+      apply NoDup_Permutation.
+      apply NoDup_cons_1 in Hel; auto.
+      apply NoDup_EList.
+      intros. rewrite EList_evalid. simpl. unfold removeValidFunc. rewrite <- EList_evalid. split; intros.
+      split. apply (Permutation_in (l:=(e::l))). apply H. right; auto.
+      unfold not; intros. subst e. apply NoDup_cons_2 in Hel. contradiction.
+      destruct H0. apply Permutation_sym in H. apply (Permutation_in (l':=(e::l))) in H0. 2: auto.
+      destruct H0. symmetry in H0; contradiction. auto.
+    Qed.
+
+    End REMOVE_EDGE_PRIGRAPH.
+
+  Section ADD_EDGE_UADJMATGRAPH.
+
+    Context {g: PrimGG}.
+    Context {u v: V} {vvalid_u: vvalid g u} {vvalid_v: vvalid g v} {uv_smaller: u <= v}.
+    Context {w: Z} {w_rep: Int.min_signed <= w < inf}.
+
+    Definition PrimGG_adde':=
+      labeledgraph_add_edge g (u,v) u v w.
+
+        Instance Fin_PrimGG_adde':
+      FiniteGraph (PrimGG_adde').
+    Proof.
+      unfold PrimGG_adde'.
+      unfold labeledgraph_add_edge.
+      apply pregraph_add_edge_finite.
+      apply PrimGG_FiniteGraph.
+    Qed.
+
+    Instance SoundPrim_adde':
+      SoundPrim PrimGG_adde'.
+    Proof.
+      constructor; simpl. constructor; simpl. constructor; simpl.
+      +apply (size_representable g).
+      +apply (inf_representable g).
+      +apply (vvalid_meaning g).
+      +unfold addValidFunc, updateEdgeFunc, update_elabel; intros.
+       split; intros. destruct H. unfold equiv_dec; destruct E_EqDec.
+       split. pose proof (inf_representable g); lia. lia.
+       apply (evalid_meaning g) in H. admit.
+       (* apply H. *)
+       subst e. unfold equiv_dec. destruct E_EqDec.
+       split. pose proof (inf_representable g); lia. lia.
+       unfold complement, equiv in c; contradiction.
+       unfold equiv_dec in H; destruct (E_EqDec (u,v)).
+       hnf in e0; subst e. right; auto.
+       left. apply (evalid_meaning g). auto. admit.
+      +unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e);  destruct H.
+       hnf in e0. subst e.
+       apply add_edge_strong_evalid; trivial.
+       hnf in e0. subst e.
+       apply add_edge_strong_evalid; trivial.
+       apply add_edge_preserves_strong_evalid; trivial.
+       apply (evalid_strong_evalid g); trivial.
+       hnf in c. exfalso. apply c. hnf. auto. 
+      + split; intros; unfold update_elabel, equiv_dec in *; destruct (E_EqDec (u,v) e).
+      - exfalso. apply H. right. hnf in e0. auto.
+      - apply Decidable.not_or in H. destruct H.
+        apply (invalid_edge_weight g); trivial.
+      - rewrite H in w_rep. lia.
+      - apply Classical_Prop.and_not_or.
+        split. apply <- (invalid_edge_weight g); trivial.
+        auto.
+        + unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+          unfold equiv in e0; subst e. simpl; auto.
+          apply (edge_src_fst g e).
+        +unfold addValidFunc, updateEdgeFunc, equiv_dec; intros. destruct (E_EqDec (u,v) e).
+         unfold equiv in e0; subst e. simpl; auto.
+         apply (edge_dst_snd g e).
+        +apply pregraph_add_edge_finite, PrimGG_FiniteGraph.
+        +unfold addValidFunc, updateEdgeFunc, equiv_dec; intros.
+         destruct (E_EqDec (u,v) e). hnf in e0; subst e. trivial. 
+         unfold complement, equiv in c. destruct H.
+         apply (undirected_edge_rep g e); auto.
+         exfalso. apply c.
+         symmetry. trivial.
+        + admit.
+    Admitted.
+
+    Definition PrimGG_adde: PrimGG :=
+      @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundPrim
+                          PrimGG_adde' (SoundPrim_adde').
+
+
+    End ADD_EDGE_UADJMATGRAPH.
+    
   Lemma exists_labeled_spanning_uforest_pre:
     forall (l: list E) (g: PrimGG), Permutation l (EList g) -> exists (t: PrimGG), labeled_spanning_uforest t g.
   Proof.
@@ -184,8 +388,8 @@ to be used as a bool, and I don't know what allows it*)
     (*nil case*)
     exists edgeless_graph.
     split. split.
-    admit.
-    (* apply edgeless_partial_lgraph. split. apply uforest'_edgeless_graph.
+    (* admit. *)
+    apply edgeless_partial_lgraph. split. apply uforest'_edgeless_graph.
     unfold spanning; intros. destruct (V_EqDec u v).
     hnf in e. subst v. split; intros; apply connected_refl.
     apply connected_vvalid in H0. rewrite vert_bound in *. apply H0.
@@ -195,11 +399,11 @@ to be used as a bool, and I don't know what allows it*)
     destruct x. inversion H1. inversion H2. subst v0. contradiction.
     destruct H0. destruct H0. destruct H0. destruct H0.
     rewrite <- EList_evalid in H0. rewrite <- H in H0. contradiction.
-    pose proof (@edgeless_graph_disconnected (inf_representable g) (size_representable g) u v c).
+    pose proof (edgeless_graph_disconnected u v c).
     contradiction.
     unfold preserve_vlabel, preserve_elabel; split; intros.
     destruct vlabel. destruct vlabel. auto.
-    pose proof (@edgeless_graph_evalid (inf_representable g) (size_representable g) e).
+    pose proof (edgeless_graph_evalid e).
     contradiction.
     (*inductive step*)
     set (u:=src g a). set (v:=dst g a).
@@ -207,11 +411,13 @@ to be used as a bool, and I don't know what allows it*)
     unfold u; unfold v; apply strong_evalid_adj_edge.
     apply (evalid_strong_evalid g). rewrite <- EList_evalid, <- H. left; auto.
     set (remove_a:=(@PrimGG_eremove g a)).
-    assert (Ha_evalid: evalid g a). { rewrite <- EList_evalid. apply (Permutation_in (l:=(a::l))).
-                                      apply H. left; auto. }
-                                    specialize IHl with remove_a.
+    assert (Ha_evalid: evalid g a). {
+      rewrite <- EList_evalid. apply (Permutation_in (l:=(a::l))).
+      apply H. left; auto. }
+    specialize IHl with (remove_a Ha_evalid).
     destruct IHl as [t ?]. {
-      unfold remove_a. pose proof (@eremove_EList g a Ha_evalid l H).
+      unfold remove_a.
+      pose proof (@eremove_EList _ a Ha_evalid l H).
       apply NoDup_Permutation. assert (NoDup (a::l)). apply (Permutation_NoDup (l:=EList g)).
       apply Permutation_sym; auto. apply NoDup_EList. apply NoDup_cons_1 in H2; auto.
       apply NoDup_EList.
@@ -229,11 +435,11 @@ to be used as a bool, and I don't know what allows it*)
       unfold preserve_vlabel, preserve_elabel; split; intros.
       destruct vlabel. destruct vlabel. auto.
       rewrite H3 by auto. simpl. destruct (E_EqDec e a). unfold equiv in e0.
-      subst e. assert (evalid remove_a a). apply H1; auto.
+      subst e. assert (evalid (remove_a Ha_evalid) a). apply H1; auto.
       simpl in H7. unfold removeValidFunc in H7. destruct H7; contradiction.
       auto.
     }
-    destruct (connected_dec remove_a u v).
+    destruct (connected_dec (remove_a Ha_evalid) u v).
     (*already connected*)
     ++
       exists t. destruct H1.  destruct H3. destruct H1. destruct H5.
@@ -285,19 +491,19 @@ to be used as a bool, and I don't know what allows it*)
       assert (Int.min_signed <= w < inf). unfold w. split.
       pose proof (weight_representable g a). apply H6. apply (evalid_meaning g). auto.
       rewrite vert_bound in H3, H4. rewrite <- (vert_bound t) in H3, H4.
-      assert (Ha: a = (u,v)). unfold u, v; apply evalid_form; auto. rewrite Ha in *.
+      assert (Ha: a = (u,v)). unfold u, v; apply (evalid_form g); auto. rewrite Ha in *.
       set (adde_a:=@PrimGG_adde t u v H3 H4 H5 w H6).
       exists adde_a. split. split.
-      apply adde_partial_lgraph; auto. unfold w. rewrite Ha; auto.
+      admit.
       split.
       (*uforest*)
       apply add_edge_uforest'; auto. apply H1.
       unfold not; intros.
-      apply (is_partial_lgraph_connected t remove_a) in H7. contradiction.
+      apply (is_partial_lgraph_connected t (remove_a Ha_evalid)) in H7. contradiction.
       split. apply H1. apply H1.
       (*spanning*)
       unfold spanning; intros. assert (Ht_uv: ~ evalid t (u,v)). unfold not; intros.
-      assert (evalid remove_a (u,v)). apply H1; auto.
+      assert (evalid (remove_a Ha_evalid) (u,v)). apply H1; auto.
       simpl in H8. rewrite Ha in H8. unfold removeValidFunc in H8. destruct H8; contradiction.
       split; intros.
       { (*-->*) destruct H7 as [p ?]. apply connected_by_upath_exists_simple_upath in H7.
@@ -333,7 +539,7 @@ to be used as a bool, and I don't know what allows it*)
           apply (remove_edge_valid_upath g a p' l'); auto. apply H7.
       } {
         apply (is_partial_lgraph_connected adde_a g).
-        apply adde_partial_lgraph; auto. unfold w. rewrite Ha; auto. auto.
+        admit. auto.
       }
       (*labels*)
       unfold preserve_vlabel, preserve_elabel; split; intros.
@@ -342,7 +548,6 @@ to be used as a bool, and I don't know what allows it*)
       destruct (E_EqDec (u,v) e). hnf in e0. subst e. unfold w; rewrite Ha; auto.
       apply Htg. simpl in H7. unfold addValidFunc in H7. destruct H7. apply H7.
       unfold complement, equiv in c. symmetry in H7; contradiction.
-     *)
   Admitted.
 
   Corollary exists_labeled_spanning_uforest:

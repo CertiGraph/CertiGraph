@@ -1,7 +1,7 @@
 Require Import CertiGraph.prim.prim_env.
 Require Export CertiGraph.lib.find_lemmas.
 Require Export CertiGraph.priq.is_empty_lemmas.
-Require Import CertiGraph.prim.MathPrimGraph. 
+Require Import CertiGraph.prim.MathPrimGraph.
 Require Import CertiGraph.graph.SpaceUAdjMatGraph1.
 Require Import CertiGraph.prim.prim_spec1.
 
