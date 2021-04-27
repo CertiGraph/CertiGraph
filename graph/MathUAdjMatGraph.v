@@ -527,7 +527,7 @@ Section Mathematical_Undirected_AdjMat_Model.
       intros. rewrite remove_In_iff, EList_evalid; auto. split; auto.
     Qed.
 
-    Instance SoundPrim_eremove':
+    Instance SoundUAdjMat_eremove':
       SoundUAdjMat UAdjMatGG_eremove'.
     Proof.
       constructor; simpl. constructor; simpl.
@@ -560,7 +560,7 @@ Section Mathematical_Undirected_AdjMat_Model.
 
     Definition UAdjMatGG_eremove: UAdjMatGG :=
       @Build_GeneralGraph V E V_EqDec E_EqDec unit Z unit SoundUAdjMat
-                          UAdjMatGG_eremove' (SoundPrim_eremove').
+                          UAdjMatGG_eremove' (SoundUAdjMat_eremove').
 
     Lemma eremove_EList:
       forall l, Permutation (e::l) (EList g) -> Permutation l (EList UAdjMatGG_eremove).
