@@ -152,10 +152,16 @@ assert (Znth i starting_keys = Vint (Int.repr (Znth i (upd_Znth r (list_repeat (
 }
 forward_call (v_pq, i, Znth i (upd_Znth r (list_repeat (Z.to_nat size) inf) 0), sublist 0 i starting_keys ++ sublist i size (list_repeat (Z.to_nat size) Vundef)).
 split. auto. unfold weight_inrange_priq.
-destruct (Z.eq_dec i r). subst i. rewrite upd_Znth_same. split. pose proof Int.min_signed_neg; lia.
-rewrite inf_eq; lia. rewrite Zlength_list_repeat; lia.
+destruct (Z.eq_dec i r). subst i. rewrite upd_Znth_same.
+pose proof Int.min_signed_neg; lia.
+rewrite Zlength_list_repeat; lia.
 rewrite upd_Znth_diff, Znth_list_repeat_inrange. rep_lia.
 lia. rewrite Zlength_list_repeat; lia. rewrite Zlength_list_repeat; lia. auto.
+destruct (Z.eq_dec i r).
+subst i. rewrite upd_Znth_same. rewrite inf_eq. lia.
+rewrite Zlength_list_repeat; lia.
+rewrite upd_Znth_diff; try rewrite Zlength_list_repeat; try lia.
+rewrite Znth_list_repeat_inrange; lia.
 entailer!.
 rewrite upd_Znth_app2. rewrite Zlength_sublist, Z.sub_0_r, Z.sub_diag; try lia.
 rewrite (sublist_split i (i+1) size). rewrite (sublist_one i (i+1)). rewrite upd_Znth_app1.
@@ -419,9 +425,6 @@ break: (
     with (data_at Tsh (tarray tint size) (map Vint (map Int.repr pq_state)) v_pq).
   2: { rewrite list_map_compose. auto. }
   forward_call (v_pq, pq_state).
-  1: { repeat split; trivial.
-        rewrite inf_eq. set (k:=Int.max_signed); compute in k; subst k. lia.
-  }
   forward_if.
 
   (*PROCEED WITH LOOP*) {
@@ -430,9 +433,6 @@ break: (
     rewrite H1 in H0; simpl in H0; now inversion H0.
   }
   forward_call (v_pq, pq_state).
-  1: { repeat split; trivial.
-        rewrite inf_eq. set (k:=Int.max_signed); compute in k; subst k. lia.
-  }
   Intros u. rename H2 into Hu.
   assert (0 <= u < size). {
     rewrite Hu. rewrite <- HZlength_pq_state. apply find_range.
@@ -578,7 +578,6 @@ break: (
     forward_call (v_pq, i, Znth i (Znth u (@graph_to_symm_mat size g)), pq_state').
     replace (map (fun x : Z => Vint (Int.repr x)) pq_state') with (map Vint (map Int.repr pq_state')).
     entailer!. rewrite list_map_compose. auto.
-    split. lia.
     unfold weight_inrange_priq.
     rewrite graph_to_mat_eq. split.
     apply weight_representable. rewrite eformat_adj_elabel, eformat_symm in Hadj_ui.

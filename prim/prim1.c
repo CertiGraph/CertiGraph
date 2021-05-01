@@ -2,6 +2,9 @@
 
 //I feel like we should store the matrix in a struct. That way size can be preserved yet it can be moved around with ease
 
+extern void * mallocN (int n);
+extern void freeN (void *p);
+
 int check_symmetric_matrix(int** graph, int size) {
     for (int i = 0; i < size; ++i) {
         for (int j = 0; j < i; ++j) {

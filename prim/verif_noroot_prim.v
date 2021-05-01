@@ -223,6 +223,7 @@ Qed.
 Lemma body_prim: semax_body Vprog Gprog f_prim prim_spec.
 Proof.
 start_function. rename H into Hprecon_1. rename H0 into Ha.
+
 assert (inf_repable: repable_signed inf). {
   red. pose proof (inf_representable g). rep_lia.
 }
@@ -256,7 +257,6 @@ assert (HZlength_starting_keys: Zlength starting_keys = size). {
 unfold repable_signed in inf_repable.
 (*push all vertices into priq*)
 forward_call(tt).
-
 rewrite <- size_eq in *.
 Intro priq_ptr.
 remember (pointer_val_val priq_ptr) as v_pq.
@@ -296,6 +296,8 @@ assert (Znth i starting_keys = Vint (Int.repr (Znth i (list_repeat (Z.to_nat siz
 forward_call (v_pq, i, Znth i (list_repeat (Z.to_nat size) inf), sublist 0 i starting_keys ++ sublist i size (list_repeat (Z.to_nat size) Vundef)).
 split. auto. unfold weight_inrange_priq.
 rewrite Znth_list_repeat_inrange. lia. lia.
+rewrite Znth_list_repeat_inrange; lia.
+
 entailer!.
 rewrite upd_Znth_app2. rewrite Zlength_sublist, Z.sub_0_r, Z.sub_diag; try lia.
 rewrite (sublist_split i (i+1) size). rewrite (sublist_one i (i+1)). rewrite upd_Znth_app1.
@@ -548,9 +550,6 @@ break: (
     with (data_at Tsh (tarray tint size) (map Vint (map Int.repr pq_state)) v_pq).
   2: { rewrite list_map_compose. auto. }
   forward_call (v_pq, pq_state).
-  1: { repeat split; trivial.
-        rewrite inf_eq. set (k:=Int.max_signed); compute in k; subst k. lia.
-     }
   forward_if.
   (*PROCEED WITH LOOP*) {
   assert (@isEmpty inf pq_state = Vzero). {
@@ -558,8 +557,6 @@ break: (
     rewrite H1 in H0; simpl in H0; now inversion H0.
   }
   forward_call (v_pq, pq_state).
-  repeat split; trivial.
-  rewrite inf_eq. set (k:=Int.max_signed); compute in k; subst k. lia.
   Intros u. rename H2 into Hu.
   assert (0 <= u < size). {
     rewrite Hu. rewrite <- HZlength_pq_state. apply find_range.
@@ -702,7 +699,6 @@ break: (
     forward_call (v_pq, i, Znth i (Znth u (@graph_to_symm_mat size g)), pq_state').
     replace (map (fun x : Z => Vint (Int.repr x)) pq_state') with (map Vint (map Int.repr pq_state')).
     entailer!. rewrite list_map_compose. auto.
-    split. lia.
     unfold weight_inrange_priq.
     rewrite graph_to_mat_eq. split.
     apply weight_representable. rewrite eformat_adj_elabel, eformat_symm in Hadj_ui.
