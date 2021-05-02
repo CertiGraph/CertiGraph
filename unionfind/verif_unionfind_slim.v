@@ -152,7 +152,9 @@ Proof.
   - apply denote_tc_test_eq_split; apply graph_local_facts; auto.
   - (* p0 = find(p); *)
     forward_call (sh, g, pa). Intros vret. destruct vret as [g' root]. simpl fst in *. simpl snd in *. Opaque pointer_val_val. forward. Transparent pointer_val_val.
-    pose proof (true_Cne_neq _ _ H1).
+    assert (pa <> x). {
+      intro. subst. apply H1; trivial.
+    }
     assert (weak_valid g' root) by (right; destruct H3; apply reachable_foot_valid in H3; auto).
     assert (vvalid g' x) by (destruct H2 as [? _]; rewrite <- H2; apply H).
     assert (~ reachable g' root x) by (apply (uf_equiv_not_reachable g g' x r pa root); auto).

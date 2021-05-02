@@ -402,5 +402,5 @@ Proof.
            rewrite nat_seq_S, Nat.add_comm. destruct H30 as [[? ?] | [? ?]].
            ++ subst g''. split; [| apply svwl_add_tail_no_scan]; easy.
            ++ split; [|apply svwl_add_tail_scan with g']; easy.
-  - Intros g' t_info'. unfold POSTCONDITION, abbreviate. Exists g' t_info'. entailer!.
+  - Intros g' t_info'. Exists g' t_info'. entailer!.
 Qed.

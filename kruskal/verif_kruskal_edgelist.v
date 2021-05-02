@@ -685,7 +685,7 @@ assert (memory_block sh (MAX_EDGES * (sizeof t_struct_edge)) eptr = data_at_ sh 
   } rewrite <- memory_block_data_at_; auto.
 } rewrite H1. clear H1.
 assert (data_at_ sh (tarray t_struct_edge MAX_EDGES) eptr = data_at sh (tarray t_struct_edge MAX_EDGES) (Vundef_cwedges MAX_EDGES) eptr). {
-  unfold data_at_, field_at_, data_at. assert (default_val (nested_field_type (tarray t_struct_edge MAX_EDGES) []) = list_repeat (Z.to_nat MAX_EDGES) (Vundef, (Vundef, Vundef))) by reflexivity.
+  unfold data_at_, field_at_, data_at. assert (default_val (nested_field_type (tarray t_struct_edge MAX_EDGES) []) = repeat (Vundef, (Vundef, Vundef)) (Z.to_nat MAX_EDGES)) by reflexivity.
   rewrite H1. auto.
 } rewrite H1. clear H1.
 assert_PROP (isptr eptr). entailer!.
@@ -962,8 +962,8 @@ Proof.
       2: { pose proof (Vundef_cwedges_Zlength (MAX_EDGES - numE msf')).
            rewrite <- (sublist_same 0 (MAX_EDGES - numE msf') (Vundef_cwedges (MAX_EDGES - numE msf'))) by lia.
            rewrite (sublist_split 0 1 (MAX_EDGES - numE msf')) by lia.
-           rewrite sublist_one by lia. unfold Vundef_cwedges. rewrite Znth_list_repeat_inrange by lia.
-           rewrite sublist_list_repeat by lia. rewrite Z.sub_add_distr by lia. simpl; auto.
+           rewrite sublist_one by lia. unfold Vundef_cwedges. rewrite Znth_repeat_inrange by lia.
+           rewrite sublist_repeat by lia. rewrite Z.sub_add_distr by lia. simpl; auto.
       }
       rewrite (split2_data_at_Tarray_app 1 (MAX_EDGES - numE msf') sh t_struct_edge
                                          (Vundef_cwedges 1) (Vundef_cwedges (MAX_EDGES - (numE msf' + 1)))).
@@ -1325,11 +1325,11 @@ Proof.
                                          (map wedge_to_cdata msflist) ([Znth i sorted] ++ Vundef_cwedges (MAX_EDGES - (numE msf' + 1)))).
       2: { rewrite Zlength_map. rewrite (Permutation_Zlength _ _ Hinv4).
            rewrite g2wedgelist_numE. auto. }
-      2: { unfold Vundef_cwedges; simpl. rewrite Zlength_cons, Zlength_list_repeat by lia. lia. }
+      2: { unfold Vundef_cwedges; simpl. rewrite Zlength_cons, Zlength_repeat by lia. lia. }
       rewrite (split2_data_at_Tarray_app 1 (MAX_EDGES - numE msf') sh t_struct_edge
                                          ([Znth i sorted]) (Vundef_cwedges (MAX_EDGES - (numE msf' + 1)))).
       2: { simpl; auto. }
-      2: { unfold Vundef_cwedges; simpl. rewrite Zlength_list_repeat by lia. lia. }
+      2: { unfold Vundef_cwedges; simpl. rewrite Zlength_repeat by lia. lia. }
       rewrite (data_at_singleton_array_eq' sh t_struct_edge (Znth i sorted)).
       entailer!.
     --- (* no, don't add this edge *)

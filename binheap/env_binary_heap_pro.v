@@ -749,7 +749,7 @@ Lemma Zlength_default_val_array: forall t size,
   0 <= size ->
   Zlength (default_val (tarray t size)) = size.
 Proof.
-  unfold default_val. simpl. intros. rewrite Zlength_list_repeat; lia.
+  unfold default_val. simpl. intros. rewrite Zlength_repeat; lia.
 Qed.
 
 Definition initializing_inc_list (size capacity : Z) : list val :=
@@ -787,7 +787,7 @@ Proof.
   rewrite Znth_app2. 1,2: rewrite Zlength_map, List_ext.nat_inc_list_Zlength.
   rewrite Znth_upd_Znth_diff.
   unfold default_val. simpl.
-  rewrite Znth_list_repeat_inrange, Znth_list_repeat_inrange; trivial.
+  rewrite Znth_repeat_inrange, Znth_repeat_inrange; trivial.
   1,2,3,4: lia.
 Qed.
 
@@ -859,7 +859,7 @@ Proof.
   rewrite Znth_app2. 1,2: rewrite Zlength_map, Zlength_initial_item_list.
   rewrite Znth_upd_Znth_diff.
   unfold default_val. simpl.
-  rewrite Znth_list_repeat_inrange, Znth_list_repeat_inrange; trivial.
+  rewrite Znth_repeat_inrange, Znth_repeat_inrange; trivial.
   1-6: lia.
 Qed.
 

@@ -600,8 +600,8 @@ Section DijkstraMathLemmas.
       dijkstra_correct
         g src []
         (upd_Znth src
-                  (list_repeat (Z.to_nat size) inf) src)
-        (upd_Znth src (list_repeat (Z.to_nat size) inf) 0).
+                  (repeat inf (Z.to_nat size)) src)
+        (upd_Znth src (repeat inf (Z.to_nat size)) 0).
   Proof.
     intros.
     unfold dijkstra_correct, inv_popped, inv_unpopped, inv_unseen;
@@ -609,8 +609,8 @@ Section DijkstraMathLemmas.
     destruct (Z.eq_dec dst src); [trivial | exfalso].
     apply (vvalid_meaning g) in H0. 
     rewrite upd_Znth_diff in H2; trivial.
-    rewrite Znth_list_repeat_inrange in H2; ulia.
-    all: rewrite Zlength_list_repeat; lia.
+    rewrite Znth_repeat_inrange in H2; ulia.
+    all: rewrite Zlength_repeat; lia.
   Qed.
 
   Lemma inv_popped_newcost:
