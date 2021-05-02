@@ -206,11 +206,18 @@ Proof.
     forward.
     unlocalize [EX g'' : UFGraph, !! (findS g x g'' /\ uf_root g'' x root) && vertices_at sh (vvalid g'') g''].
     (* The main ramification entailment. *)
-    + pose proof (true_Cne_neq _ _ H1).
-      assert ((vgamma g' x) = (r, pa)) by (apply (findS_preserves_vgamma g); auto).
+    +
+      assert (pa <> x). {
+        intro. subst. apply H1; trivial.
+      }
+      assert ((vgamma g' x) = (r, pa)). {
+        apply (findS_preserves_vgamma g); auto.
+      }
       assert (weak_valid g' root) by (right; destruct H3; apply reachable_foot_valid in H3; auto).
       assert (vvalid g' x) by (destruct H2 as [_ [[? _] _]]; rewrite <- H2; apply H).
-      assert (~ reachable g' root x) by (destruct H3; apply (vgamma_not_reachable' _ _ r pa); auto).
+      assert (~ reachable g' root x). {
+        destruct H3; apply (vgamma_not_reachable' _ _ r pa); auto.
+      }
       assert (root <> null). {
         destruct H3. apply reachable_foot_valid in H3. intro. subst root. apply (valid_not_null g' null H3). simpl. auto. }
       eapply derives_trans.

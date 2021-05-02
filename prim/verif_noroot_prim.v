@@ -89,7 +89,7 @@ forward_for_simple_bound size
      PROP ()
      LOCAL (temp _list arr; temp _a (Vint (Int.repr a)))
      SEP (
-      data_at Tsh (tarray tint size) (list_repeat (Z.to_nat i) (Vint (Int.repr a))++(sublist i size old_list)) arr
+      data_at Tsh (tarray tint size) (repeat (Vint (Int.repr a)) (Z.to_nat i) ++(sublist i size old_list)) arr
     ))%assert.
 entailer!. rewrite app_nil_l. rewrite sublist_same by lia. entailer!.
 (*loop*)
@@ -97,9 +97,9 @@ forward. entailer!.
 rewrite (sublist_split i (i+1)) by lia.
 replace (sublist i (i+1) old_list) with [Znth i old_list]. simpl.
 rewrite upd_Znth_char.
-rewrite <- list_repeat_app' by lia.
+rewrite <- repeat_app' by lia.
 rewrite <- app_assoc. simpl. auto.
-apply Zlength_list_repeat; lia.
+apply Zlength_repeat; lia.
 symmetry; apply sublist_one; lia.
 (*postcon*)
 entailer!. rewrite sublist_nil. rewrite app_nil_r. entailer!.
@@ -115,7 +115,7 @@ forward_for_simple_bound size
      PROP ()
      LOCAL (temp _graph arr; temp _a (Vint (Int.repr a)))
      SEP (
-      iter_sepcon.iter_sepcon (fun i => data_at Tsh (tarray tint size) (list_repeat (Z.to_nat size) (Vint (Int.repr a))) ((@list_address size CompSpecs arr i)))
+      iter_sepcon.iter_sepcon (fun i => data_at Tsh (tarray tint size) (repeat (Vint (Int.repr a)) (Z.to_nat size)) ((@list_address size CompSpecs arr i)))
         (sublist 0 i (nat_inc_list (Z.to_nat (Zlength old_contents))));
       iter_sepcon.iter_sepcon ((@list_rep size CompSpecs Tsh arr old_contents))
         (sublist i size (nat_inc_list (Z.to_nat (Zlength old_contents))))
@@ -142,9 +142,9 @@ forward_for_simple_bound size
      PROP ()
      LOCAL (temp _i (Vint (Int.repr i)); temp _graph arr; temp _a (Vint (Int.repr a)))
      SEP (
-      iter_sepcon.iter_sepcon (fun i => data_at Tsh (tarray tint size) (list_repeat (Z.to_nat size) (Vint (Int.repr a))) (@list_address size CompSpecs arr i))
+      iter_sepcon.iter_sepcon (fun i => data_at Tsh (tarray tint size) (repeat (Vint (Int.repr a)) (Z.to_nat size)) (@list_address size CompSpecs arr i))
         (sublist 0 i (nat_inc_list (Z.to_nat (Zlength old_contents))));
-      data_at Tsh (tarray tint size) (list_repeat (Z.to_nat j) (Vint (Int.repr a))++sublist j size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (@list_address size CompSpecs arr i);
+      data_at Tsh (tarray tint size) (repeat (Vint (Int.repr a)) (Z.to_nat j) ++sublist j size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (@list_address size CompSpecs arr i);
       iter_sepcon.iter_sepcon (@list_rep size CompSpecs Tsh arr old_contents)
         (sublist (i+1) size (nat_inc_list (Z.to_nat (Zlength old_contents))))
     ))%assert.
@@ -177,13 +177,13 @@ assert_PROP(force_val (sem_add_ptr_int tint Signed (force_val (sem_add_ptr_int (
 (*g[i][j] = a*)
 forward.
 unfold list_address.
-replace (upd_Znth j (list_repeat (Z.to_nat j) (Vint (Int.repr a)) ++ sublist j size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (Vint (Int.repr a)))
-with (list_repeat (Z.to_nat (j + 1)) (Vint (Int.repr a)) ++ sublist (j + 1) size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))).
+replace (upd_Znth j (repeat (Vint (Int.repr a)) (Z.to_nat j) ++ sublist j size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (Vint (Int.repr a)))
+with (repeat (Vint (Int.repr a)) (Z.to_nat (j + 1)) ++ sublist (j + 1) size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))).
 entailer!.
-rewrite <- list_repeat_app' by lia. rewrite <- app_assoc. rewrite upd_Znth_app2.
-rewrite Zlength_list_repeat by lia. rewrite Z.sub_diag by lia.
+rewrite <- repeat_app' by lia. rewrite <- app_assoc. rewrite upd_Znth_app2.
+rewrite Zlength_repeat by lia. rewrite Z.sub_diag by lia.
 rewrite (sublist_split j (j+1)) by lia. rewrite (sublist_one j (j+1)) by lia. simpl. rewrite upd_Znth0 by lia. auto.
-rewrite Zlength_list_repeat by lia. rewrite Zlength_sublist; lia.
+rewrite Zlength_repeat by lia. rewrite Zlength_sublist; lia.
 (*inner loop postcon*)
 entailer!.
 rewrite (sublist_split 0 i (i+1)) by lia. rewrite (sublist_one i (i+1)) by lia. rewrite nat_inc_list_i.
@@ -193,9 +193,9 @@ rewrite <- Zlength_correct. lia.
 entailer!. rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses 0). repeat rewrite sublist_nil. repeat rewrite iter_sepcon.iter_sepcon_nil.
 rewrite sepcon_emp. rewrite sepcon_comm. rewrite sepcon_emp.
 rewrite Z.add_0_l. rewrite (sublist_split 0 1 (size)). rewrite sublist_one. rewrite nat_inc_list_i.
-rewrite iter_sepcon.iter_sepcon_app. rewrite Zlength_list_repeat. replace (Datatypes.length old_contents) with (Z.to_nat size).
-rewrite <- (map_list_repeat (fun x => Vint (Int.repr x))).
-unfold list_rep. rewrite Znth_list_repeat_inrange.
+rewrite iter_sepcon.iter_sepcon_app. rewrite Zlength_repeat. replace (Datatypes.length old_contents) with (Z.to_nat size).
+rewrite <- (map_repeat (fun x => Vint (Int.repr x))).
+unfold list_rep. rewrite Znth_repeat_inrange.
 (*we can just simpl; entailer! here, but that relies on our size being fixed at a small number, so providing the scalable proof*)
 rewrite <- (map_map Int.repr Vint).
 rewrite (iter_sepcon.iter_sepcon_func_strong _
@@ -204,18 +204,18 @@ rewrite (iter_sepcon.iter_sepcon_func_strong _
            (map Vint
               (map Int.repr
                  (Znth index
-                    (list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) a)))))
+                    (repeat (repeat a (Z.to_nat size)) (Z.to_nat size)))))
            (list_address arr index))
    (fun i : Z =>
-      data_at Tsh (tarray tint size) (map (fun x : Z => Vint (Int.repr x)) (list_repeat (Z.to_nat size) a))
+      data_at Tsh (tarray tint size) (map (fun x : Z => Vint (Int.repr x)) (repeat a (Z.to_nat size)))
               (@list_address size CompSpecs arr i))). entailer!. simpl; entailer.
-intros. replace (Znth x (list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) a))) with
-(list_repeat (Z.to_nat size) a); auto.
-symmetry; apply Znth_list_repeat_inrange. apply sublist_In, nat_inc_list_in_iff in H3.
+intros. replace (Znth x (repeat (repeat a (Z.to_nat size)) (Z.to_nat size))) with
+(repeat a (Z.to_nat size)); auto.
+symmetry; apply Znth_repeat_inrange. apply sublist_In, nat_inc_list_in_iff in H3.
 rewrite Z2Nat.id in H3; auto.
 all: try lia.
 all: try rewrite <- ZtoNat_Zlength; try lia.
-rewrite Zlength_list_repeat; lia.
+rewrite Zlength_repeat; lia.
 Qed.
 
 (******************PRIM'S***************)
@@ -240,19 +240,19 @@ assert (size_repable: repable_signed size). {
 (*replace all data_at_ with data_at Vundef*)
 repeat rewrite data_at__tarray.
 set (k:=default_val tint); compute in k; subst k.
-forward_call (v_key, (list_repeat (Z.to_nat size) Vundef), inf).
+forward_call (v_key, (repeat Vundef (Z.to_nat size)), inf).
 assert_PROP (Zlength (map (fun x : Z => Vint (Int.repr x)) garbage) = size). entailer!.
 forward_call (pointer_val_val parent_ptr, (map (fun x : Z => Vint (Int.repr x)) garbage), size).
 clear H garbage.
-forward_call (v_out, (list_repeat (Z.to_nat size) Vundef), 0).
-assert (Hstarting_keys: forall i, 0 <= i < size -> is_int I32 Signed (Znth i (list_repeat (Z.to_nat size) (Vint (Int.repr inf))))). {
-  intros. unfold is_int. rewrite Znth_list_repeat_inrange by lia. auto.
+forward_call (v_out, (repeat Vundef (Z.to_nat size)), 0).
+assert (Hstarting_keys: forall i, 0 <= i < size -> is_int I32 Signed (Znth i (repeat (Vint (Int.repr inf)) (Z.to_nat size)))). {
+  intros. unfold is_int. rewrite Znth_repeat_inrange by lia. auto.
 }
-replace (list_repeat (Z.to_nat size) (Vint (Int.repr inf))) with
-  (map (fun x => Vint (Int.repr x)) (list_repeat (Z.to_nat size) inf)) in *.
-set (starting_keys:=map (fun x => Vint (Int.repr x)) (list_repeat (Z.to_nat size) inf)) in *.
+replace (repeat (Vint (Int.repr inf)) (Z.to_nat size)) with
+  (map (fun x => Vint (Int.repr x)) (repeat inf (Z.to_nat size))) in *.
+set (starting_keys:=map (fun x => Vint (Int.repr x)) (repeat inf (Z.to_nat size))) in *.
 assert (HZlength_starting_keys: Zlength starting_keys = size). {
-  unfold starting_keys. rewrite Zlength_map. rewrite Zlength_list_repeat; lia.
+  unfold starting_keys. rewrite Zlength_map. rewrite Zlength_repeat; lia.
 }
 unfold repable_signed in inf_repable.
 (*push all vertices into priq*)
@@ -271,10 +271,10 @@ forward_for_simple_bound size
       temp _parent (pointer_val_val parent_ptr)
     )
     SEP (
-      data_at Tsh (tarray tint size) (list_repeat (Z.to_nat size) (Vint (Int.repr 0))) v_out;
-      data_at Tsh (tarray tint size) (list_repeat (Z.to_nat size) (Vint (Int.repr size))) (pointer_val_val parent_ptr);
+      data_at Tsh (tarray tint size) (repeat (Vint (Int.repr 0)) (Z.to_nat size)) v_out;
+      data_at Tsh (tarray tint size) (repeat (Vint (Int.repr size)) (Z.to_nat size)) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint size) starting_keys v_key;
-      data_at Tsh (tarray tint size) (sublist 0 i starting_keys ++ sublist i size (list_repeat (Z.to_nat size) Vundef)) v_pq;
+      data_at Tsh (tarray tint size) (sublist 0 i starting_keys ++ sublist i size (repeat Vundef (Z.to_nat size))) v_pq;
       (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val gptr));
       free_tok v_pq (sizeof tint * size)
     )
@@ -282,7 +282,7 @@ forward_for_simple_bound size
 entailer!.
 rewrite sublist_nil, sublist_same, app_nil_l.
 entailer!.
-trivial. rewrite Zlength_list_repeat; lia.
+trivial. rewrite Zlength_repeat; lia.
 
 (*precon taken care of*)
 (*loop*)
@@ -290,13 +290,13 @@ Transparent size.
 forward.
 Global Opaque size.
 
-assert (Znth i starting_keys = Vint (Int.repr (Znth i (list_repeat (Z.to_nat size) inf)))). {
+assert (Znth i starting_keys = Vint (Int.repr (Znth i (repeat inf (Z.to_nat size))))). {
   unfold starting_keys. rewrite Znth_map; auto.
 }
-forward_call (v_pq, i, Znth i (list_repeat (Z.to_nat size) inf), sublist 0 i starting_keys ++ sublist i size (list_repeat (Z.to_nat size) Vundef)).
+forward_call (v_pq, i, Znth i (repeat inf (Z.to_nat size)), sublist 0 i starting_keys ++ sublist i size (repeat Vundef (Z.to_nat size))).
 split. auto. unfold weight_inrange_priq.
-rewrite Znth_list_repeat_inrange. lia. lia.
-rewrite Znth_list_repeat_inrange; lia.
+rewrite Znth_repeat_inrange. lia. lia.
+rewrite Znth_repeat_inrange; lia.
 
 entailer!.
 rewrite upd_Znth_app2. rewrite Zlength_sublist, Z.sub_0_r, Z.sub_diag; try lia.
@@ -305,13 +305,13 @@ rewrite upd_Znth0. rewrite app_assoc.
 rewrite (sublist_split 0 i (i+1)). rewrite (sublist_one i (i+1)). rewrite <- H0. entailer!.
 all: try lia.
 rewrite Zlength_cons, Zlength_nil; lia.
-rewrite Zlength_list_repeat. lia. lia.
-rewrite Zlength_list_repeat; lia.
-rewrite Zlength_sublist. rewrite Zlength_sublist. lia. lia. rewrite Zlength_list_repeat; lia. lia. lia.
+rewrite Zlength_repeat. lia. lia.
+rewrite Zlength_repeat; lia.
+rewrite Zlength_sublist. rewrite Zlength_sublist. lia. lia. rewrite Zlength_repeat; lia. lia. lia.
 rewrite sublist_nil, app_nil_r, sublist_same; try lia.
 (*one last thing for convenience*)
-rewrite <- (map_list_repeat (fun x => Vint (Int.repr x))).
-rewrite <- (map_list_repeat (fun x => Vint (Int.repr x))).
+rewrite <- (map_repeat (fun x => Vint (Int.repr x))).
+rewrite <- (map_repeat (fun x => Vint (Int.repr x))).
 pose proof (finGraph g) as fg.
 (*whew! all setup done!*)
 (*now for the pq loop*)
@@ -406,10 +406,10 @@ break: (
       temp _graph (pointer_val_val gptr)
     )
     SEP (
-      data_at Tsh (tarray tint size) (list_repeat (Z.to_nat size) (Vint (Int.repr 1))) v_out;
+      data_at Tsh (tarray tint size) (repeat (Vint (Int.repr 1)) (Z.to_nat size)) v_out;
       data_at Tsh (tarray tint size) (map (fun x => Vint (Int.repr x)) parents) (pointer_val_val parent_ptr);
       data_at Tsh (tarray tint size) (map (fun x => Vint (Int.repr x)) keys) v_key;
-      data_at Tsh (tarray tint size) (list_repeat (Z.to_nat size) (Vint (Int.repr (inf+1)))) v_pq;
+      data_at Tsh (tarray tint size) (repeat (Vint (Int.repr (inf+1))) (Z.to_nat size)) v_pq;
       (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_symm_mat size g) (pointer_val_val gptr));
       free_tok v_pq (sizeof tint * size)
     )
@@ -425,50 +425,50 @@ break: (
             (inf_representable g)) as elg.
   Exists elg.
   pose proof (finGraph elg) as fe. Exists fe.
-  Exists (list_repeat (Z.to_nat size) size).
-  Exists (list_repeat (Z.to_nat size) inf).
-  Exists (list_repeat (Z.to_nat size) inf).
+  Exists (repeat size (Z.to_nat size)).
+  Exists (repeat inf (Z.to_nat size)).
+  Exists (repeat inf (Z.to_nat size)).
   Exists (nil (A:=V)).
   Exists (VList g). rewrite app_nil_l.
   assert (Hinv_1: is_partial_lgraph elg g).
   subst elg. apply edgeless_partial_lgraph.
   assert (Hinv_2: uforest' elg). subst elg. apply uforest'_edgeless_graph.
   assert (Hinv_3: Permutation (VList g) (VList g)). apply Permutation_refl; auto.
-  assert (Hinv_4: forall v : Z, 0 <= v < size -> 0 <= Znth v (list_repeat (Z.to_nat size) size) <= size). {
-    intros. rewrite Znth_list_repeat_inrange; lia.
+  assert (Hinv_4: forall v : Z, 0 <= v < size -> 0 <= Znth v (repeat size (Z.to_nat size)) <= size). {
+    intros. rewrite Znth_repeat_inrange; lia.
   }
-  assert (Hinv_5: forall v : Z, 0 <= v < size -> Znth v (list_repeat (Z.to_nat size) inf) =
-    elabel g (eformat (v, Znth v (list_repeat (Z.to_nat size) size)))). {
+  assert (Hinv_5: forall v : Z, 0 <= v < size -> Znth v (repeat inf (Z.to_nat size)) =
+    elabel g (eformat (v, Znth v (repeat size (Z.to_nat size))))). {
     intros.
-    repeat rewrite Znth_list_repeat_inrange by lia. symmetry; apply (invalid_edge_weight g).
+    repeat rewrite Znth_repeat_inrange by lia. symmetry; apply (invalid_edge_weight g).
     unfold not; intros. rewrite <- (eformat_adj g) in H0. apply adjacent_requires_vvalid in H0. destruct H0.
     rewrite vert_bound in H1. lia.
   }
   assert (Hinv_6: forall v : Z,
     0 <= v < size ->
-    Znth v (list_repeat (Z.to_nat size) inf) =
+    Znth v (repeat inf (Z.to_nat size)) =
     (if in_dec V_EqDec v (nil (A:=V))
      then (inf + 1)%Z
-     else Znth v (list_repeat (Z.to_nat size) inf))). {
+     else Znth v (repeat inf (Z.to_nat size)))). {
     intros. destruct (in_dec V_EqDec v []); [contradiction | auto].
   }
   assert (Hinv_7: forall v : Z, 0 <= v < size ->
-    0 <= Znth v (list_repeat (Z.to_nat size) size) < size ->
-    evalid g (eformat (v, Znth v (list_repeat (Z.to_nat size) size))) /\
+    0 <= Znth v (repeat size (Z.to_nat size)) < size ->
+    evalid g (eformat (v, Znth v (repeat size (Z.to_nat size)))) /\
     (exists i : Z, 0 <= i < Zlength (nil (A:=V)) /\
-       Znth i (nil (A:=V)) = Znth v (list_repeat (Z.to_nat size) size) /\ i < find (nil (A:=V)) v 0) /\
+       Znth i (nil (A:=V)) = Znth v (repeat size (Z.to_nat size)) /\ i < find (nil (A:=V)) v 0) /\
     (forall u : V,
      In u (sublist 0 (find (nil (A:=V)) v 0) (nil (A:=V))) ->
-     elabel g (eformat (v, Znth v (list_repeat (Z.to_nat size) size))) <=
+     elabel g (eformat (v, Znth v (repeat size (Z.to_nat size)))) <=
      elabel g (eformat (u, v)))). {
-    intros. rewrite Znth_list_repeat_inrange in H0; lia. }
+    intros. rewrite Znth_repeat_inrange in H0; lia. }
   assert (Hinv_8: forall v : Z, 0 <= v < size ->
-    Znth v (list_repeat (Z.to_nat size) size ) = size ->
+    Znth v (repeat size (Z.to_nat size) ) = size ->
     forall u : V, In u (sublist 0 (find [] v 0) []) -> ~ adjacent g u v). {
     intros. rewrite sublist_nil in H1. contradiction. }
   assert (Hinv_9: Permutation (EList elg)
-      (map (fun v : Z => eformat (v, Znth v (list_repeat (Z.to_nat size) size)))
-         (filter (fun v : Z => Znth v (list_repeat (Z.to_nat size) size) <? size) []))). {
+      (map (fun v : Z => eformat (v, Znth v (repeat size (Z.to_nat size))))
+         (filter (fun v : Z => Znth v (repeat size (Z.to_nat size)) <? size) []))). {
     simpl.
     (*because I've trouble using edgeless_graph_EList*) apply NoDup_Permutation. apply NoDup_EList. apply NoDup_nil.
     intros. rewrite EList_evalid. split; intros.
@@ -483,11 +483,11 @@ break: (
   }
   assert (Hinv_12: forall v u1 u2 : V,
     In v (nil (A:=V)) ->
-    0 <= Znth v (list_repeat (Z.to_nat size) size) < size ->
+    0 <= Znth v (repeat size (Z.to_nat size)) < size ->
     vvalid g u2 ->
     In u1 (sublist 0 (find (nil (A:=V)) v 0) (nil (A:=V))) ->
     ~ In u2 (sublist 0 (find (nil (A:=V)) v 0) (nil (A:=V))) ->
-    elabel g (eformat (v, Znth v (list_repeat (Z.to_nat size) size))) <=
+    elabel g (eformat (v, Znth v (repeat size (Z.to_nat size)))) <=
     elabel g (eformat (u1, u2))). {
     intros. contradiction.
   }
@@ -498,11 +498,11 @@ break: (
 
   (*fix up the SEP*)
   replace (map (fun x : V => if in_dec V_EqDec x [] then Vint (Int.repr 1) else Vint (Int.repr 0)) (nat_inc_list (Z.to_nat size)))
-    with (map (fun x : Z => Vint (Int.repr x)) (list_repeat (Z.to_nat size) 0)). 2: {
-    apply list_eq_Znth. repeat rewrite Zlength_map. rewrite Zlength_list_repeat by lia. rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
-    intros. rewrite Zlength_map, Zlength_list_repeat in H by lia.
-    rewrite Znth_map. 2: rewrite Zlength_list_repeat; lia.
-    rewrite Znth_list_repeat_inrange by lia.
+    with (map (fun x : Z => Vint (Int.repr x)) (repeat 0 (Z.to_nat size))). 2: {
+    apply list_eq_Znth. repeat rewrite Zlength_map. rewrite Zlength_repeat by lia. rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
+    intros. rewrite Zlength_map, Zlength_repeat in H by lia.
+    rewrite Znth_map. 2: rewrite Zlength_repeat; lia.
+    rewrite Znth_repeat_inrange by lia.
     rewrite Znth_map. 2: rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
     rewrite nat_inc_list_i. 2: rewrite Z2Nat.id; lia.
     destruct (in_dec V_EqDec i []); [contradiction | auto].
@@ -1733,10 +1733,10 @@ break: (
     }
     Exists mst'. Exists fmst'. Exists popped_vertices. Exists parents. Exists keys.
     (*SEP matters*)
-    replace (map Vint (map Int.repr pq_state)) with (list_repeat (Z.to_nat size) (Vint (Int.repr (inf + 1)))). 2: {
-      apply list_eq_Znth. do 2 rewrite Zlength_map. rewrite Zlength_list_repeat; lia.
-      intros. rewrite Zlength_list_repeat in H2 by lia.
-      rewrite Znth_list_repeat_inrange by lia. rewrite Znth_map. 2: rewrite Zlength_map; lia.
+    replace (map Vint (map Int.repr pq_state)) with (repeat (Vint (Int.repr (inf + 1))) (Z.to_nat size)). 2: {
+      apply list_eq_Znth. do 2 rewrite Zlength_map. rewrite Zlength_repeat; lia.
+      intros. rewrite Zlength_repeat in H2 by lia.
+      rewrite Znth_repeat_inrange by lia. rewrite Znth_map. 2: rewrite Zlength_map; lia.
       rewrite Znth_map by lia. rewrite Hinv_6 by lia.
       destruct (in_dec V_EqDec i popped_vertices). auto.
       exfalso; apply n. apply (Permutation_in (l:=VList mst')). apply Permutation_sym; auto.
@@ -1744,9 +1744,9 @@ break: (
     }
     replace (map (fun x : V =>
       if in_dec V_EqDec x popped_vertices then Vint (Int.repr 1) else Vint (Int.repr 0))
-     (nat_inc_list (Z.to_nat size))) with (list_repeat (Z.to_nat size) (Vint (Int.repr 1))). 2: {
-      apply list_eq_Znth. rewrite Zlength_map, Zlength_list_repeat, nat_inc_list_Zlength, Z2Nat.id by lia; auto.
-      intros. rewrite Zlength_list_repeat in H2 by lia. rewrite Znth_list_repeat_inrange by lia.
+     (nat_inc_list (Z.to_nat size))) with (repeat (Vint (Int.repr 1)) (Z.to_nat size)). 2: {
+      apply list_eq_Znth. rewrite Zlength_map, Zlength_repeat, nat_inc_list_Zlength, Z2Nat.id by lia; auto.
+      intros. rewrite Zlength_repeat in H2 by lia. rewrite Znth_repeat_inrange by lia.
       rewrite Znth_map. 2: rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
       rewrite nat_inc_list_i. 2: rewrite Z2Nat.id; lia.
       destruct (in_dec V_EqDec i popped_vertices). auto.
@@ -1804,7 +1804,7 @@ freeze FR := (data_at _ _ _ v_out)
                (data_at _ _ _ (pointer_val_val parent_ptr))
                (data_at _ _ _ v_key)
                (SpaceAdjMatGraph' _ _ _).
-        forward_call (Tsh, priq_ptr, size, (list_repeat (Z.to_nat size) (inf + 1))).
+        forward_call (Tsh, priq_ptr, size, (repeat (inf + 1) (Z.to_nat size))).
 entailer!.
 thaw FR.
 forward.
@@ -1814,7 +1814,7 @@ Transparent size.
 entailer!.
 Global Opaque size.
 }
-(*huh, where did I forget this*) rewrite map_list_repeat; auto.
+(*huh, where did I forget this*) rewrite map_repeat; auto.
 Qed.
 
 End NoRootPrimProof.

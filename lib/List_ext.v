@@ -9,6 +9,7 @@ Require Import CertiGraph.lib.EquivDec_ext.
 Require Import VST.floyd.sublist.
 Require Import VST.floyd.list_solver.
 
+
 Lemma list_prop_reduced_list: forall {A : Type} (Q : A -> Prop) (Q_lem : forall a, Q a \/ ~Q a) (l : list A),
   exists l', forall a, In a l' <-> (In a l /\ Q a).
 Proof.
@@ -150,30 +151,30 @@ Proof.
     apply sublist_In in H2. apply (H0 x H2).
 Qed.
 
-Lemma list_repeat1:
+Lemma repeat1:
   forall {A} (a: A),
-    Coqlib.list_repeat (Z.to_nat 1) a = a :: nil.
+    repeat a (Z.to_nat 1) = a :: nil.
 Proof. trivial. Qed.
 
-Lemma upd_Znth_list_repeat:
+Lemma upd_Znth_repeat:
   forall {A} (i:Z) size (a b : A),
     (0 <= i < size)%Z ->
-    upd_Znth i (Coqlib.list_repeat (Z.to_nat i) a ++
-                            Coqlib.list_repeat (Z.to_nat (size - i)) b) a =
-    Coqlib.list_repeat (Z.to_nat (i + 1)) a ++
-                Coqlib.list_repeat (Z.to_nat (size - (i + 1))) b.
+    upd_Znth i (repeat a (Z.to_nat i) ++
+                            repeat b (Z.to_nat (size - i))) a =
+    repeat a (Z.to_nat (i + 1)) ++
+                repeat b (Z.to_nat (size - (i + 1))).
 Proof.
   intros.
   rewrite upd_Znth_app2.
-  2: repeat rewrite Zlength_list_repeat; lia. 
-  rewrite Zlength_list_repeat by lia.
+  2: repeat rewrite Zlength_repeat; lia. 
+  rewrite Zlength_repeat by lia.
   replace (i-i)%Z with 0%Z by lia.
-  rewrite <- list_repeat_app' by lia.
+  rewrite <- repeat_app' by lia.
   rewrite app_assoc_reverse; f_equal.
   rewrite upd_Znth0_old.
-  2: rewrite Zlength_list_repeat; lia.
-  rewrite Zlength_list_repeat, sublist_list_repeat by lia.
-  rewrite list_repeat1, Z.sub_add_distr. easy.
+  2: rewrite Zlength_repeat; lia.
+  rewrite Zlength_repeat, sublist_repeat by lia.
+  rewrite repeat1, Z.sub_add_distr. easy.
 Qed.
 
 Lemma map_incl: forall {A B : Type} (f : A -> B) (l1 l2 : list A), incl l1 l2 -> incl (map f l1) (map f l2).

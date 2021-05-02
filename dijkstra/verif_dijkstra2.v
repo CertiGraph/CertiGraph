@@ -39,7 +39,7 @@ Section DijkstraProof.
            0 <= j < i ->
            keys_dist_linked_correctly j keys dist_and_prev h;
          
-         dist_and_prev = list_repeat (Z.to_nat i) (Int.repr inf);
+         dist_and_prev = repeat (Int.repr inf) (Z.to_nat i);
          
          Zlength keys = i;
 
@@ -91,17 +91,17 @@ Section DijkstraProof.
         data_at Tsh
                 (tarray tint size)
                 (map Vint (map Int.repr keys) ++
-                     (list_repeat (Z.to_nat (size-i)) Vundef))
+                     (repeat Vundef (Z.to_nat (size-i))))
                 (pointer_val_val keys_ptr);
         data_at Tsh
                 (tarray tint size)
                 (map Vint dist_and_prev ++
-                     (list_repeat (Z.to_nat (size-i)) Vundef))
+                     (repeat Vundef (Z.to_nat (size-i))))
                 (pointer_val_val prev_ptr);
         data_at Tsh
                 (tarray tint size)
                 (map Vint dist_and_prev ++
-                     (list_repeat (Z.to_nat (size-i)) Vundef))
+                     (repeat Vundef (Z.to_nat (size-i))))
                 (pointer_val_val dist_ptr);
         @SpaceAdjMatGraph size CompSpecs sh id g (pointer_val_val arr);
         free_tok (pointer_val_val keys_ptr) (size * sizeof tint);
@@ -408,13 +408,13 @@ Section DijkstraProof.
              
       Intro temp'. destruct temp' as [h' key].
       forward.
-      repeat rewrite upd_Znth_list_repeat; try lia.
+      repeat rewrite upd_Znth_repeat; try lia.
       simpl fst in *. simpl snd in *.
       (* A number of tweaks to the keys array in SEP... *)
       rewrite upd_Znth_app2.
       2: { repeat rewrite Zlength_map.
            unfold key_type in *.
-           rewrite Zlength_list_repeat; lia.
+           rewrite Zlength_repeat; lia.
       }
       replace (i - Zlength (map Vint (map Int.repr keys0))) with 0.
       2: { repeat rewrite Zlength_map.
@@ -422,8 +422,8 @@ Section DijkstraProof.
       }
       replace (Z.to_nat (size - i)) with (Z.to_nat 1 + Z.to_nat (size - (i + 1)))%nat.
       2: lia. 
-      rewrite <- (list_repeat_app _ (Z.to_nat 1) (Z.to_nat (size - (i + 1)))).
-      simpl list_repeat at 1.
+      rewrite (repeat_app _ (Z.to_nat 1) (Z.to_nat (size - (i + 1)))).
+      simpl repeat at 1.
       rewrite upd_Znth_app1.
       2: { rewrite binary_heap_Zmodel.Zlength_one. lia. }
       replace (upd_Znth 0 [Vundef] (Vint (Int.repr key))) with
@@ -454,7 +454,7 @@ Section DijkstraProof.
           -- subst j; clear H5.
              red. intros.
              rewrite Znth_app2;
-               rewrite Zlength_list_repeat; try lia.
+               rewrite Zlength_repeat; try lia.
              replace (i - i) with 0 by lia.
              rewrite Znth_0_cons.
              rewrite Znth_app2 in H5 by lia.
@@ -482,7 +482,7 @@ Section DijkstraProof.
              specialize (H4 _ H9 _ H5).
              destruct H4.
              ++ left. rewrite Znth_app1.
-                2: rewrite Zlength_list_repeat; lia.
+                2: rewrite Zlength_repeat; lia.
                 clear -H4 H8 Hc'.
                 apply Permutation_find_item_by_key with (k := k) in H8.
                 change (?x :: ?y) with ([x] ++ y) in H8.
@@ -509,7 +509,7 @@ Section DijkstraProof.
              ++ unfold find_item_by_key.
                 specialize (Hc _ H9). rewrite H5 in Hc. exfalso.
                 apply H4; trivial.
-        * rewrite <- list_repeat1, list_repeat_app,
+        * rewrite <- repeat1, <- repeat_app,
           Z2Nat.inj_add. trivial. lia. lia.
         * rewrite Zlength_app, binary_heap_Zmodel.Zlength_one.
           lia.
@@ -625,15 +625,15 @@ Section DijkstraProof.
           apply perm_skip. trivial.
           
       + repeat rewrite map_app; rewrite app_assoc; cancel.
-        rewrite list_repeat1, upd_Znth_app2,
-        Zlength_map, Zlength_list_repeat, Z.sub_diag,
+        rewrite repeat1, upd_Znth_app2,
+        Zlength_map, Zlength_repeat, Z.sub_diag,
         upd_Znth_app1, upd_Znth0, <- app_assoc.
         cancel.
         rewrite binary_heap_Zmodel.Zlength_one. lia.
         lia.
         rewrite Zlength_map, Zlength_app,
         binary_heap_Zmodel.Zlength_one,
-        Zlength_list_repeat, Zlength_list_repeat. lia.
+        Zlength_repeat, Zlength_repeat. lia.
         lia. lia.
     - (* At this point we are done with the
        first for loop. The arrays are all set to inf. *)
@@ -657,7 +657,7 @@ Section DijkstraProof.
       }
       rename H6 into Hr.
      
-      rewrite Z.sub_diag, list_repeat_0, app_nil_r, app_nil_r.
+      rewrite Z.sub_diag, repeat_0, app_nil_r, app_nil_r.
       assert (Htemp: 0 <= src < Zlength keys) by lia.
       forward. forward. forward.
       clear Htemp.
@@ -683,16 +683,16 @@ Section DijkstraProof.
                   g sh src keys dist_ptr prev_ptr
                   keys_pv priq_ptr graph_ptr ti).
       + unfold dijk_forloop_inv.
-        Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) src).
-        Exists (upd_Znth src (@list_repeat V (Z.to_nat size) inf) 0).
+        Exists (upd_Znth src (@repeat V inf (Z.to_nat size)) src).
+        Exists (upd_Znth src (@repeat V inf (Z.to_nat size)) 0).
         Exists (@nil V) hb.
         repeat rewrite <- upd_Znth_map; entailer!.
 
         clear H6 H7 H8 H9 H10 H11 H12 H13 H14 H15 H16 H17
               H18 PNpriq_ptr PNkeys_ptr.
         
-        assert (Htemp: Zlength (list_repeat (Z.to_nat size) inf) = size). {
-          rewrite Zlength_list_repeat; ulia.
+        assert (Htemp: Zlength (repeat inf (Z.to_nat size)) = size). {
+          rewrite Zlength_repeat; ulia.
         }
         
         split3; [| |split3; [| |split3; [| |split3;
@@ -707,12 +707,12 @@ Section DijkstraProof.
           destruct (Z.eq_dec i src).
           -- subst i.
              rewrite upd_Znth_same.
-             2: rewrite Zlength_map, Zlength_list_repeat; lia.
+             2: rewrite Zlength_map, Zlength_repeat; lia.
              specialize (Hu _ H4). rewrite H6 in Hu.
              destruct H3. 2: { destruct H3. unfold proj_keys.
                change k with (heap_item_key (k, Int.repr inf, Int.repr src)).
                apply in_map. trivial. }
-             rewrite Znth_list_repeat_inrange in H3; trivial.
+             rewrite Znth_repeat_inrange in H3; trivial.
              apply Permutation_find_item_by_key with (k := k) in H_ha_hb_rel.
              rewrite H6 in H_ha_hb_rel.
              rewrite find_item_by_key_update_pri_by_key with 
@@ -720,8 +720,8 @@ Section DijkstraProof.
              symmetry in H_ha_hb_rel. apply Permutation_length_1_inv in H_ha_hb_rel.
              trivial.
           -- rewrite upd_Znth_diff; trivial.
-             rewrite map_list_repeat, Znth_list_repeat_inrange by lia.
-             rewrite Znth_list_repeat_inrange in H3 by lia.
+             rewrite map_repeat, Znth_repeat_inrange by lia.
+             rewrite Znth_repeat_inrange in H3 by lia.
              destruct H3. 2: { destruct H3. rewrite <- H6. apply Hc. trivial. }
              assert (Znth src keys <> k). {
                intro. clear -H H4 H6 n H_NoDup_keys H7 H5.
@@ -796,10 +796,10 @@ Section DijkstraProof.
              apply H0.
         * red. intros. inversion H4.
         * red; apply Forall_upd_Znth;
-            try apply Forall_list_repeat; ulia.
+            try apply Forall_repeat; ulia.
         * red; apply Forall_upd_Znth.
-          1: rewrite Zlength_list_repeat; lia.
-          try apply Forall_list_repeat; try ulia.
+          1: rewrite Zlength_repeat; lia.
+          try apply Forall_repeat; try ulia.
           left. pose proof (size_representable g).
           split; [reflexivity|].
           apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; lia. 

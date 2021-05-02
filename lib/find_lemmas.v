@@ -201,7 +201,7 @@ Qed.
 Lemma min_picks_first:
   forall num mono start,
     start <= mono ->
-    fold_right Z.min start (list_repeat num mono) = start.
+    fold_right Z.min start (repeat mono num) = start.
 Proof.
   intros. induction num; trivial.
   simpl. rewrite IHnum. rewrite Z.min_r; lia.
@@ -210,47 +210,47 @@ Qed.
 Lemma find_src: forall src,
     0 < inf ->
     0 <= src < size ->
-    find (upd_Znth src (list_repeat (Z.to_nat size) inf) 0)
-         (fold_right Z.min (hd 0 (upd_Znth src (list_repeat (Z.to_nat size) inf) 0))
-                     (upd_Znth src (list_repeat (Z.to_nat size) inf) 0)) 0 = src.
+    find (upd_Znth src (repeat inf (Z.to_nat size)) 0)
+         (fold_right Z.min (hd 0 (upd_Znth src (repeat inf (Z.to_nat size)) 0))
+                     (upd_Znth src (repeat inf (Z.to_nat size)) 0)) 0 = src.
 Proof.
   intros.
-  assert (Ha: 0 <= src < Zlength (list_repeat (Z.to_nat size) inf)). {
-    rewrite Zlength_list_repeat; lia.
+  assert (Ha: 0 <= src < Zlength (repeat inf (Z.to_nat size))). {
+    rewrite Zlength_repeat; lia.
   }
 
-  remember (upd_Znth src (list_repeat (Z.to_nat size) inf) 0) as l.
+  remember (upd_Znth src (repeat inf (Z.to_nat size)) 0) as l.
   replace (fold_right Z.min (hd 0 l) l) with (Znth src l).
   - apply find_index.
     1: rewrite Heql, upd_Znth_Zlength;
-      rewrite Zlength_list_repeat; lia.
+      rewrite Zlength_repeat; lia.
     rewrite Heql.
     rewrite upd_Znth_same; trivial.
     rewrite sublist_upd_Znth_l.
     2: lia.
-    2: rewrite Zlength_list_repeat; lia.
-    rewrite sublist_list_repeat by lia.
+    2: rewrite Zlength_repeat; lia.
+    rewrite sublist_repeat by lia.
     replace (src - 0) with (src) by lia.
-    intro. apply in_list_repeat in H1. lia.
+    intro. apply repeat_spec in H1. lia.
   - subst l.
     rewrite upd_Znth_same; trivial.
     rewrite upd_Znth_unfold at 2; auto.
     repeat rewrite fold_right_app.
-    repeat rewrite sublist_list_repeat; try lia.
-    2: rewrite Zlength_list_repeat; lia.
-    repeat rewrite Zlength_list_repeat by lia.
+    repeat rewrite sublist_repeat; try lia.
+    2: rewrite Zlength_repeat; lia.
+    repeat rewrite Zlength_repeat by lia.
     replace (src - 0) with (src) by lia.
     rewrite <- Znth_0_hd.
     2: { rewrite upd_Znth_Zlength by assumption.
-         rewrite Zlength_list_repeat; lia. }
+         rewrite Zlength_repeat; lia. }
     destruct (Z.eq_dec src 0).
     + rewrite e. rewrite upd_Znth_same.
-      2: rewrite Zlength_list_repeat; lia.
+      2: rewrite Zlength_repeat; lia.
       simpl. rewrite Z.min_l; trivial.
       rewrite min_picks_first; lia.
     + rewrite upd_Znth_diff;
-        try rewrite Zlength_list_repeat; try lia.
-      rewrite Znth_list_repeat_inrange by lia.
+        try rewrite Zlength_repeat; try lia.
+      rewrite Znth_repeat_inrange by lia.
       simpl. rewrite Z.min_l.
       1,2: rewrite min_picks_first.
       all: try lia; compute; inversion 1.

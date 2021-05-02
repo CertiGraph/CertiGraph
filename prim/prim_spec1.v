@@ -53,7 +53,7 @@ Definition initialise_list_spec :=
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (data_at Tsh (tarray tint size) (list_repeat (Z.to_nat size) (Vint (Int.repr a))) arr
+     SEP (data_at Tsh (tarray tint size) (repeat (Vint (Int.repr a)) (Z.to_nat size)) arr
          ).
 
 Definition initialise_matrix_spec :=
@@ -73,7 +73,7 @@ Definition initialise_matrix_spec :=
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (list_repeat (Z.to_nat size) (list_repeat (Z.to_nat size) a)) arr addresses).
+     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (repeat (repeat a (Z.to_nat size)) (Z.to_nat size) ) arr addresses).
 
 Definition prim_spec :=
   DECLARE _prim
