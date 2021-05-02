@@ -34,14 +34,14 @@ Fixpoint prog_list_helper (i: nat) (n: nat) : list (val * val) :=
 
 Definition progressive_list (i: nat) (n: nat) := rev (prog_list_helper i n).
 
-Lemma progressive_list_repeat:
-  forall n, list_repeat n (Vundef, Vundef) = progressive_list O n.
+Lemma progressive_repeat:
+  forall n, repeat (Vundef, Vundef) n = progressive_list O n.
 Proof.
   induction n; unfold progressive_list; simpl; auto. unfold progressive_list in IHn.
-  rewrite <- IHn. change ((Vundef, Vundef) :: list_repeat n (Vundef, Vundef)) with
-                      (((Vundef, Vundef) :: nil) ++ list_repeat n (Vundef, Vundef)).
-  change ((Vundef, Vundef) :: nil) with (list_repeat 1 (Vundef, Vundef)).
-  rewrite !list_repeat_app. rewrite Nat.add_comm. auto.
+  rewrite <- IHn. change ((Vundef, Vundef) :: repeat (Vundef, Vundef) n) with
+                      (((Vundef, Vundef) :: nil) ++ repeat (Vundef, Vundef) n).
+  change ((Vundef, Vundef) :: nil) with (repeat (Vundef, Vundef) 1).
+  rewrite <- !repeat_app. rewrite Nat.add_comm. auto.
 Qed.
 
 Lemma progressive_list_length: forall i n, length (progressive_list i n) = n.
@@ -118,8 +118,8 @@ Proof.
       unfold malloc_compatible in *. destruct (pointer_val_val rt); auto. destruct H0. split; auto. simpl sizeof. rewrite Zmax0r; intuition.
     } rewrite H1. clear H1.
     assert (data_at_ sh (tarray vertex_type V) (pointer_val_val rt) = data_at sh (tarray vertex_type V) (progressive_list O (Z.to_nat V)) (pointer_val_val rt)). {
-      unfold data_at_, field_at_, data_at. assert (default_val (nested_field_type (tarray vertex_type V) []) = list_repeat (Z.to_nat V) (Vundef, Vundef)) by reflexivity.
-      rewrite H1. rewrite progressive_list_repeat. auto.
+      unfold data_at_, field_at_, data_at. assert (default_val (nested_field_type (tarray vertex_type V) []) = repeat (Vundef, Vundef) (Z.to_nat V)) by reflexivity.
+      rewrite H1. rewrite progressive_repeat. auto.
     } rewrite H1. clear H1.
     forward_for_simple_bound V
       (EX i: Z,
