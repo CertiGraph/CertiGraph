@@ -91,7 +91,12 @@ Proof.
     Exists (ppa, mgpa). simpl fst. simpl snd. assert (mr = vlabel g ppa) by (simpl in H3; inversion H3; auto). rewrite <- H4. entailer !.
     apply reachable_edge with p; auto. apply (vgamma_not_edge g p (vlabel g p)); auto. apply reachable_foot_valid in H1; auto.
     intro. subst. apply HRE; trivial.
-  - destruct H1. apply false_Cne_eq in HRE. subst ppa. assert (uf_root g x p) by (split; intros; auto; apply (parent_loop g p (vlabel g p) y); auto).
+  - destruct H1.
+    rename HRE into Htemp.
+    assert (HRE: p = ppa). {
+      destruct p; destruct ppa; inversion Htemp; trivial.
+    }
+    subst ppa. assert (uf_root g x p) by (split; intros; auto; apply (parent_loop g p (vlabel g p) y); auto).
     forward_while (EX g': UFGraph, EX tmp: pointer_val, EX xv: pointer_val,
                    PROP (uf_equiv g g' /\ uf_root g' xv p)
                    LOCAL (temp _p (pointer_val_val p); temp _tmp (pointer_val_val tmp); temp _x (pointer_val_val xv))
@@ -100,7 +105,12 @@ Proof.
     + entailer!. apply denote_tc_test_eq_split; apply graph_local_facts.
       * destruct H4 as [_ [? _]]. apply reachable_head_valid in H4; assumption.
       * destruct H4 as [[? _] _]. rewrite <- H4. apply reachable_foot_valid in H1; assumption.
-    + destruct H4 as [? ?]. apply true_Cne_neq in HRE. remember (vgamma g' xv) as rpa eqn:?H. destruct rpa as [xr xpa]. symmetry in H6.
+    + destruct H4 as [? ?].
+      rename HRE into Htemp'.
+      assert (HRE: xv <> p). {
+        intro; subst; apply Htemp'; trivial.
+      }
+      remember (vgamma g' xv) as rpa eqn:?H. destruct rpa as [xr xpa]. symmetry in H6.
       assert (H_VALID_XV: vvalid g' xv) by (destruct H5 as [? _]; apply reachable_head_valid in H5; auto).
       localize [data_at sh node_type (vgamma2cdata (vgamma g' xv)) (pointer_val_val xv)].
       rewrite H6. simpl vgamma2cdata. forward. 1: entailer!; destruct xpa; simpl; auto.

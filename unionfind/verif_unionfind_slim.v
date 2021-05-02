@@ -171,7 +171,11 @@ Proof.
       * simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto. 2: apply reachable_refl; auto.
         rewrite <- (uf_equiv_root_the_same g g' x root); auto.
         apply (uf_root_edge _ (liGraph g) _ pa); [| apply (vgamma_not_dst g x r pa) | rewrite (uf_equiv_root_the_same g g')]; auto.
-  - forward. Exists g x. entailer!. apply false_Cne_eq in H1. subst pa. split; [|split]; auto.
+  - forward. Exists g x. entailer!.
+    assert (pa = x). {
+      destruct pa; destruct x; inversion H1; trivial.
+    }
+    subst pa. split; auto.
     + apply (uf_equiv_refl _  (liGraph g)).
     + apply uf_root_vgamma with (n := r); auto.
   - Intros g' rt. forward. Exists g' rt. entailer!.
@@ -213,8 +217,17 @@ Proof.
      temp _x (pointer_val_val x); temp _y (pointer_val_val y))
      SEP (vertices_at sh (vvalid g2) g2)).
   - apply denote_tc_test_eq_split; apply graph_local_facts; auto.
-  - forward. Exists g2. entailer !. apply true_Ceq_eq in H6. subst y_root. apply (the_same_root_union g g1 g2 x y x_root); auto.
-  - forward. apply false_Ceq_neq in H6. entailer!.
+  - forward. Exists g2. entailer !.
+    rename H6 into Htemp.
+    assert (x_root = y_root). {
+      destruct x_root; destruct y_root; inversion Htemp; trivial.
+    }
+    subst y_root. apply (the_same_root_union g g1 g2 x y x_root); auto.
+  - forward.
+    assert (x_root <> y_root). {
+      intro; subst; apply H6; trivial.
+    }
+    entailer!.
   - Intros. (* xRank = xRoot -> rank; *)
     remember (vgamma g2 x_root) as rpa eqn:?H. destruct rpa as [rankXRoot paXRoot]. symmetry in H7.
     localize [data_at sh node_type (vgamma2cdata (vgamma g2 x_root)) (pointer_val_val x_root)].

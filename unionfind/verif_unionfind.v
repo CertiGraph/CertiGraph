@@ -232,10 +232,14 @@ Proof.
         -- apply reachable_refl; auto.
     (* End ramification entailment. *)
     + clear. entailer!. Exists g'' root. entailer!.
-  - forward. Exists g x. entailer!. apply false_Cne_eq in H1. subst pa. split; split; [|split| |]; auto.
-    + reflexivity.
-    + apply (uf_equiv_refl _  (liGraph g)).
-    + repeat intro; auto.
+  - forward. Exists g x. entailer!.
+    assert (pa = x). {
+      destruct pa; destruct x; inversion H1; trivial.
+    }
+    subst pa. split; auto.
+    + split3. reflexivity.
+      apply (uf_equiv_refl _  (liGraph g)).
+      repeat intro; auto.
     + apply uf_root_vgamma with (n := r); auto.
   - Intros g'' rt. forward. Exists g'' rt. entailer!.
 Qed. (* Original: 47.715 secs; VST 2.*: 2.335 secs *)
@@ -279,8 +283,16 @@ Proof.
      SEP (vertices_at sh (vvalid g2) g2)).
   - apply denote_tc_test_eq_split; apply graph_local_facts; auto.
     (* the true/false_Ceq_eq tactics below are pretty cool *)
-  - forward. Exists g2. entailer!. apply true_Ceq_eq in H6. subst y_root. apply (the_same_root_union g g1 g2 x y x_root); auto.
-  - forward. apply false_Ceq_neq in H6. entailer!.
+  - forward. Exists g2. entailer!.
+    assert (x_root = y_root). {
+      destruct x_root; destruct y_root; inversion H6; trivial.
+    }
+    subst y_root. apply (the_same_root_union g g1 g2 x y x_root); auto.
+  - forward.
+    assert (x_root <> y_root). {
+      intro; subst; apply H6; trivial.
+    }
+    entailer!.
   - Intros. (* xRank = xRoot -> rank; *)
     remember (vgamma g2 x_root) as rpa eqn:?H. destruct rpa as [rankXRoot paXRoot]. symmetry in H7.
     localize [data_at sh node_type (vgamma2cdata (vgamma g2 x_root)) (pointer_val_val x_root)].
