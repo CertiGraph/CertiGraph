@@ -1,3 +1,4 @@
+Require Import Coq.Logic.Classical.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.graph.graph_model.
@@ -311,18 +312,14 @@ Qed.
 Lemma adjacent_dec:
 forall g u v, adjacent g u v \/ ~ adjacent g u v.
 Proof.
-  intros.
-  Fail tauto.
-  admit.
-Admitted.
+  intros. tauto.
+Qed.
 
 Lemma connected_dec:
 forall g u v, connected g u v \/ ~ connected g u v.
 Proof.
-  intros.
-  Fail tauto.
-  admit.
-Admitted.
+  intros. tauto.
+Qed.
 
 Definition connected_graph (g: PGraph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
 
