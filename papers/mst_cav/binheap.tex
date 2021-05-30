@@ -1,6 +1,6 @@
 \lstset{style=myTinyStyle}
 
-Binary heaps are a classic data structure for imperative programs~\cite{clrs,sedgewick}.  Briefly, binary heaps embed a heap-ordered tree in an array and use arithmetic on indices to navigate between a parent and its left and right children.  In addition to providing the standard \texttt{insert} and \texttt{remove-min}/\texttt{remove-max} operations (depending on whether it is a min- or max-ordered heap) in logarithmic time, binary heaps can by upgraded to support two nontrivial operations.  First, Floyd's \texttt{heapify} function builds a binary heap from an unordered array in linear time, and as a related upgrade, \texttt{heapsort} performs a worst-case linearithmic-time sort using only constant additional space.  Second, binary heaps can be upgraded to support logarithmic-time \texttt{decrease-} and \texttt{increase-priority} operations, which we generalize straightforwardly into \texttt{edit\_priority}.
+Binary heaps embed a heap-ordered tree in an array and use arithmetic on indices to navigate between a parent and its left and right children~\cite{clrs}.  In addition to providing the standard \texttt{insert} and \texttt{remove-min}/\texttt{remove-max} operations (depending on whether it is a min- or max-ordered heap) in logarithmic time, binary heaps can by upgraded to support two nontrivial operations.  First, Floyd's \texttt{heapify} function builds a binary heap from an unordered array in linear time, and as a related upgrade, \texttt{heapsort} performs a worst-case linearithmic-time sort using only constant additional space.  Second, binary heaps can be upgraded to support logarithmic-time \texttt{decrease-} and \texttt{increase-priority} operations, which we generalize straightforwardly into \texttt{edit\_priority}.
 
 Binary heaps are a good fit for our graph algorithms because Dijkstra's and Prim's algorithms need to edit priorities, and a constant-space \texttt{heapsort} is appropriate for the sparse edge-list-represented graphs typically targeted by Kruskal's.  The~C language has poor support for polymorphic higher-order functions, and a binary heap that supports \texttt{edit\_priority} is half as fast as a binary heap that does not.  Accordingly, we implement binary heaps in C three times:
 \[
@@ -92,7 +92,8 @@ The insertion and remove functions we verify are in fact ``non-checking'' versio
 \subsection{Bottom-up heapify and heapsort}
 \label{sec:heapsort}
 
-Floyd's bottom-up procedure for constructing a binary heap in linear time, and using a binary heap to sort, are classics of the literature~\cite{clrs,sedgewick}.  Happily, while the asymptotic bound on heap construction is nontrivial, the implementations of both are basically repeated calls to \texttt{sink} (and exchanges to remove the root):
+Floyd's bottom-up procedure for constructing a binary heap in linear time, and using a binary heap to sort, are classics of the literature~\cite{clrs,sedgewick}.
+Happily, while the asymptotic bound on heap construction is nontrivial, the implementations of both are basically repeated calls to \texttt{sink} (and exchanges to remove the root):
 \begin{lstlisting}[firstnumber=19]
 void build_heap(Item arr[], unsigned int size) {
  unsigned int start = PARENT(size); $\label{code:parentunderflow}$
@@ -108,15 +109,24 @@ Given that in \S\ref{sec:heapinsertremove} we already generalized the specificat
 \subsection{Modifying an element's priority}
 \label{sec:modpri}
 
-In contrast to \texttt{heapify} and \texttt{heapsort}, standard algorithms textbooks are vague on the implementation of \texttt{edit\_priority}~\cite{clrs,sedgewick,DBLP:books/daglib/0015106}.  The idea is that, during \texttt{insert}, each item is associated not only with its usual \texttt{int} priority
-but also a unique \texttt{unsigned int} ``key''.
-This key is generated during \texttt{insert} and returned to the client.
-Internally, the binary heap maintains a secondary array \texttt{key\_table} that maps each key to the current location of the associated item within the primary heap array. The client calls \texttt{edit\_priority} by supplying the key associated with the item
-it wishes to modify, and the binary heap looks up the key in the \texttt{key\_table} to
+%In contrast to \texttt{heapify} and \texttt{heapsort}, standard algorithms textbooks are vague on the implementation of .
+
+To support edit-priority, each live item is associated not only with its usual \texttt{int} priority
+but also given a unique \texttt{unsigned int} ``key'', generated during \texttt{insert} and returned to the client.
+The binary heap internally maintains a secondary array \texttt{key\_table} that maps each key to the current location of the associated item within the primary heap array. The client calls \texttt{edit\_priority} by supplying the key for the item that it wishes to modify, which the binary heap looks up in the \texttt{key\_table} to
 locate the item in the heap array before calling \texttt{sink} or \texttt{swim}. To keep everything linked together, the \texttt{key\_table} is modified during \texttt{exch}ange.
 
-One detail entirely missing from standard textbooks is how to generate the keys on insert.  The initial idea is to have a global counter starting at 0, which is then increased on each insert.  Unfortunately, this is unsound: during (very) long runs involving both \texttt{insert} and \texttt{remove-min}, this key counter will overflow.  Although overflow is defined in C for \texttt{unsigned int}, this overflow is fatal algorithmically: multiple items could be assigned the same key.
-
-A better method is to store a key field within each heap-item in the main array.  These keys are initialized to $0..(\texttt{capacity}-1)$, and thereafter are never modified other than when two cells are swapped during \texttt{exch}ange.  An invariant can then be maintained that the keys from the ``live'' and ``junk'' parts have no duplicates.  On insertion, we ``recycle'' the key of the first ``junk'' item, which is by the invariant known to be appropriately fresh.
+To generate the keys on insert, we store a key field within each heap-item in the main array.  These keys are initialized to $0..(\texttt{capacity}-1)$, and thereafter are never modified other than when two cells are swapped during \texttt{exch}ange.  An invariant can then be maintained that the keys from the ``live'' and ``junk'' parts have no duplicates.  On insertion, we ``recycle'' the key of the first ``junk'' item, which is by the invariant known to be appropriately fresh.
 
 %The VST proofs of the C code are only slightly more challenging since the key complexities are encapsulated into the \texttt{exch} function.
+
+\subsection{Related work on binary heaps in algorithms and formal methods}
+\label{sec:relworkbinheap}
+
+J. W. J. Williams published the binary heap data structure, along with heapsort, in June 1964~\cite{10.1145/512274.512284}.  Floyd proposed his linear-time bottom-up method to construct such heaps that December~\cite{10.1145/355588.365103}.  Since then, binary heaps, including Floyd's construction and heapsort, have become a staple of the introductory data structure diet~\cite{clrs}.  On the other hand, standard textbooks are surprisingly vague on the implementation of \texttt{edit\_priority}~\cite{clrs,sedgewick,DBLP:books/daglib/0015106}, and completely silent on how to generate a fresh key during insertion.  Our method above of ``recycling keys'' avoids a subtle overflow in a na\"ive approach, and does not appear in the literature we examined.  The na\"ive idea is to have a global counter starting at 0, which is then increased on each insert.  Unfortunately, this is unsound: during (very) long runs involving both \texttt{insert} and \texttt{remove-min}, this key counter will overflow.  Although overflow is defined in C for \texttt{unsigned int}, this overflow is fatal algorithmically: multiple live items could be assigned the same key.
+
+%Unlike the graph algorithms discussed in \S\ref{sec:dijkstra}, \S\ref{sec:prim}, and \S\ref{sec:kruskal}, b
+
+Binary heaps have been verified several times in the literature.  Indeed, they were problem 2 of the VACID-0 benchmark~\cite{Leino10vacid-0:verification}, and solved in this regard as well by the Why3 team~\cite{tafat:binheap}.  The Viper team has verified heapsort~\cite{Muelleremail}.  
+Lammich has verified Introsort, which includes a heapsort subroutine~\cite{DBLP:conf/cade/Lammich20}.  %He generates LLVM code, \emph{i.e.} uses a deep embedding.
+To the best of our knowledge, we are the first formally verified binary heap to support edit-priority.
