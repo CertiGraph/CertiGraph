@@ -23,3 +23,7 @@ S4.5 discussion of related work with appropriate union-find references.
 
 Cite:
 Chen, Cohen, Levy, Merz, Thery "Formal Proof of Tarjan's Strongly Connected Components Algorithm in Why3, Coq, and Isabelle (ITP 2019)"
+
+Anshuman: "setlength plus, minus"
+
+funding info in acks? crystal?
