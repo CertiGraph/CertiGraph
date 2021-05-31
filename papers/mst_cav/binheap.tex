@@ -13,7 +13,7 @@ Binary heaps are a good fit for our graph algorithms because Dijkstra's and Prim
 \end{array}
 \]
 Priorities are of type \texttt{int}.  %\note[too much detail, too soon?]{The ``advanced'' implementation requires each item to be tagged to a ``key'', which is used to lookup the item whose priority must be changed; these keys are \texttt{unsigned int}s.}
-The Kruskal-specific implementation is stripped down to the bare minimum required to implement \texttt{heapsort} (\emph{e.g.} it does not support \texttt{insert}).  We next overview these verifications in three parts: basic heap operations, \texttt{heapify} and \texttt{heapsort} operations, and the \texttt{edit\_priority} operation.
+The Kruskal-specific implementation is stripped down to the bare minimum required to implement \texttt{heapsort} (\emph{e.g.}, it does not support \texttt{insert}).  We next overview these verifications in three parts: basic heap operations, \texttt{heapify} and \texttt{heapsort} operations, and the \texttt{edit\_priority} operation.
 
 \subsection{The basic heap operations of insertion and min/max-removal}
 \label{sec:heapinsertremove}
