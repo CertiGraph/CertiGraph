@@ -129,4 +129,4 @@ J. W. J. Williams published the binary heap data structure, along with heapsort,
 
 Binary heaps have been verified several times in the literature.  Indeed, they were problem 2 of the VACID-0 benchmark~\cite{Leino10vacid-0:verification}, and solved in this regard as well by the Why3 team~\cite{tafat:binheap}.  These solutions did not implement bottom-up heap construction or edit priority.  The Viper team has verified heapsort~\cite{Muelleremail}.
 Lammich has verified Introsort, which includes a heapsort subroutine~\cite{DBLP:conf/cade/Lammich20}.  %He generates LLVM code, \emph{i.e.} uses a deep embedding.
-As best we can tell, we are the first formally verified binary heap to support edit-priority.
+As best we can tell, the previous formal work largely ignores some of the nitty-gritty of~C~code such as the difference between signed and unsigned arithmetic.  We believe we are the first formally verified binary heap to support edit-priority.
