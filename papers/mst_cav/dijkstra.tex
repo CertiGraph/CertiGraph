@@ -8,7 +8,7 @@ of related work.
 
 Figure~\ref{fig:decorated} shows the code and proof
 sketch of Dijkstra's algorithm.
-{\color{red}Red} text in an annotation indicates changes compared to the
+{\color{red}Red} text is used in the figure to highlight changes compared to the
 annotation immediately prior.
 Our code is implemented exactly
 as suggested by CLRS~\cite{clrs}, so we refer readers there for a
@@ -88,7 +88,7 @@ That is, a destination vertex $\m{dst}$ falls into one of three
 categories:
 \begin{enumerate}
 \item $\m{inv\_popped}$: if $\m{dst} \in \m{popped}$, 
-then $\m{dst}$ has been fully processed, \emph{i.e.} \m{dst} is reachable from~$\m{src}$
+then $\m{dst}$ has been fully processed, \emph{i.e.}, \m{dst} is reachable from~$\m{src}$
 via a globally-optimal path $p$ whose vertices are all in $\m{popped}$.  Path $p$ has been logged in \m{prev} and $p$'s cost is given in \m{dist}.
 
 %has a globally optimal path
