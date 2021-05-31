@@ -1,0 +1,8 @@
+Not done / needs discussion
+
+1. If you want we can remove the red text from fig 1, and with it, the second sentence of \S3.1
+2. He suggested killing the reference in the abstract. I don't often see references in abstracts but IDK what the done thing is. Thoughts?
+3. Intro: full functional correctness
+4. he didn't like that \mathcal{V} is used to start sentences...
+5. In prim.tex, we start sentences with "Indeed, blah...". he doesn't like that.
+6. He says not to use line numbers in code listings if they're not going to be referred to.

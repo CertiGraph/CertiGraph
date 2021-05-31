@@ -1,4 +1,4 @@
-We begin with the briefest of introductions to CertiGraph's core structure and then detail our extensions we make to various levels of
+We begin with the briefest of introductions to CertiGraph's core structure and then detail the extensions we make to various levels of
 CertiGraph in service of our Dijkstra, Prim, and Kruskal verifications.
 Ignoring modularity and eliding elements not used in our work,
 a mathematical graph in CertiGraph is a tuple:
@@ -199,7 +199,7 @@ standard~\cite{clrs}.
 %Our definitions are largely based on CLRS~\cite{clrs}.
 Vertices \m{u} and \m{v} are \texttt{adjacent} if there is
 an edge between them in either direction; vertices are self-adjacent.
-An valid \texttt{upath} (undirected path) is list of
+A valid \texttt{upath} (undirected path) is list of
 valid vertices that form a
 pairwise-adjacent chain. Two vertices are \texttt{connected} when a valid \texttt{upath}
 features them as head and foot (essentially the transitive
@@ -272,11 +272,11 @@ lower total edge cost than \texttt{f}.
 Our undirected work is also compatible with our new developments
 in~\S\ref{sec:adjmatpure} and~\S\ref{sec:newspatial}.
 An adjacency matrix-representable undirected graph
-has all the pure properties we covered in \texttt{SoundAdjMat},
+has all the pure properties discussed in \texttt{SoundAdjMat},
 and also has symmetry across the left diagonal.
 We extend \texttt{SoundAdjMat} into
-\texttt{Sound{\underline{U}}AdjMat} by adding the condition that
-all valid edges have src $\le$ dst. This effectively ``turns off'' the
+\texttt{Sound{\underline{U}}AdjMat} by requiring that
+all valid edges have \texttt{src} $\le$ \texttt{dst}. This effectively ``turns off'' the
 matrix on one half of the diagonal and avoids double-counting. Prim's algorithm uses
 \texttt{SoundUAdjMat} and places no further restrictions.
 Further, spatial representations and fold/unfold utilities are shared
