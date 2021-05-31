@@ -11,7 +11,7 @@ of issues that routinely crop up in real-world settings: under/overflows, integr
 error handling, casts, memory alignment, \emph{etc.} Further, previous verification efforts with formal checkers often operate
 within idealized formal environments, which likewise leads them to ignore the same kinds of issues.
 
-In our work, we provide~C~implementations of each of these algorithms/data structures, and prove in Coq~\cite{Coq} the functional correctness of the same with respect to the formal semantics of CompCert~C~\cite{leroy:compcert}.  By ``functional correctness'' we mean complex pre/post specifications, rather than \emph{e.g.} resource bounds.  Although our~C~code is developed from standard textbooks, we uncover several subtleties
+In our work, we provide~C~implementations of each of these algorithms/data structures, and prove in Coq~\cite{Coq} the functional correctness of the same with respect to the formal semantics of CompCert~C~\cite{leroy:compcert}.  By ``functional correctness'' we mean natural algorithmic specifications; we do not prove resource bounds.  Although our~C~code is developed from standard textbooks, we uncover several subtleties
 that are absent from the algorithmic and formal methods literature:
 
 \begin{itemize}

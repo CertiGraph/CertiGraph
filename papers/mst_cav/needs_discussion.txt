@@ -2,8 +2,22 @@ Not done / needs discussion
 
 (leave) 1. If you want we can remove the red text from fig 1, and with it, the second sentence of \S3.1
 (done) 2. He suggested killing the reference in the abstract. I don't often see references in abstracts but IDK what the done thing is. Thoughts?
-3. Intro: full functional correctness
+(done) 3. Intro: full functional correctness
 (leave) 4. he didn't like that \mathcal{V} is used to start sentences...
 (done) 5. In prim.tex, we start sentences with "Indeed, blah...". he doesn't like that.
 (leave) 6. He says not to use line numbers in code listings if they're not going to be referred to.
 7. Edit BiB entry for our repo.
+
+<<
+We also agree with you that we should have discussed more-automated approaches to graph
+algorithms in more depth. We will certainly examine and cite the Why3 gallery going forward,
+and will also examine Chen et al. We were likewise not familiar with "Simpler proofs with
+decentralized invariants," but will take a close look. We were familiar with “Verifying the
+Correctness and Amortized Complexity of a Union-Find Implementation in Separation Logic
+with Time Credits,” and note that this paper was cited in the CertiGraph paper (reference [59] in
+the submitted paper), which verifies the union-find we incorporate in the present result. We
+agree that one of the key challenges in verifying Kruskalʼs algorithm is a proper treatment of
+union-find. As we expand our S4.4 discussion of Kruskal, it would be natural to expand our
+S4.5 discussion of related work with appropriate union-find references. 
+>>
+
