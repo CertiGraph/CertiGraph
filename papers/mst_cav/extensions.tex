@@ -1,10 +1,10 @@
 We begin with the briefest of introductions to CertiGraph's core structure and then detail the extensions we make to various levels of
 CertiGraph in service of our Dijkstra, Prim, and Kruskal verifications.
-Ignoring modularity and eliding elements not used in our work,
+Ignoring modularity and eliding elements not used in this work,
 a mathematical graph in CertiGraph is a tuple:
 ($\mathcal{V}$, $\mathcal{E}$, \texttt{vvalid}, \texttt{evalid},
 \texttt{src}, \texttt{dst}, \texttt{vlabel}, \texttt{elabel},
-\texttt{sound}). $\mathcal{V}$/$\mathcal{E}$ are the carrier
+\texttt{sound}). Here $\mathcal{V}$/$\mathcal{E}$ are the carrier
 types of vertices/edges, \texttt{vvalid}/\texttt{evalid}
 place restrictions specifying whether a vertex/edge is
 valid\footnote{Validity denotes presence in the graph: \emph{e.g.}, if we are using $\mathbb{Z}$ as the carrier type $\mathcal{V}$, and have
@@ -204,7 +204,7 @@ Record PreGraph {EV: EqDec Vertex eq} {EE: EqDec Edge eq} := {
 Our basic ``undirected flavored'' definitions are
 standard~\cite{clrs}.
 %Our definitions are largely based on CLRS~\cite{clrs}.
-Vertices \m{u} and \m{v} are \texttt{adjacent} if there is
+Vertices \m{u} and~\m{v} are \texttt{adjacent} if there is
 an edge between them in either direction; vertices are self-adjacent.
 A valid \texttt{upath} (undirected path) is list of
 valid vertices that form a
@@ -267,7 +267,7 @@ Definition spanning_uforest f g :=
 \texttt{utree~g~:= uforest~g} $\wedge$ \texttt{connected\_graph~g.}}
 The \texttt{strong\_evalid} predicate means that the
 \texttt{src} and \texttt{dst} of the edge are also valid, so
-\emph{e.g.} a valid edge cannot point to a deleted/absent vertex.
+\emph{e.g.}, a valid edge cannot point to a deleted/absent vertex.
 The second conjunct of \texttt{uforest} is critical: a
 forest has no undirected cycles. The other definitions
 are straightforward from there, and
