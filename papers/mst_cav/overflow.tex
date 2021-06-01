@@ -45,7 +45,7 @@ the graph in figure~\ref{fig:overflow}.  The \texttt{size} of the graph is 3 nod
 \vspace*{-0.75em}
 \caption{A graph that will result in overflow on a 32-bit machine.}
 \label{fig:overflow}
-\vspace*{-1em}
+\vspace*{-0.75em}
 \end{figure}
 
 
@@ -84,7 +84,7 @@ $0 < 4 \cdot \texttt{size} \le \texttt{INT\_MAX}$, the restrictions on \texttt{i
   %The above bound is novel, and discussion of the potential for overflow in Dijkstra's algorithm largely nonexistant.
 We were not able to find a reference that gives a robust, precise,
 and full description of the overflow issue we describe above.
-Dijkstra's original paper ignores the issue~\cite{DBLP:journals/nm/Dijkstra59}, as do the standard textbooks \emph{Introduction to Algorithms} (\emph{a.k.a.} CLRS) by Cormen \emph{et al.}~\cite{clrs} and \emph{Algorithm Design} by Kleinberg and Tardos~\cite{DBLP:books/daglib/0015106}.
+Dijkstra's original paper~\cite{DBLP:journals/nm/Dijkstra59} ignores the issue, as do the standard textbooks \emph{Introduction to Algorithms} (\emph{a.k.a.} CLRS) by Cormen \emph{et al.}~\cite{clrs} and \emph{Algorithm Design} by Kleinberg and Tardos~\cite{DBLP:books/daglib/0015106}.
 % the standard algorithms textbooks by CLRS. %does not address overflow. %, although---arguably---this is unnecessary in pseudocode
 Sedgewick's book on graph algorithms in~C~\cite{sedgewick} sidesteps the overflow in line~\ref{code:overflow} by requiring weights be in \texttt{double}, which \emph{does} have a well-defined positive infinity value and cannot overflow in the traditional sense; Sedgewick and Wayne's \emph{Algorithms} textbook in Java does the same~\cite{DBLP:books/daglib/0029345}.  However, Sedgewick's sidestep entails enduring the inevitable round-off intrinsic to floating-point arithmetic, and so his algorithm computes approximate optimal costs rather than exact ones.  Sedgewick does not specify any bounds on input edge weights, and accordingly does not (and cannot) provide any bound on this accumulated error.  Sedgewick is silent on how to handle an \texttt{int}-weighted input graph.  Skiena's \emph{Algorithm Design Manual}~\cite{DBLP:books/daglib/0022194} contains code with exactly the bug we identify: he uses integer weights and does not specify any bounds.  To its credit, Heineman \emph{et al.}'s \emph{Algorithms in a Nutshell}~\cite{heineman2008algorithms} takes \texttt{int} edge weights as inputs and mentions overflow as a possibility.  Heineman \emph{et al.} hustle their way around this overflow by performing the arithmetic in line~\ref{code:overflow} in \texttt{long}.  However, this cast does not really handle the problem in a fundamental way: if edge weights are given in \texttt{long} rather than \texttt{int}, then it would be necessary to cast to \texttt{long long}; if edge weights are given in \texttt{long long}, then Heineman's hustle breaks as there is no bigger type to which to cast.  Moreover, Heineman \emph{et al.} do not bound edge weights, so when the cumulative edge weights are too high their code fails silently. %; readers are left in the dark. % for the precondition needed to run the algorithm. %, .leaving users in the fog:
 
