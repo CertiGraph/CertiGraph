@@ -25,6 +25,8 @@ Guttman generalised minimum spanning tree algorithms using Stone relation algebr
 
 In a similar vein, Haslbeck \emph{et al.} verified Kruskal's algorithm~\cite{DBLP:journals/afp/HaslbeckLB19} by building on Lammich \emph{et al.}'s earlier work on Prim~\cite{DBLP:journals/afp/LammichN19}.  Like Lammich \emph{et al.}, Haslbeck \emph{et al.} work within Isabelle/HOL with a focus on purely functional data structures.
 
+One of the stumbling blocks in verifying Kruskal's algorithm is the need to verify union-find.  In addition to CertiGraph, 
+
 %In Lammich et al, their Prim's implementation explicitly expects a connected graph, and they do not reason about the disconnected case.
 
 %Working in an idealized formal environment, they do not require the development of .
