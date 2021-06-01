@@ -151,7 +151,26 @@
   \setlength{\itemsep}{\bibparskip}%
   \renewcommand{\baselinestretch}{0.3}
 }
-}
+}% end hide
+
+%hack 1:
+%saves half a page
+\renewcommand{\baselinestretch}{0.98}
+% similar effect on page use, maybe via a bit different look:
+%\linespread{0.98}
+
+% hack 2:
+% the following options don't "stack"
+
+% hack 2, option a:
+%saves ~10 lines
+\addtolength{\textfloatsep}{-1.5em plus -0.5em minus -0.5em}
+
+% hack 2, option b:
+%saves ~10 lines
+% \addtolength{\abovecaptionskip}{-0.5em plus -0.25em minus -0.25em}
+% \addtolength{\belowcaptionskip}{-1em plus -0.25em minus -0.25em}
+
 
 \title{Functional Correctness of C Implementations \\
 of Dijkstra's, Kruskal's, and Prim's Algorithms}
