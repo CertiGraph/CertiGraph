@@ -163,13 +163,13 @@
 % the following options don't "stack"
 
 % hack 2, option a:
-%saves ~10 lines
-\addtolength{\textfloatsep}{-1.5em plus -0.5em minus -0.5em}
+%saves ~10 lines, but sometimes is ugly in fig 2
+% \addtolength{\textfloatsep}{-1em plus -0.5em minus -0.5em}
 
 % hack 2, option b:
 %saves ~10 lines
-% \addtolength{\abovecaptionskip}{-0.5em plus -0.25em minus -0.25em}
-% \addtolength{\belowcaptionskip}{-1em plus -0.25em minus -0.25em}
+\addtolength{\abovecaptionskip}{-0.5em plus -0.25em minus -0.25em}
+\addtolength{\belowcaptionskip}{-1em plus -0.25em minus -0.25em}
 
 
 \title{Functional Correctness of C Implementations \\
