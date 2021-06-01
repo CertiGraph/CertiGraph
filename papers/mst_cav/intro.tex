@@ -13,21 +13,24 @@ within idealized formal environments, which likewise leads them to ignore the sa
 
 In our work, we provide~C~implementations of each of these algorithms/data structures, and prove in Coq~\cite{Coq} the functional correctness of the same with respect to the formal semantics of CompCert~C~\cite{leroy:compcert}.  By ``functional correctness'' we mean natural algorithmic specifications; we do not prove resource bounds.  Although our~C~code is developed from standard textbooks, we uncover several subtleties
 that are absent from the algorithmic and formal methods literature:
-
+\vspace*{-0.25em}
 \begin{itemize}
 \item[\S\ref{sec:dijkoverflow}] an overflow in Dijkstra's algorithm whose avoidance requires a nontrivial refinement to the algorithm's precondition to bound edge weights;
 \item[\S\ref{sec:primforest}] that the specification of Prim's algorithm can be improved to apply to disconnected graphs without any change to textbook (pseudo-)code;
 \item[\S\ref{sec:primforest}] the presence of a wholly unneeded line of (pseduo-)code in Prim's algorithm, and an associated unneeded function argument;
 \item[\S\ref{sec:binheap}] several potential overflows in binary heaps equipped with Floyd's linear-time build-heap function and an edit-priority operation.
 \end{itemize}
+\vspace*{-0.25em}
 
 We wish to develop general and reusable techniques for verifying graph-manipulating programs written in real programming languages.  This is a significant challenge, and so we choose to leverage and/or extend three large existing proof developments to state and prove the full functional correctness of our code in Coq: CompCert; the Verified Software Toolchain~\cite{appel:programlogics} (VST) separation logic~\cite{o2001local} deductive verifier; and our own previous efforts~\cite{DBLP:journals/pacmpl/WangCMH19}, hereafter dubbed the CertiGraph project.  Our primary extensions are to the third, and include:
+\vspace*{-0.25em}
 \begin{enumerate}
 \item[\S\ref{sec:adjmatpure}] pure/abstract reasoning for graphs with edge labels,
 (\emph{e.g.}, a distinguished edge-label value for ``infinity'' that indicates invalid/absent edges);
 \item[\S\ref{sec:newspatial}] spatial representations and associated reasoning for edge-labeled graphs (several flavors of adjacency matrices as well as edge lists);
 \item[\S\ref{sec:newundirected}] pure reasoning for undirected graphs (\emph{e.g.}, notions of connectedness).
 \end{enumerate}
+\vspace*{-0.25em}
 We prove that our pure machinery and our spatial machinery are well-isolated from each other by verifying several implementations (of each of Dijkstra and Prim) that represent graphs differently in memory but reuse the entire pure portion of the proof.  Likewise, we show that our spatial reasoning is generic by reusing graph representations across Dijkstra and Prim.  Our verification of Kruskal proves that we can reason about two graphs simultaneously: a directed graph with vertex labels for union-find and an undirected graph with edge labels for which we are building a spanning forest.
 In addition to our verification of Dijkstra, Prim, and Kruskal, we develop increased lemma support for the preexisting CertiGraph union-find example~\cite{DBLP:journals/pacmpl/WangCMH19}.  Our extension to ``base VST'' (\emph{e.g.}, verifications without graphs) primarily consists of our verified binary heap.
 
@@ -47,6 +50,7 @@ We discuss two observations. First, in spite of the many pen-and-paper proofs of
 }
 
 The remainder of this paper is organized as follows:
+\vspace*{-0.25em}
 \begin{itemize}
     \item[\S\ref{sec:extensions}] We explain our extensions to CertiGraph:
     edge-labeled graphs, spatial representations of such graphs, and
@@ -62,5 +66,6 @@ The remainder of this paper is organized as follows:
     \item[\S\ref{sec:conclusion}] We discuss related work, outline future research directions, and conclude.
 %    putting this result in the context of our previous and ongoing work. We discuss related work in certifying the three graph algorithms, and revisit standard algorithms textbook presentations.
 \end{itemize}
+\vspace*{-0.25em}
 
-\noindent Our results are completely machine-checked in Coq and publicly available~\cite{anonrepo}.%  Our code is available at \url{https://github.com/anshumanmohan/CertiGraph}.
+\noindent Our results are completely machine-checked in Coq and publicly available~\cite{mohan_anshuman_2021_4744665}.%  Our code is available at \url{https://github.com/anshumanmohan/CertiGraph}.

@@ -141,9 +141,9 @@
 \renewcommand{\iff}{\Leftrightarrow}
 
 % To fiddle with the bib spacing...
-\hide{
+%\hide{
 \newlength{\bibitemsep}\setlength{\bibitemsep}{-0.1\baselineskip plus .05\baselineskip minus .05\baselineskip}
-\newlength{\bibparskip}\setlength{\bibparskip}{-0.5pt}
+\newlength{\bibparskip}\setlength{\bibparskip}{-0.1pt}
 \let\oldthebibliography\thebibliography
 \renewcommand\thebibliography[1]{%
   \oldthebibliography{#1}%
@@ -151,7 +151,7 @@
   \setlength{\itemsep}{\bibparskip}%
   \renewcommand{\baselinestretch}{0.3}
 }
-}% end hide
+%}% end hide
 
 %hack 1:
 %saves half a page
@@ -243,28 +243,36 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 	
 	%% main text
 %\hide{	
+\vspace*{-0.5em}
 	\section{Introduction}
-%\vspace*{-0.25em}
 	\label{sec:intro}
+\vspace*{-0.5em}
 	\input{intro.tex}
 	
+\vspace*{-0.5em}
 	\section{Extensions to CertiGraph}
 	\label{sec:extensions}
+\vspace*{-0.5em}
 	\input{extensions.tex}
 
+\vspace*{-0.5em}
 	\section{Shortest Path}
 	\label{sec:dijkstra}
+\vspace*{-0.5em}
 	\input{dijkstra.tex}
 	
-%\vspace*{-0.5em}
+\vspace*{-0.5em}
     \section{Minimum Spanning Trees}
-%\vspace*{-0.5em}
     \label{sec:mst}
+\vspace*{-0.5em}
+%\vspace*{-0.5em}
 	\input{prim.tex}
 	\input{kruskal.tex}
 
+\vspace*{-0.5em}
     \section{Verified binary heaps in C}
     \label{sec:binheap}
+\vspace*{-0.5em}
     \input{binheap.tex}
 
 	%% If you have bibdatabase file and want bibtex to generate the
@@ -272,17 +280,20 @@ of Dijkstra's, Kruskal's, and Prim's Algorithms}
 	%%
 	%\bibliographystyle{plainurl}% the mandatory bibstyle
 	
+\vspace*{-0.5em}
     \section{Engineering considerations}
     \label{sec:stats}
+\vspace*{-0.5em}
 	\input{structure.tex}
 
 %	\subsection{Observations of VST}
 %	\label{sec:vst}
 %	\input{vst.tex}
 
-%\vspace*{-0.5em}
+\vspace*{-0.5em}
 	\section{Concluding thoughts: Related and Future Work}
 	\label{sec:conclusion}
+\vspace*{-0.5em}
 
 %\vspace*{-0.5em}
 

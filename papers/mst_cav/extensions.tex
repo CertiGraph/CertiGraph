@@ -16,8 +16,10 @@ restrictions~\cite{DBLP:journals/pacmpl/WangCMH19}.
 Mathematical graphs connect to graphs in computer memory via spatial predicates in separation logic.
 %We explain here the extensions we made .
 
+\vspace*{-0.25em}
 \subsection{Pure reasoning for adjacency matrix-represented graphs}
 \label{sec:adjmatpure}
+\vspace*{-0.25em}
 
 Two of our algorithms operate over graphs represented as adjacency matrices.
 Not every legal graph can be represented as an adjacency matrix,
@@ -51,12 +53,15 @@ algorithm-specific restrictions before
 being plugged in for \texttt{sound}. Dijkstra's algorithm
 requires nonnegative edge weights, and---as we will discuss in~\S\ref{sec:dijkoverflow}---nontrivial restrictions on \texttt{size} and \texttt{inf}.
 
+\vspace*{-0.25em}
 \subsection{New spatial representations for edge-labeled graphs}
 \label{sec:newspatial}
+\vspace*{-0.25em}
 
 We give predicates for adjacency matrices and edge lists
 for edge-labeled graphs.
 
+\vspace*{-0.5em}
 \subsubsection{Adjacency matrices.}
 
 Adjacency matrices enable efficient label access for edge-labeled graphs.
@@ -71,7 +76,7 @@ arithmetic that the second flavor uses to access cells, there is a
 more subtle point: the first and second enjoy a contiguous block of
 memory, but the third does not: it is an allocated ``spine'' with pointers to separately-allocated rows.
 For a taste, the spatial representation of the first is:
-%\vspace{-0.5em}
+\vspace{-0.5em}
 \begin{equation*}
 \begin{array}{r@{\quad}c@{\quad}l}
 \m{arr\_addr} (\m{ptr}, \m{i},\texttt{size}) & \defeq &
@@ -80,7 +85,8 @@ For a taste, the spatial representation of the first is:
 \p{arr\_rep}(\gamma, \m{i}, \m{ptr}) & \defeq & \texttt{let }\m{row} \texttt{ := }\mathsf{graph2mat}(\gamma)[\m{i}] \texttt{ in } \\
 &&\mathsf{array}(\m{arr\_addr}(\m{ptr},\m{i},\lvert\m{row}\rvert), \m{row}) \\
 %\vspace{1em}
-\p{graph\_rep}(\gamma, \m{g\_addr}, \_) & \defeq & \underset{\m{v} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr})
+\p{graph\_rep}(\gamma, \m{g\_addr}, \_) & \defeq & \underset{\m{v} \in \gamma}{\bigstar} \p{arr\_rep}(\gamma, \m{v}, \m{g\_addr}) \\
+[-0.5em]
 \end{array}
 \end{equation*}
 We use the separation logic $\ast$ in its iterated form
@@ -107,6 +113,7 @@ be agnostic to the style of representation they are using
 }%end hide
 % discuss with Aquinas
 
+\vspace*{-0.5em}
 \subsubsection{Edge lists.}
 
 Edge lists are the representation of choice
@@ -118,7 +125,7 @@ defines an \texttt{edge} as a
 the graph's size, edge count,
 and an array of \texttt{edge}s. Our spatial representation
 follows this pattern:
-%\vspace{-0.5em}
+\vspace{-0.5em}
 \begin{equation*}
 \begin{split}
 \p{graph\_rep}(\gamma, \m{g\_addr}, &\m{e\_addr})~\defeq~ \\
@@ -245,6 +252,7 @@ only duplicate is the first/last vertex.} A \texttt{connected\_graph}
 means that any two valid vertices are \texttt{connected}. % \note USED???
 \texttt{is\_partial\_graph f g} means everything in \texttt{f} is in \texttt{g}.
 We proceed:
+\vspace*{-0.5em}
 \lstset{style=CoqStyle}
 \begin{lstlisting}
 Definition uforest g :=

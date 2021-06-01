@@ -1,11 +1,16 @@
-\subsection{Related work}
 
-We have already discussed work directly related to Dijkstra's (\S\ref{sec:relworkdijkstra}), Prim's (\S\ref{sec:relworkprim}), and Kruskal's (\S\ref{sec:relworkkruskal}) algorithms in detail, including work from both the algorithms and formal methods literature.  Summarizing briefly to the point of unreasonableness, our observations about Dijkstra's overflow and Prim's specification are novel, and existing formal proofs focus on code working within idealized environments rather than handling the real-world considerations that we do.  We have also already discussed the three formal developments we
+We have already discussed work directly related to Dijkstra's (\S\ref{sec:relworkdijkstra}), Prim's (\S\ref{sec:relworkprim}), and Kruskal's (\S\ref{sec:relworkkruskal}) algorithms; as well as binary heaps (\S\ref{sec:relworkbinheap}).
+%in detail, including work from both the algorithms and formal methods literature.
+Summarizing briefly to the point of unreasonableness, our observations about Dijkstra's overflow and Prim's specification are novel, and existing formal proofs focus on code working within idealized environments rather than handling the real-world considerations that we do.  We have also discussed the three formal developments we
 build upon and extend: CompCert, VST, and CertiGraph (\S\ref{sec:stats}).  Our goal now is to discuss mechanized graph reasoning and verification more broadly.
 
+%\vspace*{-0.5em}
+%\subsection{Related work}
+\vspace*{-0.5em}
 \paragraph{Reasoning about mathematical graphs.}
 There is a 30+ year history of mechanizing graph theory, beginning at least with Wong~\cite{wong1991} and Chou~\cite{chou1994formal} and continuing to the present day; Wang discusses many such efforts~\cite[\S3.3]{shengyi:thesis}.  The two abstract frameworks that seem closest to ours are those by Noschinski~\cite{Noschinski2015}; and by Lammich and Nipkow~\cite{DBLP:journals/afp/LammichN19}.  The latter is particularly related to our work, because they too start with a directed graph library and must extend it to handle undirected graphs so that they can verify Prim's algorithm.
 
+\vspace*{-0.5em}
 \paragraph{More-automated verification.}
 Broadly speaking, mechanized verification of software falls in a spectrum between more-automated-but-less-precise verifications and less-automated-but-more-precise verifications.  Although VST contains some automation, we fall within the latter camp.  In the former camp, landmark initial separation logic~\cite{reynolds2002separation} tools such as Smallfoot~\cite{berdine:smallfoot} have grown into Facebook's industrial-strength Infer~\cite{calcagno2015moving}.  Other notable relatively-automated separation logic-based tools include HIP/SLEEK~\cite{chin:hipsleek}, Bedrock~\cite{chlipala:bedrock}, KIV~\cite{sttt2015}, VerCors~\cite{DBLP:conf/fm/BlomH14}, and Viper~\cite{MuellerSchwerhoffSummers16}.  More-automated solutions that use techniques other than separation logic include Boogie~\cite{barnett2005boogie}, \textsc{Blast}~\cite{DBLP:journals/sttt/BeyerHJM07}, Dafny~\cite{leino10}, and KeY~\cite{DBLP:series/lncs/10001}.  In \S\ref{sec:relworkdijkstra} we discuss how some of these more-automated approaches have been applied to verify Dijkstra's algorithm. Petrank and Hawblitzel's Boogie-based verification of a garbage collector~\cite{gcexample2}, Bubel's KeY-based verification of the Schorr-Waite algorithm, and Chen \emph{et al.}'s {T}arjan's strongly connected components algorithm in (among others) Why3~\cite{Chen2019FormalPO} are three examples of more-automated verification of graph algorithms.  M\"uller verified \emph{binomial} (not binary) heaps in Viper, although his implementation did not support an edit-priority function~\cite{Mueller18}.  The VOCAL project has verified a number of data structures, including binary and other heaps (all without edit-priority) and union-find~\cite{cfpp17}.
 
@@ -13,11 +18,13 @@ We are not confident that more-automated tools would be able to replicate our wo
 
 In contrast, several of the potential overflows in our binary heap might be uncovered by more-automated approaches, especially those related to the \texttt{PARENT} and \texttt{LEFT\_CHILD} macros from \S\ref{sec:heapinsertremove}.  Although the arithmetic involves both addition/subtraction and multiplication/division, we suspect a tool such as Z3~\cite{moura2008} could handle it. \hide{; the multiplication/division always has the constant \texttt{2u} for an operand.}  Moreover, a sufficiently-precise tool would probably spot the necessity of forcing the internal constants into \texttt{unsigned int}.  The issue of sound key generation described in~\S\ref{sec:modpri} might be a bit trickier.  On the one hand, \texttt{unsigned int} overflow is defined in~C, so real code sometimes relies upon it.  Accordingly, merely observing that the counter could overflow does not guarantee that the code is necessarily buggy.  On the other hand, some tools might flag it anyway out of caution (\emph{i.e.} right answer, wrong reason).
 
+\vspace*{-0.5em}
 \paragraph{Less-automated verification.}
 Although as discussed above some more-automated tools have been applied to verify graph algorithms, the problem domain is sufficiently complex that many of the verifications discussed in \S\ref{sec:relworkdijkstra}, \S\ref{sec:relworkprim}, and \S\ref{sec:relworkkruskal} use less-automated techniques.  Two basic approaches are popular.  The ``shallow embedding'' approach is to write the algorithm in the native language of a proof assistant.  The ``deep embedding'' approach is to write the algorithm in another language whose semantics has been precisely defined in the proof assistant.  VST uses a deep embedding, and so we do too; one of VST's more popular competitors in the deep embedding style is ``Iris Proof Mode''~\cite{DBLP:conf/popl/KrebbersTB17}.  In contrast, Lammich \emph{et al.} have produced a series of results verifying a variety of graph algorithms using a shallow embedding~(\emph{e.g.},~\cite{DBLP:conf/itp/Lammich14,DBLP:journals/afp/LammichN19,DBLP:journals/afp/HaslbeckLB19,DBLP:journals/jar/LammichS19,DBLP:conf/itp/LammichS16}).  From a bird's-eye view Lammich \emph{et al.}'s work is the most related to our results in this paper: they verify all three algorithms we do and are able to extract fully-executable code, even if sometimes their focus is a bit different, \emph{e.g.} on novel purely-functional data structures such as a  priority queue with \texttt{edit\_priority}.  %In particular, Lammich \emph{et al.} are able to ; others such as Guttmann provide only relational program descriptions and so probably cannot~\cite{DBLP:conf/ictac/Guttmann16,DBLP:journals/jlp/Guttmann18}.
 
 %we note that Lammich has an ``approach B'' (deep embedding, in the sense that he generates LLVM code) verification of Introsort, which combines quicksort, heapsort, and insertion sort.
 
+\vspace*{-0.5em}
 \paragraph{Pen-and-paper verification of graph algorithms.}
 
 We use separation logic~\cite{reynolds2002separation} as our base framework.  Initial work on graph algorithms in separation logic was minimal; Bornat \emph{et al.} is an early example~\cite{bornat:aliasing04}.  Hobor and Villard developed the technique of ramification to verify graph algorithms~\cite{hobor:ramification}, using a particular ``star/wand'' pattern to express heap update.  Wang \emph{et al.} later integrated ramification into VST as the CertiGraph project we use~\cite{DBLP:journals/pacmpl/WangCMH19}.  Krishna \emph{et al.}~\cite{krishna2017go} have developed a flow algebraic framework to reason about local and global properties of \textit{flow graphs} in the program heap; their flow algebra is mainly used to tackle local reasoning of global graphs in program heaps.
@@ -27,9 +34,11 @@ Krishna \emph{et al.} are interested in concurrency~\cite{krishna2017go}; Raad \
 
 %\vspace*{-0.25em}
 
-\subsection{Future work}
+%\subsection{Future work}
 
 %\vspace*{-0.25em}
+\vspace*{-0.5em}
+\paragraph{Future work.}
 
 We see several opportunities for decreasing the effort and/or increasing the automation in our approach.  At the level of Hoare tuples, we see opportunities for improved VST tactics to handle common cases we encounter in graph algorithms.  At the level of spatial predicates, we can continue to expand our library of graph constructions, for example for adjacency lists.  We also believe there are opportunities to increase modularity and automation at the interface between the spatial and the mathematical levels, \emph{e.g.} we sometimes compare~C~pointers to heap-represented graph
 nodes for equality, and due to the nature of our representations this equality check will be
@@ -40,13 +49,14 @@ The key advantage of having end-to-end machine-checked examples such as the ones
 that they guide the automation efforts by providing precise goals that are known to be strong
 enough to verify real code.
 
-%\vspace*{-0.25em}
-\subsection{Conclusion}
+\vspace*{-0.5em}
+\paragraph{Conclusion}
 %\vspace*{-0.25em}
 
 We extend the CertiGraph library to handle undirected graphs and several flavours of graphs with edge labels, both at the pure and at the spatial levels.  We verify the full functional correctness of the three classic graph algorithms of Dijkstra, Prim, and Kruskal.  We find nontrivial bounds on edge costs and infinity for Dijkstra and provide a novel specification for Prim.  We verify a binary heap with Floyd's \texttt{heapify} and \texttt{edit\_priority}.
 All of our code is in CompCert~C~and all of our proofs are machine-checked in Coq.
 
+\vspace*{-0.5em}
 \paragraph{Acknowledgements.}  We thank Shengyi Wang for his help and support. %helpful early discussions some help with understanding the CertiGraph implementation, as well as a useful initial discussion about understanding the program invariants of Dijkstra's algorithm.
 
 %The existing library of CertiGraph verifications contains a treasure trove of \emph{precisely} what lemmas are needed to verify real graph code, which should help to guide the development of automated techniques.

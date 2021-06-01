@@ -1,5 +1,7 @@
+\vspace*{-0.5em}
 \subsection{Kruskal's Algorithm}
 \label{sec:kruskal}
+\vspace*{-0.25em}
 
 Although Kruskal's algorithm is sometimes presented as taking connected graphs and producing spanning trees, the literature also discusses the more general case of multi-component input graphs and spanning forests.  However, Kruskal has only recently been the focus of formal verification efforts, partly because it relies on the notoriously difficult-to-verify union-find algorithm; fortunately, the CertiGraph project has an existing fully-verified union-find implementation that we can leverage~\cite{DBLP:journals/pacmpl/WangCMH19}.  Kruskal also requires a sorting function; we implemented \texttt{heapsort} as explained in \S\ref{sec:heapsort}.  Kruskal is optimized for compact representations of sparse graphs, so the $O(1)$ space cost of \texttt{heapsort} is a reasonable fit.  %Including the code for union-find and heap sort, the code for Kruskal's algorithm is around 200 lines of~C.
 
@@ -16,8 +18,10 @@ Another challenge is integrating the pre-existing CertiGraph verification of uni
 
 %We mention this to emphasise the modularity and buildability of VST and CertiGraph infrastructure - that we were able to use previously, independently proven code in a bigger system later. The internal details and verification of the union-find system are independent from that of Kruskal's, whose proof only required the preconditions and postconditions of whichever union-find implementation we decide to use.
 
+\vspace*{-0.75em}
 \subsection{Related work on Kruskal in algorithms and formal methods}
 \label{sec:relworkkruskal}
+\vspace*{-0.5em}
 
 Joseph Kruskal published his algorithm in 1956~\cite{kruskal} and it has appeared in numerous textbooks since (\emph{e.g.},~\cite{clrs,DBLP:books/daglib/0022194,sedgewick,DBLP:books/daglib/0015106}).  Kruskal's algorithm is usually preferred over Prim's for sparse graphs, and is sometimes presented as ``the right choice'' when confronted with multi-component graphs under the mistaken assumption that Prim's first requires a component-finding initial step.
 

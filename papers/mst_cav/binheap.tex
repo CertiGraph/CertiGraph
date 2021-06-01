@@ -15,8 +15,10 @@ Binary heaps are a good fit for our graph algorithms because Dijkstra's and Prim
 Priorities are of type \texttt{int}.  %\note[too much detail, too soon?]{The ``advanced'' implementation requires each item to be tagged to a ``key'', which is used to lookup the item whose priority must be changed; these keys are \texttt{unsigned int}s.}
 The Kruskal-specific implementation is stripped down to the bare minimum required to implement \texttt{heapsort} (\emph{e.g.}, it does not support \texttt{insert}).  We next overview these verifications in three parts: basic heap operations, \texttt{heapify} and \texttt{heapsort} operations, and the \texttt{edit\_priority} operation.
 
+\vspace*{-0.5em}
 \subsection{The basic heap operations of insertion and min/max-removal}
 \label{sec:heapinsertremove}
+\vspace*{-0.25em}
 
 Because we are juggling three implementations, we take some care to factor our verification to maximize reuse.  First, each C implementation has its own exchange and comparison functions that handle the nitty-gritty of the payload and choose between a min or max heap.  The following lines are from the ``basic'' implementation, in which the ``payload'' (\texttt{data} field) is of type \texttt{void*}:
 \begin{lstlisting}[firstnumber=5]
@@ -89,8 +91,10 @@ The insertion and remove functions we verify are in fact ``non-checking'' versio
 
 \lstset{style=myTinyStyle}
 
+\vspace*{-0.5em}
 \subsection{Bottom-up heapify and heapsort}
 \label{sec:heapsort}
+\vspace*{-0.25em}
 
 Floyd's bottom-up procedure for constructing a binary heap in linear time, and using a binary heap to sort, are classics of the literature~\cite{clrs,sedgewick}.
 Happily, while the asymptotic bound on heap construction is nontrivial, the implementations of both are basically repeated calls to \texttt{sink} (and exchanges to remove the root):
@@ -106,8 +110,10 @@ void heapsort_rev(Item* arr, unsigned int size) {
 \end{lstlisting}
 Given that in \S\ref{sec:heapinsertremove} we already generalized the specification for \texttt{sink} to handle a portion of the array being unordered, the verification of these functions is straightforward.  There is, however, the possibility of a subtle underflow on line~\ref{code:parentunderflow}, in the case when building an empty heap (\emph{i.e.}, $\texttt{size}=0$).  In turn, this means that \texttt{heapsort\_rev} as given above cannot sort empty lists; in our ``basic'' implementation we strengthen the precondition accordingly, whereas in our ``Kruskal'' implementation we add a line before~\ref{code:buildheapsort} that \texttt{return}s when $\texttt{size}=0$.  We use a max-heap for Kruskal because heapsort yields a \emph{reverse} sorted list.
 
+\vspace*{-0.5em}
 \subsection{Modifying an element's priority}
 \label{sec:modpri}
+\vspace*{-0.25em}
 
 %In contrast to \texttt{heapify} and \texttt{heapsort}, standard algorithms textbooks are vague on the implementation of .
 
@@ -120,8 +126,10 @@ To generate the keys on insert, we store a key field within each heap-item in th
 
 %The VST proofs of the C code are only slightly more challenging since the key complexities are encapsulated into the \texttt{exch} function.
 
+\vspace*{-0.5em}
 \subsection{Related work on binary heaps in algorithms and formal methods}
 \label{sec:relworkbinheap}
+\vspace*{-0.25em}
 
 J. W. J. Williams published the binary heap data structure, along with heapsort, in June 1964~\cite{10.1145/512274.512284}.  Floyd proposed his linear-time bottom-up method to construct such heaps that December~\cite{10.1145/355588.365103}.  Since then, binary heaps, including Floyd's construction and heapsort, have become a staple of the introductory data structure diet~\cite{clrs}.  On the other hand, standard textbooks are surprisingly vague on the implementation of \texttt{edit\_priority}~\cite{clrs,sedgewick,DBLP:books/daglib/0015106}, and completely silent on the generation of fresh keys during insertion.  Our method above of ``recycling keys'' avoids a subtle overflow in a na\"ive approach, and does not appear in the literature we examined.  The na\"ive idea is to have a global counter starting at 0, which is then increased on each insert.  Unfortunately, this is unsound: during (very) long runs involving both \texttt{insert} and \texttt{remove-min}, this key counter will overflow.  Although overflow is defined in C for \texttt{unsigned int}, this overflow is fatal algorithmically: multiple live items could be assigned the same key.
 

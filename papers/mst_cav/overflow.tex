@@ -1,5 +1,7 @@
+\vspace*{-0.5em}
 \subsection{Overflow in Dijkstra's algorithm}
 \label{sec:dijkoverflow}
+\vspace*{-0.25em}
 
 Dijkstra's algorithm clearly cannot work when a path
 cost is more than \texttt{INT\_MAX}.  A reasonable-looking restriction
@@ -40,10 +42,10 @@ the graph in figure~\ref{fig:overflow}.  The \texttt{size} of the graph is 3 nod
   \node at (15,0.6) {$2^{31}-1$};
   \node at (15,-2.4) {$2^{31}-1$};
 \end{tikzpicture}
-%\vspace*{-1em}
+\vspace*{-0.75em}
 \caption{A graph that will result in overflow on a 32-bit machine.}
 \label{fig:overflow}
-%\vspace*{-1.75em}
+\vspace*{-1em}
 \end{figure}
 
 
@@ -75,8 +77,10 @@ $0 < 4 \cdot \texttt{size} \le \texttt{INT\_MAX}$, the restrictions on \texttt{i
 %Lastly, when $\texttt{size} = 1$, the range bound on infinity collapses and \texttt{inf} becomes unrealizable.
 %Our verification is thus not applicable to single-vertex graphs, a special case for which the shortest-path problem is rather uninteresting. }
 
+\vspace*{-1.0em}
 \subsection{Related work on Dijkstra in algorithms and formal methods}
 \label{sec:relworkdijkstra}
+\vspace*{-0.5em}
   %The above bound is novel, and discussion of the potential for overflow in Dijkstra's algorithm largely nonexistant.
 We were not able to find a reference that gives a robust, precise,
 and full description of the overflow issue we describe above.
