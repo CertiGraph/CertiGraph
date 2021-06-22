@@ -1,0 +1,48 @@
+\begin{tikzpicture}[
+  gnode/.style={circle, inner sep=0pt, minimum size=5pt, fill=black},
+  gnodecol/.style={circle, inner sep=0pt, minimum size=5pt, fill=black},
+  ->/.style={-Stealth, thick}, node distance=0.5cm]
+  \node[gnode] (n0) {};
+  \node [right = of n0, xshift = -18pt, yshift=5pt] {$\m{r}$};
+  \node[gnodecol] (n1) [below = of n0, xshift=-22pt] {};
+  \node [left = of n1, xshift = 16pt] {$\m{c}$};
+  \node[gnode] (n2) [below = of n0, xshift=22pt] {};
+  \node[gnodecol] (n3) [below = of n1, xshift=-11pt] {};
+  \node[gnodecol] (n4) [below = of n1, xshift=11pt] {};
+  \node[gnode] (n5) [below = of n2, xshift=-11pt] {};
+  \node[gnode] (n6) [below = of n2, xshift=11pt] {};
+  \node [left = of n6, xshift = 16pt] {$\m{b}$};
+  \node[gnodecol] (n7) [below = of n4, xshift=11pt] {};
+  \node [left = of n7, xshift = 16pt] {$\m{a}$};
+  \draw[->] (n1) to (n0);
+%  \draw[->] (n2) to (n0);
+  \draw[->] (n3) to (n1);
+  \draw[->] (n4) to (n1);
+  \draw[->] (n5) to (n2);
+  \draw[->] (n6) to (n2);
+  \draw[->] (n7) to (n4);
+
+  \node[gnode] (m0) [right = 120pt of n0]{};
+  \node [right = of m0, xshift = -18pt, yshift=5pt] {$\m{r}$};
+  \node[gnodecol] (m1) [below = of m0, xshift=-22pt] {};
+  \node [left = of m1, xshift = 16pt] {$\m{c}$};
+  \node[gnode] (m2) [below = of m0, xshift=22pt] {};
+  \node[gnodecol] (m3) [below = of m1, xshift=-11pt] {};
+  \node[gnodecol] (m4) [below = of m1, xshift=11pt] {};
+  \node[gnode] (m5) [below = of m2, xshift=-11pt] {};
+  \node[gnodecol] (m6) [below = of m2, xshift=11pt] {};
+  \node [left = of m6, xshift = 16pt] {$\m{b}$};
+  \node[gnodecol] (m7) [below = of m4, xshift=11pt] {};
+  \node [left = of m7, xshift = 16pt] {$\m{a}$};
+  \draw[->] (m1) to (m0);
+  \draw[->, mymaroon] (m2) to (m0);
+  \draw[->] (m3) to (m1);
+  \draw[->, mymaroon] (m4) to (m0);
+  \draw[->] (m5) to (m2);
+  \draw[->] (m6) to (m2);
+  \draw[->, mymaroon] (m7) to (m0);
+%  \draw[->] (m5) to (m7);
+%  \draw[->] (m5) to [bend left] (m0);
+%  \draw[->] (m7) to [bend right] (m6);
+%  \draw[->] (m7) to [bend left] (m3);
+\end{tikzpicture}
