@@ -496,7 +496,7 @@ Verify executable graph-manipulating code with rich specifications
 \end{adjustbox}
 
 }
-\end{minipage} 
+\end{minipage}
 \begin{minipage}{0.45\textwidth}
 {
 \uncover<2>{
@@ -563,7 +563,7 @@ Verify executable graph-manipulating code with rich specifications
 \end{adjustbox}
 
 }
-\end{minipage} 
+\end{minipage}
 \uncover<2->{
 \begin{minipage}{0.45\textwidth}
 {\centering
@@ -978,7 +978,7 @@ We support three representations of adjacency matrices in memory: \\
 
 \uncover<5->{\centering \textbf{Contribution 3: separation logic for each into CertiGraph}}
 
-\bigskip 
+\bigskip
 
 \uncover<6->{Well engineered: can swap the model with only minimal changes ($<1\%$) to the formal proofs.}
 
@@ -1047,14 +1047,6 @@ Class SoundDijk size inf g := {
  \uncover<4->{\hspace{1.8em}\texttt{ifr: ~~~~}Bona-fide costs must dodge \texttt{inf}} \\
  \uncover<5->{\hspace{1.8em}\texttt{sz1: ~~~~}Special bounds for degenerate case for \texttt{inf}}
 
-
-\end{frame}
-
-\begin{frame}{Dijkstra: spatial representation}
-Nothing fancy spatially, use \p{AdjMat} wholesale \\
-We verify Dijkstra 3 times: \\
-\hspace{1em} reuse math proof entirely \\
-\hspace{1em} spatial variations handled under the hood
 
 \end{frame}
 
@@ -1315,6 +1307,27 @@ $\braces{\exists \m{dist''}, \m{prev''}.~
 \end{center}
 \end{frame}
 
+\begin{frame}{Dijkstra: spatial representation}
+
+{\textbf{Contribution 4: machine-certified ``real C'' Dijkstra}}
+
+\bigskip
+
+\uncover<2->{\textbf{Contribution 5: precise edge bounds to avoid overflow}}
+
+\bigskip
+
+\uncover<3->{\textbf{Contribution 6: three adjacency matrix representations}}
+
+\uncover<4->{(code bases differ by less than 1\%)}
+
+%Nothing fancy spatially, use \p{AdjMat} wholesale \\
+%We verify Dijkstra 3 times: \\
+%\hspace{1em} reuse math proof entirely \\
+%\hspace{1em} spatial variations handled under the hood
+
+\end{frame}
+
 \section{Minimum Spanning Forest: Prim and Kruskal}
 
 \begin{frame}[fragile]{Prim: missing the forest for the trees}
@@ -1325,9 +1338,9 @@ MST-PRIM(G,w,r):
  for each u in G.V
   /* elided: set up PQ,
      key, parent */
- r.key = 0
+ $\alert<2>{\texttt{r.key = 0}}$
  while PQ $\neq$ $\emptyset$
-  u = EXTRACT-MIN(PQ)
+  $\texttt{u = EXTRACT-MIN(PQ)}$
   for each v in G.Adj[u]
    if (v $\in$ Q and
        w(u,v) $<$ v.key)
@@ -1408,6 +1421,9 @@ Prim typically assumes a connected graph}
 
 }}
 \end{minipage}
+\\
+~\\
+~\\
 
 \end{frame}
 
@@ -1419,7 +1435,7 @@ MST-PRIM(G,w,r):
  for each u in G.V
   /* elided: set up PQ,
      key, parent */
- r.key = 0
+ $\texttt{r.key = 0}$
  while PQ $\neq$ $\emptyset$
   $\alert<4->{\texttt{u = EXTRACT-MIN(PQ)}}$
   for each v in G.Adj[u]
@@ -1431,8 +1447,8 @@ MST-PRIM(G,w,r):
 
 \bigskip \vspace{-1em}
 How about an unconnected graph? \\
-\uncover<4->{D can now be extracted at cost \texttt{inf} \\ }
-\uncover<5->{\hspace{-.35em}meaning D is the root of a new tree}
+\uncover<4->{D can now be extracted at cost $\infty$... (!) \\ }
+\uncover<5->{\hspace{-.35em}...meaning D is the root of a new tree!}
 \end{minipage} \begin{minipage}{0.35\textwidth}
 \uncover<2->{
 {\centering
@@ -1519,11 +1535,11 @@ How about an unconnected graph? \\
 
 \begin{minipage}{0.48\textwidth}
 \begin{lstlisting}
-MST-PRIM(G,w,$\alert{\texttt{r}}$):
+MST-PRIM(G,w,$\alert<2->{\texttt{r}}$):
  for each u in G.V
   u.key = INF
   u.parent = NIL $\hide{code:primsetinitparent}$
- $\alert{\texttt{r.key = 0}}$
+ $\alert<2->{\texttt{r.key = 0}}$
  Q = G.V
  while Q $\neq$ $\emptyset$
   u = EXTRACT-MIN(Q) $\hide{code:primextractmin}$
@@ -1534,6 +1550,7 @@ MST-PRIM(G,w,$\alert{\texttt{r}}$):
     v.key = w(u,v) $\hide{code:primeditpri}$
 \end{lstlisting} \end{minipage}
 \begin{minipage}{0.5\textwidth}
+%\uncover<3>{
 \begin{lstlisting}
 MST-PRIM-NOROOT(G,w):
  for each u in G.V
@@ -1549,6 +1566,7 @@ MST-PRIM-NOROOT(G,w):
     v.parent = u
     v.key = w(u,v) $\hide{code:primeditpri}$
 \end{lstlisting}
+%}
 \end{minipage}
 \end{frame}
 
