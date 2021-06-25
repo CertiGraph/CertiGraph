@@ -1307,7 +1307,7 @@ $\braces{\exists \m{dist''}, \m{prev''}.~
 \end{center}
 \end{frame}
 
-\begin{frame}{Dijkstra: spatial representation}
+\begin{frame}{Dijkstra: contributions}
 
 {\textbf{Contribution 4: machine-certified ``real C'' Dijkstra}}
 
@@ -1531,7 +1531,7 @@ How about an unconnected graph? \\
 \end{frame}
 
 
-\begin{frame}[fragile]{Prim: an unnecessary argument; a simpler spec}
+\begin{frame}[fragile]{Prim: an unnecessary argument; simpler invariants}
 
 \begin{minipage}{0.48\textwidth}
 \begin{lstlisting}
@@ -1550,7 +1550,30 @@ MST-PRIM(G,w,$\alert<2->{\texttt{r}}$):
     v.key = w(u,v) $\hide{code:primeditpri}$
 \end{lstlisting} \end{minipage}
 \begin{minipage}{0.5\textwidth}
-%\uncover<3>{
+\end{minipage}
+\end{frame}
+
+\addtocounter{framenumber}{-1}
+
+\begin{frame}[fragile]{Prim: an unnecessary argument; simpler invariants}
+
+\begin{minipage}{0.48\textwidth}
+\begin{lstlisting}
+MST-PRIM(G,w,$\alert{\texttt{r}}$):
+ for each u in G.V
+  u.key = INF
+  u.parent = NIL $\hide{code:primsetinitparent}$
+ $\alert{\texttt{r.key = 0}}$
+ Q = G.V
+ while Q $\neq$ $\emptyset$
+  u = EXTRACT-MIN(Q) $\hide{code:primextractmin}$
+  for each v in G.Adj[u]
+   if (v $\in$ Q and
+       w(u,v) $<$ v.key)
+    v.parent = u
+    v.key = w(u,v) $\hide{code:primeditpri}$
+\end{lstlisting} \end{minipage}
+\begin{minipage}{0.5\textwidth}
 \begin{lstlisting}
 MST-PRIM-NOROOT(G,w):
  for each u in G.V
@@ -1566,12 +1589,54 @@ MST-PRIM-NOROOT(G,w):
     v.parent = u
     v.key = w(u,v) $\hide{code:primeditpri}$
 \end{lstlisting}
-%}
 \end{minipage}
 \end{frame}
 
+\begin{frame}{Prim: contributions}
+
+\uncover<2->{\textbf{Contribution 7: machine-certified ``real C'' Prim}}
+
+\bigskip
+
+\uncover<3->{\textbf{Contribution 8: more general specification}}
+
+\bigskip
+
+\uncover<4->{\textbf{Contribution 9: three adjacency matrix representations}}
+
+\uncover<5->{(code bases differ by less than 1\%)}
+
+\bigskip
+
+\uncover<6->{\textbf{Contribution 10: novel Prim variant without root}}
+
+
+
+%Nothing fancy spatially, use \p{AdjMat} wholesale \\
+%We verify Dijkstra 3 times: \\
+%\hspace{1em} reuse math proof entirely \\
+%\hspace{1em} spatial variations handled under the hood
+
+\end{frame}
 
 \begin{frame}{Kruskal: challenges and nonchallenges}
+
+Challenges: \\ \pause
+\hspace{1em} Edge list to represent the graph in memory \\ \pause
+\hspace{1em} Relies on union-find \\ \pause
+\hspace{1em} Union-find itself uses a (directed) graph \\ \pause
+\hspace{1em} So must manipulate two graphs simultaneously \\ \pause
+
+\bigskip
+
+Nonchallenges: \\ \pause
+\hspace{1em} No algorithmic issues discovered... \\ \pause
+
+\bigskip
+
+{\textbf{Contribution 11: machine-certified ``real C'' Kruskal}}
+
+\hide{
 Extend spatial support: \\
 \hspace{1em} lay out edgelist-represented graphs in memory \\
 \hspace{1em} develop fold-unfold utilities in separation logic
@@ -1585,8 +1650,10 @@ The undirected development carries over wholesale
 Manipulate two graphs simultaneously: \\
 \hspace{1em}directed graph with vertex labels (stores parents and ranks) \\
 \hspace{1em}undirected graph with edge labels (for which we construct an MSF)
+}
 \end{frame}
 
+\hide{
 \begin{frame}{Kruksal: layering undirectedness atop of union-find}
   We have just performed $\texttt{union}^{d}$ \m{a} \m{b} \\
   \vspace{2em}
@@ -1597,11 +1664,12 @@ Manipulate two graphs simultaneously: \\
  \pause \bigskip
   What can we say about $\texttt{connected}^{u}$ \m{a} \m{b}? \uncover<3>{$\texttt{connected}^{u}$ \m{c} \m{b}?}
 \end{frame}
+}
 
-\begin{frame}{Contributions}
+\begin{frame}{Major contributions}
 \uncover<1->{
 Math, spatial support for adjacency matrices, edge lists \\
-Harmonious math support for undirected graphs \\ }
+Harmonious support for undirected graphs \\ }
 \bigskip
 \uncover<2->{
 Dijkstra: nontrivial overflow \\ }
