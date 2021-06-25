@@ -1011,11 +1011,11 @@ The first, in memory:
 \begin{frame}[fragile]{Dijkstra: \texttt{SoundDijk}}
 \begin{lstlisting}
 Class SoundDijk size inf g := {
-  sadjmat: SoundAdjMat size inf g;
+  sadjmat: $\alert<2>{\texttt{SoundAdjMat size inf g}}$;
   efr: $\forall$e, evalid g e $\rightarrow$
-           0 $\le$ elabel g e $\le$ $\alert<2>{\texttt{(MAX/size)}}$;
-  ifr: $\alert<3>{\texttt{(MAX/size) * (size-1)}}$ $<$ inf;
-  sz1: $\alert<4>{\texttt{size = 1}} \rightarrow \forall e, \texttt{ evalid g e } \rightarrow \texttt{ elabel g e } < \texttt{inf}$
+           0 $\le$ elabel g e $\le$ $\alert<3>{\texttt{(MAX/size)}}$;
+  ifr: $\alert<4>{\texttt{(MAX/size) * (size-1)}}$ $<$ inf;
+  sz1: $\alert<5>{\texttt{size = 1}} \rightarrow \forall e, \texttt{ evalid g e } \rightarrow \texttt{ elabel g e } < \texttt{inf}$
 }.
 \end{lstlisting}
 
@@ -1042,9 +1042,10 @@ Class SoundDijk size inf g := {
 
  }
 
- \uncover<2->{\hspace{1.8em}\texttt{efr: }Leave room for probing link} \\
- \uncover<3->{\hspace{1.8em}\texttt{ifr: }Bona-fide costs must dodge \texttt{inf}} \\
- \uncover<4->{\hspace{1.8em}\texttt{sz1: }Special bounds for degenerate case \texttt{inf}}
+ \uncover<2->{\hspace{1.8em}\texttt{sadjmat: }Variant of adjacency matrix} \\
+ \uncover<3->{\hspace{1.8em}\texttt{efr: ~~~~}Leave room for probing link} \\
+ \uncover<4->{\hspace{1.8em}\texttt{ifr: ~~~~}Bona-fide costs must dodge \texttt{inf}} \\
+ \uncover<5->{\hspace{1.8em}\texttt{sz1: ~~~~}Special bounds for degenerate case for \texttt{inf}}
 
 
 \end{frame}
