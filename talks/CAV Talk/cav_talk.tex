@@ -1317,7 +1317,7 @@ $\braces{\exists \m{dist''}, \m{prev''}.~
 
 \bigskip
 
-\uncover<3->{\textbf{Contribution 6: three adjacency matrix representations}}
+\uncover<3->{\textbf{Contribution 6a: three adjacency matrix representations}}
 
 \uncover<4->{(code bases differ by less than 1\%)}
 
@@ -1325,6 +1325,19 @@ $\braces{\exists \m{dist''}, \m{prev''}.~
 %We verify Dijkstra 3 times: \\
 %\hspace{1em} reuse math proof entirely \\
 %\hspace{1em} spatial variations handled under the hood
+
+%\end{frame}
+
+%\begin{frame}{Binary heap with \texttt{decrease-key}}
+
+%To get good performance, Dijkstra requires a priority queue that supports \texttt{decrease-key}.
+
+\bigskip
+
+\uncover<5->{\textbf{Contribution 7: certified binary heap}}
+\uncover<6->{\textbf{with \texttt{decrease-key}}}
+
+\uncover<7->{(subtle C overflow discovered: constants must be unsigned)}
 
 \end{frame}
 
@@ -1594,21 +1607,21 @@ MST-PRIM-NOROOT(G,w):
 
 \begin{frame}{Prim: contributions}
 
-\uncover<2->{\textbf{Contribution 7: machine-certified ``real C'' Prim}}
+\uncover<1->{\textbf{Contribution 8: machine-certified ``real C'' Prim}}
 
 \bigskip
 
-\uncover<3->{\textbf{Contribution 8: more general specification}}
+\uncover<2->{\textbf{Contribution 9: more general specification}}
 
 \bigskip
 
-\uncover<4->{\textbf{Contribution 9: three adjacency matrix representations}}
+\uncover<3->{\textbf{Contribution 6b: three adjacency matrix representations}}
 
-\uncover<5->{(code bases differ by less than 1\%)}
+\uncover<4->{(code bases differ by less than 1\%)}
 
 \bigskip
 
-\uncover<6->{\textbf{Contribution 10: novel Prim variant without root}}
+\uncover<5->{\textbf{Contribution 10: novel Prim variant without root}}
 
 
 
@@ -1634,7 +1647,12 @@ Nonchallenges: \\ \pause
 
 \bigskip
 
-{\textbf{Contribution 11: machine-certified ``real C'' Kruskal}}
+{\textbf{Contribution 11: machine-certified ``real C'' Kruskal}} \pause
+
+\bigskip
+
+{\textbf{Contribution 12: heapsort with $O(n)$ bottom-up \texttt{heapify}}}
+
 
 \hide{
 Extend spatial support: \\
@@ -1668,21 +1686,24 @@ Manipulate two graphs simultaneously: \\
 
 \begin{frame}{Major contributions}
 \uncover<1->{
-Math, spatial support for adjacency matrices, edge lists \\
+Math, spatial support for adjacency matrices, edge lists \\}
+\uncover<2->{
 Harmonious support for undirected graphs \\ }
 \bigskip
-\uncover<2->{
-Dijkstra: nontrivial overflow \\ }
 \uncover<3->{
-Prim: nontrivial improvement in spec \\ }
+Dijkstra: nontrivial overflow \\ }
 \uncover<4->{
-Kruskal: library handles directed $+$ undirected \\ }
-\bigskip
+Prim: nontrivial improvement in spec \\ }
 \uncover<5->{
+Kruskal: library handles directed $+$ undirected \\ }
+\uncover<6->{
+Binary heap: \texttt{decrease-key} and \texttt{heapify}, avoids overflow \\ }
+\bigskip
+\uncover<7->{
 Development is modular and general \\
 High effort---largely because we work with C---but good reuse}
 \bigskip
-\uncover<6->{
+\uncover<8->{
 \flushright
 Thanks! \hspace{2em}}
 \end{frame}
