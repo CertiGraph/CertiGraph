@@ -222,7 +222,7 @@
 
 In a graph with \texttt{size} vertices, \\
 the longest optimal path has \texttt{size-1} links \\
-\uncover<2->{so an edge-cost is, at most, $\lfloor\texttt{MAX/(size-1)}\rfloor$}
+\uncover<2->{so edge costs should be $\leq \lfloor\texttt{MAX/(size-1)}\rfloor$ to prevent overflow}
 
 \bigskip \uncover<3->{
 Consider a $4$-bit machine and unsigned integers \\
@@ -235,13 +235,13 @@ Consider a $4$-bit machine and unsigned integers \\
 [inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
  ->/.style={thick, arrows={-Stealth}}]
 
-\uncover<3->{
+\uncover<4->{
   \node at (1.5,-0.2) {5};
   \node at (4.9,-0.2) {5};
   \node at (6,-0.6) {6};
   }
 
-\uncover<1,2>{
+\uncover<1-3>{
 \node at (0.1, 0.3) {\small A};
 \node at (3.2, 0.3) {\small B};
 \node at (6.3, 0.3) {\small C};
@@ -252,7 +252,7 @@ Consider a $4$-bit machine and unsigned integers \\
   \draw [->, dashed, myred] (B) -- (C);}
 
 
-\uncover<3>{
+\uncover<4>{
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.7, 0.3) {\small B (cost $\infty$)};
 \node at (6.8, 0.3) {\small C (cost $\infty$)};
@@ -263,7 +263,7 @@ Consider a $4$-bit machine and unsigned integers \\
   \draw [->, dashed, myred] (B) -- (C);
   \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);}
 
-\uncover<4>{
+\uncover<5>{
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost 5)};
 \node at (6.8, 0.3) {\small C (cost $\infty$)};
@@ -275,23 +275,10 @@ Consider a $4$-bit machine and unsigned integers \\
   \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
   }
 
-\uncover<5>{
-\node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.5, 0.3) {\small B (cost 5)};
-\node at (6.6, 0.3) {\small C (cost 10)};
-  \node[inf] (A) at (0,0) {};
-  \node[inf] (B) [right = 3 of A] {};
-  \node[inf] (C) [right = 3 of B] {};
-  \draw [->, myred] (A) -- (B);
-  \draw [->, myred] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
-}
-
 \uncover<6>{
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost 5)};
 \node at (6.6, 0.3) {\small C (cost 10)};
-\node at (5, -1.5) {if $5 > 16$ then relax C $\leadsto$ B};
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
   \node[inf] (C) [right = 3 of B] {};
@@ -304,6 +291,19 @@ Consider a $4$-bit machine and unsigned integers \\
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost 5)};
 \node at (6.6, 0.3) {\small C (cost 10)};
+\node at (5, -1.5) {if $5 > 16$ then relax C $\leadsto$ B};
+  \node[inf] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, myred] (A) -- (B);
+  \draw [->, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\uncover<8>{
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.5, 0.3) {\small B (cost 5)};
+\node at (6.6, 0.3) {\small C (cost 10)};
 \node at (5, -1.5) {if $5 > \alert{0}$ then relax C $\leadsto$ B};
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
@@ -313,7 +313,7 @@ Consider a $4$-bit machine and unsigned integers \\
   \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
 }
 
-\uncover<8->{
+\uncover<9->{
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost \alert{0})};
 \node at (6.6, 0.3) {\small C (cost 10)};
@@ -330,39 +330,42 @@ Consider a $4$-bit machine and unsigned integers \\
 
 }
 \bigskip
-\uncover<9->{
-Must allow room for the probe edge \includegraphics[scale=.08]{nye} \\ }
-\uncover<10>{so an edge-cost is, at most, \alert{$\lfloor\texttt{MAX/size}\rfloor$}}
+\uncover<10->{
+Must allow room for the probing edge \hide{\includegraphics[scale=.08]{nye}} \\ }
+\uncover<11>{so an edge-cost is, at most, \alert{$\lfloor\texttt{MAX/size}\rfloor$}}
 
 \end{frame}
 
 \begin{frame}{Motivation: A precondition for Dijkstra}
 
-There are many ways to fix this!
-\\ \hspace{1em} Refactor troublesome addition as subtraction
-\\ \hspace{1em} Coerce to \texttt{long}
-\\ \hspace{1em} Work in \texttt{float}, which has $\infty^{+}$
-\\ \hspace{1em} Never look back into optimized part
+There are many ways to fix this! \pause
+\\ \hspace{1em} Refactor troublesome addition as subtraction \pause
+\\ \hspace{1em} Coerce to \texttt{long} \pause
+\\ \hspace{1em} Work in \texttt{float}, which has $\infty^{+}$ \pause
+\\ \hspace{1em} Never look back into optimized part \pause
+\\ \hspace{1em} Stop earlier: when you have one vertex left in PQ, rather than zero \pause
 
 \bigskip
 
-\pause Sadly, intuition supports our misstep \\
+Sadly, intuition supports our misstep\pause{}... \\
 and bugs such as this one are often overlooked
 
 \end{frame}
 
 \begin{frame}{CertiGraph: problem scope}
-\includegraphics[scale=0.09]{vst_logo}
-\hspace{2em} \includegraphics[scale=0.12]{compcert_logo}
+\includegraphics[scale=0.12]{compcert_logo}
+\hspace{2em} \includegraphics[scale=0.09]{vst_logo}
 \hspace{2em} \includegraphics[scale=0.2]{paper_screen}
 
 \bigskip
-VST + CompCert + \underline{CertiGraph}
+CompCert + VST + \underline{CertiGraph}
 
 \bigskip
-\hspace{1em}Verify executable code
-\\\hspace{1em}against realistic specifications
-\\\hspace{1em}expressed with mathematical graphs
+
+\pause
+
+Verify executable graph-manipulating code with rich specifications
+%\\\hspace{1em}expressed with mathematical graphs
 
 \end{frame}
 
@@ -370,6 +373,7 @@ VST + CompCert + \underline{CertiGraph}
   \input{workflow.tex}
 \end{frame}
 
+\hide{
 \begin{frame}{CertiGraph: pure math graphs}
   \begin{align*}
 \Big(\hspace{0.5em}\mathcal{V}& \texttt{: Type}, \\
@@ -384,14 +388,16 @@ VST + CompCert + \underline{CertiGraph}
 \end{align*}
 
 \end{frame}
+}
 
 \begin{frame}
 \frametitle{Outline}
 \tableofcontents
 \end{frame}
 
-\section{Mathematical Adjacency Matrices}
+\section{Mathematical and Spatial Representations}
 
+\hide{
 \begin{frame}{Refresher: adjacency matrices}
 
 \begin{minipage}{0.45\textwidth}
@@ -490,8 +496,11 @@ VST + CompCert + \underline{CertiGraph}
 \end{adjustbox}
 
 }
-\end{minipage} \begin{minipage}{0.45\textwidth}
-{\centering
+\end{minipage} 
+\begin{minipage}{0.45\textwidth}
+{
+\uncover<2>{
+\centering
 \begin{adjustbox}{scale=0.9}
 \tikz\draw grid(5,5)foreach[count=~]\l in
 {  , A, B, C, D, E,
@@ -502,20 +511,21 @@ VST + CompCert + \underline{CertiGraph}
  E, ?, ?, 2, ?, ?}
 {({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
 \end{adjustbox}
-
+}
 }
 
 \end{minipage}
 
 \vspace{0.9em}
-\uncover<2>{\centering Inadvertently created a strongly-connected graph!}
+\uncover<3>{\centering Inadvertently created a strongly-connected graph!}
 
 \end{frame}
+}
 
 \begin{frame}{Supporting edge-labeled adjacency matrices}
 \begin{minipage}{0.45\textwidth}
 {\centering
-\begin{adjustbox}{scale=0.9}
+\begin{adjustbox}{scale=0.8}
 \begin{tikzpicture}
 [vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
  inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
@@ -553,9 +563,11 @@ VST + CompCert + \underline{CertiGraph}
 \end{adjustbox}
 
 }
-\end{minipage} \begin{minipage}{0.45\textwidth}
+\end{minipage} 
+\uncover<2->{
+\begin{minipage}{0.45\textwidth}
 {\centering
-\begin{adjustbox}{scale=0.9}
+\begin{adjustbox}{scale=0.8}
 \tikz\draw grid(5,5)foreach[count=~]\l in
 {  , A, B, C, D, E,
  A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
@@ -569,12 +581,298 @@ VST + CompCert + \underline{CertiGraph}
 }
 
 \end{minipage}
+}
 
 \vspace{0.9em}
-\uncover<2>{\centering Precondition: $\exists \infty.~$no bona-fide edge has cost $\infty$}
+\uncover<3->{Requirement 1: graph, not multigraph}
+
+\uncover<4->{Requirement 2: labels representable}
+
+\uncover<5->{Requirement 3: $\exists \infty.$} \uncover<6->{$\infty$ representable} \uncover<7->{and no bona-fide edge has cost $\infty$}
+
+\vspace{0.9em}
+
+\uncover<8>{\centering \textbf{Contribution 1: integrate this notion of graphs into CertiGraph in a generic way}}
+\\
+~\\
+
 \end{frame}
 
+\begin{frame}[fragile]{Undirected graphs}
+%\vspace*{1pt}
+\begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.8}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
 
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D};
+\node at (3.2, -3.5) {\small E};
+\node[inf] (A) at (1.5,1.5) {};
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+\node at (.75,1.1) {3};
+\node at (1.5,0.25) {4};
+\node at (1.5,-2.89) {1};
+\node at (-0.2,-1.5) {6};
+\node at (3.35,-1.5) {2};
+\node at (1.4,-1.5) {1};
+
+  \draw [thick, dashed, myred] (A) -- (B);
+  \draw [thick, dashed, myred] (B) -- (C);
+  \draw [thick, dashed, myred] (D) -- (E);
+  \draw [thick, dashed, myred] (B) -- (D);
+  \draw [thick, dashed, myred] (E) -- (C);
+  \draw [thick, dashed, myred] (C) -- (D);
+
+\end{tikzpicture}
+\end{adjustbox}
+
+}
+\end{minipage} \pause \begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.8}
+\tikz\draw grid(5,5)foreach[count=~]\l in
+{  , A, B, C, D, E,
+ A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
+ B, $\alert{\infty}$, $\infty$, 4, 6, $\infty$,
+ C, $\alert{\infty}$, $\alert{\infty}$, $\infty$, 1, 2,
+ D, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\infty$, 1,
+ E, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\infty$}
+{({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
+\end{adjustbox}
+
+}
+\end{minipage}
+
+\pause \vspace{0.9em}
+
+Kruskal and Prim handle undirected graphs \\
+
+\pause \vspace{0.9em}
+
+\quad Build lightweight undirected definitions \\
+\pause
+\quad Prove connections to existing directed definitions \\
+\pause
+\quad Grow undirected infrastructure
+\pause
+
+\vspace{1.0em}
+
+{\centering \textbf{Contribution 2: integrate undirected graphs into CertiGraph}}
+
+
+\end{frame}
+
+\hide{
+\begin{frame}{Weakening directed into undirected}
+
+\m{x} and \m{y} are $\texttt{adjacent}^{u}$ if there is an $\texttt{edge}^{d}$ between them: \\
+\hspace{1em} \m{x} $\rightarrow$ \m{y} or \m{y} $\rightarrow$ \m{x} \\
+
+\pause \bigskip
+
+$\texttt{connected}^{u}$ is the transitive closure of $\texttt{adjacent}^{u}$: \\
+\hspace{1em} \m{x} $\rightsquigarrow$ \m{a} $\leftarrow$ \m{b} $\leftarrow$ \m{c} $\leftsquigarrow$ \m{y} \\
+
+\pause \bigskip
+
+We already have $\texttt{reachable}^{d}$: \hspace{0.5em} \m{x} $\rightsquigarrow$ \m{y} \\
+\pause
+By design, $\texttt{reachable}^{d}$ weakens easily into $\texttt{connected}^{u}$
+
+\pause \bigskip
+
+$\texttt{connected}^{u}$ is powerful enough to define \\
+$\texttt{cycle}^{u}$, $\texttt{forest}^{u}$, $\texttt{spanning}^{u}$, $\ldots$ ,
+$\texttt{minimum\_spanning\_forest}^{u}$
+
+\end{frame}
+}
+
+\hide{
+\begin{frame}[fragile]{Building an undirected infrastructure}
+
+A \texttt{upath} is the edge-sequence connecting two \texttt{connected} vertices \\
+A \texttt{ucycle} is a \texttt{upath} with \m{head} = \m{foot} \\
+\texttt{is\_partial\_graph f g} means that everything in \texttt{f} is also in \texttt{g}
+\bigskip \pause
+\begin{lstlisting}
+Definition uforest g := $\forall$ p l, $\lnot$ucycle g p l.
+
+Definition spanning g g' :=
+ $\forall$ u v, connected g u v $\leftrightarrow$ connected g' u v.
+
+Definition spanning_uforest f g :=
+  is_partial_graph f g $\wedge$ uforest f $\wedge$ spanning f g.
+\end{lstlisting}
+
+\bigskip \pause
+And \texttt{minimum\_spanning\_forest f g} means that \\
+\texttt{f} minimizes total edge cost among other \texttt{spanning\_uforest}s of \texttt{g}
+
+\end{frame}
+} % end hide
+
+\hide{
+\begin{frame}[fragile]{\texttt{SoundUAdjMat}, the undirected soundness condition}
+
+\begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.8}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
+
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D};
+\node at (3.2, -3.5) {\small E};
+\node[inf] (A) at (1.5,1.5) {};
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+\node at (.75,1.1) {3};
+\node at (1.5,0.25) {4};
+\node at (1.5,-2.89) {1};
+\node at (-0.2,-1.5) {6};
+\node at (3.35,-1.5) {2};
+\node at (1.4,-1.5) {1};
+
+  \draw [thick, dashed, myred] (A) -- (B);
+  \draw [thick, dashed, myred] (B) -- (C);
+  \draw [thick, dashed, myred] (D) -- (E);
+  \draw [thick, dashed, myred] (B) -- (D);
+  \draw [thick, dashed, myred] (E) -- (C);
+  \draw [thick, dashed, myred] (C) -- (D);
+
+\end{tikzpicture}
+\end{adjustbox}
+
+}
+\end{minipage} \begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.8}
+\tikz\draw grid(5,5)foreach[count=~]\l in
+{  , A, B, C, D, E,
+ A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
+ B, 3, $\infty$, 4, 6, $\infty$,
+ C, $\infty$, 4, $\infty$, 1, 2,
+ D, $\infty$, 6, 1, $\infty$, 1,
+ E, $\infty$, $\infty$, 2, 1, $\infty$}
+{({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
+\end{adjustbox}
+
+}
+\end{minipage}
+
+\bigskip \pause
+
+A little trick prevents double-counting:
+
+\begin{lstlisting}
+Class SoundUAdjMat size inf g := {
+  sadjmat: SoundAdjMat size inf g;
+  undirec: $\forall$e, evalid g e $\rightarrow$ src g e $\le$ dst g e;
+}.
+\end{lstlisting}
+
+\end{frame}
+}
+
+\hide{
+\begin{frame}[fragile]{\texttt{SoundUAdjMat}, the undirected soundness condition}
+
+\begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.8}
+\begin{tikzpicture}
+[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
+ inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
+ ->/.style={thick, arrows={-Stealth}},
+ every text node part/.style={align=center}]
+
+% static vertices and their labels
+\node at (1.6, 1.8) {\small A};
+\node at (-0.1, 0.3) {\small B};
+\node at (3.2, 0.3) {\small C};
+\node at (-0.1, -3.5) {\small D};
+\node at (3.2, -3.5) {\small E};
+\node[inf] (A) at (1.5,1.5) {};
+\node[inf] (B) at (0,0) {};
+\node[inf] (C) [right = 3 of B] {};
+\node[inf] (D) [below = 3 of B] {};
+\node[inf] (E) [below = 3 of C] {};
+
+\node at (.75,1.1) {3};
+\node at (1.5,0.25) {4};
+\node at (1.5,-2.89) {1};
+\node at (-0.2,-1.5) {6};
+\node at (3.35,-1.5) {2};
+\node at (1.4,-1.5) {1};
+
+  \draw [thick, dashed, myred] (A) -- (B);
+  \draw [thick, dashed, myred] (B) -- (C);
+  \draw [thick, dashed, myred] (D) -- (E);
+  \draw [thick, dashed, myred] (B) -- (D);
+  \draw [thick, dashed, myred] (E) -- (C);
+  \draw [thick, dashed, myred] (C) -- (D);
+
+\end{tikzpicture}
+\end{adjustbox}
+
+}
+\end{minipage} \begin{minipage}{0.45\textwidth}
+{\centering
+\begin{adjustbox}{scale=0.8}
+\tikz\draw grid(5,5)foreach[count=~]\l in
+{  , A, B, C, D, E,
+ A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
+ B, $\alert{\infty}$, $\infty$, 4, 6, $\infty$,
+ C, $\alert{\infty}$, $\alert{\infty}$, $\infty$, 1, 2,
+ D, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\infty$, 1,
+ E, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\infty$}
+{({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
+\end{adjustbox}
+
+}
+\end{minipage}
+
+\bigskip
+
+A little trick prevents double-counting:
+
+\begin{lstlisting}
+Class SoundUAdjMat size inf g := {
+  sadjmat: SoundAdjMat size inf g;
+  undirec: $\forall$e, evalid g e $\rightarrow$ $\alert{\m{fst} \texttt{ e} \le \m{snd} \texttt{ e}}$;
+}.
+\end{lstlisting}
+
+\end{frame}
+}
+
+\hide{
 \begin{frame}{Constraining a representable graph}
 What graphs are representable as edge-labeled adjacency matrices?
 
@@ -618,42 +916,43 @@ Class SoundDijk size inf g := {
 \end{lstlisting}
 
 \end{frame}
+}
 
-
-\section{Spatial Representations in Separation Logic}
+%\section{Spatial Representations in Separation Logic}
 
 \begin{frame}[fragile]{Laying out graphs in memory}
-We support three flavors of adjacency matrix: \\
-\hspace{1em}stack-allocated 2D~array \texttt{int~graph[size][size]} \\
-\hspace{1em}stack-allocated 1D~array \texttt{int~graph[size$\times$size]} \\
-\hspace{1em}heap-allocated 2D~array \texttt{int~**graph}
+We support three representations of adjacency matrices in memory: \\
+\uncover<2->{\hspace{1em}stack-allocated 2D~array \texttt{int~graph[size][size]} \\}
+\uncover<3->{\hspace{1em}stack-allocated 1D~array \texttt{int~graph[size$\times$size]} \\}
+\uncover<4->{\hspace{1em}heap-allocated 2D~array \texttt{int~**graph}}
 
 \bigskip
 
-\uncover<2-3>{
-
+\uncover<2->{
 \begin{minipage}{0.2\textwidth}
 {\centering
 \begin{adjustbox}{scale=0.5}
 \begin{tikzpicture}
 \draw grid(3,3);
-\uncover<3>{\draw[red, thick, yshift=2cm] grid(1,1);}
+\uncover<2->{\draw[red, thick, yshift=2cm] grid(1,1);}
 \end{tikzpicture}
 \end{adjustbox}
 
-}
+}}
+\uncover<3->{
 \end{minipage} \begin{minipage}{0.45\textwidth}
 {\centering
 \begin{adjustbox}{scale=0.5}
 
 \begin{tikzpicture}
 \draw grid(9,1);
-\uncover<3>{\draw[red, thick] grid(1,1);}
+\uncover<3->{\draw[red, thick] grid(1,1);}
 
 \end{tikzpicture}
 \end{adjustbox}
 
-}
+}}
+\uncover<4->{
 \end{minipage}\begin{minipage}{0.25\textwidth}
 {\centering
 \begin{adjustbox}{scale=0.5}
@@ -661,7 +960,7 @@ We support three flavors of adjacency matrix: \\
 
 \draw grid(1,3);
 \draw [xshift=1.5cm, yshift=2.5cm]grid(3,1);
-\uncover<3>{\draw [red, thick, xshift=0cm, yshift=2cm]grid(1,1);}
+\uncover<4->{\draw [red, thick, xshift=0cm, yshift=2cm]grid(1,1);}
 \draw [xshift=1.5cm, yshift=1cm]grid(3,1);
 \draw [xshift=1.5cm, yshift=-.5cm]grid(3,1);
 \node at (1.4, 1.5) {\Huge $\rightsquigarrow$};
@@ -675,6 +974,21 @@ We support three flavors of adjacency matrix: \\
 \end{minipage}
 }
 
+\bigskip
+
+\uncover<5->{\centering \textbf{Contribution 3: separation logic for each into CertiGraph}}
+
+\bigskip 
+
+\uncover<6->{Well engineered: can swap the model with only minimal changes ($<1\%$) to the formal proofs.}
+
+\bigskip
+
+\uncover<7->{\centering \textbf{Contribution 3.1: separation logic for edge lists too}}
+
+%We have engineered our mathematical and spatial representations to allow ``swapping'' of models with minimal change to verifications.
+
+\hide{
 \uncover<4-6>{
 \vspace{-5em}
 The first, in memory:
@@ -686,6 +1000,7 @@ The first, in memory:
 \vspace{1em}
 \p{AdjMat}(\gamma, \m{gaddr}, \_) \defeq~& \underset{\m{v}\hspace{0.1em}\in \gamma}{\bigstar} \p{rowrep}(\gamma, \m{v}, \m{gaddr})
 \end{align*}
+}
 }
 
 \end{frame}
@@ -995,211 +1310,6 @@ $\braces{\exists \m{dist''}, \m{prev''}.~
 \end{tikzpicture}
 \end{adjustbox}
 \end{center}
-\end{frame}
-
-\section{Undirectedness in a Directed World}
-
-\begin{frame}[fragile]{Undirectedness in a directed world}
-
-CertiGraph is fundamentally directed \\
-We layer undirectedness atop of this
-
-\pause \bigskip
-
-\hspace{1em} Build lightweight undirected definitions \\
-\hspace{1em} Prove connections to existing directed definitions \\
-\hspace{1em} Grow undirected infrastructure
-
-\end{frame}
-
-\begin{frame}{Weakening directed into undirected}
-
-\m{x} and \m{y} are $\texttt{adjacent}^{u}$ if there is an $\texttt{edge}^{d}$ between them: \\
-\hspace{1em} \m{x} $\rightarrow$ \m{y} or \m{y} $\rightarrow$ \m{x} \\
-
-\pause \bigskip
-
-$\texttt{connected}^{u}$ is the transitive closure of $\texttt{adjacent}^{u}$: \\
-\hspace{1em} \m{x} $\rightsquigarrow$ \m{a} $\leftarrow$ \m{b} $\leftarrow$ \m{c} $\leftsquigarrow$ \m{y} \\
-
-\pause \bigskip
-
-We already have $\texttt{reachable}^{d}$: \hspace{0.5em} \m{x} $\rightsquigarrow$ \m{y} \\
-\pause
-By design, $\texttt{reachable}^{d}$ weakens easily into $\texttt{connected}^{u}$
-
-\pause \bigskip
-
-$\texttt{connected}^{u}$ is powerful enough to define \\
-$\texttt{cycle}^{u}$, $\texttt{forest}^{u}$, $\texttt{spanning}^{u}$, $\ldots$ ,
-$\texttt{minimum\_spanning\_forest}^{u}$
-
-\end{frame}
-
-\hide{
-\begin{frame}[fragile]{Building an undirected infrastructure}
-
-A \texttt{upath} is the edge-sequence connecting two \texttt{connected} vertices \\
-A \texttt{ucycle} is a \texttt{upath} with \m{head} = \m{foot} \\
-\texttt{is\_partial\_graph f g} means that everything in \texttt{f} is also in \texttt{g}
-\bigskip \pause
-\begin{lstlisting}
-Definition uforest g := $\forall$ p l, $\lnot$ucycle g p l.
-
-Definition spanning g g' :=
- $\forall$ u v, connected g u v $\leftrightarrow$ connected g' u v.
-
-Definition spanning_uforest f g :=
-  is_partial_graph f g $\wedge$ uforest f $\wedge$ spanning f g.
-\end{lstlisting}
-
-\bigskip \pause
-And \texttt{minimum\_spanning\_forest f g} means that \\
-\texttt{f} minimizes total edge cost among other \texttt{spanning\_uforest}s of \texttt{g}
-
-\end{frame}
-} % end hide
-
-\begin{frame}[fragile]{\texttt{SoundUAdjMat}, the undirected soundness condition}
-
-\begin{minipage}{0.45\textwidth}
-{\centering
-\begin{adjustbox}{scale=0.8}
-\begin{tikzpicture}
-[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
- inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
- inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
- ->/.style={thick, arrows={-Stealth}},
- every text node part/.style={align=center}]
-
-% static vertices and their labels
-\node at (1.6, 1.8) {\small A};
-\node at (-0.1, 0.3) {\small B};
-\node at (3.2, 0.3) {\small C};
-\node at (-0.1, -3.5) {\small D};
-\node at (3.2, -3.5) {\small E};
-\node[inf] (A) at (1.5,1.5) {};
-\node[inf] (B) at (0,0) {};
-\node[inf] (C) [right = 3 of B] {};
-\node[inf] (D) [below = 3 of B] {};
-\node[inf] (E) [below = 3 of C] {};
-
-\node at (.75,1.1) {3};
-\node at (1.5,0.25) {4};
-\node at (1.5,-2.89) {1};
-\node at (-0.2,-1.5) {6};
-\node at (3.35,-1.5) {2};
-\node at (1.4,-1.5) {1};
-
-  \draw [thick, dashed, myred] (A) -- (B);
-  \draw [thick, dashed, myred] (B) -- (C);
-  \draw [thick, dashed, myred] (D) -- (E);
-  \draw [thick, dashed, myred] (B) -- (D);
-  \draw [thick, dashed, myred] (E) -- (C);
-  \draw [thick, dashed, myred] (C) -- (D);
-
-\end{tikzpicture}
-\end{adjustbox}
-
-}
-\end{minipage} \begin{minipage}{0.45\textwidth}
-{\centering
-\begin{adjustbox}{scale=0.8}
-\tikz\draw grid(5,5)foreach[count=~]\l in
-{  , A, B, C, D, E,
- A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
- B, 3, $\infty$, 4, 6, $\infty$,
- C, $\infty$, 4, $\infty$, 1, 2,
- D, $\infty$, 6, 1, $\infty$, 1,
- E, $\infty$, $\infty$, 2, 1, $\infty$}
-{({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
-\end{adjustbox}
-
-}
-\end{minipage}
-
-\bigskip \pause
-
-A little trick prevents double-counting:
-
-\begin{lstlisting}
-Class SoundUAdjMat size inf g := {
-  sadjmat: SoundAdjMat size inf g;
-  undirec: $\forall$e, evalid g e $\rightarrow$ src g e $\le$ dst g e;
-}.
-\end{lstlisting}
-
-\end{frame}
-
-\begin{frame}[fragile]{\texttt{SoundUAdjMat}, the undirected soundness condition}
-
-\begin{minipage}{0.45\textwidth}
-{\centering
-\begin{adjustbox}{scale=0.8}
-\begin{tikzpicture}
-[vad/.style={rectangle, fill=black, inner sep=0pt, minimum size=4pt},
- inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
- inv/.style={circle, fill=myred, draw=myred, thick, inner sep=0pt, minimum size=4pt},
- ->/.style={thick, arrows={-Stealth}},
- every text node part/.style={align=center}]
-
-% static vertices and their labels
-\node at (1.6, 1.8) {\small A};
-\node at (-0.1, 0.3) {\small B};
-\node at (3.2, 0.3) {\small C};
-\node at (-0.1, -3.5) {\small D};
-\node at (3.2, -3.5) {\small E};
-\node[inf] (A) at (1.5,1.5) {};
-\node[inf] (B) at (0,0) {};
-\node[inf] (C) [right = 3 of B] {};
-\node[inf] (D) [below = 3 of B] {};
-\node[inf] (E) [below = 3 of C] {};
-
-\node at (.75,1.1) {3};
-\node at (1.5,0.25) {4};
-\node at (1.5,-2.89) {1};
-\node at (-0.2,-1.5) {6};
-\node at (3.35,-1.5) {2};
-\node at (1.4,-1.5) {1};
-
-  \draw [thick, dashed, myred] (A) -- (B);
-  \draw [thick, dashed, myred] (B) -- (C);
-  \draw [thick, dashed, myred] (D) -- (E);
-  \draw [thick, dashed, myred] (B) -- (D);
-  \draw [thick, dashed, myred] (E) -- (C);
-  \draw [thick, dashed, myred] (C) -- (D);
-
-\end{tikzpicture}
-\end{adjustbox}
-
-}
-\end{minipage} \begin{minipage}{0.45\textwidth}
-{\centering
-\begin{adjustbox}{scale=0.8}
-\tikz\draw grid(5,5)foreach[count=~]\l in
-{  , A, B, C, D, E,
- A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
- B, $\alert{\infty}$, $\infty$, 4, 6, $\infty$,
- C, $\alert{\infty}$, $\alert{\infty}$, $\infty$, 1, 2,
- D, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\infty$, 1,
- E, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\alert{\infty}$, $\infty$}
-{({-.5+mod(~-1,6},{5.5-div(~-1,6})node{\l}};
-\end{adjustbox}
-
-}
-\end{minipage}
-
-\bigskip
-
-A little trick prevents double-counting:
-
-\begin{lstlisting}
-Class SoundUAdjMat size inf g := {
-  sadjmat: SoundAdjMat size inf g;
-  undirec: $\forall$e, evalid g e $\rightarrow$ $\alert{\m{fst} \texttt{ e} \le \m{snd} \texttt{ e}}$;
-}.
-\end{lstlisting}
-
 \end{frame}
 
 \section{Minimum Spanning Forest: Prim and Kruskal}
