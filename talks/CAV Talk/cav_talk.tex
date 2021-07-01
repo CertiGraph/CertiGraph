@@ -221,10 +221,10 @@
 \begin{frame}{Motivation: a precondition for Dijkstra}
 
 In a graph with \texttt{size} vertices, \\
-the longest optimal path has \texttt{size-1} links \\
+the longest possible optimal path has \texttt{size-1} links \\
 \uncover<2->{so edge costs should be $\leq \lfloor\texttt{MAX/(size-1)}\rfloor$ to prevent overflow}
 
-\bigskip \uncover<3->{
+\bigskip \uncover<4->{
 Consider a $4$-bit machine and unsigned integers \\
 \texttt{MAX} = 15, \texttt{size} = 3, so every edge-cost $\le 7$.}
 
@@ -241,7 +241,7 @@ Consider a $4$-bit machine and unsigned integers \\
   \node at (6,-0.6) {6};
   }
 
-\uncover<1-3>{
+\uncover<1-2>{
 \node at (0.1, 0.3) {\small A};
 \node at (3.2, 0.3) {\small B};
 \node at (6.3, 0.3) {\small C};
@@ -251,8 +251,18 @@ Consider a $4$-bit machine and unsigned integers \\
   \draw [->, dashed, myred] (A) -- (B);
   \draw [->, dashed, myred] (B) -- (C);}
 
+\uncover<3-4>{
+\node at (0.1, 0.3) {\small A};
+\node at (3.2, 0.3) {\small B};
+\node at (6.3, 0.3) {\small C};
+  \node[inf] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, dashed, myred] (A) -- (B);
+  \draw [->, dashed, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);}
 
-\uncover<4>{
+\uncover<5>{
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.7, 0.3) {\small B (cost $\infty$)};
 \node at (6.8, 0.3) {\small C (cost $\infty$)};
@@ -263,7 +273,7 @@ Consider a $4$-bit machine and unsigned integers \\
   \draw [->, dashed, myred] (B) -- (C);
   \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);}
 
-\uncover<5>{
+\uncover<6>{
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost 5)};
 \node at (6.8, 0.3) {\small C (cost $\infty$)};
@@ -275,23 +285,10 @@ Consider a $4$-bit machine and unsigned integers \\
   \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
   }
 
-\uncover<6>{
-\node at (0.3, 0.3) {\small A (cost 0)};
-\node at (3.5, 0.3) {\small B (cost 5)};
-\node at (6.6, 0.3) {\small C (cost 10)};
-  \node[inf] (A) at (0,0) {};
-  \node[inf] (B) [right = 3 of A] {};
-  \node[inf] (C) [right = 3 of B] {};
-  \draw [->, myred] (A) -- (B);
-  \draw [->, myred] (B) -- (C);
-  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
-}
-
 \uncover<7>{
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost 5)};
 \node at (6.6, 0.3) {\small C (cost 10)};
-\node at (5, -1.5) {if $5 > 16$ then relax C $\leadsto$ B};
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
   \node[inf] (C) [right = 3 of B] {};
@@ -304,6 +301,19 @@ Consider a $4$-bit machine and unsigned integers \\
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost 5)};
 \node at (6.6, 0.3) {\small C (cost 10)};
+\node at (5, -1.5) {if $5 > 16$ then relax C $\leadsto$ B};
+  \node[inf] (A) at (0,0) {};
+  \node[inf] (B) [right = 3 of A] {};
+  \node[inf] (C) [right = 3 of B] {};
+  \draw [->, myred] (A) -- (B);
+  \draw [->, myred] (B) -- (C);
+  \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
+}
+
+\uncover<9>{
+\node at (0.3, 0.3) {\small A (cost 0)};
+\node at (3.5, 0.3) {\small B (cost 5)};
+\node at (6.6, 0.3) {\small C (cost 10)};
 \node at (5, -1.5) {if $5 > \alert{0}$ then relax C $\leadsto$ B};
   \node[inf] (A) at (0,0) {};
   \node[inf] (B) [right = 3 of A] {};
@@ -313,7 +323,7 @@ Consider a $4$-bit machine and unsigned integers \\
   \draw [->, dashed, myred] (C.south) .. controls ++(0, -1) .. (B);
 }
 
-\uncover<9->{
+\uncover<10->{
 \node at (0.3, 0.3) {\small A (cost 0)};
 \node at (3.5, 0.3) {\small B (cost \alert{0})};
 \node at (6.6, 0.3) {\small C (cost 10)};
@@ -347,8 +357,9 @@ There are many ways to fix this! \pause
 
 \bigskip
 
-Sadly, intuition supports our misstep\pause{}... \\
-and bugs such as this one are often overlooked
+Sadly, this is code directly from textbooks, and \\
+intuition supports our misstep\pause{}... \\
+...bugs such as this are often overlooked
 
 \end{frame}
 
@@ -545,7 +556,7 @@ Verify executable graph-manipulating code with rich specifications
 \node[inf] (D) [below = 3 of B] {};
 \node[inf] (E) [below = 3 of C] {};
 
-\node at (.75,1.1) {3};
+\node at (.75,1.1) {\alert<3>{3}};
 \node at (1.5,0.25) {4};
 \node at (1.5,-2.89) {1};
 \node at (-0.2,-1.5) {6};
@@ -570,7 +581,7 @@ Verify executable graph-manipulating code with rich specifications
 \begin{adjustbox}{scale=0.8}
 \tikz\draw grid(5,5)foreach[count=~]\l in
 {  , A, B, C, D, E,
- A, $\infty$, 3, $\infty$, $\infty$, $\infty$,
+ A, $\infty$, $\alert<3>{3}$, $\infty$, $\infty$, $\infty$,
  B, $\infty$, $\infty$, 4, 6, $\infty$,
  C, $\infty$, $\infty$, $\infty$, 1, $\infty$,
  D, $\infty$, $\infty$, $\infty$, $\infty$, 1,
@@ -584,11 +595,11 @@ Verify executable graph-manipulating code with rich specifications
 }
 
 \vspace{0.9em}
-\uncover<3->{Requirement 1: graph, not multigraph}
+\uncover<4->{Requirement 1: graph, not multigraph}
 
-\uncover<4->{Requirement 2: labels representable}
+\uncover<5->{Requirement 2: labels representable}
 
-\uncover<5->{Requirement 3: $\exists \infty.$} \uncover<6->{$\infty$ representable} \uncover<7->{and no bona-fide edge has cost $\infty$}
+\uncover<6->{Requirement 3: $\exists \infty.$} \uncover<6->{$\infty$ representable} \uncover<7->{and no bona-fide edge has cost $\infty$}
 
 \vspace{0.9em}
 
@@ -640,7 +651,7 @@ Verify executable graph-manipulating code with rich specifications
 \end{adjustbox}
 
 }
-\end{minipage} \pause \begin{minipage}{0.45\textwidth}
+\end{minipage} \uncover<2->{\begin{minipage}{0.45\textwidth}
 {\centering
 \begin{adjustbox}{scale=0.8}
 \tikz\draw grid(5,5)foreach[count=~]\l in
@@ -654,24 +665,24 @@ Verify executable graph-manipulating code with rich specifications
 \end{adjustbox}
 
 }
-\end{minipage}
+\end{minipage}}
 
-\pause \vspace{0.9em}
+\vspace{0.9em}
 
 Kruskal and Prim handle undirected graphs \\
 
-\pause \vspace{0.9em}
-
-\quad Build lightweight undirected definitions \\
-\pause
-\quad Prove connections to existing directed definitions \\
-\pause
-\quad Grow undirected infrastructure
-\pause
-
 \vspace{1.0em}
 
-{\centering \textbf{Contribution 2: integrate undirected graphs into CertiGraph}}
+\uncover<3->{\centering \textbf{Contribution 2: integrate undirected graphs into CertiGraph}}
+
+\vspace{0.9em}
+
+\quad \uncover<4->{Build lightweight undirected definitions} \\
+
+\quad \uncover<5->{Prove connections to existing directed definitions} \\
+
+\quad \uncover<6->{Grow undirected infrastructure}
+
 
 
 \end{frame}
@@ -921,7 +932,7 @@ Class SoundDijk size inf g := {
 %\section{Spatial Representations in Separation Logic}
 
 \begin{frame}[fragile]{Laying out graphs in memory}
-We support three representations of adjacency matrices in memory: \\
+We support four representations of adjacency matrices in memory: \\
 \uncover<2->{\hspace{1em}stack-allocated 2D~array \texttt{int~graph[size][size]} \\}
 \uncover<3->{\hspace{1em}stack-allocated 1D~array \texttt{int~graph[size$\times$size]} \\}
 \uncover<4->{\hspace{1em}heap-allocated 2D~array \texttt{int~**graph}}
@@ -1013,7 +1024,7 @@ The first, in memory:
 Class SoundDijk size inf g := {
   sadjmat: $\alert<2>{\texttt{SoundAdjMat size inf g}}$;
   efr: $\forall$e, evalid g e $\rightarrow$
-           0 $\le$ elabel g e $\le$ $\alert<3>{\texttt{(MAX/size)}}$;
+           $\alert<3>{0~\le~\texttt{elabel g e}~\le~\texttt{(MAX/size)}}$;
   ifr: $\alert<4>{\texttt{(MAX/size) * (size-1)}}$ $<$ inf;
   sz1: $\alert<5>{\texttt{size = 1}} \rightarrow \forall e, \texttt{ evalid g e } \rightarrow \texttt{ elabel g e } < \texttt{inf}$
 }.
@@ -1024,9 +1035,9 @@ Class SoundDijk size inf g := {
 [inf/.style={circle, draw=myred, thick, inner sep=0pt, minimum size=4pt},
  ->/.style={thick, arrows={-Stealth}}]
 
-  \node at (1.5,-0.2) {\alert<3>5};
-  \node at (4.9,-0.2) {\alert<3>5};
-  \node at (6,-0.6) {\alert<2>6};
+  \node at (1.5,-0.2) {\alert<4>5};
+  \node at (4.9,-0.2) {\alert<4>5};
+  \node at (6,-0.6) {\alert<3>6};
 
 \node at (0.1, 0.3) {\small A};
 \node at (3.2, 0.3) {\small B};
@@ -1054,7 +1065,7 @@ Class SoundDijk size inf g := {
 
 \begin{lstlisting}
 void dijkstra (int **g, int src, int *dist,
-               int *prev, int size, int inf {
+               int *prev, int size, int inf) {
  /* elided: init PQ, fill out dist and prev */
  while (size(pq)) {
 \end{lstlisting}
@@ -1337,7 +1348,58 @@ $\braces{\exists \m{dist''}, \m{prev''}.~
 \uncover<5->{\textbf{Contribution 7: certified binary heap}}
 \uncover<6->{\textbf{with \texttt{decrease-key}}}
 
-\uncover<7->{(subtle C overflow discovered: constants must be unsigned)}
+\uncover<7->{(several subtle C over/underflows discovered)}
+\end{frame}
+
+\begin{frame}[fragile]{Over/underflows in binary heaps}
+
+%void swim(unsigned int k, Item arr[], unsigned int lookup[]) {
+%  while (k > ROOT_IDX $\&\&$ less (k, PARENT(k), arr)) {
+%    exch(k, PARENT(k), arr, lookup);
+%    k = PARENT(k); } }
+%\begin{minipage}{0.9\textwidth}
+\begin{lstlisting}
+#define ROOT_IDX $\alert<6>{\texttt{0}}$
+#define $\alert<4>{\texttt{PARENT}}$(x) (x $\alert<5>{\texttt{- }}\alert<5-6>{\texttt{1}}$) / $\alert<6>{\texttt{2}}$
+
+void swim($\alert<2>{\texttt{unsigned int}}$ k, Item arr[], 
+          unsigned int lookup[])
+{
+ while (k > ROOT_IDX && 
+        less (k, $\alert<3>{\texttt{PARENT}}$(k), arr)) {
+   exch(k, $\alert<3>{\texttt{PARENT}}$(k), arr, lookup);
+   k = $\alert<3>{\texttt{PARENT}}$(k); 
+ }
+}
+\end{lstlisting}
+%\end{minipage}
+
+\end{frame}
+
+\addtocounter{framenumber}{-1}
+
+\begin{frame}[fragile]{Over/underflows in binary heaps}
+
+%void swim(unsigned int k, Item arr[], unsigned int lookup[]) {
+%  while (k > ROOT_IDX $\&\&$ less (k, PARENT(k), arr)) {
+%    exch(k, PARENT(k), arr, lookup);
+%    k = PARENT(k); } }
+%\begin{minipage}{0.9\textwidth}
+\begin{lstlisting}
+#define ROOT_IDX $\alert{\texttt{0u}}$
+#define $\texttt{PARENT}$(x) (x $\texttt{- }\alert{\texttt{1u}}$) / $\alert{\texttt{2u}}$
+
+void swim($\texttt{unsigned int}$ k, Item arr[],
+          unsigned int lookup[])
+{
+ while (k > ROOT_IDX &&
+        less (k, $\texttt{PARENT}$(k), arr)) {
+   exch(k, $\texttt{PARENT}$(k), arr, lookup);
+   k = $\texttt{PARENT}$(k);
+ }
+}
+\end{lstlisting}
+%\end{minipage}
 
 \end{frame}
 
@@ -1636,6 +1698,7 @@ MST-PRIM-NOROOT(G,w):
 
 Challenges: \\ \pause
 \hspace{1em} Edge list to represent the graph in memory \\ \pause
+\hspace{1em} Have to sort edge list \\ \pause
 \hspace{1em} Relies on union-find \\ \pause
 \hspace{1em} Union-find itself uses a (directed) graph \\ \pause
 \hspace{1em} So must manipulate two graphs simultaneously \\ \pause
@@ -1688,7 +1751,7 @@ Manipulate two graphs simultaneously: \\
 \uncover<1->{
 Math, spatial support for adjacency matrices, edge lists \\}
 \uncover<2->{
-Harmonious support for undirected graphs \\ }
+Added support for undirected graphs \\ }
 \bigskip
 \uncover<3->{
 Dijkstra: nontrivial overflow \\ }
