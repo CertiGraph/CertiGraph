@@ -1349,43 +1349,6 @@ Module SIMPLE_SPANNING_TREE.
       clear H3 H11. apply (spanning_bi_tree P g1 root g3 g2 e1 e2); auto.
     Qed.
 
-    Lemma spanning_list_spanning_tree: forall (P: V -> Prop) g1 root g2 l,
-        NoDup l -> (forall e, In e l <-> out_edges g1 root e) ->
-        vvalid g1 root -> P root ->
-        spanning_list' (fun x => P x /\ x <> root) g1 l g2 ->
-        spanning_tree g1 root P g2.
-    Proof.
-      intros. remember (fun x : V => P x /\ x <> root) as P0. split; [|split; [|split]]; intros.
-      + assert (forall e : E, In e l -> out_edges g1 root e) by (intros; rewrite <- H0; auto).
-        clear H0. induction H3.
-        - rewrite H0. reflexivity.
-        - assert (out_edges g1 root e) by (apply H4; apply in_or_app; right; apply in_eq).
-          pose proof (NoDup_app_l _ _ _ H).
-          assert (forall e0 : E, In e0 es -> out_edges g1 root e0) by (intros; apply H4; apply in_or_app; left; auto).
-          specialize (IHspanning_list' H6 H1 HeqP0 H7). rewrite IHspanning_list'. clear IHspanning_list'.
-          destruct H0 as [[[? ?] [? _]] | [? ?]].
-          * apply si_stronger_partialgraph_simple with
-            (fun n : V => ~ g2 |= dst g2 e ~o~> n satisfying
-                            (fun x : V => P0 x /\ ~ reachable_by_through_set g1 (map (dst g1) es) P0 x)); auto.
-            intro n. unfold Ensembles.In . do 2 intro. apply H10. clear H10. clear H9. subst P0. destruct H0.
-            admit.
-          * assert (out_edges g2 root e) by admit.
-            assert (vvalid g2 root) by admit.
-            pose proof (gremove_predicate_partial_si _ _ _ _ _ H9 H10 H2 H8).
-            apply si_stronger_partialgraph_simple with (fun n : V => ~ g2 |= root ~o~> n satisfying P); auto.
-            intro n. unfold Ensembles.In . do 2 intro. apply H12. clear H12.
-            admit.
-      + admit.
-      + induction H3.
-        - rewrite <- H3. apply reachable_by_is_reachable in H4. auto.
-        - destruct H5 as [[[? ?] [? [? [? ?]]]] | ?].
-          * admit.
-          * admit.
-      + revert a b H4 H5. induction H3.
-        - admit.
-        - intros.
-    Abort.
-
   End SIMPLE_SPANNING.
 End SIMPLE_SPANNING_TREE.
 
