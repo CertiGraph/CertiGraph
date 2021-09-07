@@ -162,7 +162,7 @@ all: \
 # A minimal list of files that need to built within VST for our build to work.
 # Please add to this as needed.
 VST_CRITICAL_FILES = \
-  progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
+  floyd/proofauto.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
 
 # clightgen:
 #	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim1.c prim/prim2.c prim/prim3.c prim/noroot_prim3.c dijkstra/dijkstra1.c dijkstra/dijkstra2.c dijkstra/dijkstra3.c
