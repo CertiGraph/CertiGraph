@@ -1352,6 +1352,7 @@ intros.
   unfold lseg_cell. simpl. saturate_local. destruct H. contradiction H.
 Qed.
 
+(*
 Lemma lseg_valid_pointer:
   forall (ls : listspec list_structid list_link list_token) sh contents p q R,
    sepalg.nonidentity sh ->
@@ -1377,6 +1378,7 @@ eapply derives_trans.
 apply sepcon_derives ; [ apply derives_refl | ]. cancel.
 admit.
 Admitted.
+*)
 
 End LIST.
 
