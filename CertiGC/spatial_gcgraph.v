@@ -1,5 +1,5 @@
 Require Import VST.veric.compcert_rmaps.
-Require Export VST.progs.conclib.
+(* Require Export VST.progs.conclib. *)
 Require Import VST.msl.shares.
 Require Export VST.msl.wand_frame.
 Require Import CertiGraph.lib.List_ext.

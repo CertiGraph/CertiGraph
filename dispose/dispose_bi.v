@@ -11,8 +11,8 @@ Module Info.
   Definition abi := "macosx"%string.
   Definition bitsize := 32.
   Definition big_endian := false.
-  Definition source_file := "sample_mark/dispose_bi.c"%string.
-  Definition normalized := false.
+  Definition source_file := "dispose/dispose_bi.c"%string.
+  Definition normalized := true.
 End Info.
 
 Definition _Node : ident := 2%positive.
