@@ -1,13 +1,14 @@
 COMPCERT_DIR = "../CompCert"
 VST_DIR = "../VST"
 CURRENT_DIR = "./"
+FLOCQ=
 -include CONFIGURE
 
 COQC=$(COQBIN)coqc -w -overriding-logical-loadpath
 COQDEP=$(COQBIN)coqdep
 
 DIRS = lib msl_ext msl_application graph heap_model_direct
-INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert
+INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert $(FLOCQ)
 INCLUDE_VST = -Q $(VST_DIR) VST
 INCLUDE_CERTIGRAPH = $(foreach d, $(DIRS), -Q $(d) CertiGraph.$(d)) -Q "." CertiGraph
 NORMAL_FLAG = $(INCLUDE_CERTIGRAPH) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
