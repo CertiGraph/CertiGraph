@@ -343,16 +343,9 @@ Proof.
                         rewrite sem_add_pl_ptr_special]; try easy;
                    [|rewrite isptr_offset_val; assumption].
                  simpl. rewrite offset_offset_val. f_equal. unfold WORD_SIZE; lia.
-              ** split; [|split; [|split; [|split; [|split; [|split]]]]];
-                   try assumption. 2: rep_lia. red. split; [|split;[|split]].
-                 --- assumption.
+              ** repeat (split; try assumption). lia.
                  --- eapply svfl_raw_fields in H29;
                        [rewrite <- H29; lia | assumption..].
-              (*    rewrite sem_add_pi_ptr_special; [| easy | rewrite isptr_offset_val; assumption | rep_lia]. *)
-              (*    simpl. rewrite offset_offset_val. f_equal. rep_lia. *)
-              (* ** repeat (split; try assumption). lia.  *)
-              (*    eapply svfl_raw_fields in H29; *)
-              (*      [rewrite <- H29; lia | assumption..]. *)
                  --- rewrite <- H26. symmetry.
                      eapply svfl_raw_mark in H29; [apply H29 | assumption..|].
                      simpl. lia.

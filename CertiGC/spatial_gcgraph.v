@@ -1,5 +1,5 @@
 Require Import VST.veric.compcert_rmaps.
-(* Require Export VST.progs.conclib. *)
+Require Export VST.concurrency.conclib.
 Require Import VST.msl.shares.
 Require Export VST.msl.wand_frame.
 Require Import CertiGraph.lib.List_ext.
@@ -527,8 +527,7 @@ Qed.
 
 Lemma derives_weak: forall P Q, P |-- Q -> TT |-- weak_derives P Q.
 Proof.
-  intros.
-  change (predicates_hered.derives TT (weak_derives P Q)).
+  intros. unseal_derives.
   intros w _ ? [? HP].
   specialize (H _ HP).
   eexists; eauto.
@@ -536,8 +535,7 @@ Qed.
 
 Lemma apply_derives: forall P Q, (weak_derives P Q && emp) * P |-- Q.
 Proof.
-  intros.
-  change (predicates_hered.derives ((weak_derives P Q && emp) * P) Q).
+  intros. unseal_derives.
   intros ? (? & ? & ? & [Hderives Hemp] & HP).
   destruct (join_level _ _ _ H).
   apply Hemp in H; subst.
