@@ -318,7 +318,7 @@ Section DijkstraMathLemmas.
         subst; trivial.
       }
       
-      destruct (in_dec (ZIndexed.eq) t popped).
+      destruct (in_dec zeq t popped).
       + assert (valid_path g (t, links)). {
           rewrite Heqt, <- (edge_dst_snd g); trivial.
           apply valid_path_cons with (v := s); trivial.
@@ -929,7 +929,7 @@ Section DijkstraMathLemmas.
      *)
 
     (* We check if u is in the path p' *)
-    destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
+    destruct (in_dec zeq u (epath_to_vpath g p2mom')).
     
     - destruct H17 as [? [? [? [? ?]]]].
       apply in_path_eq_epath_to_vpath in i0; trivial.
@@ -1162,7 +1162,7 @@ Section DijkstraMathLemmas.
      There are two cases about p': In u p' \/ ~ In u p'
      *)
 
-    destruct (in_dec (ZIndexed.eq) u (epath_to_vpath g p2mom')).
+    destruct (in_dec zeq u (epath_to_vpath g p2mom')).
     - (* Yes, the path p2mom' goes via u *) 
       (*
         1. In u p': p' is the path from s to i.
