@@ -21,6 +21,10 @@ Definition UAdjMatLG := AdjMatLG.
 Class SoundUAdjMat (g: UAdjMatLG) := {
   sadjmat: @SoundAdjMat size inf g;
   uer: forall e, evalid g e -> src g e <= dst g e;
+  em: (* evalid_meaning *)
+    forall e, evalid g e <-> 
+              Int.min_signed <= elabel g e <= Int.max_signed /\
+              elabel g e < inf;
 }.
 
 Definition UAdjMatGG := (GeneralGraph V E DV DE DG (fun g => SoundUAdjMat g)).
@@ -46,9 +50,12 @@ Coercion AdjMatGG_UAdjMatGG: UAdjMatGG >-> AdjMatGG.
    and pass it a UAdjMatGG. The coercion will be seamless. 
  *)
 
-(* For the one new UAdjMat-specific plugin, we create a getter *)
+(* For the two new UAdjMat-specific plugins, we create getters *)
 Definition undirected_edge_rep (g: UAdjMatGG) :=
   @uer g (SoundUAdjMat_UAdjMatGG g).
+
+Definition evalid_meaning (g: UAdjMatGG) :=
+  @em g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
 (* 
    A nice-to-do future step:
@@ -243,7 +250,7 @@ Qed.
 
 Section EDGELESS_UADJMATGRAPH.
 
-Context {inf_bound: 0 < inf < Int.max_signed}.
+Context {inf_bound: 0 < inf <= Int.max_signed}.
 Context {size_bound: 0 < size <= Int.max_signed}.
 
 Definition edgeless_lgraph : UAdjMatLG :=
@@ -256,22 +263,27 @@ Instance SoundUAdjMat_edgeless:
 Proof. 
 constructor.
 all: simpl; intros; try contradiction.
-constructor. 
-auto. auto. 
-all: simpl; intros; try auto; try contradiction.
-split; intros; auto.
-split; intros. contradiction. destruct H.
-apply Zaux.Zgt_not_eq in H0. contradiction.
-split; intros; auto.
-constructor; unfold EnumEnsembles.Enumerable.
-(*vertices*)
-exists (nat_inc_list (Z.to_nat size)); split. apply nat_inc_list_NoDup.
-simpl. intros. rewrite nat_inc_list_in_iff. rewrite Z_to_nat_max.
-destruct (Z.lt_trichotomy size 0). rewrite Z.max_r by lia. split; intros; lia.
-destruct H. rewrite H. unfold Z.max; simpl. split; lia.
-rewrite Z.max_l by lia. split; auto.
-(*edges*)
-exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
+- constructor. 
+  auto. auto. 
+  all: simpl; intros; try auto; try contradiction.
+  split; intros; lia. 
+  split; intros; trivial.
+  split; intros. contradiction. destruct H.
+  destruct H; apply H0; reflexivity.
+  split; intros. trivial. unfold not. inversion 1.
+  constructor; unfold EnumEnsembles.Enumerable.
+  (*vertices*)
+  exists (nat_inc_list (Z.to_nat size)); split. apply nat_inc_list_NoDup.
+  simpl. intros. rewrite nat_inc_list_in_iff. rewrite Z_to_nat_max.
+  destruct (Z.lt_trichotomy size 0). rewrite Z.max_r by lia. split; intros; lia.
+  destruct H. rewrite H. unfold Z.max; simpl. split; lia.
+  rewrite Z.max_l by lia. split; auto.
+  (*edges*)
+  exists nil. simpl. split. apply NoDup_nil. intros; split; intros; auto.
+- split. inversion 1. intros.
+  destruct H.
+  apply Zaux.Zgt_not_eq in H0.
+  apply H0; reflexivity.
 Qed.
 
 Definition edgeless_graph: UAdjMatGG :=
@@ -371,13 +383,13 @@ constructor; simpl. constructor; simpl.
 +unfold addValidFunc, updateEdgeFunc, update_elabel; intros.
   split; intros. destruct H. unfold equiv_dec; destruct E_EqDec.
   split. pose proof (inf_representable g); lia. lia.
-  apply (evalid_meaning g) in H. apply H.
+  apply (evalid_meaning g) in H. destruct H; split; lia. 
   subst e. unfold equiv_dec. destruct E_EqDec.
   split. pose proof (inf_representable g); lia. lia.
   unfold complement, equiv in c; contradiction.
   unfold equiv_dec in H; destruct (E_EqDec (u,v)).
   hnf in e0; subst e. right; auto.
-  left. apply (evalid_meaning g). auto.
+  left. apply (MathAdjMatGraph.evalid_meaning g). auto.
 +unfold addValidFunc, update_elabel, equiv_dec; intros. destruct (E_EqDec (u,v) e);  destruct H.
  hnf in e0. subst e.
  apply add_edge_strong_evalid; trivial.
@@ -407,6 +419,16 @@ constructor; simpl. constructor; simpl.
   apply (undirected_edge_rep g e); auto.
   exfalso. apply c.
   symmetry. trivial.
++ unfold addValidFunc, updateEdgeFunc, update_elabel; intros.
+  split; intros. destruct H. unfold equiv_dec; destruct E_EqDec.
+  split. pose proof (inf_representable g); lia. lia.
+  apply (evalid_meaning g) in H. destruct H; split; lia. 
+  subst e. unfold equiv_dec. destruct E_EqDec.
+  split. pose proof (inf_representable g); lia. lia.
+  unfold complement, equiv in c; contradiction.
+  unfold equiv_dec in H; destruct (E_EqDec (u,v)).
+  hnf in e0; subst e. right; auto.
+  left. apply (evalid_meaning g). auto.
 Qed.
 
 Definition UAdjMatGG_adde: UAdjMatGG :=
@@ -562,9 +584,11 @@ constructor; simpl. constructor; simpl.
 ++apply (vvalid_meaning g).
 ++unfold removeValidFunc; split; intros; destruct (E_EqDec e0 e).
   destruct H. hnf in e1. contradiction.
-  apply (evalid_meaning g). apply H.
-  destruct H. apply Zaux.Zgt_not_eq in H0. contradiction.
-  apply (evalid_meaning g) in H; auto.
+  apply (MathAdjMatGraph.evalid_meaning g). apply H.
+  destruct H.
+  exfalso; apply H0; trivial.
+  split.
+  apply (MathAdjMatGraph.evalid_meaning g). auto. auto.
 ++ intros. red in H. destruct H.
    apply remove_edge_preserves_strong_evalid; split; auto.
    apply (evalid_strong_evalid g); trivial.
@@ -581,7 +605,14 @@ constructor; simpl. constructor; simpl.
 ++apply (edge_dst_snd g).
 ++apply Fin_UAdjMatGG_eremove'.
 ++unfold removeValidFunc; intros. destruct H.
-apply (undirected_edge_rep g); trivial.
+  apply (undirected_edge_rep g); trivial.
+++unfold removeValidFunc; split; intros; destruct (E_EqDec e0 e).
+  destruct H. hnf in e1. contradiction.
+  apply (evalid_meaning g). apply H.
+  destruct H.
+  apply Zaux.Zgt_not_eq in H0; exfalso; apply H0; trivial.
+  split.
+  apply (evalid_meaning g). auto. auto.
 Qed.
 
 Definition UAdjMatGG_eremove: UAdjMatGG :=

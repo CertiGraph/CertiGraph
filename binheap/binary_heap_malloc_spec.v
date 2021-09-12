@@ -22,14 +22,12 @@ Definition mallocN_spec {CS: compspecs} :=
 
 Definition freeN_spec {CS: compspecs} :=
     DECLARE _freeN
-    WITH sh: share, p: pointer_val, n: Z, contents: list Z
+    WITH p: val, n: Z
     PRE [tptr tvoid]
     PROP ()
-    PARAMS (pointer_val_val p)
+    PARAMS (p)
     GLOBALS ()
-    SEP (data_at sh (tarray tint n)
-                 (map Vint (map Int.repr contents))
-                 (pointer_val_val p) *
-        free_tok (pointer_val_val p) (sizeof tint * n))
+    SEP (data_at_ Tsh (tarray tint n) p;
+        free_tok p (sizeof tint * n))
   POST [tvoid]
     PROP () LOCAL () SEP (emp).

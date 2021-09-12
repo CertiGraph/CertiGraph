@@ -28,8 +28,7 @@ Definition getCell_spec :=
   PRE [tptr tint, tint, tint]
     PROP (0 <= i < size;
          0 <= u < size;
-         Forall (fun list => Zlength list = size) (@graph_to_mat size g eformat);
-         (size * size <= Int.max_signed))
+         size * size <= Int.max_signed)
     PARAMS (pointer_val_val graph_ptr;
            Vint (Int.repr u);
            Vint (Int.repr i))
@@ -54,7 +53,7 @@ Definition initialise_list_spec :=
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (data_at Tsh (tarray tint size) (list_repeat (Z.to_nat size) (Vint (Int.repr a))) arr
+     SEP (data_at Tsh (tarray tint size) (repeat (Vint (Int.repr a)) (Z.to_nat size)) arr
          ).
 
 Definition initialise_matrix_spec :=
@@ -73,7 +72,7 @@ Definition initialise_matrix_spec :=
   POST [ tvoid ]
      PROP ()
      LOCAL ()
-     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (list_repeat (Z.to_nat (Z.mul size size)) a) arr).
+     SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (repeat a (Z.to_nat (Z.mul size size))) arr).
 
 Definition prim_spec :=
   DECLARE _prim
@@ -82,7 +81,7 @@ Definition prim_spec :=
      PROP ( writable_share Tsh;
             vvalid g r;
             size * (4 * size) <= Ptrofs.max_signed;
-            Forall (fun list => Zlength list = size) (@graph_to_mat size g eformat)
+            inf < Int.max_signed
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr r)); pointer_val_val parent_ptr)
      GLOBALS ()
@@ -96,7 +95,7 @@ Definition prim_spec :=
      PROP ( (*connected_graph mst;*)
             @minimum_spanning_forest size inf mst g;
             Permutation (EList mst) (map (fun v => eformat (v, Znth v parents))
-              (filter (fun v => Znth v parents <? size) (nat_inc_list (Z.to_nat size))))
+                                         (filter (fun v => Znth v parents <? size) (nat_inc_list (Z.to_nat size))))
           )
      RETURN ()
      SEP (@SpaceAdjMatGraph' size CompSpecs Tsh (@graph_to_list size g eformat) (pointer_val_val gptr);

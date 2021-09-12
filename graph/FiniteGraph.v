@@ -207,6 +207,15 @@ Proof.
   tauto.
 Qed.
 
+Lemma step_dec: forall {pg : PreGraph V E} {lfg: LocalFiniteGraph pg} x y,
+  {step pg x y} + {~step pg x y}.
+Proof.
+  intros.
+  destruct (in_dec EV y (map (dst pg) (edge_func pg x))).
+  left. apply edge_func_step. trivial.
+  right. intro. apply n. apply edge_func_step. trivial.
+Qed.
+
 Instance LocalFiniteGraph_FiniteGraph (g: PreGraph V E) (fg: FiniteGraph g): LocalFiniteGraph g.
 Proof.
   intros.

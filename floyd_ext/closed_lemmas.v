@@ -1,7 +1,7 @@
 Require Import VST.floyd.base.
 Require Import VST.floyd.assert_lemmas.
 Require Import VST.floyd.client_lemmas.
-Require Import VST.floyd.closed_lemmas.
+(* Require Import VST.floyd.closed_lemmas. *)
 
 Local Open Scope logic.
 

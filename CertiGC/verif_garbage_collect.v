@@ -294,7 +294,6 @@ Proof.
       forward_call (rsh, sh, gv, fi, ti, g1, t_info1, f_info, roots', outlier,
                     (Z.to_nat i), (Z.to_nat (i + 1))).
       1: simpl; entailer!; now rewrite !Tf.
-      1: do 4 (split; auto); rewrite H23; apply n_Sn.
       Intros vret. destruct vret as [[g2 t_info2] roots2]. simpl fst in *.
       simpl snd in *. replace (ti_heap_p t_info1) with (ti_heap_p t_info2) by
           (rewrite (proj1 H28); reflexivity). unfold thread_info_rep, heap_struct_rep.

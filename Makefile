@@ -1,13 +1,14 @@
 COMPCERT_DIR = "../CompCert"
 VST_DIR = "../VST"
 CURRENT_DIR = "./"
+FLOCQ=
 -include CONFIGURE
 
 COQC=$(COQBIN)coqc -w -overriding-logical-loadpath
 COQDEP=$(COQBIN)coqdep
 
 DIRS = lib msl_ext msl_application graph heap_model_direct
-INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert -Q $(COMPCERT_DIR)/flocq Flocq
+INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert $(FLOCQ)
 INCLUDE_VST = -Q $(VST_DIR) VST
 INCLUDE_CERTIGRAPH = $(foreach d, $(DIRS), -Q $(d) CertiGraph.$(d)) -Q "." CertiGraph
 NORMAL_FLAG = $(INCLUDE_CERTIGRAPH) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
@@ -57,7 +58,7 @@ BINARY_HEAP_FILES = \
   binary_heap_model.v binary_heap_Zmodel.v \
   binary_heap_malloc_spec.v \
   binary_heap.v env_binary_heap.v verif_binary_heap.v \
-  binary_heap_pro.v env_binary_heap_pro.v verif_binary_heap_pro.v
+  binary_heap_pro.v env_binary_heap_pro.v spec_binary_heap_pro.v verif_binary_heap_pro.v
 
 MARK_FILES = \
   env_mark_bi.v spatial_graph_bi_mark.v verif_mark_bi.v verif_mark_bi_dag.v 
@@ -102,7 +103,7 @@ PRIM_FILES = \
   prim1.v prim_spec1.v verif_prim1.v \
   prim2.v prim_spec2.v verif_prim2.v \
   prim3.v prim_spec3.v verif_prim3.v \
-  noroot_prim3.v noroot_prim_spec3.v verif_noroot_prim3.v 
+  noroot_prim.v noroot_prim_spec.v verif_noroot_prim.v 
 
 DIJKSTRA_FILES = \
   dijkstra1.v dijkstra_spec1.v verif_dijkstra1.v \
@@ -162,9 +163,9 @@ all: \
 # A minimal list of files that need to built within VST for our build to work.
 # Please add to this as needed.
 VST_CRITICAL_FILES = \
-  progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
+  floyd/proofauto.v floyd/library.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
 
-# clightgen:
+# clightgen: 
 #	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim1.c prim/prim2.c prim/prim3.c prim/noroot_prim3.c dijkstra/dijkstra1.c dijkstra/dijkstra2.c dijkstra/dijkstra3.c
 #	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c 
 
@@ -176,10 +177,10 @@ vstandme7:
 vstandme3:
 	cd $(VST_DIR) && make $(VST_CRITICAL_FILES:%.v=%.vo) -j3 && cd - && make -j3
 
-.PHONY: mst
-mst:
-	make priq/verif_priq_arr.vo \
-	prim/verif_prim1.vo prim/verif_prim2.vo prim/verif_prim3.vo prim/verif_noroot_prim3.vo \
+.PHONY: cav
+cav:
+	make binheap/verif_binary_heap.vo binheap/verif_binary_heap_pro.vo \
+	prim/verif_prim1.vo prim/verif_prim2.vo prim/verif_prim3.vo prim/verif_noroot_prim.vo \
 	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
 	kruskal/verif_sort.v kruskal/verif_kruskal_edgelist.vo -kj7
 

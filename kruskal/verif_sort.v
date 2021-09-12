@@ -147,7 +147,7 @@ Proof.
          apply derives_refl. }
   forward.
   rewrite harray_split. Intros.
-  forward_call (sh, 0, s-1, arr, arrc1). { split; auto. split; auto. rep_lia. }
+  forward_call (sh, 0, s-1, arr, arrc1).
   destruct arrc1. rewrite Zlength_nil in H5. lia.
   generalize (foot_split_spec _ (h :: arrc1)). case foot_split. destruct o. 2: intros [? ?]; subst; discriminate.
   intros. destruct l. destruct arrc1. 2: discriminate. inversion H12. subst h0. clear H12.
@@ -161,8 +161,7 @@ Proof.
   rewrite Zexchange_head_foot.
   rewrite harray_split. Intros.
   forward_call (sh, 0, arr, (h0 :: l), s-1, 0).
-  { split. trivial. split. trivial. split. rep_lia. split. autorewrite with sublist in *. rep_lia.
-    split. rep_lia. split. intros _. rep_lia.
+  { split. autorewrite with sublist in *. rep_lia.
     apply weak_heapOrdered_bounded_root_weak_heapOrdered.
     eapply weak_heapOrdered_root.
     apply heapOrdered_cutfoot in H6. apply H6. }
@@ -331,7 +330,7 @@ Proof.
                            SEP (harray sh arr_contents' arr)).
     { forward_call (sh, Zright_child i', Zleft_child i', arr, arr_contents').
         { entailer!. simpl. repeat f_equal. rewrite Zright_child_unfold, Zleft_child_unfold; lia. }
-        { split. trivial. rewrite Int.unsigned_repr in H7. rewrite Zright_child_unfold, Zleft_child_unfold in *; lia.
+        { rewrite Int.unsigned_repr in H7. rewrite Zright_child_unfold, Zleft_child_unfold in *; lia.
           (* Here is where we seem to need the precise bound on first_available? *)
           rewrite Zleft_child_unfold in *; rep_lia. }
       forward. Exists (cmp (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents')).
@@ -350,7 +349,7 @@ Proof.
     { forward. subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. entailer!. tauto. }
     { forward. entailer!. }
     Intros. (* Need to get the PROP above the bar... why doesn't forward_call do this for me? *)
-    forward_call (sh, i', j', arr, arr_contents'). { subst j'. split. trivial. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct bo; lia. }
+    forward_call (sh, i', j', arr, arr_contents'). { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct bo; lia. }
     forward_if (~cmp_rel (Znth i' arr_contents') (Znth j' arr_contents')).
       { forward. (* Prove function postcondition *)
         Exists arr_contents'. entailer!. unfold sink at 2 in H4. erewrite sink_done in H4; intros.
@@ -378,7 +377,7 @@ Proof.
           contradiction. }
       { forward.  entailer!. unfold cmp_rel, j' in H0. congruence. }
     forward_call (sh, i', j', arr, arr_contents').
-      { subst j'. split. trivial. split. trivial. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct bo; lia. }
+      { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct bo; lia. }
     forward.
     (* Prove loop invariant at loop bottom *)
     Exists j' (Zexchange arr_contents' i' j').
@@ -436,7 +435,6 @@ Proof.
   Intros s arr_contents'.
   generalize (Permutation_Zlength _ _ _ H5); intro.
   forward_call (sh, s, arr, arr_contents', size, s).
-  { split. trivial. split. trivial. split. lia. split. congruence. split. lia. split; auto. }
   Intros arr_contents''.
   forward_if (s > 0).
   { forward. subst s. Exists arr_contents''. entailer!.

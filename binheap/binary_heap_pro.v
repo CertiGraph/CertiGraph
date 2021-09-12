@@ -1,128 +1,136 @@
 From Coq Require Import String List ZArith.
 From compcert Require Import Coqlib Integers Floats AST Ctypes Cop Clight Clightdefs.
+Import Clightdefs.ClightNotations.
 Local Open Scope Z_scope.
+Local Open Scope string_scope.
+Local Open Scope clight_scope.
 
 Module Info.
-  Definition version := "3.7"%string.
-  Definition build_number := ""%string.
-  Definition build_tag := ""%string.
-  Definition arch := "x86"%string.
-  Definition model := "32sse2"%string.
-  Definition abi := "macosx"%string.
+  Definition version := "3.9".
+  Definition build_number := "".
+  Definition build_tag := "".
+  Definition build_branch := "".
+  Definition arch := "x86".
+  Definition model := "32sse2".
+  Definition abi := "macos".
   Definition bitsize := 32.
   Definition big_endian := false.
-  Definition source_file := "binheap/binary_heap_pro.c"%string.
+  Definition source_file := "binary_heap_pro.c".
   Definition normalized := true.
 End Info.
 
-Definition ___builtin_annot : ident := 18%positive.
-Definition ___builtin_annot_intval : ident := 19%positive.
-Definition ___builtin_bswap : ident := 11%positive.
-Definition ___builtin_bswap16 : ident := 13%positive.
-Definition ___builtin_bswap32 : ident := 12%positive.
-Definition ___builtin_bswap64 : ident := 10%positive.
-Definition ___builtin_clz : ident := 44%positive.
-Definition ___builtin_clzl : ident := 45%positive.
-Definition ___builtin_clzll : ident := 46%positive.
-Definition ___builtin_ctz : ident := 47%positive.
-Definition ___builtin_ctzl : ident := 48%positive.
-Definition ___builtin_ctzll : ident := 49%positive.
-Definition ___builtin_debug : ident := 60%positive.
-Definition ___builtin_fabs : ident := 14%positive.
-Definition ___builtin_fmadd : ident := 52%positive.
-Definition ___builtin_fmax : ident := 50%positive.
-Definition ___builtin_fmin : ident := 51%positive.
-Definition ___builtin_fmsub : ident := 53%positive.
-Definition ___builtin_fnmadd : ident := 54%positive.
-Definition ___builtin_fnmsub : ident := 55%positive.
-Definition ___builtin_fsqrt : ident := 15%positive.
-Definition ___builtin_membar : ident := 20%positive.
-Definition ___builtin_memcpy_aligned : ident := 16%positive.
-Definition ___builtin_read16_reversed : ident := 56%positive.
-Definition ___builtin_read32_reversed : ident := 57%positive.
-Definition ___builtin_sel : ident := 17%positive.
-Definition ___builtin_va_arg : ident := 22%positive.
-Definition ___builtin_va_copy : ident := 23%positive.
-Definition ___builtin_va_end : ident := 24%positive.
-Definition ___builtin_va_start : ident := 21%positive.
-Definition ___builtin_write16_reversed : ident := 58%positive.
-Definition ___builtin_write32_reversed : ident := 59%positive.
-Definition ___compcert_i64_dtos : ident := 29%positive.
-Definition ___compcert_i64_dtou : ident := 30%positive.
-Definition ___compcert_i64_sar : ident := 41%positive.
-Definition ___compcert_i64_sdiv : ident := 35%positive.
-Definition ___compcert_i64_shl : ident := 39%positive.
-Definition ___compcert_i64_shr : ident := 40%positive.
-Definition ___compcert_i64_smod : ident := 37%positive.
-Definition ___compcert_i64_smulh : ident := 42%positive.
-Definition ___compcert_i64_stod : ident := 31%positive.
-Definition ___compcert_i64_stof : ident := 33%positive.
-Definition ___compcert_i64_udiv : ident := 36%positive.
-Definition ___compcert_i64_umod : ident := 38%positive.
-Definition ___compcert_i64_umulh : ident := 43%positive.
-Definition ___compcert_i64_utod : ident := 32%positive.
-Definition ___compcert_i64_utof : ident := 34%positive.
-Definition ___compcert_va_composite : ident := 28%positive.
-Definition ___compcert_va_float64 : ident := 27%positive.
-Definition ___compcert_va_int32 : ident := 25%positive.
-Definition ___compcert_va_int64 : ident := 26%positive.
-Definition _arr : ident := 66%positive.
-Definition _capacity : ident := 5%positive.
-Definition _cells : ident := 77%positive.
-Definition _data : ident := 3%positive.
-Definition _exch : ident := 70%positive.
-Definition _fa : ident := 76%positive.
-Definition _first_available : ident := 6%positive.
-Definition _freeN : ident := 63%positive.
-Definition _heap_cells : ident := 7%positive.
-Definition _i : ident := 89%positive.
-Definition _item : ident := 84%positive.
-Definition _j : ident := 64%positive.
-Definition _k : ident := 65%positive.
-Definition _key : ident := 1%positive.
-Definition _key1 : ident := 68%positive.
-Definition _key2 : ident := 69%positive.
-Definition _key_table : ident := 8%positive.
-Definition _less : ident := 73%positive.
-Definition _lookup : ident := 67%positive.
-Definition _main : ident := 92%positive.
-Definition _malloc : ident := 61%positive.
-Definition _mallocN : ident := 62%positive.
-Definition _newpri : ident := 79%positive.
-Definition _oldpri : ident := 82%positive.
-Definition _pq : ident := 71%positive.
-Definition _pq_edit_priority : ident := 83%positive.
-Definition _pq_free : ident := 91%positive.
-Definition _pq_insert : ident := 86%positive.
-Definition _pq_insert_nc : ident := 78%positive.
-Definition _pq_make : ident := 90%positive.
-Definition _pq_remove_min : ident := 87%positive.
-Definition _pq_remove_min_nc : ident := 85%positive.
-Definition _pq_size : ident := 72%positive.
-Definition _priority : ident := 2%positive.
-Definition _sink : ident := 75%positive.
-Definition _size : ident := 88%positive.
-Definition _structItem : ident := 4%positive.
-Definition _structPQ : ident := 9%positive.
-Definition _swim : ident := 74%positive.
-Definition _table : ident := 80%positive.
-Definition _target : ident := 81%positive.
-Definition _t'1 : ident := 93%positive.
-Definition _t'10 : ident := 102%positive.
-Definition _t'11 : ident := 103%positive.
-Definition _t'12 : ident := 104%positive.
-Definition _t'13 : ident := 105%positive.
-Definition _t'14 : ident := 106%positive.
-Definition _t'15 : ident := 107%positive.
-Definition _t'16 : ident := 108%positive.
-Definition _t'2 : ident := 94%positive.
-Definition _t'3 : ident := 95%positive.
-Definition _t'4 : ident := 96%positive.
-Definition _t'5 : ident := 97%positive.
-Definition _t'6 : ident := 98%positive.
-Definition _t'7 : ident := 99%positive.
-Definition _t'8 : ident := 100%positive.
-Definition _t'9 : ident := 101%positive.
+Definition ___builtin_annot : ident := $"__builtin_annot".
+Definition ___builtin_annot_intval : ident := $"__builtin_annot_intval".
+Definition ___builtin_bswap : ident := $"__builtin_bswap".
+Definition ___builtin_bswap16 : ident := $"__builtin_bswap16".
+Definition ___builtin_bswap32 : ident := $"__builtin_bswap32".
+Definition ___builtin_bswap64 : ident := $"__builtin_bswap64".
+Definition ___builtin_clz : ident := $"__builtin_clz".
+Definition ___builtin_clzl : ident := $"__builtin_clzl".
+Definition ___builtin_clzll : ident := $"__builtin_clzll".
+Definition ___builtin_ctz : ident := $"__builtin_ctz".
+Definition ___builtin_ctzl : ident := $"__builtin_ctzl".
+Definition ___builtin_ctzll : ident := $"__builtin_ctzll".
+Definition ___builtin_debug : ident := $"__builtin_debug".
+Definition ___builtin_expect : ident := $"__builtin_expect".
+Definition ___builtin_fabs : ident := $"__builtin_fabs".
+Definition ___builtin_fabsf : ident := $"__builtin_fabsf".
+Definition ___builtin_fmadd : ident := $"__builtin_fmadd".
+Definition ___builtin_fmax : ident := $"__builtin_fmax".
+Definition ___builtin_fmin : ident := $"__builtin_fmin".
+Definition ___builtin_fmsub : ident := $"__builtin_fmsub".
+Definition ___builtin_fnmadd : ident := $"__builtin_fnmadd".
+Definition ___builtin_fnmsub : ident := $"__builtin_fnmsub".
+Definition ___builtin_fsqrt : ident := $"__builtin_fsqrt".
+Definition ___builtin_membar : ident := $"__builtin_membar".
+Definition ___builtin_memcpy_aligned : ident := $"__builtin_memcpy_aligned".
+Definition ___builtin_read16_reversed : ident := $"__builtin_read16_reversed".
+Definition ___builtin_read32_reversed : ident := $"__builtin_read32_reversed".
+Definition ___builtin_sel : ident := $"__builtin_sel".
+Definition ___builtin_sqrt : ident := $"__builtin_sqrt".
+Definition ___builtin_unreachable : ident := $"__builtin_unreachable".
+Definition ___builtin_va_arg : ident := $"__builtin_va_arg".
+Definition ___builtin_va_copy : ident := $"__builtin_va_copy".
+Definition ___builtin_va_end : ident := $"__builtin_va_end".
+Definition ___builtin_va_start : ident := $"__builtin_va_start".
+Definition ___builtin_write16_reversed : ident := $"__builtin_write16_reversed".
+Definition ___builtin_write32_reversed : ident := $"__builtin_write32_reversed".
+Definition ___compcert_i64_dtos : ident := $"__compcert_i64_dtos".
+Definition ___compcert_i64_dtou : ident := $"__compcert_i64_dtou".
+Definition ___compcert_i64_sar : ident := $"__compcert_i64_sar".
+Definition ___compcert_i64_sdiv : ident := $"__compcert_i64_sdiv".
+Definition ___compcert_i64_shl : ident := $"__compcert_i64_shl".
+Definition ___compcert_i64_shr : ident := $"__compcert_i64_shr".
+Definition ___compcert_i64_smod : ident := $"__compcert_i64_smod".
+Definition ___compcert_i64_smulh : ident := $"__compcert_i64_smulh".
+Definition ___compcert_i64_stod : ident := $"__compcert_i64_stod".
+Definition ___compcert_i64_stof : ident := $"__compcert_i64_stof".
+Definition ___compcert_i64_udiv : ident := $"__compcert_i64_udiv".
+Definition ___compcert_i64_umod : ident := $"__compcert_i64_umod".
+Definition ___compcert_i64_umulh : ident := $"__compcert_i64_umulh".
+Definition ___compcert_i64_utod : ident := $"__compcert_i64_utod".
+Definition ___compcert_i64_utof : ident := $"__compcert_i64_utof".
+Definition ___compcert_va_composite : ident := $"__compcert_va_composite".
+Definition ___compcert_va_float64 : ident := $"__compcert_va_float64".
+Definition ___compcert_va_int32 : ident := $"__compcert_va_int32".
+Definition ___compcert_va_int64 : ident := $"__compcert_va_int64".
+Definition _arr : ident := $"arr".
+Definition _capacity : ident := $"capacity".
+Definition _cells : ident := $"cells".
+Definition _data : ident := $"data".
+Definition _exch : ident := $"exch".
+Definition _fa : ident := $"fa".
+Definition _first_available : ident := $"first_available".
+Definition _freeN : ident := $"freeN".
+Definition _heap_cells : ident := $"heap_cells".
+Definition _i : ident := $"i".
+Definition _item : ident := $"item".
+Definition _j : ident := $"j".
+Definition _k : ident := $"k".
+Definition _key : ident := $"key".
+Definition _key1 : ident := $"key1".
+Definition _key2 : ident := $"key2".
+Definition _key_table : ident := $"key_table".
+Definition _less : ident := $"less".
+Definition _lookup : ident := $"lookup".
+Definition _main : ident := $"main".
+Definition _malloc : ident := $"malloc".
+Definition _mallocN : ident := $"mallocN".
+Definition _newpri : ident := $"newpri".
+Definition _oldpri : ident := $"oldpri".
+Definition _pq : ident := $"pq".
+Definition _pq_edit_priority : ident := $"pq_edit_priority".
+Definition _pq_free : ident := $"pq_free".
+Definition _pq_insert : ident := $"pq_insert".
+Definition _pq_insert_nc : ident := $"pq_insert_nc".
+Definition _pq_make : ident := $"pq_make".
+Definition _pq_remove_min : ident := $"pq_remove_min".
+Definition _pq_remove_min_nc : ident := $"pq_remove_min_nc".
+Definition _pq_size : ident := $"pq_size".
+Definition _priority : ident := $"priority".
+Definition _sink : ident := $"sink".
+Definition _size : ident := $"size".
+Definition _structItem : ident := $"structItem".
+Definition _structPQ : ident := $"structPQ".
+Definition _swim : ident := $"swim".
+Definition _table : ident := $"table".
+Definition _target : ident := $"target".
+Definition _t'1 : ident := 128%positive.
+Definition _t'10 : ident := 137%positive.
+Definition _t'11 : ident := 138%positive.
+Definition _t'12 : ident := 139%positive.
+Definition _t'13 : ident := 140%positive.
+Definition _t'14 : ident := 141%positive.
+Definition _t'15 : ident := 142%positive.
+Definition _t'16 : ident := 143%positive.
+Definition _t'2 : ident := 129%positive.
+Definition _t'3 : ident := 130%positive.
+Definition _t'4 : ident := 131%positive.
+Definition _t'5 : ident := 132%positive.
+Definition _t'6 : ident := 133%positive.
+Definition _t'7 : ident := 134%positive.
+Definition _t'8 : ident := 135%positive.
+Definition _t'9 : ident := 136%positive.
 
 Definition f_exch := {|
   fn_return := tvoid;
@@ -974,12 +982,44 @@ Definition global_definitions : list (ident * globdef fundef type) :=
    Gfun(External (EF_builtin "__builtin_bswap16"
                    (mksignature (AST.Tint :: nil) AST.Tint16unsigned
                      cc_default)) (Tcons tushort Tnil) tushort cc_default)) ::
+ (___builtin_clz,
+   Gfun(External (EF_builtin "__builtin_clz"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tuint Tnil) tint cc_default)) ::
+ (___builtin_clzl,
+   Gfun(External (EF_builtin "__builtin_clzl"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tuint Tnil) tint cc_default)) ::
+ (___builtin_clzll,
+   Gfun(External (EF_builtin "__builtin_clzll"
+                   (mksignature (AST.Tlong :: nil) AST.Tint cc_default))
+     (Tcons tulong Tnil) tint cc_default)) ::
+ (___builtin_ctz,
+   Gfun(External (EF_builtin "__builtin_ctz"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tuint Tnil) tint cc_default)) ::
+ (___builtin_ctzl,
+   Gfun(External (EF_builtin "__builtin_ctzl"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tuint Tnil) tint cc_default)) ::
+ (___builtin_ctzll,
+   Gfun(External (EF_builtin "__builtin_ctzll"
+                   (mksignature (AST.Tlong :: nil) AST.Tint cc_default))
+     (Tcons tulong Tnil) tint cc_default)) ::
  (___builtin_fabs,
    Gfun(External (EF_builtin "__builtin_fabs"
                    (mksignature (AST.Tfloat :: nil) AST.Tfloat cc_default))
      (Tcons tdouble Tnil) tdouble cc_default)) ::
+ (___builtin_fabsf,
+   Gfun(External (EF_builtin "__builtin_fabsf"
+                   (mksignature (AST.Tsingle :: nil) AST.Tsingle cc_default))
+     (Tcons tfloat Tnil) tfloat cc_default)) ::
  (___builtin_fsqrt,
    Gfun(External (EF_builtin "__builtin_fsqrt"
+                   (mksignature (AST.Tfloat :: nil) AST.Tfloat cc_default))
+     (Tcons tdouble Tnil) tdouble cc_default)) ::
+ (___builtin_sqrt,
+   Gfun(External (EF_builtin "__builtin_sqrt"
                    (mksignature (AST.Tfloat :: nil) AST.Tfloat cc_default))
      (Tcons tdouble Tnil) tdouble cc_default)) ::
  (___builtin_memcpy_aligned,
@@ -993,15 +1033,15 @@ Definition global_definitions : list (ident * globdef fundef type) :=
  (___builtin_sel,
    Gfun(External (EF_builtin "__builtin_sel"
                    (mksignature (AST.Tint :: nil) AST.Tvoid
-                     {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
+                     {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}))
      (Tcons tbool Tnil) tvoid
-     {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
+     {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|})) ::
  (___builtin_annot,
    Gfun(External (EF_builtin "__builtin_annot"
                    (mksignature (AST.Tint :: nil) AST.Tvoid
-                     {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
+                     {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}))
      (Tcons (tptr tschar) Tnil) tvoid
-     {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
+     {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|})) ::
  (___builtin_annot_intval,
    Gfun(External (EF_builtin "__builtin_annot_intval"
                    (mksignature (AST.Tint :: AST.Tint :: nil) AST.Tint
@@ -1046,6 +1086,15 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                    (mksignature (AST.Tint :: AST.Tint :: nil) AST.Tint
                      cc_default)) (Tcons (tptr tvoid) (Tcons tuint Tnil))
      (tptr tvoid) cc_default)) ::
+ (___builtin_unreachable,
+   Gfun(External (EF_builtin "__builtin_unreachable"
+                   (mksignature nil AST.Tvoid cc_default)) Tnil tvoid
+     cc_default)) ::
+ (___builtin_expect,
+   Gfun(External (EF_builtin "__builtin_expect"
+                   (mksignature (AST.Tint :: AST.Tint :: nil) AST.Tint
+                     cc_default)) (Tcons tint (Tcons tint Tnil)) tint
+     cc_default)) ::
  (___compcert_i64_dtos,
    Gfun(External (EF_runtime "__compcert_i64_dtos"
                    (mksignature (AST.Tfloat :: nil) AST.Tlong cc_default))
@@ -1115,30 +1164,6 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                    (mksignature (AST.Tlong :: AST.Tlong :: nil) AST.Tlong
                      cc_default)) (Tcons tulong (Tcons tulong Tnil)) tulong
      cc_default)) ::
- (___builtin_clz,
-   Gfun(External (EF_builtin "__builtin_clz"
-                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
-     (Tcons tuint Tnil) tint cc_default)) ::
- (___builtin_clzl,
-   Gfun(External (EF_builtin "__builtin_clzl"
-                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
-     (Tcons tuint Tnil) tint cc_default)) ::
- (___builtin_clzll,
-   Gfun(External (EF_builtin "__builtin_clzll"
-                   (mksignature (AST.Tlong :: nil) AST.Tint cc_default))
-     (Tcons tulong Tnil) tint cc_default)) ::
- (___builtin_ctz,
-   Gfun(External (EF_builtin "__builtin_ctz"
-                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
-     (Tcons tuint Tnil) tint cc_default)) ::
- (___builtin_ctzl,
-   Gfun(External (EF_builtin "__builtin_ctzl"
-                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
-     (Tcons tuint Tnil) tint cc_default)) ::
- (___builtin_ctzll,
-   Gfun(External (EF_builtin "__builtin_ctzll"
-                   (mksignature (AST.Tlong :: nil) AST.Tint cc_default))
-     (Tcons tulong Tnil) tint cc_default)) ::
  (___builtin_fmax,
    Gfun(External (EF_builtin "__builtin_fmax"
                    (mksignature (AST.Tfloat :: AST.Tfloat :: nil) AST.Tfloat
@@ -1199,9 +1224,9 @@ Definition global_definitions : list (ident * globdef fundef type) :=
  (___builtin_debug,
    Gfun(External (EF_external "__builtin_debug"
                    (mksignature (AST.Tint :: nil) AST.Tvoid
-                     {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
+                     {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
-     {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
+     {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|})) ::
  (_malloc,
    Gfun(External EF_malloc (Tcons tuint Tnil) (tptr tvoid) cc_default)) ::
  (_mallocN,
@@ -1231,20 +1256,21 @@ Definition public_idents : list ident :=
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
  ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
- ___builtin_fmax :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
- ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
- ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
- ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
- ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
- ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
- ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
+ ___builtin_fmax :: ___compcert_i64_umulh :: ___compcert_i64_smulh ::
+ ___compcert_i64_sar :: ___compcert_i64_shr :: ___compcert_i64_shl ::
+ ___compcert_i64_umod :: ___compcert_i64_smod :: ___compcert_i64_udiv ::
+ ___compcert_i64_sdiv :: ___compcert_i64_utof :: ___compcert_i64_stof ::
+ ___compcert_i64_utod :: ___compcert_i64_stod :: ___compcert_i64_dtou ::
+ ___compcert_i64_dtos :: ___builtin_expect :: ___builtin_unreachable ::
  ___compcert_va_composite :: ___compcert_va_float64 ::
  ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
  ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
  ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
- ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_fsqrt ::
- ___builtin_fabs :: ___builtin_bswap16 :: ___builtin_bswap32 ::
- ___builtin_bswap :: ___builtin_bswap64 :: nil).
+ ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_sqrt ::
+ ___builtin_fsqrt :: ___builtin_fabsf :: ___builtin_fabs ::
+ ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
+ ___builtin_clzl :: ___builtin_clz :: ___builtin_bswap16 ::
+ ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.

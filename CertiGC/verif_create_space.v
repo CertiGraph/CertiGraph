@@ -24,6 +24,8 @@ Proof.
         rewrite Z.max_r; [reflexivity | destruct H; assumption].
       * simpl; tauto.
       * compute; tauto.
+    (* + simpl. replace (Z.max 0 n) with n. 1: apply MSS_max_4_unsigned_range, H. *)
+    (*   rewrite Z.max_r; [reflexivity | destruct H; assumption]. *)
     + Intros p. if_tac.
       * subst p. forward_if False.
         -- unfold all_string_constants. Intros.

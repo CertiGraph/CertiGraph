@@ -2,6 +2,7 @@ Require Import RelationClasses.
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.binheap.binary_heap_pro.
+Require Import CertiGraph.binheap.binary_heap_malloc_spec.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
 
@@ -249,11 +250,13 @@ Definition valid_pq (pq : val) (h: heap): mpred :=
   EX arr : val, EX junk: list heap_item, EX arr2 : val, EX lookup : list Z,
     (!! heap_ordered (heap_items h)) && (!! (Zlength ((heap_items h) ++ junk) = heap_capacity h)) &&
     (!! (2 * (heap_capacity h - 1) <= Int.max_unsigned)) &&
-(*    (!! Permutation
-        (map heap_item_key ((heap_items h) ++ junk))
-        (nat_inc_list (Z.to_nat (heap_capacity h)))) && *)
+    (!! (Zlength lookup = heap_capacity h)) &&
     (data_at Tsh t_pq (Vint (Int.repr (heap_capacity h)), (Vint (Int.repr (heap_size h)), (arr, arr2))) pq *
-       linked_heap_array ((heap_items h) ++ junk) arr lookup arr2).
+       linked_heap_array ((heap_items h) ++ junk) arr lookup arr2 *
+(* tokens that allow deallocation *)
+       free_tok arr (sizeof (Tstruct _structItem noattr) * (heap_capacity h)) * 
+       free_tok arr2 (sizeof tuint * (heap_capacity h)) *
+       free_tok pq (sizeof (Tstruct _structPQ noattr))).
 
 Definition hitem_ (v : val) : mpred :=
   data_at_ Tsh t_item v.
@@ -266,7 +269,7 @@ Proof.
   (* apply data_at_data_at_. *)
 Qed.
 
-Lemma weaken_prehitem_: forall v,
+Lemma malloc_hitem: forall v,
   malloc_compatible (sizeof (Tstruct _structItem noattr)) v ->
   (data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint)) v) |--
   (hitem_ v).
@@ -277,6 +280,167 @@ Proof.
   rewrite memory_block_data_at_.
   apply derives_refl.
   apply malloc_compatible_field_compatible in H; auto.
+Qed.
+
+Lemma free_hitem: forall v,
+  hitem_ v |--
+  data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) / sizeof tint)) v.
+Proof.
+  unfold hitem_. intro.
+  saturate_local.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  apply derives_refl.
+  destruct H as [? [? [? [? ?]]]].
+  split3; auto.
+  split3; auto.
+  hnf in H2 |- *.
+  destruct v; auto.
+  unfold t_item in H2.
+  change (_ / _) with 3.
+  apply align_compatible_rec_Tarray; intros.
+  assert (i0 = 0 \/ i0 = 1 \/ i0 = 2) by lia.
+  destruct H5 as [? | [? | ?]]; subst i0;
+  [ eapply align_compatible_rec_Tstruct_inv with (i0 := _key) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _priority) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _data) in H2 ] ;
+  try reflexivity;
+  eapply align_compatible_rec_by_value; try reflexivity;
+  eapply align_compatible_rec_by_value_inv in H2; try reflexivity; apply H2.
+Qed.
+
+Lemma free_pq: forall v,
+  (data_at_ Tsh t_pq v) |--
+  (data_at_ Tsh (tarray tint (sizeof (Tstruct _structPQ noattr) / sizeof tint)) v).
+Proof.
+  intro. saturate_local.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  apply derives_refl.
+  destruct H as [? [? [? [? ?]]]].
+  split3; auto.
+  split3; auto.
+  hnf in H2 |- *.
+  destruct v; auto.
+  unfold t_pq in H2.
+  change (_ / _) with 4.
+  apply align_compatible_rec_Tarray; intros.
+  assert (i0 = 0 \/ i0 = 1 \/ i0 = 2 \/ i0 = 3) by lia.
+  destruct H5 as [? | [? | [? | ?]]]; subst i0;
+  [ eapply align_compatible_rec_Tstruct_inv with (i0 := _capacity) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _first_available) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _heap_cells) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _key_table) in H2 ];
+  try reflexivity; eapply align_compatible_rec_by_value; try reflexivity;
+  eapply align_compatible_rec_by_value_inv in H2; try reflexivity; apply H2.
+Qed.
+
+Lemma simpl_size_t_item: forall s,
+  12 * s / 4 = 3 * s.
+Proof.
+  intro. change 12 with (3 * 4).
+  rewrite <- Z.mul_assoc. rewrite (Z.mul_comm 4).
+  rewrite Z.mul_assoc.
+  rewrite Z.div_mul; lia.
+Qed.
+
+Lemma malloc_items: forall v size,
+  0 <= size ->
+  malloc_compatible (sizeof (Tstruct _structItem noattr) * size) v ->
+  data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) * size / sizeof tint)) v |--
+  data_at_ Tsh (tarray t_item size) v.
+Proof.
+  intros.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  simpl sizeof.
+  apply derives_refl'. f_equal. rewrite (Z.mul_comm 12). change 12 with (3 * 4).
+  rewrite Z.mul_assoc.
+  rewrite Z_div_mult. 1,2: lia.
+  apply malloc_compatible_field_compatible; try reflexivity.
+  simpl in *.
+  rewrite Z.max_r by lia. trivial.
+Qed.
+
+Lemma free_items: forall v size,
+(*  malloc_compatible (sizeof (Tstruct _structItem noattr) * size) v *)
+  data_at_ Tsh (tarray t_item size) v |--
+  data_at_ Tsh (tarray tint (sizeof (Tstruct _structItem noattr) * size / sizeof tint)) v.
+Proof.
+  intros. saturate_local.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  simpl. rewrite simpl_size_t_item.
+  apply derives_refl'. f_equal. lia.
+  destruct H as [? [? [? [? ?]]]].
+  split3; auto.
+  split3; auto.
+  hnf in H1 |- *.
+  destruct v; auto. simpl. rewrite simpl_size_t_item.
+  simpl in H1. lia.
+  hnf in H2 |- *.
+  destruct v; auto.
+  simpl sizeof. rewrite simpl_size_t_item.
+  apply align_compatible_rec_Tarray; intros.
+  assert (exists k, 0 <= k < size /\ (i0 = 3 * k + 0 \/ i0 = 3 * k + 1 \/ i0 = 3 * k + 2)).
+  { exists (i0 / 3).
+    generalize (Z_div_mod_eq i0 3); intro. spec H5. lia.
+    generalize (Z.mod_pos_bound i0 3); intro. spec H6. lia.
+    split. 2: lia.
+    destruct H4. split.
+    apply Z.div_pos; lia.
+    apply Z.div_lt_upper_bound; lia. }
+  destruct H5 as [k [? ?]].
+  eapply align_compatible_rec_Tarray_inv in H2. 2: apply H5.
+  destruct H6 as [? | [? | ?]]; subst i0;
+  [ eapply align_compatible_rec_Tstruct_inv with (i0 := _key) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _priority) in H2 |
+    eapply align_compatible_rec_Tstruct_inv with (i0 := _data) in H2 ] ;
+  try reflexivity;
+  eapply align_compatible_rec_by_value; try reflexivity;
+  eapply align_compatible_rec_by_value_inv in H2; try reflexivity;
+  simpl in *; rewrite (Z.mul_add_distr_l 4), Z.mul_assoc, Z.add_assoc; simpl; apply H2.
+Qed.
+
+Lemma malloc_lookup: forall v size,
+  0 <= size ->
+  malloc_compatible (sizeof tint * size) v ->
+  data_at_ Tsh (tarray tint (sizeof tint * size / sizeof tint)) v |--
+  data_at_ Tsh (tarray tuint size) v.
+Proof.
+  intros.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  simpl sizeof.
+  apply derives_refl'. f_equal.
+  rewrite (Z.mul_comm _ size).
+  rewrite Z_div_mult; lia.
+  apply malloc_compatible_field_compatible; try reflexivity.
+  simpl in *.
+  rewrite Z.max_r by lia. trivial.
+Qed.
+
+Lemma free_lookup: forall v size,
+(*  malloc_compatible (sizeof tint * size) v -> *)
+  data_at_ Tsh (tarray tuint size) v |--
+  data_at_ Tsh (tarray tint (sizeof tint * size / sizeof tint)) v.
+Proof.
+  intros. saturate_local.
+  sep_apply data_at__memory_block_cancel.
+  rewrite <- memory_block_data_at_.
+  simpl. rewrite (Z.mul_comm _ size), Z_div_mult; trivial. lia.
+  destruct H as [? [? [? [? ?]]]].
+  split3; auto.
+  split3; auto.
+  hnf in H1 |- *.
+  destruct v; auto. simpl. rewrite (Z.mul_comm _ size), Z_div_mult; trivial. lia.
+  hnf in H2 |- *.
+  destruct v; auto.
+  simpl sizeof. rewrite (Z.mul_comm _ size), Z_div_mult. 2: lia.
+  apply align_compatible_rec_Tarray; intros.
+  eapply align_compatible_rec_Tarray_inv in H2. 2: apply H4.
+  eapply align_compatible_rec_by_value; try reflexivity.
+  eapply align_compatible_rec_by_value_inv in H2. apply H2. reflexivity.
 Qed.
 
 Definition update_pri_if_key (key: key_type) (newpri: priority_type) (hi : heap_item) :=
@@ -302,11 +466,21 @@ Definition keys_valid (h : list heap_item) :=
 Definition proj_keys h :=
   map heap_item_key (heap_items h).
 
+Definition proj_payloads h :=
+  map heap_item_payload (heap_items h).
+
 Lemma proj_keys_Zlength: forall h,
     Zlength (proj_keys h) = heap_size h.
 Proof.
   intros. unfold proj_keys, heap_size. now rewrite Zlength_map.
 Qed.
+
+Definition keys_dist_linked_correctly i keys dist h :=
+  forall k,
+    Znth i keys = k ->
+    find_item_by_key (heap_items h) k =
+    [(k, Znth i dist, Int.repr i)] \/
+    ~ In k (proj_keys h).
 
 Lemma Subsequence_In: forall A (l1 l2 : list A),
   Subsequence l1 l2 ->
@@ -504,21 +678,21 @@ Lemma valid_pq_NoDup: forall p h,
   valid_pq p h |-- !! NoDup (heap_items h).
 Proof.
   intros. unfold valid_pq, linked_heap_array, linked_correctly, linked_correctly'. Intros arr junk lookup lookup'.
-  entailer!. clear H4 H5.
-  apply NoDup_nth_error. rewrite NoDup_nth_error in H0. intros.
-  rewrite <- (Nat2Z.id i) in H5.
-  rewrite Znth_nth_error in H5. 2: rewrite Zlength_correct; rep_lia.
+  entailer!. clear H5 H6.
+  apply NoDup_nth_error. rewrite NoDup_nth_error in H3. intros.
+  rewrite <- (Nat2Z.id i) in H6.
+  rewrite Znth_nth_error in H6. 2: rewrite Zlength_correct; rep_lia.
   remember (nth_error (heap_items h) j). destruct o. 2: discriminate.
   assert (j < length (heap_items h))%nat. { eapply nth_error_Some. intro. congruence. }
   assert (0 <= Z.of_nat j < Zlength (heap_items h)) by (rewrite Zlength_correct; lia).
   rewrite <- (Nat2Z.id j) in Heqo. rewrite Znth_nth_error in Heqo; auto.
-  inversion Heqo. subst h0. clear Heqo. inversion H5. clear H5.
-  generalize (H1 (Z.of_nat i)); generalize (H1 (Z.of_nat j)); intros. clear H1.
-  rewrite Zlength_app in *. spec H5. rep_lia. spec H8. rewrite Zlength_correct; rep_lia.
-  rewrite Znth_app1 in H5. 2: lia.
-  rewrite Znth_app1 in H8. 2: rewrite Zlength_correct; lia.
-  destruct H5, H8.
-  rewrite H9 in H10. rewrite H10 in H5. lia.
+  inversion Heqo. subst h0. clear Heqo. inversion H6. clear H6.
+  generalize (H4 (Z.of_nat i)); generalize (H4 (Z.of_nat j)); intros. clear H4.
+  rewrite Zlength_app in *. spec H6. rep_lia. spec H9. rewrite Zlength_correct; rep_lia.
+  rewrite Znth_app1 in H6. 2: lia.
+  rewrite Znth_app1 in H9. 2: rewrite Zlength_correct; lia.
+  destruct H6, H9.
+  rewrite H10 in H11. rewrite H11 in H6. lia.
 Qed.
 
 Lemma upd_Znth_update {A} {iA : Inhabitant A}: forall t (L: list A) x,
@@ -556,6 +730,377 @@ Proof.
   intros. assert (NoDup (a :: a :: l2)).
   eapply Permutation_NoDup; eauto.
   inversion H1. apply H4. left. trivial.
+Qed.
+
+Lemma malloc_pq: forall v,
+  malloc_compatible (sizeof (Tstruct _structPQ noattr)) v ->
+  (data_at_ Tsh (tarray tint (sizeof (Tstruct _structPQ noattr) / sizeof tint)) v) |--
+  (data_at_ Tsh t_pq v).
+Proof.
+  intros v H.
+  sep_apply data_at__memory_block_cancel.
+  change (sizeof (tarray _ _)) with (sizeof t_pq).
+  rewrite memory_block_data_at_.
+  apply derives_refl.
+  apply malloc_compatible_field_compatible in H; auto.
+Qed.
+
+Lemma Zlength_default_val_array: forall t size,
+  0 <= size ->
+  Zlength (default_val (tarray t size)) = size.
+Proof.
+  unfold default_val. simpl. intros. rewrite Zlength_repeat; lia.
+Qed.
+
+Definition initializing_inc_list (size capacity : Z) : list val :=
+  (map (fun z => Vint (Int.repr z)) (List_ext.nat_inc_list (Z.to_nat size))) ++ 
+  default_val (tarray tuint (capacity - size)).
+
+Lemma initializing_inc_list_inc: forall size capacity,
+  0 <= size < capacity ->
+  upd_Znth size (initializing_inc_list size capacity) (Vint (Int.repr size)) =
+  initializing_inc_list (size + 1) capacity.
+Proof.
+  unfold initializing_inc_list. intros.
+  rewrite upd_Znth_app2.
+  1,2: rewrite Zlength_map, List_ext.nat_inc_list_Zlength.
+  2: rewrite (Zlength_default_val_array tuint); lia.
+  rewrite Z2Nat.id. 2: lia. rewrite Z.sub_diag.
+  apply List_ext.list_eq_Znth.
+  rewrite Zlength_app, Zlength_app, Zlength_upd_Znth, Zlength_map, Zlength_map.
+  rewrite (Zlength_default_val_array tuint), (Zlength_default_val_array tuint).
+  rewrite List_ext.nat_inc_list_Zlength, List_ext.nat_inc_list_Zlength. 1,2,3: lia.
+  rewrite Zlength_app, Zlength_upd_Znth, Zlength_map.
+  rewrite List_ext.nat_inc_list_Zlength, (Zlength_default_val_array tuint). 2: lia.
+  replace (Z.of_nat (Z.to_nat size) + (capacity - size)) with capacity by lia.
+  intros. assert (i < size \/ size <= i) by lia. destruct H1.
+  rewrite Znth_app1, Znth_app1. rewrite Znth_map, Znth_map.
+  rewrite List_ext.nat_inc_list_i, List_ext.nat_inc_list_i. trivial.
+  5,6: rewrite Zlength_map. 3,4,5,6: rewrite List_ext.nat_inc_list_Zlength.
+  1,2,3,4,5,6: lia.
+  rewrite Znth_app2. 1,2 : rewrite Zlength_map, List_ext.nat_inc_list_Zlength. 2: lia.
+  assert (i = size \/ size < i) by lia. destruct H2. subst i.
+  rewrite Znth_app1. rewrite Znth_map, List_ext.nat_inc_list_i, Z2Nat.id, Z.sub_diag, Znth_upd_Znth_same; trivial.
+  5: rewrite Zlength_map. 4,5: rewrite List_ext.nat_inc_list_Zlength.
+  rewrite (Zlength_default_val_array tuint).
+  1,2,3,4,5,6: lia.
+  rewrite Znth_app2. 1,2: rewrite Zlength_map, List_ext.nat_inc_list_Zlength.
+  rewrite Znth_upd_Znth_diff.
+  unfold default_val. simpl.
+  rewrite Znth_repeat_inrange, Znth_repeat_inrange; trivial.
+  1,2,3,4: lia.
+Qed.
+
+Lemma initializing_inc_list_done: forall capacity,
+  initializing_inc_list capacity capacity =
+  map (fun z => Vint (Int.repr z)) (List_ext.nat_inc_list (Z.to_nat capacity)).
+Proof.
+  unfold initializing_inc_list. intros. rewrite Z.sub_diag.
+  apply app_nil_r.
+Qed.
+
+Definition initial_item_list (size : Z) : list heap_item :=
+  map (fun i => (i, Int.zero, Int.zero)) (List_ext.nat_inc_list (Z.to_nat size)).
+
+Lemma Zlength_initial_item_list: forall size,
+  0 <= size ->
+  Zlength (initial_item_list size) = size.
+Proof. intros. unfold initial_item_list. rewrite Zlength_map, List_ext.nat_inc_list_Zlength. lia. Qed.
+
+Definition initializing_item_list (size capacity : Z) : list (reptype t_item) :=
+  map heap_item_rep (initial_item_list size) ++ default_val (tarray t_item (capacity - size)).
+
+Lemma Zlength_initializing_item_list: forall size capacity,
+  0 <= size < capacity ->
+  Zlength (initializing_item_list size capacity) = capacity.
+Proof.
+  unfold initializing_item_list. intros. 
+  rewrite Zlength_app, Zlength_map, Zlength_initial_item_list, (Zlength_default_val_array t_item); lia.
+Qed.
+
+Lemma initial_item_list_i: forall i size,
+  0 <= i < size ->
+  Znth i (initial_item_list size) = (i, Int.zero, Int.zero).
+Proof.
+  intros. unfold initial_item_list. rewrite Znth_map. rewrite List_ext.nat_inc_list_i. trivial.
+  2: rewrite List_ext.nat_inc_list_Zlength. 1,2: lia.
+Qed.
+
+(* BUG, we shouldn't need this but it seems like a bad guess is being made for implicit assumptions without it? *)
+Definition initializing_item_array (size capacity : Z) (v : val) : mpred :=
+  data_at Tsh (tarray t_item capacity) (initializing_item_list size capacity) v.
+
+Lemma initializing_item_list_inc: forall size capacity : Z,
+  0 <= size < capacity ->
+    upd_Znth size (initializing_item_list size capacity) (Vint (Int.repr size), (Vzero, Vzero)) =
+    initializing_item_list (size + 1) capacity.
+Proof.
+  unfold initializing_item_list. intros.
+  rewrite upd_Znth_app2.
+  1,2: rewrite Zlength_map, Zlength_initial_item_list.
+  3: rewrite (Zlength_default_val_array t_item); lia.
+  2,3: lia. rewrite Z.sub_diag.
+  apply List_ext.list_eq_Znth.
+  rewrite Zlength_app, Zlength_app, Zlength_upd_Znth, Zlength_map, Zlength_map.
+  rewrite (Zlength_default_val_array t_item), (Zlength_default_val_array t_item).
+  rewrite Zlength_initial_item_list, Zlength_initial_item_list. 1-5: lia.
+  rewrite Zlength_app, Zlength_upd_Znth, Zlength_map.
+  rewrite Zlength_initial_item_list, (Zlength_default_val_array t_item). 2,3: lia.
+  replace (size + (capacity - size)) with capacity by lia.
+  intros. assert (i < size \/ size <= i) by lia. destruct H1.
+  rewrite Znth_app1, Znth_app1. rewrite Znth_map, Znth_map.
+  rewrite initial_item_list_i, initial_item_list_i. trivial. 
+  5,6: rewrite Zlength_map. 3-6: rewrite Zlength_initial_item_list. 1-10: lia.
+  rewrite Znth_app2. 1,2 : rewrite Zlength_map, Zlength_initial_item_list. 2-4: lia.
+  assert (i = size \/ size < i) by lia. destruct H2. subst i.
+  rewrite Znth_app1. rewrite Znth_map, Z.sub_diag, Znth_upd_Znth_same, initial_item_list_i. trivial.
+  2: rewrite (Zlength_default_val_array t_item). 6: rewrite Zlength_map.
+  5,6: rewrite Zlength_initial_item_list. 1-8: lia.
+  rewrite Znth_app2. 1,2: rewrite Zlength_map, Zlength_initial_item_list.
+  rewrite Znth_upd_Znth_diff.
+  unfold default_val. simpl.
+  rewrite Znth_repeat_inrange, Znth_repeat_inrange; trivial.
+  1-6: lia.
+Qed.
+
+Lemma initializing_item_list_done: forall capacity,
+  initializing_item_list capacity capacity = map heap_item_rep (initial_item_list capacity).
+Proof.
+  unfold initializing_item_list. intros. rewrite Z.sub_diag.
+  apply app_nil_r.
+Qed.
+
+Lemma initial_link_ok: forall size,
+  0 <= size ->
+  linked_correctly (initial_item_list size) (List_ext.nat_inc_list (Z.to_nat size)).
+Proof.
+  split. apply List_ext.nat_inc_list_NoDup.
+  intros. rewrite List_ext.nat_inc_list_Zlength. rewrite Zlength_initial_item_list in H0; trivial.
+  subst loc. unfold initial_item_list. rewrite Znth_map.
+  unfold heap_item_key. simpl.
+  rewrite List_ext.nat_inc_list_i. 
+  rewrite List_ext.nat_inc_list_i.
+  4: rewrite List_ext.nat_inc_list_Zlength. 
+  1,2,3,4: lia.
+Qed.
+
+Lemma valid_heap_NoDup_keys: forall p h,
+    valid_pq p h |-- !!(NoDup (proj_keys h)).
+Proof.
+  intros. unfold valid_pq, linked_heap_array, proj_keys.
+  Intros arr junk arr2 lookup. entailer!.
+  destruct H3. clear H4 H5.
+  apply NoDup_nth_error. intros.
+  remember (nth_error (map heap_item_key (heap_items h)) i). destruct o. 
+  2: { symmetry in Heqo. apply nth_error_Some in Heqo. contradiction. lia. }
+  assert (j < length (map heap_item_key (heap_items h)))%nat. { apply nth_error_Some. intro. rewrite H7 in H5. discriminate. }
+  assert (0 <= Z.of_nat i < Zlength (heap_items h)). { rewrite map_length in H4. rewrite Zlength_correct. lia. } clear H4.
+  assert (0 <= Z.of_nat j < Zlength (heap_items h)). { rewrite map_length in H7. rewrite Zlength_correct. lia. } clear H7.
+  destruct (H6 (Z.of_nat i)). 2: destruct (H6 (Z.of_nat j)). 1,2: rewrite Zlength_app; rep_lia.
+  rewrite Znth_app1 in H7, H9, H10, H11. 2-5: lia.
+  rewrite Heqo in H5.
+  rewrite <- (Nat2Z.id i) in H5.
+  rewrite <- (Nat2Z.id j) in H5.
+  rewrite nth_error_Znth in H5.
+  2,3: rewrite Zlength_map; lia.
+  rewrite <- (Znth_map _ heap_item_key) in H9. 2: lia.
+  rewrite H5 in H9. rewrite Znth_map in H9. 2: lia.
+  rewrite H9 in H11. lia.
+Qed.
+
+Lemma nat_inc_list_plus_1_Permutation: forall (i : Z),
+  0 <= i ->
+  Permutation (nat_inc_list (Z.to_nat (i + 1))) (i :: nat_inc_list (Z.to_nat i)).
+Proof.
+  intros.
+  replace (Z.to_nat (i + 1)) with (1 + Z.to_nat i)%nat by lia.
+  simpl. symmetry.
+  rewrite Z2Nat.id; auto.
+  apply Permutation_cons_append.
+Qed.
+
+Lemma Permutation_filter: forall A (L1 L2 : list A) (f : A -> bool),
+  Permutation L1 L2 ->
+  Permutation (filter f L1) (filter f L2).
+Proof.
+  intros. induction H.
+  constructor. simpl. case (f x). constructor. trivial. trivial.
+  simpl. case (f x); case (f y). constructor. constructor. reflexivity.
+  constructor. reflexivity. reflexivity. transitivity (filter f l'); trivial.
+Qed.
+
+Lemma filter_map_comm: forall A B (f : A -> bool) (g : B -> bool) (h : A -> B) (L : list A),
+  (forall x, f x = g (h x)) ->
+  filter g (map h L) = map h (filter f L).
+Proof.
+  induction L; intros. reflexivity.
+  simpl. rewrite <- H. case (f a); auto. simpl. f_equal. auto.
+Qed.
+
+Lemma filter_map_comm': forall A f g (L : list A),
+  (forall x, f x = f (g x)) ->
+  filter f (map g L) = map g (filter f L).
+Proof. intros. rewrite filter_map_comm with (f := f); auto. Qed.
+
+Lemma find_item_by_key_update_pri_by_key: forall L k op v np,
+  find_item_by_key L k = [(k, op, v)] ->
+  find_item_by_key (update_pri_by_key L k np) k = [(k, np, v)].
+Proof.
+  intros. unfold find_item_by_key, update_pri_by_key in *.
+  rewrite filter_map_comm'. 2: { unfold update_pri_if_key. intros.
+    destruct x as [[kk ?] ?].
+    unfold heap_item_key. simpl.
+    case (Z.eq_dec kk); case (Z.eq_dec _ kk); simpl; 
+    case (Z.eq_dec _ k); simpl; intros; auto; exfalso; auto. }
+  change (key_type * priority_type * payload_type)%type with heap_item.
+  rewrite H.
+  unfold update_pri_if_key, heap_item_key. simpl.
+  case Z.eq_dec; trivial. destruct 1; trivial.
+Qed.
+
+Lemma Permutation_find_item_by_key: forall L1 L2 k,
+  Permutation L1 L2 ->
+  Permutation (find_item_by_key L1 k) (find_item_by_key L2 k).
+Proof. intros. unfold find_item_by_key. apply Permutation_filter. trivial. Qed.
+
+Lemma not_In_app: forall A x (L1 L2 : list A),
+  ~ In x (L1 ++ L2) ->
+  ~ In x L1 /\ ~ In x L2.
+Proof.
+  split; intro; apply H; apply in_or_app; auto.
+Qed.
+
+Lemma Permutation_two_eq: forall A (L : list A) x,
+  Permutation L [x ; x] ->
+  L = [x ; x].
+Proof.
+  intros. remember [x ; x]. revert Heql. induction H.
+  * discriminate.
+  * inversion 1. subst. symmetry in H. apply Permutation_length_1_inv in H. subst. trivial.
+  * inversion 1. trivial.
+  * intros. subst l''. spec IHPermutation2. trivial. specialize (IHPermutation1 IHPermutation2). subst l'. trivial.
+Qed.
+
+Lemma filter_empty: forall A f (L : list A),
+  (forall x, In x L -> f x = false) ->
+  filter f L = [].
+Proof.
+  induction L; intros. reflexivity.
+  simpl. rewrite H. apply IHL. intros. apply H. right. trivial.
+  left. trivial.
+Qed.
+
+Lemma find_item_by_key_app: forall L1 L2 k,
+  find_item_by_key (L1 ++ L2) k = find_item_by_key L1 k ++ find_item_by_key L2 k.
+Proof. intros. unfold find_item_by_key. rewrite filter_app. trivial. Qed.
+
+Lemma filter_false_nil:
+    forall A (l: list A) f,
+      (forall a, In a l -> f a = false) ->
+      filter f l = [].
+  Proof. intros. apply filter_empty. trivial. Qed.
+  
+  Lemma find_item_by_key_finds_item:
+    forall h item,
+      In item h ->
+      NoDup (map heap_item_key h) ->
+      find_item_by_key h (heap_item_key item) =
+      [item].
+  Proof.
+    intros.
+    unfold find_item_by_key. induction h; [inversion H|].
+    destruct H.
+    - subst a. simpl.
+      destruct (Z.eq_dec (heap_item_key item) (heap_item_key item)).
+      2: exfalso; apply n; trivial. 
+      simpl. simpl in H0.
+      apply NoDup_cons_2 in H0.
+      replace (filter
+                 (fun item0 : heap_item =>
+                    Z.eq_dec (heap_item_key item0) (heap_item_key item)) h)
+        with (@nil heap_item); trivial.
+      rewrite filter_false_nil; trivial.
+      intros.
+      rewrite <- not_true_iff_false.
+      intro.
+      apply (in_map heap_item_key) in H.
+      replace (heap_item_key a) with (heap_item_key item) in H.
+      apply H0; trivial.
+      destruct (Z.eq_dec (heap_item_key a) (heap_item_key item)).
+      + lia.
+      + simpl in H1. inversion H1.
+    - simpl.
+      destruct (Z.eq_dec (heap_item_key a) (heap_item_key item)).
+      + exfalso.
+        simpl in H0.
+        apply NoDup_cons_2 in H0. 
+        apply H0. rewrite e. apply in_map; trivial.
+      + simpl. apply IHh; trivial.
+        simpl in H0.
+        apply (NoDup_cons_1 _ (heap_item_key a)); trivial.
+  Qed.
+
+Lemma filter_absorb_map: forall A (f : A -> A) (g : A -> bool) L,
+  (forall x, (g (f x) = g x) /\ ((g (f x) = false) \/ f x = x)) ->
+  filter g (map f L) = filter g L.
+Proof.
+  induction L; auto; intros.
+  simpl.
+  case_eq (g (f a)); intro. destruct (H a). rewrite H0 in H2. destruct H2. discriminate.
+  rewrite H1 in *. rewrite H0. rewrite H2, IHL; trivial.
+  destruct (H a). rewrite H1 in H0. rewrite H0.
+  apply IHL; auto.
+Qed.
+
+Lemma find_item_by_key_update_pri_by_key': forall L k1 k2 np,
+  k1 <> k2 ->
+  find_item_by_key (update_pri_by_key L k1 np) k2 = find_item_by_key L k2.
+Proof.
+  intros. unfold find_item_by_key, update_pri_by_key.
+  rewrite filter_absorb_map. trivial. intros.
+  unfold update_pri_if_key, heap_item_key. destruct x as [[? ?] ?].
+  simpl. case Z.eq_dec; intro; simpl. subst k1. split; trivial.
+  case Z.eq_dec; auto; intro; simpl. contradiction.
+  case Z.eq_dec; simpl; split; auto.
+Qed.
+
+Lemma update_pri_by_key_keys_unaffected:
+  forall l key newpri,
+    map heap_item_key (update_pri_by_key l key newpri) = map heap_item_key l.
+Proof.
+  intros. induction l; trivial.
+  simpl. rewrite IHl. f_equal.
+  unfold update_pri_by_key, update_pri_if_key, heap_item_key.
+  destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
+Qed.
+
+Lemma update_pri_by_key_payloads_unaffected:
+  forall l key newpri,
+    map heap_item_payload (update_pri_by_key l key newpri) = map heap_item_payload l.
+Proof.
+  intros. induction l; trivial.
+  simpl. rewrite IHl. f_equal.
+  unfold update_pri_by_key, update_pri_if_key, heap_item_payload, heap_item_key.
+  destruct (Z.eq_dec key (fst (fst a))); simpl fst; trivial.
+Qed.
+
+Lemma In_update_pri_by_key: forall i L k np,
+    In i (update_pri_by_key L k np) ->
+    (In i L /\ heap_item_key i <> k) \/
+    (exists oi, In oi L /\ 
+                heap_item_key i = k /\ 
+                heap_item_payload i = heap_item_payload oi /\ 
+                heap_item_key i = heap_item_key oi /\
+                heap_item_priority i = np).
+Proof.
+  intros.
+  unfold update_pri_by_key in H.
+  rewrite in_map_iff in H. destruct H as [oi [? ?]].
+  revert H. unfold update_pri_if_key. case Z.eq_dec; intros.
+  2: left; subst; auto.
+  right. exists oi. split; trivial. subst i.
+  unfold heap_item_key, heap_item_payload, heap_item_priority in *.
+  simpl. tauto.
 Qed.
 
 (*

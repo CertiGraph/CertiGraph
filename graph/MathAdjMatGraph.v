@@ -47,13 +47,13 @@ Section Mathematical_AdjMat_Model.
     sr: (* size_representable *)
       0 < size <= Int.max_signed;
     ir: (* inf_representable *)
-      0 < inf < Int.max_signed; 
+      0 < inf <= Int.max_signed; 
     vm: (* vvalid_meaning *)
       forall v, vvalid g v <-> 0 <= v < size;
     em: (* evalid_meaning *)
       forall e, evalid g e <-> 
                 Int.min_signed <= elabel g e <= Int.max_signed /\
-                elabel g e < inf;
+                elabel g e <> inf;
     ese: (* evalid_strong_evalid *)
       forall e, evalid g e -> strong_evalid g e;
     iew: (* invalid_edge_weight *)
@@ -107,7 +107,9 @@ Section Mathematical_AdjMat_Model.
   Definition finGraph (g: AdjMatGG) :=
     @fin g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
-  
+  Existing Instance finGraph.
+  Coercion finGraph: AdjMatGG >-> FiniteGraph.
+
   (* Some lemmas from the above soundness plugins *)
   
   Lemma valid_path_app_cons:
@@ -162,4 +164,129 @@ Section Mathematical_AdjMat_Model.
     rewrite <- (edge_dst_snd g); trivial.
   Qed.
 
+  Lemma path_ends_one_step:
+    forall (g: AdjMatGG) a b,
+      path_ends g (a, (a, b)::nil) a b.
+  Proof.
+    intros. split; trivial.
+    simpl. rewrite (edge_dst_snd g); trivial.
+  Qed.
+
+  Lemma epath_to_vpath_path_glue_one_step:
+    forall (g: AdjMatGG) (a b c : V) p,
+      valid_path g p ->
+      path_ends g p a b -> 
+      Permutation (epath_to_vpath g (path_glue p (b, (b, c)::nil)))
+                  (c :: epath_to_vpath g p).
+  Proof.
+    intros.
+    rewrite (surjective_pairing p) in *.
+    remember (snd p) as a2b.
+    replace (fst p) with a in *.
+    2: destruct H0 as [? _]; simpl in H0; Lia.lia.
+    clear Heqa2b.
+    
+    generalize dependent H.
+    generalize dependent H0.
+    generalize dependent b.
+    generalize dependent a.
+    generalize dependent a2b.
+
+    induction a2b.
+    - intros. simpl. red in H0. simpl in H0; destruct H0 as [_ ?].
+      subst a. rewrite (edge_dst_snd g), (edge_src_fst g); simpl.
+      apply perm_swap.
+    - intros. rename a into new.
+      inversion H. clear H2.
+      unfold path_glue. simpl fst; simpl snd.
+      rewrite <- app_comm_cons.
+      repeat rewrite epath_to_vpath_cons_eq; trivial.
+      pose proof (perm_swap c a0 (epath_to_vpath g (dst g new, a2b))).
+      apply Permutation_trans with (l' := (a0 :: c :: epath_to_vpath g (dst g new, a2b))); trivial.
+      apply perm_skip.
+      apply IHa2b.
+      + red. split; trivial.
+        destruct H0. rewrite pfoot_cons in H3; trivial.
+      + apply valid_path_cons in H; trivial.
+  Qed.
+
+  Lemma in_path_app_cons:
+    forall (g: AdjMatGG) step p2a src a b,
+      valid_path g p2a ->
+      evalid g (a,b) ->
+      path_ends g p2a src a ->
+      In_path g step (fst p2a, snd p2a +:: (a, b)) ->
+      In_path g step p2a \/ step = b.
+  Proof.
+    intros. destruct H2; simpl in H2.
+    1: left; unfold In_path; left; trivial.
+    destruct H2 as [? [? ?]].
+    assert (evalid g x). {
+      apply in_app_or in H2. simpl in H2.
+      destruct H2 as [? | [? | ?]]; [| | Lia.lia]; [|subst;trivial].
+      rewrite (surjective_pairing p2a) in H.
+      apply (valid_path_evalid _ _ _ _ H H2).
+    }
+    rewrite (edge_src_fst g) in H3; trivial.
+    apply in_app_or in H2; simpl in H2.
+    destruct H2 as [? | [? | ?]]; [| | Lia.lia]; destruct H3.
+    - left. unfold In_path. right.
+      exists x. rewrite (edge_src_fst g); trivial.
+      split; [|left]; trivial.
+    - left. unfold In_path. right.
+      exists x. rewrite (edge_src_fst g); trivial.
+      split; [|right]; trivial.
+    - left. apply pfoot_in.
+      destruct H1. rewrite H3, <- H2; simpl; trivial.
+    - unfold In_path. right.
+      rewrite H3, <- H2; simpl; trivial.
+      rewrite (edge_dst_snd g); trivial.
+  Qed.
+
+  Lemma acyclic_foot_empty: forall (g : AdjMatGG) src l,
+      valid_path g (src, l) ->
+      acyclic_path g (src, l) ->
+      pfoot g (src, l) = src ->
+      l = nil.
+  Proof.
+    destruct l; auto. intros. exfalso. assert (fst e = src). { destruct H.
+                                                               rewrite (edge_src_fst g) in H. auto. }
+                                                             apply pfoot_ptail in H1. simpl ptail in H1.
+    rewrite pfoot_spec in H1. destruct H1.
+    * rewrite (edge_dst_snd g) in H1. inversion H1. subst. 
+      red in H0. simpl in H0. rewrite (edge_src_fst g), (edge_dst_snd g) in H0.
+      rewrite H4 in H0. inversion H0. apply H5. left. trivial.
+    * destruct H1 as [v' [l' [e' [? ?]]]]. subst src. inversion H1. subst v' l.
+      rename H into Hx. clear H1.
+      red in H0.
+      rewrite <- (edge_src_fst g) in H2.
+      rewrite epath_to_vpath_cons_eq in H0; auto.
+      rewrite NoDup_cons_iff in H0. destruct H0 as [? _].
+      apply H. clear H H2.
+      rewrite in_path_eq_epath_to_vpath.
+      eapply path_ends_In_path_dst. split. reflexivity.
+      rewrite pfoot_last. trivial.
+      apply valid_path_tail in Hx. apply Hx.
+  Qed.
+
+  Lemma In_links_snd_In_path:
+    forall (g: AdjMatGG) step path,
+      In step (snd path) ->
+      In_path g (snd step) path.
+  Proof.
+    intros. unfold In_path. right.
+    exists step. split; trivial.
+    right. rewrite (edge_dst_snd g); trivial.
+  Qed.
+
+  Lemma In_links_fst_In_path:
+    forall (g: AdjMatGG) step path,
+      In step (snd path) ->
+      In_path g (fst step) path.
+  Proof.
+    intros. unfold In_path. right.
+    exists step. split; trivial.
+    left. rewrite (edge_src_fst g); trivial.
+  Qed.
+  
 End Mathematical_AdjMat_Model.

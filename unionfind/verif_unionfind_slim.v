@@ -87,7 +87,6 @@ Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
   start_function.
   forward_call (sh, 8).
-  - rep_lia.
   - Intros x.
     assert_PROP (x <> null) as x_not_null by (entailer !; destruct H0 as [? _]; apply H0).
     assert_PROP (~ vvalid g x) by (entailer; apply (@vertices_at_sepcon_unique_1x _ _ _ _ SGBA_VST _ _ (SGA_VST sh) (SGAvs_VST sh) g x (vvalid g) (O, null))).
@@ -153,7 +152,9 @@ Proof.
   - apply denote_tc_test_eq_split; apply graph_local_facts; auto.
   - (* p0 = find(p); *)
     forward_call (sh, g, pa). Intros vret. destruct vret as [g' root]. simpl fst in *. simpl snd in *. Opaque pointer_val_val. forward. Transparent pointer_val_val.
-    pose proof (true_Cne_neq _ _ H1).
+    assert (pa <> x). {
+      intro. subst. apply H1; trivial.
+    }
     assert (weak_valid g' root) by (right; destruct H3; apply reachable_foot_valid in H3; auto).
     assert (vvalid g' x) by (destruct H2 as [? _]; rewrite <- H2; apply H).
     assert (~ reachable g' root x) by (apply (uf_equiv_not_reachable g g' x r pa root); auto).
@@ -170,7 +171,11 @@ Proof.
       * simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto. 2: apply reachable_refl; auto.
         rewrite <- (uf_equiv_root_the_same g g' x root); auto.
         apply (uf_root_edge _ (liGraph g) _ pa); [| apply (vgamma_not_dst g x r pa) | rewrite (uf_equiv_root_the_same g g')]; auto.
-  - forward. Exists g x. entailer!. apply false_Cne_eq in H1. subst pa. split; [|split]; auto.
+  - forward. Exists g x. entailer!.
+    assert (pa = x). {
+      destruct pa; destruct x; inversion H1; trivial.
+    }
+    subst pa. split; auto.
     + apply (uf_equiv_refl _  (liGraph g)).
     + apply uf_root_vgamma with (n := r); auto.
   - Intros g' rt. forward. Exists g' rt. entailer!.
@@ -212,8 +217,17 @@ Proof.
      temp _x (pointer_val_val x); temp _y (pointer_val_val y))
      SEP (vertices_at sh (vvalid g2) g2)).
   - apply denote_tc_test_eq_split; apply graph_local_facts; auto.
-  - forward. Exists g2. entailer !. apply true_Ceq_eq in H6. subst y_root. apply (the_same_root_union g g1 g2 x y x_root); auto.
-  - forward. apply false_Ceq_neq in H6. entailer!.
+  - forward. Exists g2. entailer !.
+    rename H6 into Htemp.
+    assert (x_root = y_root). {
+      destruct x_root; destruct y_root; inversion Htemp; trivial.
+    }
+    subst y_root. apply (the_same_root_union g g1 g2 x y x_root); auto.
+  - forward.
+    assert (x_root <> y_root). {
+      intro; subst; apply H6; trivial.
+    }
+    entailer!.
   - Intros. (* xRank = xRoot -> rank; *)
     remember (vgamma g2 x_root) as rpa eqn:?H. destruct rpa as [rankXRoot paXRoot]. symmetry in H7.
     localize [data_at sh node_type (vgamma2cdata (vgamma g2 x_root)) (pointer_val_val x_root)].
