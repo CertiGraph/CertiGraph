@@ -111,7 +111,7 @@ Proof.
      LOCAL (temp _h (ti_heap_p t_info'); temp _fi fi; temp _ti ti;
             gvars gv)
      SEP (thread_info_rep sh t_info' ti;
-          mem_mgr gv; MSS_constant gv;
+          mem_mgr gv;
           all_string_constants rsh gv;
           fun_info_rep rsh f_info fi;
           outlier_rep outlier;
@@ -141,7 +141,7 @@ Proof.
               gvars gv; temp _i (Vint (Int.repr i)))
        SEP (thread_info_rep sh t_info1 ti;
             ti_token_rep t_info1;
-            mem_mgr gv; MSS_constant gv;
+            mem_mgr gv;
             all_string_constants rsh gv;
             fun_info_rep rsh f_info fi;
             outlier_rep outlier;
@@ -184,7 +184,7 @@ Proof.
       rewrite spaces_size in H20. unfold thread_info_rep. Intros.
       rewrite hsr_single_explicit with (i := i + 1). 2: assumption.
       2: rewrite Zlength_map, spaces_size; reflexivity. Intros.
-      freeze [0;2;3;4;8;9;10] FR.
+      freeze [0;2;3;4;8;9] FR.
       sep_apply (data_at_data_at_
                    sh space_type
                    (Znth (i + 1) (map space_tri (spaces (ti_heap t_info'))))
@@ -218,7 +218,7 @@ Proof.
             (subst g1; apply firstn_gen_clear_add; assumption).
         assert (new_gen_relation (Z.to_nat (i + 1)) g' g1). {
           subst g1. red. rewrite if_false by assumption. exists gi. split; auto. }
-        gather_SEP (malloc_token Ews (tarray int_or_ptr_type (nth_gen_size (Z.to_nat (i + 1)))) p) (FRZL FR).
+        gather_SEP (malloc_token Ews (tarray int_or_ptr_type (nth_gen_size (Z.to_nat (i + 1)))) p) (ti_token_rep t_info').
         assert (total_space sp = nth_gen_size (Z.to_nat (i + 1))) by
             (subst sp; simpl; reflexivity). rewrite <- H29.
         assert (space_start sp = p) by (subst sp; simpl; reflexivity). rewrite <- H30.
@@ -246,7 +246,7 @@ Proof.
             (subst t_info1; simpl; reflexivity).
         replace (ti_args t_info') with (ti_args t_info1) by
             (subst t_info1; simpl; reflexivity).
-        replace_SEP 10 (space_rest_rep sp). {
+        replace_SEP 4 (space_rest_rep sp). {
           unfold space_rest_rep. rewrite if_false by assumption.
           replace (space_sh sp) with Ews by (subst sp; simpl; reflexivity).
           replace (used_space sp) with 0 by (subst sp; simpl; reflexivity).
