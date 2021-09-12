@@ -1,8 +1,9 @@
-#include <stdlib.h>
+/* #include <stdlib.h> */
 #include <stdio.h>
 #include <assert.h>
 #include "config.h"
 #include "gc.h"
+#include "mem.h"
 
 /* The following 5 functions should (in practice) compile correctly in CompCert,
    but the CompCert correctness specification does not _require_ that
@@ -69,9 +70,8 @@ struct space {
 #define DEPTH 0  /* how much depth-first search to do */
 #endif
 
-#ifndef MAX_SPACE_SIZE
-#define MAX_SPACE_SIZE (1 << 29)
-#endif
+const uintnat MAX_SPACE_SIZE =
+    sizeof(void*) == 8 ? (((unsigned long long)1) << 40) : (1 << 29);
 /* The restriction of max space size is required by pointer
    subtraction.  If the space is larger than this restriction, the
    behavior of pointer subtraction is undefined.
@@ -173,8 +173,8 @@ void forward (value *from_start,  /* beginning of from-space */
       if(hd == 0) { /* already forwarded */
 	*p = Field(v,0);
       } else {
-	int i;
-	int sz;
+	intnat i;
+	intnat sz;
 	value *new;
         sz = Wosize_hd(hd);
 	new = *next+1;
@@ -201,7 +201,7 @@ void forward_roots (value *from_start,  /* beginning of from-space */
 		    struct thread_info *ti) /* where's the args array? */
 /* Forward each live root in the args array */
  {
-   value *args; int n; uintnat i;
+   value *args; uintnat n; uintnat i;
    const uintnat *roots = fi+2;
    n = fi[1];
    args = ti->args;
@@ -364,7 +364,7 @@ void garbage_collect(fun_info fi, struct thread_info *ti)
 
     /* If the next generation does not yet exist, create it */
     if (h->spaces[i+1].start==NULL) {
-      int w = h->spaces[i].limit-h->spaces[i].start;
+      intnat w = h->spaces[i].limit-h->spaces[i].start;
       create_space(h->spaces+(i+1), RATIO*w);
     }
     /* Copy all the objects in generation i, into generation i+1 */

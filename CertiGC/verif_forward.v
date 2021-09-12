@@ -33,8 +33,24 @@ Lemma sapi_ptr_val: forall p m n,
                         (vint n))) = offset_val (WORD_SIZE * (m + n)) p.
 Proof.
   intros. rewrite sem_add_pi_ptr_special; [| easy | | easy].
-  - simpl. rewrite offset_offset_val. f_equal. rep_lia.
+  - simpl. rewrite offset_offset_val. f_equal. fold WORD_SIZE; rep_lia.
   - rewrite isptr_offset_val. assumption.
+Qed.
+
+Lemma sapil_ptr_val: forall p m n,
+    isptr p ->
+    if Archi.ptr64 then
+      force_val
+        (sem_add_ptr_long int_or_ptr_type (offset_val (WORD_SIZE * m) p)
+                          (Vlong (Int64.repr n))) = offset_val (WORD_SIZE * (m + n)) p
+    else
+      force_val
+        (sem_add_ptr_int int_or_ptr_type Signed (offset_val (WORD_SIZE * m) p)
+                         (vint n)) = offset_val (WORD_SIZE * (m + n)) p.
+Proof.
+  intros. simpl.
+  first [rewrite sem_add_pi_ptr_special' | rewrite sem_add_pl_ptr_special']; auto.
+  simpl. fold WORD_SIZE. rewrite offset_offset_val. f_equal. lia.
 Qed.
 
 Lemma data_at_mfs_eq: forall g v i sh nv,
@@ -70,11 +86,14 @@ Lemma data_at__value_0_size: forall sh p,
 Proof. intros. rewrite data_at__eq. apply data_at_zero_array_inv; reflexivity. Qed.
 
 Lemma data_at_minus1_address: forall sh v p,
-    data_at sh tuint v (offset_val (- WORD_SIZE) p) |--
-   !! (force_val (sem_add_ptr_int tuint Signed p (eval_unop Oneg tint (vint 1))) =
-       field_address tuint [] (offset_val (- WORD_SIZE) p)).
+    data_at sh (if Archi.ptr64 then tulong else tuint)
+            v (offset_val (- WORD_SIZE) p) |--
+            !! (force_val (sem_add_ptr_int (if Archi.ptr64 then tulong else tuint)
+                                           Signed p (eval_unop Oneg tint (vint 1))) =
+                field_address (if Archi.ptr64 then tulong else tuint) []
+                              (offset_val (- WORD_SIZE) p)).
 Proof.
-  intros. unfold eval_unop. simpl. rewrite WORD_SIZE_eq. entailer!.
+  intros. unfold eval_unop. simpl. entailer!.
   unfold field_address. rewrite if_true by assumption. rewrite offset_offset_val.
   simpl. reflexivity.
 Qed.
@@ -195,12 +214,16 @@ Proof.
         sep_apply (data_at_minus1_address (nth_sh g from) (Z2val (make_header g v))
                                           (vertex_address g v)).
         Intros. forward. clear H21.
-        gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
+        gather_SEP (data_at _ (if Archi.ptr64 then tulong else tuint) _ _)
+                   (data_at _ _ _ _).
         replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v) by
             (unfold vertex_rep, vertex_at; entailer!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
-        forward_if; rewrite make_header_int_rep_mark_iff in H21.
-        -- localize [vertex_rep (nth_sh g (vgeneration v)) g v].
+        forward_if.
+        -- try apply Int64.same_if_eq in H21.
+           pose proof (make_header_int_rep_mark_iff g v). simpl in H22.
+           rewrite H22 in H21. clear H22.
+           localize [vertex_rep (nth_sh g (vgeneration v)) g v].
            rewrite v0. unfold vertex_rep, vertex_at. Intros.
            unfold make_fields_vals at 2. rewrite H21.
            assert (0 <= 0 < Zlength (make_fields_vals g v)). {
@@ -212,7 +235,8 @@ Proof.
              rewrite isptr_offset_val.
              apply graph_has_gen_start_isptr, H9; assumption. }
            forward. rewrite Znth_0_cons.
-           gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
+           gather_SEP (data_at _ _ _ _)
+                      (data_at _ _ _ _).
            replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v). {
              unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
              rewrite H21. entailer!. }
@@ -233,7 +257,10 @@ Proof.
            ++ rewrite <- Heqroot. apply fr_v_in_forwarded; [reflexivity | assumption].
            ++ easy.
         -- forward. thaw FR. freeze [0; 1; 2; 3; 4; 5] FR.
-           apply not_true_is_false in H21. rewrite make_header_Wosize by assumption.
+           try apply Int64_eq_false in H21.
+           pose proof (make_header_int_rep_mark_iff g v). simpl in H22.
+           rewrite H22 in H21. clear H22. apply not_true_is_false in H21.
+           rewrite make_header_Wosize by assumption.
            assert (0 <= Z.of_nat to < 12). {
              clear -H H8. destruct H as [_ [_ ?]]. red in H8.
              pose proof (spaces_size (ti_heap t_info)).
@@ -251,12 +278,7 @@ Proof.
            forward. simpl sem_binary_operation'.
            rewrite sapi_ptr_val; [|assumption | rep_lia].
            Opaque Znth. forward. Transparent Znth.
-           assert (Hr: Int.min_signed <= Zlength (raw_fields (vlabel g v)) <=
-                       Int.max_signed). {
-             pose proof (raw_fields_range (vlabel g v)). destruct H28. split.
-             1: rep_lia. transitivity (two_power_nat 22). 1: lia.
-             compute; intro s; inversion s. }
-           rewrite sapi_ptr_val by assumption. rewrite H27. unfold space_tri.
+           rewrite sapil_ptr_val by assumption. rewrite H27. unfold space_tri.
            rewrite <- Z.add_assoc.
            replace (1 + Zlength (raw_fields (vlabel g v))) with (vertex_size g v) by
                (unfold vertex_size; lia). thaw FR. freeze [0; 2; 3; 4; 5; 6] FR.
@@ -293,20 +315,21 @@ Proof.
            rewrite (data_at__tarray_value _ _ 1). 2: unfold vertex_size; rep_lia.
            Intros.
            remember (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to)).
-           rewrite (data_at__int_or_ptr_tuint sht v1).
+           rewrite (data_at__int_or_ptr_integer sht v1).
            assert_PROP
              (force_val (sem_add_ptr_int
-                           tuint Signed
+                           (if Archi.ptr64 then tulong else tuint) Signed
                            (offset_val (WORD_SIZE * (used_space sp_to + 1))
                                        (space_start sp_to))
                            (eval_unop Oneg tint (vint 1))) =
-              field_address tuint [] v1). {
-             subst v1. rewrite WORD_SIZE_eq. entailer!. simpl. rewrite neg_repr.
-             rewrite sem_add_pi_ptr_special'; auto. simpl. unfold field_address.
-             rewrite if_true by assumption. simpl. rewrite !offset_offset_val.
-             f_equal. lia. }
+              field_address (if Archi.ptr64 then tulong else tuint) [] v1). {
+             subst v1. entailer!. simpl. rewrite neg_repr.
+             rewrite sem_add_pi_ptr_special; auto. 2: rep_lia. simpl in *.
+             unfold field_address. rewrite if_true by assumption.
+             simpl. rewrite !offset_offset_val. f_equal. unfold WORD_SIZE. lia. }
            forward. sep_apply (field_at_data_at_cancel
-                                 sht tuint (Z2val (make_header g v)) v1). clear H29.
+                                 sht (if Archi.ptr64 then tulong else tuint)
+                                 (Z2val (make_header g v)) v1). clear H29.
            subst v1. rewrite offset_offset_val.
            replace (vertex_size g v - 1) with (Zlength (raw_fields (vlabel g v)))
              by (unfold vertex_size; lia).
@@ -328,7 +351,7 @@ Proof.
              (EX i: Z,
               PROP ( )
               LOCAL (temp _new nv;
-                     temp _sz (vint n);
+                     temp _sz (if Archi.ptr64 then Vlong (Int64.repr n) else vint n);
                      temp _v (vertex_address g v);
                      temp _from_start fp;
                      temp _from_limit (offset_val fn fp);
@@ -340,6 +363,8 @@ Proof.
                            (sublist 0 i (make_fields_vals g v)) nv;
                    data_at_ sht (tarray int_or_ptr_type (n - i))
                             (offset_val (WORD_SIZE * i) nv); FRZL FR))%assert.
+           ++ pose proof (raw_fields_range2 (vlabel g v)). simpl in H30.
+              now rewrite <- Heqn in H30.
            ++ rewrite sublist_nil. replace (n - 0) with n by lia.
               replace (WORD_SIZE * 0)%Z with 0 by lia.
               rewrite isptr_offset_val_zero by assumption.
@@ -359,20 +384,25 @@ Proof.
                                    sht int_or_ptr_type
                                    (offset_val (WORD_SIZE * i) nv)); entailer!).
                  assert_PROP
-                   (force_val (sem_add_ptr_int int_or_ptr_type
-                                               Signed nv (vint i)) =
+                   ((if Archi.ptr64 then
+                      force_val (sem_add_ptr_long int_or_ptr_type
+                                                  nv (Vlong (Int64.repr i)))
+                     else force_val (sem_add_ptr_int int_or_ptr_type
+                                                     Signed nv (vint i)))=
                     field_address int_or_ptr_type []
                                   (offset_val (WORD_SIZE * i) nv)). {
                    unfold field_address. rewrite if_true by assumption.
-                   clear. entailer!. }
-                 gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
+                   clear. entailer!. } simpl in H32.
+                 gather_SEP (data_at _ _ _
+                                     (offset_val (- WORD_SIZE) (vertex_address g v)))
+                            (data_at _ _ _ (vertex_address g v)).
                  replace_SEP 0 (vertex_rep shv g v) by
                      (unfold vertex_rep, vertex_at;
                       rewrite fields_eq_length; entailer!). forward.
                  rewrite offset_offset_val.
                  replace (n - i - 1) with (n - (i + 1)) by lia.
                  replace (WORD_SIZE * i + WORD_SIZE * 1) with
-                     (WORD_SIZE * (i + 1))%Z by rep_lia.
+                     (WORD_SIZE * (i + 1))%Z by lia.
                  gather_SEP (data_at sht _ _ nv) (field_at _ _ _ _ _).
                  rewrite data_at_mfs_eq. 2: assumption.
                  2: subst n; assumption. entailer!.
@@ -388,7 +418,8 @@ Proof.
                 - unfold vertex_offset. simpl. rewrite H25. reflexivity.
                 - unfold gen_start. rewrite if_true by assumption.
                   rewrite H23. reflexivity. }
-              gather_SEP (data_at sht _ _ _) (emp) (data_at sht tuint _ _).
+              gather_SEP (data_at _ _ _ nv) (emp)
+              (data_at sht (if Archi.ptr64 then tulong else tuint) _ _).
               replace_SEP
                 0 (vertex_at (nth_sh g to)
                              (vertex_address g (new_copied_v g to))
@@ -422,9 +453,10 @@ Proof.
               unfold vertex_rep, vertex_at. Intros.
               sep_apply (data_at_minus1_address
                            sh' (Z2val (make_header g' v)) (vertex_address g' v)).
-              Intros. forward. clear H37.
+              Intros. forward. clear H37. try rewrite Int.signed_repr by rep_lia.
               sep_apply (field_at_data_at_cancel
-                           sh' tuint (vint 0)
+                           sh' (if Archi.ptr64 then tulong else tuint)
+                           (if Archi.ptr64 then (Vlong (Int64.repr 0)) else (vint 0))
                            (offset_val (- WORD_SIZE) (vertex_address g' v))).
               forward_call (nv). remember (make_fields_vals g' v) as l'.
               assert (0 < Zlength l'). {
@@ -440,7 +472,7 @@ Proof.
               sep_apply (field_at_data_at_cancel
                            sh' int_or_ptr_type nv (vertex_address g' v)).
               gather_SEP
-                (data_at _ tuint (vint 0) _)
+                (data_at _ (if Archi.ptr64 then tulong else tuint) _ _)
                 (data_at _ int_or_ptr_type nv _)
                 (data_at _ _ _ _).
               rewrite H30. subst l'.
@@ -502,7 +534,8 @@ Proof.
                           forward_condition g3 t_info3 from to;
                           thread_info_relation t_info' t_info3)
                     LOCAL (temp _new nv;
-                           temp _sz (vint n);
+                           temp _sz (if Archi.ptr64 then
+                                       Vlong (Int64.repr n) else vint n);
                            temp _from_start (gen_start g3 from);
                            temp _from_limit (limit_address g3 t_info3 from);
                            temp _next (next_address t_info3 to);
@@ -512,6 +545,8 @@ Proof.
                          outlier_rep outlier;
                          graph_rep g3;
                          thread_info_rep sh t_info3 ti))%assert.
+                 --- pose proof (raw_fields_range2 (vlabel g v)). simpl in H45.
+                     now rewrite <- Heqn in H45.
                  --- Exists g' t_info'. autorewrite with sublist.
                      assert (forward_loop from to (Z.to_nat (depth - 1)) [] g' g') by
                          constructor. unfold thread_info_relation. entailer!.
@@ -526,12 +561,12 @@ Proof.
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
                      +++ apply prop_right. simpl. rewrite sub_repr, H30.
-                         do 4 f_equal. rewrite sem_add_pi_ptr_special.
+                         do 4 f_equal.
+                         first [rewrite sem_add_pi_ptr_special' |
+                                rewrite sem_add_pl_ptr_special']; auto.
                          *** simpl. f_equal. erewrite fl_vertex_address; eauto.
                              subst g'. apply graph_has_v_in_closure. assumption.
-                         *** subst n. clear -H45 Hr. easy.
                          *** rewrite <- H30. assumption.
-                         *** rep_lia.
                      +++ split3; [| |split].
                          *** apply (fl_graph_has_v _ _ _ _ _ _ H50 H47 _ H51).
                          *** erewrite <- fl_raw_fields; eauto. subst g'.
@@ -611,7 +646,7 @@ Proof.
     assert (is_pointer_or_integer (Znth n (make_fields_vals g v))). {
       pose proof (mfv_all_is_ptr_or_int g v H9 H10 H0). rewrite Forall_forall in H16.
       apply H16, Znth_In. rewrite fields_eq_length. assumption. } forward.
-    gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
+    gather_SEP (data_at _ _ _ _) (data_at _ _ _ _).
     replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v).
     1: unfold vertex_rep, vertex_at; entailer!.
     unlocalize [graph_rep g]. 1: apply graph_vertex_ramif_stable; assumption. thaw FR.
@@ -772,15 +807,16 @@ Proof.
         sep_apply (data_at_minus1_address
                      (nth_sh g from) (Z2val (make_header g v')) (vertex_address g v')).
         Intros. forward. clear H22.
-        gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
+        gather_SEP (data_at _ _ _ _) (data_at _ _ _ _).
         replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v')) g v') by
             (unfold vertex_rep, vertex_at; entailer!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
-        forward_if; rewrite make_header_int_rep_mark_iff in H22.
+        forward_if.
         -- (* yes, already forwarded *)
+          try apply Int64.same_if_eq in H22.
+          pose proof (make_header_int_rep_mark_iff g v'). simpl in H23.
+          rewrite H23 in H22. clear H23.
           localize [vertex_rep (nth_sh g (vgeneration v')) g v'].
-          change (Tpointer tvoid {| attr_volatile := false;
-                                    attr_alignas := Some 2%N |}) with int_or_ptr_type.
           rewrite v0. unfold vertex_rep, vertex_at. Intros.
           unfold make_fields_vals at 2. rewrite H22.
           assert (0 <= 0 < Zlength (make_fields_vals g v')). {
@@ -793,7 +829,7 @@ Proof.
             rewrite isptr_offset_val.
             apply graph_has_gen_start_isptr, H9; assumption. }
           forward. rewrite Znth_0_cons.
-          gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
+          gather_SEP (data_at _ _ _ _) (data_at _ _ _ _).
           replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v')) g v'). {
             unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
             rewrite H22. entailer!. }
@@ -809,7 +845,7 @@ Proof.
                        (upd_Znth n (make_fields_vals g v)
                        (vertex_address g (copied_vertex (vlabel g v'))))
                        (vertex_address g v)).
-          gather_SEP (data_at _ tuint _ _ ) (data_at _ _ _ _).
+          gather_SEP (data_at _ _ _ _ ) (data_at _ _ _ _).
           remember (copied_vertex (vlabel g v')).
           remember (labeledgraph_gen_dst g e v1) as g'.
           replace_SEP 0 (vertex_rep (nth_sh g' (vgeneration v)) g' v).
@@ -840,8 +876,11 @@ Proof.
           ++ now constructor.
           ++ easy.
         -- (* not yet forwarded *)
-          forward. thaw FR.  freeze [0; 1; 2; 3; 4; 5] FR.
-           apply not_true_is_false in H22. rewrite make_header_Wosize by assumption.
+           forward. thaw FR.  freeze [0; 1; 2; 3; 4; 5] FR.
+           try apply Int64_eq_false in H22.
+           pose proof (make_header_int_rep_mark_iff g v'). simpl in H23.
+           rewrite H23 in H22. clear H23. apply not_true_is_false in H22.
+           rewrite make_header_Wosize by assumption.
            assert (0 <= Z.of_nat to < 12). {
              clear -H H8. destruct H as [_ [_ ?]]. red in H8.
              pose proof (spaces_size (ti_heap t_info)).
@@ -858,15 +897,8 @@ Proof.
            forward; rewrite H28; unfold space_tri. 1: entailer!.
            forward. simpl sem_binary_operation'.
            rewrite sapi_ptr_val; [| assumption | rep_lia].
-           Opaque Znth.  forward. Transparent Znth.
-           assert (Hr: Int.min_signed <= Zlength (raw_fields (vlabel g v')) <=
-                       Int.max_signed). {
-             pose proof (raw_fields_range (vlabel g v')). destruct H29. split.
-             - rep_lia.
-             - transitivity (two_power_nat 22). 1: lia.
-               compute; intro s; inversion s. }
-           rewrite sapi_ptr_val; [|easy|easy].
-           rewrite H28. unfold space_tri.
+           Opaque Znth. forward. Transparent Znth.
+           rewrite sapil_ptr_val by easy. rewrite H28. unfold space_tri.
            rewrite <- Z.add_assoc.
            replace (1 + Zlength (raw_fields (vlabel g v'))) with (vertex_size g v') by
                (unfold vertex_size; lia). thaw FR. freeze [0; 2; 3; 4; 5; 6] FR.
@@ -901,20 +933,21 @@ Proof.
            rewrite (data_at__tarray_value _ _ 1). 2: unfold vertex_size; rep_lia.
            Intros.
            remember (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to)).
-           rewrite (data_at__int_or_ptr_tuint sht v1).
+           rewrite (data_at__int_or_ptr_integer sht v1).
            assert_PROP
              (force_val (sem_add_ptr_int
-                           tuint Signed
+                           (if Archi.ptr64 then tulong else tuint) Signed
                            (offset_val (WORD_SIZE * (used_space sp_to + 1))
                                        (space_start sp_to))
                            (eval_unop Oneg tint (vint 1))) =
-              field_address tuint [] v1). {
-             subst v1. rewrite WORD_SIZE_eq. entailer!. unfold field_address.
-             simpl. rewrite neg_repr. rewrite sem_add_pi_ptr_special'; auto.
+              field_address (if Archi.ptr64 then tulong else tuint) [] v1). {
+             subst v1. entailer!. unfold field_address.
+             simpl. rewrite neg_repr. rewrite sem_add_pi_ptr_special; auto. 2: rep_lia.
              rewrite if_true by assumption. simpl. rewrite !offset_offset_val.
-             f_equal. lia. }
+             f_equal. unfold WORD_SIZE. lia. }
            forward. sep_apply (field_at_data_at_cancel
-                                 sht tuint (Z2val (make_header g v')) v1). clear H30.
+                                 sht (if Archi.ptr64 then tulong else tuint)
+                                 (Z2val (make_header g v')) v1). clear H30.
            subst v1. rewrite offset_offset_val.
            replace (vertex_size g v' - 1) with (Zlength (raw_fields (vlabel g v')))
              by (unfold vertex_size; lia).
@@ -922,7 +955,7 @@ Proof.
                (WORD_SIZE * (used_space sp_to + 1))%Z by rep_lia.
            remember (offset_val (WORD_SIZE * (used_space sp_to + 1))
                                 (space_start sp_to)) as nv.
-           thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j. 
+           thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j.
            remember (Zlength (raw_fields (vlabel g v'))) as n'.
            assert (isptr nv) by (subst nv; rewrite isptr_offset_val; assumption).
            remember (field_address heap_type
@@ -933,7 +966,7 @@ Proof.
              (EX i: Z,
               PROP ( )
               LOCAL (temp _new nv;
-                     temp _sz (vint n');
+                     temp _sz (if Archi.ptr64 then Vlong (Int64.repr n') else vint n');
                      temp _v (vertex_address g v');
                      temp _from_start fp;
                      temp _from_limit (offset_val fn fp);
@@ -945,6 +978,8 @@ Proof.
                            (sublist 0 i (make_fields_vals g v')) nv;
                    data_at_ sht (tarray int_or_ptr_type (n' - i))
                             (offset_val (WORD_SIZE * i) nv); FRZL FR))%assert.
+           ++ pose proof (raw_fields_range2 (vlabel g v')). simpl in H31.
+              now rewrite <- Heqn' in H31.
            ++ rewrite sublist_nil. replace (n' - 0) with n' by lia.
               replace (WORD_SIZE * 0)%Z with 0 by lia.
               rewrite isptr_offset_val_zero by assumption.
@@ -963,13 +998,17 @@ Proof.
                                    sht int_or_ptr_type
                                    (offset_val (WORD_SIZE * i) nv)); entailer!).
                  assert_PROP
-                   (force_val (sem_add_ptr_int int_or_ptr_type
-                                               Signed nv (vint i)) =
+                   ((if Archi.ptr64 then
+                      force_val (sem_add_ptr_long int_or_ptr_type
+                                                  nv (Vlong (Int64.repr i)))
+                     else force_val (sem_add_ptr_int int_or_ptr_type
+                                                     Signed nv (vint i))) =
                     field_address int_or_ptr_type []
                                   (offset_val (WORD_SIZE * i) nv)). {
                    unfold field_address. rewrite if_true by assumption.
-                   clear. entailer!. }
-                 gather_SEP (data_at _ tuint _ _) (data_at _ (_ n') _ _).
+                   clear. entailer!. } simpl in H33.
+                 gather_SEP (data_at shv _ _ _)
+                            (data_at _ (_ n') _ _).
                  replace_SEP 0 (vertex_rep shv g v') by
                      (unfold vertex_rep, vertex_at;
                       rewrite fields_eq_length; entailer!). forward.
@@ -992,7 +1031,7 @@ Proof.
                 - unfold vertex_offset. simpl. rewrite H26. reflexivity.
                 - unfold gen_start. rewrite if_true by assumption.
                   rewrite H24. reflexivity. }
-              gather_SEP (data_at sht _ _ nv) (emp) (data_at sht tuint _ _).
+              gather_SEP (data_at sht _ _ nv) (emp) (data_at sht _ _ _).
               replace_SEP
                 0 (vertex_at (nth_sh g to)
                              (vertex_address g (new_copied_v g to))
@@ -1028,7 +1067,7 @@ Proof.
                            sh' (Z2val (make_header g' v')) (vertex_address g' v')).
               Intros. forward. clear H38.
               sep_apply (field_at_data_at_cancel
-                           sh' tuint (vint 0)
+                           sh' (if Archi.ptr64 then tulong else tuint) (Z2val 0)
                            (offset_val (- WORD_SIZE) (vertex_address g' v'))).
               forward_call (nv). remember (make_fields_vals g' v') as l'.
               assert (0 < Zlength l'). {
@@ -1045,10 +1084,8 @@ Proof.
               forward. clear H39.
               sep_apply (field_at_data_at_cancel
                            sh' int_or_ptr_type nv (vertex_address g' v')).
-              gather_SEP
-                (data_at _ tuint _ _)
-                (data_at _ int_or_ptr_type _ _)
-                (data_at _ (tarray _ _) _ _).
+              gather_SEP (data_at sh' (if Archi.ptr64 then tulong else tuint) _ _)
+                         (data_at sh' int_or_ptr_type _ _) (data_at _ _ _ _).
               rewrite H31. subst l'.
               rewrite <- lmc_vertex_rep_eq.
               thaw FR1.
@@ -1111,7 +1148,7 @@ Proof.
                            (tarray int_or_ptr_type (Zlength (make_fields_vals g' v)))
                            (upd_Znth n (make_fields_vals g' v) (vertex_address g' v1))
                            (vertex_address g' v)).
-              gather_SEP (data_at shh tuint _ _) (data_at shh _ _ _).
+              gather_SEP (data_at shh _ _ _) (data_at shh _ _ _).
               replace_SEP 0 (vertex_rep (nth_sh g1 (vgeneration v)) g1 v).
               1: { unfold vertex_rep, vertex_at.
                    replace (nth_sh g1 (vgeneration v)) with shh by
@@ -1186,7 +1223,8 @@ Proof.
                           forward_condition g3 t_info3 from to;
                           thread_info_relation t_info' t_info3)
                     LOCAL (temp _new nv;
-                           temp _sz (vint n');
+                           temp _sz (if Archi.ptr64 then Vlong (Int64.repr n')
+                                     else vint n');
                            temp _from_start (gen_start g3 from);
                            temp _from_limit (limit_address g3 t_info3 from);
                            temp _next (next_address t_info3 to);
@@ -1196,14 +1234,14 @@ Proof.
                          outlier_rep outlier;
                          graph_rep g3;
                          thread_info_rep sh t_info3 ti))%assert.
+                 --- pose proof (raw_fields_range2 (vlabel g v')). simpl in H59.
+                     now rewrite <- Heqn' in H59.
                  --- Exists g1 t_info'. autorewrite with sublist.
                      assert (forward_loop from to (Z.to_nat (depth - 1)) [] g1 g1) by
                          constructor. unfold thread_info_relation.
                      destruct H54 as [? [? [? ?]]].
                      entailer!. easy.
-                 --- change (Tpointer tvoid {| attr_volatile := false;
-                                               attr_alignas := Some 2%N |})
-                       with (int_or_ptr_type). Intros.
+                 --- Intros.
                      assert (graph_has_gen g1 to) by
                          (rewrite Heqg1, lgd_graph_has_gen; subst g';
                           rewrite <- lcv_graph_has_gen; assumption).
@@ -1214,14 +1252,14 @@ Proof.
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
                      +++ apply prop_right. simpl. rewrite sub_repr.
-                         do 4 f_equal. rewrite H31, sem_add_pi_ptr_special.
+                         do 4 f_equal. rewrite H31.
+                         first [rewrite sem_add_pi_ptr_special' |
+                                rewrite sem_add_pl_ptr_special']; auto.
                          *** simpl. f_equal.
                              rewrite <- (lgd_vertex_address_eq g' e v1), <- Heqg1.
                              subst v1. apply (fl_vertex_address _ _ _ _ _ _ H64 H61).
                              apply graph_has_v_in_closure; assumption.
-                         *** subst n'. clear -H59 Hr. easy.
                          *** rewrite <- H31. assumption.
-                         *** rep_lia.
                      +++ split3; [| |split].
                          *** destruct H53 as [_ [_ [? _]]].
                              apply (fl_graph_has_v _ _ _ _ _ _ H64 H61 _ H65).
@@ -1233,7 +1271,7 @@ Proof.
                          *** erewrite <- fl_raw_mark; eauto. subst g1 from.
                              rewrite <- lgd_raw_mark_eq. subst g'.
                              rewrite lcv_vlabel_new; try assumption.
-                         *** simpl; lia. 
+                         *** simpl; lia.
                      +++ Intros vret. destruct vret as [[g4 t_info4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 t_info4.
                          simpl in H67. subst roots4.

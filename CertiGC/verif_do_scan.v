@@ -116,10 +116,11 @@ Proof.
       assert (0 <= ofs + used_offset <= Ptrofs.max_unsigned). {
         subst.
         pose proof (space_order (Znth (Z.of_nat to) (spaces (ti_heap t_info')))).
-        rep_lia. }
+        unfold WORD_SIZE in *. rep_lia. }
       assert (0 <= ofs + index_offset <= Ptrofs.max_unsigned). {
         subst. red in H8. pose proof (pvs_ge_zero g' to (to_index + n)%nat).
-        pose proof (pvs_mono g' to _ _ H8). rep_lia. } apply prop_right.
+        pose proof (pvs_mono g' to _ _ H8). unfold WORD_SIZE in *. rep_lia. }
+      apply prop_right.
       rewrite force_sem_cmp_pp; [|rewrite isptr_offset_val; assumption..].
       simpl. rewrite !ptrofs_add_repr, if_true. 2: reflexivity.
       unfold Ptrofs.ltu. rewrite !Ptrofs.unsigned_repr; auto. f_equal.
@@ -154,21 +155,22 @@ Proof.
         - subst. unfold gen_size. split. 1: apply (proj1 H34).
           transitivity (WORD_SIZE * used_space (nth_space t_info' to))%Z.
           + rewrite nth_space_Znth. apply (proj2 H34).
-          + apply Zmult_le_compat_l. apply (proj2 (space_order _)). rep_lia.
+          + apply Zmult_le_compat_l. apply (proj2 (space_order _)).
+            unfold WORD_SIZE. lia.
         - clear -H3 H7. destruct H7 as [? [? ?]].
-          rewrite <- H0.
-          rep_lia. }
+          rewrite <- H0. unfold WORD_SIZE. lia. }
       apply andp_right; apply H34.
-      * subst. split. 1: pose proof (pvs_ge_zero g' to (to_index + n)%nat); rep_lia.
-        apply Zmult_le_compat_l. 2: rep_lia. rewrite <- H20.
+      * subst. split.
+        1: pose proof (pvs_ge_zero g' to (to_index + n)%nat); unfold WORD_SIZE; lia.
+        apply Zmult_le_compat_l. 2: unfold WORD_SIZE; lia. rewrite <- H20.
         apply pvs_mono. assumption.
       * split; [|lia]; subst; apply Z.mul_nonneg_nonneg;
-                                  [rep_lia | apply space_order].
+                                  [unfold WORD_SIZE; lia | apply space_order].
     + assert (index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
         rewrite H24 in H25; unfold typed_true in H25. easy. }
       forward. entailer!. red. rewrite <- H20 in H26.
-      rewrite <- Z.mul_lt_mono_pos_l in H26 by rep_lia.
+      rewrite <- Z.mul_lt_mono_pos_l in H26 by (unfold WORD_SIZE; lia).
       apply pvs_lt_rev in H26. assumption.
     + assert (~ index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
@@ -177,8 +179,8 @@ Proof.
       Exists g' t_info'. unfold forward_condition. entailer!.
       split; [red; auto | exists n; split; trivial].
       unfold gen_has_index. rewrite <- H20 in H26.
-      rewrite <- Z.mul_lt_mono_pos_l in H26 by rep_lia. intro; apply H26.
-      now apply pvs_mono_strict.
+      rewrite <- Z.mul_lt_mono_pos_l in H26 by (unfold WORD_SIZE; lia).
+      intro; apply H26. now apply pvs_mono_strict.
     + clear H8 H23 H24. Intros. thaw FR. freeze [1;2;3;4;5;6] FR.
       assert (graph_has_v g' (to, index)) by easy.
       (* annotation theta 7 *)
@@ -195,7 +197,7 @@ Proof.
         f_equal. unfold gen_start.
         rewrite if_true by assumption; now rewrite H18. }
       rewrite H25. forward. rewrite <- H25.
-      gather_SEP (data_at _ tuint _ _) (data_at _ _ _ _).
+      gather_SEP (data_at _ _ _ _) (data_at _ _ _ _).
       replace_SEP 0 (vertex_rep (nth_sh g' to) g' (to, index)) by
           (unfold vertex_rep, vertex_at; entailer!).
       unlocalize [graph_rep g']. 1: apply graph_vertex_ramif_stable; assumption.
@@ -222,7 +224,11 @@ Proof.
                   from to (to, index)
                   (nat_inc_list (length (vlabel g' (to, index)).(raw_fields))) g' g''))
          LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
-                temp _sz (vint (Zlength (raw_fields (vlabel g' (to, index)))));
+                temp _sz
+                     (if Archi.ptr64 then
+                        Vlong (Int64.repr
+                                 (Zlength (raw_fields (vlabel g' (to, index)))))
+                      else vint (Zlength (raw_fields (vlabel g' (to, index)))));
                 temp _s (offset_val (- WORD_SIZE) (vertex_address g'' (to, index)));
                 temp _from_start (gen_start g'' from);
                 temp _from_limit (limit_address g'' t_info'' from);
@@ -230,11 +236,15 @@ Proof.
          SEP (thread_info_rep sh t_info'' ti; graph_rep g'';
               fun_info_rep rsh f_info fi;
               all_string_constants rsh gv; outlier_rep outlier)).
-      * apply typed_true_tag in H27.
+      * try (rewrite Int64.unsigned_repr in H27;
+             [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia]).
+        apply typed_true_tag in H27.
         remember (Zlength (raw_fields (vlabel g' (to, index)))).
-        assert (1 <= z < Int.max_signed). {
-          subst z. pose proof (raw_fields_range (vlabel g' (to, index))). split; [lia|].
-          transitivity (two_power_nat 22); [lia | vm_compute; reflexivity]. }
+        assert (1 <= z < (if Archi.ptr64 then Int64.max_signed else Int.max_signed)).
+        {
+          subst z. pose proof (raw_fields_range (vlabel g' (to, index))).
+          split; [lia|]. transitivity (two_p (WORD_SIZE * 8 - 10));
+                           [lia | vm_compute; reflexivity]. }
         forward_loop
           (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
            PROP (scan_vertex_for_loop
@@ -247,8 +257,8 @@ Proof.
                 thread_info_relation t_info t_info3;
                 1 <= i <= z + 1)
            LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
-                  temp _j (vint i);
-                  temp _sz (vint z);
+                  temp _j (if Archi.ptr64 then (Vlong (Int64.repr i)) else vint i);
+                  temp _sz (if Archi.ptr64 then (Vlong (Int64.repr z)) else vint z);
                   temp _s (offset_val (- WORD_SIZE) (vertex_address g3 (to, index)));
                   temp _from_start (gen_start g3 from);
                   temp _from_limit (limit_address g3 t_info3 from);
@@ -269,8 +279,8 @@ Proof.
                 thread_info_relation t_info t_info3;
                 1 <= i + 1 <= z + 1)
            LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
-                  temp _j (vint i);
-                  temp _sz (vint z);
+                  temp _j (if Archi.ptr64 then (Vlong (Int64.repr i)) else vint i);
+                  temp _sz (if Archi.ptr64 then (Vlong (Int64.repr z)) else vint z);
                   temp _s (offset_val (- WORD_SIZE) (vertex_address g3 (to, index)));
                   temp _from_start (gen_start g3 from);
                   temp _from_limit (limit_address g3 t_info3 from);
@@ -282,10 +292,26 @@ Proof.
                 thread_info_rep sh t_info3 ti)).
         -- forward. Exists 1 g' t_info'. replace (1 - 1) with 0 by lia.
            autorewrite with sublist. unfold forward_condition. entailer!.
-           split; [apply svfl_nil | red; auto].
+           try (rewrite Int64.unsigned_repr;
+                [| pose proof (raw_tag_range (vlabel g' (to, (to_index + n)%nat)));
+                   rep_lia]).
+           split; [apply svfl_nil | unfold super_compatible; auto].
         -- Intros i g3 t_info3. forward_if (i <= z).
            ++ forward. entailer!.
-           ++ forward. assert (i = z + 1) by lia. subst i. clear H33 H34.
+              first [rewrite !Int.unsigned_repr in H34 |
+                     apply ltu64_repr_false in H34]; try lia.
+              ** clear -H28 H33. simpl in H28. split. 1: lia.
+                 transitivity
+                   (Zlength (raw_fields (vlabel g' (to, (to_index + n)%nat))) + 1);
+                   rep_lia.
+              ** clear -H28. simpl in H28. rep_lia.
+           ++ forward. assert (i = z + 1). {
+                try unfold Int64.ltu in H34.
+                first [rewrite !Int.unsigned_repr in H34 |
+                       rewrite !Int64.unsigned_repr in H34].
+                - try (if_tac in H34; [|inversion H34]). lia.
+                - simpl in H28. clear -H28 H33. rep_lia.
+                - simpl in H28. clear -H28. rep_lia. } subst i. clear H33 H34.
               replace (z + 1 - 1) with z in H29 by lia.
               remember (raw_fields (vlabel g' (to, index))) as r.
               replace (sublist 0 z (nat_inc_list (Datatypes.length r))) with
@@ -296,6 +322,9 @@ Proof.
            ++ Intros.
               change (Tpointer tvoid {| attr_volatile := false;
                                         attr_alignas := Some 2%N |}) with
+                  int_or_ptr_type.
+              change (Tpointer tvoid {| attr_volatile := false;
+                                        attr_alignas := Some 3%N |}) with
                   int_or_ptr_type.
               assert (isptr (vertex_address g3 (to, index))). {
                 erewrite <- svfl_vertex_address; eauto. rewrite <- H18 in H21.
@@ -310,11 +339,13 @@ Proof.
                             outlier, from, to, 0, (@inr Z _ ((to, index), i - 1))).
               ** simpl snd. apply prop_right. simpl.
                  do 4 f_equal.
-                 rewrite sem_add_pi_ptr_special; [| easy | rewrite isptr_offset_val; assumption | rep_lia].
-                 simpl. rewrite offset_offset_val. f_equal. rep_lia.
-              ** repeat (split; try assumption). lia. 
-                 eapply svfl_raw_fields in H29;
-                   [rewrite <- H29; lia | assumption..].
+                 first [rewrite sem_add_pi_ptr_special' |
+                        rewrite sem_add_pl_ptr_special]; try easy;
+                   [|rewrite isptr_offset_val; assumption].
+                 simpl. rewrite offset_offset_val. f_equal. unfold WORD_SIZE; lia.
+              ** repeat (split; try assumption). lia.
+                 --- eapply svfl_raw_fields in H29;
+                       [rewrite <- H29; lia | assumption..].
                  --- rewrite <- H26. symmetry.
                      eapply svfl_raw_mark in H29; [apply H29 | assumption..|].
                      simpl. lia.
@@ -350,10 +381,17 @@ Proof.
                  --- apply tir_trans with t_info3; assumption.
                  --- f_equal. symmetry. eapply fr_vertex_address; eauto.
                      apply graph_has_v_in_closure; assumption.
-        -- Intros i g3 t_info3. forward. rewrite add_repr. Exists (i + 1) g3 t_info3.
-           replace (i + 1 - 1) with i by lia. entailer!.
-      * apply typed_false_tag in H27. forward. Exists g' t_info'.
-        unfold forward_condition. entailer!. easy.
+        -- Intros i g3 t_info3. cbv [Archi.ptr64]. forward.
+           ++ entailer!. clear -H28 H33. simpl in H28.
+              first [rewrite !Int.signed_repr | rewrite Int64.signed_repr]; rep_lia.
+           ++ Exists (i + 1) g3 t_info3. replace (i + 1 - 1) with i by lia. entailer!.
+      * try (rewrite Int64.unsigned_repr in H27;
+             [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia]).
+        apply typed_false_tag in H27. forward. Exists g' t_info'.
+        unfold forward_condition. entailer!.
+        try (rewrite Int64.unsigned_repr;
+             [|pose proof (raw_tag_range (vlabel g' (to, (to_index + n)%nat)));
+               rep_lia]). easy.
       * Intros g'' t_info''. assert (isptr (vertex_address g'' (to, index))). {
           assert (isptr (vertex_address g' (to, index))). {
             unfold vertex_address. rewrite isptr_offset_val. unfold gen_start.
@@ -363,21 +401,38 @@ Proof.
             [rewrite <- H32 | | apply graph_has_v_in_closure]; assumption. }
         pose proof (raw_fields_range (vlabel g' (to, index))). forward.
         -- entailer!. split. 1: rep_lia.
-           assert (two_power_nat 22 < Int.max_signed) by (vm_compute; reflexivity).
-           rewrite Int.signed_repr; rep_lia.
+           assert (two_p (WORD_SIZE * 8 - 10) <
+                   if Archi.ptr64 then Int64.max_signed else Int.max_signed)
+             by (vm_compute; reflexivity). cbv [Archi.ptr64] in H37. clear -H37 H32.
+           first [rewrite Int.signed_repr | rewrite Int64.signed_repr]; rep_lia.
         -- change (Tpointer tvoid {| attr_volatile := false;
                                      attr_alignas := Some 2%N |}) with int_or_ptr_type.
-           simpl sem_binary_operation'. rewrite add_repr.
-           assert (force_val (sem_add_ptr_int
-                                int_or_ptr_type Unsigned
-                                (offset_val (- WORD_SIZE)
-                                            (vertex_address g'' (to, index)))
-                                (vint (1 + Zlength
-                                             (raw_fields (vlabel g' (to, index))))))
+           change (Tpointer tvoid {| attr_volatile := false;
+                                     attr_alignas := Some 3%N |}) with int_or_ptr_type.
+           cbv [Archi.ptr64]. simpl sem_binary_operation'.
+           first [rewrite add_repr | rewrite add64_repr].
+           try (rewrite Int.signed_repr; [|rep_lia]).
+           assert (force_val
+                     (if Archi.ptr64 then
+                        (sem_add_ptr_long
+                           int_or_ptr_type
+                           (offset_val (-8) (vertex_address g'' (to, index)))
+                           (Vlong
+                              (Int64.repr
+                                 (1 + Zlength (raw_fields (vlabel g' (to, index)))))))
+                      else
+                        (sem_add_ptr_int
+                           int_or_ptr_type Unsigned
+                           (offset_val (-4)
+                                       (vertex_address g'' (to, index)))
+                           (vint (1 + Zlength
+                                        (raw_fields (vlabel g' (to, index)))))))
                    = offset_val (- WORD_SIZE)
                                 (vertex_address g''
                                                 (to, (to_index + (n + 1))%nat))). {
-             rewrite sem_add_pi_ptr_special.
+             cbv [Archi.ptr64].
+             first [rewrite sem_add_pi_ptr_special' |
+                    rewrite sem_add_pl_ptr_special']; try easy.
              - assert (Zlength (raw_fields (vlabel g' (to, index))) =
                        Zlength (raw_fields (vlabel g'' (to, index)))). {
                  destruct H30 as [[? ?] | [? ?]]. 1: subst g''; reflexivity.
@@ -385,12 +440,9 @@ Proof.
                simpl. replace (to_index + (n + 1))%nat with (S index) by lia.
                unfold vertex_address. rewrite !offset_offset_val.
                unfold vertex_offset. simpl vgeneration. simpl vindex. f_equal.
-               rewrite pvs_S. unfold vertex_size. rep_lia.
-             - easy.
-             - rewrite isptr_offset_val. assumption.
-             - split. 1: rep_lia.
-               assert (two_power_nat 22 < Int.max_unsigned) by
-                   (vm_compute; reflexivity). lia. } rewrite H33. clear H33.
+               rewrite pvs_S. unfold vertex_size. unfold WORD_SIZE. lia.
+             - rewrite isptr_offset_val. assumption. }
+           cbv [Archi.ptr64] in H33. rewrite H33. clear H33.
            assert (closure_has_index g'' to (to_index + (n + 1))). {
              replace (to_index + (n + 1))%nat with (index + 1)%nat by lia.
              cut (gen_has_index g'' to index). 1: red; intros; red in H33; lia.

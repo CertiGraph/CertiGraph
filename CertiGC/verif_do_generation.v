@@ -58,16 +58,30 @@ Proof.
         (subst; apply used_space_signed_range).
     assert (Ptrofs.min_signed <= to_total - to_used <= Ptrofs.max_signed) by
         (subst; apply rest_space_signed_range). unfold Ptrofs.divs in H18.
-    rewrite !Ptrofs.signed_repr in H18 by rep_lia. subst.
-    rewrite <- Z.mul_sub_distr_l, WORD_SIZE_eq, Z.mul_comm, Z.quot_mul,
-    Z.mul_comm, Z.quot_mul, !ptrofs_to_int_repr in H18 by lia. red in H18.
-    destruct (Int.lt
-                (Int.repr
-                   (total_space (nth_space t_info to) -
-                    used_space (nth_space t_info to)))
-                (Int.repr (used_space (nth_space t_info from)))) eqn: ?; simpl in H18.
-    2: inversion H18. apply lt_repr in Heqb1. 2: apply rest_space_repable_signed.
-    2: apply used_space_repable_signed. clear -H8 H3 Heqb1. red in H3.
+    rewrite !Ptrofs.signed_repr in H18 by rep_lia. subst. unfold WORD_SIZE in H18.
+    rewrite <- Z.mul_sub_distr_l, Z.mul_comm, Z.quot_mul,
+    Z.mul_comm, Z.quot_mul in H18 by lia.
+    first [rewrite !ptrofs_to_int_repr in H18 |
+           rewrite !ptrofs_to_int64_repr in H18 by auto]. red in H18.
+    remember (if Archi.ptr64
+              then Int64.lt
+                     (Int64.repr
+                        (total_space (nth_space t_info to) -
+                         used_space (nth_space t_info to)))
+                     (Int64.repr (used_space (nth_space t_info from)))
+              else Int.lt
+                     (Int.repr
+                        (total_space (nth_space t_info to) -
+                         used_space (nth_space t_info to)))
+                     (Int.repr (used_space (nth_space t_info from)))) as lte.
+    simpl in Heqlte. rewrite <- Heqlte in H18. destruct lte; simpl in H18.
+    2: inversion H18. symmetry in Heqlte.
+    match goal with
+    | H : Int64.lt _ _ = true |- _ => apply lt64_repr in H
+    | H : Int.lt _ _ = true |- _ => apply lt_repr in H
+    end.
+    2: apply rest_space_repable_signed.
+    2: apply used_space_repable_signed. clear -H8 H3 Heqlte. red in H3.
     unfold graph_gen_size, rest_gen_size in H3. rewrite H8 in H3. lia.
   - Intros. localize [space_struct_rep sh t_info from].
     unfold space_struct_rep, space_tri. do 2 (forward; [subst from_p; entailer!|]).
@@ -84,7 +98,8 @@ Proof.
     assert_PROP (isptr (space_address t_info to)). {
       unfold space_address. rewrite isptr_offset_val. unfold thread_info_rep.
       Intros. unfold heap_struct_rep. entailer!. }
-    assert_PROP (offset_val 4 (space_address t_info to) = next_address t_info to). {
+    assert_PROP (offset_val WORD_SIZE (space_address t_info to) =
+                 next_address t_info to). {
       unfold thread_info_rep. unfold heap_struct_rep. Intros. entailer!.
       unfold space_address, next_address, field_address. rewrite if_true.
       - simpl. rewrite offset_offset_val. f_equal.
@@ -111,7 +126,8 @@ Proof.
     replace (offset_val (WORD_SIZE * total_space (nth_space t_info1 from))
                         (gen_start g1 from)) with (limit_address g1 t_info1 from) by
         (unfold limit_address, gen_size; reflexivity).
-    assert_PROP (offset_val 4 (space_address t_info to) = next_address t_info1 to). {
+    assert_PROP (offset_val WORD_SIZE (space_address t_info to) =
+                 next_address t_info1 to). {
       unfold thread_info_rep. unfold heap_struct_rep. entailer!.
       unfold space_address, next_address, field_address. rewrite (proj1 H26), if_true.
       - simpl. rewrite offset_offset_val. f_equal.
@@ -125,7 +141,7 @@ Proof.
         (rewrite <- (frr_vertex_address _ _ _ _ _ _ _ H5 H24 _ H30); subst;
          unfold vertex_address, vertex_offset, gen_start; simpl;
          rewrite offset_offset_val, H11, H9, if_true by assumption;
-         f_equal; rep_lia). eapply frr_closure_has_v in H30; eauto.
+         f_equal; unfold WORD_SIZE; lia). eapply frr_closure_has_v in H30; eauto.
     destruct H30. simpl in H30, H31.
     assert (0 < gen_size t_info1 to) by (rewrite <- (proj1 (proj2 H26)); assumption).
     assert (gen_unmarked g1 to) by (eapply (frr_gen_unmarked _ _ _ _ g _ g1); eauto).
