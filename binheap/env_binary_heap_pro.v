@@ -786,8 +786,8 @@ Proof.
   1,2,3,4,5,6: lia.
   rewrite Znth_app2. 1,2: rewrite Zlength_map, List_ext.nat_inc_list_Zlength.
   rewrite Znth_upd_Znth_diff.
-  unfold default_val. simpl.
-  rewrite Znth_Zrepeat, Znth_Zrepeat; trivial.
+  unfold default_val. simpl. unfold Zrepeat.
+  rewrite Znth_repeat_inrange, Znth_repeat_inrange; trivial.
   all: lia.
 Qed.
 
@@ -858,9 +858,9 @@ Proof.
   5,6: rewrite Zlength_initial_item_list. 1-8: lia.
   rewrite Znth_app2. 1,2: rewrite Zlength_map, Zlength_initial_item_list.
   rewrite Znth_upd_Znth_diff.
-  unfold default_val. simpl.
-  rewrite Znth_Zrepeat, Znth_Zrepeat; trivial.
-  1-6: lia.
+  unfold default_val. simpl. unfold Zrepeat.
+  rewrite Znth_repeat_inrange, Znth_repeat_inrange; trivial.
+  all: lia.
 Qed.
 
 Lemma initializing_item_list_done: forall capacity,

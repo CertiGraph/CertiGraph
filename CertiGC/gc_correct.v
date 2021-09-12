@@ -2816,8 +2816,8 @@ Definition null_fun_info: fun_info.
 Proof.
   apply (Build_fun_info 0 nil).
   - intros. inversion H.
-  - rewrite Zlength_nil. rep_lia.
-  - rep_lia.
+  - rewrite Zlength_nil. unfold MAX_UINT. rep_lia.
+  - unfold MAX_UINT. rep_lia.
 Qed.
 
 Lemma svfl_roots_graph_compatible: forall from to roots v l g1 g2,

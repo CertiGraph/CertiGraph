@@ -7,7 +7,9 @@ Lemma sem_sub_pp_total_space: forall s,
     force_val
       (sem_sub_pp int_or_ptr_type
                   (offset_val (WORD_SIZE * total_space s) (space_start s))
-                  (space_start s)) = Vint (Int.repr (total_space s)).
+                  (space_start s)) =
+    if Archi.ptr64 then Vlong (Int64.repr (total_space s)) else
+      Vint (Int.repr (total_space s)).
 Proof.
   intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
   2: exfalso; apply n; reflexivity.
@@ -17,7 +19,8 @@ Proof.
       (WORD_SIZE * total_space s)%Z by lia. simpl.
   pose proof (total_space_signed_range s). unfold Ptrofs.divs.
   rewrite !Ptrofs.signed_repr by rep_lia. unfold vptrofs, Archi.ptr64.
-  rewrite WORD_SIZE_eq, Z.mul_comm, Z.quot_mul, ptrofs_to_int_repr by lia.
+  unfold WORD_SIZE. rewrite Z.mul_comm, Z.quot_mul by lia.
+  first [rewrite ptrofs_to_int64_repr by easy | rewrite ptrofs_to_int_repr].
   reflexivity.
 Qed.
 
@@ -27,7 +30,8 @@ Lemma sem_sub_pp_rest_space: forall s,
       (sem_sub_pp int_or_ptr_type
                   (offset_val (WORD_SIZE * total_space s) (space_start s))
                   (offset_val (WORD_SIZE * used_space s) (space_start s))) =
-    Vint (Int.repr (total_space s - used_space s)).
+    if Archi.ptr64 then Vlong (Int64.repr (total_space s - used_space s)) else
+      Vint (Int.repr (total_space s - used_space s)).
 Proof.
   intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
   2: exfalso; apply n; reflexivity.
@@ -38,19 +42,23 @@ Proof.
       (rewrite Z.mul_sub_distr_l; lia). simpl.
   pose proof (rest_space_signed_range s). rewrite <- Z.mul_sub_distr_l in H0.
   unfold Ptrofs.divs. rewrite !Ptrofs.signed_repr by rep_lia.
-  unfold vptrofs, Archi.ptr64. rewrite WORD_SIZE_eq, Z.mul_comm, Z.quot_mul,
-                               ptrofs_to_int_repr by lia. reflexivity.
+  unfold vptrofs, Archi.ptr64. unfold WORD_SIZE.
+  rewrite Z.mul_comm, Z.quot_mul by lia.
+  first [rewrite ptrofs_to_int64_repr by easy | rewrite ptrofs_to_int_repr]. easy.
 Qed.
 
 Lemma t_info_space_address: forall t_info i,
     0 <= i -> isptr (ti_heap_p t_info) ->
-    force_val (sem_add_ptr_int space_type Signed
-                               (offset_val 0 (ti_heap_p t_info)) (vint i)) =
+    (if Archi.ptr64 then
+      force_val (sem_add_ptr_long space_type (offset_val 0 (ti_heap_p t_info))
+                                  (Vlong (Int64.repr i))) else
+      force_val (sem_add_ptr_int space_type Signed
+                                 (offset_val 0 (ti_heap_p t_info)) (vint i))) =
     space_address t_info (Z.to_nat i).
 Proof.
-  intros. rewrite isptr_offset_val_zero by assumption.
-  rewrite sem_add_pi_ptr_special'; auto. unfold space_address.
-  rewrite Z2Nat.id by lia. simpl. f_equal.
+  intros. rewrite isptr_offset_val_zero by assumption. simpl.
+  first [rewrite sem_add_pi_ptr_special' | rewrite sem_add_pl_ptr_special']; auto.
+  unfold space_address. rewrite Z2Nat.id by lia. simpl. f_equal.
 Qed.
 
 Ltac tc_val_Znth := entailer!; rewrite Znth_map by assumption;
@@ -176,17 +184,18 @@ Proof.
       rewrite spaces_size in H20. unfold thread_info_rep. Intros.
       rewrite hsr_single_explicit with (i := i + 1). 2: assumption.
       2: rewrite Zlength_map, spaces_size; reflexivity. Intros.
-      freeze [0;2;3;4;7;8;9] FR.
+      freeze [0;2;3;4;8;9] FR.
       sep_apply (data_at_data_at_
                    sh space_type
                    (Znth (i + 1) (map space_tri (spaces (ti_heap t_info'))))
                    (space_address t_info' (Z.to_nat (i + 1)))).
-      pose proof (t_info_space_address _ _ (proj1 H14) H19).
+      pose proof (t_info_space_address _ _ (proj1 H14) H19). simpl in H21.
       assert (0 <= 2 * nth_gen_size (Z.to_nat i) < MAX_SPACE_SIZE) by
           (rewrite ngs_S by lia; apply ngs_range; rep_lia).
       forward_call (sh, (space_address t_info' (Z.to_nat (i + 1))),
                     (2 * nth_gen_size (Z.to_nat i))%Z, gv, rsh).
-      * rewrite Int.signed_repr by (apply ngs_int_singed_range; rep_lia).
+      * first [rewrite Int64.signed_repr by (apply ngs_int_singed_range; rep_lia) |
+               rewrite Int.signed_repr by (apply ngs_int_singed_range; rep_lia)].
         rewrite ngs_S by lia. apply ngs_int_singed_range. rep_lia.
       * simpl. entailer!. f_equal. now rewrite Tf.
       * rewrite ngs_S by lia. Intros p. rewrite ngs_S in H22 by lia.
@@ -209,7 +218,7 @@ Proof.
             (subst g1; apply firstn_gen_clear_add; assumption).
         assert (new_gen_relation (Z.to_nat (i + 1)) g' g1). {
           subst g1. red. rewrite if_false by assumption. exists gi. split; auto. }
-        gather_SEP (malloc_token Ews (tarray int_or_ptr_type (nth_gen_size (Z.to_nat (i + 1)))) p) (FRZL FR).
+        gather_SEP (malloc_token Ews (tarray int_or_ptr_type (nth_gen_size (Z.to_nat (i + 1)))) p) (ti_token_rep t_info').
         assert (total_space sp = nth_gen_size (Z.to_nat (i + 1))) by
             (subst sp; simpl; reflexivity). rewrite <- H29.
         assert (space_start sp = p) by (subst sp; simpl; reflexivity). rewrite <- H30.
@@ -219,9 +228,9 @@ Proof.
         replace (space_start sp,
                  (space_start sp,
                   offset_val (WORD_SIZE * total_space sp) (space_start sp))) with
-            (space_tri sp) by
+            (space_tri sp) by          
             (unfold space_tri; do 2 f_equal; subst sp; simpl;
-             rewrite Z.mul_0_r, isptr_offset_val_zero by assumption; reflexivity).
+             rewrite isptr_offset_val_zero by assumption; reflexivity).
         thaw FR.
         gather_SEP
           (data_at sh space_type _ _)
@@ -237,7 +246,7 @@ Proof.
             (subst t_info1; simpl; reflexivity).
         replace (ti_args t_info') with (ti_args t_info1) by
             (subst t_info1; simpl; reflexivity).
-        replace_SEP 9 (space_rest_rep sp). {
+        replace_SEP 4 (space_rest_rep sp). {
           unfold space_rest_rep. rewrite if_false by assumption.
           replace (space_sh sp) with Ews by (subst sp; simpl; reflexivity).
           replace (used_space sp) with 0 by (subst sp; simpl; reflexivity).
@@ -336,8 +345,11 @@ Proof.
           with int_or_ptr_type in H39.
         rewrite sem_sub_pp_total_space, sem_sub_pp_rest_space in H40; auto.
         simpl in H40. apply typed_true_of_bool in H40. rewrite negb_true_iff in H40.
-        apply lt_repr_false in H40. 2: apply rest_space_repable_signed.
-        2: apply total_space_repable_signed.
+        match goal with
+        | H : Int64.lt _ _ = false |- _ => apply lt64_repr_false in H
+        | H : Int.lt _ _ = false |- _ => apply lt_repr_false in H
+        end.
+        2: apply rest_space_repable_signed. 2: apply total_space_repable_signed.
         assert (safe_to_copy_gen g2 (Z.to_nat i) (S (Z.to_nat i))). {
           red. destruct H27 as [? _]. destruct H36 as [_ [_ [_ [_ ?]]]].
           do 2 (erewrite <- ti_size_gen; eauto). rewrite <- H23 in *.

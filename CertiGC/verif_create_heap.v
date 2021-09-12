@@ -86,7 +86,7 @@ Proof.
     rewrite sublist_repeat by lia. simpl repeat at 1.
     rewrite space_array_1_eq. Intros. forward_call (Ews, h, Z.shiftl 1 16, gv, sh).
     (* make succeed *)
-    + rewrite MAX_SPACE_SIZE_eq. compute; split; [discriminate | reflexivity].
+    + unfold MAX_SPACE_SIZE. compute; split; [discriminate | reflexivity].
     + Intros p0. freeze [0;1;2;3;5] FR.
       (* change back to "data_at sh heap_type v h" *)
       rewrite <- space_array_1_eq. rewrite sublist_repeat by lia.
@@ -103,8 +103,12 @@ Proof.
           (rewrite Heqvl, sublist_1_cons, sublist_repeat; [reflexivity|lia..]).
       rewrite <- split2_data_at_Tarray_space_type;
         [| lia | rewrite Heqvl, Zlength_cons, Zlength_repeat; lia].
-      remember (Vint (Int.repr 0), (Vint (Int.repr 0), Vint (Int.repr 0))) as v0.
+      remember (if Archi.ptr64 then
+                  (Vlong (Int64.repr 0),
+                   (Vlong (Int64.repr 0), Vlong (Int64.repr 0))) else
+                  (Vint (Int.repr 0), (Vint (Int.repr 0), Vint (Int.repr 0)))) as v0.
       (* change succeed *) subst vl. rewrite <- data_at_heaptype_eq; auto.
+      cbv [Archi.ptr64] in Heqv0.
       forward_for_simple_bound
         12
         (EX i: Z,
@@ -123,8 +127,8 @@ Proof.
         rewrite Znth_repeat_app by apply (proj1 H2).
         rewrite upd_Znth_repeat_app by apply (proj1 H2).
         simpl fst.
-        replace (i + 1 - 1) with i by lia. rewrite <- Heqv0.
-        replace (12 - i - 1) with (12 - (i + 1)) by lia.
+        replace (i + 1 - 1) with i by lia. try rewrite !Int.signed_repr by rep_lia.
+        rewrite <- Heqv0. replace (12 - i - 1) with (12 - (i + 1)) by lia.
         change (v0 :: repeat vn (Z.to_nat (12 - (i + 1))))
                with ([v0] ++ repeat vn (Z.to_nat (12 - (i + 1)))).
         rewrite app_assoc.

@@ -29,14 +29,23 @@ Proof.
       inv_int i. clear -H7. remember (heap_head (ti_heap t_info)) as h.
       rewrite ptrofs_add_repr, ptrofs_sub_repr, Z.add_comm, Z.add_simpl_r in H7.
       simpl in H7. unfold Ptrofs.divs in H7.
-      rewrite (Ptrofs.signed_repr 4) in H7 by rep_lia.
+      first [rewrite (Ptrofs.signed_repr 8) in H7 by rep_lia |
+             rewrite (Ptrofs.signed_repr 4) in H7 by rep_lia].
       rewrite Ptrofs.signed_repr in H7 by (apply total_space_signed_range).
-      rewrite WORD_SIZE_eq in H7. rewrite Z.mul_comm, Z.quot_mul in H7 by lia.
-      rewrite ptrofs_to_int_repr in H7. hnf in H7.
-      destruct (Int.ltu (Int.repr (total_space h))
-                        (Int.repr (fun_word_size f_info))) eqn:? ; simpl in H7.
-      1: inversion H7. apply ltu_repr_false in Heqb;
-                         [lia | apply total_space_range | apply word_size_range].
+      unfold WORD_SIZE in H7. rewrite Z.mul_comm, Z.quot_mul in H7 by lia.
+      first [rewrite ptrofs_to_int64_repr in H7 by easy |
+             rewrite ptrofs_to_int_repr in H7]. hnf in H7.
+      remember (if Archi.ptr64 then
+                  (Int64.ltu (Int64.repr (total_space h))
+                             (Int64.repr (fun_word_size f_info))) else
+                  (Int.ltu (Int.repr (total_space h))
+                           (Int.repr (fun_word_size f_info)))) as comp.
+      cbv [Archi.ptr64] in Heqcomp. rewrite <- Heqcomp in H7.
+      destruct comp eqn:? ; simpl in H7. 1: inversion H7. symmetry in Heqcomp.
+      match goal with
+      | H : Int64.ltu _ _ = false |- _ => apply ltu64_repr_false in H
+      | H : Int.ltu _ _ = false |- _ => apply ltu_repr_false in H
+      end; [lia | first [apply total_space_range | apply word_size_range]..].
     + rewrite <- Heqv in *. red in H0. rewrite H0 in H5.
       unfold previous_vertices_size in H5. simpl in H5. unfold nth_space in H5.
       rewrite H1 in H5. simpl in H5. rewrite <- H2 in H5.

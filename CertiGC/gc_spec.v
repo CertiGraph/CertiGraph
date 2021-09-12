@@ -35,6 +35,11 @@ Definition all_string_constants (sh: share) (gv: globals) : mpred :=
   cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
 
+(* Definition MSS_constant (gv: globals): mpred := *)
+(*   data_at Ews (if Archi.ptr64 then tulong else tuint) *)
+(*           (if Archi.ptr64 then Vlong (Int64.repr MAX_SPACE_SIZE) else *)
+(*              Vint (Int.repr MAX_SPACE_SIZE)) (gv _MAX_SPACE_SIZE). *)
+
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
  WITH x : val
@@ -47,9 +52,10 @@ Definition test_int_or_ptr_spec :=
    PROP()
    LOCAL(temp ret_temp
           (Vint (Int.repr (match x with
-                    | Vint _ => 1
-                    | _ => 0
-                    end))))
+                           | Vint _ => if Archi.ptr64 then 0 else 1
+                           | Vlong _ => if Archi.ptr64 then 1 else 0
+                           | _ => 0
+                           end))))
    SEP().
 
 Definition int_or_ptr_to_int_spec :=
@@ -60,7 +66,7 @@ Definition int_or_ptr_to_int_spec :=
     PARAMS (x)
     GLOBALS ()
     SEP ()
-  POST [ tint ]
+  POST [ (if Archi.ptr64 then tlong else tint) ]
     PROP() LOCAL (temp ret_temp x) SEP().
 
 Definition int_or_ptr_to_ptr_spec :=
@@ -77,7 +83,7 @@ Definition int_or_ptr_to_ptr_spec :=
 Definition int_to_int_or_ptr_spec :=
   DECLARE _int_to_int_or_ptr
   WITH x : val
-  PRE [tint]
+  PRE [ (if Archi.ptr64 then tlong else tint) ]
     PROP (valid_int_or_ptr x)
     PARAMS (x)
     GLOBALS ()
@@ -233,7 +239,7 @@ Definition forward_roots_spec :=
   PRE [tptr int_or_ptr_type,
        tptr int_or_ptr_type,
        tptr (tptr int_or_ptr_type),
-       tptr tuint,
+       tptr (if Archi.ptr64 then tulong else tuint),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
@@ -307,7 +313,7 @@ Definition do_generation_spec :=
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [tptr space_type,
        tptr space_type,
-       tptr tuint,
+       tptr (if Archi.ptr64 then tulong else tuint),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
@@ -337,11 +343,11 @@ Definition do_generation_spec :=
 Definition create_space_spec :=
   DECLARE _create_space
   WITH sh: share, s: val, n: Z, gv: globals, rsh: share
-  PRE [tptr space_type, tuint]
+  PRE [tptr space_type, if Archi.ptr64 then tulong else tuint]
     PROP (writable_share sh;
           readable_share rsh;
           0 <= n < MAX_SPACE_SIZE)
-    PARAMS (s; Vint (Int.repr n))
+    PARAMS (s; if Archi.ptr64 then Vlong (Int64.repr n) else Vint (Int.repr n))
     GLOBALS (gv)
     SEP (mem_mgr gv; all_string_constants rsh gv; data_at_ sh space_type s)
   POST [tvoid]
@@ -365,10 +371,11 @@ Definition create_heap_spec :=
   POST [tptr heap_type]
     EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp h)
-    SEP (mem_mgr gv; all_string_constants sh gv; malloc_token Ews heap_type h;
+    SEP (mem_mgr gv; all_string_constants sh gv;
+        malloc_token Ews heap_type h;
          data_at Ews heap_type
                  ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
-                    :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h;
+                    :: repeat zero_triple (Z.to_nat (MAX_SPACES - 1))) h;
          malloc_token Ews (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
 
@@ -387,11 +394,11 @@ Definition make_tinfo_spec :=
          malloc_token Ews thread_info_type t;
          data_at Ews thread_info_type
                  (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,
-                      (h, list_repeat (Z.to_nat MAX_ARGS) Vundef))) t;
+                      (h, repeat Vundef (Z.to_nat MAX_ARGS)))) t;
          malloc_token Ews heap_type h;
          data_at Ews heap_type
                  ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
-                    :: list_repeat (Z.to_nat (MAX_SPACES - 1)) zero_triple) h;
+                    :: repeat zero_triple (Z.to_nat (MAX_SPACES - 1))) h;
          malloc_token Ews (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
 
@@ -400,7 +407,7 @@ Definition resume_spec :=
   WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
        g: LGraph, t_info: thread_info, f_info: fun_info,
        roots : roots_t
-  PRE [tptr tuint,
+  PRE [tptr (if Archi.ptr64 then tulong else tuint),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           graph_thread_info_compatible g t_info;
@@ -424,7 +431,7 @@ Definition garbage_collect_spec :=
   WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
        g: LGraph, t_info: thread_info, f_info: fun_info,
        roots : roots_t, outlier: outlier_t
-  PRE [tptr tuint,
+  PRE [tptr (if Archi.ptr64 then tulong else tuint),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) f_info outlier;
