@@ -1,3 +1,4 @@
+Require Import Coq.Logic.Classical.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.graph.graph_model.
@@ -65,19 +66,19 @@ But, it makes no sense having an undirected graph with more than one edge betwee
 Definition adj_edges g u v := fun e => adj_edge g e u v.
 
 (*A bunch of helpers for convenience in handling options*)
-Fixpoint adjacent_last g (u: option V) (v: V) :=
+Definition adjacent_last g (u: option V) (v: V) :=
 match u with
 | None => vvalid g v
 | Some u' => adjacent g u' v
 end.
 
-Fixpoint adjacent_hd g (u: V) (v: option V) :=
+Definition adjacent_hd g (u: V) (v: option V) :=
 match v with
 | None => vvalid g u
 | Some v' => adjacent g u v'
 end.
 
-Fixpoint adjacent_err g (u: option V) (v: option V) :=
+Definition adjacent_err g (u: option V) (v: option V) :=
 match u, v with
 | None, None => True
 | None, Some v' => vvalid g v'
@@ -311,13 +312,13 @@ Qed.
 Lemma adjacent_dec:
 forall g u v, adjacent g u v \/ ~ adjacent g u v.
 Proof.
-intros. tauto.
+  intros. tauto.
 Qed.
 
 Lemma connected_dec:
 forall g u v, connected g u v \/ ~ connected g u v.
 Proof.
-intros. tauto.
+  intros. tauto.
 Qed.
 
 Definition connected_graph (g: PGraph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.

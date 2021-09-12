@@ -1,163 +1,11 @@
 Require Import RelationClasses.
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.binheap.binary_heap_model.
-Require Export CertiGraph.binheap.binary_heap_malloc_spec.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
-Require Export CertiGraph.binheap.binary_heap_pro.
-Require Export CertiGraph.binheap.env_binary_heap_pro.
-
-Set Nested Proofs Allowed.
-
-Definition exch_spec :=
-  DECLARE _exch WITH j : Z, k : Z, arr: val, arr_contents: list heap_item, lookup : val, lookup_contents : list Z
-  PRE [tuint, tuint, tptr t_item, tptr tuint]
-    PROP (0 <= j < Zlength arr_contents; 0 <= k < Zlength arr_contents)
-    PARAMS (Vint (Int.repr j); Vint (Int.repr k); arr; lookup)
-    GLOBALS ()
-    SEP (linked_heap_array arr_contents arr lookup_contents lookup)
-  POST [tvoid]
-    EX lookup_contents' : list Z,
-      PROP (lookup_oob_eq (Zexchange arr_contents j k) lookup_contents lookup_contents')
-      LOCAL ()
-      SEP (linked_heap_array (Zexchange arr_contents j k) arr lookup_contents' lookup).
-
-Definition less_spec :=
-  DECLARE _less WITH i : Z, j : Z, arr: val, arr_contents: list heap_item, arr' : val, lookup : list Z
-  PRE [tuint, tuint, tptr t_item]
-    PROP (0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents)
-    PARAMS (Vint (Int.repr i); Vint (Int.repr j); arr)
-    GLOBALS ()
-    SEP (linked_heap_array arr_contents arr lookup arr')
-  POST [tint]
-    PROP ()
-    LOCAL (temp ret_temp (Val.of_bool (cmp (Znth i arr_contents) (Znth j arr_contents))))
-    SEP (linked_heap_array arr_contents arr lookup arr').
-
-Definition swim_spec :=
-  DECLARE _swim WITH k : Z, arr: val, arr_contents: list heap_item, lookup : val, lookup_contents : list Z
-  PRE [tuint, tptr t_item, tptr tuint]
-    PROP (0 <= k < Zlength arr_contents;
-          weak_heap_ordered_bottom_up arr_contents k)
-    PARAMS (Vint (Int.repr k); arr; lookup)
-    GLOBALS ()
-    SEP (linked_heap_array arr_contents arr lookup_contents lookup)
-  POST [tvoid]
-    EX arr_contents' : list (Z * int * int), EX lookup_contents' : list Z,
-      PROP (lookup_oob_eq arr_contents' lookup_contents lookup_contents'; 
-            heap_ordered arr_contents'; Permutation arr_contents arr_contents')
-      LOCAL ()
-      SEP (linked_heap_array arr_contents' arr lookup_contents' lookup).
-
-Definition sink_spec :=
-  DECLARE _sink WITH k : Z, arr: val, arr_contents: list heap_item, first_available : Z, lookup : val, lookup_contents : list Z
-  PRE [tuint, tptr t_item, tuint, tptr tuint]
-    PROP (0 <= k <= Zlength arr_contents; 
-          first_available = Zlength arr_contents;
-          (k = Zlength arr_contents -> (2 * k) <= Int.max_unsigned);
-          (k < Zlength arr_contents -> (2 * (first_available - 1) <= Int.max_unsigned)); (* i = fa - 1 -> (2 * i + 1) = 2 * fa - 1, must be representable *)
-          weak_heap_ordered_top_down arr_contents k)
-    PARAMS (Vint (Int.repr k); arr; Vint (Int.repr first_available); lookup)
-    GLOBALS ()
-    SEP (linked_heap_array arr_contents arr lookup_contents lookup)
-  POST [tvoid]
-    EX arr_contents' : list heap_item, EX lookup_contents' : list Z,
-      PROP (lookup_oob_eq arr_contents' lookup_contents lookup_contents'; 
-            heap_ordered arr_contents'; Permutation arr_contents arr_contents')
-      LOCAL ()
-      SEP (linked_heap_array arr_contents' arr lookup_contents' lookup).
-
-Definition pq_size_spec := 
-  DECLARE _pq_size WITH pq : val, h : heap
-  PRE [tptr t_pq]
-    PROP ()
-    PARAMS (pq)
-    GLOBALS ()
-    SEP (valid_pq pq h)
-  POST [tuint]
-    PROP ()
-    LOCAL (temp ret_temp (Vint (Int.repr (heap_size h))))
-    SEP (valid_pq pq h).
-
-Definition capacity_spec := 
-  DECLARE _capacity WITH pq : val, h : heap
-  PRE [tptr t_pq]
-    PROP ()
-    PARAMS (pq)
-    GLOBALS ()
-    SEP (valid_pq pq h)
-  POST [tuint]
-    PROP ()
-    LOCAL (temp ret_temp (Vint (Int.repr (heap_capacity h))))
-    SEP (valid_pq pq h).
-
-Definition pq_remove_min_nc_spec :=
-  DECLARE _pq_remove_min_nc WITH pq : val, h : heap, i : val
-  PRE [tptr t_pq, tptr t_item]
-    PROP (heap_size h > 0)
-    PARAMS (pq; i)
-    GLOBALS ()
-    SEP (valid_pq pq h; hitem_ i)
-  POST [tvoid]
-  EX h', EX iv : heap_item,
-    PROP (heap_capacity h = heap_capacity h';
-          Permutation (heap_items h) (iv :: heap_items h');
-          Forall (cmp_rel iv) (heap_items h'))
-    LOCAL ()
-    SEP (valid_pq pq h'; hitem iv i).
-
-Definition pq_insert_nc_spec :=
-  DECLARE _pq_insert_nc WITH pq : val, h : heap, priority : Z, data : int
-  PRE [tptr t_pq, tint, tint]
-    PROP (heap_size h < heap_capacity h)
-    PARAMS (pq; Vint (Int.repr priority); Vint data)
-    GLOBALS ()
-    SEP (valid_pq pq h)
-  POST [tuint]
-  EX h' : heap, EX key : Z,
-    PROP (heap_capacity h = heap_capacity h';
-          Permutation ((key, Int.repr priority, data) :: heap_items h) (heap_items h'))
-    LOCAL (temp ret_temp (Vint (Int.repr key)))
-    SEP (valid_pq pq h').
-
-Definition pq_make_spec := 
-  DECLARE _pq_make WITH size : Z
-  PRE [tuint]
-  PROP (4 <= 12 * size <= Int.max_unsigned)
-    PARAMS (Vint (Int.repr size))
-    GLOBALS ()
-    SEP ()
-  POST [tptr t_pq]
-    EX pq: val, EX h : heap,
-    PROP (heap_size h = 0;
-         heap_capacity h = size)
-    LOCAL (temp ret_temp pq)
-    SEP (valid_pq pq h). (* and the free_toks I get from mallocN *)
-
-Definition pq_free_spec := 
-  DECLARE _pq_free WITH pq : val, h : heap
-  PRE [tptr t_pq]
-  PROP ()
-    PARAMS (pq)
-    GLOBALS ()
-    SEP (valid_pq pq h) (* and the free toks I get from pq_make*)
-  POST [tvoid]
-    PROP ()
-    LOCAL ()
-    SEP (emp). 
-
-Definition pq_edit_priority_spec := 
-  DECLARE _pq_edit_priority WITH pq : val, h : heap, key : Z, newpri : int
-  PRE [tptr t_pq, tint, tint]
-  PROP (In key (proj_keys h))
-    PARAMS (pq; Vint (Int.repr (key)); Vint newpri)
-    GLOBALS ()
-    SEP (valid_pq pq h) (* and the free toks I get from pq_make*)
-  POST [tvoid]
-    EX h': heap,
-    PROP (Permutation (heap_items h') (update_pri_by_key (heap_items h) key newpri);
-         heap_capacity h' = heap_capacity h)
-    LOCAL ()
-    SEP (valid_pq pq h').
+Require Import CertiGraph.binheap.binary_heap_pro.
+Require Import CertiGraph.binheap.binary_heap_malloc_spec.
+Require Import CertiGraph.binheap.env_binary_heap_pro.
+Require Import CertiGraph.binheap.spec_binary_heap_pro.
 
 Definition Gprog : funspecs :=
   ltac:(with_library prog [exch_spec;
@@ -169,15 +17,110 @@ Definition Gprog : funspecs :=
                           pq_size_spec;
                           capacity_spec;
                           mallocN_spec;
+                          freeN_spec;
                           pq_make_spec;
                           pq_free_spec;
                           pq_edit_priority_spec]).
+
+Set Nested Proofs Allowed.
+
+Lemma body_free: semax_body Vprog Gprog f_pq_free pq_free_spec.
+Proof.
+  start_function. unfold valid_pq, linked_heap_array, heap_array, lookup_array.
+  Intros arr junk lookup lookup_contents.
+  forward.
+  sep_apply (data_at_data_at_ Tsh (tarray t_item (Zlength (heap_items h ++ junk)))).
+  sep_apply free_items.
+  sep_apply (data_at_data_at_ Tsh (tarray tuint (Zlength lookup_contents))).
+  sep_apply free_lookup.
+  simpl.
+  rewrite H2. change (16 / 4) with 4.
+  rewrite Z.mul_comm, Z_div_mult.
+  change 12 with (3 * 4) at 1.
+  rewrite <- Z.mul_assoc.
+  rewrite (Z.mul_comm 4), Z.mul_assoc, Z_div_mult.
+  2,3: lia.
+  rewrite H.
+  rewrite (Z.mul_comm (heap_capacity h)).
+  forward_call (lookup, heap_capacity h).
+  forward.
+  change 12 with (4 * 3). rewrite <- Z.mul_assoc.
+  forward_call (arr, 3 * heap_capacity h).
+  sep_apply data_at_data_at_.
+  sep_apply free_pq.
+  forward_call (pq, 4).
+  entailer!.
+Time Qed.
+
+Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
+Proof.
+  start_function.
+  forward_call (sizeof(Tstruct _structPQ noattr)).
+  Intros pq.
+  sep_apply malloc_pq.
+  forward_call (sizeof(tuint) * size). 
+   { simpl; lia. }
+  Intros table.
+  sep_apply malloc_lookup. lia.
+  forward_call ((sizeof(Tstruct _structItem noattr) * size)).
+  Intros arr.
+  sep_apply malloc_items. lia.
+
+  forward_for_simple_bound size
+    (EX i : Z,
+     PROP ()
+     LOCAL (temp _table (pointer_val_val table);
+            temp _arr (pointer_val_val arr);
+            temp _size (Vint (Int.repr size));
+            temp _pq (pointer_val_val pq))
+(* BUG, you can't just use "data_at Tsh (tarray t_item size) (initializing_item_list size size) v" *)
+     SEP (initializing_item_array i size (pointer_val_val arr);
+          free_tok (pointer_val_val arr) (sizeof (Tstruct _structItem noattr) * size);
+          data_at Tsh (tarray tuint size) (initializing_inc_list i size) (pointer_val_val table);
+          free_tok (pointer_val_val table) (sizeof tuint * size);
+          data_at_ Tsh t_pq (pointer_val_val pq);
+          free_tok (pointer_val_val pq) (sizeof (Tstruct _structPQ noattr)))).
+  { entailer!. unfold initializing_item_array, initializing_inc_list, initializing_item_list.
+    simpl. replace (size - 0) with size by lia. cancel. }
+  { unfold initializing_item_array.
+    forward.
+    forward.
+    rewrite upd_Znth_overwrite, upd_Znth_same. simpl snd. simpl fst.
+    2,3: rewrite Zlength_initializing_item_list; lia.
+    forward.
+    rewrite upd_Znth_overwrite, upd_Znth_same. simpl snd. simpl fst.
+    2,3: rewrite Zlength_initializing_item_list; lia.
+    forward.
+    (* Prove loop invariant *)
+    rewrite initializing_inc_list_inc. 2: lia.
+    rewrite initializing_item_list_inc. 2: lia.
+    entailer!. }
+  forward.
+  forward.
+  forward.
+  forward.
+  forward.
+  (* Prove postcondition *)
+  Exists (pointer_val_val pq) (Z.to_nat size, @nil heap_item).
+  unfold valid_pq, heap_size, heap_capacity. entailer!. lia.
+  Exists (pointer_val_val arr) (initial_item_list size) (pointer_val_val table) (List_ext.nat_inc_list (Z.to_nat size)).
+  unfold initializing_item_array, linked_heap_array, heap_array, lookup_array.
+  rewrite Zlength_app, Zlength_nil.
+  rewrite initializing_inc_list_done, initializing_item_list_done.
+  rewrite Z2Nat.id, Zlength_initial_item_list, List_ext.nat_inc_list_Zlength. 2,3: lia.
+  entailer!.
+  { split. 
+    apply heapOrdered_empty. simpl heap_items. simpl.
+    apply initial_link_ok. lia. }
+  { rewrite Z2Nat.id. cancel. lia. }
+Time Qed.
 
 Lemma body_edit_priority: semax_body Vprog Gprog f_pq_edit_priority pq_edit_priority_spec.
 Proof.
   start_function.
   unfold valid_pq.
   Intros arr junk lookup lookup_contents.
+  rename H0 into Hxx. rename H1 into H0. rename H2 into H1. rename H3 into H2.
   assert_PROP (linked_correctly (heap_items h ++ junk) lookup_contents). { unfold linked_heap_array. entailer!. }
   rewrite linked_heap_array_split. Intros.
   forward. { unfold linked_heap_array, lookup_array. Intros. entailer!. }
@@ -251,7 +194,9 @@ Proof.
       generalize H15; intro. apply Permutation_Zlength in H7. rewrite Zlength_upd_Znth in H7.
       unfold heap_items in H7. do 2 rewrite Zlength_app. rewrite H7. entailer!.
       (* Pure part inside spatial part. *)
-      split. 2: rewrite <- H7; unfold heap_items, heap_capacity in H2; rewrite <- H2; rewrite Zlength_app; trivial.
+      split. { destruct H13. apply Permutation_Zlength in H13. rewrite <- H13. trivial. }
+      split. { rewrite <- H7. unfold heap_items, heap_capacity in H2. 
+        rewrite <- H2. rewrite Zlength_app; trivial. }
       clear H17 H18 H10 H21 H11.
       destruct H13. split. eapply Permutation_NoDup; eauto.
       simpl. intros. destruct H3.
@@ -346,7 +291,8 @@ Proof.
       generalize H15; intro. apply Permutation_Zlength in H7. rewrite Zlength_upd_Znth in H7.
       unfold heap_items in H7. do 2 rewrite Zlength_app. rewrite H7. entailer!.
       (* Pure part inside spatial part. *)
-      split. 2: rewrite <- H7; unfold heap_items, heap_capacity in H2; rewrite <- H2; rewrite Zlength_app; trivial.
+      split. { destruct H13. apply Permutation_Zlength in H13. rewrite <- H13. trivial. }
+      split. { rewrite <- H7; unfold heap_items, heap_capacity in H2; rewrite <- H2; rewrite Zlength_app; trivial. }
       clear H17 H18 H10 H21 H11.
       destruct H13. split. eapply Permutation_NoDup; eauto.
       simpl. intros. destruct H3.
@@ -389,6 +335,7 @@ Proof.
   start_function.
   unfold valid_pq.
   Intros arr junk lookup lookup_contents.
+  rename H0 into Hxx. rename H1 into H0. rename H2 into H1. rename H3 into H2.
   assert_PROP (linked_correctly (heap_items h ++ junk) lookup_contents). { unfold linked_heap_array. entailer!. }
   rename H3 into Hz.
   rewrite linked_heap_array_split. Intros.
@@ -406,7 +353,6 @@ Proof.
   forward. { unfold linked_heap_array, heap_array, lookup_array. Intros. entailer!. }
   forward_call (0, Zlength l, arr, root :: l, lookup, lookup_contents).
     { entailer!. simpl. congruence. }
-    { lia. }
   Intros lookup_contents'.
   forward.
   forward.
@@ -449,11 +395,12 @@ Proof.
     destruct l0. 2: destruct l0; discriminate.
     inversion H. subst foot. clear H Hx.
     simpl.
-    forward_call (0, arr, @nil heap_item, 0, lookup, lookup_contents'); rewrite Zlength_nil. 
+    forward_call (0, arr, @nil heap_item, 0, lookup, lookup_contents');
+      try rewrite Zlength_nil. 
       { unfold linked_heap_array, heap_array. rewrite data_at_isptr. entailer. (* Surely there's a less heavy hammer way to do this? *)
-        rewrite data_at_zero_array_eq; auto. entailer!. split. destruct H5; trivial. repeat intro. rewrite Zlength_nil in H14. lia. }
-      { split; auto. split; auto. split. rep_lia. split. rep_lia.
-        apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
+        rewrite data_at_zero_array_eq; auto. entailer!. split.
+        destruct H5; trivial. repeat intro. rewrite Zlength_nil in H15. lia. }
+      { apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
     (* Prove postcondition *)
     Intro vret. destruct vret as [vret lookup_contents''].
     Exists (n, vret) root. entailer. (* Surely there's a less heavy hammer way to do this? *)
@@ -466,6 +413,8 @@ Proof.
     apply andp_right. apply prop_right. auto.
     Exists arr (root :: junk) lookup lookup_contents''. simpl. unfold linked_heap_array. entailer!.
     2: rewrite <- heap_array_split; apply derives_refl.
+    split. { destruct H. apply Permutation_Zlength in H. simpl in H. rewrite <- H.
+             destruct H4. apply Permutation_Zlength in H4. rewrite <- H4. trivial. }
     rewrite Zlength_nil in *. rewrite Zexchange_eq in *. simpl in Hz, H3, H6, H.
     change (root :: junk) with ([root] ++ junk). red.
     destruct H, H4.
@@ -473,21 +422,21 @@ Proof.
     apply linked_correctly_app3; trivial.
     apply linked_correctly'_shuffle with lookup_contents; trivial.
     + intros.
-      rewrite H18; trivial. intros. rewrite Zlength_one in H20. assert (j = 0) by lia. subst j.
+      rewrite H19; trivial. intros. rewrite Zlength_one in H21. assert (j = 0) by lia. subst j.
       change (Znth 0 [root]) with root.
       intro.
-      clear -Hz H21 H19.
+      clear -Hz H22 H20.
       destruct Hz.
       assert (0 <= 0 < Zlength (root :: junk)) by (rewrite Zlength_cons; rep_lia).
       destruct (H0 _ H1).
       assert (0 <= (1 + i0) < Zlength (root :: junk)) by (rewrite Zlength_cons; rep_lia).
       destruct (H0 _ H4).
-      clear -H21 H3 H6 H19.
-      rewrite Znth_0_cons, H21 in H3.
+      clear -H22 H3 H6 H20.
+      rewrite Znth_0_cons, H22 in H3.
       change (root :: junk) with ([root] ++ junk) in H6.
       rewrite Znth_app2 in H6; rewrite Zlength_one in *. 2: lia.
       replace (1 + i0 - 1) with i0 in H6 by lia. rewrite H3 in H6. lia.
-    + intros. rewrite H17; auto. rewrite Zlength_nil. lia.
+    + intros. rewrite H18; auto. rewrite Zlength_nil. lia.
   * (* main line: heap still has items in it *)
     destruct l0; inversion H. subst h0.
     assert (Zlength (h :: l) = Zlength (root :: l0)).
@@ -501,10 +450,7 @@ Proof.
       rewrite Zexchange_head_foot in H5. trivial. }
     rewrite linked_heap_array_split. Intros.
     forward_call (0, arr, (foot :: l0), Zlength (foot :: l0), lookup, lookup_contents').
-      { split. rewrite Zlength_cons. generalize (Zlength_nonneg l0). lia.
-        split; trivial. split. rep_lia.
-        (* Here is where we use the bound. *)
-        split. intros _. generalize (Zlength_nonneg junk); intro.
+      { split. intros _. generalize (Zlength_nonneg junk); intro.
         simpl in H2. repeat rewrite Zlength_cons in *. rewrite Zlength_app in H2. lia.
         apply weak_heapOrdered_root with root.
         rewrite H8, app_comm_cons in H1.
@@ -521,6 +467,8 @@ Proof.
     replace (Zlength vret) with (Zlength (root :: l0)). 2: { apply Permutation_Zlength in H11. trivial. }
 (*    destruct H4. *)
     entailer!. { (* Pure part inside spatial part *)
+      split. { destruct H9. apply Permutation_Zlength in H9. simpl in H9. rewrite <- H9.
+             destruct H4. apply Permutation_Zlength in H4. rewrite <- H4. trivial. }
       simpl in *. rewrite <- H2. apply Permutation_Zlength in H11. autorewrite with sublist. rewrite <- H11.
       autorewrite with sublist in *. lia. }
     (* Spatial part, this seems a bit uglier than necessary? *)
@@ -983,6 +931,7 @@ Proof.
   start_function.
   unfold valid_pq.
   Intros arr junk lookup lookup_contents.
+  rename H0 into Hxx. rename H1 into H0. rename H2 into H1. rename H3 into H2.
   destruct junk. { exfalso. unfold heap_size, heap_capacity in *. rewrite Zlength_app, Zlength_nil in H2. lia. }
   change (h0 :: junk) with ([h0] ++ junk) in *. rewrite app_assoc in *.
   rewrite linked_heap_array_split. Intros.
@@ -1036,9 +985,10 @@ Proof.
     change ((fst (fst h0), Int.repr priority, data) :: heap_items h) with ([(fst (fst h0), Int.repr priority, data)] ++ heap_items h).
     apply Permutation_app_comm.
   * Exists arr junk lookup lookup'. entailer!.
-    + rewrite Zlength_app. apply Permutation_Zlength in H9.
-      unfold heap_items. simpl in *. rewrite <- H9. unfold heap_capacity in *. simpl. rewrite <- H2.
-      autorewrite with sublist. trivial.
+    + split. { unfold heap_capacity in *. simpl. rewrite <- H2. repeat rewrite Zlength_app.
+        apply Permutation_Zlength in H9. rewrite Zlength_app, Zlength_one in *. simpl fst in H9. lia. }
+      destruct H7. apply Permutation_Zlength in H7. simpl snd in H7. rewrite <- H7.
+      unfold heap_capacity in *. simpl in *. rewrite <- Hxx. trivial.
     + unfold heap_size, heap_capacity, heap_items. simpl fst in *. simpl snd in *.
       generalize (Permutation_Zlength _ _ _ H9); intro. rewrite <- H16.
       rewrite Zlength_app, Zlength_one in *. cancel.
@@ -1065,59 +1015,3 @@ Proof.
         specialize (H3 i H18). rewrite <- H20 in H3. destruct H5. unfold heap_item_key in H25.
         destruct H3. lia.
 Time Qed.
-
-(*
-
-Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
-Proof.
-  start_function.
-  forward_call (sizeof(Tstruct _structPQ noattr)).
-  1: compute; split; inversion 1.
-  Intros pq.
-  forward_call (sizeof(tuint) * size).
-  1: simpl; lia.
-  Intros table.
-  forward_call ((sizeof(Tstruct _structItem noattr) * size)).
-  Intros arr.
-  simpl sizeof.
-  replace (12 * size / 4) with (3 * size).
-  replace (4 * size / 4) with size.
-  replace (16 / 4) with 4.
-  2,3,4: admit. (* easy *)
-  forward_for_simple_bound
-    size
-    (EX i : Z,
-     PROP ()
-     LOCAL (temp _arr (pointer_val_val arr);
-            temp _size (Vint (Int.repr size)))
-     SEP (data_at_ Tsh (tarray tint (3 * size)) (pointer_val_val arr) *
-          free_tok (pointer_val_val arr) (12 * size) *
-          data_at_ Tsh (tarray tint size) (pointer_val_val table) *
-          free_tok (pointer_val_val table) (4 * size) *
-          data_at_ Tsh (tarray tint 4) (pointer_val_val pq) *
-          free_tok (pointer_val_val pq) 16)).
-  - entailer!.
-  - Intros.
-    assert_PROP
-      ((offset_val 0
-                   (force_val
-                      (sem_add_ptr_int (Tstruct _structItem noattr) Signed 
-                                       (pointer_val_val arr) (Vint (Int.repr i)))) =
-        field_address (tarray (Tstruct _structItem noattr) size) [ArraySubsc i] (pointer_val_val arr))). {
-      entailer!.
-      rewrite field_address_offset; trivial.
-      clear H6 H7. destruct H5 as [? [? [? [? ?]]]].
-      repeat split; try lia; trivial.
-      - admit.
-      - admit.
-    }
-    
-    Fail forward.
-    (* Okay, gotta unwrap all the way to the unsigned.
-       I feel pretty misled by VST though...
-     *)
-    
-Admitted.
-*)
-
-

@@ -9,6 +9,7 @@ Require Import CertiGraph.lib.EquivDec_ext.
 Require Import VST.floyd.sublist.
 Require Import VST.floyd.list_solver.
 
+
 Lemma list_prop_reduced_list: forall {A : Type} (Q : A -> Prop) (Q_lem : forall a, Q a \/ ~Q a) (l : list A),
   exists l', forall a, In a l' <-> (In a l /\ Q a).
 Proof.
@@ -27,7 +28,7 @@ Qed.
 
 Lemma list_decidable_prop_reduced_list: forall {A : Type} (P Q : A -> Prop) (l: list A),
   (forall a, Q a \/ ~Q a) ->
-  (forall a, In a l <-> P a) ->
+  (forall a, In a l <-> P a) -> 
   (exists l', (forall a, In a l' <-> P a /\ Q a)).
 Proof.
   intros.
@@ -57,6 +58,15 @@ Lemma Permutation_incl:
 forall {A:Type} (l1 l2: list A), Permutation l1 l2 -> incl l1 l2.
 Proof.
 unfold incl; intros. apply (Permutation_in (l:=l1)); auto.
+Qed.
+
+Lemma Permutation_cons_In: forall {A} (l1 l2: list A) a,
+    Permutation l1 (a :: l2) -> In a l1.
+Proof.
+  intros.
+  pose proof (in_eq a l2).
+  apply Permutation_sym in H.
+  apply (Permutation_in _ H); trivial.
 Qed.
 
 Lemma In_tail: forall A (a : A) L, In a (tl L) -> In a L.
@@ -127,6 +137,46 @@ intros. rewrite Forall_forall in *; intros.
 apply H. apply (Permutation_in (l:=bl) (l':=al) x). apply Permutation_sym. apply H0. apply H1.
 Qed.
 
+Lemma Forall_upd_Znth: forall (l: list Z) (i: Z) new F,
+    (0 <= i < Zlength l)%Z ->
+    Forall F l -> F new ->
+    Forall F (upd_Znth i l new).
+Proof.
+  intros. rewrite Forall_forall in *. intros.
+  destruct (Z.eq_dec x new); [rewrite e; trivial|].
+  rewrite upd_Znth_unfold in H2; auto.
+  apply in_app_or in H2; destruct H2.
+  - apply sublist_In in H2. apply (H0 x H2).
+  - simpl in H2. destruct H2; [lia|].
+    apply sublist_In in H2. apply (H0 x H2).
+Qed.
+
+Lemma repeat1:
+  forall {A} (a: A),
+    repeat a (Z.to_nat 1) = a :: nil.
+Proof. trivial. Qed.
+
+Lemma upd_Znth_repeat:
+  forall {A} (i:Z) size (a b : A),
+    (0 <= i < size)%Z ->
+    upd_Znth i (repeat a (Z.to_nat i) ++
+                            repeat b (Z.to_nat (size - i))) a =
+    repeat a (Z.to_nat (i + 1)) ++
+                repeat b (Z.to_nat (size - (i + 1))).
+Proof.
+  intros.
+  rewrite upd_Znth_app2.
+  2: repeat rewrite Zlength_repeat; lia. 
+  rewrite Zlength_repeat by lia.
+  replace (i-i)%Z with 0%Z by lia.
+  rewrite <- repeat_app' by lia.
+  rewrite app_assoc_reverse; f_equal.
+  rewrite upd_Znth0_old.
+  2: rewrite Zlength_repeat; lia.
+  rewrite Zlength_repeat, sublist_repeat by lia.
+  rewrite repeat1, Z.sub_add_distr. easy.
+Qed.
+
 Lemma map_incl: forall {A B : Type} (f : A -> B) (l1 l2 : list A), incl l1 l2 -> incl (map f l1) (map f l2).
 Proof. intros; hnf in *; intros. rewrite in_map_iff in *. destruct H0 as [y [? ?]]. exists y; split; auto. Qed.
 
@@ -166,6 +216,101 @@ Lemma NoDup_app_iff: forall (A : Type) (l1 l2 : list A),
 Proof.
   intros. split; intros. split. apply NoDup_app_l with l2. auto. split. apply NoDup_app_r with l1; auto.
   apply NoDup_app_not_in; auto. destruct H as [? [? ?]]. apply NoDup_app_inv; auto.
+Qed.
+
+Lemma NoDup_one: forall A (n: A), NoDup (n :: nil).
+Proof.
+  intros. apply NoDup_cons. 
+  inversion 1. apply NoDup_nil.
+Qed.
+
+Lemma NoDup_all_bounded_Zlength:
+  forall (size : Z),
+    (0 <= size)%Z ->
+    forall L,
+      NoDup L ->
+      (forall j, In j L -> 0 <= j < size)%Z ->
+      (Zlength L <= size)%Z.
+Proof.
+  intros ? ?.
+  rename H into Ha.
+  rewrite <- (Z2Nat.id size) in *; trivial.
+  remember (Z.to_nat size) as size_n.
+  clear Heqsize_n Ha.
+  induction size_n; intros.
+  - destruct L.
+    + rewrite Zlength_nil. apply Nat2Z.is_nonneg.
+    + exfalso. specialize (H0 z (in_eq _ _)). lia.
+  - destruct (in_dec Z.eq_dec (Z.of_nat size_n) L);
+      [rename i into H1 | rename n into H1].
+    + apply in_split in H1. destruct H1 as [l1 [l2 ?]]. subst L.
+      apply NoDup_remove in H. destruct H.
+      assert (forall j : Z, In j (l1 ++ l2) ->
+                            0 <= j < Z.of_nat size_n)%Z. {
+        intros.
+        assert (In j (l1 ++ Z.of_nat size_n :: l2)). {
+          apply in_or_app. apply in_app_or in H2.
+          destruct H2; auto. right. right. trivial.
+        }
+        specialize (H0 _ H3).
+        rewrite Nat2Z.inj_succ in H0.
+        assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n)%Z by lia.
+        destruct H4; auto.
+        subst j. contradiction.
+      }
+      specialize (IHsize_n (l1 ++ l2) H H2).
+      rewrite Zlength_app in *. rewrite Zlength_cons. simpl. lia.
+    + rewrite Nat2Z.inj_succ.
+      assert (forall j, In j L -> 0 <= j < Z.of_nat size_n)%Z. {
+        intros. specialize (H0 _ H2).
+        rewrite Nat2Z.inj_succ in H0.
+        assert (0 <= j < (Z.of_nat size_n) \/ j = (Z.of_nat size_n))%Z by lia.
+        destruct H3; auto. subst. contradiction.
+      }
+      specialize (IHsize_n _ H H2). lia.
+Qed.
+
+Lemma NoDup_all_bounded_Zlength':
+  forall i size,
+    (0 <= i < size)%Z ->
+    forall L,
+      NoDup L ->
+      (forall j, In j L -> 0 <= j < size /\ j <> i)%Z ->
+      (Zlength L <= size - 1)%Z.
+Proof.
+  intros ? ? ?.
+  rewrite <- (Z2Nat.id size) in *; try lia.
+  remember (Z.to_nat size) as size_n.
+  clear Heqsize_n.
+  induction size_n; intros.
+  1: lia.
+  replace (Z.of_nat (S size_n) - 1)%Z with (Z.of_nat size_n) by lia.
+  assert (i = Z.of_nat size_n \/ 0 <= i < Z.of_nat size_n)%Z by lia.
+  destruct H2. subst i.
+  apply NoDup_all_bounded_Zlength. lia. apply H0. intros. specialize (H1 _ H2). lia.
+  destruct (in_dec Z.eq_dec (Z.of_nat size_n) L);
+    [rename i0 into H3 | rename n into H3].
+  - apply in_split in H3. destruct H3 as [l1 [l2 ?]]. subst L.
+    apply NoDup_remove in H0. destruct H0.
+    assert (forall j, In j (l1 ++ l2) -> 0 <= j < Z.of_nat size_n /\ j <> i)%Z. {
+      intros.
+      assert (In j (l1 ++ Z.of_nat size_n :: l2)). {
+        apply in_or_app. apply in_app_or in H4.
+        destruct H4; auto. right. right. trivial.
+      }
+      specialize (H1 _ H5).
+      assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n)%Z by lia.
+      destruct H6. lia.
+      subst j. contradiction.
+    }
+    specialize (IHsize_n H2 (l1 ++ l2) H0 H4).
+    rewrite Zlength_app in *. rewrite Zlength_cons. lia.
+  - assert (forall j, In j L -> 0 <= j < Z.of_nat size_n /\ j <> i)%Z. {
+      intros. specialize (H1 _ H4).
+      assert (0 <= j < Z.of_nat size_n \/ j = Z.of_nat size_n)%Z by lia.
+      destruct H5. lia. subst. contradiction.
+    }
+    specialize (IHsize_n H2 _ H0 H4). lia.
 Qed.
 
 Lemma In_remove_length: forall {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l: list A) x,
@@ -606,11 +751,21 @@ Proof.
   pose proof (spec_or_list_split l P Q H H0).
   destruct H2 as [lp [lq [? [? [? [? ?]]]]]].
   exists lp, lq. split5; auto.
-  - firstorder. assert (In x l). { rewrite H0. left; auto. } firstorder.
-  - firstorder. assert (In x l). { rewrite H0. right; auto. } firstorder.
-  - apply NoDup_Permutation; auto.
-    + apply NoDup_app_inv; auto. firstorder.
-    + intro; rewrite in_app_iff. firstorder.
+  + firstorder.
+    cut (P x \/ Q x).
+    2: left; trivial.
+    intros. rewrite <- H0, H6 in H8.
+    destruct H8; [trivial | exfalso].
+    apply (H1 x); trivial. apply H5; trivial.
+  + firstorder.
+    cut (P x \/ Q x).
+    2: right; trivial.
+    intros. rewrite <- H0, H6 in H8.
+    destruct H8; [exfalso | trivial].
+    apply (H1 x); trivial. apply H4; trivial.
+  + apply NoDup_Permutation; auto.
+    - apply NoDup_app_inv; auto. firstorder.
+    - intro; rewrite in_app_iff. apply H6. 
 Qed.
 
 Fixpoint select {A: Type} {P: A -> Prop} (dec_p: forall x, Decidable (P x)) (l: list A) : list A :=
@@ -1842,6 +1997,42 @@ exists lsame. exists (a::ldiff). repeat split.
   intros. destruct H6. subst a. auto. auto.
 Qed.
 
+Lemma app_eq_single_inv:
+  forall
+    A l (a b: A),
+    l ++ (a::nil) = b::nil ->
+    l = nil /\ a = b.
+Proof.
+  intros.
+  induction l.
+  - inversion H. split; trivial.
+  - simpl in H. inversion H. exfalso.
+    apply (app_not_nil l a); trivial.
+Qed.
+
+Lemma Zlength_cons_sub_1:
+  forall A (a: A) l,
+    Zlength (a :: l) - 1 = Zlength l.
+Proof.
+  intros. rewrite Zlength_cons.
+  pose proof (Zlength_nonneg l). lia.
+Qed.
+
+Lemma backwards_list_ind: forall A (P : list A -> Prop),
+  P nil ->
+  (forall (a : A) (l : list A), P l -> P (l +:: a )) ->
+     forall l : list A, P l.
+Proof.
+  intros.
+  remember (length l).
+  assert (Datatypes.length l <= n)%nat by lia. clear Heqn. revert l H1. induction n; intros.
+  destruct l. apply H. simpl in H1. lia.
+  remember (foot l). symmetry in Heqo.
+  destruct o.
+  2: apply foot_none_nil in Heqo; subst l; apply H.
+  apply foot_explicit in Heqo. destruct Heqo as [l' ?]. subst l.
+  apply H0. apply IHn. rewrite app_length in H1. simpl in H1. lia.
+Qed.
 
 (***** NAT_INC_LIST ******)
 
@@ -1881,8 +2072,8 @@ Proof.
   apply Zlt_succ_le in H0. apply Zle_lt_or_eq in H0. destruct H0.
   - rewrite app_Znth1. apply IHn. lia.
     now rewrite nat_inc_list_Zlength.
-  - rewrite app_Znth2 by (rewrite nat_inc_list_Zlength; lia).
-    rewrite H0. rewrite nat_inc_list_Zlength. simpl.
+  - rewrite app_Znth2 by (rewrite nat_inc_list_Zlength; lia). 
+    rewrite H0. rewrite nat_inc_list_Zlength. simpl. 
     replace (Z.of_nat n - Z.of_nat n) with 0 by lia.
     rewrite Znth_0_cons; trivial.
 Qed.
@@ -1917,7 +2108,7 @@ Proof.
        try rewrite nat_inc_list_Zlength; lia.
   }
   intros. rewrite nat_inc_list_i.
-  2: { rewrite Zlength_sublist in H1;
+  2: { rewrite Zlength_sublist in H1; 
        try rewrite nat_inc_list_Zlength; lia.
   }
   rewrite <- Z.sub_0_r at 1.

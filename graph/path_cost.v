@@ -8,8 +8,10 @@ Local Open Scope Z_scope.
 
 Section PathCost.
 
-  Context {V E DV DG : Type}.
+  Context {V DV DG : Type}.
 
+  Definition E : Type := prod V V.
+    
   Context {V_EqDec : EqDec V eq}. 
   Context {E_EqDec : EqDec E eq}.
   
@@ -74,5 +76,53 @@ Section PathCost.
     replace c1 with (c1 + 0) at 1 by lia.
     rewrite path_cost_init; trivial.
   Qed.
- 
+
+    Lemma path_cost_app_cons:
+    forall (g: LabeledGraph V E DV Z DG) path e,
+      path_cost g (fst path, snd path +:: e) =
+      path_cost g path + elabel g e.
+  Proof.
+    intros.
+    replace (fst path, snd path +:: e) with
+        (path_glue path (fst e, [e])).
+    rewrite path_cost_path_glue.
+    rewrite one_step_path_Znth; trivial.
+    unfold path_glue. simpl. trivial.
+  Qed.
+  
+  Lemma path_cost_glue_one_step:
+    forall (g: LabeledGraph V E DV Z DG) p2m u i,
+      path_cost g (path_glue p2m (u, [(u, i)])) = path_cost g p2m + elabel g (u, i).
+  Proof.
+    intros.
+    rewrite path_cost_path_glue, one_step_path_Znth; trivial.
+  Qed.
+
+  Lemma path_cost_cons:
+    forall (g: LabeledGraph V E DV Z DG) src links a,
+      path_cost g (src, a :: links) = elabel g a + path_cost g (src, links).
+  Proof.
+    intros.
+    pose proof (path_cost_path_glue g (src, [a]) (src, links)).
+    unfold path_glue in H. simpl in H. rewrite H. f_equal.
+  Qed.
+
+  Lemma path_cost_upper_bound:
+    forall (g: LabeledGraph V E DV Z DG) src links upper,
+      0 <= upper ->
+      (forall e, In e links -> elabel g e <= upper) ->
+      path_cost g (src, links) <= Zlength links * upper.
+  Proof.
+    intros.
+    induction links.
+    - rewrite (path_cost_zero g).
+      apply Z.mul_nonneg_nonneg; rep_lia.
+    - rewrite path_cost_cons.
+      rewrite Zlength_cons.
+      spec IHlinks.
+      1: intros; apply H0; right; trivial.
+      specialize (H0 a). spec H0.
+      1: left; trivial. lia.
+  Qed.
+
 End PathCost.

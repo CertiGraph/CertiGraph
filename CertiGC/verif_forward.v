@@ -578,6 +578,16 @@ Proof.
                              ---- erewrite <- fl_raw_mark; eauto. subst g' from.
                                   rewrite lcv_vlabel_new; assumption.
                          *** split; [assumption|]. split; [lia | assumption].
+                     (*     *** rep_lia. *)
+                     (* +++ split3; [| |split]. *)
+                     (*     *** apply (fl_graph_has_v _ _ _ _ _ _ H50 H47 _ H51). *)
+                     (*     *** erewrite <- fl_raw_fields; eauto. subst g'. *)
+                     (*         unfold lgraph_copy_v. subst n. *)
+                     (*         rewrite <- lmc_raw_fields, lacv_vlabel_new. *)
+                     (*         assumption. *)
+                     (*     *** erewrite <- fl_raw_mark; eauto. subst g' from. *)
+                     (*         rewrite lcv_vlabel_new. auto. assumption. *)
+                     (*     *** simpl. lia. *)
                      +++ Intros vret. destruct vret as [[g4 t_info4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 t_info4.
                          simpl in H53. subst roots4.
@@ -703,7 +713,7 @@ Proof.
     + (* GC_Pointer *)
       destruct g0. unfold field2val, GC_Pointer2val. forward_if.
       2: exfalso; apply Int.one_not_zero; assumption.
-      forward_call (Vptr b i). 1: exact I.
+      forward_call (Vptr b i). 
       unfold thread_info_rep; Intros.
       gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _).
       rewrite <- HeqP. destruct H5.
@@ -1276,6 +1286,19 @@ Proof.
                                   rewrite lcv_vlabel_new; try assumption.
                                   split; try assumption. lia.
                          *** split; [assumption|]. split; [lia | assumption].
+                     (*     *** rep_lia. *)
+                     (* +++ split3; [| |split]. *)
+                     (*     *** destruct H53 as [_ [_ [? _]]]. *)
+                     (*         apply (fl_graph_has_v _ _ _ _ _ _ H64 H61 _ H65). *)
+                     (*     *** erewrite <- fl_raw_fields; eauto. subst g1. *)
+                     (*         unfold lgraph_copy_v. subst n'. *)
+                     (*         rewrite <- lgd_raw_fld_length_eq. *)
+                     (*         subst g'. rewrite lcv_vlabel_new. *)
+                     (*         assumption. rewrite v0. lia. *)
+                     (*     *** erewrite <- fl_raw_mark; eauto. subst g1 from. *)
+                     (*         rewrite <- lgd_raw_mark_eq. subst g'. *)
+                     (*         rewrite lcv_vlabel_new; try assumption. *)
+                     (*     *** simpl; lia.  *)
                      +++ Intros vret. destruct vret as [[g4 t_info4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 t_info4.
                          simpl in H67. subst roots4.

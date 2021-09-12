@@ -348,6 +348,11 @@ Proof.
                  --- assumption.
                  --- eapply svfl_raw_fields in H29;
                        [rewrite <- H29; lia | assumption..].
+              (*    rewrite sem_add_pi_ptr_special; [| easy | rewrite isptr_offset_val; assumption | rep_lia]. *)
+              (*    simpl. rewrite offset_offset_val. f_equal. rep_lia. *)
+              (* ** repeat (split; try assumption). lia.  *)
+              (*    eapply svfl_raw_fields in H29; *)
+              (*      [rewrite <- H29; lia | assumption..]. *)
                  --- rewrite <- H26. symmetry.
                      eapply svfl_raw_mark in H29; [apply H29 | assumption..|].
                      simpl. lia.
@@ -456,5 +461,5 @@ Proof.
            rewrite nat_seq_S, Nat.add_comm. destruct H30 as [[? ?] | [? ?]].
            ++ subst g''. split; [| apply svwl_add_tail_no_scan]; easy.
            ++ split; [|apply svwl_add_tail_scan with g']; easy.
-  - Intros g' t_info'. unfold POSTCONDITION, abbreviate. Exists g' t_info'. entailer!.
+  - Intros g' t_info'. Exists g' t_info'. entailer!.
 Qed.

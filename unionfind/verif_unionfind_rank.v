@@ -93,7 +93,6 @@ Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
   start_function.
   forward_call (sh, 8).
-  - rep_lia.
   - Intros x.
     assert_PROP (x <> null) as x_not_null by (entailer !; destruct H1 as [? _]; apply H1).
     assert_PROP (~ vvalid g x) by (entailer; apply (@vertices_at_sepcon_unique_1x _ _ _ _ SGBA_VST _ _ (SGA_VST sh) (SGAvs_VST sh) g x (vvalid g) (O, null))).
@@ -160,7 +159,9 @@ Proof.
   - (* p0 = find(p); *)
     forward_call (sh, g, pa). Intros vret. destruct vret as [g' root]. simpl fst in *. simpl snd in *.
     Opaque pointer_val_val. forward. Transparent pointer_val_val.
-    pose proof (true_Cne_neq _ _ H2).
+    assert (pa <> x). {
+      intro; subst; apply H2; trivial.
+    }
     assert (weak_valid g' root) by (right; destruct H4; apply reachable_foot_valid in H4; auto).
     assert (vvalid g' x) by (destruct H3 as [? _]; rewrite <- H3; apply H).
     assert (~ reachable g' root x) by (apply (uf_equiv_not_reachable g g' x r pa root); auto).
@@ -180,10 +181,15 @@ Proof.
       * apply (graph_gen_redirect_parent_equiv g g' x r pa); auto.
       * simpl. apply (uf_root_gen_dst_same g' (liGraph g') x x root); auto. apply reachable_refl; auto.
       * apply uf_under_bound_redirect_parent; auto.
-  - forward. Exists g x. entailer!. apply false_Cne_eq in H2. subst pa. split; [|split; [split |]]; auto.
+  - forward. Exists g x. entailer!.
+    rename H2 into Htemp.
+    assert (H2: pa = x). {
+      destruct pa; destruct x; inversion Htemp; trivial.
+    }
+    subst pa. split; [|split]; auto.
     + apply (uf_equiv_refl _  (liGraph g)).
     + apply uf_root_vgamma with (n := r); auto.
-    + repeat intro; auto.
+    + repeat intro; auto. 
   - Intros g' rt. forward. Exists g' rt. entailer!.
 Qed. (* Original: 56.251 secs; VST 2.*: 2.084 secs*)
 
@@ -223,8 +229,18 @@ Proof.
      temp _x (pointer_val_val x); temp _y (pointer_val_val y))
      SEP (vertices_at sh (vvalid g2) g2)).
   - apply denote_tc_test_eq_split; apply graph_local_facts; auto.
-  - forward. apply true_Ceq_eq in H12. Exists g2. subst y_root. entailer!. apply (the_same_root_union g g1 g2 x y x_root); auto.
-  - forward. apply false_Ceq_neq in H12. entailer!.
+  - forward.
+    rename H12 into Htemp.
+    assert (H12: x_root = y_root). {
+      destruct x_root; destruct y_root; inversion Htemp; trivial.
+    }
+    Exists g2. subst y_root. entailer!. apply (the_same_root_union g g1 g2 x y x_root); auto.
+  - forward.
+    rename H12 into Htemp.
+    assert (x_root <> y_root). {
+      intro; subst; apply Htemp; trivial.
+    }
+    entailer!.
   - Intros. (* xRank = xRoot -> rank; *)
     remember (vgamma g2 x_root) as rpa eqn:?H. destruct rpa as [rankXRoot paXRoot]. symmetry in H13.
     localize [data_at sh node_type (vgamma2cdata (vgamma g2 x_root)) (pointer_val_val x_root)].

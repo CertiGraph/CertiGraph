@@ -21,4 +21,19 @@ Proof.
                                       list_repeat (Z.to_nat MAX_ARGS) Vundef))) t).
       forward. forward. rewrite Znth_0_cons. forward. forward. rewrite Znth_0_cons.
       forward. forward. Exists t h p. entailer!.
+=======
+  (* Intros t. if_tac. *)
+  (* - subst t. forward_if False. *)
+  (*   2: exfalso; apply H; trivial. *)
+  (*   unfold all_string_constants; Intros; *)
+  (*     forward_call ((gv ___stringlit_9), *)
+  (*                   (map init_data2byte (gvar_init v___stringlit_9)), sh); *)
+  (*     exfalso; assumption. *)
+  (* - Intros. forward_if True; [contradiction | forward; entailer! |]. Intros. *)
+  (*   change (data_at_ Tsh thread_info_type t) with *)
+  (*       (data_at Tsh thread_info_type *)
+  (*                (Vundef, (Vundef, (Vundef, *)
+  (*                                   list_repeat (Z.to_nat MAX_ARGS) Vundef))) t). *)
+  (*   forward. forward. rewrite Znth_0_cons. forward. forward. rewrite Znth_0_cons. *)
+  (*   forward. forward. Exists t h p. entailer!. *)
 Qed.

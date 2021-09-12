@@ -5,7 +5,6 @@ Require Import CertiGraph.lib.EnumEnsembles.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.graph.graph_model.
-Require Import CertiGraph.graph.find_not_in.
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListDec.
 
@@ -57,6 +56,15 @@ Definition ptail (g: Gph) (p: path) : path :=
   end.
 
 Definition graph_is_acyclic (g: Gph) : Prop := forall p : path, valid_path g p -> NoDup (epath_to_vpath g p).
+
+Definition acyclic_path g p := NoDup (epath_to_vpath g p).
+
+Lemma acyclic_nil_path:
+  forall g p, acyclic_path g (p, nil).
+Proof.
+  intros. unfold acyclic_path. simpl.
+  apply NoDup_one.
+Qed.
 
 Definition path_prop (g: Gph) (P : Ensemble V)  (p: path) : Prop :=
   P (fst p) /\ Forall (fun e => P (src g e) /\ P (dst g e)) (snd p).
@@ -300,6 +308,14 @@ Lemma pfoot_cons: forall g v e p, pfoot g (v, e :: p) = pfoot g (dst g e, p).
 Proof.
   intros. destruct p; simpl; auto.
   destruct p; auto. apply (pfoot_head_irrel p g v (dst g e) e1).
+Qed.
+
+Lemma pfoot_ptail: forall (g : Gph) l f,
+    pfoot g l = f ->
+    pfoot g (ptail g l) = f.
+Proof.
+  intros. destruct l. destruct l; auto.
+  rewrite pfoot_cons in H. apply H.
 Qed.
 
 Lemma Subpath_refl: forall g p, Subpath g p p.
@@ -683,6 +699,46 @@ Proof.
   + simpl in H. subst. left. simpl; auto.
   + apply pfoot_in_cons in H. right. unfold snd. destruct H as [e' [? ?]].
     exists e'. split; auto.
+Qed.
+
+Lemma path_ends_In_path_src:
+  forall (g: Gph) a b a2b,
+    path_ends g a2b a b ->
+    In_path g a a2b.
+Proof.
+  intros. left. destruct H.
+  rewrite (surjective_pairing a2b) in H.
+  simpl in H. symmetry; trivial.
+Qed.
+
+Lemma path_ends_In_path_dst:
+  forall (g: Gph) a b a2b,
+    path_ends g a2b a b ->
+    In_path g b a2b.
+Proof.
+  intros. destruct H. apply pfoot_in; trivial.
+Qed.
+
+Lemma path_ends_valid_src:
+  forall (g: Gph) a b a2b,
+    valid_path g a2b ->
+    path_ends g a2b a b ->
+    vvalid g a.
+Proof.
+  intros.
+  apply (valid_path_valid g _ _ H),
+  (path_ends_In_path_src _ _ b); trivial.
+Qed.
+
+Lemma path_ends_valid_dst:
+  forall (g: Gph) a b a2b,
+    valid_path g a2b ->
+    path_ends g a2b a b ->
+    vvalid g b.
+Proof.
+  intros.
+  apply (valid_path_valid g _ _ H),
+  (path_ends_In_path_dst _ a); trivial.
 Qed.
 
 Lemma pfoot_spec: forall g p n, pfoot g p = n <-> p = (n, nil) \/ exists v l e, p = (v, l +:: e) /\ dst g e = n.
@@ -1100,6 +1156,17 @@ Proof.
   simpl in Heql. destruct p; inversion Heql; auto.
 Qed.
 
+Lemma epath_to_vpath_eq: forall (g : Gph) src l,
+  valid_path g (src, l) ->
+  epath_to_vpath g (src, l) = src :: map (dst g) l.
+Proof.
+  intros g src l. revert src. induction l. reflexivity.
+  intros. simpl map. rewrite <- IHl.
+  rewrite epath_to_vpath_cons_eq. trivial.
+  simpl in H. tauto.
+  apply valid_path_tail in H. apply H.
+Qed.
+
 Lemma in_path_eq_epath_to_vpath: forall g p x, valid_path g p -> (In x (epath_to_vpath g p) <-> In_path g x p).
 Proof.
   intros. destruct p as [v p]. revert v H. induction p; intros.
@@ -1119,10 +1186,24 @@ Proof.
     apply IHp with (dst g a); auto. apply NoDup_cons_1 in H0. auto.
 Qed.
 
+Lemma acyclic_path_cons:
+  forall (g: Gph) links s a,
+    valid_path g (s, a :: links) ->
+    acyclic_path g (s, a :: links) ->
+    acyclic_path g (dst g a, links).
+Proof.
+  intros.
+  red in H0 |- *.
+  rewrite epath_to_vpath_cons_eq in H0.
+  apply NoDup_cons_1 with (x := s); trivial.
+  destruct H; trivial.
+Qed.
+
 Lemma reachable_by_ind: forall (g: Gph) x y P,
-                           g |= x ~o~> y satisfying P -> x = y \/
-                                                         exists z, g |= x ~> z /\
-                                                                   g |= z ~o~> y satisfying (fun n => P n /\ n <> x).
+    g |= x ~o~> y satisfying P ->
+    x = y \/
+    exists z, g |= x ~> z /\
+              g |= z ~o~> y satisfying (fun n => P n /\ n <> x).
 Proof.
   intros. rewrite reachable_acyclic in H. destruct (equiv_dec x y). 1: left; auto. right.
   destruct H as [path [? [[? ?] [? ?]]]]. destruct path as [v p]. simpl in H0. subst v.
@@ -1145,9 +1226,9 @@ Proof.
 Qed.
 
 Lemma reachable_by_weaken: forall (g: Gph) x y P Q,
-                                  Included P Q ->
-                                  g |= x ~o~> y satisfying P ->
-                                  g |= x ~o~> y satisfying Q.
+    Included P Q ->
+    g |= x ~o~> y satisfying P ->
+    g |= x ~o~> y satisfying Q.
 Proof.
   intros. destruct H0 as [p [? [? ?]]].
   exists p. do 2 (split; auto). apply path_prop_weaken with P; auto.

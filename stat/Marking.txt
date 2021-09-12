@@ -1,6 +1,0 @@
-sample_mark/verif_mark_bi.v
-sample_mark/verif_mark_bi_dag.v
-sample_mark/spatial_graph_bi_mark.v
-sample_mark/env_mark_bi.v
-msl_application/DagBi_Mark.v
-msl_application/GraphBi_Mark.v
