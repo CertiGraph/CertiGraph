@@ -35,10 +35,10 @@ Definition all_string_constants (sh: share) (gv: globals) : mpred :=
   cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
 
-(* Definition MSS_constant (gv: globals): mpred := *)
-(*   data_at Ews (if Archi.ptr64 then tulong else tuint) *)
-(*           (if Archi.ptr64 then Vlong (Int64.repr MAX_SPACE_SIZE) else *)
-(*              Vint (Int.repr MAX_SPACE_SIZE)) (gv _MAX_SPACE_SIZE). *)
+Definition MSS_constant (gv: globals): mpred :=
+  data_at Ews (if Archi.ptr64 then tulong else tuint)
+          (if Archi.ptr64 then Vlong (Int64.repr MAX_SPACE_SIZE) else
+             Vint (Int.repr MAX_SPACE_SIZE)) (gv _MAX_SPACE_SIZE).
 
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
@@ -349,11 +349,12 @@ Definition create_space_spec :=
           0 <= n < MAX_SPACE_SIZE)
     PARAMS (s; if Archi.ptr64 then Vlong (Int64.repr n) else Vint (Int.repr n))
     GLOBALS (gv)
-    SEP (mem_mgr gv; all_string_constants rsh gv; data_at_ sh space_type s)
+    SEP (mem_mgr gv; all_string_constants rsh gv; data_at_ sh space_type s;
+        MSS_constant gv)
   POST [tvoid]
     EX p: val,
     PROP () LOCAL ()
-    SEP (mem_mgr gv; all_string_constants rsh gv;
+    SEP (mem_mgr gv; all_string_constants rsh gv; MSS_constant gv;
          malloc_token Ews (tarray int_or_ptr_type n) p;
          data_at_ Ews (tarray int_or_ptr_type n) p;
          data_at sh space_type (p, (p, (offset_val (WORD_SIZE * n) p))) s).
@@ -367,11 +368,11 @@ Definition create_heap_spec :=
     PROP (readable_share sh)
     PARAMS ()
     GLOBALS (gv)
-    SEP (mem_mgr gv; all_string_constants sh gv)
+    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv)
   POST [tptr heap_type]
     EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp h)
-    SEP (mem_mgr gv; all_string_constants sh gv;
+    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv;
         malloc_token Ews heap_type h;
          data_at Ews heap_type
                  ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
@@ -386,11 +387,11 @@ Definition make_tinfo_spec :=
     PROP (readable_share sh)
     PARAMS ()
     GLOBALS (gv)
-    SEP (mem_mgr gv; all_string_constants sh gv)
+    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv)
   POST [tptr thread_info_type]
     EX t: val, EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp t)
-    SEP (mem_mgr gv; all_string_constants sh gv;
+    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv;
          malloc_token Ews thread_info_type t;
          data_at Ews thread_info_type
                  (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,
@@ -439,7 +440,7 @@ Definition garbage_collect_spec :=
           safe_to_copy g)
     PARAMS (fi; ti)
     GLOBALS (gv)
-    SEP (all_string_constants rsh gv;
+    SEP (all_string_constants rsh gv; MSS_constant gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g;
@@ -452,7 +453,7 @@ Definition garbage_collect_spec :=
           garbage_collect_condition g' t_info' roots' f_info;
           safe_to_copy g')
     LOCAL ()
-    SEP (mem_mgr gv;
+    SEP (mem_mgr gv; MSS_constant gv;
          all_string_constants rsh gv;
          fun_info_rep rsh f_info fi;
          outlier_rep outlier;

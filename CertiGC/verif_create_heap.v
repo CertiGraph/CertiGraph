@@ -68,7 +68,7 @@ Proof.
   start_function.
   forward_call (heap_type, gv).
   Intros h. if_tac.
-  - subst h; forward_if False; [|inversion H].
+  - subst h; forward_if False; [| first [exfalso; now apply H | inversion H ]].
     unfold all_string_constants; Intros;
       forward_call ((gv ___stringlit_8),
                     (map init_data2byte (gvar_init v___stringlit_8)), sh);
@@ -87,7 +87,7 @@ Proof.
     rewrite space_array_1_eq. Intros. forward_call (Ews, h, Z.shiftl 1 16, gv, sh).
     (* make succeed *)
     + unfold MAX_SPACE_SIZE. compute; split; [discriminate | reflexivity].
-    + Intros p0. freeze [0;1;2;3;5] FR.
+    + Intros p0. freeze [0;1;2;3;4;6] FR.
       (* change back to "data_at sh heap_type v h" *)
       rewrite <- space_array_1_eq. rewrite sublist_repeat by lia.
       change (12 - 1) with 11 at 2.
