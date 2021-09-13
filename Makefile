@@ -1,6 +1,7 @@
 COMPCERT_DIR = "../CompCert"
 VST_DIR = "../VST"
 CURRENT_DIR = "./"
+BITSIZE = 32
 FLOCQ=
 -include CONFIGURE
 
@@ -156,7 +157,15 @@ $(CLIGHT_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
 	@$(COQC) $(CLIGHT_FLAG) $(CURRENT_DIR)/$*.v
 
-all: \
+.PHONY: rename
+rename: CertiGC/gc32.v CertiGC/gc64.v
+ifeq ($(BITSIZE),64)
+	cp CertiGC/gc64.v CertiGC/gc.v
+else
+	cp CertiGC/gc32.v CertiGC/gc.v
+endif
+
+all: rename \
   $(NORMAL_FILES:%.v=%.vo) \
   $(CLIGHT_FILES:%.v=%.vo)
 
@@ -184,7 +193,7 @@ cav:
 	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
 	kruskal/verif_sort.v kruskal/verif_kruskal_edgelist.vo -kj7
 
-.depend depend:
+.depend depend: rename
 	@echo 'coqdep ... >.depend'
 	@$(COQDEP) $(NORMAL_FLAG) $(NORMAL_FILES) > .depend
 	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend

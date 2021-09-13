@@ -27,7 +27,7 @@ Proof.
            forward_call ((gv ___stringlit_7),
                          (map init_data2byte (gvar_init v___stringlit_7)), rsh).
            exfalso; assumption.
-        -- inversion H0.
+        -- first [exfalso; now apply H0 | inversion H0 ].
       * Intros. forward_if (
                     PROP ( )
                     LOCAL (temp _p p; temp _s s;
