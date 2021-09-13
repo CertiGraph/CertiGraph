@@ -101,7 +101,7 @@ Proof.
         rewrite nat_inc_list_S. remember (Z.to_nat i) as n.
         replace i with (Z.of_nat n) in * by (subst n;rewrite Z2Nat.id; lia).
         simpl in H18. split; [apply frl_add_tail|]; easy.
-    + exfalso. try (apply ltu64_repr_false in H13; [| rep_lia..]). rep_lia.
+    + exfalso. try (rewrite !Int64.unsigned_repr in H13; [|rep_lia..]). rep_lia.
   - Intros g' t_info' roots'. Exists g' t_info' roots'.
     destruct H8 as [? [? [? ?]]]. entailer!. rewrite <- H5, ZtoNat_Zlength in H6.
     easy.
