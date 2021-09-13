@@ -159,10 +159,12 @@ $(CLIGHT_FILES:%.v=%.vo): %.vo: %.v
 
 .PHONY: rename
 rename: CertiGC/gc32.v CertiGC/gc64.v
+ifeq (,$(wildcard CertiGC/gc.v))
 ifeq ($(BITSIZE),64)
 	cp CertiGC/gc64.v CertiGC/gc.v
 else
 	cp CertiGC/gc32.v CertiGC/gc.v
+endif
 endif
 
 all: rename \
