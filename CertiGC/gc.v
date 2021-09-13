@@ -21,6 +21,7 @@ End Info.
 
 Definition _Is_block : ident := $"Is_block".
 Definition _Is_from : ident := $"Is_from".
+Definition _MAX_SPACE_SIZE : ident := $"MAX_SPACE_SIZE".
 Definition ___builtin_annot : ident := $"__builtin_annot".
 Definition ___builtin_annot_intval : ident := $"__builtin_annot_intval".
 Definition ___builtin_bswap : ident := $"__builtin_bswap".
@@ -570,6 +571,13 @@ Definition f_Is_block := {|
                    (Econst_int (Int.repr 0) tint) tint))))
 |}.
 
+Definition v_MAX_SPACE_SIZE := {|
+  gvar_info := tuint;
+  gvar_init := (Init_int32 (Int.repr 536870912) :: nil);
+  gvar_readonly := true;
+  gvar_volatile := false
+|}.
+
 Definition f_abort_with := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
@@ -862,7 +870,7 @@ Definition f_forward_roots := {|
                 (_fi, (tptr tuint)) ::
                 (_ti, (tptr (Tstruct _thread_info noattr))) :: nil);
   fn_vars := nil;
-  fn_temps := ((_args, (tptr (talignas 2%N (tptr tvoid)))) :: (_n, tint) ::
+  fn_temps := ((_args, (tptr (talignas 2%N (tptr tvoid)))) :: (_n, tuint) ::
                (_i, tuint) :: (_roots, (tptr tuint)) :: (_t'2, tuint) ::
                (_t'1, tuint) :: nil);
   fn_body :=
@@ -885,7 +893,7 @@ Definition f_forward_roots := {|
         (Sset _i (Econst_int (Int.repr 0) tint))
         (Sloop
           (Ssequence
-            (Sifthenelse (Ebinop Olt (Etempvar _i tuint) (Etempvar _n tint)
+            (Sifthenelse (Ebinop Olt (Etempvar _i tuint) (Etempvar _n tuint)
                            tint)
               Sskip
               Sbreak)
@@ -1224,17 +1232,17 @@ Definition f_create_space := {|
   fn_params := ((_s, (tptr (Tstruct _space noattr))) :: (_n, tuint) :: nil);
   fn_vars := nil;
   fn_temps := ((_p, (tptr (talignas 2%N (tptr tvoid)))) ::
-               (_t'1, (tptr tvoid)) :: nil);
+               (_t'1, (tptr tvoid)) :: (_t'2, tuint) :: nil);
   fn_body :=
 (Ssequence
-  (Sifthenelse (Ebinop Oge (Etempvar _n tuint)
-                 (Ebinop Oshl (Econst_int (Int.repr 1) tint)
-                   (Econst_int (Int.repr 29) tint) tint) tint)
-    (Scall None
-      (Evar _abort_with (Tfunction (Tcons (tptr tschar) Tnil) tvoid
-                          cc_default))
-      ((Evar ___stringlit_6 (tarray tschar 43)) :: nil))
-    Sskip)
+  (Ssequence
+    (Sset _t'2 (Evar _MAX_SPACE_SIZE tuint))
+    (Sifthenelse (Ebinop Oge (Etempvar _n tuint) (Etempvar _t'2 tuint) tint)
+      (Scall None
+        (Evar _abort_with (Tfunction (Tcons (tptr tschar) Tnil) tvoid
+                            cc_default))
+        ((Evar ___stringlit_6 (tarray tschar 43)) :: nil))
+      Sskip))
   (Ssequence
     (Ssequence
       (Scall (Some _t'1)
@@ -2228,13 +2236,6 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|})) ::
- (_malloc,
-   Gfun(External EF_malloc (Tcons tuint Tnil) (tptr tvoid) cc_default)) ::
- (_free, Gfun(External EF_free (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
- (_exit,
-   Gfun(External (EF_external "exit"
-                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
-     (Tcons tint Tnil) tvoid cc_default)) ::
  (___stderrp, Gvar v___stderrp) ::
  (_fprintf,
    Gfun(External (EF_external "fprintf"
@@ -2251,12 +2252,20 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}))
      (Tcons (tptr tschar) Tnil) tint
      {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|})) ::
+ (_malloc,
+   Gfun(External EF_malloc (Tcons tuint Tnil) (tptr tvoid) cc_default)) ::
+ (_free, Gfun(External EF_free (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
+ (_exit,
+   Gfun(External (EF_external "exit"
+                   (mksignature (AST.Tint :: nil) AST.Tvoid cc_default))
+     (Tcons tint Tnil) tvoid cc_default)) ::
  (_test_int_or_ptr, Gfun(Internal f_test_int_or_ptr)) ::
  (_int_or_ptr_to_int, Gfun(Internal f_int_or_ptr_to_int)) ::
  (_int_or_ptr_to_ptr, Gfun(Internal f_int_or_ptr_to_ptr)) ::
  (_int_to_int_or_ptr, Gfun(Internal f_int_to_int_or_ptr)) ::
  (_ptr_to_int_or_ptr, Gfun(Internal f_ptr_to_int_or_ptr)) ::
  (_Is_block, Gfun(Internal f_Is_block)) ::
+ (_MAX_SPACE_SIZE, Gvar v_MAX_SPACE_SIZE) ::
  (_abort_with, Gfun(Internal f_abort_with)) ::
  (_Is_from, Gfun(Internal f_Is_from)) ::
  (_forward, Gfun(Internal f_forward)) ::
@@ -2274,29 +2283,29 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 Definition public_idents : list ident :=
 (_free_heap :: _reset_heap :: _garbage_collect :: _resume :: _make_tinfo ::
  _create_heap :: _create_space :: _do_generation :: _do_scan ::
- _forward_roots :: _forward :: _Is_from :: _abort_with :: _Is_block ::
- _ptr_to_int_or_ptr :: _int_to_int_or_ptr :: _int_or_ptr_to_ptr ::
- _int_or_ptr_to_int :: _test_int_or_ptr :: _printf :: _abort :: _fprintf ::
- ___stderrp :: _exit :: _free :: _malloc :: ___builtin_debug ::
- ___builtin_write32_reversed :: ___builtin_write16_reversed ::
- ___builtin_read32_reversed :: ___builtin_read16_reversed ::
- ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
- ___builtin_fmadd :: ___builtin_fmin :: ___builtin_fmax ::
- ___compcert_i64_umulh :: ___compcert_i64_smulh :: ___compcert_i64_sar ::
- ___compcert_i64_shr :: ___compcert_i64_shl :: ___compcert_i64_umod ::
- ___compcert_i64_smod :: ___compcert_i64_udiv :: ___compcert_i64_sdiv ::
- ___compcert_i64_utof :: ___compcert_i64_stof :: ___compcert_i64_utod ::
- ___compcert_i64_stod :: ___compcert_i64_dtou :: ___compcert_i64_dtos ::
- ___builtin_expect :: ___builtin_unreachable :: ___compcert_va_composite ::
- ___compcert_va_float64 :: ___compcert_va_int64 :: ___compcert_va_int32 ::
- ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
- ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
- ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
- ___builtin_sqrt :: ___builtin_fsqrt :: ___builtin_fabsf ::
- ___builtin_fabs :: ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz ::
- ___builtin_clzll :: ___builtin_clzl :: ___builtin_clz ::
- ___builtin_bswap16 :: ___builtin_bswap32 :: ___builtin_bswap ::
- ___builtin_bswap64 :: nil).
+ _forward_roots :: _forward :: _Is_from :: _abort_with :: _MAX_SPACE_SIZE ::
+ _Is_block :: _ptr_to_int_or_ptr :: _int_to_int_or_ptr ::
+ _int_or_ptr_to_ptr :: _int_or_ptr_to_int :: _test_int_or_ptr :: _exit ::
+ _free :: _malloc :: _printf :: _abort :: _fprintf :: ___stderrp ::
+ ___builtin_debug :: ___builtin_write32_reversed ::
+ ___builtin_write16_reversed :: ___builtin_read32_reversed ::
+ ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
+ ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
+ ___builtin_fmax :: ___compcert_i64_umulh :: ___compcert_i64_smulh ::
+ ___compcert_i64_sar :: ___compcert_i64_shr :: ___compcert_i64_shl ::
+ ___compcert_i64_umod :: ___compcert_i64_smod :: ___compcert_i64_udiv ::
+ ___compcert_i64_sdiv :: ___compcert_i64_utof :: ___compcert_i64_stof ::
+ ___compcert_i64_utod :: ___compcert_i64_stod :: ___compcert_i64_dtou ::
+ ___compcert_i64_dtos :: ___builtin_expect :: ___builtin_unreachable ::
+ ___compcert_va_composite :: ___compcert_va_float64 ::
+ ___compcert_va_int64 :: ___compcert_va_int32 :: ___builtin_va_end ::
+ ___builtin_va_copy :: ___builtin_va_arg :: ___builtin_va_start ::
+ ___builtin_membar :: ___builtin_annot_intval :: ___builtin_annot ::
+ ___builtin_sel :: ___builtin_memcpy_aligned :: ___builtin_sqrt ::
+ ___builtin_fsqrt :: ___builtin_fabsf :: ___builtin_fabs ::
+ ___builtin_ctzll :: ___builtin_ctzl :: ___builtin_ctz :: ___builtin_clzll ::
+ ___builtin_clzl :: ___builtin_clz :: ___builtin_bswap16 ::
+ ___builtin_bswap32 :: ___builtin_bswap :: ___builtin_bswap64 :: nil).
 
 Definition prog : Clight.program := 
   mkprogram composites global_definitions public_idents _main Logic.I.
