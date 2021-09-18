@@ -3,16 +3,16 @@
 1. Download and Unpack
 	1. Clone VST
 	1. Clone CertiGraph
-	1. Things will be a tiny bit easier if these are in sibling directories named VST and CertiGraph. This is not critical, and the only edits will come in step 3(i)
+	1. Things will be a tiny bit easier if these are in sibling directories named VST and CertiGraph. This is not critical, and the only edits will come in step 3(ii)
 
 1. Build VST
-In VST/
+	1. Navigate to VST/
 	1. `make clean`
 	1. `make -jn`, where `n` is the number of cores you want to dedicate
 
 1. Build CertiGraph
-In CertiGraph/
-	1. We supply a file `CONFIGURE` in your CertiGraph folder with the following two lines in it. You may notice that we are assuming CertiGraph/ and VST/ are sibling directories with those names. If this is not the case, change these as needed to reflect the actual path to VST.
+	1. Navigate to CertiGraph/
+	1. We supply a file `CONFIGURE` with the following two lines in it. You may notice that we are assuming CertiGraph/ and VST/ are sibling directories with those names. If this is not the case, change these as needed to reflect the actual path to VST.
         > COMPCERT_DIR=../VST/compcert  
 	  VST_DIR=../VST
 	1. `make clean`
