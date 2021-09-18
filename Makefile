@@ -1,4 +1,3 @@
-COMPCERT_DIR = "../CompCert"
 VST_DIR = "../VST"
 CURRENT_DIR = "./"
 BITSIZE = 32
