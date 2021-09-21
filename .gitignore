@@ -30,9 +30,8 @@ syntax: glob
 .lia.cache
 CONFIGURE
 \#*\#
-_CoqProject
 final
 poster.run.xml
 project.pbxproj
 xcschememanagement.plist
-CertiGC/gc.v
+examples/CertiGC/gc.v
