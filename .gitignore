@@ -30,8 +30,9 @@ syntax: glob
 .lia.cache
 CONFIGURE
 \#*\#
-_CoqProject
-*Makefile.coq*
+_CoqProject*
+*Makefile.lib*
+*Makefile.examples*
 final
 poster.run.xml
 project.pbxproj

@@ -1,5 +1,5 @@
 Require Import CertiGraph.lib.List_ext.
-Require Import CertiGraph.sample_mark.env_unionfind_arr.
+Require Import CertiGraph.unionfind.env_unionfind_arr.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
 Require Import CertiGraph.graph.subgraph2.
@@ -9,7 +9,7 @@ Require Import CertiGraph.graph.UnionFind.
 Require Import CertiGraph.msl_application.UnionFindGraph.
 Require Import CertiGraph.msl_application.ArrayGraph.
 Require Import CertiGraph.floyd_ext.share.
-Require Import CertiGraph.sample_mark.spatial_array_graph.
+Require Import CertiGraph.unionfind.spatial_array_graph.
 Require Import Coq.Lists.List.
 
 Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
