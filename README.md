@@ -16,7 +16,7 @@
         > COMPCERT_DIR=../VST/compcert  
 	  VST_DIR=../VST
 	1. `make clean`
-	1. `make -jn`, where `n` is the number of cores you want to dedicate
+	1. `make J=n BUILD_CERTIGRAPH_EXAMPLES=1`, where `n` is the number of cores you want to dedicate. This command will build CertiGraph and its examples. Alternatively, if you only wish to build CertiGraph, you can simply `make J=n`.
 
 1. Developing Inside CertiGraph (requires that you have clightgen)
 	1. Write your `newfile.c` inside CertiGraph.
