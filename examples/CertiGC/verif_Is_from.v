@@ -4,24 +4,22 @@
 (*          CONTENTS          *)
 (*                            *)
 (* is_from          line  20  *)
-(* int_or_ptr       line 280  *)
+(* int_or_ptr       line 275  *)
 (*                            *)
 (******************************)
 
 Require Import compcert.common.Events compcert.common.Memory.
 Require Import compcert.common.Values compcert.common.AST.
-Require Import compcert.x86_32.Archi compcert.lib.Integers.
+Require Import compcert.lib.Integers.
 Require Import Coq.ZArith.BinInt Coq.Lists.List Coq.micromega.Lia.
 Import ListNotations.
 Local Open Scope Z_scope. Local Open Scope list_scope.
-
-
 
 (* Verification of the function Is_from *)
 
 Definition valid_block (m : mem) (b : block) (o : ptrofs) (n : Z) : Prop :=
   0 < n /\
-  Ptrofs.unsigned o + n <= Int.modulus /\
+  Ptrofs.unsigned o + n <= Ptrofs.modulus /\
   forall i : Z, 0 <= i < n ->
                 common.Memory.Mem.valid_pointer m b (Ptrofs.unsigned o + i) = true.
 
@@ -31,7 +29,7 @@ Definition Is_from_sem : extcall_sem :=
     match args with
     | (Vptr b1 o1) :: (Vptr b2 o2) :: (Vptr b3 o3) :: nil =>
       exists n : Z, 0 < n /\
-                    Ptrofs.unsigned o1 + n < Int.modulus /\
+                    Ptrofs.unsigned o1 + n < Ptrofs.modulus /\
                     b1 = b2 /\
                     Ptrofs.unsigned o1 + n = Ptrofs.unsigned o2 /\
                     valid_block m1 b1 o1 n /\
@@ -107,9 +105,8 @@ Proof.
     subst; clear H12.
     assert (Hf: 0 <= Ptrofs.unsigned i + n < Ptrofs.modulus) by
         (rewrite H4; apply Ptrofs.unsigned_range).
-    assert (Ha: Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr delta)) + n < Int.modulus). {
-      replace Int.modulus with Ptrofs.modulus by
-          (unfold Int.modulus, Ptrofs.modulus; f_equal).
+    assert (Ha: Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr delta)) + n <
+                  Ptrofs.modulus). {
       destruct H1 as [_ _ _ _ rep _].
       destruct (rep b0 b3 delta
                       (Ptrofs.add i (Ptrofs.repr n)) H22) as [Hx Hy].
@@ -140,8 +137,6 @@ Proof.
       destruct (Ptrofs.unsigned_range i) as [? _].
       repeat rewrite Ptrofs.unsigned_repr_eq.
       repeat rewrite Z.add_mod_idemp_r by easy.
-      replace Int.modulus with Ptrofs.modulus in Ha by
-          (unfold Int.modulus, Ptrofs.modulus; f_equal).
       unfold Ptrofs.add in Hd.
       repeat rewrite Ptrofs.unsigned_repr_eq in Hd.
       rewrite Z.add_mod_idemp_r, Z.mod_small in Hd by easy.
