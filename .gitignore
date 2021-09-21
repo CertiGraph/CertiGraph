@@ -28,6 +28,7 @@ syntax: glob
 .\#*
 .depend
 .lia.cache
+*Makefile.coq*
 CONFIGURE
 \#*\#
 final
