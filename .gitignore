@@ -28,9 +28,10 @@ syntax: glob
 .\#*
 .depend
 .lia.cache
-*Makefile.coq*
 CONFIGURE
 \#*\#
+_CoqProject
+*Makefile.coq*
 final
 poster.run.xml
 project.pbxproj
