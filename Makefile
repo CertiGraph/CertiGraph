@@ -1,6 +1,9 @@
-.PHONY: all clean
+.PHONY: all install clean
 
 all: lib-and-examples
+
+install: lib
+	$(MAKE) -f Makefile.lib install
 
 clean:: Makefile.lib Makefile.lib-and-examples
 	$(MAKE) -f Makefile.lib clean
