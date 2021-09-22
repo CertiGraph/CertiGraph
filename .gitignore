@@ -32,7 +32,6 @@ CONFIGURE
 \#*\#
 _CoqProject*
 *Makefile.lib*
-*Makefile.examples*
 final
 poster.run.xml
 project.pbxproj
