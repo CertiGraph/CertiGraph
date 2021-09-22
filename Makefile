@@ -21,11 +21,11 @@ clean:: Makefile.lib Makefile.lib-and-examples
 #
 # These can be set at the command line:
 # `make VAR_1=VALUE_1 ... VAR_N=VALUE_N target`
+# They can also be specified in the `CONFIGURE` file
 #
 
 J=1
-BITSIZE=32
-
+BITSIZE=64
 COMPCERT_DIR=""
 VST_DIR=""
 -include CONFIGURE
