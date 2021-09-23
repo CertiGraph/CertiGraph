@@ -89,7 +89,10 @@ _CoqProject.lib:
 	@[ -z $(VST_DIR) ] || echo "-Q $(VST_DIR) VST" >> $@
 	@[ -z $(COMPCERT_DIR) ] || echo "-Q $(COMPCERT_DIR) compcert" >> $@
 	@echo "" >> $@
-	@find ./ext -name "*.v" >> $@
+	@find ./ext/coq_ext -name "*.v" >> $@
+	@find ./ext/msl_ext -name "*.v" >> $@
+	@find ./ext/floyd_ext -name "*.v" >> $@
+	@find ./ext/veric_ext -name "*.v" >> $@
 	@find ./CertiGraph -name "*.v" >> $@
 
 
