@@ -8,7 +8,7 @@ install: lib
 clean:: Makefile.lib Makefile.lib-and-examples
 	$(MAKE) -f Makefile.lib clean
 	$(MAKE) -f Makefile.lib-and-examples clean
-	rm -f *Makefile.lib* _CoqProject
+	rm -f *Makefile.lib* _CoqProject.lib
 	rm -f *Makefile.lib-and-examples* _CoqProject
 	rm -f `find ./ -name ".*.aux"`
 	rm -f `find ./ -name "*.glob"`
@@ -26,8 +26,16 @@ clean:: Makefile.lib Makefile.lib-and-examples
 
 J=1
 BITSIZE=64
-COMPCERT_DIR=""
-VST_DIR=""
+
+COQLIB=$(shell $(COQC) -where | tr -d '\r' | tr '\\' '/')
+ifeq ($(BITSIZE),64)
+	COMPCERT_DIR=$(COQLIB)/user-contrib/compcert
+	VST_DIR=$(COQLIB)/user-contrib/VST
+else ifeq ($(BITSIZE),32)
+	COMPCERT_DIR=$(COQLIB)/../coq-variant/compcert32/compcert
+	VST_DIR=$(COQLIB)/../coq-variant/VST32/VST
+endif
+
 -include CONFIGURE
 
 

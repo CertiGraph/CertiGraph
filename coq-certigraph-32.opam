@@ -13,7 +13,7 @@ build: [
     [make "BITSIZE=32" "J=%{jobs}%" "lib"]
 ]
 install: [
-    make "install"
+    make "BITSIZE=32" "install"
 ]
 depends: [
     "coq" {>= "8.11.0"}
