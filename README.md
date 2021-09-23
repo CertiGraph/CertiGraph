@@ -22,7 +22,7 @@ Powered by [Coq](https://coq.inria.fr) and [VST](https://vst.cs.princeton.edu/).
 
 ## Installing
 
-The library can be installed using [opam](https://opam.ocaml.org/). Different packages are offered for different target architectures.
+The library can be installed using [opam](https://opam.ocaml.org/). Different packages are offered for different target architectures. You can install multiple targets side-by-side.
 
 ### `x86_64-linux`
 
@@ -40,7 +40,9 @@ $ opam install ./coq-certigraph-32.opam
 
 It is possible to build CertiGraph without installing it as a library. This is useful if you simply want to check out the examples, or if you want to hack on CertiGraph itself.
 
-The accompanying `Makefile` provides several useful targets:
+For a list of dependencies, consult the `opam` files.
+
+Manual builds can be performed using the included `Makefile`. See the subsections below for information about different use cases.
 
 ### Library and examples
 
