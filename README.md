@@ -38,9 +38,9 @@ $ opam install ./coq-certigraph-32.opam
 
 ## Building without installing
 
-It is possible to build CertiGraph without installing it as a library. This is useful if you simply want to check out the examples, or if you want to hack on CertiGraph itself.
+It is possible to build CertiGraph without installing it as a library. This is useful if you simply want to check out the examples or if you want to hack on CertiGraph itself.
 
-For a list of dependencies, consult the `opam` files.
+Consult the `opam` files for a list of dependencies.
 
 Manual builds can be performed using the included `Makefile`. See the subsections below for information about different use cases.
 
