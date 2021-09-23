@@ -16,6 +16,7 @@
         > COMPCERT_DIR=../VST/compcert  
 	  VST_DIR=../VST
 	1. `make clean`
+	1. `make depend`
 	1. `make -jn`, where `n` is the number of cores you want to dedicate
 
 1. Developing Inside CertiGraph (requires that you have clightgen)

@@ -194,14 +194,14 @@ cav:
 	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
 	kruskal/verif_sort.v kruskal/verif_kruskal_edgelist.vo -kj7
 
-.depend depend: rename
+depend: rename
 	@echo 'coqdep ... >.depend'
 	@$(COQDEP) $(NORMAL_FLAG) $(NORMAL_FILES) > .depend
 	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend
 
 clean:
-	@rm */*.vo */*.glob */.*.aux .depend
+	@rm -f */*.vo */*.glob */.*.aux .depend
 
 .DEFAULT_GOAL := all
 
-include .depend 
+-include .depend 
