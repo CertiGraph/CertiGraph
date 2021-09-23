@@ -1,20 +1,41 @@
 #
 # CertiGraph build configuration
 #
-# This file gets included into `Makefile`.
+# This file gets included into `Makefile` and overrides any defaults
+# set there.
+#
 # These settings can also be specified at the command-line. For example,
+#
 #     $ make VAR_1=VAL_1 ... VAR_N=VAL_N target
+#
+# Note that values specified at the command-line take precedence over
+# the defaults found in `Makefile` and the values found in this file.
 #
 
 
-# Controls whether the build will be 32-bit or 64-bit.
-# (This must be aligned with the settings used to build VST.)
-# BITSIZE=32
+# Controls the number of jobs to run in parallel (ala `make -j`)
+#
+# J=1
 
 
-# Path to CompCert. Use this to override Coq's search path.
+# Controls the build target. Two values are supported:
+#     32, which corresponds to CompCert's `x86_32-linux` target
+#     64, which corresponds to CompCert's `x86_64-linux` target
+#
+# This value must be aligned with your CompCert and VST installation.
+#
+# BITSIZE=64
+
+
+# Path to CompCert.
+# If you leave this unset, `Makefile` will use `BITSIZE` and `coqc -where`
+# to attempt to locate compcert automatically.
+#
 # COMPCERT_DIR=../VST/compcert
 
 
-# Path to VST. Use this to override Coq's search path.
+# Path to VST.
+# If you leave this unset, `Makefile` will use `BITSIZE` and `coqc -where`
+# to attempt to locate compcert automatically.
+#
 # VST_DIR=../VST

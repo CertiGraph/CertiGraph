@@ -44,24 +44,37 @@ Consult the `opam` files for a list of dependencies.
 
 Manual builds can be performed using the included `Makefile`. See the subsections below for information about different use cases.
 
-### Library and examples
+### Configuring the build
 
-First, edit the `CONFIGURE` file to reflect your build environment. Then:
+By default, the build process will:
+* Provide a build for the `x86_64-linux` target;
+* Execute only one job at a time (ala `make -j1`);
+* Attempt to locate CompCert and VST using `coqc -where`.
 
-```console
-$ make clean
-$ make lib-and-examples
-```
+There are two ways to override these settings:
+1. By editing the `CONFIGURE` file.
+2. By passing `VAR=VALUE` argument pairs to `make`.
+
+See `CONFIGURE` for more information.
+
+### Building the library and examples
 
 The `lib-and-examples` target builds the library and all examples. It also generates a [`_CoqProject`](https://coq.inria.fr/refman/practical-tools/utilities.html#building-a-coq-project-with-coq-makefile) file. This is particularly useful if you want to step through the examples in [`vs-coq`](https://github.com/coq-community/vscoq).
 
-### Just the library
-
-First, edit the `CONFIGURE` file to reflect your build environment. Then:
+Edit the commands below to reflect your desired build settings (see `CONFIGURE` for more information):
 
 ```console
 $ make clean
-$ make lib
+$ make BITSIZE=64 J=4 lib-and-examples
 ```
 
+### Building just the library
+
 The `lib` target builds the library but not the examples.
+
+Edit the commands below to reflect your desired build settings (see `CONFIGURE` for more information):
+
+```console
+$ make clean
+$ make BITSIZE=64 J=4 lib
+```
