@@ -17,7 +17,7 @@ CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_CERTIGRAPH)
 LIB_FILES = \
   Coqlib.v Equivalence_ext.v List_Func_ext.v Ensembles_ext.v List_ext.v \
   EnumEnsembles.v Relation_ext.v relation_list.v EquivDec_ext.v Morphisms_ext.v \
-  find_lemmas.v 
+  find_lemmas.v
 
 MSL_EXT_FILES = \
   log_normalize.v iter_sepcon.v ramification_lemmas.v abs_addr.v seplog.v \
@@ -61,16 +61,16 @@ BINARY_HEAP_FILES = \
   binary_heap_pro.v env_binary_heap_pro.v spec_binary_heap_pro.v verif_binary_heap_pro.v
 
 MARK_FILES = \
-  env_mark_bi.v spatial_graph_bi_mark.v verif_mark_bi.v verif_mark_bi_dag.v 
+  mark_bi.v env_mark_bi.v spatial_graph_bi_mark.v verif_mark_bi.v verif_mark_bi_dag.v
 
 SUMMATRIX_FILES = \
-  verif_summatrix.v 
+  summatrix.v verif_summatrix.v
 
 COPY_FILES = \
-  env_copy_bi.v spatial_graph_bi_copy.v verif_copy_bi.v  
+  copy_bi.v env_copy_bi.v spatial_graph_bi_copy.v verif_copy_bi.v
 
 DISPOSE_FILES = \
-  env_dispose_bi.v verif_dispose_bi.v
+  dispose_bi.v env_dispose_bi.v verif_dispose_bi.v
 
 UNION_FIND_FILES = \
   unionfind.v env_unionfind.v \
@@ -86,7 +86,7 @@ HIP_FILES = \
 # Using "clightgen -DCOMPCERT -normalize -isystem . gc.c" to generate gc.v
 
 CERTIGC_FILES = \
-  gc.v data_at_test.v spatial_gcgraph.v verif_conversion.v verif_Is_from.v \
+  data_at_test.v spatial_gcgraph.v verif_conversion.v verif_Is_from.v \
   gc_spec.v verif_create_space.v verif_create_heap.v verif_make_tinfo.v env_graph_gc.v verif_Is_block.v verif_garbage_collect.v verif_resume.v \
   GCGraph.v verif_forward.v verif_do_scan.v verif_forward_roots.v verif_do_generation.v gc_correct.v
 
@@ -103,25 +103,25 @@ PRIM_FILES = \
   prim1.v prim_spec1.v verif_prim1.v \
   prim2.v prim_spec2.v verif_prim2.v \
   prim3.v prim_spec3.v verif_prim3.v \
-  noroot_prim.v noroot_prim_spec.v verif_noroot_prim.v 
+  noroot_prim.v noroot_prim_spec.v verif_noroot_prim.v
 
 DIJKSTRA_FILES = \
   dijkstra1.v dijkstra_spec1.v verif_dijkstra1.v \
   dijkstra2.v dijkstra_spec2.v verif_dijkstra2.v \
   dijkstra3.v dijkstra_spec3.v verif_dijkstra3.v \
   MathDijkGraph.v dijkstra_env.v dijkstra_constants.v \
-  dijkstra_math_proof.v dijkstra_spec_pure.v 
+  dijkstra_math_proof.v dijkstra_spec_pure.v
   # 1 = noncontiguous
   # 2 = contiguous 1-d
   # 3 = contiguous 2-d
 
 PRIQ_FILES = \
-  priq_arr.v priq_arr_specs.v is_empty_lemmas.v verif_priq_arr.v 
+  priq_arr.v priq_arr_specs.v is_empty_lemmas.v verif_priq_arr.v
 
 APPEND_FILES = \
-  append.v list_dt.v verif_append.v 
+  append.v list_dt.v verif_append.v
 
-CLIGHT_FILES = mark/mark_bi.v dispose/dispose_bi.v copy/copy_bi.v summatrix/summatrix.v
+CLIGHT_FILES = CertiGC/gc.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
 
@@ -152,21 +152,15 @@ $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
 	@$(COQC) $(NORMAL_FLAG) $(CURRENT_DIR)/$*.v
 
+$(CLIGHT_FILES): %.v: %$(BITSIZE).v
+	@echo CP $< $@
+	@cp $< $(CURRENT_DIR)/$@
+
 $(CLIGHT_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
 	@$(COQC) $(CLIGHT_FLAG) $(CURRENT_DIR)/$*.v
 
-.PHONY: rename
-rename: CertiGC/gc32.v CertiGC/gc64.v
-ifeq (,$(wildcard CertiGC/gc.v))
-ifeq ($(BITSIZE),64)
-	cp CertiGC/gc64.v CertiGC/gc.v
-else
-	cp CertiGC/gc32.v CertiGC/gc.v
-endif
-endif
-
-all: rename \
+all: \
   $(NORMAL_FILES:%.v=%.vo) \
   $(CLIGHT_FILES:%.v=%.vo)
 
@@ -175,9 +169,9 @@ all: rename \
 VST_CRITICAL_FILES = \
   concurrency/conclib.v floyd/proofauto.v floyd/library.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
 
-# clightgen: 
+# clightgen:
 #	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim1.c prim/prim2.c prim/prim3.c prim/noroot_prim3.c dijkstra/dijkstra1.c dijkstra/dijkstra2.c dijkstra/dijkstra3.c
-#	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c 
+#	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c
 
 .PHONY: vstandme7
 vstandme7:
@@ -194,14 +188,15 @@ cav:
 	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
 	kruskal/verif_sort.v kruskal/verif_kruskal_edgelist.vo -kj7
 
-depend: rename
+.PHONY: depend
+.depend depend: $(CLIGHT_FILES)
 	@echo 'coqdep ... >.depend'
 	@$(COQDEP) $(NORMAL_FLAG) $(NORMAL_FILES) > .depend
 	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend
 
 clean:
-	@rm -f */*.vo */*.glob */.*.aux .depend
+	@rm -f */*.vo */*.glob */.*.aux .depend $(CLIGHT_FILES)
 
 .DEFAULT_GOAL := all
 
--include .depend 
+-include .depend
