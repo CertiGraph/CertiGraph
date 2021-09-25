@@ -216,7 +216,7 @@ Defined.
 
 End sSGG_VST.
 
-Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto.
+#[export] Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto : core.
 
 Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bi pSGG_VST addr (addr * LR).
   refine (Build_sPointwiseGraph_Graph_Bi pSGG_VST _ _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).

@@ -21,4 +21,4 @@ Proof.
   simpl. f_equal; eauto.
 Qed.
 
-Hint Resolve closed_wrt_wand closed_wrtl_wand : closed.
+#[export] Hint Resolve closed_wrt_wand closed_wrtl_wand : closed.

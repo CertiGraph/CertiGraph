@@ -21,7 +21,7 @@ Proof. intros [? ?]; simpl; auto. Qed.
 Lemma wshare_readable: forall sh: wshare, readable_share sh.
 Proof. intros [? ?]; simpl; auto. Qed.
 
-Hint Resolve rshare_readable.
-Hint Resolve wshare_writable.
-Hint Resolve wshare_readable.
+#[export] Hint Resolve rshare_readable: core.
+#[export] Hint Resolve wshare_writable: core.
+#[export] Hint Resolve wshare_readable: core.
 Identity Coercion share_share_t: share >-> Share.t.

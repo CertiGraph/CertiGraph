@@ -15,7 +15,7 @@ Require Import VST.msl.wand_frame.
 Require Import VST.floyd.reassoc_seq.
 Require Import VST.floyd.field_at_wand.
 
-Hint Resolve concrete_valid_pointer_valid_pointer: valid_pointer.
+#[export] Hint Resolve concrete_valid_pointer_valid_pointer: valid_pointer.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion Graph'_LGraph: Graph' >-> LGraph.

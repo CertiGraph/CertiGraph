@@ -859,7 +859,7 @@ Hint Rewrite @lseg_nil_eq : norm.
 
 Hint Rewrite @lseg_eq using reflexivity: norm.
 
-Hint Resolve lseg_local_facts : saturate_local.
+#[export] Hint Resolve lseg_local_facts : saturate_local.
 End LsegGeneral.
 
 Module LsegSpecial.
@@ -1384,7 +1384,7 @@ End LIST.
 
 Hint Rewrite @lseg_nil_eq : norm.
 Hint Rewrite @lseg_eq using reflexivity: norm.
-Hint Resolve lseg_local_facts : saturate_local.
+#[export] Hint Resolve lseg_local_facts : saturate_local.
 
 Lemma list_cell_local_facts:
   forall {cs: compspecs} {list_structid list_link: ident}{list_token}
@@ -1395,7 +1395,7 @@ intros.
 unfold list_cell.
 normalize.
 Qed.
-Hint Resolve list_cell_local_facts : saturate_local.
+#[export] Hint Resolve list_cell_local_facts : saturate_local.
 
 End LsegSpecial.
 
@@ -1597,9 +1597,9 @@ Hint Rewrite @lseg_nil_eq : norm.
 
 Hint Rewrite @lseg_eq using reflexivity: norm.
 
-Hint Resolve lseg_local_facts : saturate_local.
+#[export] Hint Resolve lseg_local_facts : saturate_local.
 
-Hint Resolve denote_tc_test_eq_split : valid_pointer.
+#[export] Hint Resolve denote_tc_test_eq_split : valid_pointer.
 
 End Links.
 
