@@ -38,19 +38,22 @@ Lemma body_append: semax_body Vprog Gprog f_append append_spec.
 Proof.
 start_function.
 forward_if.
-* apply denote_tc_test_eq_split; [|entailer!].
+- apply denote_tc_test_eq_split; [|entailer!].
   rewrite <- sepcon_comm.
   destruct x; inversion PNx.
-  1: unfold Int.zero; apply valid_pointer_zero32; auto.
+  + match goal with
+    | |- context [Int.zero] => unfold Int.zero; apply valid_pointer_zero32; auto
+    | |- context [Int64.zero] => unfold Int64.zero; apply valid_pointer_zero64; auto
+    end.
   (* apply lseg_valid_pointer; auto. *)
   (* apply valid_pointer_null. *)
-  admit.
-*
+  + admit.
+-
  forward.
  Exists y.
  simpl app.
  entailer!.
-*
+-
  forward.
  apply semax_lseg_nonnull; [ | intros a s3 u ? ?].
  entailer!.
