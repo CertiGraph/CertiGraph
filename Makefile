@@ -57,25 +57,22 @@ DATA_STRUCTURE_FILES = \
 BINARY_HEAP_FILES = \
   binary_heap_model.v binary_heap_Zmodel.v \
   binary_heap_malloc_spec.v \
-  binary_heap.v env_binary_heap.v verif_binary_heap.v \
-  binary_heap_pro.v env_binary_heap_pro.v spec_binary_heap_pro.v verif_binary_heap_pro.v
+  env_binary_heap.v verif_binary_heap.v \
+  env_binary_heap_pro.v spec_binary_heap_pro.v verif_binary_heap_pro.v
 
 MARK_FILES = \
-  mark_bi.v env_mark_bi.v spatial_graph_bi_mark.v verif_mark_bi.v verif_mark_bi_dag.v
+  env_mark_bi.v spatial_graph_bi_mark.v verif_mark_bi.v verif_mark_bi_dag.v
 
-SUMMATRIX_FILES = \
-  summatrix.v verif_summatrix.v
+SUMMATRIX_FILES = verif_summatrix.v
 
 COPY_FILES = \
-  copy_bi.v env_copy_bi.v spatial_graph_bi_copy.v verif_copy_bi.v
+  env_copy_bi.v spatial_graph_bi_copy.v verif_copy_bi.v
 
 DISPOSE_FILES = \
-  dispose_bi.v env_dispose_bi.v verif_dispose_bi.v
+  env_dispose_bi.v verif_dispose_bi.v
 
 UNION_FIND_FILES = \
-  unionfind.v env_unionfind.v \
-  unionfind_iter.v env_unionfind_iter.v \
-  unionfind_arr.v env_unionfind_arr.v uf_arr_specs.v \
+  env_unionfind.v env_unionfind_iter.v env_unionfind_arr.v uf_arr_specs.v \
   spatial_graph_uf_iter.v spatial_graph_glist.v spatial_array_graph.v \
   verif_unionfind.v verif_unionfind_slim.v verif_unionfind_rank.v \
   verif_unionfind_iter.v verif_unionfind_iter_rank.v verif_unionfind_arr.v
@@ -91,8 +88,7 @@ CERTIGC_FILES = \
   GCGraph.v verif_forward.v verif_do_scan.v verif_forward_roots.v verif_do_generation.v gc_correct.v
 
 KRUSKAL_FILES = \
-  WeightedEdgeListGraph.v \
-  kruskal_edgelist.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_specs.v \
+  WeightedEdgeListGraph.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_specs.v \
   verif_sort.v verif_kruskal_edgelist.v
 
 #kruskal_edgelist_sort.v env_kruskal_edgelist_sort.v spatial_wedgearray_graph_sort.v kruskal_specs_sort.v \
@@ -100,15 +96,15 @@ KRUSKAL_FILES = \
 
 PRIM_FILES = \
   prim_env.v prim_constants.v \
-  prim1.v prim_spec1.v verif_prim1.v \
-  prim2.v prim_spec2.v verif_prim2.v \
-  prim3.v prim_spec3.v verif_prim3.v \
-  noroot_prim.v noroot_prim_spec.v verif_noroot_prim.v
+  prim_spec1.v verif_prim1.v \
+  prim_spec2.v verif_prim2.v \
+  prim_spec3.v verif_prim3.v \
+  noroot_prim_spec.v verif_noroot_prim.v
 
 DIJKSTRA_FILES = \
-  dijkstra1.v dijkstra_spec1.v verif_dijkstra1.v \
-  dijkstra2.v dijkstra_spec2.v verif_dijkstra2.v \
-  dijkstra3.v dijkstra_spec3.v verif_dijkstra3.v \
+  dijkstra_spec1.v verif_dijkstra1.v \
+  dijkstra_spec2.v verif_dijkstra2.v \
+  dijkstra_spec3.v verif_dijkstra3.v \
   MathDijkGraph.v dijkstra_env.v dijkstra_constants.v \
   dijkstra_math_proof.v dijkstra_spec_pure.v
   # 1 = noncontiguous
@@ -116,12 +112,17 @@ DIJKSTRA_FILES = \
   # 3 = contiguous 2-d
 
 PRIQ_FILES = \
-  priq_arr.v priq_arr_specs.v is_empty_lemmas.v verif_priq_arr.v
+  priq_arr_specs.v is_empty_lemmas.v verif_priq_arr.v
 
 APPEND_FILES = \
-  append.v list_dt.v verif_append.v
+  list_dt.v verif_append.v
 
-CLIGHT_FILES = CertiGC/gc.v
+CLIGHT_FILES = \
+  CertiGC/gc.v summatrix/summatrix.v kruskal/kruskal_edgelist.v unionfind/unionfind.v \
+  unionfind/unionfind_iter.v unionfind/unionfind_arr.v append/append.v mark/mark_bi.v \
+  binheap/binary_heap_pro.v binheap/binary_heap.v prim/noroot_prim.v prim/prim1.v \
+  prim/prim2.v prim/prim3.v priq/priq_arr.v dispose/dispose_bi.v copy/copy_bi.v \
+  dijkstra/dijkstra1.v dijkstra/dijkstra2.v dijkstra/dijkstra3.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
 
@@ -194,8 +195,9 @@ cav:
 	@$(COQDEP) $(NORMAL_FLAG) $(NORMAL_FILES) > .depend
 	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend
 
+.PHONY: clean
 clean:
-	@rm -f */*.vo */*.glob */.*.aux .depend $(CLIGHT_FILES)
+	@rm -f */*.vo */*.glob */.*.aux $(CLIGHT_FILES) .depend
 
 .DEFAULT_GOAL := all
 
