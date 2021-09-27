@@ -63,7 +63,8 @@ Section sSGG_VST.
     normalize.
     apply data_at_conflict.
     + apply readable_nonidentity, writable_readable. auto.
-    + change (sizeof node_type) with 8. lia.
+    + change (sizeof node_type) with (if Archi.ptr64 then 16 else 8).
+      cbv [Archi.ptr64]. lia.
   Qed.
 
 Instance SGA_VST (sh: share) : PointwiseGraphAssum (SGP_VST sh).

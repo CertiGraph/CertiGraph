@@ -70,7 +70,8 @@ Proof.
   normalize.
   apply data_at_conflict.
   + apply readable_nonidentity, writable_readable. auto.
-  + change (sizeof node_type) with 16. lia.
+  + change (sizeof node_type) with (if Archi.ptr64 then 32 else 16).
+    cbv [Archi.ptr64]. lia.
 Qed.
 
 (*
@@ -146,7 +147,7 @@ Defined.
 
 End sSGG_VST.
 
-Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto.
+#[export] Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto: core.
 
 Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bi pSGG_VST bool unit.
   refine (Build_sPointwiseGraph_Graph_Bi pSGG_VST _ _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).

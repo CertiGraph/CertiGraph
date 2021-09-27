@@ -94,8 +94,8 @@ Proof.
       apply identity_share_bot in H.
       apply comp_Ews_not_bot.
       auto.
-    - change (sizeof node_type) with 16.
-      lia.
+    - change (sizeof node_type) with (if Archi.ptr64 then 32 else 16).
+      cbv [Archi.ptr64]. lia.
 Qed.
 
 Definition trinode (sh: share) (p: addr) (dlr: addr * addr * addr): mpred :=
@@ -138,7 +138,8 @@ Proof.
   end.
   apply data_at_conflict.
   + apply readable_nonidentity, writable_readable. auto.
-  + change (sizeof node_type) with 16. lia.
+  + change (sizeof node_type) with (if Archi.ptr64 then 32 else 16).
+    cbv [Archi.ptr64]. lia.
   + sep_apply H1.
     normalize.
 Qed.

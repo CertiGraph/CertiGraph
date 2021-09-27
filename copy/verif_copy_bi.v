@@ -37,7 +37,7 @@ Definition mallocN_spec :=
   WITH sh: wshare
   PRE [tint]
      PROP ()
-     PARAMS (Vint (Int.repr 16))
+     PARAMS (Vint (Int.repr (if Archi.ptr64 then 32 else 16)))
      GLOBALS ()
      SEP ()
   POST [ tptr tvoid ]
@@ -136,7 +136,7 @@ Proof.
     1: split.
     + eapply (copy_vgamma_not_null_refl g); eauto.
       clear - H0.
-      destruct d; [change null with (NullPointer) | simpl in H0; change nullval with (Vint Int.zero) in H0]; try congruence.
+      destruct d; [change null with (NullPointer) | simpl in H0]; try congruence.
     + right.
       inversion H_GAMMA_g; auto.
     + rewrite (va_reachable_invalid _ d); auto.
@@ -237,7 +237,7 @@ Proof.
   (* l0 = copy(l); *)
 
   unlocalize
-    [data_at Ews node_type (Vint (Int.repr 0), (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) * concrete_valid_pointer null;
+    [data_at Ews node_type (nullval, (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) * concrete_valid_pointer null;
          holegraph Ews x0 g1';
          graph sh x g2;
          graph Ews l0 g2'']
@@ -298,7 +298,7 @@ Proof.
 
   unlocalize
     [data_at Ews node_type
-          (Vint (Int.repr 0), (pointer_val_val l0, pointer_val_val null))
+          (nullval, (pointer_val_val l0, pointer_val_val null))
           (pointer_val_val x0) * concrete_valid_pointer null;
          holegraph Ews x0 g3';
          graph sh x g4; graph Ews r0 g4'']
