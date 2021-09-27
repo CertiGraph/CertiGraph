@@ -137,7 +137,7 @@ Proof.
     + eapply (copy_vgamma_not_null_refl g); eauto.
       clear - H0.
       destruct d; [change null with (NullPointer) |
-                    unfold nullval in H0; simpl in H0]; try congruence.
+                    simpl in H0; unfold nullval in H0; simpl in H0]; try congruence.
     + right.
       inversion H_GAMMA_g; auto.
     + rewrite (va_reachable_invalid _ d); auto.
