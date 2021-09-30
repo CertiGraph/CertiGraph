@@ -168,10 +168,11 @@ assert_PROP(force_val (sem_add_ptr_int tint Signed (force_val (sem_add_ptr_int (
     rewrite Z.mul_comm.
     auto.
     rewrite Z.add_0_l.
-    all: split; try rep_lia.
-    (* ++apply (Z.le_trans _ (1*(4*size))). lia. *)
-    (*   apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia. *)
-    apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia.
+    + split; [rep_lia |].
+      apply (Z.le_trans _ (1*(4*size))). lia.
+      apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia.
+    + split; [rep_lia |].
+      apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia.
   - auto.
 }
 (*g[i][j] = a*)
