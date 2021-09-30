@@ -40,7 +40,7 @@ Proof.
   }
   assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_symm_mat size g)))) by lia.
   assert (0 <= i < Zlength (Znth u (@graph_to_symm_mat size g))). {
-    rewrite Zlength_map in H1. lia.
+    rewrite Zlength_map in H2. lia.
   }
 
   Intros.
@@ -71,7 +71,7 @@ Proof.
     rewrite field_address_offset.
     1: { rewrite offset_offset_val; simpl; f_equal.
          rewrite Z.add_0_l. f_equal. lia. }            
-    destruct H5 as [? [? [? [? ?]]]]. 
+    destruct H6 as [? [? [? [? ?]]]]. 
     unfold field_compatible; split3; [| | split3]; simpl; auto.
   }
   forward. forward. 

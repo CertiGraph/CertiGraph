@@ -27,7 +27,8 @@ Definition getCell_spec :=
        i : V
   PRE [tptr (tarray tint size), tint, tint]
     PROP (0 <= i < size;
-          0 <= u < size)
+          0 <= u < size;
+          size <= Int.max_signed)
     PARAMS (pointer_val_val graph_ptr;
            Vint (Int.repr u);
            Vint (Int.repr i))

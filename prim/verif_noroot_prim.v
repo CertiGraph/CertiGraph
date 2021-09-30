@@ -1,7 +1,7 @@
 Require Import CertiGraph.prim.prim_env.
 Require Export CertiGraph.lib.find_lemmas.
 Require Export CertiGraph.priq.is_empty_lemmas.
-Require Import CertiGraph.graph.MathUAdjMatGraph. 
+Require Import CertiGraph.graph.MathUAdjMatGraph.
 Require Import CertiGraph.prim.prim_constants.
 Require Import CertiGraph.graph.SpaceUAdjMatGraph3.
 Require Import CertiGraph.prim.noroot_prim_spec.
@@ -40,13 +40,13 @@ Proof.
   }
   assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_symm_mat size g)))) by lia.
   assert (0 <= i < Zlength (Znth u (@graph_to_symm_mat size g))). {
-    rewrite Zlength_map in H1. lia.
+    rewrite Zlength_map in H2. lia.
   }
 
   Intros.
   freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
   unfold list_rep.
-  
+
   assert_PROP (force_val
                  (sem_add_ptr_int
                     tint
@@ -70,11 +70,11 @@ Proof.
     unfold list_address. simpl.
     rewrite field_address_offset.
     1: { rewrite offset_offset_val; simpl; f_equal.
-         rewrite Z.add_0_l. f_equal. lia. }            
-    destruct H5 as [? [? [? [? ?]]]]. 
+         rewrite Z.add_0_l. f_equal. lia. }
+    destruct H6 as [? [? [? [? ?]]]].
     unfold field_compatible; split3; [| | split3]; simpl; auto.
   }
-  forward. forward. 
+  forward. forward.
   thaw FR.
   rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u); trivial.
   entailer!.
@@ -169,9 +169,9 @@ assert_PROP(force_val (sem_add_ptr_int tint Signed (force_val (sem_add_ptr_int (
     auto.
     rewrite Z.add_0_l.
     all: split; try rep_lia.
-    ++apply (Z.le_trans _ (1*(4*size))). lia.
-      apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia.
-    ++apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia.
+    (* ++apply (Z.le_trans _ (1*(4*size))). lia. *)
+    (*   apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia. *)
+    apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia.
   - auto.
 }
 (*g[i][j] = a*)
@@ -561,7 +561,7 @@ break: (
   assert (0 <= u < size). {
     rewrite Hu. rewrite <- HZlength_pq_state. apply find_range.
     apply min_in_list. apply incl_refl. destruct pq_state.
-    rewrite Zlength_nil in HZlength_pq_state. lia. 
+    rewrite Zlength_nil in HZlength_pq_state. lia.
     simpl. left; trivial.
   }
   assert (Hu_not_popped: ~ In u popped_vertices). { unfold not; intros.
@@ -708,7 +708,7 @@ break: (
     Exists (upd_Znth i pq_state' (Znth i (Znth u (@graph_to_symm_mat size g)))).
     rewrite (@SpaceAdjMatGraph_unfold' _ _ _ _ _ addresses u). unfold list_rep.
     rewrite list_map_compose. repeat rewrite (upd_Znth_map (fun x => Vint (Int.repr x))).
-    2: lia. 
+    2: lia.
     clear H0 H5.
     assert (Hx1: forall v : Z, 0 <= v < i + 1 ->
       ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
@@ -820,7 +820,7 @@ break: (
   Exists parents'. Exists keys'. Exists pq_state'.
   rewrite (@SpaceAdjMatGraph_unfold' _ _ _ _ _ addresses u). unfold list_rep.
   2: lia.
-  2: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia. 
+  2: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; lia.
   assert (forall v : Z,
           0 <= v < i + 1 ->
           ~ adjacent g u v \/ In v (popped_vertices +:: u) ->
@@ -1562,7 +1562,7 @@ break: (
        (filter (fun v : Z => Znth v parents <? size) (popped_vertices)))+::(eformat (u, Znth u parents)))).
     { apply Permutation_cons_append. }
     replace (map (fun v : Z => eformat (v, Znth v parents))
-       (filter (fun v : Z => Znth v parents <? size) popped_vertices) +:: 
+       (filter (fun v : Z => Znth v parents <? size) popped_vertices) +::
      (eformat (u, Znth u parents))) with (map (fun v : Z => eformat (v, Znth v parents'))
        (filter (fun v : Z => Znth v parents' <? size) (popped_vertices +:: u))). apply Permutation_refl.
     replace [eformat (u,Znth u parents)] with (map (fun v : Z => eformat (v, Znth v parents)) [u]). 2: { simpl; auto. }

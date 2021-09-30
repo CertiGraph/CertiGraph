@@ -40,7 +40,7 @@ Proof.
   }
   assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_symm_mat size g)))) by lia.
   assert (0 <= i < Zlength (Znth u (@graph_to_symm_mat size g))). {
-    rewrite Zlength_map in H1. lia.
+    rewrite Zlength_map in H2. lia.
   }
 
   Intros.

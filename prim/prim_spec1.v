@@ -28,7 +28,8 @@ Definition getCell_spec :=
        i : V
   PRE [tptr (tptr tint), tint, tint]
     PROP (0 <= i < size;
-          0 <= u < size)
+          0 <= u < size;
+          size <= Int.max_signed)
     PARAMS (pointer_val_val graph_ptr;
            Vint (Int.repr u);
            Vint (Int.repr i))
@@ -81,7 +82,7 @@ Definition prim_spec :=
   PRE [tptr (tptr tint), tint, tint, tint, tptr tint]
      PROP ( writable_share Tsh;
             vvalid g r;
-          size * (4 * size) <= Ptrofs.max_signed;
+          size * (4 * size) <= Int.max_signed;
           inf < Int.max_signed
           )
      PARAMS ( pointer_val_val gptr; (Vint (Int.repr size)); (Vint (Int.repr inf)); (Vint (Int.repr r)); pointer_val_val parent_ptr)
