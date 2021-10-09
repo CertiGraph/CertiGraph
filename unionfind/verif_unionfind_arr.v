@@ -107,8 +107,10 @@ Proof.
       split; rewrite Z.le_lteq; left.
       - rep_lia.
       - apply Z.le_lt_trans with (Int.max_signed / 8); [intuition | apply Z.div_lt; lia].
-    } rewrite !Int.signed_repr; auto. split. 1: lia.
-    assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
+    } simpl. try rewrite ptrofs_to_int64_repr; auto. rewrite !Int.signed_repr; auto.
+    try rewrite mul64_repr.
+    assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). try rewrite Int64.unsigned_repr by rep_lia. intros.
+    first [apply prop_right; auto | rep_lia].
   - assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
   - Intros rt.
     assert (memory_block sh (V * 8) (pointer_val_val rt) = data_at_ sh (tarray vertex_type V) (pointer_val_val rt)). {
@@ -128,7 +130,11 @@ Proof.
        SEP (progressive_array sh i V rt)); unfold progressive_array.
     + destruct H. apply Z.le_trans with (Int.max_signed / 8); auto. rewrite Z.lt_eq_cases. left. apply Z_div_lt; intuition.
     + entailer.
-    + Opaque Znth. forward. remember (Znth i (progressive_list (Z.to_nat i) (Z.to_nat V))) as lll. destruct lll. forward.
+    + Opaque Znth.
+      assert (Int.min_signed <= i <= Int.max_signed). {
+        split. 1: rep_lia. transitivity V. 1: lia. transitivity (Int.max_signed / 8).
+        1: lia. apply Z.lt_le_incl. apply Z.div_lt; rep_lia. }
+      forward. remember (Znth i (progressive_list (Z.to_nat i) (Z.to_nat V))) as lll. destruct lll. forward.
       assert (0 <= i < Zlength (progressive_list (Z.to_nat i) (Z.to_nat V))) by (split; [|rewrite Zlength_correct, progressive_list_length, Z2Nat.id]; lia).
       rewrite upd_Znth_same, upd_Znth_twice; [|auto ..]. unfold progressive_array, data_at.
       rewrite upd_Znth_progressive_list. 2: rewrite Z2Nat.id; lia. entailer. Transparent Znth.
@@ -213,7 +219,11 @@ Qed.
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
 Proof.
   start_function. rewrite whole_graph_unfold. Intros n. forward.
-  assert (H_BOUND: 0 <= i < Zlength (nat_inc_list n)) by (rewrite Zlength_correct, nat_inc_list_length, H0; assumption). forward.
+  assert (H_BOUND: 0 <= i < Zlength (nat_inc_list n)) by (rewrite Zlength_correct, nat_inc_list_length, H0; assumption).
+  assert (Hl: Int.min_signed <= i <= Int.max_signed). {
+    split; try rep_lia. rewrite nat_inc_list_Zlength in H_BOUND.
+    transitivity (Z.of_nat n); try lia. transitivity (Int.max_signed / 8). 1: lia.
+    apply Z.lt_le_incl. apply Z.div_lt; rep_lia. } forward.
   - apply prop_right. rewrite H0. auto.
   - rewrite <- (map_id (nat_inc_list n)) at 1. rewrite Znth_nat_inc_list. 2: rewrite H0; auto. simpl id.
     forward_if
@@ -293,10 +303,18 @@ Proof.
   - forward. entailer!.
   - rewrite whole_graph_unfold. Intros n.
     assert (0 <= x_root < Z.of_nat n) by (destruct H4; destruct H2; apply reachable_foot_valid in H2; rewrite H4 in H2; rewrite <- H7 in H2; auto).
-    assert (H_XROOT_BOUND: 0 <= x_root < Zlength (nat_inc_list n)) by (rewrite Zlength_correct, nat_inc_list_length; apply H9). forward.
+    assert (H_XROOT_BOUND: 0 <= x_root < Zlength (nat_inc_list n)) by (rewrite Zlength_correct, nat_inc_list_length; apply H9).
+    assert (Hxroot: Int.min_signed <= x_root <= Int.max_signed). {
+      split; try rep_lia. transitivity (Z.of_nat n); try lia.
+      transitivity (Int.max_signed / 8). 1: lia. apply Z.lt_le_incl.
+      apply Z.div_lt; rep_lia. } forward.
     rewrite <- (map_id (nat_inc_list n)) at 1. rewrite Znth_nat_inc_list; auto. simpl id. unfold vgamma2cdata at 1. unfold vgamma at 1.
     unfold UnionFindGraph.vgamma. assert (0 <= y_root < Z.of_nat n) by (destruct H5; apply reachable_foot_valid in H5; rewrite <- H7 in H5; auto).
-    assert (H_YROOT_BOUND: 0 <= y_root < Zlength (nat_inc_list n)) by (rewrite Zlength_correct, nat_inc_list_length; apply H10). forward.
+    assert (H_YROOT_BOUND: 0 <= y_root < Zlength (nat_inc_list n)) by (rewrite Zlength_correct, nat_inc_list_length; apply H10).
+    assert (Hyroot: Int.min_signed <= y_root <= Int.max_signed). {
+      split; try rep_lia. transitivity (Z.of_nat n); try lia.
+      transitivity (Int.max_signed / 8). 1: lia. apply Z.lt_le_incl.
+      apply Z.div_lt; rep_lia. } forward.
     rewrite <- (map_id (nat_inc_list n)) at 1. rewrite Znth_nat_inc_list; auto. unfold vgamma2cdata at 1. unfold vgamma at 1. unfold UnionFindGraph.vgamma. simpl id.
     forward_if
       (EX g': UFGraph,

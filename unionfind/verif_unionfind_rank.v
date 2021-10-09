@@ -42,7 +42,7 @@ Definition mallocN_spec :=
      EX v: addr,
      PROP ()
      LOCAL (temp ret_temp (pointer_val_val v))
-     SEP (data_at sh node_type (pointer_val_val null, (Vint (Int.repr 0)))
+     SEP (data_at sh node_type (Vint (Int.repr 0), pointer_val_val null)
               (pointer_val_val v)).
 
 Definition find_spec :=
@@ -92,7 +92,8 @@ Definition Gprog : funspecs := ltac:(with_library prog [mallocN_spec; makeSet_sp
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
   start_function.
-  forward_call (sh, 8).
+  forward_call (sh, if Archi.ptr64 then 16 else 8).
+  - cbv [Archi.ptr64]. rep_lia.
   - Intros x.
     assert_PROP (x <> null) as x_not_null by (entailer !; destruct H1 as [? _]; apply H1).
     assert_PROP (~ vvalid g x) by (entailer; apply (@vertices_at_sepcon_unique_1x _ _ _ _ SGBA_VST _ _ (SGA_VST sh) (SGAvs_VST sh) g x (vvalid g) (O, null))).
