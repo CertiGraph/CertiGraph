@@ -11,7 +11,8 @@ Set Nested Proofs Allowed.
 Definition exch_spec :=
   DECLARE _exch WITH i : Z, j : Z, arr: val, arr_contents: list heap_item
   PRE [tuint, tuint, tptr t_item]
-    PROP (0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents)
+  PROP (0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents;
+        Zlength arr_contents <= Int.max_unsigned)
     PARAMS (Vint (Int.repr i); Vint (Int.repr j); arr)
     GLOBALS ()
     SEP (harray arr_contents arr)
@@ -23,7 +24,8 @@ Definition exch_spec :=
 Definition less_spec :=
   DECLARE _less WITH i : Z, j : Z, arr: val, arr_contents: list heap_item
   PRE [tuint, tuint, tptr t_item]
-    PROP (0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents)
+  PROP (0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents;
+        Zlength arr_contents <= Int.max_unsigned)
     PARAMS (Vint (Int.repr i); Vint (Int.repr j); arr)
     GLOBALS ()
     SEP (harray arr_contents arr)
@@ -36,7 +38,8 @@ Definition swim_spec :=
   DECLARE _swim WITH i : Z, arr: val, arr_contents: list heap_item
   PRE [tuint, tptr t_item]
     PROP (0 <= i < Zlength arr_contents;
-          weak_heap_ordered_bottom_up arr_contents i)
+          weak_heap_ordered_bottom_up arr_contents i;
+          Zlength arr_contents <= Int.max_unsigned)
     PARAMS (Vint (Int.repr i); arr)
     GLOBALS ()
     SEP (harray arr_contents arr)
@@ -49,7 +52,7 @@ Definition swim_spec :=
 Definition sink_spec :=
   DECLARE _sink WITH i : Z, arr: val, arr_contents: list heap_item, first_available : Z, b : Z
   PRE [tuint, tptr t_item, tuint]
-    PROP (0 <= i <= Zlength arr_contents; 
+    PROP (0 <= i <= Zlength arr_contents;
           first_available = Zlength arr_contents;
           (i = Zlength arr_contents -> (2 * i) <= Int.max_unsigned);
           (i < Zlength arr_contents -> (2 * (first_available - 1) <= Int.max_unsigned)); (* i = fa - 1 -> (2 * i + 1) = 2 * fa - 1, must be representable *)
@@ -64,7 +67,7 @@ Definition sink_spec :=
       LOCAL ()
       SEP (harray arr_contents' arr).
 
-Definition size_spec := 
+Definition size_spec :=
   DECLARE _size WITH pq : val, h : heap
   PRE [tptr t_pq]
     PROP ()
@@ -76,7 +79,7 @@ Definition size_spec :=
     LOCAL (temp ret_temp (Vint (Int.repr (heap_size h))))
     SEP (valid_pq pq h).
 
-Definition capacity_spec := 
+Definition capacity_spec :=
   DECLARE _capacity WITH pq : val, h : heap
   PRE [tptr t_pq]
     PROP ()
@@ -120,7 +123,7 @@ Definition insert_nc_spec :=
 Definition build_heap_spec :=
   DECLARE _build_heap WITH arr: val, arr_contents: list heap_item, size : Z
   PRE [tptr t_item, tuint]
-    PROP (size > 0 ; (* Required because PARENT subtracts 1u *)
+    PROP (0 < size <= Int.max_signed ; (* Required because PARENT subtracts 1u *)
           Zlength arr_contents = size)
     PARAMS (arr; Vint (Int.repr size))
     GLOBALS ()
@@ -135,7 +138,7 @@ Definition build_heap_spec :=
 Definition heapsort_rev_spec :=
   DECLARE _heapsort_rev WITH arr : val, arr_contents : list heap_item, size : Z
   PRE [tptr t_item, tuint]
-    PROP (size > 0 ;
+    PROP (0 < size <= Int.max_signed;
           Zlength arr_contents = size)
     PARAMS (arr; Vint (Int.repr size))
     GLOBALS ()
@@ -148,18 +151,16 @@ Definition heapsort_rev_spec :=
     SEP (harray arr_contents' arr).
 
 Definition Gprog : funspecs :=
-         ltac:(with_library prog [ exch_spec ; less_spec ; swim_spec ; sink_spec ; 
-                                   remove_min_nc_spec ; insert_nc_spec ; 
-                                   size_spec ; capacity_spec ; 
+         ltac:(with_library prog [ exch_spec ; less_spec ; swim_spec ; sink_spec ;
+                                   remove_min_nc_spec ; insert_nc_spec ;
+                                   size_spec ; capacity_spec ;
                                    build_heap_spec ; heapsort_rev_spec ]).
 
 Lemma body_heapsort: semax_body Vprog Gprog f_heapsort_rev heapsort_rev_spec.
 Proof.
   start_function.
-  assert_PROP (2 * (size - 2) <= Int.max_unsigned). { 
-    go_lower. unfold harray. saturate_local. apply prop_right.
-    destruct H1 as [? [? [? [? ?]]]].
-    destruct arr; try contradiction. simpl in H5. rep_lia. }
+  assert_PROP (2 * (size - 2) <= Int.max_unsigned). {
+    apply prop_right. rep_lia. }
   forward_call (arr, arr_contents, size).
   Intros arr_contents'.
   forward.
@@ -188,7 +189,7 @@ Proof.
        apply H8. left. trivial. }
   forward.
   rewrite harray_split. Intros.
-  forward_call (0, s-1, arr, arrc1). 
+  forward_call (0, s-1, arr, arrc1).
   destruct arrc1. rewrite Zlength_nil in H5. lia.
   generalize (foot_split_spec _ (h :: arrc1)). case foot_split. destruct o. 2: intros [? ?]; subst; discriminate.
   intros. destruct l. destruct arrc1. 2: discriminate. inversion H12. subst h0. clear H12.
@@ -260,9 +261,7 @@ Lemma body_build_heap: semax_body Vprog Gprog f_build_heap build_heap_spec.
 Proof.
   start_function.
   assert_PROP (2 * (size - 1) <= Int.max_unsigned). {
-    go_lower. unfold harray. saturate_local. apply prop_right.
-    destruct H1 as [? [? [? [? ?]]]].
-    destruct arr; try contradiction. simpl in H5. rep_lia. }
+    apply prop_right. rep_lia. }
   assert (Zlength arr_contents <= Int.max_unsigned) by rep_lia.
   forward.
   rewrite sub_repr. rewrite <- Zparent_repr. 2: lia.
@@ -310,14 +309,14 @@ Proof.
   rewrite Zlength_correct, Nat2Z.id. apply le_refl.
 * (* Main line *)
   assert (Hx : i < Zlength arr_contents) by lia. specialize (H2 Hx). clear H1 Hx. rename H2 into H1. rename H3 into H2.
-  forward_loop (EX i' : Z, EX arr_contents' : list heap_item, 
-                 PROP (0 <= i' < Zlength arr_contents; 
+  forward_loop (EX i' : Z, EX arr_contents' : list heap_item,
+                 PROP (0 <= i' < Zlength arr_contents;
                        sink arr_contents (Z.to_nat i) = sink arr_contents' (Z.to_nat i'))
                  LOCAL (temp _k (Vint (Int.repr i')); temp _arr arr; temp _first_available (Vint (Int.repr first_available)))
                  SEP (harray arr_contents' arr)).
   Exists i arr_contents. entailer!.
   Intros i' arr_contents'.
-  assert (Zlength arr_contents = Zlength arr_contents'). { unfold sink in H4. 
+  assert (Zlength arr_contents = Zlength arr_contents'). { unfold sink in H4.
     generalize (sink_permutation _ cmp_rel cmp_dec arr_contents (Z.to_nat i)); intro.
     generalize (sink_permutation _ cmp_rel cmp_dec arr_contents' (Z.to_nat i')); intro.
     apply Permutation_Zlength in H5. apply Permutation_Zlength in H6. congruence. }
@@ -328,8 +327,8 @@ Proof.
       rewrite <- Zleft_child_unfold in H6; try lia.
       unfold Zleft_child in H6. rewrite H5 in H6. rewrite Zlength_correct in H6.
       erewrite sink_done in H4. 2: apply Znth_nth_error; lia.
-      rewrite <- H4. { split. 
-      * apply sink_hO_bounded. apply cmp_po. apply cmp_linear. apply H2. 
+      rewrite <- H4. { split.
+      * apply sink_hO_bounded. apply cmp_po. apply cmp_linear. apply H2.
       * apply sink_permutation. }
       intros. assert (left_child (Z.to_nat i') < length arr_contents')%nat by (apply nth_error_Some; congruence).
       lia.
@@ -339,7 +338,7 @@ Proof.
   rewrite mul_repr, add_repr. rewrite <- Zleft_child_unfold. 2: lia.
   forward_if (EX b : bool, PROP (if b then Zright_child i' <  first_available /\  cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents')
                                       else Zright_child i' >= first_available \/ ~cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents') )
-                           LOCAL (temp _t'1 (Val.of_bool b); temp _k (Vint (Int.repr i')); temp _j (Vint (Int.repr (Zleft_child i'))); temp _arr arr; temp _first_available (Vint (Int.repr first_available))) 
+                           LOCAL (temp _t'1 (Val.of_bool b); temp _k (Vint (Int.repr i')); temp _j (Vint (Int.repr (Zleft_child i'))); temp _arr arr; temp _first_available (Vint (Int.repr first_available)))
                            SEP (harray arr_contents' arr)).
     { forward_call (Zright_child i', Zleft_child i', arr, arr_contents').
         { entailer!. simpl. repeat f_equal. rewrite Zright_child_unfold, Zleft_child_unfold; lia. }
@@ -351,13 +350,13 @@ Proof.
       rewrite Int.unsigned_repr in H7. 2,3,4,5: rep_lia.
       case cmp; entailer!. }
     { forward. Exists false.
-      rewrite Zright_child_unfold, Zleft_child_unfold in *. rewrite Int.unsigned_repr in H7. 
+      rewrite Zright_child_unfold, Zleft_child_unfold in *. rewrite Int.unsigned_repr in H7.
       entailer!. all: rep_lia. }
   Intro bo.
   set (j' := if bo then Zright_child i' else Zleft_child i').
   forward_if (PROP (if bo then Zright_child i' <  first_available /\  cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents')
                           else Zright_child i' >= first_available \/ ~cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents') )
-              LOCAL (temp _t'1 (Val.of_bool bo); temp _k (Vint (Int.repr i')); temp _j (Vint (Int.repr j')); temp _arr arr; temp _first_available (Vint (Int.repr first_available))) 
+              LOCAL (temp _t'1 (Val.of_bool bo); temp _k (Vint (Int.repr i')); temp _j (Vint (Int.repr j')); temp _arr arr; temp _first_available (Vint (Int.repr first_available)))
               SEP (harray arr_contents' arr)).
     { forward. subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. entailer!. tauto. }
     { forward. entailer!. }
@@ -423,20 +422,16 @@ Time Qed.
 
 Lemma body_swim: semax_body Vprog Gprog f_swim swim_spec.
 Proof.
-  start_function.
-  assert_PROP (Zlength arr_contents <= Int.max_unsigned) as Hz. 
-    { go_lower. unfold harray. saturate_local. apply prop_right.
-      destruct H1 as [? [? [? [? ?]]]].
-      destruct arr; try contradiction. simpl in H5. rep_lia. }
-  forward_loop (EX i' : Z, EX arr_contents' : list heap_item, 
-                PROP (0 <= i' < Zlength arr_contents; 
+  start_function. rename H1 into Hz.
+  forward_loop (EX i' : Z, EX arr_contents' : list heap_item,
+                PROP (0 <= i' < Zlength arr_contents;
                       swim arr_contents (Z.to_nat i) = swim arr_contents' (Z.to_nat i'))
                 LOCAL (temp _k (Vint (Int.repr i')); temp _arr arr)
                 SEP (harray arr_contents' arr)).
   Exists i arr_contents. entailer!.
   Intros i' arr_contents'.
   assert (Zlength arr_contents = Zlength arr_contents'). {
-    unfold swim in H2. 
+    unfold swim in H2.
     generalize (swim_permutation _ cmp_rel cmp_dec arr_contents (Z.to_nat i)); intro.
     generalize (swim_permutation _ cmp_rel cmp_dec arr_contents' (Z.to_nat i')); intro.
     apply Permutation_Zlength in H3. apply Permutation_Zlength in H4. congruence. }
@@ -444,7 +439,7 @@ Proof.
   assert (Hx: i' = 0 \/ i' > 0) by lia.
   forward_if (EX b : bool, PROP (if b then i' > 0 /\  cmp_rel (Znth i' arr_contents') (Znth (Zparent i') arr_contents')
                                       else i' = 0 \/ ~cmp_rel (Znth i' arr_contents') (Znth (Zparent i') arr_contents') )
-                           LOCAL (temp _t'1 (Val.of_bool b); temp _k (Vint (Int.repr i')); temp _arr arr) 
+                           LOCAL (temp _t'1 (Val.of_bool b); temp _k (Vint (Int.repr i')); temp _arr arr)
                            SEP (harray arr_contents' arr)).
     { (* if-branch *)
       destruct Hx as [Hx | Hx]. subst i'. inversion H4.
@@ -465,12 +460,12 @@ Proof.
       Exists arr_contents'. entailer!. split.
       { assert (heap_ordered (swim arr_contents (Z.to_nat i))). { apply swim_hO; auto. apply cmp_po. apply cmp_linear. }
         unfold swim at 2 in H2. destruct H5.
-        * subst i'. simpl in H2. rewrite swim_0 in H2. rewrite <- H2. trivial. 
+        * subst i'. simpl in H2. rewrite swim_0 in H2. rewrite <- H2. trivial.
         * erewrite swim_done in H2; eauto. rewrite <- H2. trivial.
           apply Znth_nth_error; lia.
           unfold Zparent. rewrite <- Znth_nth_error; try lia.
           rewrite Nat2Z.id. trivial. }
-      { unfold swim in H2. 
+      { unfold swim in H2.
         generalize (swim_permutation _ cmp_rel cmp_dec arr_contents (Z.to_nat i)); intro.
         generalize (swim_permutation _ cmp_rel cmp_dec arr_contents' (Z.to_nat i')); intro.
         rewrite H2 in H4. etransitivity. apply H4. symmetry. trivial. } }
@@ -507,7 +502,10 @@ Proof.
   forward.
   forward.
   forward. { (* C typing issue? *) entailer!. apply H10. discriminate. }
-  forward. entailer!. rewrite Zlength_app, Zlength_one. unfold heap_size in *. lia.
+  forward.
+  assert (0 <= heap_size h < Zlength (heap_items h ++ [h0])). {
+    rewrite Zlength_app, Zlength_one. unfold heap_size in *. lia. }
+  entailer!.
   forward.
   forward.
   (* Just before the call, let's do some cleanup *)
@@ -517,12 +515,13 @@ Proof.
   simpl fst. change (Vint (fst iv), Vint (snd iv)) with (heap_item_rep iv). rewrite upd_Znth_map.
   rewrite <- map_app. rewrite upd_Znth0.
   2,3,4: autorewrite with sublist; unfold heap_size in *; lia.
-  replace (Zlength (heap_items h ++ [h0])) with (Zlength (heap_items h ++ [iv])). 
+  replace (Zlength (heap_items h ++ [h0])) with (Zlength (heap_items h ++ [iv])).
   2: do 2 rewrite Zlength_app, Zlength_one; lia.
   forward_call (heap_size h, arr, heap_items h ++ [iv]).
-    { rewrite Zlength_app, Zlength_one. unfold heap_size in *. split. lia.
-      red. rewrite Zlength_correct, Nat2Z.id.
-      apply weak_heapOrdered2_postpend. apply cmp_po. trivial. }
+    { rewrite Zlength_app, Zlength_one. unfold heap_size in *. split. lia. split.
+      - red. rewrite Zlength_correct, Nat2Z.id.
+        apply weak_heapOrdered2_postpend. apply cmp_po. trivial.
+      - rep_lia. }
   Intro vret.
   forward.
   forward.
@@ -564,10 +563,13 @@ Proof.
   forward.
   unfold harray. entailer!.
   forward_call (0, Zlength l, arr, root :: l).
-  entailer!. simpl. congruence. 
+  entailer!. simpl. congruence.
+  { simpl in H2. rewrite app_comm_cons, Zlength_app in H2. rep_lia. }
   forward.
   forward.
   unfold harray at 1. (* Not delighted with this unfold... *)
+  assert (Hrl: 0 <= Zlength (root :: l) - 1 <= Int.max_unsigned). {
+    simpl in H2. rewrite app_comm_cons, Zlength_app in H2. rep_lia. }
   forward.
     { entailer!. rewrite Zlength_Zexchange. lia. }
     { entailer!. rewrite Znth_map. rewrite <- Hx. rewrite Znth_Zexchange'; try lia. rewrite Znth_0_cons.
@@ -604,21 +606,23 @@ Proof.
     destruct l0. 2: destruct l0; discriminate.
     inversion H. subst foot. clear H Hx.
     simpl.
-    forward_call (0, arr, @nil heap_item, 0, 0). rewrite Zlength_nil. 
+    forward_call (0, arr, @nil heap_item, 0, 0). rewrite Zlength_nil.
       { rewrite Zexchange_eq. unfold harray. rewrite data_at_isptr. entailer. (* Surely there's a less heavy hammer way to do this? *)
         rewrite data_at_zero_array_eq; auto. entailer!. }
       { split. split; inversion 1.
         apply weak_heapOrdered_bounded_root_weak_heapOrdered.
         apply hOwhO. apply cmp_po. apply heapOrdered_empty. }
     (* Prove postcondition *)
-    Intro vret. Exists (n, vret) root. entailer. (* Surely there's a less heavy hammer way to do this? *)
+      Intro vret. Exists (n, vret) root. Intros. simpl fst. simpl snd.
+     (* Surely there's a less heavy hammer way to do this? *)
     apply Permutation_nil in H3. subst vret. clear H Hy.
-    sep_apply harray_emp. rewrite emp_sepcon.
+    sep_apply harray_emp.
     do 2 rewrite fold_harray. unfold valid_pq, hitem.
-    apply andp_right. apply prop_right. auto.
-    Exists arr (root :: junk). simpl. entailer!.
-    apply heapOrdered_empty.
-    rewrite <- harray_split. apply derives_refl.
+    first [now entailer ! | entailer;
+                       Exists arr (root :: junk); simpl;
+                       entailer!;
+                               [apply heapOrdered_empty |
+                                 rewrite <- harray_split; apply derives_refl]].
   * (* main line: heap still has items in it *)
     destruct l0; inversion H. subst h0.
     deadvars!.
@@ -667,8 +671,11 @@ Proof.
   do 2 (rewrite Znth_map; trivial).
   entailer!.
   forward.
-  repeat rewrite Znth_map in *; trivial.
-  entailer!.
+  repeat rewrite Znth_map in *; trivial. simpl.
+  try (rewrite sem_cast_i2i_correct_range;
+       [|destruct (negb (Int.lt (fst (Znth j arr_contents))
+                                (fst (Znth i arr_contents))));
+         now simpl]). entailer !.
 Time Qed.
 
 Lemma body_size: semax_body Vprog Gprog f_size size_spec.
@@ -702,7 +709,7 @@ Proof. unfold heap_item_rep. destruct x,y; reflexivity. Qed.
 
 Lemma body_exch: semax_body Vprog Gprog f_exch exch_spec.
 Proof.
-  start_function.
+  start_function. rename H1 into Hal.
   unfold harray.
   forward. { rewrite Znth_map; trivial. entailer!. }
   forward. { rewrite Znth_map; trivial. entailer!.
@@ -716,23 +723,21 @@ Proof.
     apply H4. discriminate. }
   forward. { repeat rewrite Znth_map; trivial. entailer!. }
   forward.
-  forward. { repeat rewrite Znth_map; trivial. entailer!.
-    clear H3.
-    (* We may be in another C-typing issue... *)
-    case (eq_dec i j); intro.
-    + subst j. rewrite upd_Znth_same. trivial. rewrite Zlength_map; auto.
-    + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
-      (* So ugly... is there no easier way? *)
-      replace (let (x, _) := heap_item_rep _ in x) with (fst (heap_item_rep (Znth j arr_contents))) in H4 by trivial.
-      rewrite heap_item_rep_morph, upd_Znth_map in H4.
-      apply Forall_map in H4.
-      rewrite Forall_Znth in H4. specialize (H4 j).
-      do 2 rewrite Zlength_map in H4. rewrite Zlength_upd_Znth in H4. specialize (H4 H0).
-      do 2 rewrite Znth_map in H4. 2,3,4: autorewrite with sublist; trivial.
-      rewrite upd_Znth_diff in H4; auto. rewrite Znth_map; trivial.
-      (* Flailing around solves the goal... *)
-      simplify_value_fits in H4. destruct H4.
-      apply H4. discriminate. }
+  forward. {
+    repeat rewrite Znth_map; trivial.
+    first [now entailer ! |
+            entailer !; clear H3; case (eq_dec i j); intro;
+    [ subst j; rewrite upd_Znth_same; [| rewrite Zlength_map]; easy |
+      rewrite upd_Znth_diff; auto;[|rewrite Zlength_map; auto..];
+      replace (let (x, _) := heap_item_rep _ in x) with
+        (fst (heap_item_rep (Znth j arr_contents))) in H4 by trivial;
+      rewrite heap_item_rep_morph, upd_Znth_map in H4;
+        apply Forall_map in H4; rewrite Forall_Znth in H4; specialize (H4 j);
+        do 2 rewrite Zlength_map in H4; rewrite Zlength_upd_Znth in H4;
+        specialize (H4 H0);
+        do 2 rewrite Znth_map in H4; [|autorewrite with sublist; trivial..];
+      rewrite upd_Znth_diff in H4; auto; rewrite Znth_map; trivial;
+      simplify_value_fits in H4; destruct H4; apply H4; discriminate]]. }
   forward.
   forward.
   forward.
@@ -741,21 +746,32 @@ Proof.
   2,3,4: autorewrite with sublist; auto.
   repeat rewrite upd_Znth_same.
   2,3: autorewrite with sublist; auto.
+  assert (Hin: forall ind,
+             0 <= ind < Zlength arr_contents ->
+             is_int I32 Signed
+                    (let (x, _) := Znth ind (map heap_item_rep arr_contents) in x)). {
+    intros. remember (@Znth _ (@Inhabitant_reptype CompSpecs t_item) ind
+                            (map heap_item_rep arr_contents)).
+    assert (In r (map heap_item_rep arr_contents)) by
+      (subst; apply Znth_In; now rewrite Zlength_map).
+    apply list_in_map_inv in H2. destruct H2 as [x [? ?]].
+    unfold heap_item_rep in H2. rewrite H2. now simpl. }
   case (eq_dec i j); intro.
-  + subst j. rewrite upd_Znth_overwrite, upd_Znth_same. 2,3: autorewrite with sublist; auto. simpl fst.
-    simpl fst; simpl snd.
+  + subst j. rewrite upd_Znth_overwrite, upd_Znth_same.
+    2,3: autorewrite with sublist; auto. simpl fst. simpl snd.
+    try rewrite sem_cast_i2i_correct_range; auto. simpl force_val.
     replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
              let (_, y) := Znth i (map heap_item_rep arr_contents) in y)
             with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
     rewrite upd_Znth_map, upd_Znth_same_Znth; trivial.
     rewrite Zexchange_eq. Intros. unfold harray. go_lower. cancel.
   + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto. simpl fst.
-    simpl fst; simpl snd.
+    simpl snd. try rewrite !sem_cast_i2i_correct_range; auto. simpl force_val.
     replace (let (x, _) := Znth j (map heap_item_rep arr_contents) in x,
-             let (_, y) := Znth j (map heap_item_rep arr_contents) in y) 
+             let (_, y) := Znth j (map heap_item_rep arr_contents) in y)
             with (heap_item_rep (Znth j arr_contents)) by (rewrite Znth_map; auto).
     replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
-             let (_, y) := Znth i (map heap_item_rep arr_contents) in y) 
+             let (_, y) := Znth i (map heap_item_rep arr_contents) in y)
             with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
     do 2 rewrite upd_Znth_map.
     rewrite fold_harray'. 2: autorewrite with sublist; trivial.

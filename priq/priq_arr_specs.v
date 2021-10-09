@@ -67,7 +67,8 @@ Definition push_spec {CS: compspecs} :=
   WITH pq: val, vertex : Z, weight : Z, priq_contents_val: list val
   PRE [tint, tint, tptr tint]
   PROP (0 <= vertex < size;
-       (@weight_inrange_priq weight))
+        size <= Int.max_signed;
+        (@weight_inrange_priq weight))
   PARAMS (Vint (Int.repr vertex);
           Vint (Int.repr weight);
           pq)
@@ -103,7 +104,8 @@ Definition adjustWeight_spec {CS: compspecs} :=
   WITH pq: val, vertex : Z, newWeight : Z, priq_contents: list Z
   PRE [tint, tint, tptr tint]
   PROP (0 <= vertex < size;
-       @weight_inrange_priq newWeight)
+        size <= Int.max_signed;
+        @weight_inrange_priq newWeight)
   PARAMS (Vint (Int.repr vertex);
           Vint (Int.repr newWeight);
           pq)

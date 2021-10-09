@@ -130,15 +130,14 @@ Proof.
       rewrite (sublist_one i (i+1) priq_contents) by lia.
       rewrite fold_min_another.
       rewrite Z.min_l; [|lia]. split; trivial.
-  - forward.
-    + entailer!.
-      apply find_range.
-      rewrite sublist_same; [|lia..].
-      apply min_in_list; [apply incl_refl | apply Znth_In; lia].
-    + forward.
-      Exists (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0).
-      rewrite sublist_same by lia. entailer!.
-      destruct priq_contents; simpl; auto.
+  - rewrite sublist_same; [|lia..].
+    assert (0 <= find priq_contents (fold_right Z.min (Znth 0 priq_contents)
+                                                priq_contents) 0 <
+              Zlength priq_contents). {
+      apply find_range. apply min_in_list; [apply incl_refl | apply Znth_In; lia]. }
+    forward. forward.
+    Exists (find priq_contents (fold_right Z.min (hd 0 priq_contents) priq_contents) 0).
+    entailer!. destruct priq_contents; simpl; auto.
 Qed.
 
 End PQProof.
