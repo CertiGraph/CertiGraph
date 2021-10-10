@@ -30,7 +30,7 @@ Definition mallocK_spec :=
      PROP (writable_share sh;
            4 <= n <= Ptrofs.max_unsigned - 12 (*we don't want to malloc 0. The 12 is just some constant from the verified malloc*)
           )
-     PARAMS (Vptrofs (Ptrofs.repr n))
+     PARAMS (Vint (Int.repr n))
      GLOBALS (gv)
      SEP (mem_mgr gv)
   POST [ tptr tvoid ]
@@ -77,7 +77,8 @@ Definition exch_spec :=
   DECLARE _exch WITH sh : share, i : Z, j : Z, arr: val, arr_contents: list heap_item
   PRE [tuint, tuint, tptr t_struct_edge]
     PROP (readable_share sh; writable_share sh;
-          0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents)
+          0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents;
+          Zlength arr_contents <= Int.max_unsigned)
     PARAMS (Vint (Int.repr i); Vint (Int.repr j); arr)
     GLOBALS ()
     SEP (harray sh arr_contents arr)
@@ -90,7 +91,8 @@ Definition greater_spec :=
   DECLARE _greater WITH sh : share, i : Z, j : Z, arr: val, arr_contents: list heap_item
   PRE [tuint, tuint, tptr t_struct_edge]
     PROP (readable_share sh;
-          0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents)
+          0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents;
+          Zlength arr_contents <= Int.max_unsigned)
     PARAMS (Vint (Int.repr i); Vint (Int.repr j); arr)
     GLOBALS ()
     SEP (harray sh arr_contents arr)
@@ -123,7 +125,8 @@ Definition build_heap_spec :=
   PRE [tptr t_struct_edge, tuint]
     PROP (readable_share sh; writable_share sh;
           size > 0 ; (* Required because PARENT subtracts 1u *)
-          Zlength arr_contents = size)
+          Zlength arr_contents = size;
+          size <= Int.max_signed)
     PARAMS (arr; Vint (Int.repr size))
     GLOBALS ()
     SEP (harray sh arr_contents arr)

@@ -410,11 +410,8 @@ Time Qed.
 
 Lemma body_build_heap: semax_body Vprog (@Gprog sz) f_build_heap build_heap_spec.
 Proof.
-  start_function.
-  assert_PROP (2 * (size - 1) <= Int.max_unsigned). {
-    go_lower. unfold harray. saturate_local. apply prop_right.
-    destruct H1 as [? [? [? [? ?]]]].
-    destruct arr; try contradiction. simpl in H5. rep_lia. }
+  start_function. rename H1 into Hs.
+  assert_PROP (2 * (size - 1) <= Int.max_unsigned) by (apply prop_right; rep_lia).
   assert (Zlength arr_contents <= Int.max_unsigned) by rep_lia.
   forward.
   rewrite sub_repr. rewrite <- Zparent_repr. 2: lia.
@@ -459,8 +456,11 @@ Proof.
   do 2 (rewrite Znth_map; trivial).
   entailer!.
   forward.
-  repeat rewrite Znth_map in *; trivial.
-  entailer!.
+  repeat rewrite Znth_map in *; trivial. simpl.
+  try (rewrite sem_cast_i2i_correct_range;
+       [| destruct (negb (Int.lt (fst (Znth i arr_contents))
+                                 (fst (Znth j arr_contents)))); now simpl]).
+  simpl. entailer!.
 Time Qed.
 
 Lemma heap_item_rep_morph: forall x y,
@@ -470,30 +470,24 @@ Proof. unfold heap_item_rep. destruct x,y; reflexivity. Qed.
 
 Lemma body_exch: semax_body Vprog (@Gprog sz) f_exch exch_spec.
 Proof.
-  start_function.
+  start_function. rename H1 into Ha.
   unfold harray.
   forward. { rewrite Znth_map; trivial. entailer!. }
   forward. { rewrite Znth_map; trivial. entailer!. }
   forward. { rewrite Znth_map; trivial. entailer!. }
   forward. { repeat rewrite Znth_map; trivial. entailer!. }
   forward.
+  rewrite !Znth_map; auto.
+  destruct (Znth i arr_contents) as [i1 [i2 i3]] eqn: ?S.
+  destruct (Znth j arr_contents) as [j1 [j2 j3]] eqn: ?S.
+  unfold heap_item_rep at 1 2 3 4 6 7. simpl fst. simpl snd. simpl force_val.
   forward. { repeat rewrite Znth_map; trivial. entailer!.
     clear H2.
     (* We may be in another C-typing issue... *)
     case (eq_dec i j); intro.
     + subst j. rewrite upd_Znth_same. trivial. rewrite Zlength_map; auto.
     + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
-      (* So ugly... is there no easier way? *)
-      replace (let (x, _) := heap_item_rep _ in x) with (fst (heap_item_rep (Znth j arr_contents))) in H3 by trivial.
-      rewrite heap_item_rep_morph, upd_Znth_map in H3.
-      apply Forall_map in H3.
-      rewrite Forall_Znth in H3. specialize (H3 j).
-      do 2 rewrite Zlength_map in H3. rewrite Zlength_upd_Znth in H3. specialize (H3 H0).
-      do 2 rewrite Znth_map in H3. 2,3,4: autorewrite with sublist; trivial.
-      rewrite upd_Znth_diff in H3; auto. rewrite Znth_map; trivial.
-      (* Flailing around solves the goal... *)
-      simplify_value_fits in H3. destruct H3.
-      apply H3. discriminate. }
+      rewrite Znth_map; auto. rewrite S0. unfold heap_item_rep. trivial. }
   forward.
   rewrite upd_Znth_overwrite. rewrite upd_Znth_same.
   2,3: autorewrite with sublist; auto.
@@ -503,18 +497,7 @@ Proof.
     case (eq_dec i j); intro.
     + subst j. rewrite upd_Znth_same. trivial. rewrite Zlength_map; auto.
     + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
-      (* So ugly... is there no easier way? *)
-      replace (let (x, _) := heap_item_rep _ in x) with (fst (heap_item_rep (Znth j arr_contents))) in H4 by trivial.
-      rewrite heap_item_rep_morph, upd_Znth_map in H4.
-      apply Forall_map in H4.
-      rewrite Forall_Znth in H4. specialize (H4 j).
-      rewrite Zlength_map in H4. rewrite Zlength_upd_Znth in H4. rewrite Zlength_map in H4.
-      specialize (H4 H0).
-      do 2 rewrite Znth_map in H4. 2,3,4: autorewrite with sublist; trivial.
-      rewrite upd_Znth_diff in H4; auto. rewrite Znth_map; trivial.
-      (* Flailing around solves the goal... *)
-      simplify_value_fits in H4. rewrite Znth_map in H4. 2,3,4: autorewrite with sublist; trivial.
-      destruct H4. apply H4. discriminate. }
+      rewrite Znth_map; auto. rewrite S0. unfold heap_item_rep. trivial. }
   forward.
   rewrite upd_Znth_overwrite. rewrite upd_Znth_same.
   2,3: autorewrite with sublist; auto.
@@ -526,29 +509,18 @@ Proof.
   rewrite upd_Znth_overwrite. rewrite upd_Znth_same.
   2,3: autorewrite with sublist; auto.
   case (eq_dec i j); intro.
-  + subst j. rewrite upd_Znth_overwrite, upd_Znth_same. 2,3: autorewrite with sublist; auto. simpl fst.
-    unfold snd.
-    replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
-             let (_, y) := Znth i (map heap_item_rep arr_contents) in y)
-            with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
-    replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
-             (let (x, _) := let (_, y) := Znth i (map heap_item_rep arr_contents) in y in x,
-              let (_, y) := let (_, y) := Znth i (map heap_item_rep arr_contents) in y in y))
-            with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
+  + subst j. rewrite upd_Znth_overwrite, upd_Znth_same. 2,3: autorewrite with sublist; auto. simpl fst. unfold snd.
+    replace (Vint i1, (Vint i2, Vint i3)) with
+      (heap_item_rep (Znth i arr_contents)) by now rewrite S.
     rewrite upd_Znth_map, upd_Znth_same_Znth; trivial.
     rewrite Zexchange_eq. Intros. unfold harray. go_lower. cancel.
-  + rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
-    rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
-    rewrite upd_Znth_diff; auto. 2,3: rewrite Zlength_map; auto.
-    replace (let (x, _) := Znth j (map heap_item_rep arr_contents) in x,
-             (let (x, _) := let (_, y) := Znth j (map heap_item_rep arr_contents) in y in x,
-              let (_, y) := let (_, y) := Znth j (map heap_item_rep arr_contents) in y in y))
-            with (heap_item_rep (Znth j arr_contents)) by (rewrite Znth_map; auto).
-    simpl fst.
-    replace (let (x, _) := Znth i (map heap_item_rep arr_contents) in x,
-             (let (x, _) := let (_, y) := Znth i (map heap_item_rep arr_contents) in y in x,
-              let (_, y) := let (_, y) := Znth i (map heap_item_rep arr_contents) in y in y))
-            with (heap_item_rep (Znth i arr_contents)) by (rewrite Znth_map; auto).
+  + do 3 (rewrite upd_Znth_diff; auto; [|rewrite Zlength_map; auto..]).
+    rewrite !Znth_map; auto. rewrite !S0. unfold heap_item_rep at 1 2 4 5 6 7.
+    simpl fst. simpl snd. simpl force_val.
+    replace (Vint i1, (Vint i2, Vint i3)) with
+      (heap_item_rep (Znth i arr_contents)) by now rewrite S.
+    replace (Vint j1, (Vint j2, Vint j3)) with
+      (heap_item_rep (Znth j arr_contents)) by now rewrite S0.
     do 2 rewrite upd_Znth_map.
     rewrite fold_harray'. 2: autorewrite with sublist; trivial.
     replace (upd_Znth j (upd_Znth i arr_contents (Znth j arr_contents)) (Znth i arr_contents)) with (Zexchange arr_contents i j).
