@@ -6,7 +6,9 @@ Require Export CertiGraph.binheap.env_binary_heap_pro.
 Definition exch_spec :=
   DECLARE _exch WITH j : Z, k : Z, arr: val, arr_contents: list heap_item, lookup : val, lookup_contents : list Z
   PRE [tuint, tuint, tptr t_item, tptr tuint]
-    PROP (0 <= j < Zlength arr_contents; 0 <= k < Zlength arr_contents)
+  PROP (0 <= j < Zlength arr_contents; 0 <= k < Zlength arr_contents;
+        Zlength arr_contents <= Int.max_unsigned;
+        Zlength lookup_contents <= Int.max_unsigned)
     PARAMS (Vint (Int.repr j); Vint (Int.repr k); arr; lookup)
     GLOBALS ()
     SEP (linked_heap_array arr_contents arr lookup_contents lookup)
@@ -19,7 +21,8 @@ Definition exch_spec :=
 Definition less_spec :=
   DECLARE _less WITH i : Z, j : Z, arr: val, arr_contents: list heap_item, arr' : val, lookup : list Z
   PRE [tuint, tuint, tptr t_item]
-    PROP (0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents)
+    PROP (0 <= i < Zlength arr_contents; 0 <= j < Zlength arr_contents;
+          Zlength arr_contents <= Int.max_unsigned)
     PARAMS (Vint (Int.repr i); Vint (Int.repr j); arr)
     GLOBALS ()
     SEP (linked_heap_array arr_contents arr lookup arr')
@@ -32,13 +35,15 @@ Definition swim_spec :=
   DECLARE _swim WITH k : Z, arr: val, arr_contents: list heap_item, lookup : val, lookup_contents : list Z
   PRE [tuint, tptr t_item, tptr tuint]
     PROP (0 <= k < Zlength arr_contents;
-          weak_heap_ordered_bottom_up arr_contents k)
+          weak_heap_ordered_bottom_up arr_contents k;
+          Zlength arr_contents <= Int.max_unsigned;
+          Zlength lookup_contents <= Int.max_unsigned)
     PARAMS (Vint (Int.repr k); arr; lookup)
     GLOBALS ()
     SEP (linked_heap_array arr_contents arr lookup_contents lookup)
   POST [tvoid]
     EX arr_contents' : list (Z * int * int), EX lookup_contents' : list Z,
-      PROP (lookup_oob_eq arr_contents' lookup_contents lookup_contents'; 
+      PROP (lookup_oob_eq arr_contents' lookup_contents lookup_contents';
             heap_ordered arr_contents'; Permutation arr_contents arr_contents')
       LOCAL ()
       SEP (linked_heap_array arr_contents' arr lookup_contents' lookup).
@@ -46,22 +51,23 @@ Definition swim_spec :=
 Definition sink_spec :=
   DECLARE _sink WITH k : Z, arr: val, arr_contents: list heap_item, first_available : Z, lookup : val, lookup_contents : list Z
   PRE [tuint, tptr t_item, tuint, tptr tuint]
-    PROP (0 <= k <= Zlength arr_contents; 
+    PROP (0 <= k <= Zlength arr_contents;
           first_available = Zlength arr_contents;
           (k = Zlength arr_contents -> (2 * k) <= Int.max_unsigned);
           (k < Zlength arr_contents -> (2 * (first_available - 1) <= Int.max_unsigned)); (* i = fa - 1 -> (2 * i + 1) = 2 * fa - 1, must be representable *)
-          weak_heap_ordered_top_down arr_contents k)
+          weak_heap_ordered_top_down arr_contents k;
+          Zlength lookup_contents <= Int.max_unsigned)
     PARAMS (Vint (Int.repr k); arr; Vint (Int.repr first_available); lookup)
     GLOBALS ()
     SEP (linked_heap_array arr_contents arr lookup_contents lookup)
   POST [tvoid]
     EX arr_contents' : list heap_item, EX lookup_contents' : list Z,
-      PROP (lookup_oob_eq arr_contents' lookup_contents lookup_contents'; 
+      PROP (lookup_oob_eq arr_contents' lookup_contents lookup_contents';
             heap_ordered arr_contents'; Permutation arr_contents arr_contents')
       LOCAL ()
       SEP (linked_heap_array arr_contents' arr lookup_contents' lookup).
 
-Definition pq_size_spec := 
+Definition pq_size_spec :=
   DECLARE _pq_size WITH pq : val, h : heap
   PRE [tptr t_pq]
     PROP ()
@@ -73,7 +79,7 @@ Definition pq_size_spec :=
     LOCAL (temp ret_temp (Vint (Int.repr (heap_size h))))
     SEP (valid_pq pq h).
 
-Definition capacity_spec := 
+Definition capacity_spec :=
   DECLARE _capacity WITH pq : val, h : heap
   PRE [tptr t_pq]
     PROP ()
@@ -114,7 +120,7 @@ Definition pq_insert_nc_spec :=
     LOCAL (temp ret_temp (Vint (Int.repr key)))
     SEP (valid_pq pq h').
 
-Definition pq_make_spec := 
+Definition pq_make_spec :=
   DECLARE _pq_make WITH size : Z
   PRE [tuint]
   PROP (4 <= 12 * size <= Int.max_unsigned)
@@ -128,7 +134,7 @@ Definition pq_make_spec :=
     LOCAL (temp ret_temp pq)
     SEP (valid_pq pq h). (* and the free_toks I get from mallocN *)
 
-Definition pq_free_spec := 
+Definition pq_free_spec :=
   DECLARE _pq_free WITH pq : val, h : heap
   PRE [tptr t_pq]
   PROP ()
@@ -138,9 +144,9 @@ Definition pq_free_spec :=
   POST [tvoid]
     PROP ()
     LOCAL ()
-    SEP (emp). 
+    SEP (emp).
 
-Definition pq_edit_priority_spec := 
+Definition pq_edit_priority_spec :=
   DECLARE _pq_edit_priority WITH pq : val, h : heap, key : Z, newpri : int
   PRE [tptr t_pq, tint, tint]
   PROP (In key (proj_keys h))
@@ -153,4 +159,3 @@ Definition pq_edit_priority_spec :=
          heap_capacity h' = heap_capacity h)
     LOCAL ()
     SEP (valid_pq pq h').
-

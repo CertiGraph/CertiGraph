@@ -8,8 +8,8 @@ Set Nested Proofs Allowed.
 Local Open Scope Z_scope.
 
 Section DijkstraProof.
-  
-  (* The invariants have been dragged out of the 
+
+  (* The invariants have been dragged out of the
      proof for readability and reuse
    *)
   Context {size: Z}.
@@ -40,9 +40,9 @@ Section DijkstraProof.
          forall j,
            0 <= j < i ->
            keys_dist_linked_correctly j keys dist_and_prev h;
-         
+
          dist_and_prev = repeat (Int.repr inf) (Z.to_nat i);
-         
+
          Zlength keys = i;
 
          forall j,
@@ -51,11 +51,11 @@ Section DijkstraProof.
 
          Permutation (map heap_item_payload (heap_items h))
                      (map Int.repr (nat_inc_list (Z.to_nat i)));
-         
+
          Forall (fun item =>
                    heap_item_priority item = Int.repr inf)
                 (heap_items h);
-         
+
          NoDup (map heap_item_payload (heap_items h));
 
          forall j,
@@ -75,11 +75,11 @@ Section DijkstraProof.
 	     j = Int.signed (heap_item_payload j_item);
 
          NoDup keys;
-         
+
          (Permutation
             keys
             (map heap_item_key (heap_items h))))
-         
+
     LOCAL (temp _dist (pointer_val_val dist_ptr);
           temp _prev (pointer_val_val prev_ptr);
           temp _src (Vint (Int.repr src));
@@ -110,7 +110,7 @@ Section DijkstraProof.
                           g (pointer_val_val arr) addresses;
         free_tok (pointer_val_val keys_ptr) (size * sizeof tint);
         free_tok (pointer_val_val temp_ptr) (sizeof (Tstruct _structItem noattr))).
-  
+
   Definition dijk_forloop_inv (g: @DijkGG size inf) sh src keys
              dist_ptr prev_ptr keys_ptr priq_ptr graph_ptr temp_ptr addresses :=
     EX prev : list V,
@@ -119,20 +119,20 @@ Section DijkstraProof.
     EX h : heap,
     PROP (
         dijkstra_correct g src popped prev dist;
-      
+
       Znth src dist = 0;
       Znth src prev = src;
 
       popped <> [] -> In src popped;
       heap_capacity h = size;
-      
+
       forall i,
         vvalid g i ->
         keys_dist_linked_correctly i keys (map Int.repr dist) h;
 
       src_picked_first h src popped;
 
-      in_heap_or_popped popped h;      
+      in_heap_or_popped popped h;
 
       (* Information about the ranges of the three arrays *)
       @inrange_prev size inf prev;
@@ -148,7 +148,7 @@ Section DijkstraProof.
       Forall (fun item =>
                 0 <= Int.signed (heap_item_payload item) < size)
              (heap_items h);
-      
+
       NoDup (map heap_item_payload (heap_items h));
 
       forall some_item,
@@ -162,7 +162,7 @@ Section DijkstraProof.
         exists i_item,
           In i_item (heap_items h) /\
           i = Int.signed (heap_item_payload i_item))
-         
+
          LOCAL (temp _dist (pointer_val_val dist_ptr);
                temp _prev (pointer_val_val prev_ptr);
                temp _keys (pointer_val_val keys_ptr);
@@ -191,7 +191,7 @@ Section DijkstraProof.
              free_tok (pointer_val_val temp_ptr)
                       (sizeof (Tstruct _structItem noattr));
              free_tok (pointer_val_val keys_ptr) (size * sizeof tint)).
-  
+
   Definition dijk_forloop_break_inv (g: @DijkGG size inf) sh
              src keys dist_ptr prev_ptr keys_ptr priq_ptr
              graph_ptr temp_ptr addresses :=
@@ -203,7 +203,7 @@ Section DijkstraProof.
 
         (* This fact comes from breaking while *)
         Permutation popped (VList g);
-         
+
       (* And the correctness condition is established *)
       dijkstra_correct g src popped prev dist)
          LOCAL (temp _pq priq_ptr;
@@ -229,7 +229,7 @@ Section DijkstraProof.
              free_tok (pointer_val_val temp_ptr)
                       (sizeof (Tstruct _structItem noattr));
              free_tok (pointer_val_val keys_ptr) (heap_capacity h * sizeof tint)).
-  
+
   Definition dijk_inner_forloop_inv (g: @DijkGG size inf) sh
              src u ti min_item keys
              dist_ptr prev_ptr priq_ptr keys_ptr h graph_ptr addresses :=
@@ -244,20 +244,20 @@ Section DijkstraProof.
         forall dst,
           vvalid g dst ->
           inv_popped g src popped' prev' dist' dst;
-      
+
       (* inv_unpopped is restored for those vertices
          that the for loop has scanned and repaired *)
       forall dst,
         0 <= dst < i ->
         inv_unpopped g src popped' prev' dist' dst;
-      
+
       (* a weaker version of inv_popped is
          true for those vertices that the
          for loop has not yet scanned *)
       forall dst,
         i <= dst < size ->
         inv_unpopped_weak g src popped' prev' dist' dst u;
-      
+
       (* similarly for inv_unseen,
          the invariant has been
          restored until i:
@@ -265,29 +265,29 @@ Section DijkstraProof.
       forall dst,
         0 <= dst < i ->
         inv_unseen g src popped' prev' dist' dst;
-      
+
       (* and a weaker version of inv_unseen is
          true for those vertices that the
          for loop has not yet scanned *)
       forall dst,
         i <= dst < size ->
         inv_unseen_weak g src popped' prev' dist' dst u;
-      
+
       (* further, some useful facts about src... *)
       Znth src dist' = 0;
       Znth src prev' = src;
       popped' <> [] -> In src popped';
 
       src_picked_first h' src popped';
-           
+
       (* a useful fact about u *)
       In u popped';
-      
+
       (* the lengths of the threee arrays *)
       Zlength dist' = size;
       Zlength prev' = size;
       heap_capacity h' = size;
-                                                           
+
       (* and ranges of the three arrays *)
       @inrange_prev size inf prev';
       @inrange_dist size inf dist';
@@ -315,14 +315,14 @@ Section DijkstraProof.
         In some_item (heap_items h') ->
         Znth (Int.signed (heap_item_payload some_item)) keys =
         heap_item_key some_item;
-      
+
       forall i,
         vvalid g i ->
         ~ In i popped' ->
         exists i_item,
           In i_item (heap_items h') /\
           i = Int.signed (heap_item_payload i_item))
-         
+
          LOCAL (temp _u (Vint (Int.repr u));
                temp _dist (pointer_val_val dist_ptr);
                temp _prev (pointer_val_val prev_ptr);
@@ -333,7 +333,7 @@ Section DijkstraProof.
                temp _size (Vint (Int.repr size));
                temp _inf (Vint (Int.repr inf));
                temp _temp (pointer_val_val ti))
-         
+
          SEP (valid_pq priq_ptr h';
              data_at Tsh
                       (tarray tint size)
@@ -343,7 +343,7 @@ Section DijkstraProof.
                      (tarray tint size)
                      (map Vint (map Int.repr dist'))
                      (pointer_val_val dist_ptr);
-             @SpaceAdjMatGraph size CompSpecs sh id 
+             @SpaceAdjMatGraph size CompSpecs sh id
                                g (pointer_val_val graph_ptr) addresses;
              hitem min_item (pointer_val_val ti);
              data_at Tsh (tarray tint (heap_capacity h))
@@ -351,7 +351,7 @@ Section DijkstraProof.
                      keys_ptr;
              free_tok (pointer_val_val ti) 12;
              free_tok keys_ptr (heap_capacity h * 4)).
-  
+
   (* DIJKSTRA PROOF BEGINS *)
 
   Lemma body_dijkstra: semax_body Vprog (@Gprog size inf)
@@ -394,15 +394,15 @@ Section DijkstraProof.
            1,3: apply NoDup_nil.
            inversion 1.
       }
-               
+
       remember (heap_capacity h) as size.
       rewrite app_nil_l, data_at__tarray.
       replace (size * sizeof tint / sizeof tint) with size.
       2: rewrite Z.div_mul; trivial; simpl; lia.
-      entailer!. 
+      entailer!.
       apply (malloc_hitem (pointer_val_val ti)).
       trivial.
-      
+
     - rename keys into keys0.
       forward. forward.
       forward_call (priq_ptr, h0, inf, Int.repr i).
@@ -415,7 +415,7 @@ Section DijkstraProof.
       rename H13 into Hb'.
       rename H14 into H_NoDup_keys.
       rename H15 into H_keys_perm.
-             
+
       Intro temp'. destruct temp' as [h' key].
       forward.
       repeat rewrite upd_Znth_repeat; try lia.
@@ -431,7 +431,7 @@ Section DijkstraProof.
            unfold key_type in *. lia.
       }
       replace (Z.to_nat (size - i)) with (Z.to_nat 1 + Z.to_nat (size - (i + 1)))%nat.
-      2: lia. 
+      2: lia.
       rewrite (repeat_app _ (Z.to_nat 1) (Z.to_nat (size - (i + 1)))).
       simpl repeat at 1.
       rewrite upd_Znth_app1.
@@ -440,14 +440,14 @@ Section DijkstraProof.
           [(Vint (Int.repr key))].
       2: { rewrite upd_Znth0. reflexivity. }
       (* and done *)
-      
+
       Exists h' (keys0 ++ [key]) (dist_and_prev ++ [Int.repr inf]).
 
       assert_PROP (NoDup (map heap_item_key (heap_items h'))). {
         sep_apply valid_heap_NoDup_keys. entailer!.
       }
       rename H9 into Hc'.
-            
+
       entailer!;
               remember (heap_capacity h) as size;
         remember (heap_size h0) as i;
@@ -483,7 +483,7 @@ Section DijkstraProof.
              rewrite map_app in Hc'. simpl in Hc'. apply NoDup_remove_2 in Hc'.
              apply not_In_app in Hc'. destruct Hc'.
              rewrite filter_empty, filter_empty; try reflexivity;
-               intros; case Z.eq_dec; simpl; auto; intro; exfalso; 
+               intros; case Z.eq_dec; simpl; auto; intro; exfalso;
                  [apply H0 | apply H]; rewrite <- e;
                    unfold heap_item_key at 1; simpl; apply in_map; trivial.
           -- assert (0 <= j < i) by lia.
@@ -574,7 +574,7 @@ Section DijkstraProof.
           -- subst j. clear H5. left.
              rewrite Znth_app2 by lia.
              replace (i - Zlength keys0) with 0 by lia.
-             rewrite Znth_0_cons. trivial. 
+             rewrite Znth_0_cons. trivial.
           -- assert (0 <= j < i) by lia.
              clear H5. right.
              rewrite Znth_app1 by lia. apply Ht; trivial.
@@ -627,7 +627,7 @@ Section DijkstraProof.
           symmetry in H5.
           apply (Permutation_trans H5).
           apply (Permutation_map heap_item_key) in H8.
-          simpl in H8. 
+          simpl in H8.
           apply Permutation_trans with
               (l' :=
                  (heap_item_key (key, Int.repr inf, Int.repr i)
@@ -635,7 +635,7 @@ Section DijkstraProof.
             trivial.
           unfold heap_item_key at 1. simpl.
           apply perm_skip. trivial.
-          
+
       + repeat rewrite map_app; rewrite app_assoc; cancel.
         rewrite repeat1, upd_Znth_app2,
         Zlength_map, Zlength_repeat, Z.sub_diag,
@@ -668,7 +668,7 @@ Section DijkstraProof.
         sep_apply valid_heap_NoDup_keys. entailer!.
       }
       rename H6 into Hr.
-     
+
       rewrite Z.sub_diag, repeat_0, app_nil_r, app_nil_r.
       assert (Htemp: 0 <= src < Zlength keys) by lia.
       forward. forward. forward.
@@ -679,14 +679,14 @@ Section DijkstraProof.
       assert (H_hb_cap: heap_capacity hb = size) by lia.
       clear H7.
       (* Special values for src have been inserted *)
-      
+
       (* We will now enter the main while loop.
        We state the invariant just below, in PROP.
 
        VST will first ask us to first show the
        invariant at the start of the loop
        *)
-      
+
       forward_loop
         (dijk_forloop_inv g sh src keys
                           dist_ptr prev_ptr keys_pv priq_ptr
@@ -702,16 +702,16 @@ Section DijkstraProof.
 
         clear H6 H7 H8 H9 H10 H11 H12 H13 H14 H15 H16 H17
               H18 PNpriq_ptr PNkeys_ptr.
-        
+
         remember (heap_capacity h) as size.
         assert (Htemp: Zlength (repeat inf (Z.to_nat size)) = size). {
           rewrite Zlength_repeat; ulia.
         }
-        
+
         split3; [| |split3; [| |split3; [| |split3;
                                             [| |split3; [| |split3; [| |split3]]]]]].
         * apply (dijkstra_correct_nothing_popped g src); trivial.
-        * rewrite upd_Znth_same; ulia. 
+        * rewrite upd_Znth_same; ulia.
         * rewrite upd_Znth_same; ulia.
         * red in H3 |- *. intros.
           left.
@@ -728,7 +728,7 @@ Section DijkstraProof.
              rewrite Znth_repeat_inrange in H3; trivial.
              apply Permutation_find_item_by_key with (k := k) in H_ha_hb_rel.
              rewrite H6 in H_ha_hb_rel.
-             rewrite find_item_by_key_update_pri_by_key with 
+             rewrite find_item_by_key_update_pri_by_key with
                (op := Int.repr inf) (v := Int.repr src) in H_ha_hb_rel; trivial.
              symmetry in H_ha_hb_rel. apply Permutation_length_1_inv in H_ha_hb_rel.
              trivial.
@@ -815,7 +815,7 @@ Section DijkstraProof.
             try apply Forall_repeat; try ulia.
           left. pose proof (size_representable g).
           split; [reflexivity|].
-          apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; lia. 
+          apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; lia.
         * red. apply Forall_nil.
         * apply NoDup_nil.
         * intros.
@@ -823,7 +823,7 @@ Section DijkstraProof.
           rewrite update_pri_by_key_keys_unaffected in H_ha_hb_rel.
           apply Permutation_sym in H_ha_hb_rel.
           unfold proj_keys in Hc |- *.
-          apply (Permutation_in _ H_ha_hb_rel), Hc, (vvalid_meaning g); trivial.      
+          apply (Permutation_in _ H_ha_hb_rel), Hc, (vvalid_meaning g); trivial.
         * rewrite Forall_forall. intros.
           apply (Permutation_in _ H_ha_hb_rel) in H4.
           unfold update_pri_by_key in H4.
@@ -855,7 +855,7 @@ Section DijkstraProof.
           1: apply Hy; trivial.
           destruct H4 as [? [? [? [? [? ?]]]]].
           specialize (Hy _ H4).
-          rewrite H7, H8; trivial.          
+          rewrite H7, H8; trivial.
         * intros i ? _.
           apply (vvalid_meaning g) in H4.
           specialize (Hc' _ H4).
@@ -873,14 +873,14 @@ Section DijkstraProof.
              destruct (Z.eq_dec (Znth src keys)
                                 (heap_item_key x)); trivial.
         * repeat rewrite map_repeat; cancel.
-            
+
       + (* Now the body of the while loop begins. *)
         unfold dijk_forloop_inv.
         rename H1 into H_ha_cap.
         rename H2 into H_ha_size.
         rename H3 into H_keys_ha.
         subst dist_and_prev.
-        rename H5 into H_keys_sz.        
+        rename H5 into H_keys_sz.
         Intros prev dist popped hc.
         (* may need a link between hc and hb? *)
 
@@ -891,7 +891,7 @@ Section DijkstraProof.
         rename H15 into Hs.
         rename H16 into Ht.
         rename H17 into Hz.
-                
+
         assert_PROP (Zlength prev = size).
         { entailer!. now repeat rewrite Zlength_map in *. }
         assert_PROP (Zlength dist = size).
@@ -914,10 +914,10 @@ Section DijkstraProof.
           assert_PROP (0 <= heap_size hc <= Int.max_unsigned). {
             unfold valid_pq.
             Intros arr junk lookup l_contents.
-            entailer!. 
-            unfold heap_size. 
-            pose proof (Zlength_nonneg junk). 
-            split; [apply Zlength_nonneg|]. 
+            entailer!.
+            unfold heap_size.
+            pose proof (Zlength_nonneg junk).
+            split; [apply Zlength_nonneg|].
             apply Z.le_trans with (m := heap_capacity hc).
             1: rewrite <- H16, Zlength_app; lia.
             lia.
@@ -928,13 +928,13 @@ Section DijkstraProof.
                          (data_at _ _ _ _)
                          (free_tok _ _)
                          (free_tok _ _)
-                         (SpaceAdjMatGraph _ _ _ _ _).      
+                         (SpaceAdjMatGraph _ _ _ _ _).
           forward_call (priq_ptr,
                         hc,
-                        pointer_val_val ti). 
+                        pointer_val_val ti).
 
           (* hd is skipped because it is "head" *)
-          Intros temp. destruct temp as [he min_item]. 
+          Intros temp. destruct temp as [he min_item].
           simpl fst in *. simpl snd in *.
 
           thaw FR.
@@ -946,7 +946,7 @@ Section DijkstraProof.
           2: unfold hitem; trivial.
           simpl.
           remember (Int.signed (snd min_item)) as u.
-          
+
           (* u is the minimally chosen item from the
            "seen but not popped" category of vertices *)
 
@@ -957,10 +957,10 @@ Section DijkstraProof.
             rewrite Forall_forall in Hk.
             apply Hk, (Permutation_cons_In _ _ _ H15).
           }
-          
+
           assert (0 <= u < size). {
             apply (vvalid_meaning g) in H_u_valid; trivial.
-          } 
+          }
 
           assert (Ha: In min_item (heap_items hc)). {
             apply Permutation_cons_In with (l2 := heap_items he); trivial.
@@ -989,16 +989,16 @@ Section DijkstraProof.
 
             assert (Htemp: 0 <= u < Zlength dist) by lia.
             rename H10 into H10'.
-            
+
             pose proof (Forall_Znth _ _ u Htemp H10').
-            
+
             simpl in H10. destruct H10; [trivial | exfalso].
             clear Htemp.
             destruct (H1 _ H_u_valid) as [_ [_ ?]].
-            
+
             clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1 H10' H12 Hd' Ha Ht Z_EqDec.
 
-            assert (Hai: v :: popped <> []) by inversion 1.  
+            assert (Hai: v :: popped <> []) by inversion 1.
             specialize (H4 Hai). clear Hai.
 
             destruct (Hconn u H_u_valid) as
@@ -1032,14 +1032,14 @@ Section DijkstraProof.
               eapply valid_path_valid. apply Hag3. apply in_path_eq_epath_to_vpath; auto.
               rewrite Zlength_epath_to_vpath in H.
               pose proof (inf_further_restricted g).
-              
+
               eapply Z.le_lt_trans. 2: apply H0. rewrite Z.mul_comm.
               apply Zmult_le_compat_l.
               unfold path_cost.E, E in *.
               ulia.
               apply Z.div_pos; rep_lia.
             }
-            
+
             (* child' is in heap, or is u
                by minimality of u, child's dist-cost is inf
                by inv_unpopped on child', child' should have < inf cost.
@@ -1061,7 +1061,7 @@ Section DijkstraProof.
                 Opaque Int.max_signed.
                 simpl in H10'.
                 Transparent Int.max_signed.
-                
+
                 pose proof (inf_bounded_above_dist g).
                 destruct H10'; lia.
               }
@@ -1071,7 +1071,7 @@ Section DijkstraProof.
               (* antisymmetry *)
 
               rewrite <- H10.
-              
+
               clear - H15 H16 Hequ H6 H8 H19 H20 H21 H_u_valid Hd H18 H12 Hd' Ha Ht H10'.
 
               (* setting up the Forall...*)
@@ -1124,7 +1124,7 @@ Section DijkstraProof.
                 apply Z.le_trans with (m := size * (Int.max_signed / size)).
                 - apply Zmult_le_compat_r.
                   lia. apply Z.div_pos; lia.
-                - apply Z.le_trans with (m := Int.max_signed). 
+                - apply Z.le_trans with (m := Int.max_signed).
                   apply Z.mul_div_le. lia. lia. }
               rewrite <- Int.signed_repr.
               rewrite <- (Int.signed_repr (Znth child' dist)). lia.
@@ -1134,7 +1134,7 @@ Section DijkstraProof.
               Opaque Int.max_signed.
               simpl in H10'.
               Transparent Int.max_signed.
-                
+
               destruct H10'. rep_lia.
               rep_lia.
               apply (Forall_Znth _ _ u) in H10'.
@@ -1149,12 +1149,12 @@ Section DijkstraProof.
             assert (vvalid g mom'). {
               apply (path_ends_valid_dst _ src _ p1); trivial.
             }
-            
+
             destruct (H1 _ H23) as [? _].
             specialize (H24 H7).
             destruct H24 as [[? ?] | [optp2mom' [? [? ?]]]].
             1: apply (H25 p1); trivial.
-            
+
             destruct (H1 _ H19) as [_ [_ ?]].
             apply (H27 H8 H22 mom' optp2mom'); trivial.
             destruct H24 as [? [? _]].
@@ -1162,7 +1162,7 @@ Section DijkstraProof.
             - apply (path_ends_meet _ _ _ src mom' child'); trivial.
               red. simpl. rewrite (edge_dst_snd g). split; trivial.
             - simpl. rewrite (edge_src_fst g). split; trivial.
-          } 
+          }
 
           (* This is the popped array with which
            we will enter the for loop.
@@ -1178,10 +1178,10 @@ Section DijkstraProof.
             apply Z.le_trans with (m := size * (Int.max_signed / size)).
             - apply Zmult_le_compat_r.
               lia. apply Z.div_pos; lia.
-            - apply Z.le_trans with (m := Int.max_signed). 
+            - apply Z.le_trans with (m := Int.max_signed).
               apply Z.mul_div_le. lia. lia.
           }
-          
+
           forward_for_simple_bound
             size
             (dijk_inner_forloop_inv
@@ -1200,10 +1200,10 @@ Section DijkstraProof.
 
             2: {
               replace (heap_capacity h) with (heap_capacity he) by lia.
-              cancel. 
+              cancel.
             }
             remember (Int.signed (snd min_item)) as u.
-            remember (heap_capacity h) as size. 
+            remember (heap_capacity h) as size.
             symmetry in Heqsize.
             clear H20 H21 H22 H23 H24 H25 H26 H27 H28
                   H29 H30 H31 H32 H33 PNpriq_ptr.
@@ -1218,11 +1218,11 @@ Section DijkstraProof.
               apply (Permutation_in x) in H15; trivial.
               destruct H15. subst x. reflexivity. auto.
             }
-            
+
             split3; [| | split3; [| |split3; [| |split3;
                                                  [| |split3; [| |split3;
                     [| |split3; [| |split]]]]]]]; trivial.
-            ++ (* if popped = [], then 
+            ++ (* if popped = [], then
                 prove inv_popped for [u].
                 if popped <> [], then we're set
                 *)
@@ -1239,10 +1239,10 @@ Section DijkstraProof.
                  1: apply H4; inversion 1.
                  rewrite <- Heql in *.
                  intros.
-                 
+
                  specialize (Hz _ H21 H22).
                  destruct Hz as [i_item [? ?]].
-                 
+
                  assert (cmp_rel min_item i_item). {
                    clear -H23 Ha H15 H16.
                    eapply Permutation_in in Ha.
@@ -1293,10 +1293,10 @@ Section DijkstraProof.
                      apply Znth_In. lia.
                    }
                    specialize (H10 _ H26). destruct H10; [|ulia].
-                   
+
                    ulia.
                }
-               replace u with src in * by now apply Hl.  
+               replace u with src in * by now apply Hl.
                intros. intro.
                simpl in H21; destruct H21; [|lia].
                subst dst; clear H20.
@@ -1311,15 +1311,15 @@ Section DijkstraProof.
                       inversion 1.
                   --- apply acyclic_nil_path.
                ** unfold path_in_popped.
-                  intros. 
+                  intros.
                   inversion H20.
-                  --- simpl in H21. 
+                  --- simpl in H21.
                       subst step. simpl; left; trivial.
                   --- destruct H21 as [? [? _]].
                       inversion H21.
                ** red. intros. rewrite (path_cost_zero g); try ulia.
                   apply path_cost_pos; trivial.
-  
+
             ++ intros.
                apply (vvalid_meaning g) in H20.
                apply inv_unpopped_weak_add_unpopped; trivial.
@@ -1331,7 +1331,7 @@ Section DijkstraProof.
                destruct popped eqn:?.
                2: right; apply H4; inversion 1.
                simpl. left. symmetry. apply Hl; trivial.
-               
+
             ++ red. intros. inversion H21.
 
             ++ apply in_eq.
@@ -1344,7 +1344,7 @@ Section DijkstraProof.
                specialize (Hd _ H20 H22).
                unfold proj_keys in Hd |- *.
                pose proof (Permutation_map heap_item_key H15).
-               apply (Permutation_in _ H23) in Hd. 
+               apply (Permutation_in _ H23) in Hd.
                simpl in Hd.
 
                destruct Hd as [Hd | ?]; trivial.
@@ -1357,7 +1357,7 @@ Section DijkstraProof.
                }
                clear H8 H22.
                destruct H as [i_item [Hb ?]].
-               
+
                generalize (H6 _ H20 _ eq_refl); intro.
                destruct H0. 2: {
                  destruct H0. rewrite <- Hd.
@@ -1370,7 +1370,7 @@ Section DijkstraProof.
                apply (vvalid_meaning g) in H20.
                apply (vvalid_meaning g) in H_u_valid.
                repeat rewrite Int.Z_mod_modulus_eq, Z.mod_small in H5; ulia.
-               
+
             ++ red in H8 |- *. intros.
                specialize (H8 i_item). intro.
                replace i_item with min_item in *.
@@ -1399,7 +1399,7 @@ Section DijkstraProof.
                  apply in_map_iff. exists (i1, i2, mi3). auto.
                  destruct H2. trivial.
                  exfalso. apply H1. apply in_or_app. right.
-                 apply in_map_iff. exists (i1, i2, mi3). auto. 
+                 apply in_map_iff. exists (i1, i2, mi3). auto.
                }
                destruct (In_Permutation_cons _ _ H21) as [he' ?].
                pose proof (Perm_Perm_cons_Perm H15 H22).
@@ -1416,7 +1416,7 @@ Section DijkstraProof.
                      from hc. the question becomes whether i was that min.
                    *)
                  apply (vvalid_meaning g) in H20.
-                 apply (vvalid_meaning g) in H_u_valid.                   
+                 apply (vvalid_meaning g) in H_u_valid.
                  clear -H6 H15 H20 H21 Hequ Hd' Ht Ha H_keys_sz
                            H_u_valid H_NoDup_keys.
                  destruct (Z.eq_dec i u).
@@ -1429,7 +1429,7 @@ Section DijkstraProof.
                      replace k with (heap_item_key min_item) in H; trivial.
                      specialize (Ht _ Ha).
                      rewrite <- Ht, <- H21, Hequ. f_equal.
-                     
+
                  --- left. unfold find_item_by_key in *.
                      apply (Permutation_filter _ _ _
                               (fun item : heap_item =>
@@ -1452,7 +1452,7 @@ Section DijkstraProof.
                          spec H_NoDup_keys. rewrite <- ZtoNat_Zlength; lia.
                          ulia.
                      +++ simpl in H15; trivial.
-                     
+
                ** right. intro. apply H6.
                   unfold proj_keys in *.
                   apply (Permutation_map heap_item_key) in H15.
@@ -1497,7 +1497,7 @@ Section DijkstraProof.
             freeze FR := (data_at _ _ _ _) (data_at _ _ _ _)  (data_at _ _ _ _).
             assert (1 = 1) by trivial.
             Intros.
-            
+
             rename H22 into H_inv_popped.
             rename H23 into H_inv_unpopped.
             rename H24 into H_inv_unpopped_weak.
@@ -1540,8 +1540,8 @@ Section DijkstraProof.
                 apply Z.div_pos; ulia.
                 lia.
             }
-            
-            forward_call (sh, g, graph_ptr, addresses, u, i).            
+
+            forward_call (sh, g, graph_ptr, addresses, u, i).
             remember (Znth i (Znth u (@graph_to_mat size g id))) as cost.
 
             assert (H_i_valid: vvalid g i). {
@@ -1574,7 +1574,7 @@ Section DijkstraProof.
                  pose proof (size_representable g). lia.
                }
                clear Htemp.
-               
+
                assert (0 <= Znth u dist' <= inf). {
                  assert (0 <= u < Zlength dist') by lia.
                  apply (sublist.Forall_Znth _ _ _ H23) in H35.
@@ -1591,7 +1591,7 @@ Section DijkstraProof.
                }
                assert (0 <= Znth u dist' + cost <= Int.max_signed). {
                  (* IMPORTANT:
-                  the key point where 
+                  the key point where
                   we were forced to lower
                   inf's upper bound
                   *)
@@ -1613,7 +1613,7 @@ Section DijkstraProof.
                   assert (H23: 0 <= Znth u dist' < inf) by lia.
                   clear Htemp.
 
-                  assert (H_i_not_popped: ~ In i (popped')). { 
+                  assert (H_i_not_popped: ~ In i (popped')). {
                     apply (not_in_popped g src u i cost prev' dist'); trivial.
                   }
                   assert (Htemp : 0 <= i < Zlength dist') by lia.
@@ -1621,12 +1621,12 @@ Section DijkstraProof.
                   clear Htemp.
                   rename H26 into icases.
                   (* rewrite <- H_priq_dist_link in icases; trivial. *)
-                  (* hrmm this is gonna 
+                  (* hrmm this is gonna
                      be a problem.
-                     I need to be able to say that 
+                     I need to be able to say that
                      each item IN the PQ
                      is there at cost = or < inf
-                   *) 
+                   *)
 
                   assert (0 <= i < Zlength keys) by lia.
                   forward. forward. forward. forward.
@@ -1635,14 +1635,14 @@ Section DijkstraProof.
                   1,3: repeat rewrite Zlength_map; lia.
                   forward_call (priq_ptr, h',
                                 Znth i keys, Int.repr (Znth u dist' + cost)).
-                  
+
 (* Now we must show that the for loop's invariant
    holds if we take another step,
    ie when i increments
-                
+
    We will provide the arrays as they stand now:
    with the i'th cell updated in all three arrays,
-   to log a new improved path via u 
+   to log a new improved path via u
  *)
                   Intros hf.
                   Exists (upd_Znth i prev' u).
@@ -1664,7 +1664,7 @@ Section DijkstraProof.
                   rewrite <- Heqnewcost in *.
 
                   assert (u <> i) by (intro; subst; lia).
-                  
+
                   split3; [| | split3;
                                [| | split3;
                                     [| | split3;
@@ -1676,7 +1676,7 @@ Section DijkstraProof.
                   --- apply inv_unpopped_newcost; try ulia.
                   --- now apply inv_unpopped_weak_newcost.
                   --- apply inv_unseen_newcost; ulia.
-                  --- apply inv_unseen_weak_newcost; ulia. 
+                  --- apply inv_unseen_weak_newcost; ulia.
                   --- rewrite upd_Znth_diff; try lia;
                         intro; subst src; lia.
                   --- rewrite upd_Znth_diff; try lia;
@@ -1705,7 +1705,7 @@ Section DijkstraProof.
                         apply Z.le_trans with
                             (m := (Zlength popped' - 1) *  (Int.max_signed / size)).
                         2: apply Z.mul_le_mono_nonneg_r; [apply Z.div_pos|]; ulia.
-                        
+
                         destruct p as [src' links].
                         pose proof (path_in_popped_Zlengths _ _ _ _ Haz H45 H42).
                         pose proof (path_cost_upper_bound
@@ -1732,7 +1732,7 @@ Section DijkstraProof.
                       apply Permutation_sym in H36.
                       apply (Permutation_in _ H36); trivial.
                   --- red in Hf |- *.
-                      intros some_item ?. intro. 
+                      intros some_item ?. intro.
                       pose proof (Permutation_in _ H36 H40).
                       unfold update_pri_by_key in H41.
                       apply list_in_map_inv in H41.
@@ -1773,7 +1773,7 @@ Section DijkstraProof.
                               symmetry in H36.
                               apply Permutation_length_1_inv in H36; trivial.
                               rewrite Znth_map in H41; ulia.
-                              
+
                           *** rewrite upd_Znth_diff; trivial.
                               2,3: rewrite Zlength_map; try lia.
                               assert (Znth i keys <> k). {
@@ -1819,20 +1819,20 @@ Section DijkstraProof.
                       +++ unfold update_pri_if_key.
                           destruct (Z.eq_dec (Znth i keys)
                                              (heap_item_key x)); trivial.
-                      
+
                ** (* This is the branch where we didn't
                    make a change to the i'th vertex. *)
                  rename H26 into H_non_improvement.
-                 forward. 
+                 forward.
                  (* The old arrays are just fine. *)
                  Exists prev' dist' popped' h'.
                  entailer!.
                  remember (Int.signed (snd min_item)) as u.
                  remember (heap_capacity h) as size.
-                 
+
                  clear H26 H36 H37 H38 H39 H40 H41 H42 H43 H44
                        H45 H46 H47 PNkeys_ptr PNpriq_ptr.
-                 
+
                  assert (elabel g (u, i) < inf). {
                    apply (inf_gt_largest_edge g). auto.
                  }
@@ -1881,7 +1881,7 @@ Section DijkstraProof.
                      subst src'.
                      pose proof (path_in_popped_Zlengths _ _ _ _ H1 H6 H).
                      pose proof (path_cost_upper_bound g src links (Int.max_signed / size)).
-                     spec H8. apply Z.div_pos; ulia. 
+                     spec H8. apply Z.div_pos; ulia.
                      spec H8. intros.
                      pose proof (valid_edge_bounds g e). spec H10.
                      eapply valid_path_evalid; eauto.
@@ -1904,7 +1904,7 @@ Section DijkstraProof.
               entailer!.
               remember (Int.signed (snd min_item)) as u.
               remember (heap_capacity h) as size.
-              
+
               clear H23 H24 H25 H26 H36 H37 H38 H39 H40 H41
                     H42 H43 H44 PNkeys_ptr PNpriq_ptr.
 
@@ -1912,12 +1912,12 @@ Section DijkstraProof.
               2: apply edge_representable.
               split3; [| |split]; intros.
               ** destruct (Z.eq_dec dst i).
-                 --- subst dst. 
-(* Will need to use the second half of the 
-   for loop's invariant.          
-   Whatever path worked for i then will 
+                 --- subst dst.
+(* Will need to use the second half of the
+   for loop's invariant.
+   Whatever path worked for i then will
    continue to work for i now:
-   i cannot be improved by going via u 
+   i cannot be improved by going via u
  *)
                      unfold inv_unpopped; intros.
                      assert (i <= i < size) by lia.
@@ -1930,9 +1930,9 @@ Section DijkstraProof.
                        pose proof (edge_cost_pos g (mom, i)).
                        ulia.
                      }
-                     
+
                      right. split3; [| |split3; [| |split3]]; trivial.
-                     
+
                      intros.
                      destruct (@Znth_dist_cases size inf mom' dist')
                        as [e | e]; trivial.
@@ -1941,11 +1941,11 @@ Section DijkstraProof.
                           pose proof (edge_cost_pos g (mom', i)).
                           ulia.
                      }
-                     
+
                      destruct (zlt (Znth mom' dist' +
                                     elabel g (mom', i)) inf).
                      2: ulia.
-                     
+
                      destruct (Z.eq_dec mom' u).
                      1: { subst mom'.
                           assert (0 <= Znth u dist'). {
@@ -1957,7 +1957,7 @@ Section DijkstraProof.
                      apply H43; trivial.
                  --- apply H_inv_unpopped; lia.
               ** destruct (Z.eq_dec dst i);
-                   [| apply H_inv_unpopped_weak]; lia. 
+                   [| apply H_inv_unpopped_weak]; lia.
               ** destruct (Z.eq_dec dst i).
                  2: apply H_inv_unseen; lia.
                  subst dst.
@@ -1968,12 +1968,12 @@ Section DijkstraProof.
                  2: {
                    red in H_inv_unseen_weak.
                    apply (H_inv_unseen_weak _ H24 H25 H26 m p2m); trivial.
-                 }                 
+                 }
                  subst m.
                  assert (0 <= Znth u dist'). {
                    apply (sublist.Forall_Znth _ _ u) in H35.
                    destruct H35; lia. lia.
-                 } 
+                 }
                  intro.
                  apply Z.ge_le, Zle_not_lt in H22; apply H22.
                  assert (In (u, i) (snd p2m ++ snd (u, [(u, i)]))). {
@@ -1986,7 +1986,7 @@ Section DijkstraProof.
                  eapply valid_path_evalid. apply H40.
                  apply in_or_app. right. left. reflexivity.
               ** apply H_inv_unseen_weak; lia.
-          -- (* From the for loop's invariant, 
+          -- (* From the for loop's invariant,
               prove the while loop's invariant. *)
             Intros prev' dist' popped' h'.
             replace (heap_capacity he) with size by lia.
@@ -1994,13 +1994,13 @@ Section DijkstraProof.
             Exists prev' dist' popped' h'.
             entailer!.
             2: unfold hitem_, hitem; apply data_at_data_at_.
-            
+
             remember (Int.signed (snd min_item)) as u.
-                                                     
+
             unfold dijkstra_correct.
             split3; [auto | apply H21 | apply H23];
               try rewrite <- (vvalid_meaning g); trivial.
-            
+
         * (* After breaking from the while loop,
            prove break's postcondition *)
           forward.
@@ -2010,10 +2010,10 @@ Section DijkstraProof.
           assert_PROP (0 <= heap_size hc <= Int.max_unsigned). {
             unfold valid_pq.
             Intros arr junk lookup l_contents.
-            entailer!. 
-            unfold heap_size. 
-            pose proof (Zlength_nonneg junk). 
-            split; [apply Zlength_nonneg|]. 
+            entailer!.
+            unfold heap_size.
+            pose proof (Zlength_nonneg junk).
+            split; [apply Zlength_nonneg|].
             apply Z.le_trans with (m := heap_capacity hc).
             1: rewrite <- H17, Zlength_app; lia.
             lia.
@@ -2049,7 +2049,7 @@ Section DijkstraProof.
           intros. split; intros.
           -- apply <- H0. apply <- H; trivial.
           -- apply H, H0; trivial.
-          
+
       + (* from the break's postcon, prove the overall postcon *)
         unfold dijk_forloop_break_inv.
         Intros prev dist popped hc.
@@ -2065,7 +2065,7 @@ Section DijkstraProof.
           replace (sizeof tint *
                    (sizeof (Tstruct _structItem noattr) / sizeof tint)) with
               (sizeof (Tstruct _structItem noattr)) by ulia.
-            
+
           entailer!.
         }
         thaw FR.
@@ -2079,7 +2079,7 @@ Section DijkstraProof.
         Exists prev dist. entailer!.
         intros. destruct (H7 _ H15) as [? _].
         symmetry in H6.
-        intro. 
+        intro.
         pose proof (Permutation_in _ H6 H17).
         specialize (H16 H18). destruct H16; auto. right.
         destruct H16 as [p [? [? ?]]]. exists p. split3; trivial.
@@ -2090,7 +2090,7 @@ Section DijkstraProof.
   Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell
                                  (@getCell_spec size inf).
   Proof.
-    start_function.
+    start_function. rename H1 into Hs.
     rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.
     assert (Zlength (map Int.repr (Znth u (@graph_to_mat size g id))) = size). {
       unfold graph_to_mat, vert_to_list.

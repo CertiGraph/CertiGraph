@@ -23,7 +23,7 @@ Section DijkstraSpec.
   Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
   Definition Vprog : varspecs. mk_varspecs prog. Defined.
   Global Existing Instance CompSpecs.
-  
+
   Definition getCell_spec :=
     DECLARE _getCell
     WITH sh: rshare,
@@ -34,7 +34,8 @@ Section DijkstraSpec.
          i : V
     PRE [tptr (tptr tint), tint, tint]
       PROP (0 <= i < size;
-            0 <= u < size)
+            0 <= u < size;
+            size <= Int.max_signed)
       PARAMS (pointer_val_val graph_ptr;
            Vint (Int.repr u);
            Vint (Int.repr i))
@@ -42,7 +43,7 @@ Section DijkstraSpec.
       SEP (@SpaceAdjMatGraph size CompSpecs sh id g (pointer_val_val graph_ptr) addresses)
     POST [tint]
       PROP ()
-      RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_mat size g id))))) 
+      RETURN (Vint (Int.repr (Znth i (Znth u (@graph_to_mat size g id)))))
       SEP (@SpaceAdjMatGraph size CompSpecs sh id g (pointer_val_val graph_ptr) addresses).
 
   Definition dijkstra_spec :=
@@ -86,7 +87,7 @@ Section DijkstraSpec.
                        mallocN_spec;
                        freeN_spec;
                        pq_remove_min_nc_spec;
-                       pq_insert_nc_spec; 
+                       pq_insert_nc_spec;
                        pq_size_spec;
                        pq_make_spec;
                        pq_edit_priority_spec;
