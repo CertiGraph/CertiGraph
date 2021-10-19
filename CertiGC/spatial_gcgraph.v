@@ -1260,7 +1260,7 @@ Proof.
         unfold heap_type.
         remember {|
             co_su := Struct;
-            co_members := [(_spaces, tarray (Tstruct _space noattr) 12)];
+            co_members := [Member_plain _spaces (tarray (Tstruct _space noattr) 12)];
             co_attr := noattr;
             co_sizeof := if Archi.ptr64 then 288 else 144;
             co_alignof := WORD_SIZE;
@@ -1270,7 +1270,7 @@ Proof.
             co_sizeof_alignof :=
               prove_Zdivide WORD_SIZE (if Archi.ptr64 then 288 else 144) eq_refl |}.
         apply (align_compatible_rec_Tstruct cenv_cs _heap noattr c _); subst c.
-        1: reflexivity. simpl co_members. intros. simpl in H.
+        1, 2: reflexivity. simpl co_members. intros. simpl in H.
         if_tac in H; inversion H. subst. clear H. inversion H0. subst z0.
         rewrite Z.add_0_r. apply H2.
       * red. simpl. left; reflexivity.

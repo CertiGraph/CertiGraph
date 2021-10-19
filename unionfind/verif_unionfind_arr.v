@@ -140,7 +140,7 @@ Proof.
       rewrite upd_Znth_progressive_list. 2: rewrite Z2Nat.id; lia. entailer. Transparent Znth.
     + forward. Exists rt. entailer!.
       * intros. simpl. rewrite makeSet_vvalid. rewrite Z2Nat.id; lia.
-      * unfold whole_graph, full_graph_at. simpl. Exists (Z.to_nat V). apply andp_right; intros; [apply andp_right; apply prop_right|].
+      * unfold whole_graph, full_graph_at. simpl vvalid. Exists (Z.to_nat V). apply andp_right; intros; [apply andp_right; apply prop_right|].
         -- intros. rewrite makeSet_vvalid. intuition.
         -- rewrite Z2Nat.id; lia.
         -- simpl. unfold vcell_array_at, SAG_VST. rewrite map_length, nat_inc_list_length. rewrite Z2Nat.id. 2: intuition.

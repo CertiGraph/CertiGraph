@@ -33,7 +33,7 @@ Proof.
   sep_apply free_items.
   sep_apply (data_at_data_at_ Tsh (tarray tuint (Zlength lookup_contents))).
   sep_apply free_lookup.
-  simpl.
+  simpl. rewrite !Zaux.Zdiv_eucl_unique.
   rewrite H2. change (16 / 4) with 4.
   rewrite Z.mul_comm, Z_div_mult.
   change 12 with (3 * 4) at 1.

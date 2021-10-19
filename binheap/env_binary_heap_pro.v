@@ -351,7 +351,7 @@ Proof.
   rewrite <- memory_block_data_at_.
   simpl sizeof.
   apply derives_refl'. f_equal. rewrite (Z.mul_comm 12). change 12 with (3 * 4).
-  rewrite Z.mul_assoc.
+  rewrite Zaux.Zdiv_eucl_unique. rewrite Z.mul_assoc.
   rewrite Z_div_mult. 1,2: lia.
   apply malloc_compatible_field_compatible; try reflexivity.
   simpl in *.
@@ -366,13 +366,14 @@ Proof.
   intros. saturate_local.
   sep_apply data_at__memory_block_cancel.
   rewrite <- memory_block_data_at_.
-  simpl. rewrite simpl_size_t_item.
+  simpl. rewrite Zaux.Zdiv_eucl_unique. rewrite simpl_size_t_item.
   apply derives_refl'. f_equal. lia.
   destruct H as [? [? [? [? ?]]]].
   split3; auto.
   split3; auto.
   hnf in H1 |- *.
-  destruct v; auto. simpl. rewrite simpl_size_t_item.
+  destruct v; auto. simpl. simpl sizeof.
+  rewrite Zaux.Zdiv_eucl_unique. rewrite simpl_size_t_item.
   simpl in H1. lia.
   hnf in H2 |- *.
   destruct v; auto.
@@ -409,7 +410,7 @@ Proof.
   rewrite <- memory_block_data_at_.
   simpl sizeof.
   apply derives_refl'. f_equal.
-  rewrite (Z.mul_comm _ size).
+  rewrite (Z.mul_comm _ size). rewrite Zaux.Zdiv_eucl_unique.
   rewrite Z_div_mult; lia.
   apply malloc_compatible_field_compatible; try reflexivity.
   simpl in *.
@@ -424,12 +425,14 @@ Proof.
   intros. saturate_local.
   sep_apply data_at__memory_block_cancel.
   rewrite <- memory_block_data_at_.
-  simpl. rewrite (Z.mul_comm _ size), Z_div_mult; trivial. lia.
+  simpl. rewrite Zaux.Zdiv_eucl_unique.
+  rewrite (Z.mul_comm _ size), Z_div_mult; trivial. lia.
   destruct H as [? [? [? [? ?]]]].
   split3; auto.
   split3; auto.
   hnf in H1 |- *.
-  destruct v; auto. simpl. rewrite (Z.mul_comm _ size), Z_div_mult; trivial. lia.
+  destruct v; auto. simpl. rewrite Zaux.Zdiv_eucl_unique.
+  rewrite (Z.mul_comm _ size), Z_div_mult; trivial. lia.
   hnf in H2 |- *.
   destruct v; auto.
   simpl sizeof. rewrite (Z.mul_comm _ size), Z_div_mult. 2: lia.

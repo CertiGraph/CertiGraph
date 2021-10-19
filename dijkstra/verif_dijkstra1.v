@@ -1063,6 +1063,7 @@ Section DijkstraProof.
                 Transparent Int.max_signed.
 
                 pose proof (inf_bounded_above_dist g).
+                rewrite Zaux.Zdiv_eucl_unique in H10'.
                 destruct H10'; lia.
               }
 
@@ -1134,7 +1135,7 @@ Section DijkstraProof.
               Opaque Int.max_signed.
               simpl in H10'.
               Transparent Int.max_signed.
-
+              rewrite Zaux.Zdiv_eucl_unique in H10'.
               destruct H10'. rep_lia.
               rep_lia.
               apply (Forall_Znth _ _ u) in H10'.
@@ -1142,6 +1143,7 @@ Section DijkstraProof.
               Opaque Int.max_signed.
               simpl in H10'.
               Transparent Int.max_signed.
+              rewrite Zaux.Zdiv_eucl_unique in H10'.
               destruct H10'. rep_lia.
               rep_lia.
             }

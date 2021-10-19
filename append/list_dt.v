@@ -61,9 +61,12 @@ Context  {list_structid: ident} {list_link: ident} {list_token: share -> val -> 
 Fixpoint all_but_link (f: members) : members :=
  match f with
  | nil => nil
- | cons it f' => if ident_eq (fst it) list_link
-                               then f'
-                               else cons it (all_but_link f')
+ | cons it f' => match it with
+                 | Member_plain id _ =>
+                     if ident_eq id list_link
+                     then f' else cons it (all_but_link f')
+                 | Member_bitfield _ _ _ _ _ _ => cons it (all_but_link f')
+                 end
  end.
 
 Lemma list_link_size_in_range (ls: listspec list_structid list_link list_token):
