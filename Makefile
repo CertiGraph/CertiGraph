@@ -21,8 +21,8 @@ LIB_FILES = \
 
 MSL_EXT_FILES = \
   log_normalize.v iter_sepcon.v ramification_lemmas.v abs_addr.v seplog.v \
-  ramify_tactics.v msl_ext.v sepalg.v overlapping.v precise.v alg_seplog.v \
-  overlapping_direct.v precise_direct.v alg_seplog_direct.v
+  # ramify_tactics.v msl_ext.v sepalg.v overlapping.v precise.v alg_seplog.v \
+  # overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
   Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v \
@@ -34,8 +34,8 @@ VERIC_EXT_FILES = \
 FLOYD_EXT_FILES = closed_lemmas.v share.v
   # MapstoSL.v DataatSL.v semax_ram_lemmas.v semax_ram_tac.v exists_trick.v closed_lemmas.v ramification.v share.v
 
-HEAP_MODEL_DIRECT_FILES = \
-  SeparationAlgebra.v mapsto.v SeparationLogic.v
+# HEAP_MODEL_DIRECT_FILES = \
+#   SeparationAlgebra.v mapsto.v SeparationLogic.v
 
 GRAPH_FILES = \
   graph_model.v path_lemmas.v graph_gen.v graph_relation.v reachable_computable.v \
@@ -135,7 +135,6 @@ NORMAL_FILES = \
   $(SAMPLE_EDGE_WEIGHT_FILES:%.v=sample_edge_weight/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v) \
-  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
   $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \

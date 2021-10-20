@@ -1,5 +1,4 @@
 Require Import VST.veric.compcert_rmaps.
-Require Export VST.concurrency.conclib.
 Require Import VST.msl.shares.
 Require Export VST.msl.wand_frame.
 Require Import CertiGraph.lib.List_ext.
@@ -12,6 +11,130 @@ Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import Coq.Lists.List.
 
 Local Open Scope logic.
+
+(** * WARNING
+    The following section contains lemmas copied from
+    concurrency/conclib.v and other files. I put them here to avoid
+    the compatible problem with VST-2.8 *)
+
+(*+ TEMP LEMMAS BEGIN *)
+
+Import FashNotation.
+
+Lemma data_at__eq : forall {cs : compspecs} sh t p,
+    data_at_ sh t p = data_at sh t (default_val t) p.
+Proof. intros; unfold data_at_, data_at, field_at_; auto. Qed.
+
+Lemma approx_eq_i':
+  forall (P Q : pred rmap) n,
+    (|> (P <=> Q))%pred n -> approx n P = approx n Q.
+Proof.
+  intros.
+  apply pred_ext'; extensionality m'.
+  unfold approx.
+  apply and_ext'; auto; intros.
+  specialize (H (level m')); spec H; [simpl; apply later_nat; auto |].
+  specialize (H m').
+  spec H; [lia |].
+  destruct H.
+  specialize (H m').
+  specialize (H1 m').
+  apply prop_ext; split; auto.
+Qed.
+
+Lemma nonexpansive_entail (F: pred rmap -> pred rmap) :
+  nonexpansive F -> forall P Q, (P <=> Q |-- F P <=> F Q)%logic.
+Proof.
+  intros N P Q.
+  specialize (N P Q).
+  eapply derives_trans; [ eapply derives_trans | ]; [ | constructor; apply N | ];
+    apply derives_refl.
+Qed.
+
+Lemma fash_equiv_approx: forall n (R: pred rmap), (|> (R <=> approx n R))%pred n.
+Proof.
+  intros.
+  intros m ? x ?; split; intros y ? ?.
+  + apply approx_lt; auto.
+    apply necR_level in H1.
+    apply later_nat in H; lia.
+  + eapply approx_p; eauto.
+Qed.
+
+Lemma nonexpansive2_super_non_expansive: forall (F: mpred -> mpred -> mpred),
+    (forall P, nonexpansive (fun Q => F P Q)) ->
+    (forall Q, nonexpansive (fun P => F P Q)) ->
+    forall P Q n,
+      approx n (F P Q) = approx n (F (approx n P) (approx n Q)).
+Proof.
+  intros.
+  apply approx_eq_i'.
+  intros m ?.
+  pose proof nonexpansive_entail _ (H P) Q (approx n Q) as H2.
+  inv H2; rename derivesI into H2. specialize (H2 m); cbv beta in H2.
+  spec H2; [apply (fash_equiv_approx n Q m); auto |].
+  pose proof nonexpansive_entail _ (H0 (approx n Q)) P (approx n P) as H3.
+  inv H3; rename derivesI into H3. specialize (H3 m); cbv beta in H3.
+  spec H3; [apply (fash_equiv_approx n P m); auto |].
+  remember (F P Q) as X1.
+  remember (F P (approx n Q)) as X2.
+  remember (F (approx n P) (approx n Q)) as X3.
+  clear - H2 H3.
+  change ((X1 <=> X2)%pred m) in H2.
+  change ((X2 <=> X3)%pred m) in H3.
+  intros y H; specialize (H2 y H); specialize (H3 y H).
+  destruct H2 as [H2A H2B], H3 as [H3A H3B].
+  split; intros z H0.
+  + specialize (H2A z H0); specialize (H3A z H0); auto.
+  + specialize (H2B z H0); specialize (H3B z H0); auto.
+Qed.
+
+Lemma nonexpansive_super_non_expansive: forall (F: mpred -> mpred),
+    nonexpansive F -> forall R n, approx n (F R) = approx n (F (approx n R)).
+Proof.
+  intros.
+  apply approx_eq_i'.
+  intros m ?.
+  apply nonexpansive_entail; auto.
+  clear - H0.
+  apply (fash_equiv_approx n R m); auto.
+Qed.
+
+Lemma firstn_all : forall {A} n (l : list A), (length l <= n)%nat -> firstn n l = l.
+Proof.
+  induction n; destruct l; auto; simpl; intros; try lia.
+  rewrite IHn; auto; lia.
+Qed.
+
+Lemma sublist_all : forall {A} i (l : list A), Zlength l <= i -> sublist 0 i l = l.
+Proof.
+  intros; unfold_sublist_old; simpl.
+  apply firstn_all.
+  rewrite Zlength_correct in *; rep_lia.
+Qed.
+
+Notation "'TYPE' A 'WITH'  x1 : t1 , x2 : t2 , x3 : t3 , x4 : t4 , x5 : t5 'PRE'  [ u , .. , v ] P 'POST' [ tz ] Q" :=
+  (mk_funspec ((cons u%type .. (cons v%type nil) ..), tz) cc_default A
+              (fun (ts: list Type) (x: t1*t2*t3*t4*t5) =>
+                 match x with (x1,x2,x3,x4,x5) => P%argsassert end)
+              (fun (ts: list Type) (x: t1*t2*t3*t4*t5) =>
+                 match x with (x1,x2,x3,x4,x5) => Q%assert end) _ _)
+    (at level 200, x1 at level 0, x2 at level 0, x3 at level 0, x4 at level 0,
+      x5 at level 0,
+      P at level 100, Q at level 100).
+
+Lemma approx_idem : forall n P, compcert_rmaps.R.approx n (compcert_rmaps.R.approx n P) =
+                                  compcert_rmaps.R.approx n P.
+Proof.
+  intros.
+  transitivity (base.compose (compcert_rmaps.R.approx n) (compcert_rmaps.R.approx n) P); auto.
+  rewrite compcert_rmaps.RML.approx_oo_approx; auto.
+Qed.
+
+Notation vint z := (Vint (Int.repr z)).
+Notation vptrofs z := (Vptrofs (Ptrofs.repr z)).
+
+(*+ TEMP LEMMAS END *)
 
 Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
   Eval cbv delta [Archi.ptr64] match
