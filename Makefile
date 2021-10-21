@@ -1,15 +1,36 @@
-VST_DIR = "../VST"
-CURRENT_DIR = "./"
-BITSIZE = 32
-FLOCQ=
 -include CONFIGURE
 
-COQC=$(COQBIN)coqc -w -overriding-logical-loadpath
-COQDEP=$(COQBIN)coqdep
+CURRENT_DIR = "./"
+COQC ?= $(COQBIN)coqc -w -overriding-logical-loadpath
+COQDEP ?= $(COQBIN)coqdep
+COQLIB ?= $(shell $(COQC) -where | tr -d '\r' | tr '\\' '/')
+
+BITSIZE ?= 64
+FLOCQ=
+
+ifeq ($(BITSIZE),64)
+	COQLIBINSTALL ?= $(COQLIB)/user-contrib
+	COMPCERT_DIR ?= $(COQLIB)/user-contrib/compcert
+	VST_DIR ?= $(COQLIB)/user-contrib/VST
+	CLIGHTGEN ?= $(COQLIB)/../../bin/clightgen
+#	TARGET_ARCH ?= x86_64-linux
+else ifeq ($(BITSIZE),32)
+	COQLIBINSTALL ?= $(COQLIB)/../coq-variant
+	COMPCERT_DIR ?= $(COQLIB)/../coq-variant/compcert32/compcert
+	VST_DIR ?= $(COQLIB)/../coq-variant/VST32/VST
+	CLIGHTGEN ?= $(COQLIB)/../../variants/compcert32/bin/clightgen
+#	TARGET_ARCH ?= x86_32-linux
+endif
+
+ifdef COMPCERT_DIR
+INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert $(FLOCQ)
+endif
+
+ifdef VST_DIR
+INCLUDE_VST = -Q $(VST_DIR) VST
+endif
 
 DIRS = lib msl_ext msl_application graph heap_model_direct
-INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert $(FLOCQ)
-INCLUDE_VST = -Q $(VST_DIR) VST
 INCLUDE_CERTIGRAPH = $(foreach d, $(DIRS), -Q $(d) CertiGraph.$(d)) -Q "." CertiGraph
 NORMAL_FLAG = $(INCLUDE_CERTIGRAPH) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
 CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_CERTIGRAPH)
