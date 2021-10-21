@@ -221,7 +221,7 @@ clean:
 
 .PHONY: install
 install:
-  @echo "¯\_(ツ)_/¯"
+	@echo "¯\_(ツ)_/¯"
 
 .DEFAULT_GOAL := all
 
