@@ -221,11 +221,14 @@ cav:
 clean:
 	@rm -f */*.vo */*.glob */.*.aux $(CLIGHT_FILES) .depend
 
+INSTALL_SOURCES = $(NORMAL_FILES) $(CLIGHT_FILES)
+INSTALL_COMPILED = $(INSTALL_SOURCES:%.v=%.vo)
+
 .PHONY: install
 install:
 	install -d "$(INSTALLDIR)"
-	for d in $(sort $(dir $(NORMAL_FILES) $(CLIGHT_FILES))); do install -d "$(INSTALLDIR)/$$d"; done
-	for f in $(NORMAL_FILES) $(CLIGHT_FILES); do install -m 0644 $$f "$(INSTALLDIR)/$$(dirname $$f)"; done
+	for d in $(sort $(dir $(INSTALL_SOURCES) $(INSTALL_COMPILED))); do install -d "$(INSTALLDIR)/$$d"; done
+	for f in $(INSTALL_SOURCES) $(INSTALL_COMPILED); do install -m 0644 $$f "$(INSTALLDIR)/$$(dirname $$f)"; done
 
 .DEFAULT_GOAL := all
 
