@@ -15,7 +15,7 @@ ifeq ($(BITSIZE),64)
 	CLIGHTGEN ?= $(COQLIB)/../../bin/clightgen
 #	TARGET_ARCH ?= x86_64-linux
 else ifeq ($(BITSIZE),32)
-	COQLIBINSTALL ?= $(COQLIB)/../coq-variant
+	COQLIBINSTALL ?= $(COQLIB)/../coq-variant/CertiGraph32
 	COMPCERT_DIR ?= $(COQLIB)/../coq-variant/compcert32/compcert
 	VST_DIR ?= $(COQLIB)/../coq-variant/VST32/VST
 	CLIGHTGEN ?= $(COQLIB)/../../variants/compcert32/bin/clightgen
@@ -224,6 +224,7 @@ clean:
 .PHONY: install
 install:
 	install -d "$(INSTALLDIR)"
+	for d in $(sort $(dir $(NORMAL_FILES) $(CLIGHT_FILES))); do install -d "$(INSTALLDIR)/$$d"; done
 	for f in $(NORMAL_FILES) $(CLIGHT_FILES); do install -m 0644 $$f "$(INSTALLDIR)/$$(dirname $$f)"; done
 
 .DEFAULT_GOAL := all
