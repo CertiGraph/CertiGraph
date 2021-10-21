@@ -22,6 +22,8 @@ else ifeq ($(BITSIZE),32)
 #	TARGET_ARCH ?= x86_32-linux
 endif
 
+INSTALLDIR ?= $(COQLIBINSTALL)/CertiGraph
+
 ifdef COMPCERT_DIR
 INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert $(FLOCQ)
 endif
@@ -221,7 +223,8 @@ clean:
 
 .PHONY: install
 install:
-	@echo "¯\_(ツ)_/¯"
+	install -d "$(INSTALLDIR)"
+	for f in $(NORMAL_FILES) $(CLIGHT_FILES); do install -m 0644 $$f "$(INSTALLDIR)/$$(dirname $$f)"; done
 
 .DEFAULT_GOAL := all
 
