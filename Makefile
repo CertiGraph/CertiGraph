@@ -219,6 +219,10 @@ cav:
 clean:
 	@rm -f */*.vo */*.glob */.*.aux $(CLIGHT_FILES) .depend
 
+.PHONY: install
+install:
+  @echo "¯\_(ツ)_/¯"
+
 .DEFAULT_GOAL := all
 
 -include .depend
