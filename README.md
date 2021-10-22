@@ -80,7 +80,7 @@ $ make BITSIZE=32 -j4
 
 ## Developing within CertiGraph
 
-1. Add our C source and clightgen output to the CertiGraph directory:
+1. Add your C source and clightgen output to the CertiGraph directory:
 	1. Write your `newfile.c` inside CertiGraph.
 	1. `path_to_clightgen/clightgen -DCOMPCERT -normalize -isystem . newfile.c`
 	1. Add `newfile.v` to the list of sources in `Makefile`
