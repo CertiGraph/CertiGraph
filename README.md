@@ -9,6 +9,7 @@ Powered by [Coq](https://coq.inria.fr) and [VST](https://vst.cs.princeton.edu/).
 
 * Aquinas Hobor
 * Shengyi Wang
+* Qinxiang Cao
 * Anshuman Mohan
 
 
