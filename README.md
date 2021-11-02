@@ -14,10 +14,10 @@ Powered by [Coq](https://coq.inria.fr) and [VST](https://vst.cs.princeton.edu/).
 
 ## Papers
 
-* [Functional Correctness of C Implementations of Dijkstra's, Kruskal's, and Prim's Algorithms](https://www.comp.nus.edu.sg/~hobor/Publications/2021/CertiDKP.pdf) (CAV 2021). Aquinas Hobor, Anshuman Mohan, Wei Xiang Leow.
+* [Functional Correctness of C Implementations of Dijkstra's, Kruskal's, and Prim's Algorithms](https://doi.org/10.1007/978-3-030-81688-9_37) (CAV 2021). Aquinas Hobor, Anshuman Mohan, Wei Xiang Leow.
 * [Mechanized verification of graph-manipulating programs](https://www.comp.nus.edu.sg/~hobor/Teaching/SW-PhD.pdf) (Thesis). Shengyi Wang.
 * [A Machine-Checked C Implementation of Dijkstra's Shortest Path Algorithm](https://www.comp.nus.edu.sg/~hobor/Publications/2020/CertifiedDijkstra.pdf). Aquinas Hobor, Anshuman Mohan, Shengyi Wang.
-* [Certifying Graph-Manipulating C Programs via Localizations within Data Structures](https://www.comp.nus.edu.sg/~hobor/Publications/2019/Localize.pdf) (OOPSLA 2019). Aquinas Hobor, Shengyi Wang, Qinxiang Cao, Anshuman Mohan.
+* [Certifying Graph-Manipulating C Programs via Localizations within Data Structures](https://doi.org/10.1145/3360597) (OOPSLA 2019). Aquinas Hobor, Shengyi Wang, Qinxiang Cao, Anshuman Mohan.
 
 
 ## Installing
