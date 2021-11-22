@@ -217,27 +217,33 @@ End SimplifiedModel.
 
 (** ** Part 2: In CertiGraph *)
 
+(** This module contains the basic definitions of graphs, including
+    PreGraph, LabeledGraph and GeneralGraph. They would be discussed
+    below. *)
 Require Import CertiGraph.graph.graph_model.
-Require Import CertiGraph.graph.path_lemmas.
+
+(** This module contains various spatial definitions which connect the
+    mathematical definitions of graphs and their spatial
+    representations, such as "full_vertices_at" below. *)
 Require Import CertiGraph.msl_application.Graph.
 
 Section CertiGraphModel.
 
-(* With the help of the CertiGraph library, we can treat the data in
-   the heap as a graph and reason about it. *)
+(** With the help of the CertiGraph library, we can treat the data in
+    the heap as a graph and reason about it. *)
 
-(* Every graph must have a type called PreGraph. *)
+(** Every graph must have a type called PreGraph. *)
 
 Print PreGraph.
 
-(* To declare a PreGraph, we need to provide the types of the vertices
-   and edges, also with the proofs which say their equliaties are
-   decidable.
+(** To declare a PreGraph, we need to provide the types of the
+    vertices and edges, also with the proofs which say their
+    equliaties are decidable.
 
-   In our case, we can simply define val in VST as the vertex
-   type. The definition of the edge type could be (val * LR) where LR
-   is an inductive type indicating left or right, because what we have
-   is a binary tree here. *)
+    In our case, we can simply define val in VST as the vertex
+    type. The definition of the edge type could be (val * LR) where LR
+    is an inductive type indicating left or right, because what we
+    have is a binary tree here. *)
 
 Definition VType : Type := val.
 
@@ -255,31 +261,31 @@ Proof.
   - right. destruct lx, ly; congruence.
 Defined.
 
-(* V_EqDec and E_EqDec would be maximally inserted. *)
+(** V_EqDec and E_EqDec would be maximally inserted. *)
 
 Check (PreGraph VType EType).
 
-(* When we declared a type like above, we assume we have all the four
-   components of PreGraph: two predicates (vvalid and evalid) and two
-   functions (src and dst). Please refer to the section 4.1 in [1] for
-   more information. *)
+(** When we declared a type like above, we assume we have all the four
+    components of PreGraph: two predicates (vvalid and evalid) and two
+    functions (src and dst). Please refer to the section 4.1 in [1] for
+    more information. *)
 
-(* PreGraph just describes the topological layout of a graph. The
-   graph used in concrete programs usually carry more information. The
-   CertiGraph library provides LabeledGraph, which allows us to
-   represent any type of "labels" attached to vertices or/and edges,
-   or even the whole graph. *)
+(** PreGraph just describes the topological layout of a graph. The
+    graph used in concrete programs usually carry more
+    information. The CertiGraph library provides LabeledGraph, which
+    allows us to represent any type of "labels" attached to vertices
+    or/and edges, or even the whole graph. *)
 
-(* In this case, each node carries an unsigned integer which can be
-   represented by type int. We specify the unit type for labels of edges
-   and the whole graph. *)
+(** In this case, each node carries an unsigned integer which can be
+    represented by type int. We specify the unit type for labels of
+    edges and the whole graph. *)
 
 Definition graph: Type := (LabeledGraph VType EType int unit unit).
 
-(* Even after defining the LabeledGraph, there are still too many
-   possibilities for our graphs. The graph in our case is very
-   special: it is a binary tree. So we can define a predicate to show
-   this: *)
+(** Even after defining the LabeledGraph, there are still too many
+    possibilities for our graphs. The graph in our case is very
+    special: there is a binary tree embedded in it. So we can define a
+    predicate to show this: *)
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
@@ -292,20 +298,30 @@ Inductive tree_in_graph (g: graph) : tree -> val -> Prop :=
     tree_in_graph g tr (dst g (p, R)) ->
     tree_in_graph g (T (vlabel g p) tl tr) p.
 
-(* So far, all these definitions are pure mathematical. The next step
-   is connecting the pure mathematical graph and its spatial
-   representation. The CertiGraph library provides some helper
-   definitions for such connections. All we need to do is to
-   implementing some classes. *)
+(** The CertiGraph library actually provides another type called
+    GeneralGraph, which contains a LabeledGraph g and a predicate
+    describing the properties g must obey. In this case, we can define
+    the GeneralGraph by putting the graph and tree_in_graph
+    together. For simplicity, we omit this definition. We put
+    tree_in_graph in the pre-condition instead. For more information
+    about GeneralGraph, please refer to section 4.1 and 4.2 in [1]. *)
 
-(* This is just a wrapper for the decidable equality of vertices and edges *)
+(** So far, all these definitions are pure mathematical. The next step
+    is connecting the pure mathematical graph and its spatial
+    representation. The CertiGraph library provides some helper
+    definitions for such connections. All we need to do is to
+    implementing some classes. *)
+
+(** This is just a wrapper for the decidable equality of vertices and
+    edges *)
 
 #[local] Instance PGBA_VST: PointwiseGraphBasicAssum val (val * LR).
 Proof. constructor; apply _. Defined.
 
-(* The following two classes together form the spatial representation
-   of a single vertex, the first maps a vertex to a intermediate type,
-   the second maps the intermediate value to the spatial predicate. *)
+(** The following two classes together form the spatial representation
+    of a single vertex, the first maps a vertex to a intermediate
+    type, the second maps the intermediate value to the spatial
+    predicate. *)
 
 #[local] Instance PGC_VST: PointwiseGraphConstructor val (val * LR) int unit unit (int * val * val) unit.
 Proof. constructor. exact (fun g v => (vlabel g v, dst g (v, L), dst g (v, R))). exact (fun _ _ => tt). Defined.
@@ -316,20 +332,21 @@ Proof.
   exact (fun _ _ => emp).
 Defined.
 
-(* This is just a wrapper for various VST classes *)
+(** This is just a wrapper for various VST classes *)
 
 #[local] Instance PGA_VST: PointwiseGraphAssum PGP_VST.
 Proof. refine (Build_PointwiseGraphAssum _ _ _ _ _ _ _ _ _ _ _). Defined.
 
-(* Now we can define the spatial representation of our
-   graph. Basically it iteratively separates all valid vertex
-   representations. *)
+(** Now we can define the spatial representation of our
+    graph. Basically it iteratively separates all valid vertex
+    representations. For more information, please refer to section 5
+    of [1]. *)
 
 Definition graph_rep (g: graph) := full_vertices_at g.
 
-(* The following 4 lines coerce the type graph to the type
-   PointwiseGraph, so that we can use terms like "vgamma g p" without
-   writing conversion function explicitly. *)
+(** The following 4 lines coerce the type graph to the type
+    PointwiseGraph, so that we can use terms like "vgamma g p" without
+    writing conversion function explicitly. *)
 
 Definition SGraph := PointwiseGraph val (val * LR) (int * val * val) unit.
 Definition graph_SGraph (G: graph): SGraph := Graph_PointwiseGraph G.
@@ -350,8 +367,8 @@ Definition sum_spec :=
 
 Definition Gprog : funspecs := [ sum_spec ].
 
-(* Here we use the lemma vertices_at_ramif_1_stable the CertiGraph
-   library to establish graph_rep_In. *)
+(** Here we use the lemma vertices_at_ramif_1_stable the CertiGraph
+    library to establish graph_rep_In. *)
 
 Lemma graph_rep_In (g : graph) p:
   vvalid g p -> graph_rep g = (vertex_at p (vgamma g p) * (vertex_at p (vgamma g p) -* graph_rep g))%logic.
@@ -361,7 +378,8 @@ Proof.
   - sep_apply modus_ponens_wand. entailer.
 Qed.
 
-(* The rest proofs are almost the same. *)
+(** The rest proofs are almost the same as in section SimplifiedModel
+    above. *)
 
 Lemma valid_pointer_tree g t p:
   tree_in_graph g t p -> graph_rep g |-- valid_pointer p.
@@ -404,7 +422,10 @@ Proof.
     assert_PROP (is_pointer_or_null (dst g (p, L))). { entailer!. eauto. }
     assert_PROP (is_pointer_or_null (dst g (p, R))). { entailer!. eauto. }
 
-    (** Here, the localization tactic is used to single out the representation of one node. *)
+    (** Here, the localization tactic is used to single out the
+        representation of one node. For more details about this
+        localize/unlocalize pair, please refer to section 7.1 in
+        [1]. *)
     localize [vertex_at p (vgamma g p)].
     simpl vertex_at.
     forward.
@@ -434,6 +455,8 @@ Qed.
 
 End CertiGraphModel.
 
+(** For a more subtle example, please refer to ../mark/verif_mark_bi.v
+    which verifies a graph-marking program. *)
 
 (** Related Work:
 
