@@ -4,6 +4,7 @@ A library for verifying graph-manipulating programs.
 
 Powered by [Coq](https://coq.inria.fr) and [VST](https://vst.cs.princeton.edu/). Compatible with [CompCert](https://compcert.org/).
 
+The [OVERVIEW](OVERVIEW.md) describes what it's for, and the [demo](demo) gives a brief tutorial introduction.
 
 ## Contributors
 
