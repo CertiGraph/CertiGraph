@@ -6,6 +6,8 @@ Powered by [Coq](https://coq.inria.fr) and [VST](https://vst.cs.princeton.edu/).
 
 The [OVERVIEW](OVERVIEW.md) describes what it's for, and the [demo](demo) gives a brief tutorial introduction.
 
+This version of CertiGraph is compatible with Coq 8.13 (and probably 8.14), CompCert 3.9, and VST 2.8.
+
 ## Contributors
 
 * Aquinas Hobor
