@@ -43,13 +43,16 @@ It is possible to build CertiGraph without installing it as a library. This is u
 
 ### `x86_64-linux`
 
-First, make sure you have all of the dependencies. This can be done via opam:
+First, make sure you have all of the dependencies. 
 
+1. This can be done via opam:
 ```console
 $ opam install --deps-only ./coq-certigraph.opam
 ```
 
-Alternatively, you can fetch and compile the dependencies by hand. In that case, be sure to edit the `CONFIGURE` file to specify the path to CompCert and/or VST.
+2. Alternatively, you can fetch and compile the dependencies by hand. In that case, be sure to edit the `CONFIGURE` file to specify the path to CompCert and/or VST.
+
+3. Or, if your [Coq Platform](https://github.com/coq/platform) install includes CompCert and VST, then you may already have all the needed libraries.
 
 Once the dependencies are in place you can perform the build:
 
@@ -61,13 +64,16 @@ $ make -j4
 
 ### `x86_32-linux`
 
-First, make sure you have all of the dependencies. This can be done via opam:
+First, make sure you have all of the dependencies. 
 
+1. This can be done via opam:
 ```console
 $ opam install --deps-only ./coq-certigraph-32.opam
 ```
 
-Alternatively, you can fetch and compile the dependencies by hand. In that case, be sure to edit the `CONFIGURE` file to specify the path to CompCert and/or VST.
+2. Alternatively, you can fetch and compile the dependencies by hand. In that case, be sure to edit the `CONFIGURE` file to specify the path to CompCert and/or VST.
+
+3. Or, if your [Coq Platform](https://github.com/coq/platform) install includes CompCert and VST, then you may already have all the needed libraries.
 
 Once the dependencies are in place you can perform the build:
 
