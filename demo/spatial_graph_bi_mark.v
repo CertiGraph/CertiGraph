@@ -7,12 +7,6 @@ Require Import CertiGraph.floyd_ext.share.
 
 Local Open Scope logic.
 
-Definition pointer_val_val (pv: pointer_val): val :=
-  match pv with
-  | ValidPointer b i => Vptr b i
-  | NullPointer => nullval
-  end.
-
 Section pSGG_VST.
 
 Instance PointerVal_EqDec: EquivDec.EqDec pointer_val eq.

@@ -51,7 +51,8 @@ Class listspec {cs: compspecs} (list_structid: ident) (list_link: ident) (token:
    list_members_eq: list_fields = co_members (get_co list_structid);
    list_struct_complete_legal_cosu: complete_legal_cosu_type list_struct = true; (* TODO: maybe this line not useful? *)
    list_link_type: nested_field_type list_struct (StructField list_link :: nil) = Tpointer list_struct noattr;
-   list_token := token
+   list_token := token;
+   list_plain: plain_members list_fields = true
 }.
 
 Section LIST1.
@@ -61,12 +62,9 @@ Context  {list_structid: ident} {list_link: ident} {list_token: share -> val -> 
 Fixpoint all_but_link (f: members) : members :=
  match f with
  | nil => nil
- | cons it f' => match it with
-                 | Member_plain id _ =>
-                     if ident_eq id list_link
-                     then f' else cons it (all_but_link f')
-                 | Member_bitfield _ _ _ _ _ _ => cons it (all_but_link f')
-                 end
+ | cons it f' => if ident_eq (name_member it) list_link
+                               then f'
+                               else cons it (all_but_link f')
  end.
 
 Lemma list_link_size_in_range (ls: listspec list_structid list_link list_token):
@@ -81,10 +79,10 @@ Qed.
 
 Definition elemtype (ls: listspec list_structid list_link list_token) :=
   compact_prod
-  (map (fun it => reptype (field_type (fst it) list_fields)) (all_but_link list_fields)).
+  (map (fun it => reptype (field_type (name_member it) list_fields)) (all_but_link list_fields)).
 
-Definition field_type'  (F: members) (it: ident * type) :=
-   reptype (field_type (fst it) F).
+Definition field_type'  (F: members) (it: member) :=
+   reptype (field_type (name_member it) F).
 
 Definition add_link_back' {F f: members}
   (v: compact_prod (map (field_type' F) (all_but_link f))) :
@@ -94,16 +92,16 @@ Definition add_link_back' {F f: members}
   +  destruct f as [| it1 f0].
     - exact (default_val _).
     - change (all_but_link (it0 :: it1 :: f0))
-       with (if ident_eq (fst it0) list_link
+       with (if ident_eq (name_member it0) list_link
                                then it1::f0
                                else cons it0 (all_but_link (it1::f0)))
        in v.
-       change (reptype (field_type (fst it0) F) * compact_prod (map (field_type' F) (it1::f0)))%type.
-       destruct (ident_eq (fst it0) list_link).
+       change (reptype (field_type (name_member it0) F) * compact_prod (map (field_type' F) (it1::f0)))%type.
+       destruct (ident_eq (name_member it0) list_link).
        exact (default_val _, v).
        destruct (all_but_link (it1 :: f0)) eqn:?.
        simpl in Heqm.
-       destruct (ident_eq (fst it1) list_link); [ | discriminate Heqm].
+       destruct (ident_eq (name_member it1) list_link); [ | discriminate Heqm].
         subst f0.
         exact (v, default_val _).
         exact (fst v, IHf (snd v)).
@@ -112,16 +110,16 @@ Defined.
 Definition add_link_back
  (F f : members)
   (v : compact_prod
-         (map (fun it : ident * type => reptype (field_type (fst it) F))
+         (map (fun it : member => reptype (field_type (name_member it) F))
             (all_but_link f)))
-  : compact_prod (map (fun it => reptype (field_type (fst it) F)) f)
+  : compact_prod (map (fun it => reptype (field_type (name_member it) F)) f)
   :=
 list_rect
-  (fun f0 : list (ident * type) =>
+  (fun f0 : list member =>
    compact_prod (map (field_type' F) (all_but_link f0)) ->
    compact_prod (map (field_type' F) f0))
   (fun _ : compact_prod (map (field_type' F) (all_but_link nil)) => tt)
-  (fun (it0 : ident * type) (f0 : list (ident * type))
+  (fun (it0 : member) (f0 : list member)
      (IHf : compact_prod (map (field_type' F) (all_but_link f0)) ->
             compact_prod (map (field_type' F) f0))
      (v0 : compact_prod (map (field_type' F) (all_but_link (it0 :: f0)))) =>
@@ -138,7 +136,7 @@ list_rect
          (_ : compact_prod (map (field_type' F) (all_but_link (it0 :: nil))))
          (_ : compact_prod (map (field_type' F) (all_but_link nil)) ->
               compact_prod (map (field_type' F) nil)) =>
-       default_val (field_type (fst it0) F)
+       default_val (field_type (name_member it0) F)
    | it1 :: f1 =>
        fun
          (v1 : compact_prod
@@ -146,16 +144,16 @@ list_rect
          (IHf0 : compact_prod
                    (map (field_type' F) (all_but_link (it1 :: f1))) ->
                  compact_prod (map (field_type' F) (it1 :: f1))) =>
-       (if ident_eq (fst it0) list_link as s0
+       (if ident_eq (name_member it0) list_link as s0
          return
            (compact_prod
               (map (field_type' F)
                  (if s0 then it1 :: f1 else it0 :: all_but_link (it1 :: f1))) ->
-            reptype (field_type (fst it0) F) *
+            reptype (field_type (name_member it0) F) *
             compact_prod (map (field_type' F) (it1 :: f1)))
         then
          fun v2 : compact_prod (map (field_type' F) (it1 :: f1)) =>
-         (default_val (field_type (fst it0) F), v2)
+         (default_val (field_type (name_member it0) F), v2)
         else
          fun
            v2 : compact_prod
@@ -167,7 +165,7 @@ list_rect
               compact_prod (map (field_type' F) (it0 :: l)) ->
               (compact_prod (map (field_type' F) l) ->
                compact_prod (map (field_type' F) (it1 :: f1))) ->
-              reptype (field_type (fst it0) F) *
+              reptype (field_type (name_member it0) F) *
               compact_prod (map (field_type' F) (it1 :: f1)))
          with
          | nil =>
@@ -175,11 +173,11 @@ list_rect
                (v3 : compact_prod (map (field_type' F) (it0 :: nil)))
                (IHf1 : compact_prod (map (field_type' F) nil) ->
                        compact_prod (map (field_type' F) (it1 :: f1))) =>
-             let s0 := ident_eq (fst it1) list_link in
+             let s0 := ident_eq (name_member it1) list_link in
              (if s0
                return
                  ((if s0 then f1 else it1 :: all_but_link f1) = nil ->
-                  reptype (field_type (fst it0) F) *
+                  reptype (field_type (name_member it0) F) *
                   compact_prod (map (field_type' F) (it1 :: f1)))
               then
                fun Heqm1 : f1 = nil =>
@@ -187,17 +185,17 @@ list_rect
                  (fun f2 : members =>
                   (compact_prod (map (field_type' F) nil) ->
                    compact_prod (map (field_type' F) (it1 :: f2))) ->
-                  reptype (field_type (fst it0) F) *
+                  reptype (field_type (name_member it0) F) *
                   compact_prod (map (field_type' F) (it1 :: f2)))
                  (fun
                     _ : compact_prod (map (field_type' F) nil) ->
                         compact_prod (map (field_type' F) (it1 :: nil)) =>
-                  (v3, default_val (field_type (fst it1) F)))
+                  (v3, default_val (field_type (name_member it1) F)))
                  Heqm1 IHf1
               else
                fun Heqm1 : it1 :: all_but_link f1 = nil =>
                  False_rect
-                   (reptype (field_type (fst it0) F) *
+                   (reptype (field_type (name_member it0) F) *
                     compact_prod (map (field_type' F) (it1 :: f1)))
                  (eq_rect (it1 :: all_but_link f1)
                     (fun e : members =>
@@ -249,9 +247,9 @@ Definition list_cell (ls: listspec list_structid list_link list_token) (sh: Shar
    !! field_compatible list_struct nil p &&
    struct_pred (all_but_link list_fields)
               (fun it v => withspacer sh
-                (field_offset cenv_cs (fst it) list_fields + sizeof (field_type (fst it) list_fields))
-                (field_offset_next cenv_cs (fst it) list_fields (co_sizeof (get_co list_structid)))
-                (at_offset (data_at_rec sh (field_type (fst it) list_fields) v) (field_offset cenv_cs (fst it) list_fields)))
+                (field_offset cenv_cs (name_member it) list_fields + sizeof (field_type (name_member it) list_fields))
+                (field_offset_next cenv_cs (name_member it) list_fields (co_sizeof (get_co list_structid)))
+                (at_offset (data_at_rec sh (field_type (name_member it) list_fields) v) (field_offset cenv_cs (name_member it) list_fields)))
      v p.
 
 Lemma struct_pred_type_changable:
@@ -265,14 +263,12 @@ intros.
 subst m'. apply JMeq_eq in H0. subst v'.
 induction m. reflexivity.
 destruct m.
-destruct a; simpl.
-apply H1.
+destruct a; simpl; apply H1.
 rewrite !struct_pred_cons2.
 f_equal.
 auto.
 apply IHm.
 Qed.
-
 
 End LIST1.
 
@@ -1410,7 +1406,7 @@ Context  {list_structid: ident} {list_link: ident}{list_token: share -> val -> m
 
 Definition vund  (ls: listspec list_structid list_link list_token) : elemtype ls :=
  compact_prod_gen
-      (fun it => default_val (field_type (fst it) list_fields)) (@all_but_link list_link  list_fields).
+      (fun it => default_val (field_type (name_member it) list_fields)) (@all_but_link list_link  list_fields).
 
 Definition lseg (ls: listspec list_structid list_link list_token) (dsh psh: share)
             (contents: list val) (x z: val) : mpred :=

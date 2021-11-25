@@ -6,12 +6,6 @@ Require Import CertiGraph.copy.env_copy_bi.
 
 Local Open Scope logic.
 
-Definition pointer_val_val (pv: pointer_val): val :=
-  match pv with
-  | ValidPointer b i => Vptr b i
-  | NullPointer => nullval
-  end.
-
 Lemma comp_Ews_not_bot: Share.comp Ews <> Share.bot.
   intro.
   apply (f_equal Share.comp) in H.
@@ -86,7 +80,7 @@ Proof.
   + apply orp_right1.
     normalize.
 Qed.
-    
+
 Lemma concrete_valid_pointer_valid_pointer: forall p,
   concrete_valid_pointer p |-- valid_pointer (pointer_val_val p).
 Proof.

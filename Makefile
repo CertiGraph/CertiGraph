@@ -6,7 +6,7 @@ COQDEP ?= $(COQBIN)coqdep
 COQLIB ?= $(shell $(COQC) -where | tr -d '\r' | tr '\\' '/')
 
 BITSIZE ?= 64
-FLOCQ=
+FLOCQ ?=
 
 ifeq ($(BITSIZE),64)
 	COQLIBINSTALL ?= $(COQLIB)/user-contrib

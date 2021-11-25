@@ -36,6 +36,7 @@
 # to attempt to locate compcert automatically.
 #
 # COMPCERT_DIR=../compcert
+# FLOCQ= -Q $(COMPCERT_DIR)/flocq Flocq  # this mode to use the flocq built into compcert
 
 
 # Path to VST.
