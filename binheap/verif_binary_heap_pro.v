@@ -641,7 +641,7 @@ Proof.
   forward.
   repeat rewrite upd_Znth_overwrite. repeat rewrite upd_Znth_same.
   2,3,4,5,6: repeat rewrite Zlength_upd_Znth; rewrite Zlength_map; rep_lia.
-  simpl snd.
+  simpl snd. unfold heap_item_rep.
   forward. { entailer!. destruct H1. destruct (H9 j H). apply H9. lia. }
   Exists (Zexchange lookup_contents (heap_item_key (Znth j arr_contents)) (heap_item_key (Znth k arr_contents))).
   autorewrite with sublist in *.
@@ -651,8 +651,12 @@ Proof.
   { split. apply lookup_oob_eq_Zexchange; auto. apply linked_correctly_Zexchange; auto. }
   { apply sepcon_derives; apply data_at_ext_derives; auto.
     * case (Z.eq_dec k j); intro.
-      - subst k. rewrite upd_Znth_overwrite. 2: rewrite Zlength_map; rep_lia.
-        change (Vint _, _) with (heap_item_rep (Znth j arr_contents)).
+    - subst k. rewrite upd_Znth_overwrite. 2: rewrite Zlength_map; rep_lia.
+      simpl snd.
+      change (Vint (Int.repr (fst (fst (Znth j arr_contents)))),
+               (Vint (snd (fst (Znth j arr_contents))),
+                 Vint (snd (Znth j arr_contents)))) with
+        (heap_item_rep (Znth j arr_contents)).
         rewrite upd_Znth_map, upd_Znth_same_Znth, Zexchange_eq. trivial. lia.
       - rewrite Znth_upd_Znth_diff; auto. clear H2 H5 H7 H8 H3 H6 H4.
         change (let (_, z) := let (_, y) :=
@@ -661,12 +665,13 @@ Proof.
          (snd (snd ((Znth k (map heap_item_rep arr_contents))))).
         rewrite Znth_map; auto.
         change (Vint (Int.repr (fst (fst (Znth k arr_contents)))),
-               (Vint (snd (fst (Znth k arr_contents))),
-                snd (snd (heap_item_rep (Znth k arr_contents))))) with
+                 (Vint (snd (fst (Znth k arr_contents))),
+                   Vint (snd (Znth k arr_contents)))) with
           (heap_item_rep (Znth k arr_contents)).
         rewrite upd_Znth_map; auto.
         change (Vint (Int.repr (fst (fst (Znth j arr_contents)))),
-               (Vint (snd (fst (Znth j arr_contents))), Vint (snd (Znth j arr_contents)))) with
+                 (Vint (snd (fst (Znth j arr_contents))),
+                   Vint (snd (Znth j arr_contents)))) with
           (heap_item_rep (Znth j arr_contents)).
         rewrite upd_Znth_map; auto. f_equal.
         rewrite upd_Znth_Zexchange; auto.
