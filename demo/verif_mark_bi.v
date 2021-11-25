@@ -4,8 +4,8 @@
 <<
 
 struct Node {
-  int  _Alignas(16) m;
-  struct Node * _Alignas(8) l;
+  int m;
+  struct Node * l;
   struct Node * r;
 };
 
@@ -26,7 +26,7 @@ void mark(struct Node * x) {
 
 >>
  *)
-Require Import CertiGraph.mark.env_mark_bi.
+Require Import Demo.env_mark_bi.
 
 (** Besides PreGraph, LabeledGraph and GeneralGraph, this module also
     contains the definition of predicates such as structurally
@@ -66,7 +66,7 @@ Require Import CertiGraph.floyd_ext.share.
 
 (** This module instantiate classes in modules above to connects VST
     and the CertiGraph library. *)
-Require Import CertiGraph.mark.spatial_graph_bi_mark.
+Require Import Demo.spatial_graph_bi_mark.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.

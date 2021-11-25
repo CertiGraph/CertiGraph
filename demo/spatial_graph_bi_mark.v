@@ -2,7 +2,7 @@ Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.msl_application.Graph.
 Require Import CertiGraph.msl_application.GraphBi.
 Require Import VST.veric.SeparationLogic.
-Require Import CertiGraph.mark.env_mark_bi.
+Require Import Demo.env_mark_bi.
 Require Import CertiGraph.floyd_ext.share.
 
 Local Open Scope logic.
@@ -76,8 +76,7 @@ Proof.
   normalize.
   apply data_at_conflict.
   + apply readable_nonidentity, writable_readable. auto.
-  + change (sizeof node_type) with (if Archi.ptr64 then 32 else 16).
-    cbv [Archi.ptr64]. lia.
+  + now vm_compute.
 Qed.
 
 (*

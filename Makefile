@@ -1,15 +1,38 @@
-VST_DIR = "../VST"
-CURRENT_DIR = "./"
-BITSIZE = 32
-FLOCQ=
 -include CONFIGURE
 
-COQC=$(COQBIN)coqc -w -overriding-logical-loadpath
-COQDEP=$(COQBIN)coqdep
+CURRENT_DIR = "./"
+COQC ?= $(COQBIN)coqc -w -overriding-logical-loadpath
+COQDEP ?= $(COQBIN)coqdep
+COQLIB ?= $(shell $(COQC) -where | tr -d '\r' | tr '\\' '/')
+
+BITSIZE ?= 64
+FLOCQ=
+
+ifeq ($(BITSIZE),64)
+	COQLIBINSTALL ?= $(COQLIB)/user-contrib
+	COMPCERT_DIR ?= $(COQLIB)/user-contrib/compcert
+	VST_DIR ?= $(COQLIB)/user-contrib/VST
+	CLIGHTGEN ?= $(COQLIB)/../../bin/clightgen
+#	TARGET_ARCH ?= x86_64-linux
+else ifeq ($(BITSIZE),32)
+	COQLIBINSTALL ?= $(COQLIB)/../coq-variant/CertiGraph32
+	COMPCERT_DIR ?= $(COQLIB)/../coq-variant/compcert32/compcert
+	VST_DIR ?= $(COQLIB)/../coq-variant/VST32/VST
+	CLIGHTGEN ?= $(COQLIB)/../../variants/compcert32/bin/clightgen
+#	TARGET_ARCH ?= x86_32-linux
+endif
+
+INSTALLDIR ?= $(COQLIBINSTALL)/CertiGraph
+
+ifdef COMPCERT_DIR
+INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert $(FLOCQ)
+endif
+
+ifdef VST_DIR
+INCLUDE_VST = -Q $(VST_DIR) VST
+endif
 
 DIRS = lib msl_ext msl_application graph heap_model_direct
-INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert $(FLOCQ)
-INCLUDE_VST = -Q $(VST_DIR) VST
 INCLUDE_CERTIGRAPH = $(foreach d, $(DIRS), -Q $(d) CertiGraph.$(d)) -Q "." CertiGraph
 NORMAL_FLAG = $(INCLUDE_CERTIGRAPH) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
 CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_CERTIGRAPH)
@@ -21,8 +44,8 @@ LIB_FILES = \
 
 MSL_EXT_FILES = \
   log_normalize.v iter_sepcon.v ramification_lemmas.v abs_addr.v seplog.v \
-  ramify_tactics.v msl_ext.v sepalg.v overlapping.v precise.v alg_seplog.v \
-  overlapping_direct.v precise_direct.v alg_seplog_direct.v
+  # ramify_tactics.v msl_ext.v sepalg.v overlapping.v precise.v alg_seplog.v \
+  # overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
   Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v \
@@ -34,8 +57,8 @@ VERIC_EXT_FILES = \
 FLOYD_EXT_FILES = closed_lemmas.v share.v
   # MapstoSL.v DataatSL.v semax_ram_lemmas.v semax_ram_tac.v exists_trick.v closed_lemmas.v ramification.v share.v
 
-HEAP_MODEL_DIRECT_FILES = \
-  SeparationAlgebra.v mapsto.v SeparationLogic.v
+# HEAP_MODEL_DIRECT_FILES = \
+#   SeparationAlgebra.v mapsto.v SeparationLogic.v
 
 GRAPH_FILES = \
   graph_model.v path_lemmas.v graph_gen.v graph_relation.v reachable_computable.v \
@@ -135,7 +158,6 @@ NORMAL_FILES = \
   $(SAMPLE_EDGE_WEIGHT_FILES:%.v=sample_edge_weight/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v) \
-  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
   $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
@@ -198,6 +220,15 @@ cav:
 .PHONY: clean
 clean:
 	@rm -f */*.vo */*.glob */.*.aux $(CLIGHT_FILES) .depend
+
+INSTALL_SOURCES = $(NORMAL_FILES) $(CLIGHT_FILES)
+INSTALL_COMPILED = $(INSTALL_SOURCES:%.v=%.vo)
+
+.PHONY: install
+install:
+	install -d "$(INSTALLDIR)"
+	for d in $(sort $(dir $(INSTALL_SOURCES) $(INSTALL_COMPILED))); do install -d "$(INSTALLDIR)/$$d"; done
+	for f in $(INSTALL_SOURCES) $(INSTALL_COMPILED); do install -m 0644 $$f "$(INSTALLDIR)/$$(dirname $$f)"; done
 
 .DEFAULT_GOAL := all
 

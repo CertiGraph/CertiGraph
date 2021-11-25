@@ -1,2 +1,45 @@
-COMPCERT_DIR=../VST/compcert
-VST_DIR=../VST 
+#
+# Build configuration
+#
+# This file gets included into `Makefile` and overrides any defaults
+# set there.
+#
+# These settings can also be specified at the command-line. For example,
+#
+#     $ make VAR_1=VAL_1 ... VAR_N=VAL_N target
+#
+# Note that values specified at the command-line take precedence over
+# the defaults found in `Makefile` and the values found in this file.
+#
+
+
+
+# Controls the build target. Two values are supported:
+#     32, which corresponds to CompCert's `x86_32-linux` target
+#     64, which corresponds to CompCert's `x86_64-linux` target
+#     opam, which corresponds to the `coq-compcert` package in opam.
+#
+# This value must be aligned with your CompCert and VST installation.
+#
+# BITSIZE=opam
+
+
+# Path to clightgen.
+# If you leave this unset, `Makefile` will use `BITSIZE` and `coqc -where`
+# to attempt to locate compcert automatically.
+#
+# CLIGHTGEN=../compcert/bin/clightgen
+
+
+# Path to CompCert.
+# If you leave this unset, `Makefile` will use `BITSIZE` and `coqc -where`
+# to attempt to locate compcert automatically.
+#
+# COMPCERT_DIR=../compcert
+
+
+# Path to VST.
+# If you leave this unset, `Makefile` will use `BITSIZE` and `coqc -where`
+# to attempt to locate VST automatically.
+#
+# VST_DIR=../VST

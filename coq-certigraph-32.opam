@@ -1,0 +1,29 @@
+opam-version: "2.0"
+name: "CertiGraph"
+version: "1.0"
+maintainer: "CertiGraph team"
+homepage: "https://github.com/Salamari/CertiGraph"
+dev-repo: "git+https://github.com/Salamari/CertiGraph.git"
+bug-reports: "https://github.com/Salamari/CertiGraph/issues"
+license: "https://github.com/Salamari/CertiGraph/blob/live/LICENSE"
+authors: ["Aquinas Hobor"
+    "Shengyi Wang"
+    "Anshuman Mohan"
+]
+build: [
+    [make "BITSIZE=32" "clean"]
+    [make "BITSIZE=32" "depend"]
+    [make "BITSIZE=32" "-j%{jobs}%"]
+]
+install: [
+    make "BITSIZE=32" "install"
+]
+depends: [
+    "coq" {>= "8.13.2"}
+    "coq-compcert-32" {>= "3.9"}
+    "coq-vst-32" {>= "2.8"}
+]
+synopsis: "A library for verifying graph-manipulating programs"
+description: """
+CertiGraph is a library for verifying graph-manipulating programs.
+"""
