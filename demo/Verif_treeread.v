@@ -29,7 +29,7 @@
            this time using the CertiGraph library.  That's in 
             Module CertiGraphModel of this file. 
    3.  Depth-first search of a DAG or a cyclic graph, using CertiGraph.
-           That's in a different directory, ../mark/verif_mark_bi.v.
+           That's in a different file, verif_mark_bi.v.
 
 Consider the following C program:
 
@@ -60,7 +60,7 @@ Both verifications need to import VST itself as well as
 
 Require Import VST.floyd.proofauto.
 Require Import VST.msl.iter_sepcon.
-Require Import TR.treeread.
+Require Import Demo.treeread.
 
 (* The next two lines are standard VST boilerplate, useful
   in both verifications *)

@@ -25,10 +25,13 @@ syntax: glob
 *.vrb
 *.xcworkspace
 .DS_Store
+.Makefile.coq.d
 .\#*
 .depend
 .lia.cache
 CONFIGURE
+Makefile.coq
+Makefile.coq.conf
 \#*\#
 _CoqProject
 final
