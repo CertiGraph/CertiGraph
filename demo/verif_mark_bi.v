@@ -28,9 +28,9 @@ void mark(struct Node * x) {
  *)
 Require Import Demo.env_mark_bi.
 
-(** Besides PreGraph, LabeledGraph and GeneralGraph, this module also
-    contains the definition of predicates such as structurally
-    identical. *)
+(** Besides PreGraph, LabeledGraph and GeneralGraph, this module 
+    also contains the definition of predicates such as "structurally
+    identical". *)
 Require Import CertiGraph.graph.graph_model.
 
 (** This module contains the predicate "mark x g1 g2" which says a
@@ -50,21 +50,20 @@ Require Import CertiGraph.msl_application.Graph.
     need to be marked. *)
 Require Import CertiGraph.msl_application.Graph_Mark.
 
-(** This module specialized the PreGraph, LabeledGraph and
-    GeneralGraph we used in this case. It captured the key properties
+(** This module specializes the PreGraph, LabeledGraph and
+    GeneralGraph we used in this case. It captures the key properties
     of our graph: 1. Every node contains two out edges. 2. The edge
     can points to a special "null" node. 3. The number of vertices and
     edges is finite. *)
 Require Import CertiGraph.msl_application.GraphBi.
 
-(** This module combines the two orthogonal definitons together to
-    prove the spatial lemmas we need in the following proofs. They are
-    essentially the specializations of lemmas proved in Graph_Mark and
-    GraphBi. *)
+(** This module combines the two orthogonal definitons to prove the
+    spatial lemmas we need in the following proofs. They are essentially
+    the specializations of lemmas proved in Graph_Mark and GraphBi. *)
 Require Import CertiGraph.msl_application.GraphBi_Mark.
 Require Import CertiGraph.floyd_ext.share.
 
-(** This module instantiate classes in modules above to connects VST
+(** This module instantiate classes in modules above to connect VST
     and the CertiGraph library. *)
 Require Import Demo.spatial_graph_bi_mark.
 
@@ -76,7 +75,10 @@ Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 (** The spatial representation of the graph, specialized with instances *)
-Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ unit unit _ mpred (@SGP pSGG_VST bool unit (sSGG_VST sh)) (SGA_VST sh) x g).
+Notation graph sh x g := 
+  (@reachable_vertices_at _ _ _ _ _ _ unit unit _ mpred
+        (@SGP pSGG_VST bool unit (sSGG_VST sh)) 
+        (SGA_VST sh) x g).
 
 (** The definition of graph. *)
 Notation Graph := (@Graph pSGG_VST bool unit unit).
@@ -97,18 +99,21 @@ Existing Instances MGS biGraph maGraph finGraph RGF.
 
 (** The second clause is easy to understand: every node marked in g2
     is either already marked in g1 or is reachable through an unmarked
-    way from root.
+    path from root.
 
     The first clause requires the unreachable partial graph of g1 and
-    g2 are structurally identical. It means the program does not touch
+    g2 to be structurally identical. It means the program does not touch
     those parts.
 
-    It is not defined as a naive way: every node in g1 is unmarked and
+    It is not defined naively: every node in g1 is unmarked and
     every node in g2 is marked because what we have is a graph. The
     "root", "left branch" and "right branch" may overlap. When the
-    spec are used in the recursive calls, the mark predicate must be
+    spec is used in the recursive calls, the mark predicate must be
     weak enough to be provable and strong enough to indicate the final
     conclusion. *)
+
+(** Now, you can see that the funspec is quite simple!  All the
+     interesting mathematics is within the [mark] relation. *)
 Definition mark_spec :=
  DECLARE _mark
   WITH sh: wshare, g: Graph, x: pointer_val
@@ -129,7 +134,7 @@ Definition main_spec :=
   PRE  [] main_pre prog tt gv
   POST [ tint ] main_post prog gv.
 
-Definition Gprog : funspecs := ltac:(with_library prog [mark_spec ; main_spec]).
+Definition Gprog : funspecs := [mark_spec ; main_spec].
 
 Lemma graph_local_facts: forall sh x (g: Graph), weak_valid g x -> @derives mpred Nveric (graph sh x g) (valid_pointer (pointer_val_val x)).
 Proof.
