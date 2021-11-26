@@ -13,9 +13,9 @@ in the parent directory.  Then do `make` in this subdirectory.
 The demo is in these parts:
 
 1. treeread.c, verif_treeread.v
-1.0 Traversing a tree in separation logic
-1.1 Traversing a tree-in-graph using magic wand
-1.2 Traversing a tree-in-graph using CertiGraph
+ - 1.0 Traversing a tree in separation logic
+ - 1.1 Traversing a tree-in-graph using magic wand
+ - 1.2 Traversing a tree-in-graph using CertiGraph
 
 2. mark_bi.c, verif_mark_bi.v
-Depth-first search of a graph, using CertiGraph
+ - Depth-first search of a graph, using CertiGraph
