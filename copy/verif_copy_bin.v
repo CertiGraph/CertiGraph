@@ -1,5 +1,5 @@
 Require Import CertiGraph.lib.Coqlib.
-Require Import CertiGraph.copy.env_copy_bi.
+Require Import CertiGraph.copy.env_copy_bin.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.weak_mark_lemmas.
 Require Import CertiGraph.graph.local_graph_copy.
@@ -8,9 +8,9 @@ Require Import CertiGraph.graph.subgraph2.
 Require Import CertiGraph.graph.reachable_computable.
 Require Import CertiGraph.msl_application.Graph.
 Require Import CertiGraph.msl_application.Graph_Copy.
-Require Import CertiGraph.msl_application.GraphBi.
-Require Import CertiGraph.msl_application.GraphBi_Copy.
-Require Import CertiGraph.copy.spatial_graph_bi_copy.
+Require Import CertiGraph.msl_application.GraphBin.
+Require Import CertiGraph.msl_application.GraphBin_Copy.
+Require Import CertiGraph.copy.spatial_graph_bin_copy.
 Require Import VST.msl.wand_frame.
 Require Import VST.floyd.reassoc_seq.
 Require Import VST.floyd.field_at_wand.
@@ -30,7 +30,7 @@ Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ (addr * LR) unit _ 
 Notation holegraph sh x g := (@vertices_at _ _ _ _ _ mpred (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) (SGA_VST sh) (Ensembles.Intersection (@vvalid addr (addr * LR) _ _ g) (fun u => x <> u)) (LGraph_SGraph g)).
 Notation Graph := (@Graph pSGG_VST (@addr pSGG_VST) (addr * LR) unit).
 Notation vmap := (@LocalGraphCopy.vmap addr (addr * LR) addr (addr * LR) _ _ _ _ _ _ _ _ (@GMS _ _ _ CCS)).
-Existing Instances MGS biGraph maGraph finGraph RGF.
+Existing Instances MGS binGraph maGraph finGraph RGF.
 
 Definition mallocN_spec :=
  DECLARE _mallocN
@@ -213,7 +213,7 @@ Proof.
     eapply Graph_vgen_vgamma; eauto.
   }
   (* unlocalize *)
-  destruct (not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid x0_not_null) as [H_vopy1 [H_x0 BiMaFin_g1']].
+  destruct (not_null_copy1 g x x0 _ _ H_GAMMA_g gx_vvalid x0_not_null) as [H_vopy1 [H_x0 BinMaFin_g1']].
   forget (Graph_vgen g x x0) as g1.
   forget (initial_copied_Graph x x0 g) as g1'.
 
@@ -260,7 +260,7 @@ Proof.
   replace_SEP 0
       (EX g2': LGraph,
        !! (extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') /\
-           is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e nil) g2') &&
+           is_guarded_BinMaFin' (fun v => x0 <> v) (fun e => ~ In e nil) g2') &&
           (data_at Ews node_type
             (pointer_val_val null, (pointer_val_val null, pointer_val_val null)) (pointer_val_val x0) * concrete_valid_pointer null *
            holegraph Ews x0 g2')).
@@ -268,8 +268,8 @@ Proof.
     entailer.
     apply (@extend_copy_left _ (sSGG_VST Ews) g g1 g2 g1' g2'' (ValidPointer b i) l r (vmap g1 (ValidPointer b i)) l0 (null, null, null)); auto.
   }
-  clear g2'' H_copy BiMaFin_g1'.
-  Intros g2'. rename H2 into H_copy_left, H3 into BiMaFin_g2'.
+  clear g2'' H_copy BinMaFin_g1'.
+  Intros g2'. rename H2 into H_copy_left, H3 into BinMaFin_g2'.
 
   forward. (* x0 -> l = l0; *)
 
@@ -281,8 +281,8 @@ Proof.
   simpl reachable_vertices_at in HH |- *. rewrite HH; clear HH.
   Transparent Graph_LGraph.
 
-  destruct (labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_x0 H_l0 BiMaFin_g2' x0_not_null) as [H_ecopy1_left [BiMaFin_g3' [H_x0L Hl0_dst]]].
-  clear BiMaFin_g2'.
+  destruct (labeledgraph_add_edge_ecopy1_left g g1 g2 g1' g2' x l r x0 l0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_x0 H_l0 BinMaFin_g2' x0_not_null) as [H_ecopy1_left [BinMaFin_g3' [H_x0L Hl0_dst]]].
+  clear BinMaFin_g2'.
   forget (Graph_egen g2 (x: addr, L) (x0: addr, L)) as g3.
   forget (graph_gen.labeledgraph_add_edge g2' (x0, L) x0 l0 (null, L)) as g3'.
 
@@ -320,7 +320,7 @@ Proof.
   replace_SEP 0
       (EX g4': LGraph,
        !! (extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') /\
-           is_guarded_BiMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') &&
+           is_guarded_BinMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') &&
           (data_at Ews node_type
             (pointer_val_val null, (pointer_val_val l0, pointer_val_val null)) (pointer_val_val x0) * concrete_valid_pointer null *
            holegraph Ews x0 g4')).
@@ -332,8 +332,8 @@ Proof.
   Opaque extended_copy.
   rewrite extract_exists_in_SEP. (* should be able to use tactic directly *)
   Transparent extended_copy.
-  clear g4'' H_copy BiMaFin_g3'.
-  Intros g4'. rename H3 into H_copy_right, H4 into BiMaFin_g4'.
+  clear g4'' H_copy BinMaFin_g3'.
+  Intros g4'. rename H3 into H_copy_right, H4 into BinMaFin_g4'.
 
   forward. (* x0 -> r = r0; *)
 
@@ -345,8 +345,8 @@ Proof.
   simpl reachable_vertices_at in HH |- *. rewrite HH; clear HH.
   Transparent Graph_LGraph.
 
-  destruct (labeledgraph_add_edge_ecopy1_right g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_ecopy1_left H_copy_right H_x0 H_x0L H_r0 BiMaFin_g4' x0_not_null) as [H_ecopy1_right [BiMaFin_g5' [H_x0R Hr0_dst]]].
-  clear BiMaFin_g4'.
+  destruct (labeledgraph_add_edge_ecopy1_right g g1 g2 g3 g4 g1' g2' g3' g4' x l r x0 r0 gx_vvalid H_GAMMA_g H_vopy1 H_copy_left H_ecopy1_left H_copy_right H_x0 H_x0L H_r0 BinMaFin_g4' x0_not_null) as [H_ecopy1_right [BinMaFin_g5' [H_x0R Hr0_dst]]].
+  clear BinMaFin_g4'.
   forget (Graph_egen g4 (x: addr, R) (x0: addr, R)) as g5.
   forget (graph_gen.labeledgraph_add_edge g4' (x0, R) x0 r0 (null, L)) as g5'.
 

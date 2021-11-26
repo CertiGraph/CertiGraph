@@ -42,13 +42,13 @@ CertiGC/gc.v
 append/append.v
 binheap/binary_heap.v
 binheap/binary_heap_pro.v
-copy/copy_bi.v
+copy/copy_bin.v
 dijkstra/dijkstra1.v
 dijkstra/dijkstra2.v
 dijkstra/dijkstra3.v
-dispose/dispose_bi.v
+dispose/dispose_bin.v
 kruskal/kruskal_edgelist.v
-mark/mark_bi.v
+mark/mark_bin.v
 prim/noroot_prim.v
 prim/prim1.v
 prim/prim2.v
