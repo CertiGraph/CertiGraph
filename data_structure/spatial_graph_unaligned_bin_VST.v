@@ -1,7 +1,7 @@
 Require Import CertiGraph.msl_application.Graph.
-Require Import CertiGraph.msl_application.GraphBi.
+Require Import CertiGraph.msl_application.GraphBin.
 Require Import VST.veric.SeparationLogic.
-Require Import CertiGraph.dispose.env_dispose_bi.
+Require Import CertiGraph.dispose.env_dispose_bin.
 Require Import CertiGraph.floyd_ext.share.
 
 Local Open Scope logic.
@@ -29,8 +29,8 @@ Instance SGBA_VST: PointwiseGraphBasicAssum pointer_val (pointer_val * LR).
   refine (Build_PointwiseGraphBasicAssum pointer_val (pointer_val * LR) _ _).
 Defined.
 
-Instance pSGG_VST: pPointwiseGraph_Graph_Bi.
-refine (Build_pPointwiseGraph_Graph_Bi pointer_val NullPointer
+Instance pSGG_VST: pPointwiseGraph_Graph_Bin.
+refine (Build_pPointwiseGraph_Graph_Bin pointer_val NullPointer
                                        _).
 Defined.
 
@@ -89,6 +89,6 @@ Instance SGAvn_VST (sh: wshare): PointwiseGraphAssum_vn (SGP_VST sh) NullPointer
   normalize.
 Defined.
 
-Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bi pSGG_VST bool unit.
-  refine (Build_sPointwiseGraph_Graph_Bi pSGG_VST _ _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
+Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bin pSGG_VST bool unit.
+  refine (Build_sPointwiseGraph_Graph_Bin pSGG_VST _ _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
 Defined.

@@ -1,14 +1,14 @@
-Require Import CertiGraph.dispose.env_dispose_bi.
+Require Import CertiGraph.dispose.env_dispose_bin.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
 Require Import CertiGraph.graph.subgraph2.
 Require Import CertiGraph.graph.spanning_tree.
 Require Import CertiGraph.graph.reachable_computable.
 Require Import CertiGraph.msl_application.Graph.
-Require Import CertiGraph.msl_application.GraphBi.
-Require Import CertiGraph.msl_application.GraphBi_Mark.
-Require Import CertiGraph.data_structure.spatial_graph_dispose_bi.
-Require Import CertiGraph.data_structure.spatial_graph_unaligned_bi_VST.
+Require Import CertiGraph.msl_application.GraphBin.
+Require Import CertiGraph.msl_application.GraphBin_Mark.
+Require Import CertiGraph.data_structure.spatial_graph_dispose_bin.
+Require Import CertiGraph.data_structure.spatial_graph_unaligned_bin_VST.
 Require Import CertiGraph.floyd_ext.share.
 Require CertiGraph.graph.weak_mark_lemmas.
 Import CertiGraph.graph.weak_mark_lemmas.WeakMarkGraph.
@@ -27,7 +27,7 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Definition vertices_at sh g P := (@vertices_at _ _ _ _ _ _ (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ g P).
 Definition graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ unit unit _ mpred (@SGP pSGG_VST bool unit (sSGG_VST sh)) _ x g).
 Notation Graph := (@Graph pSGG_VST bool unit unit).
-Existing Instances MGS biGraph maGraph finGraph RGF.
+Existing Instances MGS binGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
  DECLARE _mark

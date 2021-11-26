@@ -1,8 +1,8 @@
 Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.msl_application.Graph.
-Require Import CertiGraph.msl_application.GraphBi.
+Require Import CertiGraph.msl_application.GraphBin.
 Require Import VST.veric.SeparationLogic.
-Require Import Demo.env_mark_bi.
+Require Import Demo.env_mark_bin.
 Require Import CertiGraph.floyd_ext.share.
 
 Local Open Scope logic.
@@ -34,8 +34,8 @@ Defined.
 
 End pSGG_VST.
 
-Instance pSGG_VST: pPointwiseGraph_Graph_Bi.
-  refine (Build_pPointwiseGraph_Graph_Bi pointer_val NullPointer SGBA_VST).
+Instance pSGG_VST: pPointwiseGraph_Graph_Bin.
+  refine (Build_pPointwiseGraph_Graph_Bin pointer_val NullPointer SGBA_VST).
 Defined.
 
 Section sSGG_VST.
@@ -154,8 +154,8 @@ End sSGG_VST.
 
 #[export] Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto: core.
 
-Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bi pSGG_VST bool unit.
-  refine (Build_sPointwiseGraph_Graph_Bi pSGG_VST _ _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
+Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bin pSGG_VST bool unit.
+  refine (Build_sPointwiseGraph_Graph_Bin pSGG_VST _ _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
 Defined.
 
 (* Global Opaque pSGG_VST sSGG_VST. *)

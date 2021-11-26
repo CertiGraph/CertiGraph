@@ -48,8 +48,8 @@ MSL_EXT_FILES = \
   # overlapping_direct.v precise_direct.v alg_seplog_direct.v
 
 MSL_APPLICATION_FILES = \
-  Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v \
-  GraphBi_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v
+  Graph.v Graph_Mark.v GraphBin.v GraphBin_Mark.v DagBin_Mark.v Graph_Copy.v \
+  GraphBin_Copy.v GList.v GList_UnionFind.v ArrayGraph.v UnionFindGraph.v
 
 VERIC_EXT_FILES = \
   res_predicates.v seplog.v SeparationLogic.v
@@ -64,7 +64,7 @@ GRAPH_FILES = \
   graph_model.v path_lemmas.v graph_gen.v graph_relation.v reachable_computable.v \
   find_not_in.v reachable_ind.v subgraph2.v spanning_tree.v dag.v marked_graph.v \
   weak_mark_lemmas.v dual_graph.v graph_morphism.v local_graph_copy.v tree_model.v \
-  list_model.v BiGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
+  list_model.v BinGraph.v MathGraph.v FiniteGraph.v GraphAsList.v LstGraph.v UnionFind.v \
   graph_isomorphism.v undirected_graph.v undirected_uf_lemmas.v \
   MathAdjMatGraph.v SpaceAdjMatGraph1.v SpaceAdjMatGraph2.v SpaceAdjMatGraph3.v \
   path_cost.v \
@@ -75,7 +75,7 @@ GRAPH_FILES = \
   # 3 = contiguous 2-d
 
 DATA_STRUCTURE_FILES = \
-  spatial_graph_unaligned_bi_VST.v spatial_graph_dispose_bi.v
+  spatial_graph_unaligned_bin_VST.v spatial_graph_dispose_bin.v
 
 BINARY_HEAP_FILES = \
   binary_heap_model.v binary_heap_Zmodel.v \
@@ -84,15 +84,15 @@ BINARY_HEAP_FILES = \
   env_binary_heap_pro.v spec_binary_heap_pro.v verif_binary_heap_pro.v
 
 MARK_FILES = \
-  env_mark_bi.v spatial_graph_bi_mark.v verif_mark_bi.v verif_mark_bi_dag.v
+  env_mark_bin.v spatial_graph_bin_mark.v verif_mark_bin.v verif_mark_bin_dag.v
 
 SUMMATRIX_FILES = verif_summatrix.v
 
 COPY_FILES = \
-  env_copy_bi.v spatial_graph_bi_copy.v verif_copy_bi.v
+  env_copy_bin.v spatial_graph_bin_copy.v verif_copy_bin.v
 
 DISPOSE_FILES = \
-  env_dispose_bi.v verif_dispose_bi.v
+  env_dispose_bin.v verif_dispose_bin.v
 
 UNION_FIND_FILES = \
   env_unionfind.v env_unionfind_iter.v env_unionfind_arr.v uf_arr_specs.v \
@@ -142,9 +142,9 @@ APPEND_FILES = \
 
 CLIGHT_FILES = \
   CertiGC/gc.v summatrix/summatrix.v kruskal/kruskal_edgelist.v unionfind/unionfind.v \
-  unionfind/unionfind_iter.v unionfind/unionfind_arr.v append/append.v mark/mark_bi.v \
+  unionfind/unionfind_iter.v unionfind/unionfind_arr.v append/append.v mark/mark_bin.v \
   binheap/binary_heap_pro.v binheap/binary_heap.v prim/noroot_prim.v prim/prim1.v \
-  prim/prim2.v prim/prim3.v priq/priq_arr.v dispose/dispose_bi.v copy/copy_bi.v \
+  prim/prim2.v prim/prim3.v priq/priq_arr.v dispose/dispose_bin.v copy/copy_bin.v \
   dijkstra/dijkstra1.v dijkstra/dijkstra2.v dijkstra/dijkstra3.v
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)

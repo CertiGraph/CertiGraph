@@ -18,15 +18,15 @@ Require Import CertiGraph.graph.dag.
 Require Import CertiGraph.graph.weak_mark_lemmas.
 Require Import CertiGraph.msl_application.Graph.
 Require Import CertiGraph.msl_application.Graph_Mark.
-Require Import CertiGraph.msl_application.GraphBi.
+Require Import CertiGraph.msl_application.GraphBin.
 Require Import Coq.Logic.Classical.
 
 Open Scope logic.
 
-Section PointwiseGraph_Mark_Bi.
+Section PointwiseGraph_Mark_Bin.
 
-Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
-Context {sSGG_Bi: sPointwiseGraph_Graph_Bi bool unit}.
+Context {pSGG_Bin: pPointwiseGraph_Graph_Bin}.
+Context {sSGG_Bin: sPointwiseGraph_Graph_Bin bool unit}.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
@@ -35,7 +35,7 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation Graph := (@Graph pSGG_Bi bool unit unit).
+Notation Graph := (@Graph pSGG_Bin bool unit unit).
 
 (* TODO: move this lemma into Graph_Mark.v. *)
 Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.
@@ -200,6 +200,4 @@ Proof.
     split_relation_list ((lg_gg g3) :: nil); eauto.
 Qed.
 
-End PointwiseGraph_Mark_Bi.
-
-
+End PointwiseGraph_Mark_Bin.

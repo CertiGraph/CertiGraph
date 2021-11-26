@@ -1,17 +1,17 @@
 Require Import CertiGraph.lib.Coqlib.
 Require Export VST.floyd.proofauto.
-Require Import CertiGraph.mark.env_mark_bi.
+Require Import CertiGraph.mark.env_mark_bin.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.weak_mark_lemmas.
 Require Import CertiGraph.graph.path_lemmas.
 Require Import CertiGraph.graph.subgraph2.
 Require Import CertiGraph.graph.reachable_computable.
 Require Import CertiGraph.msl_application.Graph.
-Require Import CertiGraph.msl_application.GraphBi.
+Require Import CertiGraph.msl_application.GraphBin.
 Require Import CertiGraph.msl_application.Graph_Mark.
-Require Import CertiGraph.msl_application.DagBi_Mark.
+Require Import CertiGraph.msl_application.DagBin_Mark.
 Require Import CertiGraph.floyd_ext.share.
-Require Import CertiGraph.mark.spatial_graph_bi_mark.
+Require Import CertiGraph.mark.spatial_graph_bin_mark.
 Require Import VST.msl.wand_frame.
 Require Import VST.floyd.reassoc_seq.
 Require Import VST.floyd.field_at_wand.
@@ -26,7 +26,7 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 (* Using unit for DE and DG, inspired by Graph *)
 Notation dag sh x g := (@reachable_dag_vertices_at _ _ _ _ _ _ unit unit _ mpred (@SGP pSGG_VST bool unit (sSGG_VST sh)) (SGA_VST sh) x g).
 Notation Graph := (@Graph pSGG_VST bool unit unit).
-Existing Instances MGS biGraph maGraph finGraph RGF.
+Existing Instances MGS binGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
  DECLARE _mark

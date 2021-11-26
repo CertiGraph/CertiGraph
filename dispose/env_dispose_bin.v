@@ -1,7 +1,7 @@
 Require Export CertiGraph.msl_ext.log_normalize.
 Require Export VST.floyd.proofauto.
 Require Export CertiGraph.floyd_ext.closed_lemmas.
-Require Export CertiGraph.dispose.dispose_bi.
+Require Export CertiGraph.dispose.dispose_bin.
 
 Local Open Scope logic.
 

@@ -8,33 +8,33 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.MathGraph.
 
-Section BiGraph.
+Section BinGraph.
 
 Context {V E: Type} {EV: EqDec V eq} {EE: EqDec E eq}.
 
-Class BiGraph (pg: PreGraph V E) (left_out_edge right_out_edge: V -> E): Prop :=
+Class BinGraph (pg: PreGraph V E) (left_out_edge right_out_edge: V -> E): Prop :=
 {
-  bi_consist: forall x, vvalid pg x -> left_out_edge x <> right_out_edge x;
+  bin_consist: forall x, vvalid pg x -> left_out_edge x <> right_out_edge x;
   only_two_edges: forall x e, vvalid pg x -> (src pg e = x /\ evalid pg e <-> e = left_out_edge x \/ e = right_out_edge x)
 }.
 
 Context {left_out_edge right_out_edge: V -> E}.
 
-Lemma left_valid (pg: PreGraph V E) {bi: BiGraph pg left_out_edge right_out_edge}: forall x, vvalid pg x -> evalid pg (left_out_edge x).
+Lemma left_valid (pg: PreGraph V E) {bi: BinGraph pg left_out_edge right_out_edge}: forall x, vvalid pg x -> evalid pg (left_out_edge x).
 Proof.
   intros.
   pose proof only_two_edges x (left_out_edge x).
   tauto.
 Qed.
 
-Lemma right_valid (pg: PreGraph V E) {bi: BiGraph pg left_out_edge right_out_edge}: forall x, vvalid pg x -> evalid pg (right_out_edge x).
+Lemma right_valid (pg: PreGraph V E) {bi: BinGraph pg left_out_edge right_out_edge}: forall x, vvalid pg x -> evalid pg (right_out_edge x).
 Proof.
   intros.
   pose proof only_two_edges x (right_out_edge x).
   tauto.
 Qed.
 
-Lemma left_sound (pg: PreGraph V E) {bi: BiGraph pg left_out_edge right_out_edge}: forall x, vvalid pg x -> src pg (left_out_edge x) = x.
+Lemma left_sound (pg: PreGraph V E) {bi: BinGraph pg left_out_edge right_out_edge}: forall x, vvalid pg x -> src pg (left_out_edge x) = x.
 Proof.
   intros.
   pose proof only_two_edges x (left_out_edge x).
@@ -42,7 +42,7 @@ Proof.
   tauto.
 Qed.
 
-Lemma right_sound (pg: PreGraph V E) {bi: BiGraph pg left_out_edge right_out_edge}: forall x, vvalid pg x -> src pg (right_out_edge x) = x.
+Lemma right_sound (pg: PreGraph V E) {bi: BinGraph pg left_out_edge right_out_edge}: forall x, vvalid pg x -> src pg (right_out_edge x) = x.
 Proof.
   intros.
   pose proof only_two_edges x (right_out_edge x).
@@ -50,14 +50,14 @@ Proof.
   tauto.
 Qed.
 
-Lemma left_or_right (pg: PreGraph V E) (bi: BiGraph pg left_out_edge right_out_edge): forall x e, vvalid pg x -> evalid pg e -> src pg e = x -> {e = left_out_edge x} + {e = right_out_edge x}.
+Lemma left_or_right (pg: PreGraph V E) (bi: BinGraph pg left_out_edge right_out_edge): forall x e, vvalid pg x -> evalid pg e -> src pg e = x -> {e = left_out_edge x} + {e = right_out_edge x}.
 Proof.
   intros.
   pose proof only_two_edges x e.  
   destruct_eq_dec e (left_out_edge x); [left | right]; tauto.
 Qed.
 
-Lemma biGraph_out_edges (pg: PreGraph V E) (bi: BiGraph pg left_out_edge right_out_edge): forall x e, vvalid pg x -> (In e (left_out_edge x :: right_out_edge x :: nil) <-> out_edges pg x e).
+Lemma binGraph_out_edges (pg: PreGraph V E) (bi: BinGraph pg left_out_edge right_out_edge): forall x e, vvalid pg x -> (In e (left_out_edge x :: right_out_edge x :: nil) <-> out_edges pg x e).
 Proof.
   intros.
   unfold out_edges.
@@ -66,12 +66,12 @@ Proof.
   firstorder; subst; tauto.
 Qed.
 
-Definition biE (pg : PreGraph V E) {bi: BiGraph pg left_out_edge right_out_edge} (v: V) : V * V := (dst pg (left_out_edge v), dst pg (right_out_edge v)).
+Definition binE (pg : PreGraph V E) {bi: BinGraph pg left_out_edge right_out_edge} (v: V) : V * V := (dst pg (left_out_edge v), dst pg (right_out_edge v)).
 
-Lemma biE_only2 (pg : PreGraph V E) {bi: BiGraph pg left_out_edge right_out_edge} :
-  forall v v1 v2 n, vvalid pg v -> biE pg v = (v1 ,v2) -> (step pg v n <-> n = v1 \/ n = v2).
+Lemma binE_only2 (pg : PreGraph V E) {bi: BinGraph pg left_out_edge right_out_edge} :
+  forall v v1 v2 n, vvalid pg v -> binE pg v = (v1 ,v2) -> (step pg v n <-> n = v1 \/ n = v2).
 Proof.
-  intros; unfold biE in H.
+  intros; unfold binE in H.
   split; intros.
   + inversion H1; subst.
     inversion H0; subst.
@@ -83,15 +83,15 @@ Proof.
     - split; [| split]; [eapply right_valid | rewrite right_sound |]; eauto.
 Qed.
 
-Lemma bi_graph_si: forall (g1 g2: PreGraph V E),
+Lemma bin_graph_si: forall (g1 g2: PreGraph V E),
   g1 ~=~ g2 ->
-  BiGraph g1 left_out_edge right_out_edge ->
-  BiGraph g2 left_out_edge right_out_edge.
+  BinGraph g1 left_out_edge right_out_edge ->
+  BinGraph g2 left_out_edge right_out_edge.
 Proof.
   intros.
   constructor.
   + intros.
-    apply (bi_consist).
+    apply (bin_consist).
     rewrite (proj1 H); auto.
   + destruct H as [? [? [? ?]]].
     intros.
@@ -106,24 +106,24 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma gen_dst_preserve_bi: forall (g: PreGraph V E) e t,
-    BiGraph g left_out_edge right_out_edge -> BiGraph (pregraph_gen_dst g e t) left_out_edge right_out_edge.
+Lemma gen_dst_preserve_bin: forall (g: PreGraph V E) e t,
+    BinGraph g left_out_edge right_out_edge -> BinGraph (pregraph_gen_dst g e t) left_out_edge right_out_edge.
 Proof.
-  intros. apply Build_BiGraph; intros.
-  + apply bi_consist; auto.
+  intros. apply Build_BinGraph; intros.
+  + apply bin_consist; auto.
   + simpl. apply (only_two_edges); auto.
 Qed.
 
 Context {is_null: DecidablePred V}.
 
-Lemma bi_graph_join: forall (g: PreGraph V E) (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
+Lemma bin_graph_join: forall (g: PreGraph V E) (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
   Prop_join PV1 PV2 PV ->
   Prop_join PE1 PE2 PE ->
   MathGraph (gpredicate_subgraph PV1 PE1 g) is_null ->
   MathGraph (gpredicate_subgraph PV2 PE2 g) is_null ->
-  BiGraph (gpredicate_subgraph PV1 PE1 g) left_out_edge right_out_edge ->
-  BiGraph (gpredicate_subgraph PV2 PE2 g) left_out_edge right_out_edge ->
-  BiGraph (gpredicate_subgraph PV PE g) left_out_edge right_out_edge.
+  BinGraph (gpredicate_subgraph PV1 PE1 g) left_out_edge right_out_edge ->
+  BinGraph (gpredicate_subgraph PV2 PE2 g) left_out_edge right_out_edge ->
+  BinGraph (gpredicate_subgraph PV PE g) left_out_edge right_out_edge.
 Proof.
   intros.
   constructor.
@@ -133,9 +133,9 @@ Proof.
     destruct H5.
     destruct H as [? _].
     rewrite H in H6; destruct H6.
-    - apply (@bi_consist _ _ _ H3).
+    - apply (@bin_consist _ _ _ H3).
       split; auto.
-    - apply (@bi_consist _ _ _ H4).
+    - apply (@bin_consist _ _ _ H4).
       split; auto.
   + intros.
     simpl in H5.
@@ -176,14 +176,14 @@ Proof.
       tauto.
 Qed.
 
-Lemma bi_graph_join': forall (g: PreGraph V E) (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
+Lemma bin_graph_join': forall (g: PreGraph V E) (PV1 PV2 PV: V -> Prop) (PE1 PE2 PE: E -> Prop),
   Prop_join PV1 PV2 PV ->
   Prop_join PE1 PE2 PE ->
   MathGraph' (gpredicate_subgraph PV1 PE1 g) is_null ->
   MathGraph' (gpredicate_subgraph PV2 PE2 g) is_null ->
-  BiGraph (gpredicate_subgraph PV1 PE1 g) left_out_edge right_out_edge ->
-  BiGraph (gpredicate_subgraph PV2 PE2 g) left_out_edge right_out_edge ->
-  BiGraph (gpredicate_subgraph PV PE g) left_out_edge right_out_edge.
+  BinGraph (gpredicate_subgraph PV1 PE1 g) left_out_edge right_out_edge ->
+  BinGraph (gpredicate_subgraph PV2 PE2 g) left_out_edge right_out_edge ->
+  BinGraph (gpredicate_subgraph PV PE g) left_out_edge right_out_edge.
 Proof.
   intros.
   constructor.
@@ -193,9 +193,9 @@ Proof.
     destruct H5.
     destruct H as [? _].
     rewrite H in H6; destruct H6.
-    - apply (@bi_consist _ _ _ H3).
+    - apply (@bin_consist _ _ _ H3).
       split; auto.
-    - apply (@bi_consist _ _ _ H4).
+    - apply (@bin_consist _ _ _ H4).
       split; auto.
   + intros.
     simpl in H5.
@@ -236,4 +236,4 @@ Proof.
       tauto.
 Qed.
 
-End BiGraph.
+End BinGraph.

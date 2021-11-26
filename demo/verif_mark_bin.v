@@ -26,7 +26,7 @@ void mark(struct Node * x) {
 
 >>
  *)
-Require Import Demo.env_mark_bi.
+Require Import Demo.env_mark_bin.
 
 (** Besides PreGraph, LabeledGraph and GeneralGraph, this module 
     also contains the definition of predicates such as "structurally
@@ -55,17 +55,17 @@ Require Import CertiGraph.msl_application.Graph_Mark.
     of our graph: 1. Every node contains two out edges. 2. The edge
     can points to a special "null" node. 3. The number of vertices and
     edges is finite. *)
-Require Import CertiGraph.msl_application.GraphBi.
+Require Import CertiGraph.msl_application.GraphBin.
 
 (** This module combines the two orthogonal definitons to prove the
     spatial lemmas we need in the following proofs. They are essentially
     the specializations of lemmas proved in Graph_Mark and GraphBi. *)
-Require Import CertiGraph.msl_application.GraphBi_Mark.
+Require Import CertiGraph.msl_application.GraphBin_Mark.
 Require Import CertiGraph.floyd_ext.share.
 
 (** This module instantiate classes in modules above to connect VST
     and the CertiGraph library. *)
-Require Import Demo.spatial_graph_bi_mark.
+Require Import Demo.spatial_graph_bin_mark.
 
 Local Coercion Graph_LGraph: Graph >-> LGraph.
 Local Coercion LGraph_SGraph: LGraph >-> SGraph.
@@ -82,7 +82,7 @@ Notation graph sh x g :=
 
 (** The definition of graph. *)
 Notation Graph := (@Graph pSGG_VST bool unit unit).
-Existing Instances MGS biGraph maGraph finGraph RGF.
+Existing Instances MGS binGraph maGraph finGraph RGF.
 
 (** The key in this spec is the predicate "mark x g g'". This is a
     rather subtle definition:

@@ -3,7 +3,7 @@
 
 treeread.v
 verif_treeread.v
-mark_bi.v
-env_mark_bi.v
-spatial_graph_bi_mark.v
-verif_mark_bi.v
+mark_bin.v
+env_mark_bin.v
+spatial_graph_bin_mark.v
+verif_mark_bin.v

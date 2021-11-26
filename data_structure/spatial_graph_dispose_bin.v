@@ -12,12 +12,12 @@ Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.graph.subgraph2.
 Require Import CertiGraph.graph.reachable_ind.
 Require Import CertiGraph.graph.spanning_tree.
-Require Import CertiGraph.graph.BiGraph.
+Require Import CertiGraph.graph.BinGraph.
 Require Import CertiGraph.graph.MathGraph.
 Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.msl_application.Graph.
-Require Import CertiGraph.msl_application.GraphBi.
-Require Import CertiGraph.msl_application.GraphBi_Mark.
+Require Import CertiGraph.msl_application.GraphBin.
+Require Import CertiGraph.msl_application.GraphBin_Mark.
 Require CertiGraph.graph.weak_mark_lemmas.
 Import CertiGraph.graph.weak_mark_lemmas.WeakMarkGraph.
 
@@ -30,12 +30,12 @@ Instance MGS: MarkGraphSetting bool.
   + destruct x; [left | right]; congruence.
 Defined.
 
-Section SPATIAL_GRAPH_DISPOSE_BI.
+Section SPATIAL_GRAPH_DISPOSE_BIN.
 
-  Context {pSGG_Bi: pPointwiseGraph_Graph_Bi}.
-  Context {sSGG_Bi: sPointwiseGraph_Graph_Bi bool unit}.
+  Context {pSGG_Bin: pPointwiseGraph_Graph_Bin}.
+  Context {sSGG_Bin: sPointwiseGraph_Graph_Bin bool unit}.
 
-  Existing Instances maGraph biGraph finGraph.
+  Existing Instances maGraph binGraph finGraph.
 
   Local Open Scope logic.
   Local Coercion Graph_LGraph: Graph >-> LGraph.
@@ -45,7 +45,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-  Notation Graph := (@Graph pSGG_Bi bool unit unit).
+  Notation Graph := (@Graph pSGG_Bin bool unit unit).
 
   Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
   Proof. intros. simpl in H. simpl. destruct (vlabel g x) eqn:? . auto. inversion H. Qed.
@@ -69,7 +69,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       - right. unfold updateEdgeFunc.
         destruct (equiv_dec (x, L) (x, L)); intuition.
         * apply (valid_not_null g) in H3; auto. reflexivity.
-        * apply (@left_valid _ _ _ _ _ _ g (biGraph g)) in H; auto.
+        * apply (@left_valid _ _ _ _ _ _ g (binGraph g)) in H; auto.
     + simpl. tauto.
   Qed.
 
@@ -150,26 +150,26 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         unfold predicate_weak_evalid in H1. destruct H1 as [_ [? [_ ?]]].
         specialize (H1 (x0, L)). specialize (H4 (x0, L)).
         assert (src g (x0, L) = x0)
-          by (apply (@left_sound _ _ _ _ _ _ g (biGraph g) x0); apply reachable_foot_valid in H2; auto).
+          by (apply (@left_sound _ _ _ _ _ _ g (binGraph g) x0); apply reachable_foot_valid in H2; auto).
         change (lg_gg g) with (g: LGraph) in *.
         rewrite H5 in *.
         assert (evalid g (x0, L) /\ ~ g |= l ~o~> x0 satisfying (unmarked g)). {
           split.
           + apply reachable_foot_valid in H2.
-            apply (@left_valid _ _ _ _ _ _ g (biGraph g)); auto.
+            apply (@left_valid _ _ _ _ _ _ g (binGraph g)); auto.
           + intro; apply H3; apply reachable_by_is_reachable in H6; auto.
         } apply H4; intuition.
       - destruct H1 as [_ [? _]]. hnf in H1. simpl in H1.
         unfold predicate_weak_evalid in H1. destruct H1 as [_ [? [_ ?]]].
         specialize (H1 (x0, R)). specialize (H4 (x0, R)).
         assert (src g (x0, R) = x0)
-          by (apply (@right_sound _ _ _ _ _ _ g (biGraph g) x0); apply reachable_foot_valid in H2; auto).
+          by (apply (@right_sound _ _ _ _ _ _ g (binGraph g) x0); apply reachable_foot_valid in H2; auto).
         change (lg_gg g) with (g: LGraph) in *.
         rewrite H5 in *.
         assert (evalid g (x0, R) /\ ~ g |= l ~o~> x0 satisfying (unmarked g)). {
           split.
           + apply reachable_foot_valid in H2.
-            apply (@right_valid _ _ _ _ _ _ g (biGraph g)); auto.
+            apply (@right_valid _ _ _ _ _ _ g (binGraph g)); auto.
           + intro; apply H3; apply reachable_by_is_reachable in H6; auto.
         } apply H4; intuition.
   Qed.
@@ -193,8 +193,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     apply spanning_tree_totally_unmarked_parent_reachable with (e := (x, L));
       auto; try rewrite <- H3; auto.
       - hnf. split.
-        + apply (@left_valid _ _ _ _ _ _ g1 (biGraph g1)); auto.
-        + apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1) x); auto.
+        + apply (@left_valid _ _ _ _ _ _ g1 (binGraph g1)); auto.
+        + apply (@left_sound _ _ _ _ _ _ g1 (binGraph g1) x); auto.
       - apply vgamma_is_true in H0. auto.
       - intros; apply Graph_reachable_by_dec, weak_valid_vvalid_dec; right; auto.
   Qed.
@@ -228,7 +228,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
   Lemma edge_spanning_tree_left_reachable_vvalid: forall (g1 g2: Graph) x d l r,
       vvalid g1 x -> vgamma g1 x = (d, l, r) -> edge_spanning_tree g1 (x, L) g2 -> Included (reachable g1 x) (vvalid g2).
   Proof.
-    intros. assert (x = src g1 (x, L)) by (symmetry; apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1) x); auto).
+    intros. assert (x = src g1 (x, L)) by (symmetry; apply (@left_sound _ _ _ _ _ _ g1 (binGraph g1) x); auto).
     rewrite H2. apply edge_spanning_tree_reachable_vvalid; auto.
   Qed.
 
@@ -245,8 +245,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       change (lg_gg g2) with (g2: LGraph) in H4.
       rewrite <- H4. f_equal. symmetry. apply H1.
       - intro. inversion H3.
-      - apply (@right_valid _ _ _ _ _ _ g1 (biGraph g1)) in H; auto.
-      - apply (@right_valid _ _ _ _ _ _ g2 (biGraph g2)) in Hvg2; auto.
+      - apply (@right_valid _ _ _ _ _ _ g1 (binGraph g1)) in H; auto.
+      - apply (@right_valid _ _ _ _ _ _ g2 (binGraph g2)) in Hvg2; auto.
     + destruct H1 as [? [[_ [_ [_ ?]]] _]].
       assert (marked g1 x) by (simpl in *; inversion H0; auto).
       assert (~ g1 |= dst g1 (x, L) ~o~> x satisfying (unmarked g1)) by (intro HS; apply reachable_by_foot_prop in HS; auto).
@@ -257,10 +257,10 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       change (lg_gg g1) with (g1: LGraph) in *.
       change (lg_gg g2) with (g2: LGraph) in *.
       apply H2; split.
-      - apply (@right_valid _ _ _ _ _ _ g1 (biGraph g1) x); auto.
-      - rewrite (@right_sound _ _ _ _ _ _ g1 (biGraph g1) x); auto.
-      - apply (@right_valid _ _ _ _ _ _ g2 (biGraph g2) x); auto.
-      - rewrite (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x); auto.
+      - apply (@right_valid _ _ _ _ _ _ g1 (binGraph g1) x); auto.
+      - rewrite (@right_sound _ _ _ _ _ _ g1 (binGraph g1) x); auto.
+      - apply (@right_valid _ _ _ _ _ _ g2 (binGraph g2) x); auto.
+      - rewrite (@right_sound _ _ _ _ _ _ g2 (binGraph g2) x); auto.
   Qed.
 
   Lemma spanning_tree_left_reachable:
@@ -278,8 +278,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       split; [|split]; auto.
       - apply reachable_head_valid in r0. auto.
       - simpl in H0. inversion H0. exists (x, L); auto.
-        * apply (@left_valid _ _ _ _ _ _ g1 (biGraph g1)); auto.
-        * apply (@left_sound _ _ _ _ _ _ g1 (biGraph g1)); auto.
+        * apply (@left_valid _ _ _ _ _ _ g1 (binGraph g1)); auto.
+        * apply (@left_sound _ _ _ _ _ _ g1 (binGraph g1)); auto.
     + apply edge_reachable_by with r; auto.
       - split; [|split]; auto.
         * apply reachable_head_valid in H2.
@@ -366,7 +366,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         specialize (H2 (x0, L)). specialize (H5 (x0, L)).
         assert (src g2 (x0, L) = x0).
         1: {
-          apply (@left_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
+          apply (@left_sound _ _ _ _ _ _ g2 (binGraph g2) x0).
           rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x x0 H H1).
           apply reachable_foot_valid in H3; auto.
         }
@@ -375,7 +375,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         assert (evalid g2 (x0, L) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
           split.
           + apply reachable_foot_valid in H3.
-            apply (@left_valid _ _ _ _ _ _ g2 (biGraph g2)).
+            apply (@left_valid _ _ _ _ _ _ g2 (binGraph g2)).
             rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x); eauto.
           + intro; apply H4; apply reachable_by_is_reachable in H7; auto.
         } apply H5; intuition.
@@ -384,7 +384,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         specialize (H2 (x0, R)). specialize (H5 (x0, R)).
         assert (src g2 (x0, R) = x0).
         1: {
-          apply (@right_sound _ _ _ _ _ _ g2 (biGraph g2) x0).
+          apply (@right_sound _ _ _ _ _ _ g2 (binGraph g2) x0).
           rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x x0 H H1).
           apply reachable_foot_valid in H3; auto.
         }
@@ -393,7 +393,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
         assert (evalid g2 (x0, R) /\ ~ g2 |= r ~o~> x0 satisfying (unmarked g2)). {
           split.
           + apply reachable_foot_valid in H3.
-            apply (@right_valid _ _ _ _ _ _ g2 (biGraph g2)).
+            apply (@right_valid _ _ _ _ _ _ g2 (binGraph g2)).
             rewrite <- (edge_spanning_tree_left_vvalid g1 g2 x); eauto.
           + intro; apply H4; apply reachable_by_is_reachable in H7; auto.
         } apply H5; intuition.
@@ -471,7 +471,7 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       - right. split; auto. unfold updateEdgeFunc.
         destruct (equiv_dec (x, R) (x, R)); intuition.
         * apply (valid_not_null g) in H3; auto. reflexivity.
-        * split; auto. apply (@right_valid _ _ _ _ _ _ g (biGraph g)) in H; auto.
+        * split; auto. apply (@right_valid _ _ _ _ _ _ g (binGraph g)) in H; auto.
     + simpl. tauto.
   Qed.
 
@@ -490,8 +490,8 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
     + pose proof (only_two_edges x e H). simpl in H7 |-* .
       split; intros.
       - destruct H8 as [? | [? | ?]]; [subst e..|exfalso; auto].
-        * split; [|intuition]. apply (@left_valid _ _ _ _ _ _ g (biGraph g)); auto.
-        * split; [|intuition]. apply (@right_valid _ _ _ _ _ _ g (biGraph g)); auto.
+        * split; [|intuition]. apply (@left_valid _ _ _ _ _ _ g (binGraph g)); auto.
+        * split; [|intuition]. apply (@right_valid _ _ _ _ _ _ g (binGraph g)); auto.
       - destruct H8. intuition.
     + apply Graph_reachable_by_dec. apply weak_valid_vvalid_dec. pose proof H3.
       simpl in H3. inversion H3. subst l.
@@ -505,4 +505,4 @@ Section SPATIAL_GRAPH_DISPOSE_BI.
       apply spanning_list_nil. auto.
   Qed.
 
-End SPATIAL_GRAPH_DISPOSE_BI.
+End SPATIAL_GRAPH_DISPOSE_BIN.
