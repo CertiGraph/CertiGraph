@@ -23,7 +23,7 @@ Definition is_guarded_inj {A B: Type} (P: A -> Prop) (f: A -> B) :=
 (* forall a1 a2: A, P a1 -> P a2 -> f a1 = f a2 -> a1 = a2. *)
 (* This commented definition is weaker. *)
 
-Instance guarded_pointwise_equivalence {A B : Type} (P: A -> Prop) {R : relation B} {EqR: Equivalence R}: Equivalence (guarded_pointwise_relation P R).
+#[export] Instance guarded_pointwise_equivalence {A B : Type} (P: A -> Prop) {R : relation B} {EqR: Equivalence R}: Equivalence (guarded_pointwise_relation P R).
 Proof.
   apply resp_Equivalence.
   apply pointwise_equivalence.
@@ -71,7 +71,7 @@ Proof.
   firstorder.
 Qed.
 
-Instance guarded_pointwise_relation_Proper {A B : Type}: Proper (Same_set ==> eq ==> eq ==> eq ==> iff) (@guarded_pointwise_relation A B).
+#[export] Instance guarded_pointwise_relation_Proper {A B : Type}: Proper (Same_set ==> eq ==> eq ==> eq ==> iff) (@guarded_pointwise_relation A B).
 Proof.
   do 4 (hnf; intros); subst.
   destruct H.
@@ -258,7 +258,7 @@ Proof.
     rewrite H in H0 by auto; auto.
 Qed.
 
-Instance is_guarded_inj_proper1 {A B: Type} (P: A -> Prop): Proper (guarded_pointwise_relation P eq ==> iff) (@is_guarded_inj A B P).
+#[export] Instance is_guarded_inj_proper1 {A B: Type} (P: A -> Prop): Proper (guarded_pointwise_relation P eq ==> iff) (@is_guarded_inj A B P).
 Proof.
   hnf; intros.
   split; apply is_guarded_inj_proper_aux1; auto.
@@ -281,14 +281,14 @@ Proof.
   + intros; rewrite <- H in H1; auto.
 Qed.
 
-Instance is_guarded_inj_proper2 {A B: Type}: Proper (Same_set ==> eq ==> iff) (@is_guarded_inj A B).
+#[export] Instance is_guarded_inj_proper2 {A B: Type}: Proper (Same_set ==> eq ==> iff) (@is_guarded_inj A B).
 Proof.
   do 2 (hnf; intros); subst.
   split; apply is_guarded_inj_proper_aux2; auto.
   symmetry; auto.
 Qed.
 
-Instance image_set_proper1 {A B: Type} (P: A -> Prop) : Proper (guarded_pointwise_relation P (@eq B) ==> Same_set) (image_set P).
+#[export] Instance image_set_proper1 {A B: Type} (P: A -> Prop) : Proper (guarded_pointwise_relation P (@eq B) ==> Same_set) (image_set P).
 Proof.
   hnf; intros.
   rewrite Same_set_spec.

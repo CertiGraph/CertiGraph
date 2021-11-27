@@ -93,19 +93,17 @@ Definition guarded_structurally_identical PV PE: relation PGraph := respectful_r
 
 Definition guarded_labeled_graph_equiv PV PE: relation LGraph := respectful_relation (gpredicate_sub_labeledgraph PV PE) labeled_graph_equiv.
 
-Instance guarded_si_Equivalence PV PE: Equivalence (guarded_structurally_identical PV PE).
+#[global] Instance guarded_si_Equivalence PV PE: Equivalence (guarded_structurally_identical PV PE).
 Proof.
   apply resp_Equivalence.
   apply si_Equiv.
 Qed.
-Global Existing Instance guarded_si_Equivalence.
 
-Instance guarded_lge_Equivalence PV PE: Equivalence (guarded_labeled_graph_equiv PV PE).
+#[global] Instance guarded_lge_Equivalence PV PE: Equivalence (guarded_labeled_graph_equiv PV PE).
 Proof.
   apply resp_Equivalence.
   apply lge_Equiv.
 Qed.
-Global Existing Instance guarded_lge_Equivalence.
 
 Lemma guarded_si_spec: forall PV PE (G1 G2: PGraph),
   guarded_structurally_identical PV PE G1 G2 <->
@@ -144,7 +142,7 @@ Proof.
   rewrite <- (proj1 (proj2 H)); auto.
 Qed.
 
-Instance guarded_si_proper: Proper (@Same_set V ==> @Same_set E ==> eq ==> eq ==> iff) guarded_structurally_identical.
+#[global] Instance guarded_si_proper: Proper (@Same_set V ==> @Same_set E ==> eq ==> eq ==> iff) guarded_structurally_identical.
 Proof.
   intros.
   hnf; intros PV1 PV2 ?.
@@ -156,7 +154,6 @@ Proof.
   unfold pointwise_relation in *.
   firstorder.
 Defined.
-Global Existing Instance guarded_si_proper.
 
 Lemma si_is_guarded_si:
   same_relation PGraph structurally_identical (guarded_structurally_identical (Full_set _) (Full_set _)).
@@ -314,12 +311,11 @@ Proof.
     apply (proj2 (proj2 (proj2 H3))); auto.
 Qed.
 
-Instance pregraph_join_proper: Proper (Same_set ==> Same_set ==> structurally_identical ==> structurally_identical ==> iff) pregraph_join.
+#[global] Instance pregraph_join_proper: Proper (Same_set ==> Same_set ==> structurally_identical ==> structurally_identical ==> iff) pregraph_join.
 Proof.
   do 4 (hnf; intros).
   split; apply pregraph_join_proper_aux; auto; symmetry; auto.
 Qed.
-Global Existing Instance pregraph_join_proper.
 
 Lemma pregraph_join_guarded_si: forall PV PE (G1 G2: Graph),
   pregraph_join PV PE G1 G2 ->

@@ -433,7 +433,7 @@ Proof.
   + apply wand_sepcon_adjoint; auto.
 Qed.
   
-Instance ocon_owand_CCC: forall A `{OverlapSepLog A}, CCCviaNatDed A ocon owand.
+#[export] Instance ocon_owand_CCC: forall A `{OverlapSepLog A}, CCCviaNatDed A ocon owand.
 Proof.
   intros.
   constructor.

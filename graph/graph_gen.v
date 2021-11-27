@@ -33,14 +33,13 @@ Definition weak_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e =
 
 Definition weak'_edge_prop (P: V -> Prop) (g: PreGraph V E): E -> Prop := fun e => P (dst g e).
 
-Instance weak_edge_prop_proper: Proper (Same_set ==> eq ==> Same_set) weak_edge_prop.
+#[global] Instance weak_edge_prop_proper: Proper (Same_set ==> eq ==> Same_set) weak_edge_prop.
 Proof.
   do 2 (hnf; intros); subst.
   rewrite Same_set_spec in *.
   intro e; unfold weak_edge_prop.
   auto.
 Defined.
-Global Existing Instance weak_edge_prop_proper.
 
 Definition predicate_vvalid (g: PreGraph V E) (p: V -> Prop): Ensemble V :=
   fun n => vvalid g n /\ p n.
@@ -281,7 +280,7 @@ Definition predicate_subgraph (g: Graph) (p: V -> Prop): Graph :=
 Definition predicate_partialgraph (g: Graph) (p: V -> Prop): Graph :=
   Build_PreGraph EV EE (predicate_vvalid g p) (predicate_weak_evalid g p) (src g) (dst g).
 
-Instance subgraph_proper: Proper (structurally_identical ==> @Same_set V ==> structurally_identical) predicate_subgraph.
+#[global] Instance subgraph_proper: Proper (structurally_identical ==> @Same_set V ==> structurally_identical) predicate_subgraph.
 Proof.
   do 2 (hnf; intros).
   destruct H as [? [? [? ?]]].
@@ -296,9 +295,7 @@ Proof.
   + simpl in * |- . unfold predicate_evalid in * |- . apply H3; tauto.
 Defined.
 
-Global Existing Instance subgraph_proper.
-
-Instance partialgraph_proper: Proper (structurally_identical ==> @Same_set V ==> structurally_identical) predicate_partialgraph.
+#[global] Instance partialgraph_proper: Proper (structurally_identical ==> @Same_set V ==> structurally_identical) predicate_partialgraph.
 Proof.
   do 2 (hnf; intros).
   destruct H as [? [? [? ?]]].
@@ -313,9 +310,7 @@ Proof.
   + simpl in * |- . unfold predicate_weak_evalid in * |- . apply H3; tauto.
 Defined.
 
-Global Existing Instance partialgraph_proper.
-
-Instance gpredicate_subgraph_proper: Proper (@Same_set V ==> @Same_set E ==> structurally_identical ==> structurally_identical) gpredicate_subgraph.
+#[global] Instance gpredicate_subgraph_proper: Proper (@Same_set V ==> @Same_set E ==> structurally_identical ==> structurally_identical) gpredicate_subgraph.
 Proof.
   do 3 (hnf; intros).
   destruct H1 as [? [? [? ?]]].
@@ -334,8 +329,6 @@ Proof.
     rewrite Intersection_spec in *.
     apply H4; tauto.
 Defined.
-
-Global Existing Instance gpredicate_subgraph_proper.
 
 Lemma predicate_partialgraph_gpredicate_subgraph (g: Graph) (p: V -> Prop):
   (predicate_partialgraph g p) ~=~ (gpredicate_subgraph p (Intersection _ (weak_edge_prop p g) (evalid g)) g).
@@ -773,7 +766,7 @@ Definition predicate_sub_labeledgraph (g: Graph) (p: V -> Prop) :=
 Definition predicate_partial_labeledgraph (g: Graph) (p: V -> Prop) :=
   Build_LabeledGraph _ _ _ (predicate_partialgraph g p) (vlabel g) (elabel g) (glabel g).
 
-Instance sub_labeledgraph_proper: Proper (labeled_graph_equiv ==> @Same_set V ==> labeled_graph_equiv) predicate_sub_labeledgraph.
+#[global] Instance sub_labeledgraph_proper: Proper (labeled_graph_equiv ==> @Same_set V ==> labeled_graph_equiv) predicate_sub_labeledgraph.
 Proof.
   do 2 (hnf; intros).
   destruct H as [? [? ?]].
@@ -787,9 +780,7 @@ Proof.
     apply H2; auto.
 Defined.
 
-Global Existing Instance sub_labeledgraph_proper.
-
-Instance partial_labeledgraph_proper: Proper (labeled_graph_equiv ==> @Same_set V ==> labeled_graph_equiv) predicate_partial_labeledgraph.
+#[global] Instance partial_labeledgraph_proper: Proper (labeled_graph_equiv ==> @Same_set V ==> labeled_graph_equiv) predicate_partial_labeledgraph.
 Proof.
   do 2 (hnf; intros).
   destruct H as [? [? ?]].
@@ -803,9 +794,7 @@ Proof.
     apply H2; auto.
 Defined.
 
-Global Existing Instance partial_labeledgraph_proper.
-
-Instance gpredicate_sub_labeledgraph_proper: Proper (@Same_set V ==> @Same_set E ==> labeled_graph_equiv ==> labeled_graph_equiv) gpredicate_sub_labeledgraph.
+#[global] Instance gpredicate_sub_labeledgraph_proper: Proper (@Same_set V ==> @Same_set E ==> labeled_graph_equiv ==> labeled_graph_equiv) gpredicate_sub_labeledgraph.
 Proof.
   do 3 (hnf; intros).
   split; [| split].
@@ -818,8 +807,6 @@ Proof.
     rewrite Intersection_spec in H2, H3.
     apply (proj2 (proj2 H1)); tauto.
 Qed.
-
-Global Existing Instance gpredicate_sub_labeledgraph_proper.
 
 Lemma lg_vgen_stable: forall (g: Graph) (x: V) (d: DV),
   (predicate_partial_labeledgraph g (Complement V (eq x))) ~=~

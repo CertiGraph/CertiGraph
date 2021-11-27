@@ -5,9 +5,7 @@ Require Export CertiGraph.dispose.dispose_bin.
 
 Local Open Scope logic.
 
-Instance CompSpecs : compspecs. make_compspecs prog. Defined.
+#[export] Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs.  mk_varspecs prog. Defined.
-
-Global Existing Instance CompSpecs.
 
 Definition node_type := Tstruct _Node noattr.

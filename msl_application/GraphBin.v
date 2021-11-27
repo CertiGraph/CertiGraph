@@ -32,7 +32,7 @@ Class pPointwiseGraph_Graph_Bin: Type := {
   SGBA: PointwiseGraphBasicAssum addr (addr * LR)
 }.
 
-Existing Instance SGBA.
+#[export] Existing Instance SGBA.
 
 Definition is_null_SGBA {pSGGB: pPointwiseGraph_Graph_Bin} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
 
@@ -44,7 +44,7 @@ Class sPointwiseGraph_Graph_Bin {pSGG_Bin: pPointwiseGraph_Graph_Bin} (DV DE: Ty
   SGAvn: PointwiseGraphAssum_vn SGP null
 }.
 
-Existing Instances SGP SGA SGAvs.
+#[export] Existing Instances SGP SGA SGAvs.
 
 Section GRAPH_BI.
 
@@ -74,14 +74,14 @@ Definition Graph' := (GeneralGraph addr (addr * LR) DV DE DG (fun g => BinMaFin'
 Definition LGraph := (LabeledGraph addr (addr * LR) DV DE DG).
 Definition SGraph := (PointwiseGraph addr (addr * LR) (DV * addr * addr) unit).
 
-Instance SGC_Bin: PointwiseGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
+#[export] Instance SGC_Bin: PointwiseGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
 Proof.
   refine (Build_PointwiseGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
   + exact (fun G v => (vlabel G v, dst (pg_lg G) (v, L), dst (pg_lg G) (v, R))).
   + exact (fun _ _ => tt).
 Defined.
 
-Instance L_SGC_Bin: Local_PointwiseGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
+#[export] Instance L_SGC_Bin: Local_PointwiseGraphConstructor addr (addr * LR) DV DE DG (DV * addr * addr) unit.
 Proof.
   refine (Build_Local_PointwiseGraphConstructor _ _ _ _ _ _ _ SGBA SGC_Bin
     (fun G v => evalid (pg_lg G) (v, L) /\ evalid (pg_lg G) (v, R) /\
@@ -94,8 +94,6 @@ Proof.
   + intros; simpl.
     auto.
 Defined.
-
-Global Existing Instances SGC_Bin L_SGC_Bin.
 
 Definition Graph_LGraph (G: Graph): LGraph := lg_gg G.
 Definition Graph'_LGraph (G: Graph'): LGraph := lg_gg G.
@@ -110,25 +108,25 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Instance binGraph (G: Graph): BinGraph G (fun x => (x, L)) (fun x => (x, R)) :=
+#[export] Instance binGraph (G: Graph): BinGraph G (fun x => (x, L)) (fun x => (x, R)) :=
   @bin G (@sound_gg _ _ _ _ _ _ _ _ G).
 
-Instance binGraph' (G: Graph'): BinGraph G (fun x => (x, L)) (fun x => (x, R)) :=
+#[export] Instance binGraph' (G: Graph'): BinGraph G (fun x => (x, L)) (fun x => (x, R)) :=
   @bin' G (@sound_gg _ _ _ _ _ _ _ _ G).
 
-Instance maGraph(G: Graph): MathGraph G is_null_SGBA :=
+#[export] Instance maGraph(G: Graph): MathGraph G is_null_SGBA :=
   @ma G (@sound_gg _ _ _ _ _ _ _ _ G).
 
-Instance maGraph'(G: Graph'): MathGraph' G is_null_SGBA :=
+#[export] Instance maGraph'(G: Graph'): MathGraph' G is_null_SGBA :=
   @ma' G (@sound_gg _ _ _ _ _ _ _ _ G).
 
-Instance finGraph (G: Graph): FiniteGraph G :=
+#[export] Instance finGraph (G: Graph): FiniteGraph G :=
   @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
 
-Instance finGraph' (G: Graph'): FiniteGraph G :=
+#[export] Instance finGraph' (G: Graph'): FiniteGraph G :=
   @fin' G (@sound_gg _ _ _ _ _ _ _ _ G).
 
-Instance RGF (G: Graph): ReachableFiniteGraph G.
+#[export] Instance RGF (G: Graph): ReachableFiniteGraph G.
   apply Build_ReachableFiniteGraph.
   intros.
   apply finite_reachable_computable with (is_null := is_null_SGBA) in H.
@@ -592,7 +590,7 @@ Proof.
     auto.
 Qed.
 
-Instance BinMaFin_Normal: NormalGeneralGraph (fun g: LGraph => BinMaFin g).
+#[export] Instance BinMaFin_Normal: NormalGeneralGraph (fun g: LGraph => BinMaFin g).
 Proof.
   constructor.
   + intros.
@@ -610,7 +608,7 @@ Proof.
     - eapply finite_graph_join; eauto.
 Qed.
 
-Instance BinMaFin'_Normal: NormalGeneralGraph (fun g: LGraph => BinMaFin' g).
+#[export] Instance BinMaFin'_Normal: NormalGeneralGraph (fun g: LGraph => BinMaFin' g).
 Proof.
   constructor.
   + intros.

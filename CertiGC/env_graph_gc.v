@@ -2,7 +2,7 @@ Require Export VST.floyd.proofauto.
 Require Export VST.floyd.library.
 Require Export CertiGraph.CertiGC.gc.
 
-Instance CompSpecs : compspecs. make_compspecs prog. Defined.
+#[export] Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 Definition thread_info_type : type := Tstruct _thread_info noattr.

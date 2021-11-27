@@ -42,9 +42,9 @@ Section GList_UnionFind.
 
   Global Existing Instance fml.
 
-  Instance maGraph(G: UFGraph): MathGraph G is_null_SGBA := maGraph G.
-  Instance finGraph (G: UFGraph): FiniteGraph G := finGraph G.
-  Instance liGraph (G: UFGraph):  LstGraph G (fun x => (x, tt)) := liGraph G.
+  #[export] Instance maGraph(G: UFGraph): MathGraph G is_null_SGBA := maGraph G.
+  #[export] Instance finGraph (G: UFGraph): FiniteGraph G := finGraph G.
+  #[export] Instance liGraph (G: UFGraph):  LstGraph G (fun x => (x, tt)) := liGraph G.
 
   Definition vgamma := (@vgamma addr (addr * unit) SGBA_VE SGBA_EE is_null_SGBA (fun x => (x, tt)) nat unit unit).
 

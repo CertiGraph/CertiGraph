@@ -19,9 +19,8 @@ Section DijkstraSpec.
 
   Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
-  Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
+  #[export] Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
   Definition Vprog : varspecs. mk_varspecs prog. Defined.
-  Global Existing Instance CompSpecs.
 
   Definition getCell_spec :=
     DECLARE _getCell

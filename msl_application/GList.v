@@ -29,7 +29,7 @@ Class pPointwiseGraph_GList: Type :=
     SGBA: PointwiseGraphBasicAssum addr (addr * unit)
   }.
 
-Existing Instance SGBA.
+#[export] Existing Instance SGBA.
 
 Definition is_null_SGBA {pSGG: pPointwiseGraph_GList} : DecidablePred addr := (existT (fun P => forall a, {P a} + {~ P a}) (fun x => x = null) (fun x => SGBA_VE x null)).
 
@@ -42,21 +42,21 @@ Class sPointwiseGraph_GList {pSGG_Bi: pPointwiseGraph_GList} (DV DE: Type): Type
     SGAvn: PointwiseGraphAssum_vn SGP null
   }.
 
-Existing Instances SGP SGA SGAvs.
+#[export] Existing Instances SGP SGA SGAvs.
 
 Section GRAPH_GList.
 
   Context {pSGG: pPointwiseGraph_GList}.
   Context {DV DE DG: Type}.
 
-  Instance SGC_GList: PointwiseGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
+  #[global] Instance SGC_GList: PointwiseGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
   Proof.
     refine (Build_PointwiseGraphConstructor _ _ _ _ _ _ _ SGBA _ _).
     + exact (@vgamma addr (addr * unit) SGBA_VE SGBA_EE is_null_SGBA (fun x => (x, tt)) DV DE DG).
     + exact (fun _ _ => tt).
   Defined.
 
-  Instance L_SGC_GList: Local_PointwiseGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
+  #[global] Instance L_SGC_GList: Local_PointwiseGraphConstructor addr (addr * unit) DV DE DG (DV * addr) unit.
   Proof.
     refine (Build_Local_PointwiseGraphConstructor
               _ _ _ _ _ _ _ SGBA SGC_GList
@@ -67,8 +67,6 @@ Section GRAPH_GList.
     - intros; simpl. auto.
   Defined.
 
-  Global Existing Instances SGC_GList L_SGC_GList.
-
   Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
   Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
@@ -76,7 +74,7 @@ Section GRAPH_GList.
   Notation UFGraph := (@UFGraph addr (addr * unit) _ _ is_null_SGBA (fun x => (x, tt)) DV DE DG).
   Notation LGraph := (@LGraph addr (addr * unit) _ _ DV DE DG).
 
-  Instance RGF (G: UFGraph): ReachableFiniteGraph G.
+  #[global] Instance RGF (G: UFGraph): ReachableFiniteGraph G.
   Proof.
     apply Build_ReachableFiniteGraph.
     intros.

@@ -24,7 +24,7 @@ Module SIMPLE_SPANNING_TREE.
 
     Notation Graph := (PreGraph V E).
 
-    Instance is_tree_proper : Proper (structurally_identical ==> eq ==> iff) (@is_tree V E EV EE).
+    #[export] Instance is_tree_proper : Proper (structurally_identical ==> eq ==> iff) (@is_tree V E EV EE).
     Proof.
       cut (forall (g1 g2: Graph) x y, g1 ~=~ g2 -> x = y -> is_tree g1 x -> is_tree g2 y); intros.
       + constructor; intros; [apply (H x y x0) | apply (H y x y0)]; auto. symmetry; auto.
@@ -240,7 +240,7 @@ Module SIMPLE_SPANNING_TREE.
             rewrite <- H4. rewrite <- H3. rewrite H9. rewrite <- H. auto.
     Qed.
 
-    Instance spanning_tree_proper:
+    #[export] Instance spanning_tree_proper:
       Proper ((@structurally_identical V E _ _) ==> eq ==> (pointwise_relation V iff) ==> structurally_identical ==> iff)
              spanning_tree.
     Proof.
@@ -1352,7 +1352,7 @@ Module SIMPLE_SPANNING_TREE.
   End SIMPLE_SPANNING.
 End SIMPLE_SPANNING_TREE.
 
-Existing Instance SIMPLE_SPANNING_TREE.spanning_tree_proper .
+#[local] Existing Instance SIMPLE_SPANNING_TREE.spanning_tree_proper .
 
 (* Module SPANNING_TREE.     *)
 

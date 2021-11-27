@@ -4,7 +4,7 @@ Require Import VST.msl.iter_sepcon.
 
 Local Open Scope logic.
 
-Instance CompSpecs : compspecs. make_compspecs prog. Defined.
+#[local] Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs.  mk_varspecs prog. Defined.
 
 Definition WORD_SIZE := 4.

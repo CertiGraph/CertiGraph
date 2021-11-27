@@ -41,9 +41,9 @@ Section UnionFindGraph.
   Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-  Instance maGraph(G: UFGraph): MathGraph G isNullDec := @ma G (@sound_gg _ _ _ _ _ _ _ _ G).
-  Instance finGraph (G: UFGraph): FiniteGraph G := @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
-  Instance liGraph (G: UFGraph):  LstGraph G out_edge := @li G (@sound_gg _ _ _ _ _ _ _ _ G).
+  #[export] Instance maGraph(G: UFGraph): MathGraph G isNullDec := @ma G (@sound_gg _ _ _ _ _ _ _ _ G).
+  #[export] Instance finGraph (G: UFGraph): FiniteGraph G := @fin G (@sound_gg _ _ _ _ _ _ _ _ G).
+  #[export] Instance liGraph (G: UFGraph):  LstGraph G out_edge := @li G (@sound_gg _ _ _ _ _ _ _ _ G).
 
   (*Returns the rank (vlabel) and parent of a vertex
     Parent is: take (any?) dst x has an edge to.
@@ -151,9 +151,7 @@ Section UnionFindGraph.
     pose proof (lst_out_edge_only_one g (liGraph g) x pa root). simpl in H7. apply H2. apply H7; auto. apply (vgamma_not_dst _ _ r); auto.
   Qed.
   
-  Instance fml : FML_General V E DV DE DG LiMaFin out_edge isNullDec. Proof. constructor; intros; destruct X; auto. Defined.
-
-  Global Existing Instance fml.
+  #[global] Instance fml : FML_General V E DV DE DG LiMaFin out_edge isNullDec. Proof. constructor; intros; destruct X; auto. Defined.
 
   Lemma findS_preserves_vgamma: forall (g1 g2: UFGraph) x r pa, vvalid g1 x -> vgamma g1 x = (r, pa) -> pa <> x -> findS g1 pa g2 -> vgamma g2 x = (r, pa).
   Proof.

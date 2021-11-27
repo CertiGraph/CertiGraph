@@ -11,9 +11,8 @@ Section PrimSpec.
   
 Context {Z_EqDec : EquivDec.EqDec Z eq}.
   
-Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
+#[export] Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
-Global Existing Instance CompSpecs.
 
 Definition G := @UAdjMatGG size inf.
 Identity Coercion UAdjMatGG_G: G >-> UAdjMatGG.

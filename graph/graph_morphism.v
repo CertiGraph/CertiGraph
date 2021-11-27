@@ -240,55 +240,49 @@ Proof.
     apply bij_is_morphism; auto.
 Qed.
 
-Instance guarded_morphism_proper1 (PV: V -> Prop) (PE: E -> Prop) (vmap: V -> V') (emap: E -> E'): Proper (guarded_structurally_identical PV PE ==> guarded_structurally_identical (image_set PV vmap) (image_set PE emap) ==> iff) (guarded_morphism PV PE vmap emap).
+#[global] Instance guarded_morphism_proper1 (PV: V -> Prop) (PE: E -> Prop) (vmap: V -> V') (emap: E -> E'): Proper (guarded_structurally_identical PV PE ==> guarded_structurally_identical (image_set PV vmap) (image_set PE emap) ==> iff) (guarded_morphism PV PE vmap emap).
 Proof.
   intros.
   do 2 (hnf; intros).
   split; apply guarded_morphism_proper_aux1; auto; symmetry; auto.
 Defined.
-Global Existing Instance guarded_morphism_proper1.
 
-Instance guarded_morphism_proper2 (PV: V -> Prop) (PE: E -> Prop) : Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> eq ==> @eq (PreGraph V' E') ==> iff) (guarded_morphism PV PE).
+#[global] Instance guarded_morphism_proper2 (PV: V -> Prop) (PE: E -> Prop) : Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> eq ==> @eq (PreGraph V' E') ==> iff) (guarded_morphism PV PE).
 Proof.
   intros.
   do 4 (hnf; intros); subst.
   split; apply guarded_morphism_proper_aux2; auto; symmetry; auto.
 Defined.
-Global Existing Instance guarded_morphism_proper2.
 
-Instance guarded_morphism_proper3: Proper (@Same_set V ==> @Same_set E ==> @eq (V -> V') ==> @eq (E -> E') ==> eq ==> eq ==> iff) guarded_morphism.
+#[global] Instance guarded_morphism_proper3: Proper (@Same_set V ==> @Same_set E ==> @eq (V -> V') ==> @eq (E -> E') ==> eq ==> eq ==> iff) guarded_morphism.
 Proof.
   intros.
   do 6 (hnf; intros).
   subst.
   split; eapply guarded_morphism_proper_aux3; eauto; symmetry; auto.
 Defined.
-Global Existing Instance guarded_morphism_proper3.
 
-Instance guarded_bij_proper1 (PV: V -> Prop) (PE: E -> Prop) (vmap: V -> V') (emap: E -> E'): Proper (guarded_structurally_identical PV PE ==> guarded_structurally_identical (image_set PV vmap) (image_set PE emap) ==> iff) (guarded_bij PV PE vmap emap).
+#[global] Instance guarded_bij_proper1 (PV: V -> Prop) (PE: E -> Prop) (vmap: V -> V') (emap: E -> E'): Proper (guarded_structurally_identical PV PE ==> guarded_structurally_identical (image_set PV vmap) (image_set PE emap) ==> iff) (guarded_bij PV PE vmap emap).
 Proof.
   intros.
   do 2 (hnf; intros).
   split; apply guarded_bij_proper_aux1; auto; symmetry; auto.
 Defined.
-Global Existing Instance guarded_bij_proper1.
 
-Instance guarded_bij_proper2 (PV: V -> Prop) (PE: E -> Prop) : Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> eq ==> @eq (PreGraph V' E') ==> iff) (guarded_bij PV PE).
+#[global] Instance guarded_bij_proper2 (PV: V -> Prop) (PE: E -> Prop) : Proper (guarded_pointwise_relation PV eq ==> guarded_pointwise_relation PE eq ==> eq ==> @eq (PreGraph V' E') ==> iff) (guarded_bij PV PE).
 Proof.
   intros.
   do 4 (hnf; intros); subst.
   split; apply guarded_bij_proper_aux2; auto; symmetry; auto.
 Defined.
-Global Existing Instance guarded_bij_proper2.
 
-Instance guarded_bij_proper3: Proper (@Same_set V ==> @Same_set E ==> @eq (V -> V') ==> @eq (E -> E') ==> eq ==> eq ==> iff) guarded_bij.
+#[global] Instance guarded_bij_proper3: Proper (@Same_set V ==> @Same_set E ==> @eq (V -> V') ==> @eq (E -> E') ==> eq ==> eq ==> iff) guarded_bij.
 Proof.
   intros.
   do 6 (hnf; intros).
   subst.
   split; eapply guarded_bij_proper_aux3; eauto; symmetry; auto.
 Qed.
-Global Existing Instance guarded_bij_proper3.
 
 Lemma guarded_morphism_step: forall {PV: V -> Prop} {PE: E -> Prop} {vmap emap n m} {g: PreGraph V E} {g': PreGraph V' E'},
   guarded_morphism PV PE vmap emap g g' ->
@@ -376,7 +370,7 @@ Definition boundary_src_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (
 Definition boundary_dst_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
   forall e, PE1 e -> PV2 (dst G e) -> evalid G e -> vmap (dst G e) = dst G' (emap e).
 
-Instance boundary_src_consistent_proper: Proper (Same_set ==> Same_set ==> eq ==> eq ==> eq ==> eq ==> iff) boundary_src_consistent.
+#[global] Instance boundary_src_consistent_proper: Proper (Same_set ==> Same_set ==> eq ==> eq ==> eq ==> eq ==> iff) boundary_src_consistent.
 Proof.
   do 6 (hnf; intros); subst.
   rewrite Same_set_spec in H, H0.
@@ -384,9 +378,8 @@ Proof.
   unfold boundary_src_consistent.
   firstorder.
 Qed.
-Global Existing Instance boundary_src_consistent_proper.
 
-Instance boundary_dst_consistent_proper: Proper (Same_set ==> Same_set ==> eq ==> eq ==> eq ==> eq ==> iff) boundary_dst_consistent.
+#[global] Instance boundary_dst_consistent_proper: Proper (Same_set ==> Same_set ==> eq ==> eq ==> eq ==> eq ==> iff) boundary_dst_consistent.
 Proof.
   do 6 (hnf; intros); subst.
   rewrite Same_set_spec in H, H0.
@@ -394,7 +387,6 @@ Proof.
   unfold boundary_dst_consistent.
   firstorder.
 Qed.
-Global Existing Instance boundary_dst_consistent_proper.
 
 Lemma boundary_dst_consistent_si: forall (PE1: E -> Prop) (PV1 PV2: V -> Prop) vmap emap G G1' G2',
   guarded_morphism PV1 PE1 vmap emap G G1' ->

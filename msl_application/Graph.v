@@ -45,7 +45,7 @@ Class PointwiseGraphBasicAssum (V E: Type) := {
   SGBA_EE: EqDec E eq
 }.
 
-Existing Instances SGBA_VE SGBA_EE.
+#[export] Existing Instances SGBA_VE SGBA_EE.
 
 Class PointwiseGraphAssum {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E}:= {
   SGP_ND: NatDed Pred;
@@ -54,7 +54,7 @@ Class PointwiseGraphAssum {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV
   SGP_CoSL: CorableSepLog Pred
 }.
 
-Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
+#[export] Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
 
 Class PointwiseGraphAssum_vs {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} :=
   vertex_at_sep: sepcon_unique2 (@vertex_at _ _ _ _ _ SGP).
@@ -68,13 +68,13 @@ Class PointwiseGraphAssum_vn {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E
 Class PointwiseGraphAssum_en {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} {SGA: PointwiseGraphAssum SGP} (enull: E) :=
   edge_at_not_null: forall ge, @derives Pred _ (edge_at enull ge) FF.
 
-Instance AAV {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} : AbsAddr V GV.
+#[export] Instance AAV {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} : AbsAddr V GV.
   apply (mkAbsAddr V GV (fun x y => if equiv_dec x y then true else false)); simpl; intros.
   + destruct_eq_dec p1 p2; destruct_eq_dec p2 p1; congruence.
   + destruct_eq_dec p1 p1; destruct_eq_dec p1 p2; congruence.
 Defined.
 
-Instance AAE {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} : AbsAddr E GE.
+#[export] Instance AAE {V E GV GE Pred: Type} (SGP: PointwiseGraphPred V E GV GE Pred) {SGBA: PointwiseGraphBasicAssum V E} : AbsAddr E GE.
   apply (mkAbsAddr E GE (fun x y => if equiv_dec x y then true else false)); simpl; intros.
   + destruct_eq_dec p1 p2; destruct_eq_dec p2 p1; congruence.
   + destruct_eq_dec p1 p1; destruct_eq_dec p1 p2; congruence.
@@ -92,7 +92,7 @@ Class PointwiseGraphStrongAssum {V E GV GE Pred: Type} (SGP: PointwiseGraphPred 
   EP_sMSL: StaticMapstoSepLog (AAE SGP) edge_at
 }.
 
-Existing Instances SGP_PSL SGP_OSL SGP_DSL SGP_COSL VP_MSL VP_sMSL EP_MSL EP_sMSL.
+#[export] Existing Instances SGP_PSL SGP_OSL SGP_DSL SGP_COSL VP_MSL VP_sMSL EP_MSL EP_sMSL.
 
 Class PointwiseGraphConstructor (V E DV DE DG GV GE: Type) {SGBA: PointwiseGraphBasicAssum V E}:= {
   compute_vgamma: LabeledGraph V E DV DE DG -> V -> GV;
@@ -141,7 +141,7 @@ Definition vertices_identical0: relation (PointwiseGraph V E GV GE) :=
 Definition vertices_identical2 (PV1 PV2: Ensemble V) (g1 g2: PointwiseGraph V E GV GE) : Prop :=
   Same_set PV1 PV2 /\ vertices_identical PV1 g1 g2.
 
-Instance vertices_identical_proper: Proper (Same_set ==> eq ==> eq ==> iff) vertices_identical.
+#[global] Instance vertices_identical_proper: Proper (Same_set ==> eq ==> eq ==> iff) vertices_identical.
 Proof.
   hnf; intros.
   hnf; intros G1 G1' ?; subst G1'.
@@ -155,7 +155,6 @@ Proof.
     intros; apply H0.
     rewrite <- (app_same_set H); auto.
 Qed.
-Global Existing Instance vertices_identical_proper.
 
 Lemma vertices_identical_spec: forall PV g1 g2,
   vertices_identical PV g1 g2 <-> (forall x, PV x -> vgamma g1 x = vgamma g2 x).
@@ -178,19 +177,17 @@ Proof.
   firstorder.
 Qed.
  
-Instance vertices_identical_Equivalence (PV: Ensemble V): Equivalence (vertices_identical PV).
+#[global] Instance vertices_identical_Equivalence (PV: Ensemble V): Equivalence (vertices_identical PV).
   apply resp_Equivalence.
   apply guarded_pointwise_equivalence.
   apply eq_equivalence.
 Defined.
 
-Instance vertices_identical0_Equivalence: Equivalence vertices_identical0.
+#[global] Instance vertices_identical0_Equivalence: Equivalence vertices_identical0.
   apply vertices_identical_Equivalence.
 Defined.
 
 (* vertices_identical2 is not a equivalence relation, because it is not reflexive. *)
-Global Existing Instance vertices_identical0_Equivalence.
-Global Existing Instance vertices_identical_Equivalence.
 
 Lemma vertices_identical_weaken: forall PV1 PV2 g1 g2,
   Included PV2 PV1 ->
@@ -262,13 +259,12 @@ Definition edges_identical2 (PE1 PE2: Ensemble E) (g1 g2: PointwiseGraph V E GV 
   Same_set PE1 PE2 /\
   guarded_pointwise_relation PE1 eq (egamma g1) (egamma g2).
 
-Instance edges_identical_proper: Proper (Same_set ==> eq ==> eq ==> iff) edges_identical.
+#[global] Instance edges_identical_proper: Proper (Same_set ==> eq ==> eq ==> iff) edges_identical.
 Proof.
   hnf; intros. hnf; intros G1 G1' ?; subst G1'. hnf; intros G2 G2' ?; subst G2'. unfold edges_identical, respectful_relation. split; intros.
   + rewrite guarded_pointwise_relation_spec in H0 |- *. intros; apply H0. rewrite (app_same_set H); auto.
   + rewrite guarded_pointwise_relation_spec in H0 |- *. intros; apply H0. rewrite <- (app_same_set H); auto.
 Qed.
-Global Existing Instance edges_identical_proper.
 
 (* TODO: add some properties for edges_identical. *)
 

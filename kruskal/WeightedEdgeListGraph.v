@@ -15,7 +15,7 @@ Coercion lg_gg: GeneralGraph >-> LabeledGraph.
 Local Open Scope logic.
 Local Open Scope Z_scope.
 
-Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
+#[export] Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
 Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a : Z, {P a} + {~ P a}) (fun x : Z => x < 0) (fun a : Z => Z_lt_dec a 0).
 
@@ -31,10 +31,10 @@ Definition LE : Type := Z. (*weight*)
 Definition LV: Type := unit. (*I don't think we need this*)
 Definition LG: Type := unit.
 
-Instance V_EqDec: EqDec VType eq.
+#[export] Instance V_EqDec: EqDec VType eq.
 Proof. hnf. apply Z.eq_dec. Qed.
 
-Instance E_EqDec: EqDec EType eq.
+#[export] Instance E_EqDec: EqDec EType eq.
 Proof.
   hnf. intros [x] [y].
   destruct (equiv_dec x y).
@@ -106,7 +106,7 @@ intros. apply (vertex_valid g) in H.
 pose proof Int.min_signed_neg. lia.
 Qed.
 
-Instance finGraph (g: EdgeListGG): FiniteGraph g := @fin g (@sound_gg _ _ _ _ _ _ _ _ g).
+#[export] Instance finGraph (g: EdgeListGG): FiniteGraph g := @fin g (@sound_gg _ _ _ _ _ _ _ _ g).
 
 Lemma evalid_strong_evalid:
   forall (g: EdgeListGG) e, evalid g e -> strong_evalid g e.
@@ -265,7 +265,7 @@ Definition edgeless_LG: EdgeListLG :=
   (@Build_PreGraph VType EType V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
   (fun v => tt) (fun e => 0) tt.
 
-Instance Sound_edgeless_LG:
+#[export] Instance Sound_edgeless_LG:
   SoundEdgeList edgeless_LG.
 Proof.
 constructor.
@@ -376,7 +376,7 @@ Context {wbound: Int.min_signed <= w <= Int.max_signed}.
 Definition EdgeListLG_adde :=
   labeledgraph_add_edge g (u,v) u v w.
 
-Instance Sound_EdgeListLG_adde:
+#[export] Instance Sound_EdgeListLG_adde:
   SoundEdgeList EdgeListLG_adde.
 Proof.
 constructor.
@@ -525,7 +525,7 @@ Definition EdgeListLG_eremove :=
   (glabel g).
 
 (*there is a clash with pregraph_remove_edge_finite*)
-Instance Sound_EdgeListLG_eremove :
+#[export] Instance Sound_EdgeListLG_eremove :
   SoundEdgeList EdgeListLG_eremove.
 Proof.
 constructor.

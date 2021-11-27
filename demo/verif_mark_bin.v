@@ -82,7 +82,7 @@ Notation graph sh x g :=
 
 (** The definition of graph. *)
 Notation Graph := (@Graph pSGG_VST bool unit unit).
-Existing Instances MGS binGraph maGraph finGraph RGF.
+#[local] Existing Instances MGS binGraph maGraph finGraph RGF.
 
 (** The key in this spec is the predicate "mark x g g'". This is a
     rather subtle definition:

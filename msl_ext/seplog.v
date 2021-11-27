@@ -18,7 +18,7 @@ Class PreciseSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} := mkPreciseSepLog {
 Arguments PreciseSepLog _ {_ _}.
 Arguments mkPreciseSepLog {_ _ _}.
 
-Instance LiftPreciseSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} : PreciseSepLog (A -> B).
+#[global] Instance LiftPreciseSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} : PreciseSepLog (A -> B).
   apply (mkPreciseSepLog (fun P => forall a, precise (P a))); simpl; intros.
   (* + eapply precise_left_sepcon_andp_distr; eauto. *)
   + eapply derives_precise; eauto.
@@ -58,7 +58,7 @@ Class OverlapSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepLog 
 Arguments OverlapSepLog _ {_ _ _}.
 Arguments mkOverlapSepLog {_ _ _ _}.
 
-Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B}: OverlapSepLog (A -> B).
+#[global] Instance LiftOverlapSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B}: OverlapSepLog (A -> B).
   apply (mkOverlapSepLog (fun P Q x => ocon (P x) (Q x)) (fun P Q x => owand (P x) (Q x))); simpl; intros.
   + extensionality x. apply ocon_emp.
   + extensionality x. apply ocon_TT.
@@ -88,7 +88,7 @@ Class DisjointedSepLog (A: Type) {ND: NatDed A} {SL: SepLog A} {PSL: PreciseSepL
 Arguments DisjointedSepLog _ {_ _ _ _}.
 Arguments mkDisjointedSepLog {_ _ _ _ _}.
 
-Instance LiftDisjointedSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B} {DSL: DisjointedSepLog B}: DisjointedSepLog (A -> B).
+#[global] Instance LiftDisjointedSepLog (A B: Type) {ND: NatDed B} {SL: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B} {DSL: DisjointedSepLog B}: DisjointedSepLog (A -> B).
   apply (mkDisjointedSepLog (fun P Q => forall x, disjointed (P x) (Q x))); simpl; intros.
   + apply ocon_sepcon; auto.
   + apply disj_emp.
@@ -121,7 +121,7 @@ Class CorableOverlapSepLog (A: Type) {ND: NatDed A}{SL: SepLog A}{PSL: PreciseSe
 Arguments CorableOverlapSepLog _ {_ _ _ _ _}.
 Arguments mkCorableOverlapSepLog {_ _ _ _ _ _}.
 
-Instance LiftCorableOverlapSepLog (A: Type) (B: Type) {NB: NatDed B} {SB: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B} {CoSL: CorableSepLog B} {COSL: CorableOverlapSepLog B}: CorableOverlapSepLog (A -> B).
+#[global] Instance LiftCorableOverlapSepLog (A: Type) (B: Type) {NB: NatDed B} {SB: SepLog B} {PSL: PreciseSepLog B} {OSL: OverlapSepLog B} {CoSL: CorableSepLog B} {COSL: CorableOverlapSepLog B}: CorableOverlapSepLog (A -> B).
   apply mkCorableOverlapSepLog; simpl; intros.
   + apply corable_ocon; auto.
   + extensionality x.

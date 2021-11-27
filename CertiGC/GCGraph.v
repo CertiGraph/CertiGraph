@@ -24,17 +24,17 @@ Local Open Scope Z_scope.
 
 Definition MAX_SPACES: Z := 12.
 Lemma MAX_SPACES_eq: MAX_SPACES = 12. Proof. reflexivity. Qed.
-Hint Rewrite MAX_SPACES_eq: rep_lia.
+#[export] Hint Rewrite MAX_SPACES_eq: rep_lia.
 Global Opaque MAX_SPACES.
 
 Definition NURSERY_SIZE: Z := Z.shiftl 1 16.
 Lemma NURSERY_SIZE_eq: NURSERY_SIZE = Z.shiftl 1 16. Proof. reflexivity. Qed.
-Hint Rewrite NURSERY_SIZE_eq: rep_lia.
+#[export] Hint Rewrite NURSERY_SIZE_eq: rep_lia.
 Global Opaque NURSERY_SIZE.
 
 Definition MAX_ARGS: Z := 1024.
 Lemma MAX_ARGS_eq: MAX_ARGS = 1024. Proof. reflexivity. Qed.
-Hint Rewrite MAX_ARGS_eq: rep_lia.
+#[export] Hint Rewrite MAX_ARGS_eq: rep_lia.
 Global Opaque MAX_ARGS.
 
 Definition WORD_SIZE: Z := Eval cbv [Archi.ptr64] in if Archi.ptr64 then 8 else 4.
@@ -47,7 +47,7 @@ Definition MAX_SPACE_SIZE: Z := Eval cbv [Archi.ptr64] in
 
 Definition NO_SCAN_TAG: Z := 251.
 Lemma NO_SCAN_TAG_eq: NO_SCAN_TAG = 251. Proof. reflexivity. Qed.
-Hint Rewrite NO_SCAN_TAG_eq: rep_lia.
+#[export] Hint Rewrite NO_SCAN_TAG_eq: rep_lia.
 Global Opaque NO_SCAN_TAG.
 
 Definition SPACE_STRUCT_SIZE: Z :=
@@ -106,7 +106,7 @@ Definition EType: Type := VType * nat.
 Definition vgeneration: VType -> nat := fst.
 Definition vindex: VType -> nat := snd.
 
-Instance V_EqDec: EqDec VType eq.
+#[export] Instance V_EqDec: EqDec VType eq.
 Proof.
   hnf. intros [x] [y]. destruct (Nat.eq_dec x y).
   - destruct (Nat.eq_dec n n0); subst.
@@ -115,7 +115,7 @@ Proof.
   - right. intro. apply n1. inversion H. reflexivity.
 Defined.
 
-Instance E_EqDec: EqDec EType eq.
+#[export] Instance E_EqDec: EqDec EType eq.
 Proof.
   hnf. intros [x] [y]. destruct (equiv_dec x y).
   - hnf in e. destruct (Nat.eq_dec n n0); subst.
@@ -128,7 +128,7 @@ Inductive GC_Pointer := | GCPtr: block -> ptrofs -> GC_Pointer.
 
 Definition raw_field: Type := option (Z + GC_Pointer).
 
-Instance raw_field_inhabitant: Inhabitant raw_field := None.
+#[export] Instance raw_field_inhabitant: Inhabitant raw_field := None.
 
 Definition odd_Z2val (x: Z) : val :=
   Eval cbv delta [Archi.ptr64] match
@@ -198,7 +198,7 @@ Global Opaque IMPOSSIBLE_VAL.
 Definition null_info: generation_info :=
   Build_generation_info IMPOSSIBLE_VAL O Tsh IMPOSSIBLE_ISPTR writable_share_top.
 
-Instance gen_info_inhabitant: Inhabitant generation_info := null_info.
+#[export] Instance gen_info_inhabitant: Inhabitant generation_info := null_info.
 
 Record graph_info : Type :=
   {
@@ -240,7 +240,7 @@ Proof.
   - unfold MAX_SPACE_SIZE. vm_compute; reflexivity.
 Defined.
 
-Instance space_inhabitant: Inhabitant space := null_space.
+#[export] Instance space_inhabitant: Inhabitant space := null_space.
 
 Lemma total_space_tight_range: forall sp, 0 <= total_space sp < MAX_SPACE_SIZE.
 Proof.
@@ -554,7 +554,7 @@ Definition vertex_address (g: LGraph) (v: VType): val :=
 
 Definition root_t: Type := Z + GC_Pointer + VType.
 
-Instance root_t_inhabitant: Inhabitant root_t := inl (inl Z.zero).
+#[export] Instance root_t_inhabitant: Inhabitant root_t := inl (inl Z.zero).
 
 Definition root2val (g: LGraph) (fd: root_t) : val :=
   match fd with
@@ -884,7 +884,7 @@ Qed.
 
 Definition field_t: Type := Z + GC_Pointer + EType.
 
-Instance field_t_inhabitant: Inhabitant field_t := inl (inl Z.zero).
+#[export] Instance field_t_inhabitant: Inhabitant field_t := inl (inl Z.zero).
 
 Definition field2val (g: LGraph) (fd: field_t) : val :=
   match fd with
@@ -2772,7 +2772,7 @@ Proof.
   - rewrite upd_Znth_diff; [reflexivity | assumption..].
 Qed.
 
-Instance share_inhabitant: Inhabitant share := emptyshare.
+#[export] Instance share_inhabitant: Inhabitant share := emptyshare.
 
 Lemma lcv_nth_gen: forall g v to n,
     n <> to -> graph_has_gen g to -> nth_gen (lgraph_copy_v g v to) n = nth_gen g n.
@@ -3604,7 +3604,7 @@ Proof.
   rewrite Zlength_map, !Zlength_correct, nat_inc_list_length. reflexivity.
 Qed.
 
-Instance forward_p_type_Inhabitant: Inhabitant forward_p_type := inl 0.
+#[export] Instance forward_p_type_Inhabitant: Inhabitant forward_p_type := inl 0.
 
 Lemma vpp_Znth: forall (x : VType) (g : LGraph) (i : Z),
     0 <= i < Zlength (raw_fields (vlabel g x)) ->

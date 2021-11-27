@@ -9,12 +9,12 @@ Local Open Scope logic.
 
 Section pSGG_VST.
 
-Instance PointerVal_EqDec: EquivDec.EqDec pointer_val eq.
+#[export] Instance PointerVal_EqDec: EquivDec.EqDec pointer_val eq.
   hnf; intros.
   apply PV_eq_dec.
 Defined.
 
-Instance PointerValLR_EqDec: EquivDec.EqDec (pointer_val * LR) eq.
+#[export] Instance PointerValLR_EqDec: EquivDec.EqDec (pointer_val * LR) eq.
   hnf; intros.
   destruct x, y.
   destruct l, l0; [| right | right |]; simpl; try congruence.
@@ -22,13 +22,13 @@ Instance PointerValLR_EqDec: EquivDec.EqDec (pointer_val * LR) eq.
   + destruct (PV_eq_dec p p0); [left | right]; congruence.
 Defined.
 
-Instance SGBA_VST: PointwiseGraphBasicAssum pointer_val (pointer_val * LR).
+#[export] Instance SGBA_VST: PointwiseGraphBasicAssum pointer_val (pointer_val * LR).
   refine (Build_PointwiseGraphBasicAssum pointer_val (pointer_val * LR) _ _).
 Defined.
 
 End pSGG_VST.
 
-Instance pSGG_VST: pPointwiseGraph_Graph_Bin.
+#[export] Instance pSGG_VST: pPointwiseGraph_Graph_Bin.
   refine (Build_pPointwiseGraph_Graph_Bin pointer_val NullPointer SGBA_VST).
 Defined.
 
@@ -41,12 +41,12 @@ Definition trinode (sh: share) (p: addr) (dlr: bool * addr * addr): mpred :=
                     (pointer_val_val p)
   end.
 
-Instance SGP_VST (sh: share) : PointwiseGraphPred addr (addr * LR) (bool * addr * addr) unit mpred.
+#[export] Instance SGP_VST (sh: share) : PointwiseGraphPred addr (addr * LR) (bool * addr * addr) unit mpred.
   refine (Build_PointwiseGraphPred _ _ _ _ _ (trinode sh) (fun _ _ => emp)).
 Defined.
 
 (*
-Instance MSLstandard sh : MapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
+#[export] Instance MSLstandard sh : MapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
 Proof.
   intros.
   apply mkMapstoSepLog.
@@ -74,7 +74,7 @@ Proof.
 Qed.
 
 (*
-Instance sMSLstandard sh : StaticMapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
+#[export] Instance sMSLstandard sh : StaticMapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
 Proof.
   apply mkStaticMapstoSepLog; simpl; intros.
   + hnf in H. simpl in H.
@@ -128,15 +128,15 @@ Proof.
       rewrite H1, <- (Int.repr_unsigned i), H0, Int.repr_unsigned; auto.
 Defined.
 *)
-Instance SGA_VST (sh: share) : PointwiseGraphAssum (SGP_VST sh).
+#[export] Instance SGA_VST (sh: share) : PointwiseGraphAssum (SGP_VST sh).
   refine (Build_PointwiseGraphAssum _ _ _ _ _ _ _ _ _ _ _).
 Defined.
 
-Instance SGAvs_VST (sh: wshare): PointwiseGraphAssum_vs (SGP_VST sh).
+#[export] Instance SGAvs_VST (sh: wshare): PointwiseGraphAssum_vs (SGP_VST sh).
   apply sepcon_unique_vertex_at; auto.
 Defined.
 
-Instance SGAvn_VST (sh: wshare): PointwiseGraphAssum_vn (SGP_VST sh) NullPointer.
+#[export] Instance SGAvn_VST (sh: wshare): PointwiseGraphAssum_vn (SGP_VST sh) NullPointer.
   intros [[? ?] ?].
   simpl.
   unfold trinode.
@@ -148,7 +148,7 @@ End sSGG_VST.
 
 #[export] Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto: core.
 
-Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bin pSGG_VST bool unit.
+#[export] Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bin pSGG_VST bool unit.
   refine (Build_sPointwiseGraph_Graph_Bin pSGG_VST _ _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
 Defined.
 

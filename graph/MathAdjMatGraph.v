@@ -23,8 +23,8 @@ Section Mathematical_AdjMat_Model.
   Definition DE : Type := Z.
   Definition DG: Type := unit.
 
-  Instance V_EqDec : EqDec V eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
-  Instance E_EqDec: EqDec E eq.
+  #[export] Instance V_EqDec : EqDec V eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
+  #[export] Instance E_EqDec: EqDec E eq.
   Proof. apply (prod_eqdec V_EqDec V_EqDec). Defined.
 
   Context {size : Z}. 

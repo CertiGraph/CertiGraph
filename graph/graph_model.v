@@ -160,7 +160,7 @@ Proof. unfold node_pred_equiv; intros. specialize (H n); tauto. Qed.
 Lemma npe_trans: forall (m1 m2 m3: NodePred Vertex), node_pred_equiv m1 m2 -> node_pred_equiv m2 m3 -> node_pred_equiv m1 m3.
 Proof. unfold node_pred_equiv; intros. specialize (H n); specialize (H0 n); tauto. Qed.
 
-Instance npe_Equiv: Equivalence (node_pred_equiv).
+#[global] Instance npe_Equiv: Equivalence (node_pred_equiv).
 Proof.
   split.
   + intro; apply npe_refl.
@@ -215,7 +215,7 @@ Proof.
   specialize (H5 H9 H8); specialize (H6 H9 H8); congruence.
 Qed.
 
-Instance si_Equiv: Equivalence (structurally_identical).
+#[global] Instance si_Equiv: Equivalence (structurally_identical).
 Proof.
   split.
   + intro; apply si_refl.
@@ -328,7 +328,7 @@ Proof.
     specialize (H2 e H5 H7); specialize (H4 e H7 H6); congruence.
 Qed.
 
-Instance lge_Equiv: Equivalence (labeled_graph_equiv).
+#[global] Instance lge_Equiv: Equivalence (labeled_graph_equiv).
 Proof.
   split.
   + intro; apply lge_refl.
@@ -359,6 +359,3 @@ Delimit Scope NodePred with NodePred.
 Delimit Scope LabeledGraph with LabeledGraph.
 
 Open Scope PreGraph.
-Global Existing Instance npe_Equiv.
-Global Existing Instance si_Equiv.
-Global Existing Instance lge_Equiv.

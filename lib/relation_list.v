@@ -44,7 +44,7 @@ Proof.
   + auto.
 Qed.
 
-Instance Equivalence_same_relation_list {A}: Equivalence (@same_relation_list A).
+#[export] Instance Equivalence_same_relation_list {A}: Equivalence (@same_relation_list A).
 Proof.
   split.
   + exact same_relation_list_refl.
@@ -52,7 +52,7 @@ Proof.
   + exact same_relation_list_trans.
 Defined.
 
-Instance cons_relation_proper {A}: Proper (same_relation A ==> same_relation_list ==> same_relation_list) (@cons (relation A)).
+#[export] Instance cons_relation_proper {A}: Proper (same_relation A ==> same_relation_list ==> same_relation_list) (@cons (relation A)).
 Proof.
   do 2 (hnf; intros).
   apply same_relation_list_cons; auto.
@@ -237,7 +237,7 @@ Proof.
   apply compond_eq_left.
 Qed.
 
-Instance relation_list_proper {A: Type}: Proper (same_relation_list ==> same_relation A) relation_list.
+#[export] Instance relation_list_proper {A: Type}: Proper (same_relation_list ==> same_relation A) relation_list.
 Proof.
   hnf; intros.
   induction H.

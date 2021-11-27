@@ -23,7 +23,7 @@ Notation whole_graph sh g := (vertices_at sh (vvalid g) g).
 Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
 Notation UFGraph := (@UFGraph pSGG_VST).
 Notation uf_under_bound g := (uf_under_bound id g).
-Existing Instances maGraph finGraph liGraph RGF.
+#[local] Existing Instances maGraph finGraph liGraph RGF.
 
 Definition find_spec :=
  DECLARE _find

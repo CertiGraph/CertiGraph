@@ -64,7 +64,7 @@ Require Import Demo.treeread.
 
 (* The next two lines are standard VST boilerplate, useful
   in both verifications *)
-Instance CompSpecs : compspecs. make_compspecs prog. Defined.
+#[local] Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 (* We continue with definitions that will be useful in both

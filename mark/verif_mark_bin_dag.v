@@ -26,7 +26,7 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 (* Using unit for DE and DG, inspired by Graph *)
 Notation dag sh x g := (@reachable_dag_vertices_at _ _ _ _ _ _ unit unit _ mpred (@SGP pSGG_VST bool unit (sSGG_VST sh)) (SGA_VST sh) x g).
 Notation Graph := (@Graph pSGG_VST bool unit unit).
-Existing Instances MGS binGraph maGraph finGraph RGF.
+#[local] Existing Instances MGS binGraph maGraph finGraph RGF.
 
 Definition mark_spec :=
  DECLARE _mark

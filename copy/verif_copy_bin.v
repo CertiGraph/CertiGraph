@@ -30,7 +30,7 @@ Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ (addr * LR) unit _ 
 Notation holegraph sh x g := (@vertices_at _ _ _ _ _ mpred (@SGP pSGG_VST addr (addr * LR) (sSGG_VST sh)) (SGA_VST sh) (Ensembles.Intersection (@vvalid addr (addr * LR) _ _ g) (fun u => x <> u)) (LGraph_SGraph g)).
 Notation Graph := (@Graph pSGG_VST (@addr pSGG_VST) (addr * LR) unit).
 Notation vmap := (@LocalGraphCopy.vmap addr (addr * LR) addr (addr * LR) _ _ _ _ _ _ _ _ (@GMS _ _ _ CCS)).
-Existing Instances MGS binGraph maGraph finGraph RGF.
+#[local] Existing Instances MGS binGraph maGraph finGraph RGF.
 
 Definition mallocN_spec :=
  DECLARE _mallocN

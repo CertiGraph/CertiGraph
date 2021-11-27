@@ -255,7 +255,7 @@ Proof.
       simpl in H0. apply H0. apply Lt.lt_n_S. assumption.
 Qed.
 
-Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> (pointwise_relation B eq) ==> eq) iter_sepcon.
+#[global] Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> (pointwise_relation B eq) ==> eq) iter_sepcon.
 Proof.
   repeat intro. transitivity (iter_sepcon x y0).
   + apply iter_sepcon_func.
@@ -305,8 +305,6 @@ Lemma iter_sepcon_map: forall {A B C: Type} {ND : NatDed A} {SL : SepLog A} (l :
                          iter_sepcon l (fun x : C => f (g x)) = iter_sepcon (map g l) f.
 Proof. intros. induction l; simpl; [|f_equal]; auto. Qed.
 
-Global Existing Instance iter_sepcon_permutation_proper.
-
 Section IterPredSepCon.
 
   Context {A : Type}.
@@ -347,14 +345,12 @@ Proof.
   apply H0; tauto.
 Qed.
 
-Instance pred_sepcon_proper: Proper (pointwise_relation B iff ==> pointwise_relation B eq ==> eq) pred_sepcon.
+#[global] Instance pred_sepcon_proper: Proper (pointwise_relation B iff ==> pointwise_relation B eq ==> eq) pred_sepcon.
 Proof.
   intros.
   do 2 (hnf; intros).
   apply pred_sepcon_strong_proper; intros; auto.
 Defined.
-
-Global Existing Instance pred_sepcon_proper.
 
 Lemma pred_sepcon1: forall p x0,
   pred_sepcon (fun x => x = x0) p = p x0.

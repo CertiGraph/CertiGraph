@@ -100,7 +100,7 @@ Section MathDijkGraph.
   Definition AdjMatGG_FiniteGraph (g : DijkGG) : FiniteGraph g :=
     g.
   Coercion AdjMatGG_FiniteGraph: DijkGG >-> FiniteGraph. 
-  Existing Instance AdjMatGG_FiniteGraph.
+  #[export] Existing Instance AdjMatGG_FiniteGraph.
 
   (* Great! So now when we want to access an AdjMat
      plugin, we can simply use the AdjMat getter 
@@ -321,4 +321,4 @@ Qed.
 
 End MathDijkGraph.
 
-Existing Instance AdjMatGG_FiniteGraph.
+#[export] Existing Instance AdjMatGG_FiniteGraph.

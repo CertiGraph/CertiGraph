@@ -94,7 +94,7 @@ Definition edge_copy (g: Graph) (root: V) (M: V -> Prop) (l: list E * E) :=
 Definition edge_copy_list (g: Graph) (root: V) es (P: V -> Prop) :=
   relation_list (map (edge_copy g root P) (cprefix es)).
 
-Instance copy_proper: Proper (Same_set ==> eq ==> eq ==> eq ==> eq ==> iff) copy.
+#[global] Instance copy_proper: Proper (Same_set ==> eq ==> eq ==> eq ==> eq ==> iff) copy.
 Proof.
   hnf; intros M1 M2 ?.
   hnf; intros root root' ?; subst root'.
@@ -105,9 +105,8 @@ Proof.
   rewrite H.
   tauto.
 Qed.
-Global Existing Instance copy_proper.
 
-Instance extended_copy_proper: Proper (Same_set ==> eq ==> eq ==> eq ==> iff) extended_copy.
+#[global] Instance extended_copy_proper: Proper (Same_set ==> eq ==> eq ==> eq ==> iff) extended_copy.
 Proof.
   hnf; intros M1 M2 ?.
   hnf; intros root root' ?; subst root'.
@@ -122,9 +121,8 @@ Proof.
   }
   tauto.
 Qed.
-Global Existing Instance extended_copy_proper.
 
-Instance extended_copy_proper': Proper (Same_set ==> eq ==> same_relation (Graph * Graph')) extended_copy.
+#[global] Instance extended_copy_proper': Proper (Same_set ==> eq ==> same_relation (Graph * Graph')) extended_copy.
 Proof.
   hnf; intros M1 M2 ?.
   hnf; intros root root' ?; subst root'.
@@ -140,7 +138,6 @@ Proof.
   }
   tauto.
 Qed.
-Global Existing Instance extended_copy_proper'.
 
 Lemma vcopy1_copied_root_valid: forall (G G1: Graph) (G1': Graph') x x0,
   vcopy1 x G G1 G1' ->

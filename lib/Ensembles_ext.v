@@ -172,7 +172,7 @@ Proof.
   tauto.
 Qed.
 
-Instance Included_proper (V: Type): Proper (Same_set ==> Same_set ==> iff) (@Included V).
+#[export] Instance Included_proper (V: Type): Proper (Same_set ==> Same_set ==> iff) (@Included V).
 Proof.
   hnf; intros.
   hnf; intros.
@@ -181,7 +181,7 @@ Proof.
   firstorder.
 Defined.
 
-Instance complement_proper (V: Type): Proper (Same_set ==> Same_set) (Complement V).
+#[export] Instance complement_proper (V: Type): Proper (Same_set ==> Same_set) (Complement V).
   hnf; intros.
   rewrite Same_set_spec in *.
   hnf; intros.
@@ -190,7 +190,7 @@ Instance complement_proper (V: Type): Proper (Same_set ==> Same_set) (Complement
   tauto.
 Defined.
 
-Instance Union_proper (V: Type): Proper (Same_set ==> Same_set ==> Same_set) (Union V).
+#[export] Instance Union_proper (V: Type): Proper (Same_set ==> Same_set ==> Same_set) (Union V).
   hnf; intros.
   hnf; intros.
   rewrite Same_set_spec in *.
@@ -199,7 +199,7 @@ Instance Union_proper (V: Type): Proper (Same_set ==> Same_set ==> Same_set) (Un
   firstorder.
 Defined.
 
-Instance Disjoint_proper (V: Type): Proper (Same_set ==> Same_set ==> iff) (Disjoint V).
+#[export] Instance Disjoint_proper (V: Type): Proper (Same_set ==> Same_set ==> iff) (Disjoint V).
   hnf; intros.
   hnf; intros.
   rewrite Same_set_spec in *.
@@ -355,7 +355,7 @@ Proof.
   rewrite Intersection_spec; unfold Complement, Ensembles.In; try tauto.
 Qed.
 
-Instance Intersection_proper {A}: Proper (Same_set ==> Same_set ==> Same_set) (Intersection A).
+#[export] Instance Intersection_proper {A}: Proper (Same_set ==> Same_set ==> Same_set) (Intersection A).
 Proof.
   do 2 (hnf; intros).
   rewrite Same_set_spec in *.
@@ -364,7 +364,7 @@ Proof.
   tauto.
 Defined.
 
-Instance Prop_join_proper {A}: Proper (@Same_set A ==> Same_set ==> Same_set ==> iff) Prop_join.
+#[export] Instance Prop_join_proper {A}: Proper (@Same_set A ==> Same_set ==> Same_set ==> iff) Prop_join.
 Proof.
   intros.
   do 3 (hnf; intros).
@@ -572,7 +572,7 @@ Proof.
     constructor; auto.
 Qed.
 
-Instance respectful_set_proper {A B: Type}: Proper (Same_set ==> pointwise_relation A (@eq B) ==> Same_set) respectful_set.
+#[export] Instance respectful_set_proper {A B: Type}: Proper (Same_set ==> pointwise_relation A (@eq B) ==> Same_set) respectful_set.
 Proof.
   intros.
   do 2 (hnf; intros).
@@ -584,7 +584,7 @@ Proof.
   + rewrite H, H0; firstorder.
 Qed.
 
-Instance image_set_proper2 {A B: Type}: Proper (Same_set ==> eq ==> Same_set) (@image_set A B).
+#[export] Instance image_set_proper2 {A B: Type}: Proper (Same_set ==> eq ==> Same_set) (@image_set A B).
 Proof.
   intros.
   do 2 (hnf; intros).

@@ -5,13 +5,13 @@ Require Export CertiGraph.kruskal.kruskal_edgelist.
 
 Local Open Scope Z.
 
-Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
+#[export] Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 
 Definition MAX_EDGES:= 8. (*We can malloc, but it's not quite relevant*)
 Definition t_struct_edge := Tstruct _edge noattr.
 Definition t_wedgearray_graph := Tstruct _graph noattr.
 Definition wedgerep := reptype t_struct_edge.
-Instance wedgerep_inhabitant : Inhabitant wedgerep :=
+#[export] Instance wedgerep_inhabitant : Inhabitant wedgerep :=
                                     (Vundef, (Vundef, Vundef)).
 
 (*Warning: reptype of a struct doesn’t destruct nicely*)
@@ -177,7 +177,7 @@ Lemma cmp_dec: forall a a', {cmp_rel a a'} + {~cmp_rel a a'}.
 Proof.
   intros [? ?] [? ?]. unfold cmp_rel, cmp. simpl. case (Int.lt i i0); simpl; auto.
 Qed. 
-Instance cmp_po: PreOrder cmp_rel.
+#[export] Instance cmp_po: PreOrder cmp_rel.
 Proof.
   constructor. intros [? ?]. red. unfold cmp. simpl. case_eq (Int.lt i i); auto; intro. exfalso.
   apply lt_inv in H. lia.

@@ -13,7 +13,7 @@ Context {RB: relation B}.
 Context {EqRA: Equivalence RA}.
 Context {EqRB: Equivalence RB}.
 
-Instance proper_fold_left: forall (f: A -> B -> A) {Proper_f: Proper (equiv ==> equiv ==> equiv) f}, Proper (Forall2 equiv ==> equiv ==> equiv) (fold_left f).
+#[export] Instance proper_fold_left: forall (f: A -> B -> A) {Proper_f: Proper (equiv ==> equiv ==> equiv) f}, Proper (Forall2 equiv ==> equiv ==> equiv) (fold_left f).
 Proof.
   intros.
   hnf; intros.

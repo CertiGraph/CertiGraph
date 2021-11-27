@@ -47,11 +47,9 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Notation Graph := (@Graph pSGG_Bin addr (addr * LR) unit).
 Notation Graph' := (@Graph' pSGG_Bin addr (addr * LR) unit).
 
-Instance CCS: CompactCopySetting addr (addr * LR) unit.
+#[global] Instance CCS: CompactCopySetting addr (addr * LR) unit.
   apply (Build_CompactCopySetting _ _ _ null (null, L) tt).
 Defined.
-
-Global Existing Instance CCS.
 
 Definition empty_Graph': Graph' := empty_Graph' null (null, L) tt.
 

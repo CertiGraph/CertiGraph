@@ -100,7 +100,7 @@ Definition numV' g {fg: FiniteGraph g} := length (VList g).
 Definition numE' g {fg: FiniteGraph g} := length (EList g).
 
 (****EDGE ADD/REMOVE*****)
-Instance pregraph_add_edge_finite g {fg: FiniteGraph g} e u v:
+#[export] Instance pregraph_add_edge_finite g {fg: FiniteGraph g} e u v:
   FiniteGraph (pregraph_add_edge g e u v).
 Proof.
 constructor; unfold EnumEnsembles.Enumerable; simpl.
@@ -118,7 +118,7 @@ destruct H. rewrite <- EList_evalid in H. apply in_cons. apply H.
 rewrite H. simpl. left; auto.
 Qed.
 
-Instance pregraph_remove_edge_finite g {fg: FiniteGraph g} e :
+#[export] Instance pregraph_remove_edge_finite g {fg: FiniteGraph g} e :
   FiniteGraph (pregraph_remove_edge g e).
 Proof.
 unfold pregraph_remove_edge.
@@ -216,7 +216,7 @@ Proof.
   right. intro. apply n. apply edge_func_step. trivial.
 Qed.
 
-Instance LocalFiniteGraph_FiniteGraph (g: PreGraph V E) (fg: FiniteGraph g): LocalFiniteGraph g.
+#[export] Instance LocalFiniteGraph_FiniteGraph (g: PreGraph V E) (fg: FiniteGraph g): LocalFiniteGraph g.
 Proof.
   intros.
   destruct fg as [[vs [?H ?H]] [es [?H ?H]]].

@@ -1996,7 +1996,7 @@ split. apply H2. apply H1. split; auto.
 split. apply H4. apply H3. split; auto.
 Qed.
 
-Instance prod_EV: EqDec (V*V) eq.
+#[export] Instance prod_EV: EqDec (V*V) eq.
 Proof.
   hnf. intros [x] [y].
   destruct (equiv_dec x y).

@@ -3,9 +3,7 @@ Require Export CertiGraph.floyd_ext.closed_lemmas.
 Require Export CertiGraph.floyd_ext.share.
 Require Export CertiGraph.copy.copy_bin.
 
-Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
+#[export] Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
-
-Global Existing Instance CompSpecs.
 
 Definition node_type := Tstruct _Node noattr.

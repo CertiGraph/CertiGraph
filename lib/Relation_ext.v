@@ -45,7 +45,7 @@ Proof.
   firstorder.
 Qed.
 
-Instance same_relation_Equivalence {A}: Equivalence (same_relation A).
+#[export] Instance same_relation_Equivalence {A}: Equivalence (same_relation A).
 Proof.
   split.
   + apply same_relation_Reflexive.
@@ -53,7 +53,7 @@ Proof.
   + apply same_relation_Transitive.
 Qed.
 
-Instance inclusion_proper {A}: Proper (same_relation A ==> same_relation A ==> iff) (inclusion A).
+#[export] Instance inclusion_proper {A}: Proper (same_relation A ==> same_relation A ==> iff) (inclusion A).
 Proof.
   intros.
   do 2 (hnf; intros ?F ?G ?H).
@@ -99,7 +99,7 @@ Proof.
   apply compond_intro with y0; auto.
 Qed.
 
-Instance compond_relation_proper {A: Type}: Proper (same_relation A ==> same_relation A ==> same_relation A) compond_relation.
+#[export] Instance compond_relation_proper {A: Type}: Proper (same_relation A ==> same_relation A ==> same_relation A) compond_relation.
 Proof.
   do 2 (hnf; intros).
   destruct H, H0.
@@ -147,7 +147,7 @@ Proof.
   split; auto.
 Qed.
 
-Instance relation_conjunction_proper {A: Type}: Proper (same_relation A ==> same_relation A ==> same_relation A) relation_conjunction.
+#[export] Instance relation_conjunction_proper {A: Type}: Proper (same_relation A ==> same_relation A ==> same_relation A) relation_conjunction.
 Proof.
   do 2 (hnf; intros).
   destruct H, H0.
@@ -192,7 +192,7 @@ Definition fst_relation {A B}: relation A -> relation (A * B) := respectful_rela
 
 Definition snd_relation {A B}: relation B -> relation (A * B) := respectful_relation (@snd A B).
 
-Instance respectful_relation_proper {A B} (f: A -> B): Proper (same_relation _ ==> same_relation _) (respectful_relation f).
+#[export] Instance respectful_relation_proper {A B} (f: A -> B): Proper (same_relation _ ==> same_relation _) (respectful_relation f).
 Proof.
   hnf; intros.
   rewrite @same_relation_spec in H |- *.

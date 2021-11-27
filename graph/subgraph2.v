@@ -319,7 +319,7 @@ Proof.
   + destruct H1 as [[? ?] [? ?]]. split; split; auto; clear H1.
 Abort.
 
-Instance reachable_by_proper: Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> @Same_set V ==> (@eq V) ==> iff) (@reachable_by V E _ _).
+#[global] Instance reachable_by_proper: Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> @Same_set V ==> (@eq V) ==> iff) (@reachable_by V E _ _).
 Proof.
   intros.
   do 4 (hnf; intros); subst.
@@ -327,9 +327,8 @@ Proof.
   rewrite H, H1.
   reflexivity.
 Defined.
-Global Existing Instance reachable_by_proper.
 
-Instance reachable_by_proper': Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> @Same_set V ==> @Same_set V) (@reachable_by V E _ _).
+#[global] Instance reachable_by_proper': Proper ((@structurally_identical V E _ _) ==> (@eq V) ==> @Same_set V ==> @Same_set V) (@reachable_by V E _ _).
 Proof.
   intros.
   do 3 (hnf; intros); subst.
@@ -338,9 +337,8 @@ Proof.
   rewrite H, H1.
   reflexivity.
 Defined.
-Global Existing Instance reachable_by_proper'.
 
-Instance reachable_by_through_set_proper: Proper ((@structurally_identical V E _ _) ==> eq ==> @Same_set V ==> (@eq V) ==> iff) (@reachable_by_through_set V E _ _).
+#[global] Instance reachable_by_through_set_proper: Proper ((@structurally_identical V E _ _) ==> eq ==> @Same_set V ==> (@eq V) ==> iff) (@reachable_by_through_set V E _ _).
 Proof.
   intros.
   do 4 (hnf; intros); subst.
@@ -348,9 +346,8 @@ Proof.
   rewrite H, H1.
   reflexivity.
 Defined.
-Global Existing Instance reachable_by_through_set_proper.
 
-Instance reachable_by_through_set_proper': Proper ((@structurally_identical V E _ _) ==> eq ==> @Same_set V ==> @Same_set V) (@reachable_by_through_set V E _ _).
+#[global] Instance reachable_by_through_set_proper': Proper ((@structurally_identical V E _ _) ==> eq ==> @Same_set V ==> @Same_set V) (@reachable_by_through_set V E _ _).
 Proof.
   intros.
   do 3 (hnf; intros); subst.
@@ -359,7 +356,6 @@ Proof.
   rewrite H, H1.
   reflexivity.
 Defined.
-Global Existing Instance reachable_by_through_set_proper'.
 
 Lemma predicate_partialgraph_reachable_by_included (g: PreGraph V E) (p p0: V -> Prop): 
   forall (n: V), Included (reachable_by (predicate_partialgraph g p) n p0) (reachable_by g n p0).

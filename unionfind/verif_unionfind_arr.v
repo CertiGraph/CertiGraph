@@ -17,7 +17,7 @@ Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
 Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
-Existing Instances maGraph finGraph liGraph.
+#[local] Existing Instances maGraph finGraph liGraph.
 
 Local Open Scope Z_scope.
 

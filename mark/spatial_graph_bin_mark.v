@@ -28,7 +28,7 @@ Defined.
 
 End pSGG_VST.
 
-Instance pSGG_VST: pPointwiseGraph_Graph_Bin.
+#[export] Instance pSGG_VST: pPointwiseGraph_Graph_Bin.
   refine (Build_pPointwiseGraph_Graph_Bin pointer_val NullPointer SGBA_VST).
 Defined.
 
@@ -46,7 +46,7 @@ Instance SGP_VST (sh: share) : PointwiseGraphPred addr (addr * LR) (bool * addr 
 Defined.
 
 (*
-Instance MSLstandard sh : MapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
+#[export] Instance MSLstandard sh : MapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
 Proof.
   intros.
   apply mkMapstoSepLog.
@@ -75,7 +75,7 @@ Proof.
 Qed.
 
 (*
-Instance sMSLstandard sh : StaticMapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
+#[export] Instance sMSLstandard sh : StaticMapstoSepLog (AAV (SGP_VST sh)) (trinode sh).
 Proof.
   apply mkStaticMapstoSepLog; simpl; intros.
   + hnf in H. simpl in H.
@@ -149,7 +149,7 @@ End sSGG_VST.
 
 #[export] Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto: core.
 
-Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bin pSGG_VST bool unit.
+#[export] Instance sSGG_VST (sh: wshare): @sPointwiseGraph_Graph_Bin pSGG_VST bool unit.
   refine (Build_sPointwiseGraph_Graph_Bin pSGG_VST _ _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
 Defined.
 

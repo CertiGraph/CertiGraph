@@ -705,7 +705,7 @@ Proof.
     - apply Permutation_cons; auto.
 Qed.
 
-Existing Instance Permutation_app'.
+#[export] Existing Instance Permutation_app'.
 
 Ltac split5 := split; [| split; [| split; [| split]]].
 

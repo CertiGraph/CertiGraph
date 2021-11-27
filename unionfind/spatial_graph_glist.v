@@ -25,7 +25,7 @@ Defined.
 
 End pSGG_VST.
 
-Instance pSGG_VST: pPointwiseGraph_GList.
+#[export] Instance pSGG_VST: pPointwiseGraph_GList.
   refine (Build_pPointwiseGraph_GList pointer_val NullPointer SGBA_VST).
 Defined.
 
@@ -45,7 +45,7 @@ Section sSGG_VST.
 
   (*
 
-  Instance MSLstandard sh : MapstoSepLog (AAV (SGP_VST sh)) (binode sh).
+  #[export] Instance MSLstandard sh : MapstoSepLog (AAV (SGP_VST sh)) (binode sh).
   Proof.
     intros. apply mkMapstoSepLog. intros.
     apply derives_precise with (memory_block sh (sizeof node_type) (pointer_val_val p)); [| apply memory_block_precise].
@@ -87,7 +87,7 @@ End sSGG_VST.
 
 #[export] Hint Extern 10 (@sepcon_unique2 _ _ _ _ _ (@vertex_at _ _ _ _ _ _)) => apply sepcon_unique_vertex_at; auto: core.
 
-Instance sSGG_VST (sh: wshare): @sPointwiseGraph_GList pSGG_VST nat unit.
+#[export] Instance sSGG_VST (sh: wshare): @sPointwiseGraph_GList pSGG_VST nat unit.
   refine (Build_sPointwiseGraph_GList pSGG_VST _ _ _ (SGP_VST sh) (SGA_VST sh) (SGAvs_VST sh) (SGAvn_VST sh)).
 Defined.
 

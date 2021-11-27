@@ -23,7 +23,7 @@ Import CertiGraph.graph.weak_mark_lemmas.WeakMarkGraph.
 
 (* TODO: Put some pure lemmas into some file like: graph/bi_spanning. *)
 
-Instance MGS: MarkGraphSetting bool.
+#[export] Instance MGS: MarkGraphSetting bool.
   apply (Build_MarkGraphSetting bool
           (eq true));
   intros.

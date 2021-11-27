@@ -23,12 +23,12 @@ Section Mathematical_Edge_Labeled_Graph_Model.
   Definition DE : Type := Z. (* the cost itself *)
   Definition DG: Type := unit.
   
-  Instance V_EqDec : EqDec V eq.
+  #[export] Instance V_EqDec : EqDec V eq.
   Proof.
     hnf. intros. apply Z.eq_dec.
   Defined.
 
-  Instance E_EqDec: EqDec E eq.
+  #[export] Instance E_EqDec: EqDec E eq.
   Proof.
     apply (prod_eqdec (prod_eqdec V_EqDec V_EqDec) Z.eq_dec).
   Defined.

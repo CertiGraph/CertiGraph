@@ -2,7 +2,7 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.Lists.List.
 Require Export CertiGraph.lib.Relation_ext.
 
-Instance list_Reflexive {A R} {EqA: @Equivalence A R}: Reflexive (Forall2 (@equiv A _ _)).
+#[export] Instance list_Reflexive {A R} {EqA: @Equivalence A R}: Reflexive (Forall2 (@equiv A _ _)).
 Proof.
   hnf; intros.
   induction x; constructor.
@@ -10,7 +10,7 @@ Proof.
   + auto.
 Qed.
 
-Instance list_Symmetric {A R} {EqA: @Equivalence A R}: Symmetric (Forall2 (@equiv A _ _)).
+#[export] Instance list_Symmetric {A R} {EqA: @Equivalence A R}: Symmetric (Forall2 (@equiv A _ _)).
 Proof.
   hnf; intros.
   revert y H; induction x; intros; destruct y; try solve [inversion H]; constructor.
@@ -18,7 +18,7 @@ Proof.
   + inversion H; subst. apply IHx; auto.
 Qed.
 
-Instance list_Transitive {A R} {EqA: @Equivalence A R}: Transitive (Forall2 (@equiv A _ _)).
+#[export] Instance list_Transitive {A R} {EqA: @Equivalence A R}: Transitive (Forall2 (@equiv A _ _)).
 Proof.
   hnf; intros.
   revert y z H H0; induction x; intros; destruct y, z; try solve [inversion H; subst; inversion H0]; constructor.
@@ -26,7 +26,7 @@ Proof.
   + inversion H; inversion H0; subst. eapply IHx; eauto.
 Qed.
 
-Instance list_Equivalence {A R} {EqA: @Equivalence A R}: Equivalence (Forall2 (@equiv A _ _)).
+#[export] Instance list_Equivalence {A R} {EqA: @Equivalence A R}: Equivalence (Forall2 (@equiv A _ _)).
 Proof.
   split.
   apply list_Reflexive.
@@ -34,10 +34,10 @@ Proof.
   apply list_Transitive.
 Qed.
 
-(* The Instances-Searching for type classes are type oriented.
+(* The #[export] Instances-Searching for type classes are type oriented.
 As resp_Equivalence is a (Equvalence B), it should not be involved
-in Instances-Searching. Or else, searching engine will apply this
-Instance, and do never terminate. *)
+in #[export] Instances-Searching. Or else, searching engine will apply this
+#[export] Instance, and do never terminate. *)
 
 Lemma resp_Reflexive {A B} (f: A -> B) (R: relation B) {RR: Reflexive R}: Reflexive (respectful_relation f R).
 Proof.

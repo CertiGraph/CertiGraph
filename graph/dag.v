@@ -74,14 +74,14 @@ Proof.
   auto.
 Qed.
 
-Instance local_dag_proper: Proper (structurally_identical ==> eq ==> iff) localDag.
+#[export] Instance local_dag_proper: Proper (structurally_identical ==> eq ==> iff) localDag.
 Proof.
   do 2 (hnf; intros).
   subst.
   apply si_local_dag; auto.
 Defined.
 
-Instance dag_proper: Proper (structurally_identical ==> iff) Dag.
+#[export] Instance dag_proper: Proper (structurally_identical ==> iff) Dag.
 Proof.
   hnf; intros.
   apply si_dag; auto.
@@ -174,5 +174,3 @@ Proof.
 Qed.
 
 End Dag.
-
-Existing Instances local_dag_proper dag_proper.

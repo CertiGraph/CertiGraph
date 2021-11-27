@@ -10,7 +10,7 @@ Context {size : Z}.
 Context {inf : Z}.
 Context {Z_EqDec : EquivDec.EqDec Z eq}. 
 
-Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
+#[local] Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Local Open Scope Z_scope.
 

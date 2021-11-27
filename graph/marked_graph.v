@@ -548,7 +548,7 @@ Section SIMPLE_MARK_GRAPH.
 
   End SINGLE_GRAPH_LEM.
 
-  Instance mark1_proper: Proper (structurally_identical ==> node_pred_equiv ==> eq ==> node_pred_equiv ==> iff) mark1.
+  #[export] Instance mark1_proper: Proper (structurally_identical ==> node_pred_equiv ==> eq ==> node_pred_equiv ==> iff) mark1.
   Proof.
     hnf; intros g1 g2 Hg.
     do 3 (hnf; intros).
@@ -700,7 +700,7 @@ Section SIMPLE_MARK_GRAPH.
           apply R_DEC0; simpl; auto.
   Qed.
 
-  Instance mark_proper: Proper (structurally_identical ==> node_pred_equiv ==> eq ==> node_pred_equiv ==> iff) mark.
+  #[export] Instance mark_proper: Proper (structurally_identical ==> node_pred_equiv ==> eq ==> node_pred_equiv ==> iff) mark.
   Proof.
     hnf; intros g1 g2 Hg.
     do 3 (hnf; intros).
@@ -723,7 +723,7 @@ Section SIMPLE_MARK_GRAPH.
       rewrite !negateP_spec; specialize (H0 x0); tauto.
   Qed.
 
-  Instance mark_list_proper: Proper (structurally_identical ==> node_pred_equiv ==> eq ==> node_pred_equiv ==> iff) mark_list.
+  #[export] Instance mark_list_proper: Proper (structurally_identical ==> node_pred_equiv ==> eq ==> node_pred_equiv ==> iff) mark_list.
   Proof.
     hnf; intros g1 g2 Hg.
     do 3 (hnf; intros).
@@ -743,7 +743,7 @@ Section SIMPLE_MARK_GRAPH.
 End SIMPLE_MARK_GRAPH.
 End SIMPLE_MARK_GRAPH.
 
-Existing Instances SIMPLE_MARK_GRAPH.mark1_proper SIMPLE_MARK_GRAPH.mark_proper SIMPLE_MARK_GRAPH.mark_list_proper.
+#[local] Existing Instances SIMPLE_MARK_GRAPH.mark1_proper SIMPLE_MARK_GRAPH.mark_proper SIMPLE_MARK_GRAPH.mark_list_proper.
 
 Module MarkGraph.
 
@@ -798,7 +798,7 @@ Definition inj (g: Graph): NodePred V.
   intros; apply marked_dec.
 Defined.
 (*
-Instance inj_proper: Proper ((fun (g1 g2: Graph) => (g1 ~=~ g2)%LabeledGraph) ==> node_pred_equiv) inj.
+#[export] Instance inj_proper: Proper ((fun (g1 g2: Graph) => (g1 ~=~ g2)%LabeledGraph) ==> node_pred_equiv) inj.
 Proof.
   hnf; intros.
   intro; simpl.

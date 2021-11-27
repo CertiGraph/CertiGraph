@@ -101,7 +101,7 @@ Proof.
   rewrite eformat2'. rewrite eformat1. simpl; auto. simpl; lia. simpl; lia.
 Qed.
 
-Instance Finite_UAdjMatGG (g: UAdjMatGG):
+#[export] Instance Finite_UAdjMatGG (g: UAdjMatGG):
   FiniteGraph g.
 Proof. apply (finGraph g). Qed.
 
@@ -258,7 +258,7 @@ Definition edgeless_lgraph : UAdjMatLG :=
     (@Build_PreGraph V E V_EqDec E_EqDec (fun v => 0 <= v < size) (fun e => False) fst snd)
     (fun v => tt) (fun e => inf) tt. 
 
-Instance SoundUAdjMat_edgeless:
+#[export] Instance SoundUAdjMat_edgeless:
   SoundUAdjMat edgeless_lgraph.
 Proof. 
 constructor.
@@ -364,7 +364,7 @@ Context {w: Z} {w_rep: Int.min_signed <= w < inf}.
 Definition UAdjMatGG_adde':=
   labeledgraph_add_edge g (u,v) u v w.
 
-Instance Fin_UAdjMatGG_adde':
+#[export] Instance Fin_UAdjMatGG_adde':
   FiniteGraph (UAdjMatGG_adde').
 Proof.
   unfold UAdjMatGG_adde'.
@@ -373,7 +373,7 @@ Proof.
   apply Finite_UAdjMatGG.
 Qed.
 
-Instance SoundUAdjMat_adde':
+#[export] Instance SoundUAdjMat_adde':
   SoundUAdjMat UAdjMatGG_adde'.
 Proof.
 constructor; simpl. constructor; simpl.
@@ -563,7 +563,7 @@ Definition UAdjMatGG_eremove':=
   (fun e0 => if E_EqDec e0 e then inf else elabel g e0 )
   (glabel g).
 
-Instance Fin_UAdjMatGG_eremove':
+#[export] Instance Fin_UAdjMatGG_eremove':
   FiniteGraph (UAdjMatGG_eremove').
 Proof.
 constructor; unfold EnumEnsembles.Enumerable; simpl.
@@ -575,7 +575,7 @@ exists (remove E_EqDec e (EList g)). split. apply nodup_remove_nodup. apply NoDu
 intros. rewrite remove_In_iff, EList_evalid; auto. split; auto.
 Qed.
 
-Instance SoundPrim_eremove':
+#[export] Instance SoundPrim_eremove':
   SoundUAdjMat UAdjMatGG_eremove'.
 Proof.
 constructor; simpl. constructor; simpl.

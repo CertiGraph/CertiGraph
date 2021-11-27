@@ -31,13 +31,11 @@ Context {L_SGC: Local_PointwiseGraphConstructor V E bool unit unit GV GE}.
 Context {SGP: PointwiseGraphPred V E GV GE Pred}.
 Context {SGA: PointwiseGraphAssum SGP}.
 
-Instance MGS: WeakMarkGraph.MarkGraphSetting bool.
+#[global] Instance MGS: WeakMarkGraph.MarkGraphSetting bool.
 Proof.
   apply (WeakMarkGraph.Build_MarkGraphSetting _ (eq true)).
   intros; destruct x; [left | right]; congruence.
 Defined.
-
-Global Existing Instance MGS.
 
 Notation Graph := (LabeledGraph V E bool unit unit).
 Notation SGraph := (PointwiseGraph V E GV GE).

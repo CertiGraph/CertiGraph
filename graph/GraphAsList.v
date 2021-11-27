@@ -307,7 +307,7 @@ Section LIST_TO_GRAPH.
     + rewrite nodup_In. unfold Ensembles.In . rewrite in_app_iff, H1, <- list_edges_evalid_iff; tauto.
   Qed.
 
-  Instance listToGraphFinite (gl: GList Vertex Edge) : FiniteGraph (listToGraph gl).
+  #[export] Instance listToGraphFinite (gl: GList Vertex Edge) : FiniteGraph (listToGraph gl).
   Proof.
     destruct gl as [v l]. simpl. apply listToGraph'_FiniteGraph; simpl; auto.
     apply Build_FiniteGraph; [exists (v :: nil) | exists nil]; split; intros.
@@ -399,7 +399,7 @@ Section LIST_TO_GRAPH.
     apply listToGraph'_src in H4. intuition.
   Qed.
 
-  Instance listToGraphLF (gl: GList Vertex Edge) : LocalFiniteGraph (listToGraph gl).
+  #[export] Instance listToGraphLF (gl: GList Vertex Edge) : LocalFiniteGraph (listToGraph gl).
   Proof. apply LocalFiniteGraph_FiniteGraph, listToGraphFinite. Defined.
 
   Lemma listToGraph_vvalid_dec: forall gl v, Decidable (vvalid (listToGraph gl) v).
@@ -693,7 +693,7 @@ Section GtoL_LtoG_EQ.
   (*   + destruct (in_dec equiv_dec x (listVertices (v, l))). right; auto. exfalso; auto. *)
   (* Qed. *)
 
-  Instance listToGraph_vva (gl: GList Vertex Edge) : ValidVertexAccessible (listToGraph gl).
+  #[export] Instance listToGraph_vva (gl: GList Vertex Edge) : ValidVertexAccessible (listToGraph gl).
   Proof.
     apply (Build_ValidVertexAccessible _ (fun (l: list Edge) => filter (fun e => if (listToGraph_vvalid_dec gl (dst (listToGraph gl) e)) then true else false) l)).
     intros. rewrite filter_In. destruct (listToGraph_vvalid_dec gl (dst (listToGraph gl) e)); intuition.

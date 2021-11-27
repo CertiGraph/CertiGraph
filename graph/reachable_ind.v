@@ -337,14 +337,14 @@ Proof.
   reflexivity.
 Qed.
 
-Instance reachable_proper: Proper (structurally_identical ==> (@eq V) ==> (@eq V) ==> iff) reachable.
+#[global] Instance reachable_proper: Proper (structurally_identical ==> (@eq V) ==> (@eq V) ==> iff) reachable.
 Proof.
   do 3 (hnf; intros); subst.
   apply si_reachable_direct.
   auto.
 Defined.
 
-Instance reachable_proper': Proper (structurally_identical ==> (@eq V) ==> Same_set) reachable.
+#[global] Instance reachable_proper': Proper (structurally_identical ==> (@eq V) ==> Same_set) reachable.
 Proof.
   do 2 (hnf; intros); subst.
   rewrite Same_set_spec in *.
@@ -353,13 +353,13 @@ Proof.
   auto.
 Defined.
 
-Instance reachable_through_set_proper: Proper (structurally_identical ==> eq_as_set ==> (@eq V) ==> iff) reachable_through_set.
+#[global] Instance reachable_through_set_proper: Proper (structurally_identical ==> eq_as_set ==> (@eq V) ==> iff) reachable_through_set.
 Proof.
   do 3 (hnf; intros); subst.
   apply si_eq_as_set_reachable_through_set; auto.
 Defined.
 
-Instance reachable_through_set_proper': Proper (structurally_identical ==> eq_as_set ==> @Same_set V) reachable_through_set.
+#[global] Instance reachable_through_set_proper': Proper (structurally_identical ==> eq_as_set ==> @Same_set V) reachable_through_set.
 Proof.
   do 2 (hnf; intros); subst.
   rewrite Same_set_spec in *.
@@ -368,5 +368,3 @@ Proof.
 Defined.
 
 End EQUIV.
-
-Global Existing Instances reachable_proper reachable_proper' reachable_through_set_proper reachable_through_set_proper'.

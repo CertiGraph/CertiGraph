@@ -2,9 +2,9 @@ Require Import VST.floyd.proofauto.
 Require Import CertiGraph.append.list_dt. Import LsegSpecial.
 Require Import CertiGraph.append.append.
 
-Instance CompSpecs : compspecs. make_compspecs prog. Defined.
+#[local] Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
-Instance LS: listspec _list _tail (fun _ _ => emp).
+#[local] Instance LS: listspec _list _tail (fun _ _ => emp).
 Proof. eapply mk_listspec; reflexivity. Defined.
 Definition t_struct_list := Tstruct _list noattr.
 

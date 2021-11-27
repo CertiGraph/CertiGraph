@@ -27,7 +27,7 @@ Require Export CertiGraph.msl_application.UnionFindGraph.
 Local Open Scope logic.
 Local Open Scope Z_scope.
 
-Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
+#[export] Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
 
 Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a : Z, {P a} + {~ P a}) (fun x : Z => x < 0) (fun a : Z => Z_lt_dec a 0).
 
@@ -40,9 +40,9 @@ Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
 Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Instance maGraph(G: UFGraph): MathGraph G is_null_Z := maGraph G.
-Instance finGraph (G: UFGraph): FiniteGraph G := finGraph G.
-Instance liGraph (G: UFGraph):  LstGraph G id := liGraph G.
+#[export] Instance maGraph(G: UFGraph): MathGraph G is_null_Z := maGraph G.
+#[export] Instance finGraph (G: UFGraph): FiniteGraph G := finGraph G.
+#[export] Instance liGraph (G: UFGraph):  LstGraph G id := liGraph G.
 
 Definition vgamma := (@vgamma Z Z _ _ is_null_Z id nat unit unit).
 Definition Graph_gen_redirect_parent (g: UFGraph) (x: Z) (pa: Z) (H: weak_valid g pa) (Hv: vvalid g x) (Hn: ~ reachable g pa x): UFGraph :=
@@ -155,7 +155,7 @@ Qed.
 
 Class SpatialArrayGraph (Addr: Type) (Pred: Type) := vcell_array_at: Addr -> list (nat * Z) -> Pred.
 
-Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
+#[local] Existing Instances SGP_ND SGP_SL SGP_ClSL SGP_CoSL.
 
 Section SpaceArrayGraph.
 

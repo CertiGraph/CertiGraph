@@ -37,18 +37,14 @@ Context {V E M: Type}.
 Context {SGBA: PointwiseGraphBasicAssum V E}.
 Context {CCS: CompactCopySetting V E M}.
 
-Instance MGS: WeakMarkGraph.MarkGraphSetting V.
+#[global] Instance MGS: WeakMarkGraph.MarkGraphSetting V.
 Proof.
   apply (WeakMarkGraph.Build_MarkGraphSetting _ (fun x => default_v <> x)).
   intros; destruct_eq_dec default_v x; [right | left]; simpl; congruence.
 Defined.
 
-Global Existing Instance MGS.
-
-Instance GMS: GraphMorphismSetting V E M V E V E M :=
+#[global] Instance GMS: GraphMorphismSetting V E M V E V E M :=
   Build_GraphMorphismSetting _ _ _ _ _ _ _ _ (fun v => v) (fun e => e) default_v default_e default_g.
-
-Global Existing Instance GMS.
 
 Notation Graph := (LabeledGraph V E V E M).
 Notation SGraph := (PointwiseGraph V E V E).

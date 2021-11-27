@@ -854,9 +854,9 @@ Qed.
 
 End LIST2.
 
-Hint Rewrite @lseg_nil_eq : norm.
+#[global] Hint Rewrite @lseg_nil_eq : norm.
 
-Hint Rewrite @lseg_eq using reflexivity: norm.
+#[global] Hint Rewrite @lseg_eq using reflexivity: norm.
 
 #[export] Hint Resolve lseg_local_facts : saturate_local.
 End LsegGeneral.
@@ -1381,8 +1381,8 @@ Admitted.
 
 End LIST.
 
-Hint Rewrite @lseg_nil_eq : norm.
-Hint Rewrite @lseg_eq using reflexivity: norm.
+#[global] Hint Rewrite @lseg_nil_eq : norm.
+#[global] Hint Rewrite @lseg_eq using reflexivity: norm.
 #[export] Hint Resolve lseg_local_facts : saturate_local.
 
 Lemma list_cell_local_facts:
@@ -1592,9 +1592,9 @@ Abort.  (* probably not true; would be true with a direct (non-magic-wand)
 
 End LIST2.
 
-Hint Rewrite @lseg_nil_eq : norm.
+#[global] Hint Rewrite @lseg_nil_eq : norm.
 
-Hint Rewrite @lseg_eq using reflexivity: norm.
+#[global] Hint Rewrite @lseg_eq using reflexivity: norm.
 
 #[export] Hint Resolve lseg_local_facts : saturate_local.
 
