@@ -21,7 +21,7 @@ Lemma cmp_dec: forall a a', {cmp_rel a a'} + {~cmp_rel a a'}.
 Proof.
   intros [[? ?] ?] [[? ?] ?]. unfold cmp_rel, cmp, heap_item_priority. simpl. case (Int.lt p1 p); simpl; auto.
 Qed.
-Instance cmp_po: PreOrder cmp_rel.
+#[export] Instance cmp_po: PreOrder cmp_rel.
 Proof.
   constructor. intros [[? ?] ?]. red. unfold cmp, heap_item_priority. simpl. case_eq (Int.lt p p); auto; intro. exfalso.
   apply lt_inv in H. lia.
@@ -48,7 +48,7 @@ Qed.
 
 (* Not sure if it's a great idea to expose the capacity inside the abstraction boundary. *)
 Definition heap : Type := (nat * list heap_item)%type.
-Instance heap_inhabitant : Inhabitant heap := (O, []).
+#[export] Instance heap_inhabitant : Inhabitant heap := (O, []).
 Definition heap_capacity (h : heap) : Z := Z.of_nat (fst h).
 Definition heap_items (h : heap) : list heap_item := snd h.
 Definition heap_size (h : heap) : Z := Zlength (heap_items h).
@@ -64,9 +64,8 @@ Definition sink L i := binary_heap_model.sink heap_item cmp_rel cmp_dec (L,i).
 (* Definition remove_min := binary_heap_model.remove_min heap_item cmp_rel cmp_dec. *)
 
 (* This may get bundled elsewhere at some point. *)
-Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
+#[global] Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
-Global Existing Instance CompSpecs.
 
 Definition t_item := Tstruct _structItem noattr.
 Definition t_pq := Tstruct _structPQ noattr.
