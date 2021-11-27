@@ -162,7 +162,7 @@ Proof.
   repeat intro. specialize (H1 i H3). rewrite H1. apply H2; trivial.
 Qed.
 
-Instance lookup_oob_po: forall c, PreOrder (lookup_oob_eq c).
+#[export] Instance lookup_oob_po: forall c, PreOrder (lookup_oob_eq c).
 Proof. intro c. split. intro x. apply lookup_oob_eq_refl. intros x y z. apply lookup_oob_eq_trans. Qed.
 
 Lemma lookup_oob_eq_shuffle: forall contents contents' lookup lookup',
