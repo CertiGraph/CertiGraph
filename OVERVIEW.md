@@ -60,9 +60,16 @@ Record PreGraph (Vertex Edge : Type)
     src : Edge -> Vertex;
     dst : Edge -> Vertex }
 ```
-Then, a `LabeledGraph` is a record containing a PreGraph with additional functions to extract 
-the vertex-label from a vertex, the edge-label from an edge, and the graph-label from a graph.
+Based on `PreGraph`, the CertiGraph library defines many fundamental
+graph concepts, including structures like `path`, predicates such as
+`is_cyclic` and `reachable`, operations such as `add_vertex` and
+`remove_edge`, and relations between PreGraphs such as
+`structurally_identical` and `subgraph`.
 
-CertiGraph provides operators operators lemmas for traversing and modifying graphs.  With these you can prove the correctness of functional models of graph algorithms, such as shortest-path, union-find, garbage collection, and so on.  
+Then, a `LabeledGraph` is a record containing a PreGraph with additional functions to extract 
+the vertex-label from a vertex, the edge-label from an edge, and the graph-label from a graph. Many classic
+graph problems, from union-find (node ranks) to Dijkstra (edge weights), require such labels.
+
+CertiGraph provides operators and lemmas for traversing and modifying graphs.  With these you can prove the correctness of functional models of graph algorithms, such as shortest-path, union-find, garbage collection, and so on.  
 
 CertiGraph also provides operators and lemmas for representing labeled graphs in the memory of an imperative program:  adjacency matrices (in several flavors), adjacency lists, and so on.  With those you can prove that your C program correctly implements  the functional model.
