@@ -774,7 +774,9 @@ Proof.
               rewrite <- H4 in *. destruct H. transitivity a; eapply H.
               2: apply H0. lia. trivial. 2: apply H5. lia. trivial.
     - rewrite hOhO2. repeat intro. destruct (eq_nat_dec i j).
-      subst j. rewrite H1 in H3. rewrite H0 in H4. inversion H3. inversion H4. subst a0 a1. clear H3 H4.
+      subst j.
+      assert (E: a0 = b) by congruence. subst.
+      assert (E: a1 = a) by congruence. subst.
       destruct (Aleq_linear a b); auto. contradiction.
       destruct H.
       apply H with i; auto.

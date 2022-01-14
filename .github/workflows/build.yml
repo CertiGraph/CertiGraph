@@ -1,0 +1,34 @@
+name: build
+
+on:
+  push:
+    branches:
+      - live  # forall push/merge in live
+  pull_request:
+    branches:
+      - "**"  # forall submitted Pull Requests
+  workflow_dispatch:
+    inputs:
+
+runs-on: ubuntu-latest
+strategy:
+  # See https://github.com/coq-community/docker-coq/wiki#supported-tags
+  matrix:
+    ocaml_version:
+      - '4.11-flambda'
+    coq_version:
+      - '8.13'
+      - '8.14'
+      # - latest
+      # - dev
+    opam_file:
+      - 'coq-certigraph.opam'
+      - 'coq-certigraph-32.opam'
+  fail-fast: false  # don't stop jobs if one fails
+steps:
+  - uses: actions/checkout@v2
+  - uses: coq-community/docker-coq-action@v1
+    with:
+      opam_file: ${{ matrix.opam_file }}
+      coq_version: ${{ matrix.coq_version }}
+      ocaml_version: ${{ matrix.ocaml_version }}
