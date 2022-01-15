@@ -1839,8 +1839,8 @@ Section DijkstraProof.
                    apply (inf_gt_largest_edge g). auto.
                  }
                  split3; [| |split].
-                 --- intros. apply inv_unpopped_new_dst
-                               with (u0 := u) (i0 := i); trivial.
+                 --- intros. apply @inv_unpopped_new_dst
+                               with (u := u) (i := i); trivial.
                  --- intros. destruct (Z.eq_dec dst i).
                      +++ subst dst. lia.
                      +++ apply H_inv_unpopped_weak; lia.

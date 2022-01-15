@@ -883,7 +883,7 @@ Proof.
   intros.
   rewrite mark_inj in H.
   destruct H.
-  apply SIMPLE_MARK_GRAPH.mark_markeds with (n0 := n) in H1; auto.
+  apply @SIMPLE_MARK_GRAPH.mark_markeds with (n := n) in H1; auto.
 Qed.
 
 Lemma mark1_mark_list_mark: forall (g1: Graph) root l (g2 g3: Graph)

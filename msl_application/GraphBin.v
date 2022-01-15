@@ -148,7 +148,7 @@ Definition empty_BinGraph: BinGraph (empty_pregraph (fun e => fst e) (fun e => n
   + intros ? [].
   + intros ? ? [].
 Defined.
-      
+
 Definition empty_MathGraph: MathGraph (empty_pregraph (fun e => fst e) (fun e => null)) is_null_SGBA.
   apply (Build_MathGraph _ is_null_SGBA).
   + intros ? [].
@@ -166,11 +166,11 @@ Definition empty_FiniteGraph: FiniteGraph (empty_pregraph (fun e => fst e) (fun 
   + exists nil.
     split; [constructor | intros].
     simpl.
-    unfold Ensembles.In; reflexivity. 
+    unfold Ensembles.In; reflexivity.
   + exists nil.
     split; [constructor | intros].
     simpl.
-    unfold Ensembles.In; reflexivity. 
+    unfold Ensembles.In; reflexivity.
 Defined.
 
 Definition empty_sound: BinMaFin (empty_pregraph (fun e => fst e) (fun e => null)) :=
@@ -283,8 +283,8 @@ Proof.
   pose proof binGraph g.
   simpl.
   split; [| split; [| split]].
-  + apply left_valid with (x0 := x) in H0; auto.
-  + apply right_valid with (x0 := x) in H0; auto.
+  + apply @left_valid with (x := x) in H0; auto.
+  + apply @right_valid with (x := x) in H0; auto.
   + pose proof (proj2 (only_two_edges x (x, L) H)).
     specialize (H1 (or_introl eq_refl)).
     tauto.
@@ -301,8 +301,8 @@ Proof.
   pose proof binGraph' g.
   simpl.
   split; [| split; [| split]].
-  + apply left_valid with (x0 := x) in H0; auto.
-  + apply right_valid with (x0 := x) in H0; auto.
+  + apply @left_valid with (x := x) in H0; auto.
+  + apply @right_valid with (x := x) in H0; auto.
   + pose proof (proj2 (only_two_edges x (x, L) H)).
     specialize (H1 (or_introl eq_refl)).
     tauto.
@@ -664,7 +664,7 @@ Proof.
     - simpl; intros.
       unfold Ensembles.In in H; rewrite Intersection_spec in H; destruct H; congruence.
 Qed.
-  
+
 Lemma single_vertex_guarded_BinMaFin': forall (x0: addr) dv de dg,
   is_guarded_BinMaFin' (fun v : addr => x0 <> v) (fun _ : addr * LR => ~ False)
     (single_vertex_labeledgraph x0 dv de dg).
@@ -689,7 +689,7 @@ Proof.
     - simpl; intros.
       unfold Ensembles.In in H; rewrite Intersection_spec in H; destruct H; congruence.
 Qed.
-  
+
 Lemma is_BinMaFin_si: forall (g1 g2: LGraph),
   g1 ~=~ g2 ->
   is_BinMaFin g1 ->

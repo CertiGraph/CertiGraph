@@ -28,7 +28,7 @@ Qed.
 
 Lemma list_decidable_prop_reduced_list: forall {A : Type} (P Q : A -> Prop) (l: list A),
   (forall a, Q a \/ ~Q a) ->
-  (forall a, In a l <-> P a) -> 
+  (forall a, In a l <-> P a) ->
   (exists l', (forall a, In a l' <-> P a /\ Q a)).
 Proof.
   intros.
@@ -166,7 +166,7 @@ Lemma upd_Znth_repeat:
 Proof.
   intros.
   rewrite upd_Znth_app2.
-  2: repeat rewrite Zlength_repeat; lia. 
+  2: repeat rewrite Zlength_repeat; lia.
   rewrite Zlength_repeat by lia.
   replace (i-i)%Z with 0%Z by lia.
   rewrite <- repeat_app' by lia.
@@ -220,7 +220,7 @@ Qed.
 
 Lemma NoDup_one: forall A (n: A), NoDup (n :: nil).
 Proof.
-  intros. apply NoDup_cons. 
+  intros. apply NoDup_cons.
   inversion 1. apply NoDup_nil.
 Qed.
 
@@ -765,7 +765,7 @@ Proof.
     apply (H1 x); trivial. apply H4; trivial.
   + apply NoDup_Permutation; auto.
     - apply NoDup_app_inv; auto. firstorder.
-    - intro; rewrite in_app_iff. apply H6. 
+    - intro; rewrite in_app_iff. apply H6.
 Qed.
 
 Fixpoint select {A: Type} {P: A -> Prop} (dec_p: forall x, Decidable (P x)) (l: list A) : list A :=
@@ -1275,7 +1275,7 @@ induction l; intros. contradiction.
 simpl. replace (f a) with (0 + f a) by lia. rewrite fold_left_accum_Zadd.
 replace (fold_left Z.add (map f l) 0 + f a - f b) with
   (fold_left Z.add (map f l) 0 - f b + f a) by lia.
-destruct H; destruct (EA b a). 
+destruct H; destruct (EA b a).
 ++hnf in e. subst a. assert (~ In b l). apply NoDup_cons_2 in H0; auto.
 rewrite remove_not_in by auto. rewrite Z.sub_add. auto.
 ++unfold RelationClasses.complement, Equivalence.equiv in c. subst a. contradiction.
@@ -1297,7 +1297,7 @@ rewrite skipn_short; auto.
 rewrite <- ZtoNat_Zlength.
 rewrite Zlength_firstn.
 destruct (Z.lt_trichotomy 0 hi). rewrite Z.max_r by lia.
-destruct (Z.lt_trichotomy hi (Zlength l)). rewrite Z.min_l. lia. lia. destruct H1. 
+destruct (Z.lt_trichotomy hi (Zlength l)). rewrite Z.min_l. lia. lia. destruct H1.
 subst hi. rewrite Z.min_id. lia. rewrite Z.min_r by lia. lia.
 destruct H0. subst hi. rewrite Z.max_id. rewrite Z.min_l. lia. pose proof (Zlength_nonneg l); lia.
 rewrite Z.max_l by lia. rewrite Z.min_l. lia. pose proof (Zlength_nonneg l); lia.
@@ -1389,14 +1389,14 @@ Lemma map_fst_split: forall {A B} (l: list (A * B)), map fst l = fst (split l).
 Proof.
   intros. pose proof (split_length_l l). pose proof (split_length_r l).
   pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
-  now rewrite <- H1, map_fst_combine.
+  erewrite <- H1; eauto. now rewrite map_fst_combine.
 Qed.
 
 Lemma map_snd_split: forall {A B} (l: list (A * B)), map snd l = snd (split l).
 Proof.
   intros. pose proof (split_length_l l). pose proof (split_length_r l).
   pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
-  now rewrite <- H1, map_snd_combine.
+  erewrite <- H1; eauto. now rewrite map_snd_combine.
 Qed.
 
 Lemma In_map_fst_iff: forall {A B} a (l: list (A * B)),
@@ -2072,8 +2072,8 @@ Proof.
   apply Zlt_succ_le in H0. apply Zle_lt_or_eq in H0. destruct H0.
   - rewrite app_Znth1. apply IHn. lia.
     now rewrite nat_inc_list_Zlength.
-  - rewrite app_Znth2 by (rewrite nat_inc_list_Zlength; lia). 
-    rewrite H0. rewrite nat_inc_list_Zlength. simpl. 
+  - rewrite app_Znth2 by (rewrite nat_inc_list_Zlength; lia).
+    rewrite H0. rewrite nat_inc_list_Zlength. simpl.
     replace (Z.of_nat n - Z.of_nat n) with 0 by lia.
     rewrite Znth_0_cons; trivial.
 Qed.
@@ -2108,7 +2108,7 @@ Proof.
        try rewrite nat_inc_list_Zlength; lia.
   }
   intros. rewrite nat_inc_list_i.
-  2: { rewrite Zlength_sublist in H1; 
+  2: { rewrite Zlength_sublist in H1;
        try rewrite nat_inc_list_Zlength; lia.
   }
   rewrite <- Z.sub_0_r at 1.
