@@ -14,23 +14,17 @@ jobs:
   build-matrix:
     runs-on: ubuntu-latest
     strategy:
-      # See https://github.com/coq-community/docker-coq/wiki#supported-tags
       matrix:
-        ocaml_version:
-          - '4.11-flambda'
-        coq_version:
-          - '8.13'
-          - '8.14'
-          # - latest
-          # - dev
         opam_file:
           - 'coq-certigraph.opam'
           - 'coq-certigraph-32.opam'
+        image:
+          - 'tcarstens/coq-vst:8.14.1-ocaml-4.12.0-flambda--compcert-3.9--vst-2.8'
+          - 'tcarstens/coq-vst:8.13.2-ocaml-4.11.2-flambda--compcert-3.9--vst-2.8'
       fail-fast: false  # don't stop jobs if one fails
     steps:
       - uses: actions/checkout@v2
       - uses: coq-community/docker-coq-action@v1
         with:
+          custom_image: ${{ matrix.image }}
           opam_file: ${{ matrix.opam_file }}
-          coq_version: ${{ matrix.coq_version }}
-          ocaml_version: ${{ matrix.ocaml_version }}
