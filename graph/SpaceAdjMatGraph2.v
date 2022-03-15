@@ -10,7 +10,7 @@ Require Import compcert.export.Clightdefs.
 Require Import VST.veric.expr.
 Require Import VST.veric.mpred.
 Require Import VST.floyd.forward.
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 Require Import VST.floyd.field_at.
 Require Import VST.floyd.coqlib3.
 Require Import VST.msl.iter_sepcon.
@@ -23,36 +23,36 @@ Require Import CertiGraph.graph.MathAdjMatGraph.
 Section Spatial_AdjMat_Model_2.
   (* Model 2 is for a stack-allocated graph,
      where the graph is declared on the stack
-     as a single-dimension array of size "size^2". 
+     as a single-dimension array of size "size^2".
      Access to graph[u][v] is via graph[size*u + v].
    *)
 
-  Context {size : Z}. 
+  Context {size : Z}.
   Context {CompSpecs : compspecs}.
-  Context {V_EqDec : EquivDec.EqDec V eq}. 
+  Context {V_EqDec : EquivDec.EqDec V eq}.
   Context {E_EqDec: EquivDec.EqDec E eq}.
-  
+
   (* SPATIAL REPRESENTATION *)
 
-  (* Assumption: 
+  (* Assumption:
      (v,0), (v,1) ... (v, size-1) are edges.
-   
-   Action: 
+
+   Action:
     Makes a list containing each edge's elabel.
     The argument f is an opportunity to tweak the edges as needed
-   *)  
+   *)
   Definition vert_to_list (g: AdjMatLG) (f : E -> E) (v : V) :=
     map (elabel g)
         (map (fun x => f (v,x))
              (nat_inc_list (Z.to_nat size))).
 
-  (* Assumptions: 
+  (* Assumptions:
      1. 0, 1, ... (size-1) are vertices
      2. for any vertex v,
           (v,0), (v,1) ... (v, size-1) are edges.
-          
+
      Action:
-      Makes a list of lists, where each member list 
+      Makes a list of lists, where each member list
       is a vertex's edge-label-list (see helper above).
    *)
   Definition graph_to_mat (g: AdjMatLG) (f : E -> E) : list (list Z) :=
@@ -76,7 +76,7 @@ Section Spatial_AdjMat_Model_2.
       elabel g (f (src, dst)) =
       Znth dst (Znth src (graph_to_mat g f)).
   Proof.
-    intros. 
+    intros.
     unfold graph_to_mat.
     rewrite Znth_map, nat_inc_list_i.
     unfold vert_to_list. rewrite Znth_map.
@@ -193,4 +193,3 @@ Section Spatial_AdjMat_Model_2.
     SpaceAdjMatGraph' sh (graph_to_list g f) gaddr.
 
 End Spatial_AdjMat_Model_2.
-

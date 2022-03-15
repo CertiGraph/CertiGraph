@@ -6,8 +6,8 @@ Require Import Coq.ZArith.Zcomplements.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
-Require Import VST.floyd.sublist.
-Require Import VST.floyd.list_solver.
+Require Import VST.zlist.sublist.
+Require Import VST.zlist.list_solver.
 
 
 Lemma list_prop_reduced_list: forall {A : Type} (Q : A -> Prop) (Q_lem : forall a, Q a \/ ~Q a) (l : list A),

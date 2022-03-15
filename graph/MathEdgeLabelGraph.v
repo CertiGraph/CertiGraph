@@ -3,7 +3,7 @@ Require Import Coq.Classes.EquivDec.
 Require Import Coq.ZArith.Zcomplements.
 
 Require Import compcert.lib.Integers.
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
@@ -13,7 +13,7 @@ Require Import CertiGraph.graph.path_lemmas.
 Section Mathematical_Edge_Labeled_Graph_Model.
 
   Coercion pg_lg: LabeledGraph >-> PreGraph.
-  Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
+  Coercion lg_gg: GeneralGraph >-> LabeledGraph.
 
   Local Open Scope Z_scope.
 
@@ -22,7 +22,7 @@ Section Mathematical_Edge_Labeled_Graph_Model.
   Definition DV: Type := list V. (* the vertices I point to *)
   Definition DE : Type := Z. (* the cost itself *)
   Definition DG: Type := unit.
-  
+
   #[export] Instance V_EqDec : EqDec V eq.
   Proof.
     hnf. intros. apply Z.eq_dec.
@@ -33,13 +33,13 @@ Section Mathematical_Edge_Labeled_Graph_Model.
     apply (prod_eqdec (prod_eqdec V_EqDec V_EqDec) Z.eq_dec).
   Defined.
 
-  Context {size : Z}. 
+  Context {size : Z}.
   (* The instantiator will have to supply the number of vertices *)
-  
+
   (* This is the basic LabeledGraph for all our Edge-Labeled representations. *)
   Definition EdgeLabLG := (@LabeledGraph V E _ _ DV DE DG).
-  (* We need some further restrictions, which we will place 
-     in the GeneralGraph's soundness condition.  
+  (* We need some further restrictions, which we will place
+     in the GeneralGraph's soundness condition.
    *)
 
   (* Each field of the class is a "plugin"
@@ -66,19 +66,19 @@ Section Mathematical_Edge_Labeled_Graph_Model.
     fin:
       FiniteGraph g
     }.
-  
+
   (* Academic example of how to instantiate the above *)
   Definition EdgeLabGG := (GeneralGraph V E DV DE DG (fun g => SoundEdgeLab g)).
   (* In reality, clients may want to:
-     1. create a new soundness condition where one of the 
+     1. create a new soundness condition where one of the
         plugins is "SounndEdgeLab" above
-     2. add further program-specific restrictions in 
+     2. add further program-specific restrictions in
         other plugins
-     3. use this new accreted soundness condition to 
+     3. use this new accreted soundness condition to
         build their GeneralGraph, as shown above.
    *)
 
-  
+
   (* Getters for the plugins *)
 
   Definition size_representable (g: EdgeLabGG) :=
@@ -102,9 +102,9 @@ Section Mathematical_Edge_Labeled_Graph_Model.
   Definition finGraph (g: EdgeLabGG) :=
     @fin g ((@sound_gg _ _ _ _ _ _ _ _ g)).
 
-  
+
   (* Some lemmas from the above soundness plugins *)
-  
+
   Lemma valid_path_app_cons:
     forall (g: EdgeLabGG) src links2u u i o,
       valid_path g (src, links2u) ->
@@ -119,7 +119,7 @@ Section Mathematical_Edge_Labeled_Graph_Model.
     destruct H1.
     rewrite (edge_src_fst g); simpl; assumption.
   Qed.
-  
+
   Lemma path_ends_app_cons:
     forall (g: EdgeLabGG) a b c o a' a2b,
       a = a' ->
@@ -130,7 +130,7 @@ Section Mathematical_Edge_Labeled_Graph_Model.
     rewrite pfoot_last.
     rewrite (edge_dst_snd g); trivial.
   Qed.
-  
+
   Lemma step_in_range:
     forall (g: EdgeLabGG) x x0,
       valid_path g x ->
@@ -142,7 +142,7 @@ Section Mathematical_Edge_Labeled_Graph_Model.
     pose proof (valid_path_strong_evalid g _ _ _ H H0).
     destruct H1 as [? [? _]]. trivial.
   Qed.
-  
+
   Lemma step_in_range2:
     forall (g: EdgeLabGG) x x0,
       valid_path g x ->

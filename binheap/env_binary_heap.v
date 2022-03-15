@@ -3,7 +3,6 @@ Require Import CertiGraph.binheap.binary_heap.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
 Require Import RelationClasses.
-(* Require Import VST.floyd.sublist. *)
 
 Set Nested Proofs Allowed.
 
@@ -16,12 +15,12 @@ Definition cmp_rel (a b : heap_item) : Prop :=
 Lemma cmp_dec: forall a a', {cmp_rel a a'} + {~cmp_rel a a'}.
 Proof.
   intros [? ?] [? ?]. unfold cmp_rel, cmp. simpl. case (Int.lt i1 i); simpl; auto.
-Qed. 
+Qed.
 #[export] Instance cmp_po: PreOrder cmp_rel.
 Proof.
   constructor. intros [? ?]. red. unfold cmp. simpl. case_eq (Int.lt i i); auto; intro. exfalso.
   apply lt_inv in H. lia.
-  intros [? ?] [? ?] [? ?]. unfold cmp_rel, cmp. simpl. 
+  intros [? ?] [? ?] [? ?]. unfold cmp_rel, cmp. simpl.
   case_eq (Int.lt i3 i); auto.
   case_eq (Int.lt i1 i); auto.
   case_eq (Int.lt i3 i1); auto. simpl.
@@ -35,9 +34,9 @@ Lemma cmp_linear: forall a b,
   cmp_rel a b \/ cmp_rel b a.
 Proof.
   intros [? ?] [? ?]. unfold cmp_rel, cmp; simpl.
-  case_eq (Int.lt i1 i); auto. intro. 
+  case_eq (Int.lt i1 i); auto. intro.
   right.
-  case_eq (Int.lt i i1); auto. intro. exfalso. 
+  case_eq (Int.lt i i1); auto. intro. exfalso.
   apply lt_inv in H. apply lt_inv in H0.
   lia.
 Qed.
@@ -55,11 +54,11 @@ Definition heap_permutation (h1 h2 : heap) : Prop :=
 *)
 
 Definition heap_ordered := binary_heap_model.heapOrdered heap_item cmp_rel.
-Definition heap_ordered_bounded (L : list heap_item) (b : Z) := 
+Definition heap_ordered_bounded (L : list heap_item) (b : Z) :=
   binary_heap_model.heapOrdered_bounded heap_item cmp_rel L (Z.to_nat b).
-Definition weak_heap_ordered_bottom_up (L : list heap_item) (x : Z) := 
+Definition weak_heap_ordered_bottom_up (L : list heap_item) (x : Z) :=
   binary_heap_model.weak_heapOrdered2 heap_item cmp_rel L (Z.to_nat x).
-Definition weak_heap_ordered_top_down_bounded (L : list heap_item) (b : Z) (x : Z) := 
+Definition weak_heap_ordered_top_down_bounded (L : list heap_item) (b : Z) (x : Z) :=
   binary_heap_model.weak_heapOrdered_bounded heap_item cmp_rel L (Z.to_nat b) (Z.to_nat x).
 Definition swim := binary_heap_model.swim heap_item cmp_rel cmp_dec.
 Definition sink L i := binary_heap_model.sink heap_item cmp_rel cmp_dec (L,i).
@@ -107,8 +106,8 @@ Lemma fold_harray: forall L arr,
 Proof. reflexivity. Qed.
 
 Lemma harray_split: forall L1 L2 ptr,
-  harray (L1 ++ L2) ptr = 
-  ((harray L1 ptr) * 
+  harray (L1 ++ L2) ptr =
+  ((harray L1 ptr) *
    (harray L2 (field_address0 (tarray t_item (Zlength (L1 ++ L2))) [ArraySubsc (Zlength L1)] ptr)))%logic.
 Proof.
   intros. unfold harray.

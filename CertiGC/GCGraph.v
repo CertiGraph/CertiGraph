@@ -9,11 +9,11 @@ Require Import VST.veric.val_lemmas.
 Require Import VST.veric.shares.
 Require Import VST.msl.seplog.
 Require Import VST.msl.shares.
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 Require Import VST.floyd.coqlib3.
 Require Import VST.floyd.functional_base.
 Require Import VST.floyd.data_at_rec_lemmas.
-Require Import VST.floyd.list_solver.
+Require Import VST.zlist.list_solver.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
@@ -311,7 +311,7 @@ Qed.
 
 Definition repable64_signed (z: Z) :=
   Int64.min_signed <= z <= Int64.max_signed.
-  
+
 Lemma lt64_repr: forall i j,
     repable64_signed i -> repable64_signed j ->
     Int64.lt (Int64.repr i) (Int64.repr j) = true -> i < j.

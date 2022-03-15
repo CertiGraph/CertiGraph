@@ -10,7 +10,7 @@ Require Import compcert.export.Clightdefs.
 Require Import VST.veric.expr.
 Require Import VST.veric.mpred.
 Require Import VST.floyd.forward.
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 Require Import VST.floyd.field_at.
 Require Import VST.floyd.coqlib3.
 Require Import VST.msl.iter_sepcon.
@@ -28,30 +28,30 @@ Section Spatial_AdjMat_Model_3.
 
   Context {size : Z}.
   Context {CompSpecs : compspecs}.
-  Context {V_EqDec : EquivDec.EqDec V eq}. 
+  Context {V_EqDec : EquivDec.EqDec V eq}.
   Context {E_EqDec: EquivDec.EqDec E eq}.
-  
+
   (* SPATIAL REPRESENTATION *)
 
-  (* Assumption: 
+  (* Assumption:
      (v,0), (v,1) ... (v, size-1) are edges.
-   
-     Action: 
+
+     Action:
       Makes a list containing each edge's elabel.
       The argument f is an opportunity to tweak the edges as needed
-   *)  
+   *)
   Definition vert_to_list (g: AdjMatLG) (f : E -> E) (v : V) :=
     map (elabel g)
         (map (fun x => f (v,x))
              (nat_inc_list (Z.to_nat size))).
 
-  (* Assumptions: 
+  (* Assumptions:
      1. 0, 1, ... (size-1) are vertices
      2. for any vertex v,
           (v,0), (v,1) ... (v, size-1) are edges.
-          
+
      Action:
-      Makes a list of lists, where each member list 
+      Makes a list of lists, where each member list
       is a vertex's edge-label-list (see helper above).
    *)
   Definition graph_to_mat (g: AdjMatLG) (f : E -> E) : list (list Z) :=
@@ -75,7 +75,7 @@ Section Spatial_AdjMat_Model_3.
       elabel g (f (src, dst)) =
       Znth dst (Znth src (graph_to_mat g f)).
   Proof.
-    intros. 
+    intros.
     unfold graph_to_mat.
     rewrite Znth_map, nat_inc_list_i.
     unfold vert_to_list. rewrite Znth_map.
@@ -85,7 +85,7 @@ Section Spatial_AdjMat_Model_3.
     2, 3, 5: rewrite nat_inc_list_Zlength.
     all: rewrite Z2Nat.id; trivial.
   Qed.
-  
+
   Definition graph_to_list (g: AdjMatLG) (f : E -> E) : list Z :=
     (concat (graph_to_mat g f)).
 
@@ -104,7 +104,7 @@ Section Spatial_AdjMat_Model_3.
 
     Definition SpaceAdjMatGraph sh (f : E -> E) g gaddr : mpred :=
       SpaceAdjMatGraph' sh (graph_to_mat g f) gaddr.
-  
+
   Lemma SpaceAdjMatGraph_unfold': forall sh g_contents ptr
                                         (addresses0 : list val) i,
       0 <= i < size ->
@@ -133,7 +133,7 @@ Section Spatial_AdjMat_Model_3.
 
   Lemma SpaceAdjMatGraph_unfold: forall sh (f : E -> E) g ptr
                                         (addresses0 : list val) i,
-      let contents := (graph_to_mat g f) in 
+      let contents := (graph_to_mat g f) in
       0 <= i < size ->
       SpaceAdjMatGraph sh f g ptr =
       sepcon (iter_sepcon (list_rep sh ptr contents)
@@ -147,5 +147,5 @@ Section Spatial_AdjMat_Model_3.
     apply SpaceAdjMatGraph_unfold'; trivial.
     subst contents. rewrite graph_to_mat_Zlength; trivial. lia.
   Qed.
-  
+
 End Spatial_AdjMat_Model_3.

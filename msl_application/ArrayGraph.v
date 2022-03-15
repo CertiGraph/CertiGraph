@@ -5,7 +5,7 @@ Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Lia.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 Require Import compcert.lib.Integers.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.Ensembles_ext.

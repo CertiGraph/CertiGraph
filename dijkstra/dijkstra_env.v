@@ -4,7 +4,7 @@ Require Export Coq.Lists.List.
 Require Export Coq.micromega.Lia.
 Require Export Coq.ZArith.ZArith.
 Require Export compcert.lib.Integers.
-Require Export VST.floyd.sublist.
+Require Export VST.zlist.sublist.
 Require Export VST.msl.seplog.
 Require Export VST.msl.iter_sepcon.
 Require Export CertiGraph.floyd_ext.share.

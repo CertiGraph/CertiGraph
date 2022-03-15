@@ -8,7 +8,7 @@ Require Import compcert.common.Values.
 Require Import compcert.export.Clightdefs.
 
 Require Import VST.veric.mpred.
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 Require Import VST.floyd.field_at.
 Require Import VST.floyd.coqlib3.
 Require Import VST.msl.iter_sepcon.
@@ -21,38 +21,38 @@ Require Import CertiGraph.graph.MathEdgeLabelGraph.
 Section Spatial_Edge_Labeled_Graph_Model_1.
   (* Model 1 is for a heap-allocated graph,
      where the graph is malloc-ed
-     by first malloc-ing a "spine" column of some size, 
+     by first malloc-ing a "spine" column of some size,
      and then malloc-ing a "row" into each cell
-     of the spine.       
+     of the spine.
    *)
 
-  Context {size : Z}. 
+  Context {size : Z}.
   Context {CompSpecs : compspecs}.
-  Context {V_EqDec : EquivDec.EqDec V eq}. 
+  Context {V_EqDec : EquivDec.EqDec V eq}.
   Context {E_EqDec: EquivDec.EqDec E eq}.
-  
-  (* Assumption: 
+
+  (* Assumption:
      (v,d1,0), (v,d2,1) ... (v, dn, m) are edges.
-     v is the source vertex, 
+     v is the source vertex,
      d1...dn are the (repeatable) destinations,
      and the numbers 0...m are the out-vertex index numbers
-     
-     Action: 
+
+     Action:
       Makes a list containing each edge's elabel.
       The argument f is an opportunity to tweak the edges as needed
-   *)  
+   *)
   Definition vert_to_list (g: EdgeLabLG) (f : E -> E) (v : V) :=
     map (elabel g)
         (map f (combine
                   (map (fun x => (v,x)) (vlabel g v))
                   (nat_inc_list (length (vlabel g v))))).
-  
-  (* Assumptions: 
+
+  (* Assumptions:
      1. 0, 1, ... (size-1) are vertices
      2. the assumptions from the helper above hold for each vertex
-          
+
      Action:
-      Makes a list of lists, where each member list 
+      Makes a list of lists, where each member list
       is a vertex's edge-label-list (see helper above).
    *)
   Definition graph_to_mat (g: EdgeLabLG) (f : E -> E) : list (list Z) :=
@@ -60,7 +60,7 @@ Section Spatial_Edge_Labeled_Graph_Model_1.
         (nat_inc_list (Z.to_nat size)).
 
   (* Some lemmas about the above *)
-  
+
   Lemma graph_to_mat_Zlength:
     forall g (f : E -> E),
       0 <= size ->
@@ -81,14 +81,14 @@ Section Spatial_Edge_Labeled_Graph_Model_1.
   Proof.
     intros.
     repeat rewrite <- nth_Znth.
-    all: 
+    all:
       rewrite Zlength_correct in *;
       try rewrite combine_length;
       try rewrite <- H;
       try rewrite Nat.min_id; trivial.
     apply combine_nth; trivial.
   Qed.
-        
+
   Lemma elabel_Znth_graph_to_mat:
     forall (g: @EdgeLabGG size) (f: E -> E) src dst out,
       evalid g (src, dst, out) ->
@@ -128,7 +128,7 @@ Section Spatial_Edge_Labeled_Graph_Model_1.
     2: rewrite nat_inc_list_Zlength.
     1,2: rewrite Z2Nat.id; trivial.
   Qed.
-  
+
   Definition graph_to_list (g: EdgeLabLG) (f : E -> E) : list Z :=
     (concat (graph_to_mat g f)).
 
@@ -150,7 +150,7 @@ Section Spatial_Edge_Labeled_Graph_Model_1.
 
   Definition SpaceAdjMatGraph sh (f : E -> E) g (g_ptr: val) (addresses : list val) : mpred :=
     SpaceAdjMatGraph' sh (graph_to_mat g f) g_ptr addresses.
-                
+
   Lemma SpaceAdjMatGraph_unfold': forall sh g_contents (g_ptr : val) (addresses : list val) i,
       Zlength g_contents = size ->
       0 <= i < size ->
@@ -179,7 +179,7 @@ Section Spatial_Edge_Labeled_Graph_Model_1.
   Qed.
 
   Lemma SpaceAdjMatGraph_unfold: forall sh (f : E -> E) g (g_ptr : val) (addresses : list val) i,
-      let contents := (graph_to_mat g f) in 
+      let contents := (graph_to_mat g f) in
       0 <= i < size ->
       SpaceAdjMatGraph sh f g g_ptr addresses =
       sepcon
