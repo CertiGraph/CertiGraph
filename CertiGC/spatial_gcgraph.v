@@ -484,25 +484,22 @@ Proof.
 Qed.
 
 (* weak derives for use in funspecs *)
-Program Definition weak_derives (P Q: mpred): mpred :=
-  fun w => predicates_hered.derives (approx (S (level w)) P) (approx (S (level w)) Q).
-Next Obligation.
-  repeat intro.
-  destruct H1.
-  apply age_level in H.
-  lapply (H0 a0); [|split; auto; lia].
-  intro HQ; destruct HQ.
-  eexists; eauto.
-Defined.
+Program Definition weak_derives (P Q: mpred): mpred := (! (P >=> Q))%pred.
 
 Lemma derives_nonexpansive: forall P Q n,
     approx n (weak_derives P Q) = approx n (weak_derives (approx n P) (approx n Q)).
 Proof.
   apply nonexpansive2_super_non_expansive; repeat intro.
-  - split; intros ??%necR_level Hshift ? HP;
-      destruct (Hshift _ HP); destruct HP; eexists;  eauto; eapply H; auto; lia.
-  - split; intros ??%necR_level Hshift ? []; apply Hshift;
-      split; auto; apply (H a0); auto; lia.
+  - split; simpl; intros; eapply H3 in H7; eauto;
+      assert (a >= level y0)%nat by (apply necR_level in H1; apply ext_level in H2; lia);
+      destruct (H _ H8).
+    + eapply H9; eauto.
+    + eapply H10; eauto.
+  - split; simpl; intros; eapply H3; eauto;
+      assert (a >= level y0)%nat by (apply necR_level in H1; apply ext_level in H2; lia);
+      destruct (H _ H8).
+    + eapply H10; eauto.
+    + eapply H9; eauto.
 Qed.
 
 Lemma derives_nonexpansive_l: forall P Q n,
@@ -510,8 +507,11 @@ Lemma derives_nonexpansive_l: forall P Q n,
 Proof.
   repeat intro.
   apply (nonexpansive_super_non_expansive (fun P => weak_derives P Q)); repeat intro.
-  split; intros ??%necR_level Hshift ? [];
-    apply Hshift; split; auto; apply (H a0); auto; lia.
+  split; simpl; intros; eapply H3; eauto;
+    assert (a >= level y0)%nat by (apply necR_level in H1; apply ext_level in H2; lia);
+    destruct (H _ H8).
+  - eapply H10; eauto.
+  - eapply H9; eauto.
 Qed.
 
 Lemma derives_nonexpansive_r: forall P Q n,
@@ -519,18 +519,17 @@ Lemma derives_nonexpansive_r: forall P Q n,
 Proof.
   repeat intro.
   apply (nonexpansive_super_non_expansive (fun Q => weak_derives P Q)); repeat intro.
-  split; intros ??%necR_level Hshift ? HP;
-    destruct (Hshift _ HP); destruct HP;
-      eexists;  eauto;
-        eapply H; auto; lia.
+  split; simpl; intros; eapply H3 in H7; eauto;
+    assert (a >= level y0)%nat by (apply necR_level in H1; apply ext_level in H2; lia);
+    destruct (H _ H8).
+  - eapply H9; eauto.
+  - eapply H10; eauto.
 Qed.
 
 Lemma derives_weak: forall P Q, P |-- Q -> TT |-- weak_derives P Q.
 Proof.
   intros. unseal_derives.
-  intros w _ ? [? HP].
-  specialize (H _ HP).
-  eexists; eauto.
+  now apply derives_unfash_fash.
 Qed.
 
 Lemma apply_derives: forall P Q, (weak_derives P Q && emp) * P |-- Q.
@@ -538,10 +537,10 @@ Proof.
   intros. unseal_derives.
   intros ? (? & ? & ? & [Hderives Hemp] & HP).
   destruct (join_level _ _ _ H).
-  apply Hemp in H; subst.
-  lapply (Hderives a); [|split; auto; lia].
-  intro X; destruct X; eauto 7.
-Qed.
+  (* apply Hemp in H; subst. *)
+  (* lapply (Hderives a); [|split; auto; lia]. *)
+  (* intro X; destruct X; eauto 7. *)
+Abort.
 
 Definition heap_rest_gen_data_at_ (g: LGraph) (t_info: thread_info) (gen: nat) :=
   data_at_ (nth_sh g gen)
