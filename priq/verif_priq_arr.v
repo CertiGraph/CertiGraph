@@ -1,7 +1,7 @@
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.priq.priq_arr_specs.
 Require Import CertiGraph.priq.priq_arr_utils.
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 
 Require Import CertiGraph.priq.priq_arr.
 

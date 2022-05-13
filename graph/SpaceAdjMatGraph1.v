@@ -5,10 +5,10 @@ Require Import Coq.ZArith.Znat.
 
 Require Import compcert.lib.Integers.
 Require Import compcert.common.Values.
-Require Import compcert.exportclight.Clightdefs.
+Require Import compcert.export.Clightdefs.
 
 Require Import VST.veric.mpred.
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 Require Import VST.floyd.field_at.
 Require Import VST.floyd.coqlib3.
 Require Import VST.msl.iter_sepcon.

@@ -285,8 +285,8 @@ Proof.
   pose proof biGraph g.
   simpl.
   split; [| split; [| split]].
-  + apply left_valid with (x0 := x) in H0; auto.
-  + apply right_valid with (x0 := x) in H0; auto.
+  + apply left_valid with (x := x) in H0; auto.
+  + apply right_valid with (x := x) in H0; auto.
   + pose proof (proj2 (only_two_edges x (x, L) H)).
     specialize (H1 (or_introl eq_refl)).
     tauto.
@@ -303,8 +303,8 @@ Proof.
   pose proof biGraph' g.
   simpl.
   split; [| split; [| split]].
-  + apply left_valid with (x0 := x) in H0; auto.
-  + apply right_valid with (x0 := x) in H0; auto.
+  + apply left_valid with (x := x) in H0; auto.
+  + apply right_valid with (x := x) in H0; auto.
   + pose proof (proj2 (only_two_edges x (x, L) H)).
     specialize (H1 (or_introl eq_refl)).
     tauto.

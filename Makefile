@@ -1,15 +1,20 @@
-COMPCERT_DIR = "../CompCert"
-VST_DIR = "../VST"
+# COMPCERT_DIR = "../CompCert"
+# VST_DIR = "../VST"
 CURRENT_DIR = "./"
 -include CONFIGURE
 
 COQC=$(COQBIN)coqc -w -overriding-logical-loadpath
 COQDEP=$(COQBIN)coqdep
 
-DIRS = lib msl_ext msl_application graph heap_model_direct
+DIRS = lib msl_ext msl_application graph # heap_model_direct
+ifdef COMPCERT_DIR
 INCLUDE_COMPCERT = -Q $(COMPCERT_DIR) compcert
+endif
+ifdef VST_DIR
 INCLUDE_VST = -Q $(VST_DIR) VST
-INCLUDE_CERTIGRAPH = $(foreach d, $(DIRS), -Q $(d) CertiGraph.$(d)) -Q "." CertiGraph
+endif
+# INCLUDE_CERTIGRAPH = $(foreach d, $(DIRS), -Q $(d) CertiGraph.$(d)) # -Q "." CertiGraph
+INCLUDE_CERTIGRAPH = -Q "." CertiGraph
 NORMAL_FLAG = $(INCLUDE_CERTIGRAPH) $(INCLUDE_VST) $(INCLUDE_COMPCERT)
 CLIGHT_FLAG = $(INCLUDE_COMPCERT) $(INCLUDE_CERTIGRAPH)
 
@@ -20,7 +25,7 @@ LIB_FILES = \
 MSL_EXT_FILES = \
   log_normalize.v iter_sepcon.v ramification_lemmas.v abs_addr.v seplog.v \
   ramify_tactics.v msl_ext.v sepalg.v overlapping.v precise.v alg_seplog.v \
-  overlapping_direct.v precise_direct.v alg_seplog_direct.v
+  # precise_direct.v  alg_seplog_direct.v  overlapping_direct.v
 
 MSL_APPLICATION_FILES = \
   Graph.v Graph_Mark.v GraphBi.v GraphBi_Mark.v DagBi_Mark.v Graph_Copy.v \
@@ -53,7 +58,8 @@ DATA_STRUCTURE_FILES = \
 
 BINARY_HEAP_FILES = \
   binary_heap_model.v binary_heap_Zmodel.v \
-  binary_heap.v env_binary_heap.v verif_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v
+  binary_heap.v env_binary_heap.v binary_heap_pro.v env_binary_heap_pro.v \
+  verif_binary_heap.v # verif_binary_heap_pro.v 
 
 MARK_FILES = \
   env_mark_bi.v spatial_graph_bi_mark.v verif_mark_bi.v verif_mark_bi_dag.v 
@@ -94,7 +100,7 @@ PRIM_FILES = \
   MatrixUGraph.v \
   prim3.v prim_spec3.v spatial_undirected_matrix3.v verif_prim3.v \
   noroot_prim.v noroot_prim_spec.v verif_noroot_prim.v prim_constants.v
-#prim1.v prim_spec1.v spatial_undirected_matrix1.v verif_prim1.v \  
+#prim1.v prim_spec1.v spatial_undirected_matrix1.v verif_prim1.v 
 
 DIJKSTRA_FILES = \
   dijkstra1.v SpaceDijkGraph1.v dijkstra_spec1.v verif_dijkstra1.v \
@@ -127,7 +133,7 @@ NORMAL_FILES = \
   $(SAMPLE_EDGE_WEIGHT_FILES:%.v=sample_edge_weight/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v) \
-  $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
+#   $(HEAP_MODEL_DIRECT_FILES:%.v=heap_model_direct/%.v) \
   $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
@@ -143,11 +149,11 @@ NORMAL_FILES = \
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
-	@$(COQC) $(NORMAL_FLAG) $(CURRENT_DIR)/$*.v
+	$(COQC) $(NORMAL_FLAG) $(CURRENT_DIR)/$*.v
 
 $(CLIGHT_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
-	@$(COQC) $(CLIGHT_FLAG) $(CURRENT_DIR)/$*.v
+	$(COQC) $(CLIGHT_FLAG) $(CURRENT_DIR)/$*.v
 
 all: \
   $(NORMAL_FILES:%.v=%.vo) \
@@ -158,10 +164,26 @@ all: \
 VST_CRITICAL_FILES = \
   progs/conclib.v floyd/reassoc_seq.v compcert/cfrontend/ClightBigstep.v msl/msl_direct.v msl/alg_seplog_direct.v
 
-# clightgen:
-#	../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c prim/noroot_prim.c
-# ../CompCert/clightgen -DCOMPCERT -normalize -isystem . priq_malloc/priq_arr.c dijkstra/dijkstra1.c 
-#	../CompCert/clightgen -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c 
+ifdef CLIGHTGEN
+mark/mark_bi.v: mark/mark_bi.c
+	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . $<
+copy/copy_bi.v: copy/copy_bi.c
+	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . $<
+summatrix/summatrix.v: summatrix/summatrix.c
+	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . $<
+binheap/binary_heap.v: binheap/binary_heap.c
+	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . $<
+binheap/binary_heap_pro.v: binheap/binary_heap_pro.c
+	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . $<
+dispose/dispose_bi.v: dispose/dispose_bi.c
+	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . $<
+priq/priq_arr.v prim/prim.v prim/noroot_prim.v: priq/priq_arr.c
+	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . priq/priq_arr.c prim/prim.c prim/noroot_prim.c
+priq_malloc/pric_arr.v dijkstra/dijkstra1.v: priq_malloc/pric_arr.c
+	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . priq_malloc/priq_arr.c dijkstra/dijkstra1.c 
+unionfind/unionfind_arr.v kruskal/kruskal_edgelist.v: unionfind/unionfind_arr.c
+	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . unionfind/unionfind_arr.c kruskal/kruskal_edgelist.c 
+endif
 
 .PHONY: vstandme7
 vstandme7:

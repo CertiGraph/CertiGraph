@@ -3,7 +3,7 @@ Require Import CertiGraph.binheap.binary_heap.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
 Require Import RelationClasses.
-(* Require Import VST.floyd.sublist. *)
+(* Require Import VST.zlist.sublist. *)
 
 Set Nested Proofs Allowed.
 

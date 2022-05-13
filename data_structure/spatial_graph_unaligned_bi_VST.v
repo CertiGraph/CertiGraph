@@ -64,7 +64,7 @@ Proof.
   normalize.
   apply data_at_conflict.
   + apply readable_nonidentity, writable_readable. auto.
-  + change (sizeof node_type) with 12. lia.
+  + reflexivity.
 Qed.
 
 Instance SGA_VST (sh: share) : PointwiseGraphAssum (SGP_VST sh).

@@ -2,7 +2,7 @@ Require Import CertiGraph.dijkstra.env_dijkstra_arr.
 Require Export CertiGraph.dijkstra.dijkstra_spec_pure.
 Require Import CertiGraph.dijkstra.path_cost.
 
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 (* seems this has to be imported after the others *)
 
 Local Open Scope Z_scope.

@@ -131,10 +131,6 @@ Ltac elim_emp :=
            | [H1: join ?y ?x _, H2: emp ?x |- _] => apply (join_unit2_e _ _ H2) in H1; rewrite H1 in *; clear H1 y
          end.
 
-Require Import VST.msl.msl_direct.
-
-(* For direct precise *)
-
 Ltac equate_precise_direct x1 x2 :=
   let Sub1 := fresh "Sub1" in
   let Sub2 := fresh "Sub2" in
