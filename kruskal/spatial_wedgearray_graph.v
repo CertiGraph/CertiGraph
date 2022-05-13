@@ -174,10 +174,10 @@ apply Forall_inv in H; auto.
 Qed.
 
 Definition Vundef_cwedges (n: Z): list (reptype t_struct_edge) :=
-    list_repeat (Z.to_nat n) (Vundef, (Vundef, Vundef)).
+    Zrepeat (Vundef, (Vundef, Vundef)) n.
 
 Lemma Vundef_cwedges_Zlength:
   forall n: Z, 0 <= n -> Zlength (Vundef_cwedges n) = n.
 Proof.
-intros. unfold Vundef_cwedges. apply Zlength_list_repeat. auto.
+intros. unfold Vundef_cwedges. list_solve.
 Qed.

@@ -6,7 +6,7 @@ Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_constants.
 Require Import CertiGraph.priq_malloc.priq_arr_utils.
 
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 (* seems this has to be imported after the others *)
 
 Definition inrange_priq inf priq := @dijkstra_math_proof.inrange_priq inf priq.

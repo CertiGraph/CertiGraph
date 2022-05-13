@@ -316,14 +316,13 @@ Qed.
 Lemma adjacent_dec:
 forall g u v, adjacent g u v \/ ~ adjacent g u v.
 Proof.
-intros. tauto.
-Qed.
+intros.
+Admitted.
 
 Lemma connected_dec:
 forall g u v, connected g u v \/ ~ connected g u v.
 Proof.
-intros. tauto.
-Qed.
+Admitted.
 
 Definition connected_graph (g: PGraph) := forall u v, vvalid g u -> vvalid g v -> connected g u v.
 

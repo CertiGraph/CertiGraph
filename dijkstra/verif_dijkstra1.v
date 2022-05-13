@@ -7,7 +7,7 @@ Require Import CertiGraph.dijkstra.SpaceDijkGraph1.
 Require Import CertiGraph.dijkstra.dijkstra_spec1.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
 
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 (* seems this has to be imported after the others *)
 
 Local Open Scope Z_scope.

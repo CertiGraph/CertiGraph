@@ -6,8 +6,8 @@ Require Import Coq.ZArith.Zcomplements.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
-Require Import VST.floyd.sublist.
-Require Import VST.floyd.list_solver.
+Require Import VST.zlist.sublist.
+Require Import VST.zlist.list_solver.
 
 Lemma list_prop_reduced_list: forall {A : Type} (Q : A -> Prop) (Q_lem : forall a, Q a \/ ~Q a) (l : list A),
   exists l', forall a, In a l' <-> (In a l /\ Q a).
@@ -591,7 +591,11 @@ Proof.
   destruct H2 as [lp [lq [? [? [? [? ?]]]]]].
   exists lp, lq. split5; auto.
   + firstorder.
+      assert (In x lp \/ In x lq).
+     apply H6. apply H0. auto. destruct H8; auto. apply H5 in H8. firstorder.
   + firstorder.
+      assert (In x lp \/ In x lq).
+      apply H6. apply H0. auto. destruct H8; auto. apply H4 in H8. firstorder.
   + apply NoDup_Permutation; auto.
     - apply NoDup_app_inv; auto. firstorder.
     - intro; rewrite in_app_iff. firstorder.
@@ -1087,14 +1091,14 @@ Lemma map_fst_split: forall {A B} (l: list (A * B)), map fst l = fst (split l).
 Proof.
   intros. pose proof (split_length_l l). pose proof (split_length_r l).
   pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
-  now rewrite <- H1, map_fst_combine.
+  erewrite <- H1. apply map_fst_combine. apply H. auto.
 Qed.
 
 Lemma map_snd_split: forall {A B} (l: list (A * B)), map snd l = snd (split l).
 Proof.
   intros. pose proof (split_length_l l). pose proof (split_length_r l).
   pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
-  now rewrite <- H1, map_snd_combine.
+  erewrite <- H1. apply map_snd_combine. apply H. auto.
 Qed.
 
 Lemma In_map_fst_iff: forall {A B} a (l: list (A * B)),

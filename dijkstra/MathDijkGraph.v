@@ -5,7 +5,7 @@ Require Import Coq.micromega.Lia.
 Require Import Coq.Lists.List.
 
 Require Import VST.msl.seplog.
-Require Import VST.floyd.sublist.
+Require Import VST.zlist.sublist.
 Require Import compcert.lib.Integers.
 
 Require Import CertiGraph.lib.Coqlib.
