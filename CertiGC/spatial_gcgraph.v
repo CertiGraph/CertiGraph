@@ -490,16 +490,16 @@ Lemma derives_nonexpansive: forall P Q n,
     approx n (weak_derives P Q) = approx n (weak_derives (approx n P) (approx n Q)).
 Proof.
   apply nonexpansive2_super_non_expansive; repeat intro.
-  - split; simpl; intros; eapply H3 in H7; eauto;
-      assert (a >= level y0)%nat by (apply necR_level in H1; apply ext_level in H2; lia);
-      destruct (H _ H8).
-    + eapply H9; eauto.
-    + eapply H10; eauto.
-  - split; simpl; intros; eapply H3; eauto;
-      assert (a >= level y0)%nat by (apply necR_level in H1; apply ext_level in H2; lia);
-      destruct (H _ H8).
-    + eapply H10; eauto.
-    + eapply H9; eauto.
+  - split; simpl; intros; eapply H2 in H5; eauto;
+      assert (a >= level y0)%nat by (apply necR_level in H1; lia);
+      destruct (H _ H6).
+    + eapply H7; eauto.
+    + eapply H8; eauto.
+  - split; simpl; intros; eapply H2; eauto;
+      assert (a >= level y0)%nat by (apply necR_level in H1; lia);
+      destruct (H _ H6).
+    + eapply H8; eauto.
+    + eapply H7; eauto.
 Qed.
 
 Lemma derives_nonexpansive_l: forall P Q n,
@@ -507,11 +507,9 @@ Lemma derives_nonexpansive_l: forall P Q n,
 Proof.
   repeat intro.
   apply (nonexpansive_super_non_expansive (fun P => weak_derives P Q)); repeat intro.
-  split; simpl; intros; eapply H3; eauto;
-    assert (a >= level y0)%nat by (apply necR_level in H1; apply ext_level in H2; lia);
-    destruct (H _ H8).
-  - eapply H10; eauto.
-  - eapply H9; eauto.
+  split; simpl; intros; eapply H2; eauto;
+    assert (a >= level y0)%nat by (apply necR_level in H1; lia);
+  - eapply H7; eauto.
 Qed.
 
 Lemma derives_nonexpansive_r: forall P Q n,
@@ -519,11 +517,11 @@ Lemma derives_nonexpansive_r: forall P Q n,
 Proof.
   repeat intro.
   apply (nonexpansive_super_non_expansive (fun Q => weak_derives P Q)); repeat intro.
-  split; simpl; intros; eapply H3 in H7; eauto;
-    assert (a >= level y0)%nat by (apply necR_level in H1; apply ext_level in H2; lia);
-    destruct (H _ H8).
-  - eapply H9; eauto.
-  - eapply H10; eauto.
+  split; simpl; intros; eapply H2 in H5; eauto;
+    assert (a >= level y0)%nat by (apply necR_level in H1; lia);
+    destruct (H _ H6).
+  - eapply H7; eauto.
+  - eapply H8; eauto.
 Qed.
 
 Lemma derives_weak: forall P Q, P |-- Q -> TT |-- weak_derives P Q.
