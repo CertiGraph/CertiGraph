@@ -509,6 +509,8 @@ Proof.
   apply (nonexpansive_super_non_expansive (fun P => weak_derives P Q)); repeat intro.
   split; simpl; intros; eapply H2; eauto;
     assert (a >= level y0)%nat by (apply necR_level in H1; lia);
+    destruct (H _ H6).
+  - eapply H8; eauto.
   - eapply H7; eauto.
 Qed.
 
