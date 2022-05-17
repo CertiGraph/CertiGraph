@@ -7,10 +7,6 @@ Require Export CertiGraph.prim.prim3.
 
 Local Open Scope Z_scope.
 
-Section PrimSpec.
-  
-Context {Z_EqDec : EquivDec.EqDec Z eq}.
-  
 #[export] Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
@@ -106,7 +102,7 @@ Definition Gprog: funspecs :=
   ltac:(with_library prog
                      [(@push_spec size inf _);
                      (@pq_emp_spec size inf _);
-                     (@popMin_spec size inf Z_EqDec _);
+                     (@popMin_spec size inf _);
                      (@adjustWeight_spec size inf _);
                      (@init_spec size _);
                      freePQ_spec;
@@ -115,5 +111,3 @@ Definition Gprog: funspecs :=
                      initialise_matrix_spec;
                      prim_spec
        ]).
-
-End PrimSpec.

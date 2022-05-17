@@ -10,7 +10,6 @@ Section PrimSpec.
 
 Context {size : Z}.
 Context {inf : Z}.
-Context {Z_EqDec : EquivDec.EqDec Z eq}.
   
 #[export] Instance CompSpecs : compspecs. Proof. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
@@ -137,7 +136,7 @@ Definition Gprog: funspecs :=
   ltac:(with_library prog
                      [(@push_spec size inf _);
                      (@pq_emp_spec size inf _);
-                     (@popMin_spec size inf Z_EqDec _);
+                     (@popMin_spec size inf _);
                      (@adjustWeight_spec size inf _);
                      (@init_spec size _);
                      freePQ_spec;

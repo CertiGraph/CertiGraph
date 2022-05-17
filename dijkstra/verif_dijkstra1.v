@@ -14,7 +14,6 @@ Section DijkstraProof.
    *)
   Context {size: Z}.
   Context {inf: Z}.
-  Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
   Definition src_picked_first h src (popped: list V) :=
     0 < Zlength (heap_items h) ->
@@ -996,7 +995,7 @@ Section DijkstraProof.
             clear Htemp.
             destruct (H1 _ H_u_valid) as [_ [_ ?]].
 
-            clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1 H10' H12 Hd' Ha Ht Z_EqDec.
+            clear -Hconn Hequ H18 H16 H15 H10 H6 H4 H_u_valid Hz Hd H1 H10' H12 Hd' Ha Ht.
 
             assert (Hai: v :: popped <> []) by inversion 1.
             specialize (H4 Hai). clear Hai.
@@ -2030,7 +2029,7 @@ Section DijkstraProof.
             lia.
           }
           remember (heap_capacity h) as size in *.
-            clear -H29 Hac Hab Hz Z_EqDec.
+            clear -H29 Hac Hab Hz.
           assert (forall v, vvalid g v <-> In v popped). {
             intros. split; intros.
             - destruct (In_dec Z_EqDec v popped); trivial.

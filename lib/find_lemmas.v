@@ -2,11 +2,12 @@ Require Import VST.floyd.proofauto.
 Require Import Coq.Classes.Equivalence.
 Require Import CertiGraph.lib.List_ext.
 
+#[export] Instance Z_EqDec : EquivDec.EqDec Z eq := Z.eq_dec.
+
 Section FindLemmas.
 
 Context {size : Z}.
 Context {inf: Z}.
-Context {Z_EqDec : EquivDec.EqDec Z eq}. 
 
 (* Find and lemmas about it *)
 

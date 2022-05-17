@@ -10,9 +10,6 @@ Local Open Scope Z.
 
 (***********************VERIFICATION***********************)
 
-Section NoRootPrimProof.
-
-Context {Z_EqDec : EquivDec.EqDec Z eq}.
 Definition addresses := @nil val.
 
 (* A little helper *)
@@ -1817,5 +1814,3 @@ Global Opaque size.
 }
 (*huh, where did I forget this*) rewrite map_repeat; auto.
 Qed.
-
-End NoRootPrimProof.

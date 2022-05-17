@@ -27,7 +27,7 @@ Require Export CertiGraph.msl_application.UnionFindGraph.
 Local Open Scope logic.
 Local Open Scope Z_scope.
 
-#[export] Instance Z_EqDec : EqDec Z eq. Proof. hnf. intros. apply Z.eq_dec. Defined.
+#[export] Instance Z_EqDec : EqDec Z eq := Z.eq_dec.
 
 Definition is_null_Z: DecidablePred Z := existT (fun P : Z -> Prop => forall a : Z, {P a} + {~ P a}) (fun x : Z => x < 0) (fun a : Z => Z_lt_dec a 0).
 

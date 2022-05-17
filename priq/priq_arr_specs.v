@@ -3,13 +3,14 @@ Require Export CertiGraph.lib.find_lemmas.
 Require Export CertiGraph.priq.is_empty_lemmas.
 Require Export CertiGraph.priq.priq_arr.
 
+#[export] Instance Z_EqDec : EquivDec.EqDec Z eq := Z.eq_dec.
+
 (* Specs for Anshuman's simple array-based PQ *)
 Section PQSpec.
 
 Context {size : Z}.
 Context {inf : Z}.
 Parameter free_tok : val -> Z -> mpred.
-Context {Z_EqDec : EquivDec.EqDec Z eq}. 
 
 Definition weight_inrange_priq item :=
   Int.min_signed <= item <= inf.

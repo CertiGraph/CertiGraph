@@ -37,7 +37,6 @@ Section DijkstraMathLemmas.
 
   Context {size : Z}.
   Context {inf : Z}.
-  Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
   Definition inrange_prev prev :=
     Forall (fun x => 0 <= x < size \/ x = inf) prev.

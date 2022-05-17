@@ -14,7 +14,6 @@ Section PrimProof.
 
 Context {size: Z}.	
 Context {inf: Z}.
-Context {Z_EqDec : EquivDec.EqDec Z eq}.
 
 (* Without a find + isEmpty priq file, just leave it IMO *)
 Lemma find_min_lt_inf: forall u l,
@@ -29,7 +28,7 @@ Qed.
 
 (**Initialisation functions**)
 
-Lemma body_getCell: semax_body Vprog (@Gprog size inf Z_EqDec) f_getCell (@getCell_spec size inf).
+Lemma body_getCell: semax_body Vprog (@Gprog size inf) f_getCell (@getCell_spec size inf).
 Proof.
   start_function.
   rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u); trivial.
@@ -54,7 +53,7 @@ Proof.
   apply Zlength_nonneg. lia.
 Qed.
 
-Lemma body_initialise_list: semax_body Vprog (@Gprog size inf Z_EqDec) f_initialise_list (@initialise_list_spec size).
+Lemma body_initialise_list: semax_body Vprog (@Gprog size inf) f_initialise_list (@initialise_list_spec size).
 Proof.
 start_function.
 assert_PROP(Zlength old_list = size). entailer!.
@@ -81,7 +80,7 @@ Qed.
 
 (******************PRIM'S***************)
 
-Lemma body_prim: semax_body Vprog (@Gprog size inf Z_EqDec) f_prim (@prim_spec size inf).
+Lemma body_prim: semax_body Vprog (@Gprog size inf) f_prim (@prim_spec size inf).
 Proof.
   start_function. rename H into Hprecon_1. rename H0 into Hprecon_2.
   rename H1 into Hprecon_3.

@@ -11,9 +11,6 @@ Local Open Scope Z.
 
 (***********************VERIFICATION***********************)
 
-Section PrimProof.
-
-Context {Z_EqDec : EquivDec.EqDec Z eq}.
 Definition addresses := @nil val.
 
 (* Without a find + isEmpty priq file, just leave it IMO *)
@@ -1743,5 +1740,3 @@ entailer!.
 Global Opaque size.
 }
 Qed.
-
-End PrimProof.

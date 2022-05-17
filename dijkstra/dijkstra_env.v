@@ -14,3 +14,5 @@ Require Export CertiGraph.lib.EquivDec_ext.
 Require Export CertiGraph.graph.graph_model.
 Require Export CertiGraph.graph.path_lemmas.
 Require Export CertiGraph.graph.path_cost.
+
+#[export] Instance Z_EqDec : EquivDec.EqDec Z eq := Z.eq_dec.
