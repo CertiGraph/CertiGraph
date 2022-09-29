@@ -363,7 +363,7 @@ Proof.
         -- rewrite H23 in H38. eapply safe_to_copy_complete; eauto.
       * forward. Intros. Exists g2 roots2 t_info2. rewrite <- H23 in *. entailer!.
   - Intros g2 roots2 t_info2. unfold all_string_constants. Intros.
-    forward_call ((gv ___stringlit_13),
-                  (map init_data2byte (gvar_init v___stringlit_13)), rsh).
+    forward_call ((gv ___stringlit_12),
+                  (map init_data2byte (gvar_init v___stringlit_12)), rsh).
     exfalso; assumption.
 Qed.

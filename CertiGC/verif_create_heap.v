@@ -22,7 +22,7 @@ Proof.
   intros. pose proof (split2_data_at_Tarray sh space_type n n1) as HS.
   apply HS with (v' := v); auto.
   - rewrite Z.le_lteq. right; auto.
-  - rewrite sublist_all; [|apply Z.eq_le_incl; rewrite H0]; reflexivity.
+  - rewrite sublist_same; auto.
 Qed.
 
 Lemma space_array_1_eq: forall (sh: share) (v: (val * (val * val))) (p: val),
@@ -70,8 +70,8 @@ Proof.
   Intros h. if_tac.
   - subst h; forward_if False; [| first [exfalso; now apply H | inversion H ]].
     unfold all_string_constants; Intros;
-      forward_call ((gv ___stringlit_8),
-                    (map init_data2byte (gvar_init v___stringlit_8)), sh);
+      forward_call ((gv ___stringlit_7),
+                    (map init_data2byte (gvar_init v___stringlit_7)), sh);
       exfalso; assumption.
   - Intros. forward_if True; [contradiction | forward; entailer! |]. Intros.
     (* make "data_at sh space_type v h " in SEP *)

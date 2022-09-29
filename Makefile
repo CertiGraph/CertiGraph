@@ -149,16 +149,17 @@ CLIGHT_FILES = \
 
 C_FILES = $(CLIGHT_FILES:%.v=%.c)
 
-NORMAL_FILES = \
+CG_CORE_FILES = \
   $(MSL_EXT_FILES:%.v=msl_ext/%.v) \
   $(MSL_APPLICATION_FILES:%.v=msl_application/%.v) \
   $(FLOYD_EXT_FILES:%.v=floyd_ext/%.v) \
   $(DATA_STRUCTURE_FILES:%.v=data_structure/%.v) \
-  $(BINARY_HEAP_FILES:%.v=binheap/%.v) \
-  $(SAMPLE_EDGE_WEIGHT_FILES:%.v=sample_edge_weight/%.v) \
   $(GRAPH_FILES:%.v=graph/%.v) \
   $(LIB_FILES:%.v=lib/%.v) \
-  $(CERTIGC_FILES:%.v=CertiGC/%.v) \
+
+APPLICATIONS_FILES = \
+  $(BINARY_HEAP_FILES:%.v=binheap/%.v) \
+  $(SAMPLE_EDGE_WEIGHT_FILES:%.v=sample_edge_weight/%.v) \
   $(KRUSKAL_FILES:%.v=kruskal/%.v) \
   $(DIJKSTRA_FILES:%.v=dijkstra/%.v) \
   $(PRIQ_FILES:%.v=priq/%.v) \
@@ -169,6 +170,18 @@ NORMAL_FILES = \
   $(MARK_FILES:%.v=mark/%.v) \
   $(DISPOSE_FILES:%.v=dispose/%.v) \
   $(SUMMATRIX_FILES:%.v=summatrix/%.v)
+
+NORMAL_FILES = $(CG_CORE_FILES) \
+  $(CERTIGC_FILES:%.v=CertiGC/%.v) \
+  $(APPLICATIONS_FILES)
+
+all: certigraph certigc applications
+
+certigraph: $(CG_CORE_FILES:%.v=%.vo)
+
+certigc: $(CERTIGC_FILES:%.v=CertiGC/%.vo)
+
+applications: $(APPLICATIONS_FILES:%.v=%.vo)
 
 
 $(NORMAL_FILES:%.v=%.vo): %.vo: %.v
@@ -181,7 +194,7 @@ $(CLIGHT_FILES): %.v: %$(BITSIZE).v
 
 $(CLIGHT_FILES:%.v=%.vo): %.vo: %.v
 	@echo COQC $*.v
-	$(COQC) $(CLIGHT_FLAG) $(CURRENT_DIR)/$*.v
+	@$(COQC) $(CLIGHT_FLAG) $(CURRENT_DIR)/$*.v
 
 all: \
   $(NORMAL_FILES:%.v=%.vo) \

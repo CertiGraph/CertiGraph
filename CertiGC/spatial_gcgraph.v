@@ -54,8 +54,8 @@ Definition space_tri (sp: space): (reptype space_type) :=
   let s := sp.(space_start) in (s, (offset_val (WORD_SIZE * sp.(used_space)) s,
                                     offset_val (WORD_SIZE * sp.(total_space)) s)).
 
-Definition heap_struct_rep (sh: share) (sp_reps: list (reptype space_type)) (h: val):
-  mpred := data_at sh heap_type sp_reps h.
+Definition heap_struct_rep (sh: share) (sp_reps: list (@reptype CompSpecs space_type)) (h: val):
+  mpred := @data_at CompSpecs sh heap_type sp_reps h.
 
 Definition before_gc_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   let nursery := heap_head ti.(ti_heap) in
@@ -489,17 +489,17 @@ Program Definition weak_derives (P Q: mpred): mpred := (! (P >=> Q))%pred.
 Lemma derives_nonexpansive: forall P Q n,
     approx n (weak_derives P Q) = approx n (weak_derives (approx n P) (approx n Q)).
 Proof.
-  apply nonexpansive2_super_non_expansive; repeat intro.
-  - split; simpl; intros; eapply H2 in H5; eauto;
-      assert (a >= level y0)%nat by (apply necR_level in H1; lia);
-      destruct (H _ H6).
-    + eapply H7; eauto.
-    + eapply H8; eauto.
-  - split; simpl; intros; eapply H2; eauto;
-      assert (a >= level y0)%nat by (apply necR_level in H1; lia);
-      destruct (H _ H6).
-    + eapply H8; eauto.
-    + eapply H7; eauto.
+  apply nonexpansive2_super_non_expansive; intros.
+  - split; simpl; intros;
+      (assert (a >= level a''0)%nat; [ | eapply H; eauto]);
+       apply ext_level in H6, H2;
+       apply necR_level in H1, H5;
+       lia.
+  - split; simpl; intros;
+      (assert (a >= level a''0)%nat; [ | eapply H in H7 ; eauto]);
+       apply ext_level in H6, H2;
+       apply necR_level in H1, H5;
+       lia.
 Qed.
 
 Lemma derives_nonexpansive_l: forall P Q n,
@@ -507,11 +507,18 @@ Lemma derives_nonexpansive_l: forall P Q n,
 Proof.
   repeat intro.
   apply (nonexpansive_super_non_expansive (fun P => weak_derives P Q)); repeat intro.
-  split; simpl; intros; eapply H2; eauto;
-    assert (a >= level y0)%nat by (apply necR_level in H1; lia);
-    destruct (H _ H6).
-  - eapply H8; eauto.
-  - eapply H7; eauto.
+  split; simpl; intros;
+   eapply H3; try eassumption.
+-
+   eapply H; auto.
+   apply ext_level in H6, H2;
+   apply necR_level in H1, H5.
+   lia.
+-
+   eapply H in H7; auto.
+   apply ext_level in H6, H2;
+   apply necR_level in H1, H5.
+   lia.
 Qed.
 
 Lemma derives_nonexpansive_r: forall P Q n,
@@ -519,11 +526,18 @@ Lemma derives_nonexpansive_r: forall P Q n,
 Proof.
   repeat intro.
   apply (nonexpansive_super_non_expansive (fun Q => weak_derives P Q)); repeat intro.
-  split; simpl; intros; eapply H2 in H5; eauto;
-    assert (a >= level y0)%nat by (apply necR_level in H1; lia);
-    destruct (H _ H6).
-  - eapply H7; eauto.
-  - eapply H8; eauto.
+  split; simpl; intros;
+   eapply H3 in H7; try eassumption.
+-
+   eapply H; auto.
+   apply ext_level in H6, H2;
+   apply necR_level in H1, H5.
+   lia.
+-
+   eapply H in H7; auto.
+   apply ext_level in H6, H2;
+   apply necR_level in H1, H5.
+   lia.
 Qed.
 
 Lemma derives_weak: forall P Q, P |-- Q -> TT |-- weak_derives P Q.
@@ -1241,17 +1255,17 @@ Proof.
 Qed.
 
 Definition space_struct_rep (sh: share) (tinfo: thread_info) (gen: nat) :=
-  data_at sh space_type (space_tri (nth_space tinfo gen)) (space_address tinfo gen).
+  @data_at CompSpecs sh space_type (space_tri (nth_space tinfo gen)) (space_address tinfo gen).
 
 Lemma heap_struct_rep_eq: forall sh l p,
-    heap_struct_rep sh l p = data_at sh (tarray space_type 12) l p.
+    heap_struct_rep sh l p = @data_at CompSpecs sh (tarray space_type 12) l p.
 Proof.
   intros. unfold heap_struct_rep. apply pred_ext; rewrite data_at_isptr; Intros.
-  - unfold_data_at (data_at _ heap_type _ _).
+  - unfold_data_at (@data_at CompSpecs _ heap_type _ _).
     entailer!. clear H0. rewrite field_at_data_at.
     unfold field_address. rewrite if_true by assumption. simpl.
     entailer!.
-  - unfold_data_at (data_at _ heap_type _ _). entailer!. clear H0 H1.
+  - unfold_data_at (@data_at CompSpecs _ heap_type _ _). entailer!. clear H0 H1.
     rewrite field_at_data_at. unfold field_address. rewrite if_true.
     + simpl. rewrite isptr_offset_val_zero by assumption. entailer!.
     + unfold field_compatible in *. simpl in *. intuition.
@@ -1279,8 +1293,8 @@ Lemma heap_struct_rep_split_lt: forall sh l tinfo i1 i2,
     i1 < MAX_SPACES -> i2 < MAX_SPACES -> 0 <= i1 < i2 -> Zlength l = MAX_SPACES ->
     exists B,
       heap_struct_rep sh l (ti_heap_p tinfo) =
-      data_at sh space_type (Znth i1 l) (space_address tinfo (Z.to_nat i1)) *
-      data_at sh space_type (Znth i2 l) (space_address tinfo (Z.to_nat i2)) * B.
+      @data_at CompSpecs sh space_type (Znth i1 l) (space_address tinfo (Z.to_nat i1)) *
+      @data_at CompSpecs sh space_type (Znth i2 l) (space_address tinfo (Z.to_nat i2)) * B.
 Proof.
   intros.
   exists (@data_at CompSpecs sh
@@ -1538,7 +1552,7 @@ Lemma ti_token_rep_add: forall ti sp i (Hs: 0 <= i < MAX_SPACES),
     ti_token_rep ti |-- ti_token_rep (ti_add_new_space ti sp i Hs).
 Proof.
   intros. unfold ti_token_rep. simpl. cancel. remember (spaces (ti_heap ti)).
-  rewrite <- (sublist_all (Zlength l) l) at 1 by lia.
+  rewrite <- (sublist_same 0 (Zlength l) l) at 1 by lia.
   assert (Zlength l = MAX_SPACES) by (subst; rewrite spaces_size; reflexivity).
   rewrite upd_Znth_unfold. 2: now rewrite H1.
   rewrite <- (sublist_rejoin 0 i) by lia. rewrite !iter_sepcon_app_sepcon. cancel.
@@ -1582,7 +1596,7 @@ Lemma heap_rest_rep_add: forall tinfo sp i (Hs: 0 <= i < MAX_SPACES),
     heap_rest_rep (ti_heap (ti_add_new_space tinfo sp i Hs)).
 Proof.
   intros. unfold heap_rest_rep. simpl. remember (spaces (ti_heap tinfo)).
-  rewrite <- (sublist_all (Zlength l) l) at 1 by lia.
+  rewrite <- (sublist_same 0 (Zlength l) l) at 1 by lia.
   assert (Zlength l = MAX_SPACES) by (subst; rewrite spaces_size; reflexivity).
   rewrite upd_Znth_unfold. 2: now rewrite H0.
   rewrite <- (sublist_rejoin 0 i) by lia. rewrite !iter_sepcon_app_sepcon.

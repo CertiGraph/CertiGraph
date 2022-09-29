@@ -32,8 +32,7 @@ Definition all_string_constants (sh: share) (gv: globals) : mpred :=
   cstring sh (map init_data2byte (gvar_init v___stringlit_12)) (gv ___stringlit_12) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_13)) (gv ___stringlit_13) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_14)) (gv ___stringlit_14) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_16)) (gv ___stringlit_16).
+  cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15).
 
 Definition MSS_constant (gv: globals): mpred :=
   data_at Ews (if Archi.ptr64 then tulong else tuint)

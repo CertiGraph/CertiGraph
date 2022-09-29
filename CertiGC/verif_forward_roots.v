@@ -40,6 +40,7 @@ Proof.
   - pose proof lri_range f_info. unfold MAX_UINT in H6. subst n; lia.
   - Exists g t_info roots. destruct H as [? [? [? ?]]]. entailer!.
     split; [|split]; try easy. unfold nat_inc_list. simpl. constructor.
+    apply derives_refl.
   - unfold fun_info_rep.
     assert_PROP (force_val
                    (if Archi.ptr64 then

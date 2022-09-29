@@ -3,22 +3,12 @@ Require Import Coq.ZArith.Zcomplements.
 Require Import Coq.micromega.Lia.
 Require Import Coq.ZArith.Znat.
 
-Require Import compcert.lib.Integers.
-Require Import compcert.common.Values.
-Require Import compcert.export.Clightdefs.
-
-Require Import VST.veric.expr.
-Require Import VST.veric.mpred.
-Require Import VST.floyd.forward.
-Require Import VST.zlist.sublist.
-Require Import VST.floyd.field_at.
-Require Import VST.floyd.coqlib3.
-Require Import VST.msl.iter_sepcon.
-Require Import VST.msl.seplog.
+Require Import VST.floyd.proofauto.
 
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.MathAdjMatGraph.
+Import invariants.
 
 Section Spatial_AdjMat_Model_3.
   (* Model 3 is for a stack-allocated graph,
@@ -30,6 +20,8 @@ Section Spatial_AdjMat_Model_3.
   Context {CompSpecs : compspecs}.
   Context {V_EqDec : EquivDec.EqDec V eq}.
   Context {E_EqDec: EquivDec.EqDec E eq}.
+Existing Instance V_EqDec.
+Existing Instance E_EqDec.
 
   (* SPATIAL REPRESENTATION *)
 
@@ -127,7 +119,7 @@ Section Spatial_AdjMat_Model_3.
     rewrite nat_inc_list_i.
     2: rewrite Z2Nat_id', Z.max_r; lia.
     repeat rewrite iter_sepcon_app.
-    simpl. rewrite sepcon_emp. rewrite H0.
+    simpl. rewrite predicates_sl.sepcon_emp. rewrite H0.
     reflexivity.
   Qed.
 

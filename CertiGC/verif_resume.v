@@ -21,8 +21,8 @@ Proof.
     forward_if (fun_word_size f_info <= total_space hs).
     + unfold denote_tc_samebase. simpl. entailer!.
     + unfold all_string_constants. Intros.
-      forward_call ((gv ___stringlit_11),
-                    (map init_data2byte (gvar_init v___stringlit_11)), rsh).
+      forward_call ((gv ___stringlit_10),
+                    (map init_data2byte (gvar_init v___stringlit_10)), rsh).
       exfalso; assumption.
     + forward. entailer!.
       unfold sem_sub_pp in H7. destruct eq_block in H7; [|easy]; simpl in H7.

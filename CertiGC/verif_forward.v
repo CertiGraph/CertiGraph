@@ -124,7 +124,7 @@ Proof.
       - specialize (H14 _ H13). apply isptr_is_pointer_or_integer. assumption. }
     assert (0 <= Znth z (live_roots_indices f_info) < MAX_ARGS) by
         (apply (fi_index_range f_info), Znth_In; assumption).
-    forward; rewrite H12. 1: entailer!.
+    forward; rewrite H12. (*1: entailer!.*)
     assert_PROP (valid_int_or_ptr (root2val g root)). {
       gather_SEP (graph_rep _) (outlier_rep _).
       sep_apply (root_valid_int_or_ptr _ _ _ _ H13 H5). entailer!. }
@@ -409,7 +409,7 @@ Proof.
            ++ thaw FR. rewrite v0, <- Heqshv.
               gather_SEP (vertex_rep _ _ _) (_ -* _).
               replace_SEP 0 (graph_rep g) by (entailer!; apply wand_frame_elim).
-              rewrite sublist_all by (rewrite fields_eq_length; lia).
+              rewrite sublist_same by (rewrite ?fields_eq_length; lia).
               replace_SEP 2 emp. {
                 replace (n - n) with 0 by lia. clear. entailer.
                 apply data_at__value_0_size. }
@@ -604,8 +604,8 @@ Proof.
                      assert (thread_info_relation t_info t_info3) by
                          (apply tir_trans with t_info';
                           [split; [|split]|]; assumption).
-                     rewrite sublist_all in H46. clear Heqt.
-                     2: { rewrite Z.le_lteq. right. subst n g' from.
+                     rewrite sublist_same in H46; auto. clear Heqt.
+                     2: { subst n g' from.
                           rewrite vpp_Zlength, lcv_vlabel_new; auto. }
                      Opaque super_compatible.
                      Exists g3 t_info3 roots'. entailer!. simpl.

@@ -317,7 +317,7 @@ Proof.
               replace (sublist 0 z (nat_inc_list (Datatypes.length r))) with
                   (nat_inc_list (Datatypes.length r)) in H29.
               ** Exists g3 t_info3. entailer!.
-              ** rewrite sublist_all; trivial. rewrite Z.le_lteq. right.
+              ** rewrite sublist_same; trivial.
                  subst z. rewrite !Zlength_correct, nat_inc_list_length. reflexivity.
            ++ Intros.
               change (Tpointer tvoid {| attr_volatile := false;
@@ -400,12 +400,7 @@ Proof.
           eapply svfl_vertex_address in H32;
             [rewrite <- H32 | | apply graph_has_v_in_closure]; assumption. }
         pose proof (raw_fields_range (vlabel g' (to, index))). forward.
-        -- entailer!. split. 1: rep_lia.
-           assert (two_p (WORD_SIZE * 8 - 10) <
-                   if Archi.ptr64 then Int64.max_signed else Int.max_signed)
-             by (vm_compute; reflexivity). cbv [Archi.ptr64] in H37. clear -H37 H32.
-           first [rewrite Int.signed_repr | rewrite Int64.signed_repr]; rep_lia.
-        -- change (Tpointer tvoid {| attr_volatile := false;
+           change (Tpointer tvoid {| attr_volatile := false;
                                      attr_alignas := Some 2%N |}) with int_or_ptr_type.
            change (Tpointer tvoid {| attr_volatile := false;
                                      attr_alignas := Some 3%N |}) with int_or_ptr_type.

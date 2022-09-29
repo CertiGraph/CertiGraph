@@ -1167,7 +1167,7 @@ Definition restricted_map {A} {d: Inhabitant A}
            (f: A -> A) (l: list A) (positions: list Z): list A :=
   fold_left (fun il i => upd_Znth i il (f (Znth i il))) positions l.
 
-Lemma restricted_map_Zlength: forall {A} {d: Inhabitant A} f positions l,
+Lemma restricted_map_Zlength: forall {A} {d: Inhabitant A} (f: A->A) positions l,
     (forall e, In e positions -> 0 <= e < Zlength l) ->
     Zlength (restricted_map f l positions) = Zlength l.
 Proof. intros. unfold restricted_map. apply fold_left_upd_Znth_Zlength. easy. Qed.
@@ -1188,12 +1188,12 @@ Proof.
   - rewrite H2. assumption.
 Qed.
 
-Lemma restricted_map_Znth_diff: forall {A} {d: Inhabitant A} f ps l i,
+Lemma restricted_map_Znth_diff: forall {A} {d: Inhabitant A} (f: A->A) ps l i,
     (forall e, In e ps -> 0 <= e < Zlength l) -> ~ In i ps ->
     0 <= i < Zlength l -> Znth i (restricted_map f l ps) = Znth i l.
 Proof. intros. unfold restricted_map. apply fold_left_upd_Znth_diff; assumption. Qed.
 
-Lemma restricted_map_Znth_same: forall {A} {d: Inhabitant A} f ps l i,
+Lemma restricted_map_Znth_same: forall {A} {d: Inhabitant A} (f: A->A) ps l i,
     (forall e, In e ps -> 0 <= e < Zlength l) -> NoDup ps -> In i ps ->
     Znth i (restricted_map f l ps) = f (Znth i l).
 Proof.
@@ -1212,7 +1212,7 @@ Proof.
     + apply NoDup_cons_1 in H0. assumption.
 Qed.
 
-Lemma restricted_map_Znth_same': forall {A} {d: Inhabitant A} f ps l i,
+Lemma restricted_map_Znth_same': forall {A} {d: Inhabitant A} (f: A->A) ps l i,
     (forall e, In e ps -> 0 <= e < Zlength l) -> idempotent f -> In i ps ->
     Znth i (restricted_map f l ps) = f (Znth i l).
 Proof.
