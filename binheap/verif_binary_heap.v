@@ -444,7 +444,7 @@ Proof.
     { (* if-branch *)
       destruct Hx as [Hx | Hx]. subst i'. inversion H4.
       forward_call (i', Zparent i', arr, arr_contents').
-      { entailer!. simpl. rewrite Zparent_repr. trivial. lia. }
+      { entailer!.  rewrite Zparent_repr by lia. rewrite divu_repr by lia. reflexivity. }
       { assert (parent (Z.to_nat i') <= (Z.to_nat i'))%nat by apply parent_le. unfold Zparent. lia. }
       forward. unfold cmp_rel. case (cmp (Znth i' arr_contents') (Znth (Zparent i') arr_contents')).
       Exists true. entailer!.
@@ -470,7 +470,7 @@ Proof.
         generalize (swim_permutation _ cmp_rel cmp_dec arr_contents' (Z.to_nat i')); intro.
         rewrite H2 in H4. etransitivity. apply H4. symmetry. trivial. } }
   forward_call (i', Zparent i', arr, arr_contents').
-    { entailer!. simpl. rewrite Zparent_repr. trivial. lia. }
+    { entailer!. rewrite Zparent_repr by lia. rewrite divu_repr by lia. reflexivity. }
     { unfold Zparent. lia. }
   forward.
   Exists (Zparent i') (Zexchange arr_contents' i' (Zparent i')).
@@ -482,7 +482,7 @@ Proof.
     4: apply H5. 2: apply Znth_nth_error.
     3: rewrite <- Znth_nth_error. 3: rewrite Nat2Z.id; trivial.
     1,2,3: lia.
-  * rewrite Zparent_repr. trivial. lia.
+  * rewrite Zparent_repr by lia. rewrite divu_repr by lia. reflexivity.
 Time Qed.
 
 Lemma body_insert_nc: semax_body Vprog Gprog f_insert_nc insert_nc_spec.

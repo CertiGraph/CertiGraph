@@ -207,7 +207,7 @@ Proof.
       simpl. intros. destruct H3.
       generalize (H17 ((Zlength (heap_items h)) + i)); intro. spec H18.
       rewrite Zlength_app; rep_lia. destruct H18.
-      rewrite Znth_app2 in H18, H21. 2,3: lia.
+      rewrite app_Znth2 in H18, H21. 2,3: lia.
       replace (Zlength (heap_items h) + i - Zlength (heap_items h)) with i in * by lia.
       generalize H10; intro. apply Permutation_Zlength in H22. rewrite <- H22. split; trivial.
       rewrite <- H11. rewrite H21. apply Permutation_Zlength in H15. rewrite <- H15.
@@ -220,7 +220,7 @@ Proof.
       specialize (H17 (Z.of_nat (f (Z.to_nat j)))). spec H17.
       specialize (H21 (Z.to_nat j)). spec H21. lia. rewrite Zlength_app. lia.
       destruct H17.
-      rewrite Znth_app1 in H17, H26. 2,3: specialize (H21 (Z.to_nat j)); lia.
+      rewrite app_Znth1 in H17, H26. 2,3: specialize (H21 (Z.to_nat j)); lia.
       rewrite <- Znth_map in Hk. 2: rewrite Zlength_upd_Znth; specialize (H21 (Z.to_nat j)); lia.
       rewrite <- upd_Znth_map in Hk. unfold heap_item_key in Hk at 3; simpl in Hk.
       rewrite upd_Znth_map in Hk.
@@ -303,7 +303,7 @@ Proof.
       simpl. intros. destruct H3.
       generalize (H17 ((Zlength (heap_items h)) + i)); intro. spec H18.
       rewrite Zlength_app; rep_lia. destruct H18.
-      rewrite Znth_app2 in H18, H21. 2,3: lia.
+      rewrite app_Znth2 in H18, H21. 2,3: lia.
       replace (Zlength (heap_items h) + i - Zlength (heap_items h)) with i in * by lia.
       generalize H10; intro. apply Permutation_Zlength in H22. rewrite <- H22. split; trivial.
       rewrite <- H11. rewrite H21. apply Permutation_Zlength in H15. rewrite <- H15.
@@ -316,7 +316,7 @@ Proof.
       specialize (H17 (Z.of_nat (f (Z.to_nat j)))). spec H17.
       specialize (H21 (Z.to_nat j)). spec H21. lia. rewrite Zlength_app. lia.
       destruct H17.
-      rewrite Znth_app1 in H17, H26. 2,3: specialize (H21 (Z.to_nat j)); lia.
+      rewrite app_Znth1 in H17, H26. 2,3: specialize (H21 (Z.to_nat j)); lia.
       rewrite <- Znth_map in Hk. 2: rewrite Zlength_upd_Znth; specialize (H21 (Z.to_nat j)); lia.
       rewrite <- upd_Znth_map in Hk. unfold heap_item_key in Hk at 3; simpl in Hk.
       rewrite upd_Znth_map in Hk.
@@ -445,7 +445,7 @@ Proof.
       clear -H22 H3 H6 H20.
       rewrite Znth_0_cons, H22 in H3.
       change (root :: junk) with ([root] ++ junk) in H6.
-      rewrite Znth_app2 in H6; rewrite Zlength_one in *. 2: lia.
+      rewrite app_Znth2 in H6; rewrite Zlength_one in *. 2: lia.
       replace (1 + i0 - 1) with i0 in H6 by lia. rewrite H3 in H6. lia.
     + intros. rewrite H18; auto. rewrite Zlength_nil. lia.
   * (* main line: heap still has items in it *)
@@ -533,7 +533,7 @@ Proof.
         rewrite H23 in H17. 2: lia.
         generalize (H19 (Zlength (root :: h :: l) + i0)); intro Hqq.
         spec Hqq. do 2 rewrite app_comm_cons. rewrite Zlength_app. lia.
-        do 2 rewrite app_comm_cons in Hqq. rewrite Znth_app2 in Hqq. 2: lia.
+        do 2 rewrite app_comm_cons in Hqq. rewrite app_Znth2 in Hqq. 2: lia.
         replace (Zlength (root :: h :: l) + i0 - Zlength (root :: h :: l)) with i0 in Hqq by lia.
         destruct Hqq.
         assert (Z.of_nat (f2 (Z.to_nat j)) = 0 \/ Z.of_nat (f2 (Z.to_nat j)) > 0) by lia.
@@ -542,24 +542,24 @@ Proof.
         ** rewrite H26, Znth_0_cons in H17.
            specialize (H19 (Zlength (h :: l))). spec H19. repeat rewrite Zlength_cons. rewrite Zlength_app. rep_lia.
            destruct H19. rewrite app_comm_cons, H8 in H27. rewrite app_comm_cons in H27.
-           rewrite Znth_app1 in H27. 2: rewrite Zlength_cons; rep_lia.
-           rewrite app_comm_cons in H27. rewrite Znth_app2 in H27. 2: rewrite Zlength_cons, Zlength_app, Zlength_one; rep_lia.
+           rewrite app_Znth1 in H27. 2: rewrite Zlength_cons; rep_lia.
+           rewrite app_comm_cons in H27. rewrite app_Znth2 in H27. 2: rewrite Zlength_cons, Zlength_app, Zlength_one; rep_lia.
            replace (Zlength (l0 ++ [foot]) - Zlength (root :: l0)) with 0 in H27 by (rewrite Zlength_cons, Zlength_app, Zlength_one; rep_lia).
            change (Znth 0 [foot]) with foot in H27.
            rewrite H17 in H27. rewrite H25 in H27. autorewrite with sublist in H27. lia.
         ** specialize (H21 (Z.to_nat j)). spec H21. lia.
            specialize (H19 (Z.of_nat (f2 (Z.to_nat j)))). spec H19. { rewrite app_comm_cons, H8.
            rewrite Zlength_cons, Zlength_app. rewrite Zlength_app, Zlength_one. rewrite Zlength_cons in H21. lia. }
-           do 2 rewrite app_comm_cons in H19. rewrite H8 in H19. rewrite Znth_app1 in H19.
+           do 2 rewrite app_comm_cons in H19. rewrite H8 in H19. rewrite app_Znth1 in H19.
            2: autorewrite with sublist in *; rep_lia.
            rewrite app_comm_cons in H19.
            change (root :: l0) with ([root] ++ l0) in H19.
            rewrite <- app_assoc in H19.
-           rewrite Znth_app2 in H19.
+           rewrite app_Znth2 in H19.
            2: rewrite Zlength_one; rep_lia.
            change (foot :: l0) with ([foot] ++ l0) in H17.
-           rewrite Znth_app2 in H17. 2: rewrite Zlength_one; lia.
-           rewrite Znth_app1 in H19. 2: autorewrite with sublist in *; rep_lia.
+           rewrite app_Znth2 in H17. 2: rewrite Zlength_one; lia.
+           rewrite app_Znth1 in H19. 2: autorewrite with sublist in *; rep_lia.
            rewrite Zlength_one in H17. rewrite Zlength_one in H19. destruct H19.
            rewrite H17 in H27. rewrite H25 in H27.
            autorewrite with sublist in H27, H21. lia.
@@ -575,7 +575,7 @@ Proof.
       change (Znth 0 [root]) with root in *.
       destruct H9. split. { apply Permutation_Zlength in H9. lia. }
       destruct H5. generalize H18; intro Hqq. specialize (H18 (Zlength (foot :: l0))). spec H18. rewrite Zlength_app, Zlength_one. rep_lia.
-      destruct H18. rewrite Znth_app2 in H19. 2: lia.
+      destruct H18. rewrite app_Znth2 in H19. 2: lia.
       replace (Zlength _ - Zlength _) with 0 in H19 by lia. change (Znth _ [root]) with root in H19.
       rewrite <- H17. lia.
       repeat intro.
@@ -583,7 +583,7 @@ Proof.
       destruct Hq as [? [f [? [? ?]]]].
       specialize (Hqq (Z.of_nat (f (Z.to_nat j)))). spec Hqq.
         { rewrite Zlength_app, Zlength_one. specialize (H23 (Z.to_nat j)). lia. }
-      destruct Hqq. rewrite Znth_app1 in H27. 2: specialize (H23 (Z.to_nat j)); lia.
+      destruct Hqq. rewrite app_Znth1 in H27. 2: specialize (H23 (Z.to_nat j)); lia.
       rewrite <- H25 in H27. 2: lia.
       rewrite H21 in H27. rewrite H19 in H27. specialize (H23 (Z.to_nat j)); lia.
 Time Qed.
@@ -856,7 +856,7 @@ Proof.
     { (* if-branch *)
       destruct Hx as [Hx | Hx]. subst k'. inversion H5.
       forward_call (k', Zparent k', arr, arr_contents', lookup, lookup_contents').
-      { entailer!. simpl. rewrite Zparent_repr. trivial. lia. }
+      { entailer!. rewrite Zparent_repr by lia. rewrite divu_repr by lia. reflexivity. }
       { assert (parent (Z.to_nat k') <= (Z.to_nat k'))%nat by apply parent_le. unfold Zparent. lia. }
       forward. unfold cmp_rel. case (cmp (Znth k' arr_contents') (Znth (Zparent k') arr_contents')).
       Exists true. entailer!.
@@ -882,7 +882,7 @@ Proof.
         generalize (swim_permutation _ cmp_rel cmp_dec arr_contents' (Z.to_nat k')); intro.
         rewrite H2 in H5. etransitivity. apply H5. symmetry. trivial. } }
   forward_call (k', Zparent k', arr, arr_contents', lookup, lookup_contents').
-    { entailer!. simpl. rewrite Zparent_repr. trivial. lia. }
+    { entailer!. rewrite Zparent_repr by lia. rewrite divu_repr by lia. reflexivity. }
     { split3; [unfold Zparent | | destruct H3; apply Permutation_Zlength in H3]; lia. }
   Intros lookup_contents''.
   forward.
@@ -897,7 +897,7 @@ Proof.
   * transitivity lookup_contents'; trivial.
     eapply lookup_oob_eq_shuffle. 2: apply H3.
     apply Permutation_map, Zexchange_Permutation.
-  * rewrite Zparent_repr. trivial. lia.
+  * rewrite Zparent_repr by lia. rewrite divu_repr by lia. reflexivity.
 Time Qed.
 
 Lemma body_less: semax_body Vprog Gprog f_less less_spec.
@@ -965,7 +965,7 @@ Proof.
   (* Just before the call, let's do some cleanup *)
   deadvars!.
   rewrite upd_Znth_overwrite, upd_Znth_same, map_app, upd_Znth_app2, Zlength_map.
-  unfold heap_size. simpl. rewrite Znth_app2, Zlength_map. rewrite Z.sub_diag. simpl.
+  unfold heap_size. simpl. rewrite app_Znth2, Zlength_map. rewrite Z.sub_diag. simpl.
   2,3,4,5: autorewrite with sublist; unfold heap_size in *; lia. rewrite Zlength_app, Zlength_one.
   rewrite upd_Znth0.
   change ([(Vint (Int.repr (fst (fst h0))), (Vint (Int.repr priority), Vint data))]) with
@@ -981,14 +981,14 @@ Proof.
       rewrite Zlength_app, Zlength_one in H15. rewrite Zlength_app, Zlength_one in H5.
       specialize (H5 H15). destruct H5. rewrite <- H16. subst loc. split.
         { assert (i < Zlength (heap_items h) \/ i = Zlength (heap_items h)) by lia.
-          destruct H17. rewrite Znth_app1 in *; auto.
-          rewrite Znth_app2 in *; try lia. subst i. rewrite Z.sub_diag in *.
+          destruct H17. rewrite app_Znth1 in *; auto.
+          rewrite app_Znth2 in *; try lia. subst i. rewrite Z.sub_diag in *.
           change (Znth _ [?c]) with c. change (Znth _ [?c]) with c in H5.
           destruct h0. destruct p. apply H5. }
       f_equal.
       assert (i < Zlength (heap_items h) \/ i = Zlength (heap_items h)) by lia.
-      destruct H17. repeat rewrite Znth_app1. 2,3: lia. trivial.
-      subst i. repeat rewrite Znth_app2. 2,3: lia. rewrite Z.sub_diag. trivial. }
+      destruct H17. repeat rewrite app_Znth1. 2,3: lia. trivial.
+      subst i. repeat rewrite app_Znth2. 2,3: lia. rewrite Z.sub_diag. trivial. }
     { split. repeat rewrite Zlength_app in *. repeat rewrite Zlength_one in *. unfold heap_size in *. lia. split3.
       - red. unfold heap_size. rewrite Zlength_correct, Nat2Z.id.
         apply weak_heapOrdered2_postpend. apply cmp_po. trivial.
@@ -1026,9 +1026,9 @@ Proof.
       destruct H5 as [Hq H5].
       specialize (H5 j'). spec H5. autorewrite with sublist; lia. rewrite Z.add_0_l in H5.
       assert (0 <= j' < Zlength (heap_items h) \/ j' = Zlength (heap_items h)) by lia. destruct H24.
-      - rewrite Znth_app1 in H20; rewrite Znth_app1 in H5; try lia.
+      - rewrite app_Znth1 in H20; rewrite app_Znth1 in H5; try lia.
         rewrite H20 in H5. destruct H3 as [Hqq H3]. specialize (H3 i H18). destruct H3. destruct H5. lia.
-      - subst j'. rewrite Znth_app2 in H20; rewrite Znth_app2 in H5; try lia.
+      - subst j'. rewrite app_Znth2 in H20; rewrite app_Znth2 in H5; try lia.
         rewrite H24, Z.sub_diag, Znth_0_cons in H20, H5.
         unfold heap_item_key in H20 at 1. simpl in H20.
         destruct H3 as [Hqq H3].

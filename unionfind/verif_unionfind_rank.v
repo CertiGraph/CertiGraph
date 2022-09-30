@@ -187,10 +187,9 @@ Proof.
     assert (H2: pa = x). {
       destruct pa; destruct x; inversion Htemp; trivial.
     }
-    subst pa. split; [|split]; auto.
+    subst pa. split.
     + apply (uf_equiv_refl _  (liGraph g)).
     + apply uf_root_vgamma with (n := r); auto.
-    + repeat intro; auto. 
   - Intros g' rt. forward. Exists g' rt. entailer!.
 Qed. (* Original: 56.251 secs; VST 2.*: 2.084 secs*)
 

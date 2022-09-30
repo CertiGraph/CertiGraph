@@ -8,6 +8,7 @@ Require Import CertiGraph.prim.prim_spec3.
 
 Local Open Scope Z.
 
+(*Import invariants. *)
 
 (***********************VERIFICATION***********************)
 
@@ -41,7 +42,7 @@ Proof.
   }
 
   Intros.
-  freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
+  freeze FR := (invariants.iter_sepcon _ _) (invariants.iter_sepcon _ _).
   unfold list_rep.
   
   assert_PROP (force_val
@@ -73,8 +74,11 @@ Proof.
   }
   forward. forward. 
   thaw FR.
-  rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u); trivial.
-  entailer!.
+  rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u) by trivial.
+  rewrite sepcon_assoc. 
+  apply sepcon_derives. apply derives_refl.
+  rewrite sepcon_comm.
+  apply sepcon_derives; apply derives_refl.
 Qed.
 
 Lemma body_initialise_list: semax_body Vprog Gprog f_initialise_list initialise_list_spec.
@@ -121,7 +125,10 @@ forward_for_simple_bound size
     ))%assert.
 rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses 0); trivial.
 2: lia.
-rewrite H. entailer!.
+rewrite H.
+repeat change (invariants.iter_sepcon ?A ?B) with (iter_sepcon A B).
+change (predicates_hered.pred _) with mpred.
+ entailer!.
 replace (@list_rep size CompSpecs Tsh arr old_contents 0) with (iter_sepcon.iter_sepcon (@list_rep size CompSpecs Tsh arr old_contents) [0]).
 2: { simpl. rewrite sepcon_emp. auto. }
 rewrite <- iter_sepcon.iter_sepcon_app.
@@ -186,31 +193,44 @@ rewrite (sublist_split 0 i (i+1)) by lia. rewrite (sublist_one i (i+1)) by lia. 
 rewrite iter_sepcon.iter_sepcon_app. rewrite sublist_nil. rewrite app_nil_r. entailer!. simpl. rewrite sepcon_emp; auto.
 rewrite <- Zlength_correct. lia.
 (*postcon*)
-entailer!. rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses 0). repeat rewrite sublist_nil. repeat rewrite iter_sepcon.iter_sepcon_nil.
-rewrite sepcon_emp. rewrite sepcon_comm. rewrite sepcon_emp.
-rewrite Z.add_0_l. rewrite (sublist_split 0 1 (size)). rewrite sublist_one. rewrite nat_inc_list_i.
-rewrite iter_sepcon.iter_sepcon_app. rewrite Zlength_repeat. replace (Datatypes.length old_contents) with (Z.to_nat size).
+entailer!.
+rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses 0)
+  by (try rep_lia; list_solve).
+rewrite !sublist_nil. rewrite !iter_sepcon.iter_sepcon_nil.
+rewrite !sepcon_emp.
+(*rewrite sepcon_comm. *) (*rewrite sepcon_emp.*)
+rewrite Z.add_0_l.
+rewrite (sublist_split 0 1 (size))
+  by (try rep_lia; list_solve).
+rewrite sublist_one
+  by (try rep_lia; list_solve).
+replace (Datatypes.length old_contents) with (Z.to_nat size)
+  by (rewrite Zlength_length in H; rep_lia).
+rewrite nat_inc_list_i by rep_lia.
+rewrite iter_sepcon.iter_sepcon_app.
+rewrite Zlength_repeat by rep_lia.
 rewrite <- (map_repeat (fun x => Vint (Int.repr x))).
-unfold list_rep. rewrite Znth_repeat_inrange.
+unfold list_rep. rewrite Znth_repeat_inrange by rep_lia.
 rewrite <- (map_map Int.repr Vint).
 rewrite (iter_sepcon.iter_sepcon_func_strong _
    (fun index : Z =>
          data_at Tsh (tarray tint size)
            (map Vint
               (map Int.repr
-                 (Znth index
-                    (repeat (repeat a (Z.to_nat size)) (Z.to_nat size)))))
+                  (repeat a (Z.to_nat size))))
            (list_address arr index))
    (fun i : Z =>
       data_at Tsh (tarray tint size) (map (fun x : Z => Vint (Int.repr x)) (repeat a (Z.to_nat size)))
-              (@list_address size CompSpecs arr i))). entailer!. simpl; entailer.
-intros. replace (Znth x (repeat (repeat a (Z.to_nat size)) (Z.to_nat size))) with
-(repeat a (Z.to_nat size)); auto.
-symmetry; apply Znth_repeat_inrange. apply sublist_In, nat_inc_list_in_iff in H3.
-rewrite Z2Nat.id in H3; auto.
-all: try lia.
-all: try rewrite <- ZtoNat_Zlength; try lia.
-rewrite Zlength_repeat; lia.
+              (@list_address size CompSpecs arr i))).
+repeat change (invariants.iter_sepcon ?A ?B) with (iter_sepcon A B).
+change (predicates_hered.pred _) with mpred.
+ entailer!.
+unfold iter_sepcon at 2. 
+cancel.
+entailer.
+intros.
+destruct H3; [ | inv H3]. subst x.
+reflexivity.
 Qed.
 
 (******************PRIM'S***************)

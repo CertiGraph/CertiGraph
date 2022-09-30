@@ -105,7 +105,7 @@ Proof.
                    PROP (uf_equiv g g' /\ uf_root g' xv p /\ uf_under_bound g' /\ rank_unchanged g g')
                    LOCAL (temp _p (pointer_val_val p); temp _tmp (pointer_val_val tmp); temp _x (pointer_val_val xv))
                    SEP (whole_graph sh g')).
-    + Exists g p x. entailer !. split; [apply (uf_equiv_refl _  (liGraph g)) | repeat intro; auto].
+    + Exists g p x. entailer !. apply (uf_equiv_refl _  (liGraph g)).
     + entailer!. apply denote_tc_test_eq_split; apply graph_local_facts.
       * destruct H5 as [_ [[? _] _]]. apply reachable_head_valid in H5; assumption.
       * destruct H5 as [[? _] _]. rewrite <- H5. apply reachable_foot_valid in H2; assumption.

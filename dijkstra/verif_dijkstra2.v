@@ -474,10 +474,10 @@ Local Open Scope Z_scope.
              clear H5 n.
              red in H4 |- *.
              intros.
-             rewrite Znth_app1 in H5 by lia.
+             rewrite app_Znth1 in H5 by lia.
              specialize (H4 _ H9 _ H5).
              destruct H4.
-             ++ left. rewrite Znth_app1.
+             ++ left. rewrite app_Znth1.
                 2: rewrite Zlength_repeat; lia.
                 clear -H4 H8 Hc'.
                 apply Permutation_find_item_by_key with (k := k) in H8.
@@ -518,7 +518,7 @@ Local Open Scope Z_scope.
              unfold proj_keys.
              apply (Permutation_cons_In _ _ _ H8).
           -- assert (0 <= j < i) by lia. clear H5 n.
-             rewrite Znth_app1 by lia.
+             rewrite app_Znth1 by lia.
              apply (Permutation_map heap_item_key) in H8.
              rewrite map_cons in H8.
              unfold proj_keys in Hc |- *.
@@ -561,7 +561,7 @@ Local Open Scope Z_scope.
              rewrite Znth_0_cons. trivial.
           -- assert (0 <= j < i) by lia.
              clear H5. right.
-             rewrite Znth_app1 by lia. apply Ht; trivial.
+             rewrite app_Znth1 by lia. apply Ht; trivial.
         * intros.
           symmetry in H8.
           apply (Permutation_in _ H8) in H5.
@@ -572,7 +572,7 @@ Local Open Scope Z_scope.
              replace (i - Zlength keys0) with 0 by lia.
              rewrite Znth_0_cons.
              unfold heap_item_key. trivial.
-          -- rewrite Znth_app1. apply Hx; trivial.
+          -- rewrite app_Znth1. apply Hx; trivial.
              replace (Zlength keys0) with i by lia.
              eapply in_map in H5.
              eapply Permutation_in in H5. 2: apply Hg.

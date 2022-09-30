@@ -1,4 +1,24 @@
+# How to use this Makefile
+# 1. If you have VST (and CompCert) installed in a Coq Platform install,
+#   just "make" should work to build the CertiGraph tool.
+# 2. The "-j" option should work for all variations described here
+# 3. If you want to build all the application demos, "make all"
+# 4. If you want to use a 32-bit VST/CompCert, BITSIZE=32
+#   (either in the CONFIGURE file or as a command-line option to "make")
+# 5. If you want a 64-bit VST/CompCert, BITSIZE=64 is default
+# 6. By default, this Makefile will not run "clightgen" to convert
+#    .c files to .v files; the clightgenned .v files are already
+#    present, named */*64.v and */*32.v.
+#    "make clightgen" will run clightgen locally on all application demos
+#    (define CLIGHTGEN variable if your clightgen is not in the default place)
+# 7. To install the pre-clightgenned files in */*64.v, "make clightgen64"
+#    (define CLIGHTGEN64 if your clightgen is not in the default place)
+# 8. To install the pre-clightgenned files in */*32.v, "make clightgen32"
+#    (define CLIGHTGEN32 if your clightgen is not in the default place)
+
 -include CONFIGURE
+
+default: certigraph
 
 CURRENT_DIR = "./"
 COQC ?= $(COQBIN)coqc -w -overriding-logical-loadpath
@@ -13,14 +33,19 @@ ifeq ($(BITSIZE),64)
 	COMPCERT_DIR ?= $(COQLIB)/user-contrib/compcert
 	VST_DIR ?= $(COQLIB)/user-contrib/VST
 	CLIGHTGEN ?= $(COQLIB)/../../bin/clightgen
+	CLIGHTGEN64 ?= $(CLIGHTGEN)
+	CLIGHTGEN32 ?= $(COQLIB)/../../variants/compcert32/bin/clightgen
 #	TARGET_ARCH ?= x86_64-linux
 else ifeq ($(BITSIZE),32)
 	COQLIBINSTALL ?= $(COQLIB)/../coq-variant/CertiGraph32
 	COMPCERT_DIR ?= $(COQLIB)/../coq-variant/compcert32/compcert
 	VST_DIR ?= $(COQLIB)/../coq-variant/VST32/VST
 	CLIGHTGEN ?= $(COQLIB)/../../variants/compcert32/bin/clightgen
+	CLIGHTGEN32 ?= $(CLIGHTGEN)
+	CLIGHTGEN64 ?= $(COQLIB)/../../bin/clightgen
 #	TARGET_ARCH ?= x86_32-linux
 endif
+
 
 INSTALLDIR ?= $(COQLIBINSTALL)/CertiGraph
 
@@ -175,9 +200,9 @@ NORMAL_FILES = $(CG_CORE_FILES) \
   $(CERTIGC_FILES:%.v=CertiGC/%.v) \
   $(APPLICATIONS_FILES)
 
-all: certigraph certigc applications
-
 certigraph: $(CG_CORE_FILES:%.v=%.vo)
+
+all: certigraph certigc applications
 
 certigc: $(CERTIGC_FILES:%.v=CertiGC/%.vo)
 
@@ -210,6 +235,16 @@ clightgen:
 	cp CertiGC/'GC Source'/{config.h,gc.h,mem.h,values.h,gc.c} CertiGC
 	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . $(C_FILES)
 
+clightgen64:
+	cp CertiGC/'GC Source'/{config.h,gc.h,mem.h,values.h,gc.c} CertiGC
+	$(CLIGHTGEN64) -DCOMPCERT -normalize -isystem . $(C_FILES)
+	$(foreach x,$(C_FILES:%.c=%), mv $(x).v $(x)64.v; )
+
+clightgen32:
+	cp CertiGC/'GC Source'/{config.h,gc.h,mem.h,values.h,gc.c} CertiGC
+	$(CLIGHTGEN32) -DCOMPCERT -normalize -isystem . $(C_FILES)
+	$(foreach x,$(C_FILES:%.c=%), mv $(x).v $(x)32.v; )
+
 
 .PHONY: vstandme7
 vstandme7:
@@ -226,6 +261,7 @@ cav:
 	dijkstra/verif_dijkstra1.vo dijkstra/verif_dijkstra2.vo dijkstra/verif_dijkstra3.vo \
 	kruskal/verif_sort.v kruskal/verif_kruskal_edgelist.vo -kj7
 
+
 .PHONY: depend
 .depend depend: $(CLIGHT_FILES)
 	@echo 'coqdep ... >.depend'
@@ -235,6 +271,11 @@ cav:
 .PHONY: clean
 clean:
 	@rm -f */*.vo */*.glob */.*.aux $(CLIGHT_FILES) .depend
+
+.PHONY: coqide
+coqide:
+	echo >coqide "exec coqide $(NORMAL_FLAG)" $$\*
+	chmod +x coqide
 
 INSTALL_SOURCES = $(NORMAL_FILES) $(CLIGHT_FILES)
 INSTALL_COMPILED = $(INSTALL_SOURCES:%.v=%.vo)
