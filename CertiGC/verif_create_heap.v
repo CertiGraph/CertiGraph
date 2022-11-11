@@ -69,10 +69,9 @@ Proof.
   forward_call (heap_type, gv).
   Intros h. if_tac.
   - subst h; forward_if False; [| first [exfalso; now apply H | inversion H ]].
-    unfold all_string_constants; Intros;
-      forward_call ((gv ___stringlit_7),
-                    (map init_data2byte (gvar_init v___stringlit_7)), sh);
-      exfalso; assumption.
+    unfold all_string_constants; Intros.
+    forward_call. 
+    contradiction. 
   - Intros. forward_if True; [contradiction | forward; entailer! |]. Intros.
     (* make "data_at sh space_type v h " in SEP *)
     assert_PROP (isptr h) by entailer!. remember (Vundef, (Vundef, Vundef)) as vn.

@@ -20,10 +20,7 @@ Proof.
     destruct (space_start (heap_head (ti_heap t_info))) eqn:? ; try contradiction.
     forward_if (fun_word_size f_info <= total_space hs).
     + unfold denote_tc_samebase. simpl. entailer!.
-    + unfold all_string_constants. Intros.
-      forward_call ((gv ___stringlit_10),
-                    (map init_data2byte (gvar_init v___stringlit_10)), rsh).
-      exfalso; assumption.
+    + unfold all_string_constants; Intros; forward_call; contradiction.
     + forward. entailer!.
       unfold sem_sub_pp in H7. destruct eq_block in H7; [|easy]; simpl in H7.
       inv_int i. clear -H7. remember (heap_head (ti_heap t_info)) as h.

@@ -9,10 +9,7 @@ Proof.
   Intros t. if_tac.
   - subst t. forward_if False.
     2: exfalso; first [rewrite Int64.eq_true in H; inversion H | apply H; trivial].
-    unfold all_string_constants; Intros;
-      forward_call ((gv ___stringlit_8),
-                     (map init_data2byte (gvar_init v___stringlit_8)), sh);
-      exfalso; assumption.
+    unfold all_string_constants; Intros; forward_call; contradiction.
   - Intros. forward_if True; [contradiction | forward; entailer! |]. Intros.
     forward. forward. rewrite Znth_0_cons. forward. forward. rewrite Znth_0_cons.
     forward. forward. Exists t h p. entailer!.

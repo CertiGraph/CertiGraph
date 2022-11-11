@@ -65,6 +65,19 @@ Ltac tc_val_Znth := entailer!; rewrite Znth_map by assumption;
                     unfold space_tri; apply isptr_is_pointer_or_null;
                     try assumption.
 
+Lemma gather_thread_info_rep:
+  forall (v1 v2: val) sh t_info ti , 
+   data_at sh thread_info_type (v1,(v2, (ti_heap_p t_info, ti_args t_info))) ti
+   * data_at sh heap_type (@map space (val * (val * val))  space_tri (spaces (ti_heap t_info))) (ti_heap_p t_info) 
+   * heap_rest_rep (ti_heap t_info)
+   |-- thread_info_rep sh t_info ti.
+Proof.
+intros.
+unfold thread_info_rep, heap_struct_rep.
+do 2 unfold_data_at (data_at _ thread_info_type _ _).
+cancel.
+Qed.
+
 Lemma body_garbage_collect:
   semax_body Vprog Gprog f_garbage_collect garbage_collect_spec.
 Proof.
@@ -93,12 +106,15 @@ Proof.
       (spaces (ti_heap t_info)) by
       (destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]];
        unfold nth_space; rewrite H7; simpl; reflexivity).
+  sep_apply gather_thread_info_rep.
+(*
   gather_SEP (data_at sh heap_type _ _) (heap_rest_rep _).
   gather_SEP (data_at sh thread_info_type _ _)
              (data_at sh heap_type _ _ * heap_rest_rep _).
   replace_SEP 0 (thread_info_rep sh t_info ti) by
     (unfold thread_info_rep, heap_struct_rep; entailer!;
     do 2 (unfold_data_at (data_at _ _ _ _); cancel)).
+*)
   forward_for_simple_bound
     11
     (EX i: Z, EX g': LGraph, EX roots': roots_t, EX t_info': thread_info,
@@ -177,10 +193,8 @@ Proof.
       pose proof (ti_size_gen _ _ _ (proj1 H8) H13 H19). unfold gen_size in H20.
       rewrite nth_space_Znth, Z2Nat.id in H20 by lia. rewrite H20. clear H19 H20.
       assert_PROP (isptr (ti_heap_p t_info')) by entailer!.
-      gather_SEP (data_at sh heap_type _ _) (heap_rest_rep _).
-      gather_SEP (data_at sh thread_info_type _ ti) (data_at sh heap_type _ _ * heap_rest_rep _).
-      replace_SEP 0 (thread_info_rep sh t_info' ti) by
-          (unfold thread_info_rep, heap_struct_rep; entailer!). pose proof H14.
+      sep_apply gather_thread_info_rep.
+      pose proof H14.
       rewrite spaces_size in H20. unfold thread_info_rep. Intros.
       rewrite hsr_single_explicit with (i := i + 1). 2: assumption.
       2: rewrite Zlength_map, spaces_size; reflexivity. Intros.
@@ -232,6 +246,11 @@ Proof.
             (unfold space_tri; do 2 f_equal; subst sp; simpl;
              rewrite isptr_offset_val_zero by assumption; reflexivity).
         thaw FR.
+
+  match goal with |- context [SEPx  [_; _; _; _; _; ?a; _; ?b; ?c; _; _; _; _]] =>
+     gather_SEP a b c
+   end.
+  (* the above "match goal with" replaces the following, which was absurdly slow:
         gather_SEP
           (data_at sh space_type _ _)
           (data_at sh (tarray space_type
@@ -241,6 +260,7 @@ Proof.
                                (offset_val (SPACE_STRUCT_SIZE * (i + 1)) (ti_heap_p t_info'))))
           (data_at sh (tarray space_type (i + 1)) _
                    (ti_heap_p t_info')).
+    *)
         rewrite sepcon_assoc, (heap_struct_rep_add t_info' sh sp (i + 1) H20), <- Heqt_info1.
         replace (ti_heap_p t_info') with (ti_heap_p t_info1) by
             (subst t_info1; simpl; reflexivity).
@@ -323,10 +343,15 @@ Proof.
           (rewrite H23; eapply do_gen_firstn_gen_clear; eauto).
       assert (safe_to_copy_to_except g2 (Z.to_nat (i + 1))) by
           (rewrite H23; eapply do_gen_stcte; eauto).
+    match goal with |- context [SEPx [_; _; _; _; ?a; ?b; ?c; _; _; _]] =>
+      gather_SEP a b c
+    end.
+   (* the "match goal" above replaces the following, which is absurdly slow:
       gather_SEP
         (data_at sh thread_info_type _ _)
-        (data_at sh heap_type _ (ti_heap_p t_info2))
-        (heap_rest_rep (ti_heap t_info2)).
+        (data_at sh heap_type  _ _)
+        (heap_rest_rep _).
+*)
       rewrite sepcon_assoc.
       replace_SEP 0 (thread_info_rep sh t_info2 ti) by
           (unfold thread_info_rep, heap_struct_rep; entailer!).
@@ -363,7 +388,5 @@ Proof.
         -- rewrite H23 in H38. eapply safe_to_copy_complete; eauto.
       * forward. Intros. Exists g2 roots2 t_info2. rewrite <- H23 in *. entailer!.
   - Intros g2 roots2 t_info2. unfold all_string_constants. Intros.
-    forward_call ((gv ___stringlit_12),
-                  (map init_data2byte (gvar_init v___stringlit_12)), rsh).
-    exfalso; assumption.
+     forward_call; contradiction.
 Qed.
