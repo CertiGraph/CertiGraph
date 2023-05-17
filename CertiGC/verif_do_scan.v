@@ -3,18 +3,15 @@ Require Import CertiGraph.CertiGC.gc_spec.
 Local Open Scope logic.
 
 Lemma typed_true_tag: forall (to : nat) (g : LGraph) (index : nat),
-    typed_true tint
-               (force_val
-                  (option_map (fun b : bool => Val.of_bool (negb b))
-                              (bool_val_i
-                                 (Val.of_bool
-                                    (negb (Int.lt (Int.repr (raw_tag
-                                                               (vlabel g (to, index))))
-                                                  (Int.repr 251))))))) ->
+    Int.repr (Z.b2z
+                (negb
+                   (Int.lt (Int.repr (raw_tag (vlabel g (to, index))))
+                      (Int.repr 251)))) = Int.zero ->
     ~ no_scan g (to, index).
 Proof.
-  intros. remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index)))) (Int.repr 251)).
-  unfold typed_true in H. destruct b; simpl in H; [|inversion H].
+  intros.
+  remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index)))) (Int.repr 251)).
+  destruct b; simpl in H; [|inversion H].
   symmetry in Heqb. apply lt_repr in Heqb.
   - unfold no_scan. rep_lia.
   - red. pose proof (raw_tag_range (vlabel g (to, index))). rep_lia.
@@ -22,18 +19,16 @@ Proof.
 Qed.
 
 Lemma typed_false_tag: forall (to : nat) (g : LGraph) (index : nat),
-    typed_false tint
-               (force_val
-                  (option_map (fun b : bool => Val.of_bool (negb b))
-                              (bool_val_i
-                                 (Val.of_bool
-                                    (negb (Int.lt (Int.repr (raw_tag
-                                                               (vlabel g (to, index))))
-                                                  (Int.repr 251))))))) ->
+    Int.repr
+      (Z.b2z
+         (negb
+            (Int.lt (Int.repr (raw_tag (vlabel g (to, index))))
+               (Int.repr 251)))) <> Int.zero ->
     no_scan g (to, index).
 Proof.
-  intros. remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index)))) (Int.repr 251)).
-  unfold typed_false in H. destruct b; simpl in H; [inversion H|].
+  intros.
+  remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index)))) (Int.repr 251)).
+  destruct b; simpl in H; [exfalso; apply H; reflexivity |].
   symmetry in Heqb. apply lt_repr_false in Heqb.
   - unfold no_scan. rep_lia.
   - red. pose proof (raw_tag_range (vlabel g (to, index))). rep_lia.
@@ -168,12 +163,14 @@ Proof.
                                   [unfold WORD_SIZE; lia | apply space_order].
     + assert (index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
+        unfold force_val in H24.
         rewrite H24 in H25; unfold typed_true in H25. easy. }
       forward. entailer!. red. rewrite <- H20 in H26.
       rewrite <- Z.mul_lt_mono_pos_l in H26 by (unfold WORD_SIZE; lia).
       apply pvs_lt_rev in H26. assumption.
     + assert (~ index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
+        unfold force_val in H24.
         now rewrite H24 in H25; unfold typed_false in H25. }
       forward. thaw FR. unfold thread_info_rep, heap_struct_rep.
       Exists g' t_info'. unfold forward_condition. entailer!.
