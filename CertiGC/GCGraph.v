@@ -4264,10 +4264,10 @@ Proof.
           apply H0. rewrite <- filter_sum_right_In_iff, <- Heqr.
           apply Znth_In; assumption. }
         hnf in H. destruct (H _ H4 Heqb) as [_ ?]. auto.
-      * assert (i<>j) by tauto. rewrite upd_Znth_diff in * by auto; auto.
+      * assert (i<>j) by tauto. rewrite upd_Znth_diff in H5 by auto. auto.
       * destruct H4; auto. subst j. rewrite upd_Znth_same in H5 by assumption.
         inversion H5. unfold new_copied_v. simpl. auto.
-      * assert (i<>j) by tauto. rewrite upd_Znth_diff in * by auto; auto.
+      * assert (i<>j) by tauto. rewrite upd_Znth_diff in H5 by auto; auto.
     + split; intros; subst roots'; auto. destruct H9; auto. congruence.
 Qed.
 
