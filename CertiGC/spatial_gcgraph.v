@@ -32,14 +32,6 @@ Definition generation_rep (g: LGraph) (gen: nat): mpred :=
 Definition graph_rep (g: LGraph): mpred :=
   iter_sepcon (nat_inc_list (length g.(glabel).(g_gen))) (generation_rep g).
 
-Definition fun_info_rep (sh: share) (fi: fun_info) (p: val) : mpred :=
-  Eval cbv delta [Archi.ptr64] match
-         in
-         let len := Zlength (live_roots_indices fi) in
-         data_at
-           sh (tarray (if Archi.ptr64 then tulong else tuint) (len + 2))
-           (map Z2val (fun_word_size fi :: len :: live_roots_indices fi)) p.
-
 Definition space_rest_rep (sp: space): mpred :=
   if (Val.eq sp.(space_start) nullval)
   then emp
@@ -52,25 +44,33 @@ Definition heap_rest_rep (hp: heap): mpred :=
 
 Definition space_tri (sp: space): (reptype space_type) :=
   let s := sp.(space_start) in (s, (offset_val (WORD_SIZE * sp.(used_space)) s,
-                                    offset_val (WORD_SIZE * sp.(total_space)) s)).
+                                    (offset_val (WORD_SIZE * sp.(total_space)) s,
+                                     offset_val (WORD_SIZE * sp.(total_space)) s))).
 
 Definition heap_struct_rep (sh: share) (sp_reps: list (@reptype CompSpecs space_type)) (h: val):
   mpred := @data_at CompSpecs sh heap_type sp_reps h.
 
-Definition before_gc_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
+Definition ti_fp (ti: thread_info) : val :=
+  match ti_frames ti with
+  | nil => nullval
+  | fr :: _ => fr_adr fr
+  end. 
+
+  Definition before_gc_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   let nursery := heap_head ti.(ti_heap) in
   let p := nursery.(space_start) in
   let n_lim := offset_val (WORD_SIZE * nursery.(total_space)) p in
   data_at sh thread_info_type
-          (offset_val (WORD_SIZE * nursery.(used_space)) p,
-           (n_lim, (ti.(ti_heap_p), ti.(ti_args)))) t *
+         (offset_val (WORD_SIZE * nursery.(used_space)) p,
+           (n_lim, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (vptrofs (ti.(ti_nalloc)),nullval)))))) t *
   heap_struct_rep
-    sh ((p, (Vundef, n_lim))
+    sh ((p, (Vundef, (n_lim,n_lim)))
           :: map space_tri (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
   heap_rest_rep ti.(ti_heap).
 
 Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
-  data_at sh thread_info_type (Vundef, (Vundef, (ti.(ti_heap_p), ti.(ti_args)))) t *
+  data_at sh thread_info_type 
+     (Vundef, (Vundef, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (vptrofs (ti.(ti_nalloc)), nullval)))))) t *
   heap_struct_rep sh (map space_tri ti.(ti_heap).(spaces)) ti.(ti_heap_p) *
   heap_rest_rep ti.(ti_heap).
 
@@ -366,7 +366,8 @@ Lemma data_at_tarray_space: forall sh n n1 p (v: list (reptype space_type)),
     data_at sh (tarray space_type (n - n1)) (sublist n1 n v)
             (offset_val (SPACE_STRUCT_SIZE * n1) p).
 Proof.
-  intros. eapply data_at_tarray_split; eauto. 1: lia.
+  intros.
+  eapply data_at_tarray_split with (t:=space_type); eauto. 1: lia.
   autorewrite with sublist. reflexivity.
 Qed.
 
@@ -1258,7 +1259,7 @@ Definition space_struct_rep (sh: share) (tinfo: thread_info) (gen: nat) :=
   @data_at CompSpecs sh space_type (space_tri (nth_space tinfo gen)) (space_address tinfo gen).
 
 Lemma heap_struct_rep_eq: forall sh l p,
-    heap_struct_rep sh l p = @data_at CompSpecs sh (tarray space_type 12) l p.
+    heap_struct_rep sh l p = @data_at CompSpecs sh (tarray space_type MAX_SPACES) l p.
 Proof.
   intros. unfold heap_struct_rep. apply pred_ext; rewrite data_at_isptr; Intros.
   - unfold_data_at (@data_at CompSpecs _ heap_type _ _).
@@ -1271,19 +1272,10 @@ Proof.
     + unfold field_compatible in *. simpl in *. intuition.
       * destruct p; try contradiction. clear -H2. unfold align_compatible in *.
         unfold heap_type.
-        remember {|
-            co_su := Struct;
-            co_members := [Member_plain _spaces (tarray (Tstruct _space noattr) 12)];
-            co_attr := noattr;
-            co_sizeof := if Archi.ptr64 then 288 else 144;
-            co_alignof := WORD_SIZE;
-            co_rank := 2;
-            co_sizeof_pos := Zgeb0_ge0 (if Archi.ptr64 then 288 else 144) eq_refl;
-            co_alignof_two_p := prove_alignof_two_p WORD_SIZE eq_refl;
-            co_sizeof_alignof :=
-              prove_Zdivide WORD_SIZE (if Archi.ptr64 then 288 else 144) eq_refl |}.
-        apply (align_compatible_rec_Tstruct cenv_cs _heap noattr c _); subst c.
-        1, 2: reflexivity. simpl co_members. intros. simpl in H.
+        evar (c: composite).
+        apply (align_compatible_rec_Tstruct cenv_cs _heap noattr c _).
+        1,2: subst c; reflexivity.
+        simpl co_members. intros. simpl in H.
         if_tac in H; inversion H. subst. clear H. inversion H0. subst z0.
         rewrite Z.add_0_r. apply H2.
       * red. simpl. left; reflexivity.
@@ -1301,8 +1293,8 @@ Proof.
                    (tarray space_type
                            (@Zlength (@reptype CompSpecs space_type)
                                      (@sublist (@reptype CompSpecs space_type)
-                                               (i2 + 1) 12 l)))
-                   (@sublist (@reptype CompSpecs space_type) (i2 + 1) 12 l)
+                                               (i2 + 1) MAX_SPACES l)))
+                   (@sublist (@reptype CompSpecs space_type) (i2 + 1) MAX_SPACES l)
                    (offset_val (SPACE_STRUCT_SIZE * (i2 + 1)) (ti_heap_p tinfo)) *
           @data_at CompSpecs sh (tarray space_type i1)
                    (@sublist (@reptype CompSpecs space_type) 0 i1 l)
@@ -1310,28 +1302,28 @@ Proof.
           @data_at CompSpecs sh (tarray space_type (i2 - i1 - 1))
                    (@sublist (@reptype CompSpecs space_type) (i1 + 1) i2 l)
                    (offset_val (SPACE_STRUCT_SIZE * (i1 + 1)) (ti_heap_p tinfo))).
-  rewrite heap_struct_rep_eq. rewrite (data_at_tarray_space sh 12 i1) by rep_lia.
-  rewrite (sublist_next i1 12 l) by rep_lia.
-  replace (12 - i1) with (Zlength (sublist (i1 + 1) 12 l) + 1) by
-      (rewrite Zlength_sublist; rep_lia).
+  rewrite heap_struct_rep_eq. rewrite (data_at_tarray_space sh MAX_SPACES i1) by rep_lia.
+  rewrite (sublist_next i1 MAX_SPACES l) by rep_lia.
+  replace (MAX_SPACES - i1) with (Zlength (sublist (i1 + 1) MAX_SPACES l) + 1) 
+    by (rewrite Zlength_sublist; rep_lia).
   rewrite data_at_tarray_split_1 by reflexivity. unfold space_address.
   rewrite Z2Nat.id by lia. rewrite sepcon_comm, !sepcon_assoc. f_equal.
   rewrite offset_offset_val. rewrite Z2Nat.id by lia.
   replace (SPACE_STRUCT_SIZE * i1 + sizeof space_type) with
       (SPACE_STRUCT_SIZE * (i1 + 1))%Z by
       (simpl sizeof; unfold SPACE_STRUCT_SIZE; rep_lia).
-  assert (Zlength (sublist (i1 + 1) 12 l) = 11 - i1) by
-      (rewrite Zlength_sublist; rep_lia). rewrite H3.
-  rewrite (data_at_tarray_space sh (11 - i1) (i2 - i1 - 1)).
+  assert (Zlength (sublist (i1 + 1) MAX_SPACES l) = (MAX_SPACES-1) - i1)
+   by (rewrite Zlength_sublist; rep_lia). rewrite H3.
+  rewrite (data_at_tarray_space sh ((MAX_SPACES-1) - i1) (i2 - i1 - 1)).
   3: rewrite H3; reflexivity. 2: rep_lia. rewrite !sublist_sublist by rep_lia.
   replace (0 + (i1 + 1)) with (i1 + 1) by lia.
   replace (i2 - i1 - 1 + (i1 + 1)) with i2 by lia.
-  replace (11 - i1 - (i2 - i1 - 1)) with (12 - i2) by lia.
-  replace (11 - i1 + (i1 + 1)) with 12 by lia.
+  replace ((MAX_SPACES-1) - i1 - (i2 - i1 - 1)) with (MAX_SPACES - i2) by lia.
+  replace ((MAX_SPACES-1) - i1 + (i1 + 1)) with MAX_SPACES by lia.
   rewrite offset_offset_val, <- Z.mul_add_distr_l.
   replace (i1 + 1 + (i2 - i1 - 1)) with i2 by lia.
-  rewrite (sublist_next i2 12 l) by rep_lia.
-  replace (12 - i2) with (Zlength (sublist (i2 + 1) 12 l) + 1) by
+  rewrite (sublist_next i2 MAX_SPACES l) by rep_lia.
+  replace (MAX_SPACES - i2) with (Zlength (sublist (i2 + 1) MAX_SPACES l) + 1) by
       (rewrite Zlength_sublist; rep_lia).
   rewrite data_at_tarray_split_1 by reflexivity.
   rewrite sepcon_assoc, sepcon_comm, !sepcon_assoc. f_equal.
@@ -1362,15 +1354,12 @@ Lemma thread_info_rep_ramif_stable: forall sh tinfo ti gen1 gen2,
        -* thread_info_rep sh tinfo ti).
 Proof.
   intros. unfold thread_info_rep.
-  remember (@data_at
-              CompSpecs sh thread_info_type
-              (@pair val (prod val (prod val (list val))) Vundef
-                     (@pair val (prod val (list val)) Vundef
-                            (@pair val (list val)
-                                   (ti_heap_p tinfo) (ti_args tinfo)))) ti) as P.
-  remember (heap_rest_rep (ti_heap tinfo)) as Q.
-  rewrite (sepcon_comm P), sepcon_assoc. remember (P * Q) as R.
-  clear P HeqP Q HeqQ HeqR. remember (map space_tri (spaces (ti_heap tinfo))).
+  set (P := data_at _ _ _ _).
+  set (Q := heap_rest_rep _).
+  rewrite (sepcon_comm P), sepcon_assoc.
+  set (R := (P * Q)).
+  clearbody P. clearbody Q. clearbody R. clear  P Q.
+  remember (map space_tri (spaces (ti_heap tinfo))).
   assert (0 <= Z.of_nat gen1 < MAX_SPACES) by rep_lia.
   assert (0 <= Z.of_nat gen2 < MAX_SPACES) by rep_lia.
   assert (Z.of_nat gen1 <> Z.of_nat gen2) by lia.
@@ -1394,17 +1383,17 @@ Lemma hsr_single_explicit: forall sh l tinfo i,
          CompSpecs sh
          (tarray space_type
                  (@Zlength (@reptype CompSpecs space_type)
-                           (@sublist (@reptype CompSpecs space_type) (i + 1) 12 l)))
-         (@sublist (@reptype CompSpecs space_type) (i + 1) 12 l)
+                           (@sublist (@reptype CompSpecs space_type) (i + 1) MAX_SPACES l)))
+         (@sublist (@reptype CompSpecs space_type) (i + 1) MAX_SPACES l)
          (offset_val (@sizeof CompSpecs space_type)
                      (offset_val (SPACE_STRUCT_SIZE * i) (ti_heap_p tinfo))) *
        @data_at CompSpecs sh (tarray space_type i)
                 (@sublist (@reptype CompSpecs space_type) 0 i l) (ti_heap_p tinfo)).
 Proof.
   intros. rewrite heap_struct_rep_eq.
-  rewrite (data_at_tarray_space sh 12 i) by rep_lia.
-  rewrite (sublist_next i 12 l) by rep_lia.
-  replace (12 - i) with (Zlength (sublist (i + 1) 12 l) + 1) by
+  rewrite (data_at_tarray_space sh MAX_SPACES i) by rep_lia.
+  rewrite (sublist_next i MAX_SPACES l) by rep_lia.
+  replace (MAX_SPACES - i) with (Zlength (sublist (i + 1) MAX_SPACES l) + 1) by
       (rewrite Zlength_sublist; rep_lia).
   rewrite data_at_tarray_split_1 by reflexivity. unfold space_address.
   rewrite Z2Nat.id by lia. rewrite sepcon_comm, !sepcon_assoc. reflexivity.
@@ -1417,16 +1406,7 @@ Lemma heap_struct_rep_split_single: forall sh l tinfo i,
       data_at sh space_type (Znth i l) (space_address tinfo (Z.to_nat i)) * B.
 Proof.
   intros.
-  exists (@data_at
-            CompSpecs sh
-            (tarray space_type
-                    (@Zlength (@reptype CompSpecs space_type)
-                              (@sublist (@reptype CompSpecs space_type) (i + 1) 12 l)))
-            (@sublist (@reptype CompSpecs space_type) (i + 1) 12 l)
-            (offset_val (@sizeof CompSpecs space_type)
-                        (offset_val (SPACE_STRUCT_SIZE * i) (ti_heap_p tinfo))) *
-          @data_at CompSpecs sh (tarray space_type i)
-                   (@sublist (@reptype CompSpecs space_type) 0 i l) (ti_heap_p tinfo)).
+  eexists. 
   erewrite hsr_single_explicit; eauto.
 Qed.
 
@@ -1437,15 +1417,12 @@ Lemma thread_info_rep_ramif_stable_1: forall sh tinfo ti gen,
     (space_struct_rep sh tinfo gen -* thread_info_rep sh tinfo ti).
 Proof.
   intros. unfold thread_info_rep.
-  remember (@data_at
-              CompSpecs sh thread_info_type
-              (@pair val (prod val (prod val (list val))) Vundef
-                     (@pair val (prod val (list val)) Vundef
-                            (@pair val (list val)
-                                   (ti_heap_p tinfo) (ti_args tinfo)))) ti) as P.
-  remember (heap_rest_rep (ti_heap tinfo)) as Q.
-  rewrite (sepcon_comm P), sepcon_assoc. remember (P * Q) as R.
-  clear P HeqP Q HeqQ HeqR. remember (map space_tri (spaces (ti_heap tinfo))).
+  set (P := data_at _ _ _ _). clearbody P.
+  set (Q := heap_rest_rep _). clearbody Q.
+  rewrite (sepcon_comm P), sepcon_assoc.
+  set (R := P * Q).
+  clearbody R. clear P Q.
+  remember (map space_tri (spaces (ti_heap tinfo))).
   assert (Zlength l = MAX_SPACES) by (subst; rewrite Zlength_map; apply spaces_size).
   destruct (heap_struct_rep_split_single sh l tinfo (Z.of_nat gen))
     as [B ?]; try rep_lia; try assumption. rewrite H1, !Nat2Z.id. clear H1.
@@ -1567,9 +1544,9 @@ Lemma heap_struct_rep_add: forall tinfo sh sp i (Hs: 0 <= i < MAX_SPACES),
        CompSpecs sh
        (tarray space_type
                (@Zlength (@reptype CompSpecs space_type)
-                         (@sublist (@reptype CompSpecs space_type) (i + 1) 12
+                         (@sublist (@reptype CompSpecs space_type) (i + 1) MAX_SPACES
                                    (map space_tri (spaces (ti_heap tinfo))))))
-       (@sublist (@reptype CompSpecs space_type) (i + 1) 12
+       (@sublist (@reptype CompSpecs space_type) (i + 1) MAX_SPACES
                  (map space_tri (spaces (ti_heap tinfo))))
        (offset_val (@sizeof CompSpecs space_type)
                    (offset_val (SPACE_STRUCT_SIZE * i) (ti_heap_p tinfo))) *

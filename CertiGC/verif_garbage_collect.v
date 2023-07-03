@@ -67,8 +67,8 @@ Ltac tc_val_Znth := entailer!; rewrite Znth_map by assumption;
 
 Lemma gather_thread_info_rep:
   forall (v1 v2: val) sh t_info ti , 
-   data_at sh thread_info_type (v1,(v2, (ti_heap_p t_info, ti_args t_info))) ti
-   * data_at sh heap_type (@map space (val * (val * val))  space_tri (spaces (ti_heap t_info))) (ti_heap_p t_info) 
+   data_at sh thread_info_type (v1,(v2, (ti_heap_p t_info, (ti_args t_info,(ti_fp t_info, (vptrofs(ti_nalloc t_info),nullval)))))) ti
+   * data_at sh heap_type (@map space (val * (val * (val*val)))  space_tri (spaces (ti_heap t_info))) (ti_heap_p t_info) 
    * heap_rest_rep (ti_heap t_info)
    |-- thread_info_rep sh t_info ti.
 Proof.
