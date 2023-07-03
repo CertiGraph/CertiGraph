@@ -10,9 +10,9 @@ Module Info.
   Definition build_number := "".
   Definition build_tag := "".
   Definition build_branch := "".
-  Definition arch := "x86".
-  Definition model := "64".
-  Definition abi := "standard".
+  Definition arch := "aarch64".
+  Definition model := "default".
+  Definition abi := "apple".
   Definition bitsize := 64.
   Definition big_endian := false.
   Definition source_file := "unionfind/unionfind_arr.c".
@@ -23,23 +23,18 @@ Definition _E : ident := $"E".
 Definition _Is_block : ident := $"Is_block".
 Definition _Is_from : ident := $"Is_from".
 Definition _MAX_EDGES : ident := $"MAX_EDGES".
-Definition _MAX_SPACE_SIZE : ident := $"MAX_SPACE_SIZE".
 Definition _Node : ident := $"Node".
 Definition _Union : ident := $"Union".
 Definition _V : ident := $"V".
-Definition __139 : ident := $"_139".
-Definition __140 : ident := $"_140".
-Definition __213 : ident := $"_213".
-Definition __214 : ident := $"_214".
-Definition __215 : ident := $"_215".
-Definition __Bigint : ident := $"_Bigint".
-Definition ___assert_func : ident := $"__assert_func".
 Definition ___builtin_annot : ident := $"__builtin_annot".
 Definition ___builtin_annot_intval : ident := $"__builtin_annot_intval".
 Definition ___builtin_bswap : ident := $"__builtin_bswap".
 Definition ___builtin_bswap16 : ident := $"__builtin_bswap16".
 Definition ___builtin_bswap32 : ident := $"__builtin_bswap32".
 Definition ___builtin_bswap64 : ident := $"__builtin_bswap64".
+Definition ___builtin_cls : ident := $"__builtin_cls".
+Definition ___builtin_clsl : ident := $"__builtin_clsl".
+Definition ___builtin_clsll : ident := $"__builtin_clsll".
 Definition ___builtin_clz : ident := $"__builtin_clz".
 Definition ___builtin_clzl : ident := $"__builtin_clzl".
 Definition ___builtin_clzll : ident := $"__builtin_clzll".
@@ -50,6 +45,7 @@ Definition ___builtin_debug : ident := $"__builtin_debug".
 Definition ___builtin_expect : ident := $"__builtin_expect".
 Definition ___builtin_fabs : ident := $"__builtin_fabs".
 Definition ___builtin_fabsf : ident := $"__builtin_fabsf".
+Definition ___builtin_fence : ident := $"__builtin_fence".
 Definition ___builtin_fmadd : ident := $"__builtin_fmadd".
 Definition ___builtin_fmax : ident := $"__builtin_fmax".
 Definition ___builtin_fmin : ident := $"__builtin_fmin".
@@ -59,8 +55,6 @@ Definition ___builtin_fnmsub : ident := $"__builtin_fnmsub".
 Definition ___builtin_fsqrt : ident := $"__builtin_fsqrt".
 Definition ___builtin_membar : ident := $"__builtin_membar".
 Definition ___builtin_memcpy_aligned : ident := $"__builtin_memcpy_aligned".
-Definition ___builtin_read16_reversed : ident := $"__builtin_read16_reversed".
-Definition ___builtin_read32_reversed : ident := $"__builtin_read32_reversed".
 Definition ___builtin_sel : ident := $"__builtin_sel".
 Definition ___builtin_sqrt : ident := $"__builtin_sqrt".
 Definition ___builtin_unreachable : ident := $"__builtin_unreachable".
@@ -68,9 +62,6 @@ Definition ___builtin_va_arg : ident := $"__builtin_va_arg".
 Definition ___builtin_va_copy : ident := $"__builtin_va_copy".
 Definition ___builtin_va_end : ident := $"__builtin_va_end".
 Definition ___builtin_va_start : ident := $"__builtin_va_start".
-Definition ___builtin_write16_reversed : ident := $"__builtin_write16_reversed".
-Definition ___builtin_write32_reversed : ident := $"__builtin_write32_reversed".
-Definition ___cleanup : ident := $"__cleanup".
 Definition ___compcert_i64_dtos : ident := $"__compcert_i64_dtos".
 Definition ___compcert_i64_dtou : ident := $"__compcert_i64_dtou".
 Definition ___compcert_i64_sar : ident := $"__compcert_i64_sar".
@@ -90,14 +81,10 @@ Definition ___compcert_va_composite : ident := $"__compcert_va_composite".
 Definition ___compcert_va_float64 : ident := $"__compcert_va_float64".
 Definition ___compcert_va_int32 : ident := $"__compcert_va_int32".
 Definition ___compcert_va_int64 : ident := $"__compcert_va_int64".
-Definition ___count : ident := $"__count".
-Definition ___getreent : ident := $"__getreent".
-Definition ___locale_t : ident := $"__locale_t".
-Definition ___sFILE64 : ident := $"__sFILE64".
+Definition ___sFILE : ident := $"__sFILE".
+Definition ___sFILEX : ident := $"__sFILEX".
 Definition ___sbuf : ident := $"__sbuf".
-Definition ___sdidinit : ident := $"__sdidinit".
-Definition ___sf : ident := $"__sf".
-Definition ___sglue : ident := $"__sglue".
+Definition ___stderrp : ident := $"__stderrp".
 Definition ___stringlit_1 : ident := $"__stringlit_1".
 Definition ___stringlit_10 : ident := $"__stringlit_10".
 Definition ___stringlit_11 : ident := $"__stringlit_11".
@@ -105,7 +92,13 @@ Definition ___stringlit_12 : ident := $"__stringlit_12".
 Definition ___stringlit_13 : ident := $"__stringlit_13".
 Definition ___stringlit_14 : ident := $"__stringlit_14".
 Definition ___stringlit_15 : ident := $"__stringlit_15".
+Definition ___stringlit_16 : ident := $"__stringlit_16".
+Definition ___stringlit_17 : ident := $"__stringlit_17".
+Definition ___stringlit_18 : ident := $"__stringlit_18".
+Definition ___stringlit_19 : ident := $"__stringlit_19".
 Definition ___stringlit_2 : ident := $"__stringlit_2".
+Definition ___stringlit_20 : ident := $"__stringlit_20".
+Definition ___stringlit_21 : ident := $"__stringlit_21".
 Definition ___stringlit_3 : ident := $"__stringlit_3".
 Definition ___stringlit_4 : ident := $"__stringlit_4".
 Definition ___stringlit_5 : ident := $"__stringlit_5".
@@ -113,116 +106,41 @@ Definition ___stringlit_6 : ident := $"__stringlit_6".
 Definition ___stringlit_7 : ident := $"__stringlit_7".
 Definition ___stringlit_8 : ident := $"__stringlit_8".
 Definition ___stringlit_9 : ident := $"__stringlit_9".
-Definition ___tm : ident := $"__tm".
-Definition ___tm_hour : ident := $"__tm_hour".
-Definition ___tm_isdst : ident := $"__tm_isdst".
-Definition ___tm_mday : ident := $"__tm_mday".
-Definition ___tm_min : ident := $"__tm_min".
-Definition ___tm_mon : ident := $"__tm_mon".
-Definition ___tm_sec : ident := $"__tm_sec".
-Definition ___tm_wday : ident := $"__tm_wday".
-Definition ___tm_yday : ident := $"__tm_yday".
-Definition ___tm_year : ident := $"__tm_year".
-Definition ___value : ident := $"__value".
-Definition ___wch : ident := $"__wch".
-Definition ___wchb : ident := $"__wchb".
-Definition __add : ident := $"_add".
-Definition __asctime_buf : ident := $"_asctime_buf".
-Definition __atexit : ident := $"_atexit".
-Definition __atexit0 : ident := $"_atexit0".
 Definition __base : ident := $"_base".
 Definition __bf : ident := $"_bf".
 Definition __blksize : ident := $"_blksize".
 Definition __close : ident := $"_close".
 Definition __cookie : ident := $"_cookie".
-Definition __cvtbuf : ident := $"_cvtbuf".
-Definition __cvtlen : ident := $"_cvtlen".
-Definition __data : ident := $"_data".
-Definition __dso_handle : ident := $"_dso_handle".
-Definition __emergency : ident := $"_emergency".
-Definition __errno : ident := $"_errno".
+Definition __extra : ident := $"_extra".
 Definition __file : ident := $"_file".
 Definition __flags : ident := $"_flags".
-Definition __flags2 : ident := $"_flags2".
-Definition __fnargs : ident := $"_fnargs".
-Definition __fns : ident := $"_fns".
-Definition __fntypes : ident := $"_fntypes".
-Definition __freelist : ident := $"_freelist".
-Definition __gamma_signgam : ident := $"_gamma_signgam".
-Definition __getdate_err : ident := $"_getdate_err".
-Definition __glue : ident := $"_glue".
-Definition __h_errno : ident := $"_h_errno".
-Definition __inc : ident := $"_inc".
-Definition __ind : ident := $"_ind".
-Definition __iobs : ident := $"_iobs".
-Definition __is_cxa : ident := $"_is_cxa".
-Definition __k : ident := $"_k".
-Definition __l64a_buf : ident := $"_l64a_buf".
 Definition __lb : ident := $"_lb".
 Definition __lbfsize : ident := $"_lbfsize".
-Definition __locale : ident := $"_locale".
-Definition __localtime_buf : ident := $"_localtime_buf".
-Definition __lock : ident := $"_lock".
-Definition __maxwds : ident := $"_maxwds".
-Definition __mblen_state : ident := $"_mblen_state".
-Definition __mbrlen_state : ident := $"_mbrlen_state".
-Definition __mbrtowc_state : ident := $"_mbrtowc_state".
-Definition __mbsrtowcs_state : ident := $"_mbsrtowcs_state".
-Definition __mbstate : ident := $"_mbstate".
-Definition __mbtowc_state : ident := $"_mbtowc_state".
-Definition __mult : ident := $"_mult".
 Definition __nbuf : ident := $"_nbuf".
-Definition __new : ident := $"_new".
-Definition __next : ident := $"_next".
-Definition __nextf : ident := $"_nextf".
-Definition __niobs : ident := $"_niobs".
-Definition __nmalloc : ident := $"_nmalloc".
 Definition __offset : ident := $"_offset".
-Definition __on_exit_args : ident := $"_on_exit_args".
 Definition __p : ident := $"_p".
-Definition __p5s : ident := $"_p5s".
 Definition __r : ident := $"_r".
-Definition __r48 : ident := $"_r48".
-Definition __rand48 : ident := $"_rand48".
-Definition __rand_next : ident := $"_rand_next".
 Definition __read : ident := $"_read".
-Definition __reent : ident := $"_reent".
-Definition __result : ident := $"_result".
-Definition __result_k : ident := $"_result_k".
-Definition __seed : ident := $"_seed".
 Definition __seek : ident := $"_seek".
-Definition __seek64 : ident := $"_seek64".
-Definition __sig_func : ident := $"_sig_func".
-Definition __sign : ident := $"_sign".
-Definition __signal_buf : ident := $"_signal_buf".
 Definition __size : ident := $"_size".
-Definition __stderr : ident := $"_stderr".
-Definition __stdin : ident := $"_stdin".
-Definition __stdout : ident := $"_stdout".
-Definition __strtok_last : ident := $"_strtok_last".
 Definition __ub : ident := $"_ub".
 Definition __ubuf : ident := $"_ubuf".
-Definition __unspecified_locale_info : ident := $"_unspecified_locale_info".
-Definition __unused : ident := $"_unused".
-Definition __unused_rand : ident := $"_unused_rand".
-Definition __up : ident := $"_up".
 Definition __ur : ident := $"_ur".
 Definition __w : ident := $"_w".
-Definition __wcrtomb_state : ident := $"_wcrtomb_state".
-Definition __wcsrtombs_state : ident := $"_wcsrtombs_state".
-Definition __wctomb_state : ident := $"_wctomb_state".
-Definition __wds : ident := $"_wds".
 Definition __write : ident := $"_write".
-Definition __x : ident := $"_x".
 Definition _a : ident := $"a".
+Definition _abort : ident := $"abort".
 Definition _abort_with : ident := $"abort_with".
 Definition _active : ident := $"active".
 Definition _alloc : ident := $"alloc".
+Definition _allocated : ident := $"allocated".
 Definition _args : ident := $"args".
 Definition _arr : ident := $"arr".
 Definition _build_heap : ident := $"build_heap".
+Definition _certicoq_modify : ident := $"certicoq_modify".
 Definition _create_heap : ident := $"create_heap".
 Definition _create_space : ident := $"create_space".
+Definition _curr : ident := $"curr".
 Definition _depth : ident := $"depth".
 Definition _do_generation : ident := $"do_generation".
 Definition _do_scan : ident := $"do_scan".
@@ -232,13 +150,17 @@ Definition _edge_list : ident := $"edge_list".
 Definition _empty_graph : ident := $"empty_graph".
 Definition _exch : ident := $"exch".
 Definition _exit : ident := $"exit".
-Definition _fi : ident := $"fi".
+Definition _export : ident := $"export".
+Definition _fake_sp : ident := $"fake_sp".
 Definition _fill_edge : ident := $"fill_edge".
 Definition _find : ident := $"find".
 Definition _first_available : ident := $"first_available".
 Definition _forward : ident := $"forward".
+Definition _forward_remset : ident := $"forward_remset".
 Definition _forward_roots : ident := $"forward_roots".
+Definition _fp : ident := $"fp".
 Definition _fprintf : ident := $"fprintf".
+Definition _frame : ident := $"frame".
 Definition _free : ident := $"free".
 Definition _freeN : ident := $"freeN".
 Definition _freeSet : ident := $"freeSet".
@@ -246,8 +168,11 @@ Definition _free_graph : ident := $"free_graph".
 Definition _free_heap : ident := $"free_heap".
 Definition _from : ident := $"from".
 Definition _from_limit : ident := $"from_limit".
+Definition _from_rem_limit : ident := $"from_rem_limit".
 Definition _from_start : ident := $"from_start".
 Definition _garbage_collect : ident := $"garbage_collect".
+Definition _garbage_collect_all : ident := $"garbage_collect_all".
+Definition _gen_level : ident := $"gen_level".
 Definition _graph : ident := $"graph".
 Definition _graph_E : ident := $"graph_E".
 Definition _graph_V : ident := $"graph_V".
@@ -276,24 +201,40 @@ Definition _mallocK : ident := $"mallocK".
 Definition _mallocN : ident := $"mallocN".
 Definition _mst : ident := $"mst".
 Definition _n : ident := $"n".
+Definition _nalloc : ident := $"nalloc".
 Definition _new : ident := $"new".
+Definition _newp : ident := $"newp".
 Definition _next : ident := $"next".
 Definition _num_allocs : ident := $"num_allocs".
+Definition _odata : ident := $"odata".
+Definition _oldp : ident := $"oldp".
 Definition _p : ident := $"p".
 Definition _p0 : ident := $"p0".
+Definition _p_cell : ident := $"p_cell".
+Definition _p_val : ident := $"p_val".
 Definition _parent : ident := $"parent".
+Definition _prev : ident := $"prev".
+Definition _print_heapsize : ident := $"print_heapsize".
+Definition _printf : ident := $"printf".
 Definition _ptr_to_int_or_ptr : ident := $"ptr_to_int_or_ptr".
+Definition _q : ident := $"q".
 Definition _rank : ident := $"rank".
+Definition _rem_limit : ident := $"rem_limit".
+Definition _remembered : ident := $"remembered".
 Definition _reset_heap : ident := $"reset_heap".
+Definition _result_block : ident := $"result_block".
 Definition _resume : ident := $"resume".
+Definition _root : ident := $"root".
 Definition _roots : ident := $"roots".
 Definition _s : ident := $"s".
 Definition _scan : ident := $"scan".
 Definition _sink : ident := $"sink".
 Definition _size : ident := $"size".
+Definition _sp : ident := $"sp".
 Definition _space : ident := $"space".
 Definition _spaces : ident := $"spaces".
 Definition _src : ident := $"src".
+Definition _stack_frame : ident := $"stack_frame".
 Definition _start : ident := $"start".
 Definition _subset : ident := $"subset".
 Definition _subsets : ident := $"subsets".
@@ -311,7 +252,7 @@ Definition _u : ident := $"u".
 Definition _ufind : ident := $"ufind".
 Definition _unionS : ident := $"unionS".
 Definition _v : ident := $"v".
-Definition _va : ident := $"va".
+Definition _value_sp : ident := $"value_sp".
 Definition _vfind : ident := $"vfind".
 Definition _w : ident := $"w".
 Definition _wedge : ident := $"wedge".
@@ -721,16 +662,22 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                    (mksignature (AST.Tlong :: AST.Tlong :: nil) AST.Tlong
                      cc_default)) (Tcons tlong (Tcons tlong Tnil)) tlong
      cc_default)) ::
- (___builtin_fmax,
-   Gfun(External (EF_builtin "__builtin_fmax"
-                   (mksignature (AST.Tfloat :: AST.Tfloat :: nil) AST.Tfloat
-                     cc_default)) (Tcons tdouble (Tcons tdouble Tnil))
-     tdouble cc_default)) ::
- (___builtin_fmin,
-   Gfun(External (EF_builtin "__builtin_fmin"
-                   (mksignature (AST.Tfloat :: AST.Tfloat :: nil) AST.Tfloat
-                     cc_default)) (Tcons tdouble (Tcons tdouble Tnil))
-     tdouble cc_default)) ::
+ (___builtin_fence,
+   Gfun(External (EF_builtin "__builtin_fence"
+                   (mksignature nil AST.Tvoid cc_default)) Tnil tvoid
+     cc_default)) ::
+ (___builtin_cls,
+   Gfun(External (EF_builtin "__builtin_cls"
+                   (mksignature (AST.Tint :: nil) AST.Tint cc_default))
+     (Tcons tint Tnil) tint cc_default)) ::
+ (___builtin_clsl,
+   Gfun(External (EF_builtin "__builtin_clsl"
+                   (mksignature (AST.Tlong :: nil) AST.Tint cc_default))
+     (Tcons tlong Tnil) tint cc_default)) ::
+ (___builtin_clsll,
+   Gfun(External (EF_builtin "__builtin_clsll"
+                   (mksignature (AST.Tlong :: nil) AST.Tint cc_default))
+     (Tcons tlong Tnil) tint cc_default)) ::
  (___builtin_fmadd,
    Gfun(External (EF_builtin "__builtin_fmadd"
                    (mksignature
@@ -759,25 +706,16 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      AST.Tfloat cc_default))
      (Tcons tdouble (Tcons tdouble (Tcons tdouble Tnil))) tdouble
      cc_default)) ::
- (___builtin_read16_reversed,
-   Gfun(External (EF_builtin "__builtin_read16_reversed"
-                   (mksignature (AST.Tlong :: nil) AST.Tint16unsigned
-                     cc_default)) (Tcons (tptr tushort) Tnil) tushort
-     cc_default)) ::
- (___builtin_read32_reversed,
-   Gfun(External (EF_builtin "__builtin_read32_reversed"
-                   (mksignature (AST.Tlong :: nil) AST.Tint cc_default))
-     (Tcons (tptr tuint) Tnil) tuint cc_default)) ::
- (___builtin_write16_reversed,
-   Gfun(External (EF_builtin "__builtin_write16_reversed"
-                   (mksignature (AST.Tlong :: AST.Tint :: nil) AST.Tvoid
-                     cc_default)) (Tcons (tptr tushort) (Tcons tushort Tnil))
-     tvoid cc_default)) ::
- (___builtin_write32_reversed,
-   Gfun(External (EF_builtin "__builtin_write32_reversed"
-                   (mksignature (AST.Tlong :: AST.Tint :: nil) AST.Tvoid
-                     cc_default)) (Tcons (tptr tuint) (Tcons tuint Tnil))
-     tvoid cc_default)) ::
+ (___builtin_fmax,
+   Gfun(External (EF_builtin "__builtin_fmax"
+                   (mksignature (AST.Tfloat :: AST.Tfloat :: nil) AST.Tfloat
+                     cc_default)) (Tcons tdouble (Tcons tdouble Tnil))
+     tdouble cc_default)) ::
+ (___builtin_fmin,
+   Gfun(External (EF_builtin "__builtin_fmin"
+                   (mksignature (AST.Tfloat :: AST.Tfloat :: nil) AST.Tfloat
+                     cc_default)) (Tcons tdouble (Tcons tdouble Tnil))
+     tdouble cc_default)) ::
  (___builtin_debug,
    Gfun(External (EF_external "__builtin_debug"
                    (mksignature (AST.Tint :: nil) AST.Tvoid
@@ -798,11 +736,10 @@ Definition global_definitions : list (ident * globdef fundef type) :=
 
 Definition public_idents : list ident :=
 (_freeSet :: _makeSet :: _Union :: _find :: _freeN :: _mallocN ::
- ___builtin_debug :: ___builtin_write32_reversed ::
- ___builtin_write16_reversed :: ___builtin_read32_reversed ::
- ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
- ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::
- ___builtin_fmax :: ___builtin_expect :: ___builtin_unreachable ::
+ ___builtin_debug :: ___builtin_fmin :: ___builtin_fmax ::
+ ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::
+ ___builtin_fmadd :: ___builtin_clsll :: ___builtin_clsl :: ___builtin_cls ::
+ ___builtin_fence :: ___builtin_expect :: ___builtin_unreachable ::
  ___builtin_va_end :: ___builtin_va_copy :: ___builtin_va_arg ::
  ___builtin_va_start :: ___builtin_membar :: ___builtin_annot_intval ::
  ___builtin_annot :: ___builtin_sel :: ___builtin_memcpy_aligned ::
