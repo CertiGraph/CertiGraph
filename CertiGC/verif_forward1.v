@@ -4,16 +4,15 @@ Require Import CertiGraph.CertiGC.forward_lemmas.
 
 Local Open Scope logic.
 
-
 Lemma body_forward_inL:
  forall (Espec : OracleKind)
-      (rsh sh : share) (gv : globals) (fi ti : val) (g : LGraph)
-      (t_info : thread_info) (f_info : fun_info)
+      (rsh sh : share) (gv : globals) (ti : val) (g : LGraph)
+      (t_info : thread_info)
       (roots : roots_t) (outlier : outlier_t)
       (from to : nat)
       (depth z : Z)
       (SH : readable_share rsh) (SH0 : writable_share sh)
-      (H : super_compatible (g, t_info, roots) f_info outlier)
+      (H : super_compatible (g, t_info, roots) outlier)
       (H0 : forward_p_compatible (inl z) roots g from)
       (H1 : forward_condition g t_info from to)
       (H2 : 0 <= depth <= Int.max_signed)
@@ -23,21 +22,20 @@ Lemma body_forward_inL:
    LOCAL (temp _from_start (gen_start g from);
    temp _from_limit (limit_address g t_info from);
    temp _next (next_address t_info to);
-   temp _p (forward_p_address (inl z) ti f_info g); 
+   temp _p (forward_p_address (inl z) t_info g); 
    temp _depth (vint depth))
-   SEP (all_string_constants rsh gv; fun_info_rep rsh f_info fi;
+   SEP (all_string_constants rsh gv;
    outlier_rep outlier; graph_rep g; thread_info_rep sh t_info ti))
   (fn_body f_forward)
   (normal_ret_assert
      ((EX (g' : LGraph) (t_info' : thread_info) (roots' : roots_t),
-       PROP (super_compatible (g', t_info', roots') f_info outlier;
-       roots' = upd_roots from to (inl z) g roots f_info;
+       PROP (super_compatible (g', t_info', roots') outlier;
+       roots' = upd_roots from to (inl z) g roots;
        forward_relation from to (Z.to_nat depth)
          (forward_p2forward_t (inl z) roots g) g g';
        forward_condition g' t_info' from to;
        thread_info_relation t_info t_info')
-       RETURN ( ) SEP (all_string_constants rsh gv;
-                  fun_info_rep rsh f_info fi; outlier_rep outlier;
+       RETURN ( ) SEP (all_string_constants rsh gv; outlier_rep outlier; 
                   graph_rep g'; thread_info_rep sh t_info' ti))%argsassert
         * stackframe_of f_forward)).
 Proof.
@@ -47,13 +45,18 @@ abbreviate_semax.
   destruct H as [? [? [? ?]]]. destruct H1 as [? [? [? [? ?]]]].
   unfold limit_address, next_address, forward_p_address.
   unfold thread_info_rep. Intros.
-    assert (Zlength roots = Zlength (live_roots_indices f_info)) by
+  pose (H11:=True).
+(*    assert (Zlength roots = Zlength (live_roots_indices f_info)) by
         (rewrite <- (Zlength_map _ _ (flip Znth (ti_args t_info))), <- H4, Zlength_map; trivial).
-    pose proof (Znth_map _ (root2val g) _ H0). hnf in H0. rewrite H11 in H0.
-    rewrite H4, Znth_map in H12 by assumption. unfold flip in H12.
-    remember (Znth z roots) as root. rewrite <- H11 in H0.
+        *)
+  pose (H12 := True).
+(*    pose proof (Znth_map _ (root2val g) _ H0). hnf in H0. (*rewrite H11 in H0.*)
+    rewrite Znth_map in H12 by assumption. unfold flip in H12.
+    *)
+    remember (Znth z roots) as root. 
+    red in H0. (* rewrite <- H11 in H0.*)
     pose proof (Znth_In _ _ H0).
-    rewrite <- Heqroot in H13. rewrite H11 in H0. unfold Inhabitant_val in H12.
+    rewrite <- Heqroot in H13. (*rewrite H11 in H0. unfold Inhabitant_val in H12.*)
     assert (forall v, In (inr v) roots -> isptr (vertex_address g v)). { (**)
       intros. destruct H5. unfold vertex_address. red in H15.
       rewrite Forall_forall in H15.
@@ -65,9 +68,16 @@ abbreviate_semax.
       destruct root as [[? | ?] | ?]; simpl; auto.
       - destruct g0. simpl. exact I.
       - specialize (H14 _ H13). apply isptr_is_pointer_or_integer. assumption. }
+    red in H4.
+    sep_apply (isolate_frame sh (ti_frames t_info) z).
+     1: rewrite <- H4, Zlength_map; assumption.
+    set (W := allp _).
+    Intros.
+    rewrite <- H4. rewrite Znth_map by lia. rewrite <- Heqroot.
+    pose proof I. (*
     assert (0 <= Znth z (live_roots_indices f_info) < MAX_ARGS) by
-        (apply (fi_index_range f_info), Znth_In; assumption).
-    forward; rewrite H12. (*1: entailer!.*)
+        (apply (fi_index_range f_info), Znth_In; assumption).*)
+    forward. (*1: entailer!.*)
     assert_PROP (valid_int_or_ptr (root2val g root)). {
       gather_SEP (graph_rep _) (outlier_rep _).
       sep_apply (root_valid_int_or_ptr _ _ _ _ H13 H5). entailer!. }
@@ -89,7 +99,18 @@ abbreviate_semax.
       entailer!.
       * simpl; split3; try rewrite <- Heqroot; [easy..|].
         split3; [constructor | easy | apply tir_id].
-      * unfold thread_info_rep. entailer!.
+      * subst W.
+        repeat sep_apply allp_sepcon1.
+        apply allp_left with (Vlong (Int64.repr (2*z0+1))).
+        set (P := data_at _ int_or_ptr_type (Vlong _) _).
+        set (Q := frames_rep _ _).
+        sep_apply (modus_ponens_wand P Q). clear P. subst Q.
+        unfold thread_info_rep.
+        replace (Vlong (Int64.repr (2 * z0 + 1))) with (Znth z (frames2roots (ti_frames t_info))).
+           2:{ rewrite <- H4. rewrite Znth_map by auto. rewrite <- Heqroot. reflexivity.  }
+        rewrite upd_Znth_unchanged by (rewrite <- H4, Zlength_map; auto).
+        rewrite update_frames_same.        
+        cancel. entailer!.
     + unfold GC_Pointer2val. destruct g0. forward_if.
       2: exfalso; apply Int.one_not_zero in H20; assumption.
       forward_call (Vptr b i).
@@ -122,8 +143,28 @@ abbreviate_semax.
         entailer!.
         -- split3; [| |split3]; simpl; try rewrite <- Heqroot;
              [easy.. | constructor | hnf; intuition | apply tir_id].
-        -- unfold thread_info_rep. entailer!.
-    + specialize (H14 _ H13). destruct (vertex_address g v) eqn:? ; try contradiction.
+        -- subst W.
+        repeat sep_apply allp_sepcon1.
+        apply allp_left with (Vptr b i).
+        set (P := data_at _ int_or_ptr_type (Vptr b i) _).
+        set (Q := frames_rep _ _).
+        sep_apply (modus_ponens_wand P Q). clear P. subst Q.
+        unfold thread_info_rep.
+        replace (Vptr b i) with (Znth z (frames2roots (ti_frames t_info))).
+         2:{ rewrite <- H4. rewrite Znth_map by auto. rewrite <- Heqroot. reflexivity.  }
+      rewrite upd_Znth_unchanged by (rewrite <- H4, Zlength_map; auto).
+      rewrite update_frames_same.        
+      cancel. entailer!.
+    + assert (W * data_at sh int_or_ptr_type (vertex_address g v)
+                            (frame_root_address (ti_frames t_info) z)
+              |-- frames_rep sh
+              (update_frames (ti_frames t_info)
+                 (upd_Znth z (frames2roots (ti_frames t_info)) (vertex_address g v)))). {
+         subst W. sep_apply allp_sepcon1. apply allp_left with (vertex_address g v).
+         rewrite sepcon_comm. apply modus_ponens_wand.
+                 }
+     sep_apply H20. clear H20 W.
+    specialize (H14 _ H13). destruct (vertex_address g v) eqn:? ; try contradiction.
       forward_if. 2: exfalso; apply Int.one_not_zero in H20; assumption.
       clear H20 H20'. simpl in H15, H17. forward_call (Vptr b i).
       rewrite <- Heqv0 in *.
@@ -184,15 +225,46 @@ abbreviate_semax.
              unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
              rewrite H21. entailer!. }
            unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
-           thaw FR. forward.
-           Exists g (upd_thread_info_arg
-                       t_info
-                       (Znth z (live_roots_indices f_info))
-                       (vertex_address g (copied_vertex (vlabel g v))) H16)
-                  (upd_bunch z f_info roots (inr (copied_vertex (vlabel g v)))).
-           unfold thread_info_rep. entailer!. 2: simpl; entailer!. simpl.
+           thaw FR.
+           set (fr := update_frames _ _).
+           sep_apply (isolate_frame sh fr z).
+           {clear - H0 H4. subst fr.
+           rewrite <- (Zlength_map _ _ (root2val g)) in H0. rewrite H4 in H0.
+           rewrite frames2roots_update_frames. list_solve.
+           apply invariants.Zlength_eq. list_solve.
+           }
+           Intros.
+           assert (frame_root_address fr z = frame_root_address (ti_frames t_info) z). {
+              subst fr; clear - H0 H4.
+              rewrite frame_root_address_same; list_solve. 
+           }
+           rewrite H24.
+           forward. rewrite <- H24 at 2.
+           pose (fr' := update_frames (ti_frames t_info)
+                    (upd_Znth z (frames2roots (ti_frames t_info)) 
+                        (vertex_address g (copied_vertex (vlabel g v))))).
+           Exists g (update_thread_info_frames t_info fr')
+                  (upd_Znth z roots (inr (copied_vertex (vlabel g v)))).
+           unfold thread_info_rep.
+           entailer!.
+           2:{ simpl; entailer!.
+           replace (ti_fp (update_thread_info_frames t_info fr')) with (ti_fp t_info)
+             by(unfold ti_fp, fr'; destruct (ti_frames t_info) as [|[? ? ?] ?]; reflexivity).
+           cancel.
+           sep_apply allp_sepcon2. apply allp_left with (vertex_address g (copied_vertex (vlabel g v))).
+           rewrite <- H24.
+           eapply derives_trans; [apply modus_ponens_wand| ].
+           unfold fr'. unfold fr.
+           rewrite frames2roots_update_frames by (apply invariants.Zlength_eq; list_solve).
+           rewrite update_update_frames by (apply invariants.Zlength_eq; list_solve).
+           rewrite upd_Znth_twice. auto.
+           rewrite <- H4, Zlength_map; auto.             
+           }
+           simpl.
            split; split; [|split; [|split] | |split]; auto.
-           ++ now apply upd_fun_thread_arg_compatible.
+           ++ red. unfold fr'.
+           rewrite frames2roots_update_frames by (apply invariants.Zlength_eq; list_solve).
+            rewrite <- upd_Znth_map. f_equal. auto.
            ++ specialize (H9 _ H19 H21). destruct H9 as [? _].
               now apply upd_roots_compatible.
            ++ rewrite <- Heqroot, H21.
@@ -204,7 +276,7 @@ abbreviate_semax.
            pose proof (make_header_int_rep_mark_iff g v). simpl in H22.
            rewrite H22 in H21. clear H22. apply not_true_is_false in H21.
            rewrite make_header_Wosize by assumption.
-           assert (0 <= Z.of_nat to < 12). {
+           assert (0 <= Z.of_nat to < MAX_SPACES). {
              clear -H H8. destruct H as [_ [_ ?]]. red in H8.
              pose proof (spaces_size (ti_heap t_info)).
              rewrite Zlength_correct in H0. rep_lia. } unfold heap_struct_rep.
@@ -213,7 +285,7 @@ abbreviate_semax.
            remember (Znth (Z.of_nat to) (spaces (ti_heap t_info))) as sp_to.
            assert (isptr (space_start sp_to)) by (rewrite <- H23; apply start_isptr).
            remember (map space_tri (spaces (ti_heap t_info))) as l.
-           assert (@Znth (val * (val * val)) (Vundef, (Vundef, Vundef))
+           assert (@Znth (val * (val * (val*val))) (Vundef, (Vundef, (Vundef,Vundef)))
                          (Z.of_nat to) l = space_tri sp_to). {
              subst l sp_to. rewrite Znth_map by (rewrite spaces_size; rep_lia).
              reflexivity. }
@@ -243,14 +315,26 @@ abbreviate_semax.
            rewrite <- Heqsp_to. thaw FR.
            gather_SEP (data_at _ thread_info_type _ _)
                       (data_at _ heap_type _ _)
-                      (heap_rest_rep _).
-           replace_SEP 0 (thread_info_rep
-                            sh (cut_thread_info t_info _ _ Hi Hh) ti). {
+                      (heap_rest_rep _)
+                      (frames_rep _ _).
+           replace_SEP 0 (thread_info_rep sh 
+                            (update_thread_info_frames
+                             (cut_thread_info t_info _ _ Hi Hh)
+                             (update_frames (ti_frames t_info)
+                               (upd_Znth z (frames2roots (ti_frames t_info))
+                                  (vertex_address g v)))) ti). {
              entailer. unfold thread_info_rep. simpl ti_heap. simpl ti_heap_p. cancel.
              simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
-             unfold space_tri at 3. simpl. unfold heap_struct_rep. cancel. }
+             unfold space_tri at 3. simpl. unfold heap_struct_rep. cancel.
+             apply derives_refl'. do 5 f_equal.
+             f_equal. unfold ti_fp.
+             destruct (ti_frames t_info) as [|[? ? ?]?]; simpl; auto.
+             f_equal.
+             rewrite Vptrofs_unfold_true, ptrofs_to_int64_repr by reflexivity.
+             auto.              
+           }
            sep_apply (graph_vertex_ramif_stable _ _ H19). Intros.
-           freeze [1; 2; 3; 4; 5] FR. rewrite v0.
+           freeze [1; 2; 3; 4] FR. rewrite v0.
            remember (nth_sh g from) as shv.
            assert (writable_share (space_sh sp_to)) by
                (rewrite <- H24; apply generation_share_writable).
@@ -280,12 +364,10 @@ abbreviate_semax.
                (WORD_SIZE * (used_space sp_to + 1))%Z by rep_lia.
            remember (offset_val (WORD_SIZE * (used_space sp_to + 1))
                                 (space_start sp_to)) as nv.
-           thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j.
+           thaw FR. freeze [0; 1; 2; 3; 4] FR. rename i into j.
            remember (Zlength (raw_fields (vlabel g v))) as n.
            assert (isptr nv) by (subst nv; rewrite isptr_offset_val; assumption).
-           remember (field_address thread_info_type
-                                   [ArraySubsc (Znth z (live_roots_indices f_info));
-                                    StructField _args] ti) as p_addr.
+           remember (frame_root_address (ti_frames t_info) z) as p_addr.
            remember (field_address heap_type
                                    [StructField _next; ArraySubsc (Z.of_nat to);
                                     StructField _spaces] (ti_heap_p t_info)) as n_addr.
@@ -316,7 +398,7 @@ abbreviate_semax.
            ++ unfold vertex_rep, vertex_at. Intros.
               rewrite fields_eq_length, <- Heqn. forward.
               ** entailer!. pose proof (mfv_all_is_ptr_or_int _ _ H9 H10 H19).
-                 rewrite Forall_forall in H45. apply H45, Znth_In.
+                 rewrite Forall_forall in H43. apply H43, Znth_In.
                  rewrite fields_eq_length. assumption.
               ** rewrite (data_at__tarray_value _ _ 1) by lia. Intros.
                  rewrite data_at__singleton_array_eq.
@@ -376,7 +458,7 @@ abbreviate_semax.
                 rewrite <- H30. unfold vertex_at; entailer!. }
               gather_SEP (vertex_at _ _ _ _) (graph_rep _).
               rewrite (copied_v_derives_new_g g v to) by assumption.
-              freeze [1; 2; 3; 4] FR. remember (lgraph_add_copied_v g v to) as g'.
+              freeze [1; 2; 3] FR. remember (lgraph_add_copied_v g v to) as g'.
               assert (vertex_address g' v = vertex_address g v) by
                   (subst g'; apply lacv_vertex_address_old; assumption).
               assert (vertex_address g' (new_copied_v g to) =
@@ -433,43 +515,84 @@ abbreviate_semax.
               remember (lgraph_copy_v g v to) as g'. rewrite <- H30 in *. thaw FR.
               forward_call (nv). subst p_addr.
               remember (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh)
-                as t_info'. unfold thread_info_rep. Intros. forward.
-              remember (Znth z (live_roots_indices f_info)) as lz.
+                as t_info'.
+              set (fr' := update_frames _ _).
+              unfold thread_info_rep. Intros.
+              simpl ti_frames.
+              sep_apply (isolate_frame sh fr' z). {
+                subst fr'. clear - H4 H0. rewrite <- H4.
+                rewrite frames2roots_update_frames. list_solve.
+                rewrite <- H4. apply invariants.Zlength_eq.
+                list_solve.
+              }
+              set (W := allp _).
+              Intros.
+              assert (frame_root_address fr' z = frame_root_address (ti_frames t_info) z). {
+                     apply frame_root_address_same.
+                     clear - H0 H4. rewrite <- H4. list_solve.
+                     rewrite <- H4. list_solve.
+              }
+              rewrite H38.
+              forward.
+              subst W.
+              match goal with |- context [SEPx (?A :: ?B :: _)] =>
+                assert (A * B |-- frames_rep sh (update_frames fr' (upd_Znth z (frames2roots fr') nv)))
+              end. {
+                 sep_apply allp_sepcon2. apply allp_left with nv.
+                 rewrite H38.
+                 apply modus_ponens_wand.
+              }
+              sep_apply H39. clear H39. 
               gather_SEP
                 (data_at sh thread_info_type _ ti)
                 (heap_struct_rep sh _ _)
-                (heap_rest_rep _ ).
-              replace_SEP 0 (thread_info_rep
-                               sh (update_thread_info_arg t_info' lz nv H16) ti). {
+                (heap_rest_rep _ )
+                (frames_rep _ _).
+              replace_SEP 0 (thread_info_rep sh
+                              (update_thread_info_frames t_info' 
+                               (update_frames fr' (upd_Znth z (frames2roots fr') nv))) ti). {
                 unfold thread_info_rep. simpl heap_head. simpl ti_heap_p.
-                simpl ti_args. simpl ti_heap. clear Heqt_info'. entailer!. }
-              remember (update_thread_info_arg t_info' lz nv H16) as t. subst t_info'.
-              rename t into t_info'. rewrite H30 in H32.
+                simpl ti_args. simpl ti_heap.
+                entailer!. simpl.
+                apply derives_refl'. f_equal. f_equal. f_equal. f_equal. f_equal. f_equal.
+                unfold cut_thread_info. 
+                destruct (ti_frames t_info) as [|[???]]; simpl; try reflexivity.
+              }
+
+              subst fr'.
+              rewrite frames2roots_update_frames by (apply invariants.Zlength_eq; list_solve).
+              rewrite upd_Znth_twice by list_solve.
+              rewrite update_update_frames by (apply invariants.Zlength_eq; list_solve).
+              set (t :=  update_thread_info_frames _ _). subst t_info'. rename t into t_info'.
+              rewrite H30 in H32.
               assert (forward_relation from to 0 (inl (inr v)) g g') by
                   (subst g'; constructor; assumption).
               assert (forward_condition g' t_info' from to). {
-                subst g' t_info' from. apply lcv_forward_condition; try assumption.
+                subst g' t_info' from.
+                apply lcv_forward_condition; try assumption.
                 red. intuition. }
-              remember (upd_bunch z f_info roots (inr (new_copied_v g to))) as roots'.
-              assert (super_compatible (g', t_info', roots') f_info outlier). {
-                subst g' t_info' roots' lz. rewrite H30, H32.
+              remember (upd_Znth z roots (inr (new_copied_v g to))) as roots'.
+              assert (super_compatible (g', t_info', roots') outlier). {
+                subst g' t_info' roots'. rewrite H30, H32.
                 apply lcv_super_compatible; try assumption. red. intuition. }
               assert (thread_info_relation t_info t_info'). {
                 subst t_info'. split; [|split]; [reflexivity| |]; intros m.
                 - rewrite utiacti_gen_size. reflexivity.
                 - rewrite utiacti_space_start. reflexivity. }
               forward_if.
-              ** destruct H41 as [? [? ?]]. replace fp with (gen_start g' from) by
+              ** destruct H42 as [? [? ?]]. replace fp with (gen_start g' from) by
                      (subst fp g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g' from)) with
                      (limit_address g' t_info' from) by
-                     (subst fn gn; rewrite H43; reflexivity).
+                     (subst fn gn; rewrite H44; reflexivity).
                  replace n_addr with (next_address t_info' to) by
-                     (subst n_addr; rewrite H41; reflexivity).
+                     (subst n_addr; reflexivity).
+                 change (ti_frames (cut_thread_info t_info (Z.of_nat to) (vertex_size g v) Hi Hh))
+                     with (ti_frames t_info). 
                  forward_for_simple_bound
                    n
                    (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
-                    PROP (super_compatible (g3, t_info3, roots') f_info outlier;
+                    PROP (super_compatible (g3, t_info3, roots') outlier;
                           forward_loop
                             from to (Z.to_nat (depth - 1))
                             (sublist 0 i (vertex_pos_pairs g' (new_copied_v g to)))
@@ -484,12 +607,11 @@ abbreviate_semax.
                            temp _next (next_address t_info3 to);
                            temp _depth (vint depth))
                     SEP (all_string_constants rsh gv;
-                         fun_info_rep rsh f_info fi;
                          outlier_rep outlier;
                          graph_rep g3;
                          thread_info_rep sh t_info3 ti))%assert.
-                 --- pose proof (raw_fields_range2 (vlabel g v)). simpl in H45.
-                     now rewrite <- Heqn in H45.
+                 --- pose proof (raw_fields_range2 (vlabel g v)). simpl in H46.
+                     now rewrite <- Heqn in H46.
                  --- Exists g' t_info'. autorewrite with sublist.
                      assert (forward_loop from to (Z.to_nat (depth - 1)) [] g' g') by
                          constructor. unfold thread_info_relation. entailer!.
@@ -500,7 +622,7 @@ abbreviate_semax.
                          (rewrite Heqg', <- lcv_graph_has_gen; assumption).
                      assert (graph_has_v g' (new_copied_v g to)) by
                          (rewrite Heqg'; apply lcv_graph_has_v_new; assumption).
-                     forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots',
+                     forward_call (rsh, sh, gv, ti, g3, t_info3, roots',
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
                      +++ apply prop_right. simpl. rewrite sub_repr, H30.
@@ -511,7 +633,7 @@ abbreviate_semax.
                              subst g'. apply graph_has_v_in_closure. assumption.
                          *** rewrite <- H30. assumption.
                      +++ split3; [| |split].
-                         *** apply (fl_graph_has_v _ _ _ _ _ _ H50 H47 _ H51).
+                         *** apply (fl_graph_has_v _ _ _ _ _ _ H51 H48 _ H52).
                          *** erewrite <- fl_raw_fields; eauto. subst g'.
                              unfold lgraph_copy_v. subst n.
                              rewrite <- lmc_raw_fields, lacv_vlabel_new.
@@ -521,18 +643,18 @@ abbreviate_semax.
                          *** simpl. lia.
                      +++ Intros vret. destruct vret as [[g4 t_info4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 t_info4.
-                         simpl in H53. subst roots4.
+                         simpl in H54. subst roots4.
                          assert (gen_start g3 from = gen_start g4 from). {
                            eapply fr_gen_start; eauto.
-                           erewrite <- fl_graph_has_gen; eauto. } rewrite H53.
+                           erewrite <- fl_graph_has_gen; eauto. } rewrite H54.
                          assert (limit_address g3 t_info3 from =
                                  limit_address g4 t_info4 from). {
                            unfold limit_address. f_equal. 2: assumption. f_equal.
-                           destruct H56 as [? [? _]]. rewrite H57. reflexivity. }
-                         rewrite H57.
+                           destruct H57 as [? [? _]]. rewrite H58. reflexivity. }
+                         rewrite H58.
                          assert (next_address t_info3 to = next_address t_info4 to). {
-                           unfold next_address. f_equal. destruct H56. assumption. }
-                         rewrite H58. clear H53 H57 H58.
+                           unfold next_address. f_equal. destruct H57. assumption. }
+                         rewrite H59. clear H54 H58 H59.
                          assert (thread_info_relation t_info' t_info4) by
                              (apply tir_trans with t_info3; assumption).
                          assert (forward_loop
@@ -547,7 +669,7 @@ abbreviate_semax.
                      assert (thread_info_relation t_info t_info3) by
                          (apply tir_trans with t_info';
                           [split; [|split]|]; assumption).
-                     rewrite sublist_same in H46; auto. clear Heqt.
+                     rewrite sublist_same in H47; auto.
                      2: { subst n g' from.
                           rewrite vpp_Zlength, lcv_vlabel_new; auto. }
                      Opaque super_compatible.
@@ -557,19 +679,38 @@ abbreviate_semax.
                          (rewrite <- Z2Nat.inj_succ; [f_equal|]; lia).
                      constructor; easy.
                      Transparent super_compatible.
-              ** assert (depth = 0) by lia. subst depth. clear H42.
+              ** assert (depth = 0) by lia. subst depth. clear H43.
                  clear Heqnv. forward.
                  remember (cut_thread_info
                              t_info (Z.of_nat to) (vertex_size g v) Hi Hh).
-                 Exists (lgraph_copy_v g v to) (update_thread_info_arg t lz nv H16)
-                        (upd_bunch z f_info roots (inr (new_copied_v g to))).
+                 Exists (lgraph_copy_v g v to) t_info'
+                        (upd_Znth z roots (inr (new_copied_v g to))).
                  entailer!. simpl; rewrite <- Heqroot.
-                 rewrite if_true by reflexivity; rewrite H21; easy.
+                 rewrite if_true by reflexivity. rewrite H21; easy.
       * forward_if. 1: exfalso; apply H21'; reflexivity.
         rewrite H20 in n. forward.
+        assert (update_frames (ti_frames t_info)
+                  (upd_Znth z (frames2roots (ti_frames t_info)) (vertex_address g v))
+                = ti_frames t_info). {
+                  change (vertex_address g v) with (root2val g (inr v)).
+                  rewrite Heqroot. rewrite <- H4.
+                  rewrite upd_Znth_map, upd_Znth_unchanged by lia.
+                  rewrite H4. Search update_frames frames2roots.
+                  rewrite update_frames_same; auto.
+                }
+        set (t_info' := update_thread_info_frames t_info 
+                 (update_frames (ti_frames t_info)
+                 (upd_Znth z (frames2roots (ti_frames t_info)) (vertex_address g v)))).
+        replace t_info' with t_info.
+        2:{ subst t_info'.
+           transitivity (update_thread_info_frames t_info (ti_frames t_info)).
+           destruct t_info; reflexivity.
+           f_equal. auto.           
+        }
         Exists g t_info roots. entailer!; simpl.
         -- rewrite <- Heqroot, if_false by assumption.
            split3; [| |simpl root2forward; constructor]; try easy.
            now constructor.
         -- unfold thread_info_rep. entailer!.
+        rewrite H22; auto.
 Qed.

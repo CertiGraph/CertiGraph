@@ -171,9 +171,10 @@ void forward (value *from_start,  /* beginning of from-space */
    may improve the cache locality of the copied graph.
 */
 {
-  value v = *p;
-  if(Is_block(v)) {
-
+  value * v;
+  value va = *p;
+  if(Is_block(va)) {
+    v = (value*)int_or_ptr_to_ptr(va);
     /* printf("Start: %lld end"" %lld word %lld \n", from_start, from_limit, v); */
     /* if  (v == 4360698480) printf ("Found it\n"); */
     if(Is_from(from_start, from_limit, v)) {
@@ -182,20 +183,21 @@ void forward (value *from_start,  /* beginning of from-space */
       if(hd == 0) { /* already forwarded */
         *p = Field(v,0);
       } else {
-        int i;
-        int sz;
+        intnat i;
+        intnat sz;
         value *new;
         sz = Wosize_hd(hd);
         new = *next+1;
         *next = new+sz;
-        if (sz > 50) printf("Moving value %p with tag %ld with %d fields\n", (void*)v, hd, sz);
-        for(i = -1; i < sz; i++) {
+	/*        if (sz > 50) printf("Moving value %p with tag %ld with %d fields\n", (void*)v, hd, sz); */
+        Hd_val(new) = hd;
+        for(i = 0; i < sz; i++) {
           /* printf("Moving field %d\n", i); */
           Field(new, i) = Field(v, i);
         }
         Hd_val(v) = 0;
-        Field(v, 0) = (value)new;
-        *p = (value)new;
+	Field(v, 0) = ptr_to_int_or_ptr((void *)new);
+	*p = ptr_to_int_or_ptr((void *)new);
         /* printf("New %lld\n", new); */
         /* if (*p == 73832) printf("Found it\n"); */
         if (depth>0)

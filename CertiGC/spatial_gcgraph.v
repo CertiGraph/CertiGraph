@@ -68,9 +68,25 @@ Definition ti_fp (ti: thread_info) : val :=
           :: map space_tri (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
   heap_rest_rep ti.(ti_heap).
 
+Definition frames_adr (frames: list frame) : val :=
+  match frames with nil => nullval | fr::_ => fr_adr fr end.
+
+Fixpoint frames_rep (sh: share) (frames: list frame) : mpred :=
+  match frames with
+  | nil => emp
+  | {| fr_adr := a; fr_root := r; fr_roots := s |} :: rest =>
+     data_at sh (Tstruct _stack_frame noattr) 
+       (field_address0 (tarray int_or_ptr_type (Zlength s))
+         [ArraySubsc (Zlength s)] r,
+         (r, frames_adr rest)) a * 
+     data_at sh (tarray int_or_ptr_type (Zlength s)) s r *
+      frames_rep sh rest
+  end.
+
 Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   data_at sh thread_info_type 
      (Vundef, (Vundef, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (vptrofs (ti.(ti_nalloc)), nullval)))))) t *
+  frames_rep sh (ti_frames ti) *
   heap_struct_rep sh (map space_tri ti.(ti_heap).(spaces)) ti.(ti_heap_p) *
   heap_rest_rep ti.(ti_heap).
 
@@ -1354,7 +1370,7 @@ Lemma thread_info_rep_ramif_stable: forall sh tinfo ti gen1 gen2,
        -* thread_info_rep sh tinfo ti).
 Proof.
   intros. unfold thread_info_rep.
-  set (P := data_at _ _ _ _).
+  set (P := data_at _ _ _ _ * frames_rep _ _).
   set (Q := heap_rest_rep _).
   rewrite (sepcon_comm P), sepcon_assoc.
   set (R := (P * Q)).
@@ -1417,7 +1433,7 @@ Lemma thread_info_rep_ramif_stable_1: forall sh tinfo ti gen,
     (space_struct_rep sh tinfo gen -* thread_info_rep sh tinfo ti).
 Proof.
   intros. unfold thread_info_rep.
-  set (P := data_at _ _ _ _). clearbody P.
+  set (P := data_at _ _ _ _ * _). clearbody P.
   set (Q := heap_rest_rep _). clearbody Q.
   rewrite (sepcon_comm P), sepcon_assoc.
   set (R := P * Q).
@@ -1604,4 +1620,123 @@ Proof.
   rewrite in_map_iff in H3. destruct H3 as [idx [? ?]].
   rewrite nat_inc_list_In_iff in H4. apply vertex_rep_add; auto.
   split; subst; simpl; assumption.
+Qed.
+
+
+Lemma frames_adr_update_frames: forall frames roots, frames_adr (update_frames frames roots) = frames_adr frames.
+Proof.
+  destruct frames as [ | [? ? ?] ? ]; intros; auto.
+Qed.
+
+Fixpoint frame_root_address (frames: list frame) (i: Z) : val :=
+  match frames with
+  | nil => nullval (* oops! *)
+  | {|fr_adr:=a; fr_root:=r; fr_roots:=s |}::rest =>
+     if zlt i (Zlength s)
+     then offset_val (i * WORD_SIZE) r
+     else frame_root_address rest (i-Zlength s)
+  end.
+
+Lemma isolate_frame: 
+    forall sh frames z, 
+    0 <= z < Zlength (frames2roots frames) ->
+    frames_rep sh frames |--
+    data_at sh int_or_ptr_type (Znth z (frames2roots frames)) (frame_root_address frames z) *
+    ALL v:val, data_at sh int_or_ptr_type v (frame_root_address frames z) -* 
+           frames_rep sh (update_frames frames (upd_Znth z (frames2roots frames) v)).
+Proof.
+unfold frames2roots.
+induction frames as [ | [a r s] rest ]; simpl; intros.
+-
+rewrite Zlength_nil in H.
+lia.
+-
+rewrite Zlength_app in H.
+if_tac.
++ clear IHrest.
+(* saturate_local.
+ clear H1 H3 H4.*)
+ erewrite (data_at_tarray_split _ _ z); try reflexivity; try list_solve.
+ erewrite (data_at_tarray_split _ (Zlength s - z) 1).
+ 3: instantiate (1 := (sublist z (Zlength s) s)).
+ all: try reflexivity. all: try list_solve.
+ rewrite !sublist_sublist by lia.
+ rewrite (sublist_one (0+z) (1+z)) by list_solve.
+ erewrite data_at_singleton_array_eq by reflexivity.
+ rewrite !Z.sub_add.
+ rewrite Z.add_0_l.
+ rewrite Znth_app1 by lia.
+ change (sizeof int_or_ptr_type) with WORD_SIZE.
+ rewrite <- (Z.mul_comm WORD_SIZE).
+ cancel.
+ apply allp_right; intro v.
+ rewrite !upd_Znth_app1 by lia.
+ rewrite <- !ZtoNat_Zlength.
+ rewrite <- !sublist_skip by lia.
+ rewrite <- !sublist_firstn.
+ autorewrite with sublist.
+ rewrite (sublist_same 0 (Zlength (concat _))) by lia.
+ fold (frames2roots rest).
+ rewrite update_frames_same.
+ apply -> wand_sepcon_adjoint.
+ cancel.
+(* rewrite (sublist_same 0 (Zlength s) (upd_Znth z s v)) by list_solve.*)
+ erewrite (data_at_tarray_split _ (Zlength s) z).
+ 4: reflexivity.
+ all: try reflexivity.
+ all: try list_solve.
+ rewrite sublist_upd_Znth_l by list_solve.
+ cancel.
+ erewrite (data_at_tarray_split _ (Zlength s - z) 1).
+ 4: instantiate (1 := sublist z (Zlength s) (upd_Znth z s v)).
+ all: try reflexivity.
+ all: try list_solve.
+ autorewrite with sublist.
+ rewrite (sublist_one (0+z) (1+z)) by list_solve.
+ erewrite data_at_singleton_array_eq by reflexivity.
+ rewrite Z.add_0_l.
+ rewrite upd_Znth_same by lia.
+ rewrite sublist_upd_Znth_r by lia.
+ cancel.
+ +
+  sep_apply (IHrest (z-Zlength s)); clear IHrest; try lia.
+  rewrite Znth_app2 by lia. cancel.
+  do 2 sep_apply allp_sepcon1.
+  apply allp_right; intro v.
+  apply allp_left with (x:=v).
+  repeat sep_apply log_normalize.sepcon_wand_wand_sepcon.
+  apply wand_derives; auto.
+  rewrite !upd_Znth_app2 by lia.
+ rewrite <- !ZtoNat_Zlength.
+ rewrite <- !sublist_skip by rep_lia.
+ rewrite <- !sublist_firstn.
+ fold (frames2roots rest).
+ autorewrite with sublist.
+ rewrite frames_adr_update_frames.
+ cancel.
+Qed.
+
+Lemma frame_root_address_same: forall frames roots z,
+  Zlength roots = Zlength (frames2roots frames) ->
+  0 <= z < Zlength (frames2roots frames) ->
+  frame_root_address (update_frames frames roots) z = frame_root_address frames z.
+Proof.
+unfold frames2roots.
+induction frames as [|[a r s ] fr]; simpl; intros; auto.
+rewrite Zlength_app in *.
+if_tac.
+rewrite if_true; auto.
+rewrite Zlength_solver.Zlength_firstn in H1.
+rewrite <- Zlength_correct in H1. 
+lia.
+rewrite Zlength_solver.Zlength_firstn in *.
+rewrite <- Zlength_correct in *.
+rewrite IHfr; clear IHfr.
+rewrite if_false.
+f_equal. rep_lia.
+rep_lia.
+rewrite Zlength_solver.Zlength_skipn.
+rewrite <- Zlength_correct.
+rep_lia.
+rep_lia.
 Qed.

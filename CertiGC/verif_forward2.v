@@ -7,12 +7,12 @@ Local Open Scope logic.
 Lemma body_forward_inR:
  forall (Espec : OracleKind)
     (rsh sh : share) (gv : globals) (fi ti : val) (g : LGraph)
-    (t_info : thread_info) (f_info : fun_info) (roots : roots_t) 
+    (t_info : thread_info) (roots : roots_t) 
     (outlier : outlier_t)
     (from to : nat) (depth : Z) (p : VType * Z)
     (SH : readable_share rsh)
     (SH0 : writable_share sh)
-    (H : super_compatible (g, t_info, roots) f_info outlier)
+    (H : super_compatible (g, t_info, roots) outlier)
     (H0 : forward_p_compatible (inr p) roots g from)
     (H1 : forward_condition g t_info from to)
     (H2 : 0 <= depth <= Int.max_signed)
@@ -22,21 +22,20 @@ Lemma body_forward_inR:
    LOCAL (temp _from_start (gen_start g from);
    temp _from_limit (limit_address g t_info from);
    temp _next (next_address t_info to);
-   temp _p (forward_p_address (inr p) ti f_info g); 
+   temp _p (forward_p_address (inr p) t_info g); 
    temp _depth (vint depth))
-   SEP (all_string_constants rsh gv; fun_info_rep rsh f_info fi;
+   SEP (all_string_constants rsh gv;
    outlier_rep outlier; graph_rep g; thread_info_rep sh t_info ti))
   (fn_body f_forward)
   (normal_ret_assert
      ((EX (g' : LGraph) (t_info' : thread_info) (roots' : roots_t),
-       PROP (super_compatible (g', t_info', roots') f_info outlier;
-       roots' = upd_roots from to (inr p) g roots f_info;
+       PROP (super_compatible (g', t_info', roots') outlier;
+       roots' = upd_roots from to (inr p) g roots;
        forward_relation from to (Z.to_nat depth)
          (forward_p2forward_t (inr p) roots g) g g';
        forward_condition g' t_info' from to;
        thread_info_relation t_info t_info')
-       RETURN ( ) SEP (all_string_constants rsh gv;
-                  fun_info_rep rsh f_info fi; outlier_rep outlier;
+       RETURN ( ) SEP (all_string_constants rsh gv; outlier_rep outlier;
                   graph_rep g'; thread_info_rep sh t_info' ti))%argsassert
         * stackframe_of f_forward)).
 Proof.
@@ -46,7 +45,7 @@ abbreviate_semax.
   destruct H as [? [? [? ?]]]. destruct H1 as [? [? [? [? ?]]]].
   unfold limit_address, next_address, forward_p_address.
   (* p is Vtype * Z, ie located in graph *)
-    destruct p as [v n]. destruct H0 as [? [? [? ?]]]. freeze [0; 1; 2; 4] FR.
+    destruct p as [v n]. destruct H0 as [? [? [? ?]]]. freeze [0; 1; 3] FR.
     localize [vertex_rep (nth_sh g (vgeneration v)) g v].
     unfold vertex_rep, vertex_at. Intros.
     assert_PROP (offset_val (WORD_SIZE * n) (vertex_address g v) =
@@ -77,7 +76,7 @@ abbreviate_semax.
         apply in_gcptr_outlier with (gcptr:= g0) (outlier:=outlier) (n:=n) in H0;
           try assumption.
         apply (in_map single_outlier_rep outlier g0) in H0.
-        replace_SEP 3 (single_outlier_rep g0). {
+        replace_SEP 2 (single_outlier_rep g0). {
           clear -H0.
           apply (list_in_map_inv single_outlier_rep) in H0; destruct H0 as [? [? ?]].
           rewrite H.
@@ -297,7 +296,7 @@ abbreviate_semax.
            pose proof (make_header_int_rep_mark_iff g v'). simpl in H23.
            rewrite H23 in H22. clear H23. apply not_true_is_false in H22.
            rewrite make_header_Wosize by assumption.
-           assert (0 <= Z.of_nat to < 12). {
+           assert (0 <= Z.of_nat to < MAX_SPACES). {
              clear -H H8. destruct H as [_ [_ ?]]. red in H8.
              pose proof (spaces_size (ti_heap t_info)).
              rewrite Zlength_correct in H0. rep_lia. } unfold heap_struct_rep.
@@ -306,7 +305,7 @@ abbreviate_semax.
            remember (Znth (Z.of_nat to) (spaces (ti_heap t_info))) as sp_to.
            assert (isptr (space_start sp_to)) by (rewrite <- H24; apply start_isptr).
            remember (map space_tri (spaces (ti_heap t_info))).
-           assert (@Znth (val * (val * val)) (Vundef, (Vundef, Vundef))
+           assert (@Znth (val * (val * (val* val))) (Vundef, (Vundef, (Vundef, Vundef)))
                          (Z.of_nat to) l = space_tri sp_to). {
              subst l sp_to. rewrite Znth_map by (rewrite spaces_size; rep_lia).
              reflexivity. }
@@ -317,7 +316,7 @@ abbreviate_semax.
            rewrite sapil_ptr_val by easy. rewrite H28. unfold space_tri.
            rewrite <- Z.add_assoc.
            replace (1 + Zlength (raw_fields (vlabel g v'))) with (vertex_size g v') by
-               (unfold vertex_size; lia). thaw FR. freeze [0; 2; 3; 4; 5; 6] FR.
+               (unfold vertex_size; lia). thaw FR. freeze [0; 2; 3; 4; 5] FR.
            assert (Hi : 0 <= Z.of_nat to < Zlength (spaces (ti_heap t_info))) by
                (rewrite spaces_size; rep_lia).
            assert (Hh: has_space (Znth (Z.of_nat to) (spaces (ti_heap t_info)))
@@ -334,14 +333,18 @@ abbreviate_semax.
            rewrite (heap_rest_rep_cut
                       (ti_heap t_info) (Z.of_nat to) (vertex_size g v') Hi Hh Hn).
            rewrite <- Heqsp_to. thaw FR.
-           gather_SEP (data_at _ _ _ ti) (data_at _ _ _ _) (heap_rest_rep _).
+           gather_SEP (data_at _ _ _ ti) (frames_rep _ _) (data_at _ _ _ _) (heap_rest_rep _).
            replace_SEP 0 (thread_info_rep
                             sh (cut_thread_info t_info _ _ Hi Hh) ti). {
              entailer. unfold thread_info_rep. simpl ti_heap. simpl ti_heap_p. cancel.
              simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
-             unfold space_tri at 3. simpl. unfold heap_struct_rep. cancel. }
+             unfold space_tri at 3. simpl. unfold heap_struct_rep. cancel.
+             apply derives_refl'. do 5 f_equal. f_equal.
+             rewrite Vptrofs_unfold_true, ptrofs_to_int64_repr by reflexivity.
+             auto.              
+             }
            sep_apply (graph_vertex_ramif_stable _ _ H19). Intros.
-           freeze [1; 2; 3; 4; 5] FR. rewrite v0.
+           freeze [1; 2; 3; 4] FR. rewrite v0.
            remember (nth_sh g from) as shv.
            assert (writable_share (space_sh sp_to)) by
                (rewrite <- H25; apply generation_share_writable).
@@ -371,7 +374,7 @@ abbreviate_semax.
                (WORD_SIZE * (used_space sp_to + 1))%Z by rep_lia.
            remember (offset_val (WORD_SIZE * (used_space sp_to + 1))
                                 (space_start sp_to)) as nv.
-           thaw FR. freeze [0; 1; 2; 3; 4; 5] FR. rename i into j.
+           thaw FR. freeze [0; 1; 2; 3; 4] FR. rename i into j.
            remember (Zlength (raw_fields (vlabel g v'))) as n'.
            assert (isptr nv) by (subst nv; rewrite isptr_offset_val; assumption).
            remember (field_address heap_type
@@ -461,7 +464,7 @@ abbreviate_semax.
                 rewrite <- H31. unfold vertex_at; entailer!. }
               gather_SEP (vertex_at _ _ _ _) (graph_rep _).
               rewrite (copied_v_derives_new_g g v' to) by assumption.
-              freeze [1; 2; 3; 4] FR. remember (lgraph_add_copied_v g v' to) as g'.
+              freeze [1; 2; 3] FR. remember (lgraph_add_copied_v g v' to) as g'.
               assert (vertex_address g' v' = vertex_address g v') by
                   (subst g'; apply lacv_vertex_address_old; assumption).
               assert (vertex_address g' (new_copied_v g to) =
@@ -589,6 +592,7 @@ abbreviate_semax.
                   (rewrite arg_size; rep_lia).
               gather_SEP
                 (data_at _ _ _ _)
+                (frames_rep _ _ )
                 (heap_struct_rep _ _ _)
                 (heap_rest_rep _).
               replace_SEP 0 (thread_info_rep sh t_info' ti).
@@ -610,7 +614,7 @@ abbreviate_semax.
                   apply lcv_forward_condition_unchanged; try assumption.
                   red. intuition. }
                 remember roots as roots'.
-                assert (super_compatible (g1, t_info', roots') f_info outlier). {
+                assert (super_compatible (g1, t_info', roots') outlier). {
 
                   subst g1 g' t_info' roots'.
                   apply lgd_super_compatible, lcv_super_compatible_unchanged;
@@ -631,7 +635,7 @@ abbreviate_semax.
                  forward_for_simple_bound
                    n'
                    (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
-                    PROP (super_compatible (g3, t_info3, roots') f_info outlier;
+                    PROP (super_compatible (g3, t_info3, roots') outlier;
                           forward_loop
                             from to (Z.to_nat (depth - 1))
                             (sublist 0 i (vertex_pos_pairs g1 (new_copied_v g to)))
@@ -646,7 +650,6 @@ abbreviate_semax.
                            temp _next (next_address t_info3 to);
                            temp _depth (vint depth))
                     SEP (all_string_constants rsh gv;
-                         fun_info_rep rsh f_info fi;
                          outlier_rep outlier;
                          graph_rep g3;
                          thread_info_rep sh t_info3 ti))%assert.
@@ -664,7 +667,7 @@ abbreviate_semax.
                      assert (graph_has_v g1 (new_copied_v g to)) by
                        (subst g1; rewrite <- lgd_graph_has_v;
                        rewrite Heqg'; apply lcv_graph_has_v_new; assumption).
-                     forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots',
+                     forward_call (rsh, sh, gv, ti, g3, t_info3, roots',
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
                      +++ apply prop_right. simpl. rewrite sub_repr.

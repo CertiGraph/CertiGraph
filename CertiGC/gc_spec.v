@@ -171,15 +171,6 @@ Proof.
   rewrite !sepcon_emp, approx_idem. reflexivity.
 Qed.
 
-Fixpoint frame_root_address (frames: list frame) (i: Z) : val :=
-  match frames with
-  | nil => nullval (* oops! *)
-  | {|fr_adr:=a; fr_root:=r; fr_roots:=s |}::rest =>
-     if i <=? Zlength s
-     then offset_val (i * WORD_SIZE) r
-     else frame_root_address rest (i-Zlength s)
-  end.
-
 Definition forward_p_address
            (p: forward_p_type) (ti: thread_info) (g: LGraph) :=
   match p with
@@ -197,7 +188,7 @@ Definition next_address t_info to :=
 
 Definition forward_spec :=
   DECLARE _forward
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
+  WITH rsh: share, sh: share, gv: globals, ti: val,
        g: LGraph, t_info: thread_info,
        roots : roots_t, outlier: outlier_t,
        from: nat, to: nat, depth: Z, forward_p: forward_p_type
@@ -318,7 +309,7 @@ Definition do_generation_spec :=
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) outlier;
-          do_generation_condition g t_info roots from to;
+          do_generation_condition g t_info (*roots*) from to;
           from <> to)
     PARAMS (space_address t_info from;
            space_address t_info to;
