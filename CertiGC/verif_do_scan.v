@@ -45,7 +45,7 @@ Proof.
   start_function.
   forward.
   forward_loop (EX n: nat, EX g': LGraph, EX t_info': thread_info,
-                PROP (super_compatible (g', t_info', roots) f_info outlier;
+                PROP (super_compatible (g', t_info', roots) outlier;
                       forward_condition g' t_info' from to;
                       thread_info_relation t_info t_info';
                       closure_has_index g' to (to_index + n);
@@ -56,15 +56,15 @@ Proof.
                  temp _from_start (gen_start g' from);
                  temp _from_limit (limit_address g' t_info' from);
                  temp _next (next_address t_info' to))
-                SEP (all_string_constants rsh gv; fun_info_rep rsh f_info fi;
+                SEP (all_string_constants rsh gv;
                outlier_rep outlier; graph_rep g'; thread_info_rep sh t_info' ti))
   break: (EX g' : LGraph, EX t_info' : thread_info,
-          PROP (super_compatible (g', t_info', roots) f_info outlier;
+          PROP (super_compatible (g', t_info', roots) outlier;
                 forward_condition g' t_info' from to;
                 do_scan_relation from to to_index g g';
                 thread_info_relation t_info t_info')
           LOCAL ()
-          SEP (all_string_constants rsh gv; fun_info_rep rsh f_info fi;
+          SEP (all_string_constants rsh gv;
                outlier_rep outlier; graph_rep g'; thread_info_rep sh t_info' ti)).
   - Exists O g t_info. destruct H as [? [? [? ?]]].
     replace (to_index + 0)%nat with to_index by lia. entailer!.
@@ -73,7 +73,7 @@ Proof.
     unfold next_address, thread_info_rep. Intros.
     unfold heap_struct_rep. destruct H5 as [? [? [? ?]]].
     destruct H6 as [? [? [? [? ?]]]].
-    assert (0 <= Z.of_nat to < 12). {
+    assert (0 <= Z.of_nat to < MAX_SPACES). {
       clear -H5 H14. destruct H5 as [_ [_ ?]]. red in H14.
       pose proof (spaces_size (ti_heap t_info')).
       rewrite Zlength_correct in H0. rep_lia. }
@@ -81,7 +81,7 @@ Proof.
     remember (Znth (Z.of_nat to) (spaces (ti_heap t_info'))) as sp_to.
     assert (isptr (space_start sp_to)) by (rewrite <- H18; apply start_isptr).
     remember (map space_tri (spaces (ti_heap t_info'))).
-    assert (@Znth (val * (val * val)) (Vundef, (Vundef, Vundef))
+    assert (@Znth (val * (val * (val*val))) (Vundef, (Vundef, (Vundef,Vundef)))
                   (Z.of_nat to) l = space_tri sp_to). {
       subst l sp_to. now rewrite Znth_map by (rewrite spaces_size; rep_lia). }
     forward; rewrite H22; unfold space_tri. 1: entailer!.
@@ -92,7 +92,7 @@ Proof.
     unfold gen_start at 1. rewrite if_true by assumption. rewrite H18.
     remember (WORD_SIZE * used_space sp_to)%Z as used_offset.
     remember (WORD_SIZE * previous_vertices_size g' to index)%Z as index_offset.
-    freeze [0; 1; 2; 4; 5] FR.
+    freeze [0; 1; 3; 4; 5] FR.
     gather_SEP (graph_rep g') (heap_rest_rep (ti_heap t_info')).
     assert (
         forall b i,
@@ -210,12 +210,13 @@ Proof.
       fold (heap_struct_rep sh l (ti_heap_p t_info')).
       gather_SEP
         (data_at _ thread_info_type _ _)
+        (frames_rep _ _)
         (heap_struct_rep _ _ _ ) (heap_rest_rep _).
       replace_SEP 0 (thread_info_rep sh t_info' ti) by
           (unfold thread_info_rep; entailer!).
       forward_if
         (EX g'': LGraph, EX t_info'': thread_info,
-         PROP (super_compatible (g'', t_info'', roots) f_info outlier;
+         PROP (super_compatible (g'', t_info'', roots) outlier;
                forward_condition g'' t_info'' from to;
                thread_info_relation t_info t_info'';
                (no_scan g' (to, index) /\ g'' = g') \/
@@ -234,7 +235,6 @@ Proof.
                 temp _from_limit (limit_address g'' t_info'' from);
                 temp _next (next_address t_info'' to))
          SEP (thread_info_rep sh t_info'' ti; graph_rep g'';
-              fun_info_rep rsh f_info fi;
               all_string_constants rsh gv; outlier_rep outlier)).
       * try (rewrite Int64.unsigned_repr in H27;
              [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia]).
@@ -252,7 +252,7 @@ Proof.
                    (sublist 0 (i - 1)
                             (nat_inc_list
                                (length (vlabel g' (to, index)).(raw_fields)))) g' g3;
-                super_compatible (g3, t_info3, roots) f_info outlier;
+                super_compatible (g3, t_info3, roots) outlier;
                 forward_condition g3 t_info3 from to;
                 thread_info_relation t_info t_info3;
                 1 <= i <= z + 1)
@@ -265,7 +265,6 @@ Proof.
                   temp _next (next_address t_info3 to))
            SEP (all_string_constants rsh gv;
                 outlier_rep outlier;
-                fun_info_rep rsh f_info fi;
                 graph_rep g3;
                 thread_info_rep sh t_info3 ti))
           continue: (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
@@ -274,7 +273,7 @@ Proof.
                    (sublist 0 i
                             (nat_inc_list
                                (length (vlabel g' (to, index)).(raw_fields)))) g' g3;
-                super_compatible (g3, t_info3, roots) f_info outlier;
+                super_compatible (g3, t_info3, roots) outlier;
                 forward_condition g3 t_info3 from to;
                 thread_info_relation t_info t_info3;
                 1 <= i + 1 <= z + 1)
@@ -286,7 +285,6 @@ Proof.
                   temp _from_limit (limit_address g3 t_info3 from);
                   temp _next (next_address t_info3 to))
            SEP (all_string_constants rsh gv;
-                fun_info_rep rsh f_info fi;
                 outlier_rep outlier;
                 graph_rep g3;
                 thread_info_rep sh t_info3 ti)).
@@ -335,7 +333,7 @@ Proof.
                   (eapply svfl_graph_has_gen in H29; [rewrite <- H29|]; assumption).
               assert (graph_has_v g3 (to, index)) by
                   (eapply svfl_graph_has_v in H29; [apply H29| assumption..]).
-              forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots,
+              forward_call (rsh, sh, gv, ti, g3, t_info3, roots,
                             outlier, from, to, 0, (@inr Z _ ((to, index), i - 1))).
               ** simpl snd. apply prop_right. simpl.
                  do 4 f_equal.
