@@ -1595,12 +1595,18 @@ Proof.
   destruct p; simpl in H4, H5.
   - destruct (Znth z roots) eqn:? ; [destruct s|]; simpl in *; rewrite Heqr;
       inversion H5; subst; [exists []; simpl..|].
-    + split; [|split; [rewrite rrm_non_vertex_id|]]; auto. 1: intros; now rewrite Heqr.
+    + split; [|split; [rewrite rrm_non_vertex_id|]]; auto.
+      rewrite <- Heqr; apply upd_Znth_unchanged'.
+      intros; now rewrite Heqr.
       eapply inl_rf_list_relation; eauto.
-    + split; [|split; [rewrite rrm_non_vertex_id|]]; auto. 1: intros; now rewrite Heqr.
+    + split; [|split; [rewrite rrm_non_vertex_id|]]; auto.
+    rewrite <- Heqr; apply upd_Znth_unchanged'.
+      intros; now rewrite Heqr.
       eapply inl_rf_list_relation; eauto.
     + split; [|split; [rewrite if_false|]]; auto.
-      * erewrite rrm_not_in_id; eauto. simpl. intro. destruct H3 as [_ [_ ?]].
+      * erewrite rrm_not_in_id; eauto.
+       rewrite <- Heqr; apply upd_Znth_unchanged'.
+       simpl. intro. destruct H3 as [_ [_ ?]].
         rewrite map_fst_split in H9. destruct (split l1). simpl in H9.
         destruct H3 as [[_ ?] _]. rewrite <- H3 in H9. now destruct H9 as [_ [_ ?]].
       * eapply not_rf_list_relation; eauto.
@@ -1618,7 +1624,7 @@ Proof.
         rewrite In_map_fst_iff in H14. destruct H14 as [b ?].
         destruct (H3 _ _ H14) as [? _]. now subst b.
       * red. intros. congruence.
-    + rewrite if_true, H11; auto. exists [(v, (new_copied_v g1 to))].
+    + unfold upd_root. rewrite if_true, H11; auto. exists [(v, (new_copied_v g1 to))].
       simpl. split3.
       * apply lcv_semi_iso; auto. red in Hg. rewrite Forall_forall in Hg.
         destruct H0. red in H0. rewrite H0. apply Hg.
@@ -2397,10 +2403,12 @@ Proof.
   assert (He: forall e, evalid g1 e -> fst e <> new_copied_v g1 to). {
     intros. destruct H1 as [_ [? _]]. red in H1. rewrite H1 in H8.
     destruct H8. eapply graph_has_v_not_eq in H8; eauto. }
+  unfold upd_roots, upd_root.
   pose proof H1. destruct H8 as [Hv _]. red in Hv. destruct p; simpl in H4, H5.
   - destruct (Znth z roots) eqn:? ;
-      [destruct s|]; simpl in *; rewrite Heqr; inversion H5; subst; clear H5; try easy.
-    + now rewrite if_false.
+      [destruct s|]; simpl in *; rewrite ?Heqr; inversion H5; subst; clear H5;
+        try (rewrite <- Heqr, upd_Znth_unchanged'); auto.
+    + rewrite if_false; auto. rewrite <- Heqr, upd_Znth_unchanged'; auto. 
     + rewrite if_true, H11; auto. red in H7 |-* ; intros. specialize (H7 _ H5 H8 H9).
       rewrite reachable_from_roots in *. destruct H7 as [i [r [? [? ?]]]].
       pose proof I. rewrite upd_Znth_Zlength; auto.
@@ -2548,10 +2556,12 @@ Proof.
                             Znth i roots = inr r -> graph_has_v g1 r). {
       intros. red in H3. rewrite Forall_forall in H3. apply H3.
       rewrite <- filter_sum_right_In_iff, <- H8. now apply Znth_In. }
+  unfold upd_roots, upd_root.
   pose proof H1. destruct H7 as [Hv _]. red in Hv. destruct p; simpl in H5, H6.
   - destruct (Znth z roots) eqn:? ;
-      [destruct s|]; simpl in *; rewrite Heqr; inversion H6; subst; clear H6; try easy.
-    + now rewrite if_false.
+      [destruct s|]; simpl in *; rewrite ?Heqr; inversion H6; subst; clear H6; try easy;
+      try (rewrite <- Heqr, upd_Znth_unchanged'); auto; try easy.
+    + rewrite if_false; auto; rewrite <- Heqr, upd_Znth_unchanged'; easy.
     + rewrite if_true, H10; auto.
       split; intros; red in H6 |-* ; destruct H6; split; auto.
       * destruct H7; [| right]; auto. rewrite reachable_from_roots in H7.

@@ -1643,21 +1643,22 @@ Qed.
 
 Local Close Scope Z_scope.
 
+Definition upd_root (from to: nat)
+           (g: LGraph) (root: root_t) : root_t :=
+  match root with
+  | inl _ => root
+  | inr v => if Nat.eq_dec (vgeneration v) from
+              then if (vlabel g v).(raw_mark)
+                  then inr (vlabel g v).(copied_vertex)
+                  else inr (new_copied_v g to)
+              else root
+  end.
+
 Definition upd_roots (from to: nat) (forward_p: forward_p_type)
            (g: LGraph) (roots: roots_t) : roots_t :=
   match forward_p with
   | inr _ => roots
-  | inl index => match Znth index roots with
-                 | inl (inl z) => roots
-                 | inl (inr p) => roots
-                 | inr v => if Nat.eq_dec (vgeneration v) from
-                            then if (vlabel g v).(raw_mark)
-                                 then upd_Znth index roots
-                                                (inr (vlabel g v).(copied_vertex))
-                                 else upd_Znth index roots
-                                                (inr (new_copied_v g to))
-                            else roots
-                 end
+  | inl index => upd_Znth index roots (upd_root from to g (Znth index roots))
   end.
 
 Inductive forward_roots_loop (from to: nat):
@@ -4083,9 +4084,7 @@ Qed.
 Lemma upd_roots_Zlength: forall from to p g roots,
     Zlength (upd_roots from to p g roots) = Zlength roots.
 Proof.
-  intros. unfold upd_roots. destruct p. 2: reflexivity.
-  destruct (Znth z roots). 1: destruct s; reflexivity. if_tac. 2: reflexivity.
-  destruct (raw_mark (vlabel g v)); apply Zlength_upd_Znth.
+  intros. unfold upd_roots. destruct p. 2: reflexivity. list_solve.
 Qed.
 
 Lemma frl_roots_Zlength: forall from to l roots g roots' g',
@@ -4235,8 +4234,10 @@ Proof.
     rewrite <- H6. destruct (Z_lt_le_dec j (Zlength roots')).
     2: rewrite Znth_outofbounds in H5 by lia; inversion H5. split; auto.
     destruct (Z_lt_le_dec j 0); auto. rewrite Znth_outofbounds in H5 by lia.
-    inversion H5. } simpl in H4. destruct (Znth i roots) eqn:? .
-  - assert (roots' = roots) by (destruct s; assumption). clear H4. subst roots'.
+    inversion H5. }
+  unfold upd_roots, upd_root in *.
+  simpl in H4. destruct (Znth i roots) eqn:? .
+  - assert (roots' = roots) by (rewrite <- Heqr, upd_Znth_unchanged in H4; auto). clear H4. subst roots'.
     split; intros; auto. destruct H4; auto. congruence.
   - if_tac in H4.
     + destruct (raw_mark (vlabel g v0)) eqn: ?; subst; split; intros.
@@ -4251,7 +4252,7 @@ Proof.
       * destruct H4; auto. subst j. rewrite upd_Znth_same in H5 by assumption.
         inversion H5. unfold new_copied_v. simpl. auto.
       * assert (i<>j) by tauto. rewrite upd_Znth_diff in H5 by auto; auto.
-    + split; intros; subst roots'; auto. destruct H9; auto. congruence.
+    + rewrite <- Heqr in H4. rewrite upd_Znth_unchanged in H4 by auto. subst roots'. split; intros; auto. destruct H4; auto. congruence.
 Qed.
 
 Lemma np_roots_rel_cons: forall roots1 roots2 roots3 from i l,
@@ -4319,14 +4320,27 @@ Proof.
     simpl. intuition. rewrite Zlength_correct. apply inj_lt; assumption.
 Qed.
 
+
+Lemma upd_Znth_unchanged': forall {A} `{d: Inhabitant A} (i: Z) (al: list A),
+   upd_Znth i al (Znth i al) = al.
+Proof.
+  intros.
+  unfold upd_Znth.  unfold Sumbool.sumbool_and.
+  if_tac; auto.
+  list_solve.
+Qed.
+
 Lemma fr_roots_outlier_compatible: forall from to p g roots outlier,
     roots_outlier_compatible roots outlier ->
     roots_outlier_compatible (upd_roots from to p g roots) outlier.
 Proof.
-  intros. destruct p; simpl in *. 2: assumption. destruct (Znth z roots) eqn: ?.
-  + destruct s; assumption.
-  + if_tac. 2: assumption.
-    destruct (raw_mark (vlabel g v)); apply upd_roots_outlier_compatible; assumption.
+  intros. destruct p; simpl in *. 2: assumption.
+  assert (roots_outlier_compatible (upd_Znth z roots (Znth z roots)) outlier)
+    by (rewrite upd_Znth_unchanged'; auto).
+  unfold upd_root.
+  destruct (Znth z roots) eqn: ?; auto.
+  if_tac; auto.
+  destruct (raw_mark (vlabel g v)); apply upd_roots_outlier_compatible; assumption.
 Qed.
 
 Lemma fr_roots_graph_compatible: forall depth from to p g g' roots,
@@ -4335,17 +4349,20 @@ Lemma fr_roots_graph_compatible: forall depth from to p g g' roots,
     from <> to -> roots_graph_compatible roots g ->
     roots_graph_compatible (upd_roots from to p g roots) g'.
 Proof.
-  intros. destruct p.
+  intros.
+  unfold upd_roots, upd_root in *.
+  destruct p.
   - simpl in *. destruct (Znth z roots) eqn: ?; simpl in H2.
-    + destruct s; inversion H2; subst; assumption.
+    + rewrite <- Heqr. rewrite upd_Znth_unchanged'. destruct s; inversion H2; subst; assumption.
     + assert (graph_has_v g v). {
         red in H4. rewrite Forall_forall in H4. apply H4.
         rewrite <- filter_sum_right_In_iff. rewrite <- Heqr. apply Znth_In.
         assumption. }
       inversion H2; destruct (Nat.eq_dec (vgeneration v) from);
         try contradiction; subst; try assumption.
-      * destruct (raw_mark (vlabel g' v)) eqn:? . 2: inversion H9.
-        apply upd_Znth_graph_compatible. 1: assumption. specialize (H1 _ H5 Heqb).
+      * rewrite <- Heqr, upd_Znth_unchanged'; auto.
+      * rewrite H9.
+        apply upd_Znth_graph_compatible. 1: assumption. specialize (H1 _ H5 H9).
         destruct H1; assumption.
       * destruct (raw_mark (vlabel g v)) eqn:? . 1: inversion H9.
         apply lcv_roots_graph_compatible; assumption.
@@ -5364,10 +5381,8 @@ Lemma frr_roots_fi_compatible: forall from to roots1 g1 roots2 g2,
 Proof.
   intros. induction H; subst; auto.
   rewrite <- IHforward_roots_loop; clear.
-  unfold upd_roots.
-  destruct (Znth _). destruct s; auto.
-  if_tac; auto.
-  destruct (raw_mark _); rewrite Zlength_upd_Znth; auto.
+  unfold upd_roots, upd_root.
+  destruct (Znth _); list_solve. 
 Qed.
 
 Definition no_backward_edge (g: LGraph): Prop :=

@@ -97,7 +97,9 @@ abbreviate_semax.
       1: exfalso; apply H20'; reflexivity.
       forward. Exists g t_info roots.
       entailer!.
-      * simpl; split3; try rewrite <- Heqroot; [easy..|].
+      * simpl; split3; [easy | | ].
+        unfold upd_root. rewrite <- Heqroot, -> Heqroot, upd_Znth_unchanged'; auto.
+        rewrite <- Heqroot.
         split3; [constructor | easy | apply tir_id].
       * subst W.
         repeat sep_apply allp_sepcon1.
@@ -142,7 +144,8 @@ abbreviate_semax.
         forward. Exists g t_info roots.
         entailer!.
         -- split3; [| |split3]; simpl; try rewrite <- Heqroot;
-             [easy.. | constructor | hnf; intuition | apply tir_id].
+             [ easy |  | constructor | hnf; intuition | apply tir_id].
+             unfold upd_root. rewrite  Heqroot. rewrite upd_Znth_unchanged'; auto.
         -- subst W.
         repeat sep_apply allp_sepcon1.
         apply allp_left with (Vptr b i).
@@ -267,7 +270,7 @@ abbreviate_semax.
             rewrite <- upd_Znth_map. f_equal. auto.
            ++ specialize (H9 _ H19 H21). destruct H9 as [? _].
               now apply upd_roots_compatible.
-           ++ rewrite <- Heqroot, H21.
+           ++ unfold upd_root. rewrite <- Heqroot, H21.
               now rewrite if_true by reflexivity.
            ++ rewrite <- Heqroot. apply fr_v_in_forwarded; [reflexivity | assumption].
            ++ easy.
@@ -674,6 +677,7 @@ abbreviate_semax.
                           rewrite vpp_Zlength, lcv_vlabel_new; auto. }
                      Opaque super_compatible.
                      Exists g3 t_info3 roots'. entailer!. simpl.
+                     unfold upd_root.
                      rewrite <- Heqroot, H21, if_true by reflexivity. split; auto.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
                          (rewrite <- Z2Nat.inj_succ; [f_equal|]; lia).
@@ -685,7 +689,7 @@ abbreviate_semax.
                              t_info (Z.of_nat to) (vertex_size g v) Hi Hh).
                  Exists (lgraph_copy_v g v to) t_info'
                         (upd_Znth z roots (inr (new_copied_v g to))).
-                 entailer!. simpl; rewrite <- Heqroot.
+                 entailer!. unfold upd_roots, upd_root. simpl; rewrite <- Heqroot.
                  rewrite if_true by reflexivity. rewrite H21; easy.
       * forward_if. 1: exfalso; apply H21'; reflexivity.
         rewrite H20 in n. forward.
@@ -708,8 +712,10 @@ abbreviate_semax.
            f_equal. auto.           
         }
         Exists g t_info roots. entailer!; simpl.
-        -- rewrite <- Heqroot, if_false by assumption.
+        -- unfold upd_root.
+           rewrite <- Heqroot, if_false by assumption.
            split3; [| |simpl root2forward; constructor]; try easy.
+           rewrite Heqroot, upd_Znth_unchanged'; auto.
            now constructor.
         -- unfold thread_info_rep. entailer!.
         rewrite H22; auto.

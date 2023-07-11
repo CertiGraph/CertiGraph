@@ -229,13 +229,12 @@ Definition forward_spec :=
 
 Definition forward_roots_spec :=
   DECLARE _forward_roots
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
+  WITH rsh: share, sh: share, gv: globals,  ti: val,
        g: LGraph, t_info: thread_info,
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [tptr int_or_ptr_type,
        tptr int_or_ptr_type,
        tptr (tptr int_or_ptr_type),
-       tptr (if Archi.ptr64 then tulong else tuint),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) outlier;
@@ -244,7 +243,7 @@ Definition forward_roots_spec :=
     PARAMS (gen_start g from;
            limit_address g t_info from;
            next_address t_info to;
-           fi; ti)
+           ti)
     GLOBALS (gv)
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
@@ -300,12 +299,11 @@ Definition do_scan_spec :=
 
 Definition do_generation_spec :=
   DECLARE _do_generation
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
+  WITH rsh: share, sh: share, gv: globals, ti: val,
        g: LGraph, t_info: thread_info,
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [tptr space_type,
        tptr space_type,
-       tptr (if Archi.ptr64 then tulong else tuint),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) outlier;
@@ -313,7 +311,7 @@ Definition do_generation_spec :=
           from <> to)
     PARAMS (space_address t_info from;
            space_address t_info to;
-           fi; ti)
+           ti)
     GLOBALS (gv)
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
@@ -395,15 +393,14 @@ Definition make_tinfo_spec :=
 
 Definition resume_spec :=
   DECLARE _resume
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
+  WITH rsh: share, sh: share, gv: globals, ti: val,
        g: LGraph, t_info: thread_info,
        roots : roots_t
-  PRE [tptr (if Archi.ptr64 then tulong else tuint),
-       tptr thread_info_type]
+  PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           graph_thread_info_compatible g t_info;
           graph_gen_clear g O)
-    PARAMS (fi; ti)
+    PARAMS (ti)
     GLOBALS (gv)
     SEP (all_string_constants rsh gv;
          graph_rep g;
