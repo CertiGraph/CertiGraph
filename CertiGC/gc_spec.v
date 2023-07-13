@@ -261,9 +261,21 @@ Definition forward_roots_spec :=
          graph_rep g';
          thread_info_rep sh t_info' ti).
 
+Definition forward_remset_spec :=
+  DECLARE _forward_remset
+  WITH sh: share, ti: val, t_info: thread_info, from: nat, to: nat, next: val
+  PRE [ tptr space_type, tptr space_type, tptr (tptr int_or_ptr_type) ]
+     PROP (readable_share sh)
+     PARAMS ( space_address t_info from ; space_address t_info to; next )
+     SEP (thread_info_rep sh t_info ti)
+  POST [ tvoid ]
+     PROP()
+     RETURN ()
+     SEP(thread_info_rep sh t_info ti).
+
 Definition do_scan_spec :=
   DECLARE _do_scan
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
+  WITH rsh: share, sh: share, gv: globals, ti: val,
        g: LGraph, t_info: thread_info,
        roots : roots_t, outlier: outlier_t,
        from: nat, to: nat, to_index: nat
@@ -474,6 +486,7 @@ Definition Gprog: funspecs :=
                       abort_with_spec;
                       forward_spec;
                       forward_roots_spec;
+                      forward_remset_spec;
                       do_scan_spec;
                       do_generation_spec;
                       create_space_spec;

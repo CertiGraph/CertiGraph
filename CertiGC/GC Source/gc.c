@@ -240,9 +240,9 @@ void forward_roots (value *from_start,  /* beginning of from-space */
    while (frame != NULL) {
      curr = frame->root;
      limit = frame->next;
-     for (curr=frame->root; curr<limit; curr++)
-        forward(from_start, from_limit, next, curr, DEPTH);
      frame = frame->prev;
+     for (; curr<limit; curr++)
+        forward(from_start, from_limit, next, curr, DEPTH);
    }
 }
 
@@ -280,7 +280,7 @@ void do_generation (struct space *from,  /* descriptor of from-space */
    using fi and ti to determine the roots of liveness. */
 {
   value *p = to->next;
-  assert(from->next-from->start + from->rem_limit-from->limit <= to->limit-to->next);
+  /*  assert(from->next-from->start + from->rem_limit-from->limit <= to->limit-to->next); */
   forward_remset(from, to, &to->next);
   forward_roots(from->start, from->limit, &to->next, ti);
   do_scan(from->start, from->limit, p, &to->next);

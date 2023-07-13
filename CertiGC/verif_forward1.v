@@ -46,31 +46,25 @@ abbreviate_semax.
   unfold limit_address, next_address, forward_p_address.
   unfold thread_info_rep. Intros.
   pose (H11:=True).
-(*    assert (Zlength roots = Zlength (live_roots_indices f_info)) by
-        (rewrite <- (Zlength_map _ _ (flip Znth (ti_args t_info))), <- H4, Zlength_map; trivial).
-        *)
   pose (H12 := True).
-(*    pose proof (Znth_map _ (root2val g) _ H0). hnf in H0. (*rewrite H11 in H0.*)
-    rewrite Znth_map in H12 by assumption. unfold flip in H12.
-    *)
-    remember (Znth z roots) as root. 
-    red in H0. (* rewrite <- H11 in H0.*)
-    pose proof (Znth_In _ _ H0).
-    rewrite <- Heqroot in H13. (*rewrite H11 in H0. unfold Inhabitant_val in H12.*)
-    assert (forall v, In (inr v) roots -> isptr (vertex_address g v)). { (**)
+  remember (Znth z roots) as root.
+  red in H0.
+  pose proof (Znth_In _ _ H0).
+  rewrite <- Heqroot in H13.
+  assert (forall v, In (inr v) roots -> isptr (vertex_address g v)). { (**)
       intros. destruct H5. unfold vertex_address. red in H15.
       rewrite Forall_forall in H15.
       rewrite (filter_sum_right_In_iff v roots) in H14. apply H15 in H14.
       destruct H14. apply graph_has_gen_start_isptr in H14.
       remember (gen_start g (vgeneration v)) as vv. destruct vv; try contradiction.
       simpl. exact I. }
-    assert (is_pointer_or_integer (root2val g root)). {
-      destruct root as [[? | ?] | ?]; simpl; auto.
-      - destruct g0. simpl. exact I.
-      - specialize (H14 _ H13). apply isptr_is_pointer_or_integer. assumption. }
-    red in H4.
-    sep_apply (isolate_frame sh (ti_frames t_info) z).
-     1: rewrite <- H4, Zlength_map; assumption.
+  assert (is_pointer_or_integer (root2val g root)). {
+    destruct root as [[? | ?] | ?]; simpl; auto.
+    - destruct g0. simpl. exact I.
+    - specialize (H14 _ H13). apply isptr_is_pointer_or_integer. assumption. }
+  red in H4.
+  sep_apply (isolate_frame sh (ti_frames t_info) z);
+      [rewrite <- H4, Zlength_map; assumption | ].
     set (W := allp _).
     Intros.
     rewrite <- H4. rewrite Znth_map by lia. rewrite <- Heqroot.
