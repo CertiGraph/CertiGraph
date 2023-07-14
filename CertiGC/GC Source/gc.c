@@ -76,10 +76,11 @@ struct space {
 
 #define NURSERY_SIZE (1<<LOG_NURSERY_SIZE)
 
-#define MAX_SPACES (8*sizeof(value)-(3+LOG_NURSERY_SIZE)) /* how many generations */
-/* The "2" in the line above should properly be (1+log2(sizeof(value))), but 3 will do.
+#define MAX_SPACES (8*sizeof(value)-(4+LOG_NURSERY_SIZE)) /* how many generations */
+/* The "4" in the line above should properly be (1+log2(sizeof(value))), but 4 will do.
    This formula is designed so that the sum of all the sizes of the
-   generations is about equal to the total size of the address space.
+   generations is about equal to the total size of the address space
+   (but less than sizeof(size_t)/2 ).
 */
 
 #ifndef DEPTH
@@ -402,7 +403,7 @@ void garbage_collect(struct thread_info *ti)
 
       /* If the next generation does not yet exist, create it */
       if (h->spaces[i+1].start==NULL) {
-        int w = h->spaces[i].rem_limit-h->spaces[i].start;
+        intnat w = h->spaces[i].rem_limit-h->spaces[i].start;
         create_space(h->spaces+(i+1), RATIO*w);
       }
       /* Copy all the objects in generation i, into generation i+1 */
