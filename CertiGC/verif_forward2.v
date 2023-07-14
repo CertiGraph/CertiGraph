@@ -339,9 +339,6 @@ abbreviate_semax.
              entailer. unfold thread_info_rep. simpl ti_heap. simpl ti_heap_p. cancel.
              simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
              unfold space_tri at 3. simpl. unfold heap_struct_rep. cancel.
-             apply derives_refl'. do 5 f_equal. f_equal.
-             rewrite Vptrofs_unfold_true, ptrofs_to_int64_repr by reflexivity.
-             auto.              
              }
            sep_apply (graph_vertex_ramif_stable _ _ H19). Intros.
            freeze [1; 2; 3; 4] FR. rewrite v0.

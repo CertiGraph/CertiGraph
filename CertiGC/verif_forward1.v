@@ -106,7 +106,7 @@ abbreviate_semax.
            2:{ rewrite <- H4. rewrite Znth_map by auto. rewrite <- Heqroot. reflexivity.  }
         rewrite upd_Znth_unchanged by (rewrite <- H4, Zlength_map; auto).
         rewrite update_frames_same.        
-        cancel. entailer!.
+        cancel.
     + unfold GC_Pointer2val. destruct g0. forward_if.
       2: exfalso; apply Int.one_not_zero in H20; assumption.
       forward_call (Vptr b i).
@@ -151,7 +151,7 @@ abbreviate_semax.
          2:{ rewrite <- H4. rewrite Znth_map by auto. rewrite <- Heqroot. reflexivity.  }
       rewrite upd_Znth_unchanged by (rewrite <- H4, Zlength_map; auto).
       rewrite update_frames_same.        
-      cancel. entailer!.
+      cancel.
     + assert (W * data_at sh int_or_ptr_type (vertex_address g v)
                             (frame_root_address (ti_frames t_info) z)
               |-- frames_rep sh
@@ -326,9 +326,6 @@ abbreviate_semax.
              apply derives_refl'. do 5 f_equal.
              f_equal. unfold ti_fp.
              destruct (ti_frames t_info) as [|[? ? ?]?]; simpl; auto.
-             f_equal.
-             rewrite Vptrofs_unfold_true, ptrofs_to_int64_repr by reflexivity.
-             auto.              
            }
            sep_apply (graph_vertex_ramif_stable _ _ H19). Intros.
            freeze [1; 2; 3; 4] FR. rewrite v0.

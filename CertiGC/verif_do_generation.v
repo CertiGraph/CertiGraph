@@ -2,53 +2,6 @@ Require Import CertiGraph.CertiGC.gc_spec.
 
 Local Open Scope logic.
 
-Lemma ptrofs_divs_repr
-	 : forall i j : Z,
-       Ptrofs.min_signed <= i <= Ptrofs.max_signed ->
-       Ptrofs.min_signed <= j <= Ptrofs.max_signed ->
-       Ptrofs.divs (Ptrofs.repr i) (Ptrofs.repr j) = 
-       Ptrofs.repr (i ÷ j).
-Proof.
-  intros.
-  unfold Ptrofs.divs.
-  rewrite ?Ptrofs.signed_repr by rep_lia;
-  auto.
-Qed.
-
-Lemma int64_lt_ptrofs_to_int_64:
-  forall x y, Archi.ptr64 = true ->
-    Int64.lt (Ptrofs.to_int64 x) (Ptrofs.to_int64 y) =  Ptrofs.lt x y.
-Proof.
-  intros.
-  unfold Int64.lt, Ptrofs.lt.
-  rewrite <- (Ptrofs.repr_signed x), <- (Ptrofs.repr_signed y).
-  rewrite !ptrofs_to_int64_repr by auto.
-  pose proof Ptrofs.signed_range.
-  unfold Ptrofs.min_signed, Ptrofs.max_signed in H0.
-  unfold Ptrofs.half_modulus, Ptrofs.modulus, Ptrofs.wordsize, 
-    Wordsize_Ptrofs.wordsize in H0. rewrite H in H0.
-  rewrite !Int64.signed_repr by apply H0.
-  rewrite !Ptrofs.signed_repr by apply Ptrofs.signed_range.
-  auto.
-Qed.
-
-Lemma int_lt_ptrofs_to_int_:
-  forall x y, Archi.ptr64 = false ->
-    Int.lt (Ptrofs.to_int x) (Ptrofs.to_int y) =  Ptrofs.lt x y.
-Proof.
-  intros.
-  unfold Int.lt, Ptrofs.lt.
-  rewrite <- (Ptrofs.repr_signed x), <- (Ptrofs.repr_signed y).
-  rewrite !ptrofs_to_int_repr by auto.
-  pose proof Ptrofs.signed_range.
-  unfold Ptrofs.min_signed, Ptrofs.max_signed in H0.
-  unfold Ptrofs.half_modulus, Ptrofs.modulus, Ptrofs.wordsize, 
-    Wordsize_Ptrofs.wordsize in H0. rewrite H in H0.
-  rewrite !Int.signed_repr by apply H0.
-  rewrite !Ptrofs.signed_repr by apply Ptrofs.signed_range.
-  auto.
-Qed.
-
 Lemma body_do_generation: semax_body Vprog Gprog f_do_generation do_generation_spec.
 Proof.
   start_function.

@@ -418,7 +418,7 @@ Definition resume_spec :=
          graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
-    PROP (ti_nalloc t_info <= total_space (heap_head (ti_heap t_info)))
+    PROP (Ptrofs.unsigned (ti_nalloc t_info) <= total_space (heap_head (ti_heap t_info)))
     LOCAL ()
     SEP (all_string_constants rsh gv;
          graph_rep g;

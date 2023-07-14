@@ -390,7 +390,7 @@ Record thread_info: Type :=
     ti_args: list val;
     arg_size: Zlength ti_args = MAX_ARGS;
     ti_frames: list frame;
-    ti_nalloc: Z
+    ti_nalloc: Ptrofs.int
   }.
 
 Definition vertex_size (g: LGraph) (v: VType): Z :=
@@ -644,8 +644,8 @@ Definition copy_compatible (g: LGraph): Prop :=
   forall v, graph_has_v g v -> (vlabel g v).(raw_mark) = true ->
             graph_has_v g (vlabel g v).(copied_vertex) /\
             vgeneration v <> vgeneration (vlabel g v).(copied_vertex).
-Definition
-  super_compatible
+
+Definition super_compatible
   (g_ti_r: LGraph * thread_info * roots_t) (out: outlier_t) : Prop :=
   let (g_ti, r) := g_ti_r in
   let (g, ti) := g_ti in
@@ -6075,4 +6075,51 @@ Proof.
   rewrite IHframes; clear IHframes; auto.
   rewrite skipn_length. lia.
   rewrite !skipn_length. lia.
+Qed.
+
+Lemma ptrofs_divs_repr
+	 : forall i j : Z,
+       Ptrofs.min_signed <= i <= Ptrofs.max_signed ->
+       Ptrofs.min_signed <= j <= Ptrofs.max_signed ->
+       Ptrofs.divs (Ptrofs.repr i) (Ptrofs.repr j) = 
+       Ptrofs.repr (i ÷ j).
+Proof.
+  intros.
+  unfold Ptrofs.divs.
+  rewrite ?Ptrofs.signed_repr by rep_lia;
+  auto.
+Qed.
+
+Lemma int64_lt_ptrofs_to_int_64:
+  forall x y, Archi.ptr64 = true ->
+    Int64.lt (Ptrofs.to_int64 x) (Ptrofs.to_int64 y) =  Ptrofs.lt x y.
+Proof.
+  intros.
+  unfold Int64.lt, Ptrofs.lt.
+  rewrite <- (Ptrofs.repr_signed x), <- (Ptrofs.repr_signed y).
+  rewrite !ptrofs_to_int64_repr by auto.
+  pose proof Ptrofs.signed_range.
+  unfold Ptrofs.min_signed, Ptrofs.max_signed in H0.
+  unfold Ptrofs.half_modulus, Ptrofs.modulus, Ptrofs.wordsize, 
+    Wordsize_Ptrofs.wordsize in H0. rewrite H in H0.
+  rewrite !Int64.signed_repr by apply H0.
+  rewrite !Ptrofs.signed_repr by apply Ptrofs.signed_range.
+  auto.
+Qed.
+
+Lemma int_lt_ptrofs_to_int_:
+  forall x y, Archi.ptr64 = false ->
+    Int.lt (Ptrofs.to_int x) (Ptrofs.to_int y) =  Ptrofs.lt x y.
+Proof.
+  intros.
+  unfold Int.lt, Ptrofs.lt.
+  rewrite <- (Ptrofs.repr_signed x), <- (Ptrofs.repr_signed y).
+  rewrite !ptrofs_to_int_repr by auto.
+  pose proof Ptrofs.signed_range.
+  unfold Ptrofs.min_signed, Ptrofs.max_signed in H0.
+  unfold Ptrofs.half_modulus, Ptrofs.modulus, Ptrofs.wordsize, 
+    Wordsize_Ptrofs.wordsize in H0. rewrite H in H0.
+  rewrite !Int.signed_repr by apply H0.
+  rewrite !Ptrofs.signed_repr by apply Ptrofs.signed_range.
+  auto.
 Qed.

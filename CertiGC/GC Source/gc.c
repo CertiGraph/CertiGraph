@@ -391,17 +391,10 @@ void garbage_collect(struct thread_info *ti)
 {
   struct heap *h = ti->heap;
   /* printf("In GC\n"); */
-  if (h==NULL) {
-    /* If the heap has not yet been initialized, create it and resume */
-    h = create_heap();
-    ti->heap = h;
-    resume(ti);
-    return;
-  } else {
-    int i;
-    h->spaces[0].limit = ti->limit;
-    h->spaces[0].next = ti->alloc; /* this line is probably unnecessary */
-    for (i=0; i<MAX_SPACES-1; i++) {
+  int i;
+  h->spaces[0].limit = ti->limit;
+  h->spaces[0].next = ti->alloc; /* this line is probably unnecessary */
+  for (i=0; i<MAX_SPACES-1; i++) {
       /* Starting with the youngest generation, collect each generation
          into the next-older generation.  Usually, when doing that,
          there will be enough space left in the next-older generation
@@ -430,12 +423,9 @@ void garbage_collect(struct thread_info *ti)
       }
     }
 
-    /* If we get to i==MAX_SPACES, that's bad news */
-    assert (MAX_SPACES == i);
-    abort_with("Ran out of generations\n");
-  }
-  /* Can't reach this point */
-  assert(0);
+  /* If we get to i==MAX_SPACES, that's bad news */
+  /*  assert (MAX_SPACES == i); */
+  abort_with("Ran out of generations\n");
 }
 
 /* REMARK.  The generation-management policy in the garbage_collect function

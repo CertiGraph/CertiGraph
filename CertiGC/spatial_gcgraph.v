@@ -56,36 +56,37 @@ Definition ti_fp (ti: thread_info) : val :=
   | fr :: _ => fr_adr fr
   end. 
 
+  Definition frames_adr (frames: list frame) : val :=
+    match frames with nil => nullval | fr::_ => fr_adr fr end.
+  
+  Fixpoint frames_rep (sh: share) (frames: list frame) : mpred :=
+    match frames with
+    | nil => emp
+    | {| fr_adr := a; fr_root := r; fr_roots := s |} :: rest =>
+       data_at sh (Tstruct _stack_frame noattr) 
+         (field_address0 (tarray int_or_ptr_type (Zlength s))
+           [ArraySubsc (Zlength s)] r,
+           (r, frames_adr rest)) a * 
+       data_at sh (tarray int_or_ptr_type (Zlength s)) s r *
+        frames_rep sh rest
+    end.
+  
   Definition before_gc_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   let nursery := heap_head ti.(ti_heap) in
   let p := nursery.(space_start) in
   let n_lim := offset_val (WORD_SIZE * nursery.(total_space)) p in
   data_at sh thread_info_type
          (offset_val (WORD_SIZE * nursery.(used_space)) p,
-           (n_lim, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (vptrofs (ti.(ti_nalloc)),nullval)))))) t *
+           (n_lim, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (Vptrofs (ti.(ti_nalloc)),nullval)))))) t *
+  frames_rep sh (ti_frames ti) *
   heap_struct_rep
     sh ((p, (Vundef, (n_lim,n_lim)))
           :: map space_tri (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
   heap_rest_rep ti.(ti_heap).
 
-Definition frames_adr (frames: list frame) : val :=
-  match frames with nil => nullval | fr::_ => fr_adr fr end.
-
-Fixpoint frames_rep (sh: share) (frames: list frame) : mpred :=
-  match frames with
-  | nil => emp
-  | {| fr_adr := a; fr_root := r; fr_roots := s |} :: rest =>
-     data_at sh (Tstruct _stack_frame noattr) 
-       (field_address0 (tarray int_or_ptr_type (Zlength s))
-         [ArraySubsc (Zlength s)] r,
-         (r, frames_adr rest)) a * 
-     data_at sh (tarray int_or_ptr_type (Zlength s)) s r *
-      frames_rep sh rest
-  end.
-
 Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   data_at sh thread_info_type 
-     (Vundef, (Vundef, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (vptrofs (ti.(ti_nalloc)), nullval)))))) t *
+     (Vundef, (Vundef, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (Vptrofs (ti.(ti_nalloc)), nullval)))))) t *
   frames_rep sh (ti_frames ti) *
   heap_struct_rep sh (map space_tri ti.(ti_heap).(spaces)) ti.(ti_heap_p) *
   heap_rest_rep ti.(ti_heap).
