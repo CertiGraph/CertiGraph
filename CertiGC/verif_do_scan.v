@@ -46,7 +46,7 @@ Proof.
   forward.
   forward_loop (EX n: nat, EX g': LGraph, EX t_info': thread_info,
                 PROP (super_compatible (g', t_info', roots) outlier;
-                      forward_condition g' t_info' from to;
+                      forward_condition g' (ti_heap t_info') from to;
                       thread_info_relation t_info t_info';
                       closure_has_index g' to (to_index + n);
                       scan_vertex_while_loop from to (nat_seq to_index n) g g')
@@ -54,25 +54,26 @@ Proof.
                 (temp _s (offset_val (- WORD_SIZE)
                                      (vertex_address g' (to, (to_index + n)%nat)));
                  temp _from_start (gen_start g' from);
-                 temp _from_limit (limit_address g' t_info' from);
+                 temp _from_limit (limit_address g' (ti_heap t_info') from);
                  temp _next (next_address t_info' to))
                 SEP (all_string_constants rsh gv;
                outlier_rep outlier; graph_rep g'; thread_info_rep sh t_info' ti))
   break: (EX g' : LGraph, EX t_info' : thread_info,
           PROP (super_compatible (g', t_info', roots) outlier;
-                forward_condition g' t_info' from to;
+                forward_condition g' (ti_heap t_info') from to;
                 do_scan_relation from to to_index g g';
                 thread_info_relation t_info t_info')
           LOCAL ()
           SEP (all_string_constants rsh gv;
                outlier_rep outlier; graph_rep g'; thread_info_rep sh t_info' ti)).
   - Exists O g t_info. destruct H as [? [? [? ?]]].
+    simpl fst in *; simpl snd in *; 
     replace (to_index + 0)%nat with to_index by lia. entailer!.
-    split; [|split]; [red; auto | apply tir_id | constructor].
+    split; [|split]; [ split3; simpl; auto | apply tir_id | constructor].
   - Intros n g' t_info'. remember (to_index + n)%nat as index.
     unfold next_address, thread_info_rep. Intros.
     unfold heap_struct_rep. destruct H5 as [? [? [? ?]]].
-    destruct H6 as [? [? [? [? ?]]]].
+    destruct H6 as [? [? [? [? ?]]]]; simpl fst in *; simpl snd in *.
     assert (0 <= Z.of_nat to < MAX_SPACES). {
       clear -H5 H14. destruct H5 as [_ [_ ?]]. red in H14.
       pose proof (spaces_size (ti_heap t_info')).
@@ -103,7 +104,7 @@ Proof.
       assert (space_start sp_to = gen_start g' to) by
           (unfold gen_start; rewrite if_true by assumption;
            rewrite <- H18; reflexivity). rewrite H24 in H23.
-      sep_apply (generation_data_at__ptrofs g' t_info' to b i H23).
+      sep_apply (generation_data_at__ptrofs g' (ti_heap t_info') to b i H23).
       unfold gen_size; rewrite nth_space_Znth; entailer!. }
     assert_PROP (force_val
                    (sem_cmp_pp Clt (offset_val index_offset (space_start sp_to))
@@ -143,17 +144,17 @@ Proof.
         apply generation_share_writable. }
       assert (forall offset,
                  0 <= offset <= used_offset ->
-                 memory_block (nth_sh g' to) (WORD_SIZE * gen_size t_info' to)
+                 memory_block (nth_sh g' to) (WORD_SIZE * gen_size (ti_heap t_info') to)
                               (Vptr b i) * TT * FRZL FR |--
         weak_valid_pointer (Vptr b (Ptrofs.add i (Ptrofs.repr offset)))). {
         intros. change (Vptr b (Ptrofs.add i (Ptrofs.repr offset))) with
             (offset_val offset (Vptr b i)).
         sep_apply (memory_block_weak_valid_pointer
-                     (nth_sh g' to) (WORD_SIZE * gen_size t_info' to)
+                     (nth_sh g' to) (WORD_SIZE * gen_size (ti_heap t_info') to)
                      (Vptr b i) offset); auto.
         3: apply extend_weak_valid_pointer.
         - subst. unfold gen_size. split. 1: apply (proj1 H34).
-          transitivity (WORD_SIZE * used_space (nth_space t_info' to))%Z.
+          transitivity (WORD_SIZE * used_space (nth_space (ti_heap t_info') to))%Z.
           + rewrite nth_space_Znth. apply (proj2 H34).
           + apply Zmult_le_compat_l. apply (proj2 (space_order _)).
             unfold WORD_SIZE. lia.
@@ -177,7 +178,7 @@ Proof.
         now rewrite H24 in H25; unfold typed_false in H25. }
       forward. thaw FR. unfold thread_info_rep, heap_struct_rep.
       Exists g' t_info'. unfold forward_condition. entailer!.
-      split; [red; auto | exists n; split; trivial].
+      split; [split3; auto | exists n; split; trivial].
       unfold gen_has_index. rewrite <- H20 in H26.
       rewrite <- Z.mul_lt_mono_pos_l in H26 by (unfold WORD_SIZE; lia).
       intro; apply H26. now apply pvs_mono_strict.
@@ -217,7 +218,7 @@ Proof.
       forward_if
         (EX g'': LGraph, EX t_info'': thread_info,
          PROP (super_compatible (g'', t_info'', roots) outlier;
-               forward_condition g'' t_info'' from to;
+               forward_condition g'' (ti_heap t_info'') from to;
                thread_info_relation t_info t_info'';
                (no_scan g' (to, index) /\ g'' = g') \/
                (~ no_scan g' (to, index) /\
@@ -232,7 +233,7 @@ Proof.
                       else vint (Zlength (raw_fields (vlabel g' (to, index)))));
                 temp _s (offset_val (- WORD_SIZE) (vertex_address g'' (to, index)));
                 temp _from_start (gen_start g'' from);
-                temp _from_limit (limit_address g'' t_info'' from);
+                temp _from_limit (limit_address g'' (ti_heap t_info'') from);
                 temp _next (next_address t_info'' to))
          SEP (thread_info_rep sh t_info'' ti; graph_rep g'';
               all_string_constants rsh gv; outlier_rep outlier)).
@@ -253,7 +254,7 @@ Proof.
                             (nat_inc_list
                                (length (vlabel g' (to, index)).(raw_fields)))) g' g3;
                 super_compatible (g3, t_info3, roots) outlier;
-                forward_condition g3 t_info3 from to;
+                forward_condition g3 (ti_heap t_info3) from to;
                 thread_info_relation t_info t_info3;
                 1 <= i <= z + 1)
            LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
@@ -261,7 +262,7 @@ Proof.
                   temp _sz (if Archi.ptr64 then (Vlong (Int64.repr z)) else vint z);
                   temp _s (offset_val (- WORD_SIZE) (vertex_address g3 (to, index)));
                   temp _from_start (gen_start g3 from);
-                  temp _from_limit (limit_address g3 t_info3 from);
+                  temp _from_limit (limit_address g3 (ti_heap t_info3) from);
                   temp _next (next_address t_info3 to))
            SEP (all_string_constants rsh gv;
                 outlier_rep outlier;
@@ -274,7 +275,7 @@ Proof.
                             (nat_inc_list
                                (length (vlabel g' (to, index)).(raw_fields)))) g' g3;
                 super_compatible (g3, t_info3, roots) outlier;
-                forward_condition g3 t_info3 from to;
+                forward_condition g3 (ti_heap t_info3) from to;
                 thread_info_relation t_info t_info3;
                 1 <= i + 1 <= z + 1)
            LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
@@ -282,7 +283,7 @@ Proof.
                   temp _sz (if Archi.ptr64 then (Vlong (Int64.repr z)) else vint z);
                   temp _s (offset_val (- WORD_SIZE) (vertex_address g3 (to, index)));
                   temp _from_start (gen_start g3 from);
-                  temp _from_limit (limit_address g3 t_info3 from);
+                  temp _from_limit (limit_address g3 (ti_heap t_info3) from);
                   temp _next (next_address t_info3 to))
            SEP (all_string_constants rsh gv;
                 outlier_rep outlier;
@@ -293,7 +294,7 @@ Proof.
            try (rewrite Int64.unsigned_repr;
                 [| pose proof (raw_tag_range (vlabel g' (to, (to_index + n)%nat)));
                    rep_lia]).
-           split; [apply svfl_nil | unfold super_compatible; auto].
+           split; [apply svfl_nil | split3; auto]. split3; auto.
         -- Intros i g3 t_info3. forward_if (i <= z).
            ++ forward. entailer!.
               first [rewrite !Int.unsigned_repr in H34 |
@@ -353,8 +354,8 @@ Proof.
                  destruct H38 as [? [? [? ?]]].
                  assert (gen_start g3 from = gen_start g4 from) by
                      (eapply fr_gen_start; eauto).
-                 assert (limit_address g3 t_info3 from =
-                         limit_address g4 t_info4 from). {
+                 assert (limit_address g3 (ti_heap t_info3) from =
+                         limit_address g4 (ti_heap t_info4) from). {
                    unfold limit_address. rewrite H45.
                    do 2 f_equal. apply (proj2 H42). }
                  assert (next_address t_info3 to = next_address t_info4 to) by

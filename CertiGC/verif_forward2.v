@@ -14,13 +14,13 @@ Lemma body_forward_inR:
     (SH0 : writable_share sh)
     (H : super_compatible (g, t_info, roots) outlier)
     (H0 : forward_p_compatible (inr p) roots g from)
-    (H1 : forward_condition g t_info from to)
+    (H1 : forward_condition g (ti_heap t_info) from to)
     (H2 : 0 <= depth <= Int.max_signed)
     (H3 : from <> to),
   semax (func_tycontext f_forward Vprog Gprog [])
   (PROP ( )
    LOCAL (temp _from_start (gen_start g from);
-   temp _from_limit (limit_address g t_info from);
+   temp _from_limit (limit_address g (ti_heap t_info) from);
    temp _next (next_address t_info to);
    temp _p (forward_p_address (inr p) t_info g); 
    temp _depth (vint depth))
@@ -33,7 +33,7 @@ Lemma body_forward_inR:
        roots' = upd_roots from to (inr p) g roots;
        forward_relation from to (Z.to_nat depth)
          (forward_p2forward_t (inr p) roots g) g g';
-       forward_condition g' t_info' from to;
+       forward_condition g' (ti_heap t_info') from to;
        thread_info_relation t_info t_info')
        RETURN ( ) SEP (all_string_constants rsh gv; outlier_rep outlier;
                   graph_rep g'; thread_info_rep sh t_info' ti))%argsassert
@@ -97,13 +97,14 @@ abbreviate_semax.
     remember (graph_rep g * heap_rest_rep (ti_heap t_info) * outlier_rep outlier) as P.
     pose proof (graph_and_heap_rest_data_at_ _ _ _ H7 H).
     unfold generation_data_at_ in H18. remember (gen_start g from) as fp.
-    remember (nth_sh g from) as fsh. remember (gen_size t_info from) as gn.
+    simpl fst in *. simpl snd in *.
+    remember (nth_sh g from) as fsh. remember (gen_size (ti_heap t_info) from) as gn.
     remember (WORD_SIZE * gn)%Z as fn.
     assert (P |-- (weak_derives P (memory_block fsh fn fp * TT) && emp) * P). {
-      apply weak_derives_strong. subst. sep_apply H18.
+      apply weak_derives_strong. subst. simpl fst in *. simpl snd in *. sep_apply H18.
       rewrite data_at__memory_block.
       rewrite sizeof_tarray_int_or_ptr; [Intros; cancel | unfold gen_size].
-      destruct (total_space_tight_range (nth_space t_info from)). assumption. }
+      destruct (total_space_tight_range (nth_space (ti_heap t_info) from)). assumption. }
     destruct (Znth n (make_fields g v)) eqn:? ; [destruct s|].
     (* Z + GC_Pointer + EType *)
     + (* Z *)
@@ -605,7 +606,7 @@ abbreviate_semax.
                   apply (Znth_In n (make_fields g v)).
                   rewrite make_fields_eq_length. assumption.
                 }
-                assert (forward_condition g1 t_info' from to). {
+                assert (forward_condition g1 (ti_heap t_info') from to). {
                   subst g1 g' t_info' from v'.
                   apply lgd_forward_condition; try assumption.
                   apply lcv_forward_condition_unchanged; try assumption.
@@ -619,13 +620,13 @@ abbreviate_semax.
                   red; intuition. }
               assert (thread_info_relation t_info t_info'). {
                 subst t_info'. split; [|split]; [reflexivity| |]; intros m.
-                - rewrite cti_gen_size. reflexivity.
-                - rewrite cti_space_start. reflexivity. }
+                - simpl. rewrite cti_gen_size. reflexivity.
+                - simpl. rewrite cti_space_start. reflexivity. }
                 forward_if.
               ** destruct H55 as [? [? ?]]. replace fp with (gen_start g1 from) by
                      (subst fp g1 g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g1 from)) with
-                     (limit_address g1 t_info' from) by
+                     (limit_address g1 (ti_heap t_info') from) by
                      (subst fn gn; rewrite H57; reflexivity).
                  replace n_addr with (next_address t_info' to) by
                      (subst n_addr; rewrite H55; reflexivity).
@@ -637,13 +638,13 @@ abbreviate_semax.
                             from to (Z.to_nat (depth - 1))
                             (sublist 0 i (vertex_pos_pairs g1 (new_copied_v g to)))
                             g1 g3;
-                          forward_condition g3 t_info3 from to;
+                          forward_condition g3 (ti_heap t_info3) from to;
                           thread_info_relation t_info' t_info3)
                     LOCAL (temp _new nv;
                            temp _sz (if Archi.ptr64 then Vlong (Int64.repr n')
                                      else vint n');
                            temp _from_start (gen_start g3 from);
-                           temp _from_limit (limit_address g3 t_info3 from);
+                           temp _from_limit (limit_address g3 (ti_heap t_info3) from);
                            temp _next (next_address t_info3 to);
                            temp _depth (vint depth))
                     SEP (all_string_constants rsh gv;
@@ -694,8 +695,8 @@ abbreviate_semax.
                          assert (gen_start g3 from = gen_start g4 from). {
                            eapply fr_gen_start; eauto.
                            erewrite <- fl_graph_has_gen; eauto. } rewrite H67.
-                         assert (limit_address g3 t_info3 from =
-                                 limit_address g4 t_info4 from). {
+                         assert (limit_address g3 (ti_heap t_info3) from =
+                                 limit_address g4 (ti_heap t_info4) from). {
                            unfold limit_address. f_equal. 2: assumption. f_equal.
                            destruct H70 as [? [? _]]. rewrite H71. reflexivity. }
                          rewrite H71.
@@ -735,7 +736,8 @@ abbreviate_semax.
       * forward_if. 1: exfalso; apply H22'; reflexivity.
         rewrite H21 in n0. forward.
         Exists g t_info roots. entailer!; simpl.
-        -- rewrite H12, Heqf. simpl. split; auto. split; [|split].
+        -- rewrite H12, Heqf. simpl. split; [split; auto | ].
+            split; [|split]; simpl fst in *; simpl snd in *.
            ++ constructor. auto.
            ++ split; auto.
            ++ apply tir_id.

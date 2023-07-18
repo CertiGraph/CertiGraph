@@ -14,13 +14,13 @@ Lemma body_forward_inL:
       (SH : readable_share rsh) (SH0 : writable_share sh)
       (H : super_compatible (g, t_info, roots) outlier)
       (H0 : forward_p_compatible (inl z) roots g from)
-      (H1 : forward_condition g t_info from to)
+      (H1 : forward_condition g (ti_heap t_info) from to)
       (H2 : 0 <= depth <= Int.max_signed)
       (H3 : from <> to),
  semax (func_tycontext f_forward Vprog Gprog [])
   (PROP ( )
    LOCAL (temp _from_start (gen_start g from);
-   temp _from_limit (limit_address g t_info from);
+   temp _from_limit (limit_address g (ti_heap t_info) from);
    temp _next (next_address t_info to);
    temp _p (forward_p_address (inl z) t_info g); 
    temp _depth (vint depth))
@@ -33,7 +33,7 @@ Lemma body_forward_inL:
        roots' = upd_roots from to (inl z) g roots;
        forward_relation from to (Z.to_nat depth)
          (forward_p2forward_t (inl z) roots g) g g';
-       forward_condition g' t_info' from to;
+       forward_condition g' (ti_heap t_info') from to;
        thread_info_relation t_info t_info')
        RETURN ( ) SEP (all_string_constants rsh gv; outlier_rep outlier; 
                   graph_rep g'; thread_info_rep sh t_info' ti))%argsassert
@@ -55,14 +55,14 @@ abbreviate_semax.
       intros. destruct H5. unfold vertex_address. red in H15.
       rewrite Forall_forall in H15.
       rewrite (filter_sum_right_In_iff v roots) in H14. apply H15 in H14.
-      destruct H14. apply graph_has_gen_start_isptr in H14.
+      destruct H14. apply graph_has_gen_start_isptr in H14. simpl in H14.
       remember (gen_start g (vgeneration v)) as vv. destruct vv; try contradiction.
       simpl. exact I. }
   assert (is_pointer_or_integer (root2val g root)). {
     destruct root as [[? | ?] | ?]; simpl; auto.
     - destruct g0. simpl. exact I.
     - specialize (H14 _ H13). apply isptr_is_pointer_or_integer. assumption. }
-  red in H4.
+  red in H4. simpl fst in *. simpl snd in *.
   sep_apply (isolate_frame sh (ti_frames t_info) z);
       [rewrite <- H4, Zlength_map; assumption | ].
     set (W := allp _).
@@ -79,13 +79,13 @@ abbreviate_semax.
     remember (graph_rep g * heap_rest_rep (ti_heap t_info) * outlier_rep outlier)
       as P. pose proof (graph_and_heap_rest_data_at_ _ _ _ H7 H).
     unfold generation_data_at_ in H18. remember (gen_start g from) as fp.
-    remember (nth_sh g from) as fsh. remember (gen_size t_info from) as gn.
+    remember (nth_sh g from) as fsh. remember (gen_size (ti_heap t_info) from) as gn.
     remember (WORD_SIZE * gn)%Z as fn.
     assert (P |-- (weak_derives P (memory_block fsh fn fp * TT) && emp) * P). {
       apply weak_derives_strong. subst. sep_apply H18.
       rewrite data_at__memory_block.
       rewrite sizeof_tarray_int_or_ptr; [Intros; cancel | unfold gen_size].
-      destruct (total_space_tight_range (nth_space t_info from)). assumption. }
+      destruct (total_space_tight_range (nth_space (ti_heap t_info) from)). assumption. }
     destruct root as [[? | ?] | ?]; simpl root2val.
     + unfold odd_Z2val. forward_if.
       1: exfalso; apply H20'; reflexivity.
@@ -258,8 +258,8 @@ abbreviate_semax.
            rewrite <- H4, Zlength_map; auto.             
            }
            simpl.
-           split; split; [|split; [|split] | |split]; auto.
-           ++ red. unfold fr'.
+           split; split; [|split; [|split] | |split]; auto; simpl fst in *; simpl snd in *.
+           ++ red. simpl. unfold fr'.
            rewrite frames2roots_update_frames by (apply invariants.Zlength_eq; list_solve).
             rewrite <- upd_Znth_map. f_equal. auto.
            ++ specialize (H9 _ H19 H21). destruct H9 as [? _].
@@ -561,7 +561,7 @@ abbreviate_semax.
               rewrite H30 in H32.
               assert (forward_relation from to 0 (inl (inr v)) g g') by
                   (subst g'; constructor; assumption).
-              assert (forward_condition g' t_info' from to). {
+              assert (forward_condition g' (ti_heap t_info') from to). {
                 subst g' t_info' from.
                 apply lcv_forward_condition; try assumption.
                 red. intuition. }
@@ -571,13 +571,13 @@ abbreviate_semax.
                 apply lcv_super_compatible; try assumption. red. intuition. }
               assert (thread_info_relation t_info t_info'). {
                 subst t_info'. split; [|split]; [reflexivity| |]; intros m.
-                - rewrite utiacti_gen_size. reflexivity.
-                - rewrite utiacti_space_start. reflexivity. }
+                - simpl. rewrite utiacti_gen_size. reflexivity.
+                - simpl. rewrite utiacti_space_start. reflexivity. }
               forward_if.
               ** destruct H42 as [? [? ?]]. replace fp with (gen_start g' from) by
                      (subst fp g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g' from)) with
-                     (limit_address g' t_info' from) by
+                     (limit_address g' (ti_heap t_info') from) by
                      (subst fn gn; rewrite H44; reflexivity).
                  replace n_addr with (next_address t_info' to) by
                      (subst n_addr; reflexivity).
@@ -591,13 +591,13 @@ abbreviate_semax.
                             from to (Z.to_nat (depth - 1))
                             (sublist 0 i (vertex_pos_pairs g' (new_copied_v g to)))
                             g' g3;
-                          forward_condition g3 t_info3 from to;
+                          forward_condition g3 (ti_heap t_info3) from to;
                           thread_info_relation t_info' t_info3)
                     LOCAL (temp _new nv;
                            temp _sz (if Archi.ptr64 then
                                        Vlong (Int64.repr n) else vint n);
                            temp _from_start (gen_start g3 from);
-                           temp _from_limit (limit_address g3 t_info3 from);
+                           temp _from_limit (limit_address g3 (ti_heap t_info3) from);
                            temp _next (next_address t_info3 to);
                            temp _depth (vint depth))
                     SEP (all_string_constants rsh gv;
@@ -641,8 +641,8 @@ abbreviate_semax.
                          assert (gen_start g3 from = gen_start g4 from). {
                            eapply fr_gen_start; eauto.
                            erewrite <- fl_graph_has_gen; eauto. } rewrite H54.
-                         assert (limit_address g3 t_info3 from =
-                                 limit_address g4 t_info4 from). {
+                         assert (limit_address g3 (ti_heap t_info3) from =
+                                 limit_address g4 (ti_heap t_info4) from). {
                            unfold limit_address. f_equal. 2: assumption. f_equal.
                            destruct H57 as [? [? _]]. rewrite H58. reflexivity. }
                          rewrite H58.

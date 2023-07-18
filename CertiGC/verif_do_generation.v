@@ -7,13 +7,13 @@ Proof.
   start_function.
   pose proof H. pose proof H0. destruct H2 as [? _]. destruct H3 as [? [? [? _]]].
   assert (generation_space_compatible
-            g (from, nth_gen g from, nth_space t_info from)) by
+            g (from, nth_gen g from, nth_space (ti_heap t_info) from)) by
       (apply gt_gs_compatible; assumption). destruct H6 as [? [? ?]].
-  assert (generation_space_compatible g (to, nth_gen g to, nth_space t_info to)) by
+  assert (generation_space_compatible g (to, nth_gen g to, nth_space (ti_heap t_info) to)) by
       (apply gt_gs_compatible; assumption). destruct H9 as [? [? ?]].
-  assert (isptr (space_start (nth_space t_info from))) by
+  assert (isptr (space_start (nth_space (ti_heap t_info) from))) by
       (rewrite <- H6; apply start_isptr).
-  assert (isptr (space_start (nth_space t_info to))) by
+  assert (isptr (space_start (nth_space (ti_heap t_info) to))) by
       (rewrite <- H9; apply start_isptr).
   assert (HS: forall gen, graph_has_gen g gen -> Z.of_nat gen < MAX_SPACES). {
     intros. unfold graph_has_gen in H14. destruct H as [[_ [_ ?]] _].
@@ -23,47 +23,49 @@ Proof.
   assert (Z.of_nat from < MAX_SPACES) by (apply HS; assumption).
   assert (Z.of_nat to < MAX_SPACES) by (apply HS; assumption). clear HS.
   freeze [0;1;2] FR.
-  localize [space_struct_rep sh t_info from; space_struct_rep sh t_info to].
+  localize [space_struct_rep sh (ti_heap_p t_info) (ti_heap t_info) from; 
+            space_struct_rep sh (ti_heap_p t_info) (ti_heap t_info) to].
   unfold space_struct_rep. unfold space_tri.
   forward.
   gather_SEP
     (data_at sh space_type
-             _ (space_address t_info from))
+             _ (space_address (ti_heap_p t_info) from))
     (data_at sh space_type
-             _ (space_address t_info to)).
-  replace_SEP 0 (space_struct_rep sh t_info from * space_struct_rep sh t_info to) by
+             _ (space_address (ti_heap_p t_info) to)).
+  replace_SEP 0 (space_struct_rep sh (ti_heap_p t_info) (ti_heap t_info) from 
+                  * space_struct_rep sh (ti_heap_p t_info) (ti_heap t_info) to) by
     (unfold space_struct_rep; entailer!).
   unlocalize [thread_info_rep sh t_info ti].
   1: apply thread_info_rep_ramif_stable;  assumption.
-  assert_PROP (isptr (space_address t_info to)). {
+  assert_PROP (isptr (space_address (ti_heap_p t_info) to)). {
     unfold thread_info_rep. unfold heap_struct_rep.
     unfold space_address. Intros.
     entailer!.
   }
   forward_call. clear H16. 
-    localize [space_struct_rep sh t_info from].
+    localize [space_struct_rep sh (ti_heap_p t_info) (ti_heap t_info) from].
     unfold space_struct_rep, space_tri. 
     forward.
     forward.
-    replace_SEP 0 (space_struct_rep sh t_info from) by
+    replace_SEP 0 (space_struct_rep sh (ti_heap_p t_info) (ti_heap t_info) from) by
         (unfold space_struct_rep, space_tri; entailer!).
     unlocalize [thread_info_rep sh t_info ti].
     1: apply thread_info_rep_ramif_stable_1; assumption. apply dgc_imply_fc in H0.
-    remember (space_start (nth_space t_info from)) as from_p.
-    remember (space_start (nth_space t_info to)) as to_p.
-    remember (WORD_SIZE * used_space (nth_space t_info to))%Z as to_used.
-    remember (WORD_SIZE * total_space (nth_space t_info to))%Z as to_total.
-    remember (WORD_SIZE * used_space (nth_space t_info from))%Z as from_used.
+    remember (space_start (nth_space (ti_heap t_info) from)) as from_p.
+    remember (space_start (nth_space (ti_heap t_info) to)) as to_p.
+    remember (WORD_SIZE * used_space (nth_space (ti_heap t_info) to))%Z as to_used.
+    remember (WORD_SIZE * total_space (nth_space (ti_heap t_info) to))%Z as to_total.
+    remember (WORD_SIZE * used_space (nth_space (ti_heap t_info) from))%Z as from_used.
     destruct H0 as [? [? ?]]. 
     replace from_p with (gen_start g from) by
         (subst; unfold gen_start; rewrite if_true; assumption).
-    replace (offset_val (WORD_SIZE * total_space (nth_space t_info from))
-                        (gen_start g from)) with (limit_address g t_info from) by
+    replace (offset_val (WORD_SIZE * total_space (nth_space (ti_heap t_info) from))
+                        (gen_start g from)) with (limit_address g (ti_heap t_info) from) by
         (unfold limit_address, gen_size; reflexivity).
-    assert_PROP (isptr (space_address t_info to)). {
+    assert_PROP (isptr (space_address (ti_heap_p t_info) to)). {
       unfold space_address. rewrite isptr_offset_val. unfold thread_info_rep.
       Intros. unfold heap_struct_rep. entailer!. }
-    assert_PROP (offset_val WORD_SIZE (space_address t_info to) =
+    assert_PROP (offset_val WORD_SIZE (space_address (ti_heap_p t_info) to) =
                  next_address t_info to). {
       unfold thread_info_rep. unfold heap_struct_rep. Intros. entailer!.
       unfold space_address, next_address, field_address. rewrite if_true.
@@ -73,26 +75,26 @@ Proof.
     forward_call (rsh, sh, gv, ti, g, t_info, roots, outlier, from, to).
     1: intuition. Intros vret. destruct vret as [[g1 t_info1] roots1]. simpl fst in *.
     simpl snd in *. freeze [0;1;2] FR.  
-    replace (space_address t_info from) with (space_address t_info1 from) by
+    replace (space_address (ti_heap_p t_info) from) with (space_address (ti_heap_p t_info1) from) by
         (unfold space_address; rewrite (proj1 H23); reflexivity).
-    assert (space_start (nth_space t_info1 from) = gen_start g1 from). {
-      destruct H20 as [? _]. destruct H22 as [_ [? _]].
-      destruct (gt_gs_compatible _ _ H20 _ H22) as [? _]. rewrite <- H24.
+    assert (space_start (nth_space (ti_heap t_info1) from) = gen_start g1 from). {
+      destruct H20 as [? _]. destruct H22 as [_ [? _]]. 
+      destruct (gt_gs_compatible _ _ H20 _ H22) as [H24 _]. simpl in H24. rewrite <- H24.
       unfold gen_start. rewrite if_true by assumption. reflexivity. }
-    assert (isptr (space_start (nth_space t_info1 from))). {
+    assert (isptr (space_start (nth_space (ti_heap t_info1) from))). {
       rewrite H24. unfold gen_start. destruct H22 as [_ [? _]].
       rewrite if_true by assumption. apply start_isptr. }
-    localize [space_struct_rep sh t_info1 from].
+    localize [space_struct_rep sh (ti_heap_p t_info1) (ti_heap t_info1) from].
     unfold space_struct_rep, space_tri. 
     do 2 forward.
-    replace_SEP 0 (space_struct_rep sh t_info1 from) by
+    replace_SEP 0 (space_struct_rep sh (ti_heap_p t_info1) (ti_heap t_info1) from) by
         (unfold space_struct_rep, space_tri; entailer!).
     unlocalize [thread_info_rep sh t_info1 ti].
     1: apply thread_info_rep_ramif_stable_1; assumption. thaw FR. rewrite H24.
-    replace (offset_val (WORD_SIZE * total_space (nth_space t_info1 from))
-                        (gen_start g1 from)) with (limit_address g1 t_info1 from) by
+    replace (offset_val (WORD_SIZE * total_space (nth_space (ti_heap t_info1) from))
+                        (gen_start g1 from)) with (limit_address g1 (ti_heap t_info1) from) by
         (unfold limit_address, gen_size; reflexivity).
-    assert_PROP (offset_val WORD_SIZE (space_address t_info to) =
+    assert_PROP (offset_val WORD_SIZE (space_address (ti_heap_p t_info) to) =
                  next_address t_info1 to). {
       unfold thread_info_rep. unfold heap_struct_rep. entailer!.
       unfold space_address, next_address, field_address. rewrite (proj1 H23), if_true.
@@ -109,29 +111,29 @@ Proof.
          rewrite offset_offset_val, H11, H9, if_true by assumption;
          f_equal; unfold WORD_SIZE; lia). eapply frr_closure_has_v in H27; eauto.
     destruct H27. simpl in H27, H28.
-    assert (0 < gen_size t_info1 to) by (rewrite <- (proj1 (proj2 H23)); assumption).
+    assert (0 < gen_size (ti_heap t_info1) to) by (rewrite <- (proj1 (proj2 H23)); assumption).
     assert (gen_unmarked g1 to) by (eapply (frr_gen_unmarked _ _ _ g _ g1); eauto).
     forward_call (rsh, sh, gv, ti, g1, t_info1, roots1, outlier,
                   from, to, number_of_vertices (nth_gen g to)).
     Intros vret. destruct vret as [g2 t_info2]. simpl fst in *. simpl snd in *.
-    replace (space_address t_info1 from) with (space_address t_info2 from) in * by
+    replace (space_address (ti_heap_p t_info1) from) with (space_address (ti_heap_p t_info2) from) in * by
         (unfold space_address; rewrite (proj1 H34); reflexivity).
-    assert (space_start (nth_space t_info2 from) = gen_start g2 from). {
+    assert (space_start (nth_space (ti_heap t_info2) from) = gen_start g2 from). {
       destruct H31 as [? _]. destruct H32 as [_ [? _]].
-      destruct (gt_gs_compatible _ _ H31 _ H32) as [? _]. rewrite <- H35.
+      destruct (gt_gs_compatible _ _ H31 _ H32) as [? _]. simpl in H35. rewrite <- H35.
       unfold gen_start. rewrite if_true by assumption. reflexivity. }
-    assert (isptr (space_start (nth_space t_info2 from))). {
+    assert (isptr (space_start (nth_space (ti_heap t_info2) from))). {
       rewrite H35. unfold gen_start. destruct H32 as [_ [? _]].
       rewrite if_true by assumption. apply start_isptr. } 
-    freeze [0;1;2] FR. localize [space_struct_rep sh t_info2 from].
+    freeze [0;1;2] FR. localize [space_struct_rep sh (ti_heap_p t_info2) (ti_heap t_info2) from].
     unfold space_struct_rep, space_tri.
     forward.
-    replace_SEP 0 (space_struct_rep sh t_info2 from) by
+    replace_SEP 0 (space_struct_rep sh (ti_heap_p t_info2) (ti_heap t_info2) from) by
         (unfold space_struct_rep, space_tri; entailer!).
     unlocalize [thread_info_rep sh t_info2 ti].
     1: apply thread_info_rep_ramif_stable_1; assumption. thaw FR.
     unfold thread_info_rep. Intros. freeze [0;1;3;4;6] FR. rewrite heap_struct_rep_eq.
-    assert_PROP (space_address t_info2 from =
+    assert_PROP (space_address (ti_heap_p t_info2) from =
                  field_address (tarray space_type MAX_SPACES) [ArraySubsc (Z.of_nat from)]
                                (ti_heap_p t_info2)). {
       entailer!. unfold space_address. unfold field_address. rewrite if_true.
@@ -143,7 +145,7 @@ Proof.
     simpl fst. simpl snd.
     assert (FROM_MAX: 0 <= Z.of_nat from < Zlength (map space_tri (spaces (ti_heap t_info2)))). {
         rewrite Zlength_map.
-        destruct H20 as [[_ [_ ?]] _]; destruct H31 as [[_ [_ ?]] _].
+        destruct H20 as [[_ [_ ?]] _]; destruct H31 as [[_ [_ H31]] _]. simpl in H31.
         apply frr_graph_has_gen with (gen:=from) in H21; auto.
         rewrite H21 in H4.
         destruct H33 as [n [? _]].
@@ -167,7 +169,7 @@ Proof.
     replace_SEP 0 (thread_info_rep sh (reset_nth_heap_thread_info from t_info2) ti).
     + unfold thread_info_rep. simpl ti_heap_p. simpl ti_args. entailer!.
       assert (from < length (spaces (ti_heap t_info2)))%nat by
-          (destruct H31 as [[_ [_ ?]] _]; red in H37; lia). simpl.
+          (destruct H31 as [[_ [_ ?]] _]; simpl in H31; red in H37; lia). simpl.
       rewrite (reset_nth_space_Znth _ _ H49), <- nth_space_Znth, <- upd_Znth_map.
       unfold space_tri at 3. simpl. replace (WORD_SIZE * 0)%Z with 0 by lia.
       rewrite isptr_offset_val_zero by assumption. cancel.

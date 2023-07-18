@@ -200,11 +200,11 @@ Definition forward_spec :=
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) outlier;
           forward_p_compatible forward_p roots g from;
-          forward_condition g t_info from to;
+          forward_condition g (ti_heap t_info) from to;
           0 <= depth <= Int.max_signed;
           from <> to)
     PARAMS (gen_start g from;
-           limit_address g t_info from;
+           limit_address g (ti_heap t_info) from;
            next_address t_info to;
            forward_p_address forward_p t_info g;
            Vint (Int.repr depth))
@@ -219,7 +219,7 @@ Definition forward_spec :=
           roots' = upd_roots from to forward_p g roots;
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
-          forward_condition g' t_info' from to;
+          forward_condition g' (ti_heap t_info') from to;
           thread_info_relation t_info t_info')
     LOCAL ()
     SEP (all_string_constants rsh gv;
@@ -238,10 +238,10 @@ Definition forward_roots_spec :=
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) outlier;
-          forward_condition g t_info from to;
+          forward_condition g (ti_heap t_info) from to;
           from <> to)
     PARAMS (gen_start g from;
-           limit_address g t_info from;
+           limit_address g (ti_heap t_info) from;
            next_address t_info to;
            ti)
     GLOBALS (gv)
@@ -253,7 +253,7 @@ Definition forward_roots_spec :=
     EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') outlier;
           forward_roots_relation from to roots g roots' g';
-          forward_condition g' t_info' from to;
+          forward_condition g' (ti_heap t_info') from to;
           thread_info_relation t_info t_info')
     LOCAL ()
     SEP (all_string_constants rsh gv;
@@ -266,7 +266,7 @@ Definition forward_remset_spec :=
   WITH sh: share, ti: val, t_info: thread_info, from: nat, to: nat, next: val
   PRE [ tptr space_type, tptr space_type, tptr (tptr int_or_ptr_type) ]
      PROP (readable_share sh)
-     PARAMS ( space_address t_info from ; space_address t_info to; next )
+     PARAMS ( space_address (ti_heap_p t_info) from ; space_address (ti_heap_p t_info) to; next )
      SEP (thread_info_rep sh t_info ti)
   POST [ tvoid ]
      PROP()
@@ -285,11 +285,11 @@ Definition do_scan_spec :=
        tptr (tptr int_or_ptr_type)]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) outlier;
-          forward_condition g t_info from to;
+          forward_condition g (ti_heap t_info) from to;
           from <> to; closure_has_index g to to_index;
-          0 < gen_size t_info to; gen_unmarked g to)
+          0 < gen_size (ti_heap t_info) to; gen_unmarked g to)
     PARAMS (gen_start g from;
-           limit_address g t_info from;
+           limit_address g (ti_heap t_info) from;
            offset_val (- WORD_SIZE) (vertex_address g (to, to_index));
            next_address t_info to)
     GLOBALS ()
@@ -300,7 +300,7 @@ Definition do_scan_spec :=
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info,
     PROP (super_compatible (g', t_info', roots) outlier;
-          forward_condition g' t_info' from to;
+          forward_condition g' (ti_heap t_info') from to;
           do_scan_relation from to to_index g g';
           thread_info_relation t_info t_info')
     LOCAL ()
@@ -319,10 +319,10 @@ Definition do_generation_spec :=
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) outlier;
-          do_generation_condition g t_info (*roots*) from to;
+          do_generation_condition g (ti_heap t_info) from to;
           from <> to)
-    PARAMS (space_address t_info from;
-           space_address t_info to;
+    PARAMS (space_address (ti_heap_p t_info) from;
+           space_address (ti_heap_p t_info) to;
            ti)
     GLOBALS (gv)
     SEP (all_string_constants rsh gv;
@@ -410,7 +410,7 @@ Definition resume_spec :=
        roots : roots_t
   PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          graph_thread_info_compatible g t_info;
+          graph_heap_compatible g (ti_heap t_info);
           graph_gen_clear g O)
     PARAMS (ti)
     GLOBALS (gv)
@@ -432,7 +432,7 @@ Definition garbage_collect_spec :=
   PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible (g, t_info, roots) outlier;
-          garbage_collect_condition g t_info roots;
+          garbage_collect_condition g (ti_heap t_info) roots;
           safe_to_copy g)
     PARAMS (ti)
     GLOBALS (gv)
@@ -445,7 +445,7 @@ Definition garbage_collect_spec :=
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible (g', t_info', roots') outlier;
           garbage_collect_relation roots roots' g g';
-          garbage_collect_condition g' t_info' roots';
+          garbage_collect_condition g' (ti_heap t_info') roots';
           safe_to_copy g')
     LOCAL ()
     SEP (mem_mgr gv; (*MSS_constant gv;*)
