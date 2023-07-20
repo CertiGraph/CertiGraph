@@ -38,7 +38,7 @@ Proof.
   unlocalize [thread_info_rep sh t_info ti].
   1: apply thread_info_rep_ramif_stable;  assumption.
   assert_PROP (isptr (space_address (ti_heap_p t_info) to)). {
-    unfold thread_info_rep. unfold heap_struct_rep.
+    unfold thread_info_rep, heap_rep. unfold heap_struct_rep.
     unfold space_address. Intros.
     entailer!.
   }
@@ -63,11 +63,11 @@ Proof.
                         (gen_start g from)) with (limit_address g (ti_heap t_info) from) by
         (unfold limit_address, gen_size; reflexivity).
     assert_PROP (isptr (space_address (ti_heap_p t_info) to)). {
-      unfold space_address. rewrite isptr_offset_val. unfold thread_info_rep.
+      unfold space_address. rewrite isptr_offset_val. unfold thread_info_rep, heap_rep.
       Intros. unfold heap_struct_rep. entailer!. }
     assert_PROP (offset_val WORD_SIZE (space_address (ti_heap_p t_info) to) =
                  next_address t_info to). {
-      unfold thread_info_rep. unfold heap_struct_rep. Intros. entailer!.
+      unfold thread_info_rep, heap_rep. unfold heap_struct_rep. Intros. entailer!.
       unfold space_address, next_address, field_address. rewrite if_true.
       - simpl. rewrite offset_offset_val. f_equal.
       - destruct H as [[_ [_ ?]] _]. unfold field_compatible in *.
@@ -96,7 +96,7 @@ Proof.
         (unfold limit_address, gen_size; reflexivity).
     assert_PROP (offset_val WORD_SIZE (space_address (ti_heap_p t_info) to) =
                  next_address t_info1 to). {
-      unfold thread_info_rep. unfold heap_struct_rep. entailer!.
+      unfold thread_info_rep, heap_rep. unfold heap_struct_rep. entailer!.
       unfold space_address, next_address, field_address. rewrite (proj1 H23), if_true.
       - simpl. rewrite offset_offset_val. f_equal.
       - unfold field_compatible in *. simpl.
@@ -132,7 +132,7 @@ Proof.
         (unfold space_struct_rep, space_tri; entailer!).
     unlocalize [thread_info_rep sh t_info2 ti].
     1: apply thread_info_rep_ramif_stable_1; assumption. thaw FR.
-    unfold thread_info_rep. Intros. freeze [0;1;3;4;6] FR. rewrite heap_struct_rep_eq.
+    unfold thread_info_rep, heap_rep. Intros. freeze [0;1;3;4;6] FR. rewrite heap_struct_rep_eq.
     assert_PROP (space_address (ti_heap_p t_info2) from =
                  field_address (tarray space_type MAX_SPACES) [ArraySubsc (Z.of_nat from)]
                                (ti_heap_p t_info2)). {
@@ -163,11 +163,11 @@ Proof.
     thaw FR.
     assert (graph_has_gen g2 from) by (destruct H32 as [_ [? _]]; assumption).
     rewrite (graph_rep_reset g2 from) by assumption. Intros.     
-    sep_apply (heap_rest_rep_reset g2 t_info2 from (proj1 H31) H37).
+    sep_apply (heap_rest_rep_reset g2 (ti_heap t_info2) from (proj1 H31) H37).
         rewrite <- heap_struct_rep_eq.
     gather_SEP (data_at _ _ _ _) (frames_rep _ _) (heap_struct_rep _ _ _) (heap_rest_rep _).
     replace_SEP 0 (thread_info_rep sh (reset_nth_heap_thread_info from t_info2) ti).
-    + unfold thread_info_rep. simpl ti_heap_p. simpl ti_args. entailer!.
+    + unfold thread_info_rep, heap_rep. simpl ti_heap_p. simpl ti_args. entailer!.
       assert (from < length (spaces (ti_heap t_info2)))%nat by
           (destruct H31 as [[_ [_ ?]] _]; simpl in H31; red in H37; lia). simpl.
       rewrite (reset_nth_space_Znth _ _ H49), <- nth_space_Znth, <- upd_Znth_map.

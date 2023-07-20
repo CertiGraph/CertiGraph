@@ -110,6 +110,7 @@ abbreviate_semax.
     + unfold GC_Pointer2val. destruct g0. forward_if.
       2: exfalso; apply Int.one_not_zero in H20; assumption.
       forward_call (Vptr b i).
+      unfold heap_rep; Intros.
       gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _).
       rewrite <- HeqP. destruct H5.
       replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
@@ -150,7 +151,7 @@ abbreviate_semax.
         replace (Vptr b i) with (Znth z (frames2roots (ti_frames t_info))).
          2:{ rewrite <- H4. rewrite Znth_map by auto. rewrite <- Heqroot. reflexivity.  }
       rewrite upd_Znth_unchanged by (rewrite <- H4, Zlength_map; auto).
-      rewrite update_frames_same.        
+      rewrite update_frames_same. unfold heap_rep.        
       cancel.
     + assert (W * data_at sh int_or_ptr_type (vertex_address g v)
                             (frame_root_address (ti_frames t_info) z)
@@ -164,7 +165,7 @@ abbreviate_semax.
     specialize (H14 _ H13). destruct (vertex_address g v) eqn:? ; try contradiction.
       forward_if. 2: exfalso; apply Int.one_not_zero in H20; assumption.
       clear H20 H20'. simpl in H15, H17. forward_call (Vptr b i).
-      rewrite <- Heqv0 in *.
+      rewrite <- Heqv0 in *. unfold heap_rep; Intros.
       gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _).
       rewrite <- HeqP.
       replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
@@ -247,6 +248,7 @@ abbreviate_semax.
            2:{ simpl; entailer!.
            replace (ti_fp (update_thread_info_frames t_info fr')) with (ti_fp t_info)
              by(unfold ti_fp, fr'; destruct (ti_frames t_info) as [|[? ? ?] ?]; reflexivity).
+          unfold heap_rep.
            cancel.
            sep_apply allp_sepcon2. apply allp_left with (vertex_address g (copied_vertex (vlabel g v))).
            rewrite <- H24.
@@ -320,7 +322,7 @@ abbreviate_semax.
                              (update_frames (ti_frames t_info)
                                (upd_Znth z (frames2roots (ti_frames t_info))
                                   (vertex_address g v)))) ti). {
-             entailer. unfold thread_info_rep. simpl ti_heap. simpl ti_heap_p. cancel.
+             entailer. unfold thread_info_rep. simpl ti_heap. simpl ti_heap_p. unfold heap_rep. cancel.
              simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
              unfold space_tri at 3. simpl. unfold heap_struct_rep. cancel.
              apply derives_refl'. do 5 f_equal.
@@ -539,13 +541,12 @@ abbreviate_semax.
               sep_apply H39. clear H39. 
               gather_SEP
                 (data_at sh thread_info_type _ ti)
-                (heap_struct_rep sh _ _)
-                (heap_rest_rep _ )
+                (heap_rep sh _ _)
                 (frames_rep _ _).
               replace_SEP 0 (thread_info_rep sh
                               (update_thread_info_frames t_info' 
                                (update_frames fr' (upd_Znth z (frames2roots fr') nv))) ti). {
-                unfold thread_info_rep. simpl heap_head. simpl ti_heap_p.
+                unfold thread_info_rep, heap_rep. simpl heap_head. simpl ti_heap_p.
                 simpl ti_args. simpl ti_heap.
                 entailer!. simpl.
                 apply derives_refl'. f_equal. f_equal. f_equal. f_equal. f_equal. f_equal.
@@ -608,7 +609,7 @@ abbreviate_semax.
                      now rewrite <- Heqn in H46.
                  --- Exists g' t_info'. autorewrite with sublist.
                      assert (forward_loop from to (Z.to_nat (depth - 1)) [] g' g') by
-                         constructor. unfold thread_info_relation. entailer!.
+                         constructor. unfold thread_info_relation, heap_relation. entailer!.
                  --- change (Tpointer tvoid {| attr_volatile := false;
                                                attr_alignas := Some 2%N |})
                        with (int_or_ptr_type). Intros.
@@ -690,7 +691,7 @@ abbreviate_semax.
                   change (vertex_address g v) with (root2val g (inr v)).
                   rewrite Heqroot. rewrite <- H4.
                   rewrite upd_Znth_map, upd_Znth_unchanged by lia.
-                  rewrite H4. Search update_frames frames2roots.
+                  rewrite H4.
                   rewrite update_frames_same; auto.
                 }
         set (t_info' := update_thread_info_frames t_info 
@@ -708,6 +709,6 @@ abbreviate_semax.
            split3; [| |simpl root2forward; constructor]; try easy.
            rewrite Heqroot, upd_Znth_unchanged'; auto.
            now constructor.
-        -- unfold thread_info_rep. entailer!.
+        -- unfold thread_info_rep, heap_rep. entailer!.
         rewrite H22; auto.
 Qed.

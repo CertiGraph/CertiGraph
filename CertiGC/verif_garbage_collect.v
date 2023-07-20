@@ -74,7 +74,7 @@ Lemma gather_thread_info_rep:
    |-- thread_info_rep sh t_info ti.
 Proof.
 intros.
-unfold thread_info_rep, heap_struct_rep.
+unfold thread_info_rep, heap_rep, heap_struct_rep.
 do 2 unfold_data_at (data_at _ thread_info_type _ _).
 cancel.
 Qed.
@@ -88,7 +88,7 @@ Proof.
                        space_address (ti_heap_p tif) (Z.to_nat j)). {
           intros. unfold space_address. now rewrite Z2Nat.id. }
   sep_apply (create_mem_mgr gv).
-  unfold before_gc_thread_info_rep, heap_struct_rep. Intros. forward. pose proof H.
+  unfold before_gc_thread_info_rep, heap_rep, heap_struct_rep. Intros. forward. pose proof H.
   destruct H as [? _]. pose proof (gt_gs_compatible _ _ H _ (graph_has_gen_O _)).
   destruct H3 as [? [? ?]].
   replace (heap_head (ti_heap t_info)) with (nth_space (ti_heap t_info) 0) by
@@ -132,14 +132,14 @@ Proof.
           all_string_constants rsh gv;
           outlier_rep outlier;
           graph_rep g';
-          ti_token_rep t_info')).
+          ti_token_rep (ti_heap t_info') (ti_heap_p t_info'))).
   - Exists g roots t_info. destruct H2 as [? [? [? ?]]].
     pose proof (graph_has_gen_O g). entailer!. split; [|split; [|split]].
     + split3; auto.
     + apply stc_stcte_O_iff; assumption.
     + red. intros. simpl in H12. lia.
     + unfold nat_inc_list. simpl. constructor.
-  - cbv beta. Intros g' roots' t_info'. unfold thread_info_rep. Intros.
+  - cbv beta. Intros g' roots' t_info'. unfold thread_info_rep, heap_rep. Intros.
     unfold heap_struct_rep. assert (0 <= i + 1 < Zlength (spaces (ti_heap t_info'))) by
         (rewrite spaces_size; rep_lia).
     pose proof (space_start_is_pointer_or_null _ _ _ (proj1 H8) H14). 
@@ -158,7 +158,7 @@ Proof.
        LOCAL (temp _h (ti_heap_p t_info1); temp _ti ti;
               gvars gv; temp _i (Vint (Int.repr i)))
        SEP (thread_info_rep sh t_info1 ti;
-            ti_token_rep t_info1;
+            ti_token_rep (ti_heap t_info1) (ti_heap_p t_info1);
             mem_mgr gv;
             all_string_constants rsh gv;
             outlier_rep outlier;
@@ -198,7 +198,7 @@ Proof.
       assert_PROP (isptr (ti_heap_p t_info')) by entailer!.
       sep_apply gather_thread_info_rep.
       pose proof H14.
-      rewrite spaces_size in H20. unfold thread_info_rep. Intros.
+      rewrite spaces_size in H20. unfold thread_info_rep, heap_rep. Intros.
       rewrite hsr_single_explicit with (i := i + 1). 2: assumption.
       2: rewrite Zlength_map, spaces_size; reflexivity. Intros.
       freeze [0;1;3;4;5;8;9] FR.
@@ -235,13 +235,13 @@ Proof.
             (subst g1; apply firstn_gen_clear_add; assumption).
         assert (new_gen_relation (Z.to_nat (i + 1)) g' g1). {
           subst g1. red. rewrite if_false by assumption. exists gi. split; auto. }
-        gather_SEP (malloc_token Ews (tarray int_or_ptr_type (nth_gen_size (Z.to_nat (i + 1)))) p) (ti_token_rep t_info').
+        gather_SEP (malloc_token Ews (tarray int_or_ptr_type (nth_gen_size (Z.to_nat (i + 1)))) p) (ti_token_rep (ti_heap t_info') (ti_heap_p t_info')).
         assert (total_space sp = nth_gen_size (Z.to_nat (i + 1))) by
             (subst sp; simpl; reflexivity). rewrite <- H29.
         assert (space_start sp = p) by (subst sp; simpl; reflexivity). rewrite <- H30.
         assert (space_start sp <> nullval) by
             (rewrite H30; destruct p; try contradiction; intro; inversion H31).
-        sep_apply (ti_token_rep_add t_info' sp (i + 1) H20); auto.
+        sep_apply (ti_token_rep_add (ti_heap t_info') (ti_heap_p t_info') sp (i + 1) H20); auto.
         replace (space_start sp,
                  (space_start sp,
                   (offset_val (WORD_SIZE * total_space sp) (space_start sp),
@@ -265,7 +265,9 @@ Proof.
           (data_at sh (tarray space_type (i + 1)) _
                    (ti_heap_p t_info')).
     *)
-        rewrite sepcon_assoc, (heap_struct_rep_add (ti_heap_p t_info') (ti_heap t_info') sh sp (i + 1) H20), <- Heqt_info1.
+        rewrite sepcon_assoc, (heap_struct_rep_add (ti_heap_p t_info') (ti_heap t_info') sh sp (i + 1) H20).
+        replace (ti_heap_p t_info') with (ti_heap_p t_info1) by (clear - Heqt_info1; subst; reflexivity).
+        replace (ti_args t_info') with (ti_args t_info1) by (clear - Heqt_info1; subst; reflexivity).
         replace (ti_heap_p t_info') with (ti_heap_p t_info1) by
             (subst t_info1; simpl; reflexivity).
         replace (ti_args t_info') with (ti_args t_info1) by
@@ -277,14 +279,14 @@ Proof.
           rewrite Z.sub_0_r, Z.mul_0_r, isptr_offset_val_zero by
               (subst; simpl; assumption). entailer!. }
         gather_SEP (heap_rest_rep (ti_heap t_info')) (space_rest_rep sp).
-        rewrite (heap_rest_rep_add _ _ (i + 1) H20), <- Heqt_info1 by assumption.
+        rewrite (heap_rest_rep_add _ _ (i + 1) H20) (*, <- Heqt_info1*) by assumption.
         gather_SEP
           (data_at sh thread_info_type _ _)
           (frames_rep _ _)
           (heap_struct_rep _ _ _)
           (heap_rest_rep _).
         replace_SEP 0 (thread_info_rep sh t_info1 ti) by
-            (unfold thread_info_rep; entailer!). rewrite (graph_rep_add g' gi); auto.
+            (unfold thread_info_rep, heap_rep; entailer!). rewrite (graph_rep_add g' gi); auto.
         3: apply H9.
         2: apply graph_unmarked_copy_compatible, H9. 
         rewrite <- Heqg1.
@@ -304,11 +306,11 @@ Proof.
         simpl. exact I. } subst v. rewrite <- (space_start_isptr_iff g') in H17; auto.
       2: destruct H8; auto. assert (new_gen_relation (Z.to_nat (i + 1)) g' g') by
           (unfold new_gen_relation; rewrite if_true; auto).
-      Exists g' t_info'. entailer!. unfold thread_info_rep, heap_struct_rep.
+      Exists g' t_info'. entailer!. unfold thread_info_rep, heap_rep, heap_struct_rep.
       entailer!.
     + Intros g1 t_info1.
       assert_PROP (isptr (ti_heap_p t_info1))
-        by (unfold thread_info_rep, heap_struct_rep; entailer!).
+        by (unfold thread_info_rep, heap_rep, heap_struct_rep; entailer!).
       assert (Z.to_nat (i + 1) = S (Z.to_nat i)) by
           (rewrite Z2Nat.inj_add by lia; simpl; lia).
       assert (do_generation_condition
@@ -321,7 +323,7 @@ Proof.
       1: simpl; entailer!; now rewrite !Tf.
       Intros vret. destruct vret as [[g2 t_info2] roots2]. simpl fst in *.
       simpl snd in *. replace (ti_heap_p t_info1) with (ti_heap_p t_info2) by
-          (rewrite (proj1 H28); reflexivity). unfold thread_info_rep, heap_struct_rep.
+          (rewrite (proj1 H28); reflexivity). unfold thread_info_rep, heap_rep, heap_struct_rep.
       Intros. assert (graph_has_gen g2 (Z.to_nat (i + 1))) by
           (rewrite <- do_gen_graph_has_gen; eauto).
       assert (graph_has_gen g2 (Z.to_nat i)) by (red in H30 |-* ; lia).
@@ -351,8 +353,10 @@ Proof.
       1:{ apply prop_right. clear - H7. rewrite MAX_SPACES_eq in H7. lia. }
       1: tc_val_Znth; rewrite isptr_offset_val; assumption.
       rewrite Znth_map by assumption. unfold space_tri at 1 2. rewrite H23 in *.
-      assert (garbage_collect_condition g2 (ti_heap t_info2) roots2) by
-          (eapply (do_gen_gcc g1 t_info1 roots'); eauto).
+
+      assert (garbage_collect_condition g2 (ti_heap t_info2) roots2) 
+        by (destruct H16 as [? [? [? ?]]], H28;
+            eapply (do_gen_gcc g1 (ti_heap t_info1) roots'); eassumption).
       assert (firstn_gen_clear g2 (Z.to_nat (i + 1))) by
           (rewrite H23; eapply do_gen_firstn_gen_clear; eauto).
       assert (safe_to_copy_to_except g2 (Z.to_nat (i + 1))) by
@@ -371,8 +375,8 @@ Proof.
           (unfold thread_info_rep, heap_struct_rep; entailer!).
       assert (garbage_collect_loop (nat_inc_list (Z.to_nat (i + 1))) roots g roots2 g2) by
           (rewrite H23, nat_inc_list_S; eapply gcl_add_tail; eauto).
-      replace_SEP 4 (ti_token_rep t_info2) by
-          (erewrite ti_rel_token_the_same; eauto; entailer!).
+      replace_SEP 4 (ti_token_rep (ti_heap t_info2) (ti_heap_p t_info2))
+        by (destruct H28;  erewrite ti_rel_token_the_same; eauto; entailer!).
       forward_if.
       * destruct (space_start (Znth i (spaces (ti_heap t_info2)))); try contradiction.
         destruct (space_start (Znth (i + 1) (spaces (ti_heap t_info2))));

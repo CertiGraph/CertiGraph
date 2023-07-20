@@ -118,7 +118,7 @@ abbreviate_semax.
       destruct g0. unfold field2val, GC_Pointer2val. forward_if.
       2: exfalso; apply Int.one_not_zero; assumption.
       forward_call (Vptr b i). 
-      unfold thread_info_rep; Intros.
+      unfold thread_info_rep, heap_rep; Intros.
       gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _).
       rewrite <- HeqP. destruct H5.
       replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
@@ -155,7 +155,7 @@ abbreviate_semax.
            ++ unfold roots_compatible. easy.
            ++ simpl. rewrite Heqf, H12. simpl. constructor.
            ++ easy.
-        -- unfold thread_info_rep. entailer!.
+        -- unfold thread_info_rep, heap_rep. entailer!.
     + (* EType *)
       unfold field2val. remember (dst g e) as v'.
       assert (isptr (vertex_address g v')). { (**)
@@ -175,7 +175,7 @@ abbreviate_semax.
       destruct (vertex_address g v') eqn:?; try contradiction.
       forward_if. 2: exfalso; apply Int.one_not_zero in H21; assumption.
       clear H21 H21'. forward_call (Vptr b i).
-      unfold thread_info_rep; Intros.
+      unfold thread_info_rep, heap_rep; Intros.
       gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _).
       rewrite <- HeqP.
       replace_SEP 0
@@ -283,7 +283,7 @@ abbreviate_semax.
           Exists (labeledgraph_gen_dst g e (copied_vertex (vlabel g (dst g e))))
                  t_info roots.
           entailer!.
-          2: unfold thread_info_rep; thaw FR; entailer!.
+          2: unfold thread_info_rep, heap_rep; thaw FR; entailer!.
           pose proof (lgd_no_dangling_dst_copied_vert g e (dst g e) H9 H19 H22 H10).
           split; [|split; [|split; [|split]]]; try reflexivity.
           ++ now constructor.
@@ -337,7 +337,7 @@ abbreviate_semax.
            gather_SEP (data_at _ _ _ ti) (frames_rep _ _) (data_at _ _ _ _) (heap_rest_rep _).
            replace_SEP 0 (thread_info_rep
                             sh (cut_thread_info t_info _ _ Hi Hh) ti). {
-             entailer. unfold thread_info_rep. simpl ti_heap. simpl ti_heap_p. cancel.
+             entailer. unfold thread_info_rep, heap_rep. simpl ti_heap. simpl ti_heap_p. cancel.
              simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
              unfold space_tri at 3. simpl. unfold heap_struct_rep. cancel.
              }
@@ -585,7 +585,7 @@ abbreviate_semax.
               thaw FR.
               remember (cut_thread_info t_info (Z.of_nat to) (vertex_size g v') Hi Hh)
                 as t_info'.
-              unfold thread_info_rep. Intros.
+              unfold thread_info_rep, heap_rep. Intros.
               assert (0 <= 0 < Zlength (ti_args t_info')) by
                   (rewrite arg_size; rep_lia).
               gather_SEP
@@ -594,7 +594,7 @@ abbreviate_semax.
                 (heap_struct_rep _ _ _)
                 (heap_rest_rep _).
               replace_SEP 0 (thread_info_rep sh t_info' ti).
-              { unfold thread_info_rep. simpl heap_head. simpl ti_heap_p.
+              { unfold thread_info_rep, heap_rep. simpl heap_head. simpl ti_heap_p.
                 simpl ti_args. simpl ti_heap. entailer!. }
               rewrite H31 in H33.
                 assert (forward_relation from to 0 (inr e) g g1) by
@@ -741,5 +741,5 @@ abbreviate_semax.
            ++ constructor. auto.
            ++ split; auto.
            ++ apply tir_id.
-        -- unfold thread_info_rep. entailer!.
+        -- unfold thread_info_rep, heap_rep. entailer!.
 Qed.

@@ -43,7 +43,7 @@ Qed.
 Lemma body_resume: semax_body Vprog Gprog f_resume resume_spec.
 Proof.
   start_function.
-  unfold thread_info_rep, heap_struct_rep. Intros.
+  unfold thread_info_rep, heap_rep, heap_struct_rep. Intros.
   forward. forward.
   forward_if True.
   - forward; entailer!.

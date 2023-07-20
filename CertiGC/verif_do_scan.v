@@ -71,7 +71,7 @@ Proof.
     replace (to_index + 0)%nat with to_index by lia. entailer!.
     split; [|split]; [ split3; simpl; auto | apply tir_id | constructor].
   - Intros n g' t_info'. remember (to_index + n)%nat as index.
-    unfold next_address, thread_info_rep. Intros.
+    unfold next_address, thread_info_rep, heap_rep. Intros.
     unfold heap_struct_rep. destruct H5 as [? [? [? ?]]].
     destruct H6 as [? [? [? [? ?]]]]; simpl fst in *; simpl snd in *.
     assert (0 <= Z.of_nat to < MAX_SPACES). {
@@ -176,7 +176,7 @@ Proof.
     + assert (~ index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
         now rewrite H24 in H25; unfold typed_false in H25. }
-      forward. thaw FR. unfold thread_info_rep, heap_struct_rep.
+      forward. thaw FR. unfold thread_info_rep, heap_rep, heap_struct_rep.
       Exists g' t_info'. unfold forward_condition. entailer!.
       split; [split3; auto | exists n; split; trivial].
       unfold gen_has_index. rewrite <- H20 in H26.
@@ -214,7 +214,7 @@ Proof.
         (frames_rep _ _)
         (heap_struct_rep _ _ _ ) (heap_rest_rep _).
       replace_SEP 0 (thread_info_rep sh t_info' ti) by
-          (unfold thread_info_rep; entailer!).
+          (unfold thread_info_rep, heap_rep; entailer!).
       forward_if
         (EX g'': LGraph, EX t_info'': thread_info,
          PROP (super_compatible (g'', t_info'', roots) outlier;
