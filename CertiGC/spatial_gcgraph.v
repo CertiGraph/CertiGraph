@@ -56,9 +56,14 @@ Definition ti_fp (ti: thread_info) : val :=
   | fr :: _ => fr_adr fr
   end. 
 
-  Definition frames_adr (frames: list frame) : val :=
+  Definition frames_p (frames: list frame) : val :=
     match frames with nil => nullval | fr::_ => fr_adr fr end.
   
+Lemma frames_p_update_frames: forall frames roots, frames_p (update_frames frames roots) = frames_p frames.
+Proof.
+  destruct frames as [ | [? ? ?] ? ]; intros; auto.
+Qed.
+
   Fixpoint frames_rep (sh: share) (frames: list frame) : mpred :=
     match frames with
     | nil => emp
@@ -66,10 +71,254 @@ Definition ti_fp (ti: thread_info) : val :=
        data_at sh (Tstruct _stack_frame noattr) 
          (field_address0 (tarray int_or_ptr_type (Zlength s))
            [ArraySubsc (Zlength s)] r,
-           (r, frames_adr rest)) a * 
+           (r, frames_p rest)) a * 
        data_at sh (tarray int_or_ptr_type (Zlength s)) s r *
         frames_rep sh rest
     end.
+
+
+  Fixpoint frames_shell_rep (sh: share) (frames: list frame) : mpred :=
+  match frames with
+  | nil => emp
+  | {| fr_adr := a; fr_root := r; fr_roots := s |} :: rest =>
+     !! field_compatible0 (tarray int_or_ptr_type (Zlength s)) nil r && 
+     data_at sh (Tstruct _stack_frame noattr) 
+       (field_address0 (tarray int_or_ptr_type (Zlength s))
+         [ArraySubsc (Zlength s)] r,
+         (r, frames_p rest)) a * 
+      frames_shell_rep sh rest
+  end.
+
+Definition roots_rep (sh: share) (roots: list (val*val)) : mpred :=
+  iter_sepcon roots (fun av => data_at sh int_or_ptr_type (snd av) (fst av)).
+
+Lemma rootpairs_app:  forall r i al bl,
+ rootpairs r i (al++bl) = rootpairs r i al ++ rootpairs r (i+Zlength al) bl.
+ Proof.
+   intros.
+   revert i bl; induction al; simpl; intros.
+   normalize.
+  f_equal. rewrite IHal. f_equal. f_equal. rewrite Zlength_cons; lia.
+  Qed.
+
+Lemma frames_rep_localize: forall sh (frs: list frame),
+   frames_rep sh frs |-- roots_rep sh (frames2rootpairs frs) *
+                       (ALL roots': list(val*val),
+                            (!!(map fst roots' = map fst (frames2rootpairs frs)) && roots_rep sh roots')
+                                -* frames_rep sh (update_frames frs (map snd roots'))).
+Proof.
+ unfold frames2rootpairs, roots_rep.
+ induction frs as [ | [a r s] frs']; simpl.
+ -
+ cancel.
+ apply allp_right; intro vl.
+ apply wand_frame_intro'.
+ normalize. destruct vl; inv H. simpl. auto.
+ -
+ rewrite iter_sepcon_app_sepcon.
+ sep_apply IHfrs'; clear IHfrs'.
+ cancel.
+ Abort.
+
+Lemma frames_rep_localize: forall sh frs, frames_rep sh frs |-- frames_shell_rep sh frs * roots_rep sh (frames2rootpairs frs).
+Proof.
+  induction frs as [ | [a r s] frs']; simpl.
+  - rewrite emp_sepcon; apply derives_refl.
+  - cancel. sep_apply IHfrs'; clear IHfrs'.
+    cancel.
+    assert_PROP (field_compatible0 (tarray int_or_ptr_type (Zlength s)) [] r) by entailer!.
+    rewrite prop_true_andp by auto. clear H.
+    unfold roots_rep, frames2rootpairs, frame2rootpairs.
+     simpl.
+     rewrite iter_sepcon_app_sepcon.
+     cancel. clear frs'.
+     saturate_local. clear H0 H1.
+     set (n := Zlength s) in H.
+     replace r with (field_address0 (tarray int_or_ptr_type n) (SUB (n-Zlength s)) r) at 1.
+     2:{unfold field_address0; rewrite if_true. simpl. replace (_ + _) with 0 by list_solve.
+         rewrite isptr_offset_val_zero; auto.
+         assert (0 <= n-Zlength s <= n) by list_solve.
+         auto with field_compatible.
+         }
+     replace 0 with (n - Zlength s) by lia.
+     assert (Zlength s <= n) by lia.
+     clearbody n.
+     induction s.
+     +
+     change (Zlength nil) with 0 in H0. 
+     simpl. 
+     rewrite data_at_zero_array_eq; auto.
+     unfold field_address0; rewrite if_true; auto.
+     normalize.
+     apply arr_field_compatible0; auto with field_compatible; lia.
+     +
+     simpl.
+     change (a0::s) with ([a0]++s).
+     rewrite (split2_data_at_Tarray_app 1) by list_solve.
+     rewrite (data_at_singleton_array_eq _ int_or_ptr_type a0 [a0]); auto. simpl.
+     apply sepcon_derives.
+      *  apply derives_refl'. f_equal.
+          unfold field_address0; rewrite if_true.
+          f_equal. simpl. unfold WORD_SIZE. list_solve.
+          apply arr_field_compatible0; auto with field_compatible.
+          list_solve.
+      * replace (Z.succ _) with (n - Zlength s) by list_solve.
+        eapply derives_trans; [ | apply IHs; list_solve].
+        replace (Zlength _ - 1) with (Zlength s) by list_solve.
+        apply derives_refl'. f_equal.
+        rewrite field_address0_SUB_SUB by list_solve.
+        f_equal. f_equal. f_equal. list_solve.
+Qed.
+     
+Lemma Zlength_rootpairs: forall r i s, Zlength (rootpairs r i s) = Zlength s.
+Proof.
+  intros.
+  revert i; induction s; simpl; intros; auto.
+  list_solve.
+Qed.   
+#[export] Hint Rewrite Zlength_rootpairs: sublist.
+
+
+Lemma field_compatible0_Tarray_offset:
+  (* can delete this after VST issue #700 is resolved in a release *)
+ forall {cs: compspecs} t n i n' i' p p',
+  field_compatible0 (Tarray t n' noattr) (ArraySubsc i' :: nil) p ->
+  0 <= n <= n' ->
+  0 <= i <= n ->
+  n-i <= n'-i' ->
+  i <= i' ->
+  p' = offset_val (sizeof t * (i'-i)) p ->
+  field_compatible0 (Tarray t n noattr) (ArraySubsc i :: nil) p'.
+Proof.
+intros until 1. intros ?H ?H Hni Hii Hp. subst p'.
+  assert (SP := sizeof_pos t).
+  assert (SS: sizeof t * n <= sizeof t * n').
+  apply Zmult_le_compat_l. lia. lia.
+  assert (SS': (sizeof t * n + sizeof t * (n'-n) = sizeof t * n')%Z).
+  rewrite <- Z.mul_add_distr_l. f_equal. lia.
+  hnf in H|-*.
+  intuition auto with field_compatible.
+  *
+  destruct p; try contradiction.
+  clear - SP SS SS' H H4 H0 H5 H3 H8 Hni Hii.
+  red in H3|-*.
+  unfold expr.sizeof in *.
+  simpl in H3,H8|-*. rewrite Z.max_r in H3|-* by lia.
+  rename i0 into j.
+   pose proof (Ptrofs.unsigned_range j).
+   fold (sizeof t) in *.
+   assert (0 <= sizeof t * (i'-i) <= sizeof t * n').
+   split. apply Z.mul_nonneg_nonneg; lia.
+   apply Zmult_le_compat_l. lia. lia.
+  assert (sizeof t * (i'-i+n) <= sizeof t * n').
+   apply Zmult_le_compat_l. lia. lia.
+  unfold Ptrofs.add.
+  rewrite (Ptrofs.unsigned_repr (_ * _))
+    by (change Ptrofs.max_unsigned with (Ptrofs.modulus -1); lia).
+  rewrite Ptrofs.unsigned_repr_eq.
+  rewrite Zmod_small by lia.
+  pose proof Z.mul_add_distr_l (sizeof t) (i' - i) n.
+  lia.
+ *
+   destruct p; try contradiction.
+   simpl in H3, H6 |- *.
+  unfold expr.sizeof in *.
+   simpl in H3, H6 |- *.
+   rewrite Z.max_r in H3 by lia.
+   constructor; intros.
+  unfold Ptrofs.add.
+   rewrite !Ptrofs.unsigned_repr_eq.
+  assert (Ptrofs.modulus <> 0) by computable.
+  rewrite Z.add_mod by auto.
+  rewrite Z.mod_mod by auto.
+  rewrite <- Z.add_mod by auto.
+  inv_int i0.
+   fold (sizeof t) in *.
+  pose_size_mult cs t (0 :: i' - i :: i' - i + i1 ::  n' :: nil).
+  rewrite Zmod_small by lia.
+  rewrite <- Z.add_assoc, <- H14.
+  eapply align_compatible_rec_Tarray_inv; [eassumption |].
+  lia.
+Qed.
+
+Lemma frames_rep_unlocalize: forall sh frs (roots: list (val*val)),
+  map fst roots = map fst (frames2rootpairs frs) ->
+  frames_shell_rep sh frs * roots_rep sh roots |-- 
+  frames_rep sh (update_frames frs (map snd roots)).
+Proof.
+  unfold frames2rootpairs, roots_rep.
+  induction frs as [ | [a r s] frs']; simpl; intros.
+  - destruct roots; inv H; rewrite emp_sepcon; apply derives_refl.
+  -  Intros. rename H0 into FC.
+     rewrite map_app in H.
+     unfold frame2rootpairs at 1 in H. simpl rootpairs in H.
+     pose (r1 := sublist 0 (Zlength s) roots).
+     pose (r2 := sublist (Zlength s) (Zlength roots) roots).
+     assert (Zlength s <= Zlength roots).  {
+       set (j := map fst (concat _)) in H. clearbody j. clear - H.
+       forget 0 as i.
+       revert i roots H; induction s; destruct roots; intros; simpl in *; subst; try list_solve.
+       inv H. apply IHs in H2. list_solve.       
+     }
+     assert (roots = r1 ++ r2) by (subst r1 r2; list_solve).
+     rewrite H1 at 1.
+     pose proof (Zlength_rootpairs r 0 s).
+     rewrite iter_sepcon_app_sepcon.
+     sep_apply (IHfrs' r2); clear IHfrs'. {
+       subst r2.
+       rewrite map_sublist. rewrite H. rewrite sublist_app2 by list_solve.
+       autorewrite with sublist.
+       rewrite sublist_same; auto. rewrite Zlength_map.
+       apply (@f_equal (list val) Z (@Zlength _) _ _) in H.
+       list_solve.
+     }
+     rewrite frames_p_update_frames.
+     rewrite <- !ZtoNat_Zlength.
+     rewrite <- !sublist_skip,  <- !sublist_firstn by rep_lia.
+     rewrite !Zlength_map. rewrite !sublist_map. fold r2. fold r1.
+     rewrite !Zlength_map.
+     unfold r1.
+     autorewrite with sublist.
+     cancel.
+     fold r1.
+     replace (Zlength s) with (Zlength r1) in FC|-* by (subst r1; list_solve).
+     assert (map fst r1 = map fst (rootpairs r 0 s)). {
+      rewrite H1 in H. rewrite map_app in H.
+      apply list_append_injective_l in H. apply H.
+      rewrite <- ! ZtoNat_Zlength. f_equal. subst r1. list_solve.
+     }
+     clearbody r1. clear - FC H3.
+     pose (n := Zlength r1).
+     assert (Zlength r1 <= n) by lia.
+     fold n in FC.  
+     replace 0 with (n - Zlength r1) in H3 by lia.
+     replace r with (offset_val ((n - Zlength r1)*WORD_SIZE) r).
+     2:{replace (_ * _)%Z with 0. apply isptr_offset_val_zero; destruct FC; auto. lia. } 
+     clearbody n.
+     revert s  H3.
+     induction r1; destruct s; intros; simpl in *; try discriminate.
+     change (Zlength nil) with 0.
+     rewrite data_at_zero_array_eq; auto.
+     inv H3.
+     rewrite H1.
+     replace (Z.succ _) with (n - Zlength r1) in H2 by list_solve.
+     apply IHr1 in H2; [ | list_solve]; clear IHr1.
+     destruct a as [a b]. rewrite Zlength_cons in H1. simpl in *. subst. 
+     sep_apply H2; clear H2.
+     change (b:: map snd r1) with ([b] ++ map snd r1).
+     rewrite (split2_data_at_Tarray_app 1) by list_solve.
+     rewrite (data_at_singleton_array_eq _ int_or_ptr_type (b) [b]); auto.
+     autorewrite with sublist. replace (Z.succ _ - _) with (Zlength r1) by lia.
+     cancel.
+     apply derives_refl'.
+     f_equal.
+     unfold field_address0. rewrite if_true. simpl.
+     rewrite offset_offset_val. f_equal. unfold WORD_SIZE. list_solve.
+     eapply field_compatible0_Tarray_offset with (i' := n - Zlength r1) (p:=r) (n':=n); try lia; try list_solve.
+     apply arr_field_compatible0; auto. list_solve.
+     f_equal. rewrite Z.mul_comm. f_equal. lia.
+Qed.
+
 
   Definition heap_rep (sh: share) (h: heap) (p: val) :=
     heap_struct_rep sh (map space_tri h.(spaces)) p * heap_rest_rep h.
@@ -1653,11 +1902,6 @@ Proof.
 Qed.
 
 
-Lemma frames_adr_update_frames: forall frames roots, frames_adr (update_frames frames roots) = frames_adr frames.
-Proof.
-  destruct frames as [ | [? ? ?] ? ]; intros; auto.
-Qed.
-
 Fixpoint frame_root_address (frames: list frame) (i: Z) : val :=
   match frames with
   | nil => nullval (* oops! *)
@@ -1742,7 +1986,7 @@ if_tac.
  rewrite <- !sublist_firstn.
  fold (frames2roots rest).
  autorewrite with sublist.
- rewrite frames_adr_update_frames.
+ rewrite frames_p_update_frames.
  cancel.
 Qed.
 

@@ -12,7 +12,7 @@ Lemma body_forward_inL:
       (from to : nat)
       (depth z : Z)
       (SH : readable_share rsh) (SH0 : writable_share sh)
-      (H : super_compatible (g, t_info, roots) outlier)
+      (H: super_compatible g (ti_heap t_info) (ti_frames t_info) roots outlier)
       (H0 : forward_p_compatible (inl z) roots g from)
       (H1 : forward_condition g (ti_heap t_info) from to)
       (H2 : 0 <= depth <= Int.max_signed)
@@ -29,7 +29,7 @@ Lemma body_forward_inL:
   (fn_body f_forward)
   (normal_ret_assert
      ((EX (g' : LGraph) (t_info' : thread_info) (roots' : roots_t),
-       PROP (super_compatible (g', t_info', roots') outlier;
+       PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots' outlier;
        roots' = upd_roots from to (inl z) g roots;
        forward_relation from to (Z.to_nat depth)
          (forward_p2forward_t (inl z) roots g) g g';
@@ -567,7 +567,7 @@ abbreviate_semax.
                 apply lcv_forward_condition; try assumption.
                 red. intuition. }
               remember (upd_Znth z roots (inr (new_copied_v g to))) as roots'.
-              assert (super_compatible (g', t_info', roots') outlier). {
+              assert (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots' outlier). {
                 subst g' t_info' roots'. rewrite H30, H32.
                 apply lcv_super_compatible; try assumption. red. intuition. }
               assert (thread_info_relation t_info t_info'). {
@@ -587,7 +587,7 @@ abbreviate_semax.
                  forward_for_simple_bound
                    n
                    (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
-                    PROP (super_compatible (g3, t_info3, roots') outlier;
+                    PROP (super_compatible g3 (ti_heap t_info3) (ti_frames t_info3) roots' outlier;
                           forward_loop
                             from to (Z.to_nat (depth - 1))
                             (sublist 0 i (vertex_pos_pairs g' (new_copied_v g to)))
@@ -667,14 +667,14 @@ abbreviate_semax.
                      rewrite sublist_same in H47; auto.
                      2: { subst n g' from.
                           rewrite vpp_Zlength, lcv_vlabel_new; auto. }
-                     Opaque super_compatible.
+                     Local Opaque super_compatible.
                      Exists g3 t_info3 roots'. entailer!. simpl.
                      unfold upd_root.
                      rewrite <- Heqroot, H21, if_true by reflexivity. split; auto.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
                          (rewrite <- Z2Nat.inj_succ; [f_equal|]; lia).
                      constructor; easy.
-                     Transparent super_compatible.
+                     Local Transparent super_compatible.
               ** assert (depth = 0) by lia. subst depth. clear H43.
                  clear Heqnv. forward.
                  remember (cut_thread_info

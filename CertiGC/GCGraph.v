@@ -386,6 +386,16 @@ Record frame : Type :=
     fr_roots: list val
   }.
 
+
+Fixpoint rootpairs (base: val) (z: Z) (al: list val) : list (val*val) :=
+  match al with
+  | nil => nil
+  | a :: al' => (offset_val (z * WORD_SIZE) base, a) :: rootpairs base (Z.succ z) al'
+  end.
+
+Definition frame2rootpairs (f: frame) :=
+  rootpairs f.(fr_root) 0 f.(fr_roots).
+  
 Record thread_info: Type :=
   {
     ti_heap_p: val;
@@ -595,8 +605,22 @@ Definition roots_t: Type := list root_t.
 
 Definition outlier_t: Type := list GC_Pointer.
 
+Definition frames2rootpairs (frames: list frame) : list (val*val) := 
+    List.concat (map frame2rootpairs frames). 
+
 Definition frames2roots (frames: list frame) : list val := 
     List.concat (map fr_roots frames). 
+
+Lemma frames2roots_eq: forall frames, 
+   frames2roots frames = map snd (frames2rootpairs frames).
+Proof.
+  unfold frames2roots, frames2rootpairs, frame2rootpairs.
+  induction frames as [ | [a r s] ]; auto.
+  simpl. rewrite map_app. f_equal; auto.
+  clear.
+  forget 0%Z as i.
+  revert i; induction s; intro; simpl; f_equal; auto.
+Qed.
 
 Fixpoint update_frames (frames: list frame) (roots: list val) : list frame :=
  match frames with
@@ -648,24 +672,11 @@ Definition copy_compatible (g: LGraph): Prop :=
             graph_has_v g (vlabel g v).(copied_vertex) /\
             vgeneration v <> vgeneration (vlabel g v).(copied_vertex).
 
-Definition super_compatible' (g: LGraph) (h: heap) (frames: list frame) (r: roots_t) (out: outlier_t) : Prop := 
+Definition super_compatible (g: LGraph) (h: heap) (frames: list frame) (r: roots_t) (out: outlier_t) : Prop := 
   graph_heap_compatible g h /\
   frames_compatible g frames r /\
   roots_compatible g out r /\
   outlier_compatible g out.
-
-Definition super_compatible
-  (g_ti_r: LGraph * thread_info * roots_t) (out: outlier_t) : Prop :=
-   super_compatible' (fst (fst g_ti_r)) (ti_heap (snd (fst g_ti_r))) (ti_frames (snd (fst g_ti_r))) (snd g_ti_r) out.
-
-(*
-  let (g_ti, r) := g_ti_r in
-  let (g, ti) := g_ti in
-  graph_thread_info_compatible g ti /\
-  frames_compatible g (ti_frames ti) r /\
-  roots_compatible g out r /\
-  outlier_compatible g out.
-*)
 
 Definition reset_gen_info (gi: generation_info) : generation_info :=
   Build_generation_info (start_address gi) O (generation_sh gi) (start_isptr gi)
@@ -3013,8 +3024,8 @@ Lemma lcv_super_compatible_unchanged: forall
     (Hi : 0 <= Z.of_nat to < Zlength (spaces h))
     (Hh : has_space (Znth (Z.of_nat to) (spaces h)) (vertex_size g v)),
     graph_has_gen g to -> graph_has_v g v ->
-    super_compatible' g h frames roots outlier ->
-    super_compatible'
+    super_compatible g h frames roots outlier ->
+    super_compatible
       (lgraph_copy_v g v to)
        (cut_heap h (Z.of_nat to) (vertex_size g v) Hi Hh)
        frames roots outlier.
@@ -3032,8 +3043,8 @@ Lemma lcv_super_compatible: forall
     (Hh : has_space (Znth (Z.of_nat to) (spaces h)) (vertex_size g v))
     (Hm : 0 <= z < Zlength roots),
     graph_has_gen g to -> graph_has_v g v ->
-    super_compatible' g h frames roots outlier ->
-    super_compatible'
+    super_compatible g h frames roots outlier ->
+    super_compatible
       (lgraph_copy_v g v to)
       (cut_heap h (Z.of_nat to) (vertex_size g v) Hi Hh)
       (update_frames frames
@@ -3374,7 +3385,7 @@ Proof.
 Qed.
 
 Lemma lgd_outlier_compatible:
-  forall (g : LGraph) (t_info : thread_info) e (v' : VType) outlier,
+  forall (g : LGraph) e (v' : VType) outlier,
     outlier_compatible g outlier ->
     outlier_compatible (labeledgraph_gen_dst g e v') outlier.
 Proof.
@@ -3384,9 +3395,9 @@ Proof.
   apply (H v H0).
 Qed.
 
-Lemma lgd_super_compatible: forall g t_info roots outlier v' e,
-    super_compatible (g, t_info, roots) outlier ->
-    super_compatible ((labeledgraph_gen_dst g e v'), t_info, roots) outlier.
+Lemma lgd_super_compatible: forall g (h: heap) (fr: list frame) roots outlier v' e,
+    super_compatible g h fr roots outlier -> 
+    super_compatible (labeledgraph_gen_dst g e v') h fr roots outlier.
 Proof.
   intros. destruct H as [? [? [? ?]]]. split; [|split; [|split]].
   - apply lgd_graph_thread_info_compatible; assumption.
@@ -4456,8 +4467,8 @@ Qed.
 
 Lemma super_compatible_reset: forall g h frames roots outlier gen,
     roots_have_no_gen roots gen ->
-    super_compatible' g h frames roots outlier ->
-    super_compatible' (reset_graph gen g) (reset_nth_heap gen h) frames roots outlier.
+    super_compatible g h frames roots outlier ->
+    super_compatible (reset_graph gen g) (reset_nth_heap gen h) frames roots outlier.
 Proof.
   intros. destruct H0 as [? [? [? ?]]]. split; [|split; [|split]].
   - apply graph_thread_info_compatible_reset; assumption.
@@ -5553,8 +5564,9 @@ Qed.
 Lemma super_compatible_add: forall g ti gi sp i (Hs: 0 <= i < MAX_SPACES) roots out,
     ~ graph_has_gen g (Z.to_nat i) -> graph_has_gen g (Z.to_nat (i - 1)) ->
     (forall (gr: LGraph), generation_space_compatible gr (Z.to_nat i, gi, sp)) ->
-    number_of_vertices gi = O -> super_compatible (g, ti, roots) out ->
-    super_compatible (lgraph_add_new_gen g gi, ti_add_new_space ti sp i Hs, roots) out.
+    number_of_vertices gi = O -> 
+    super_compatible g (ti_heap ti) (ti_frames ti) roots out ->
+    super_compatible (lgraph_add_new_gen g gi) (add_new_space (ti_heap ti) sp i Hs) (ti_frames ti) roots out.
 Proof.
   intros. destruct H3 as [? [? [? ?]]]. split; [|split; [|split]].
   - apply gti_compatible_add; assumption.
