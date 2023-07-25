@@ -12,7 +12,7 @@ Lemma body_forward_inR:
     (from to : nat) (depth : Z) (p : VType * Z)
     (SH : readable_share rsh)
     (SH0 : writable_share sh)
-    (H: super_compatible g (ti_heap t_info) (ti_frames t_info) roots outlier)
+    (H: super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier)
     (H0 : forward_p_compatible (inr p) roots g from)
     (H1 : forward_condition g (ti_heap t_info) from to)
     (H2 : 0 <= depth <= Int.max_signed)
@@ -29,7 +29,7 @@ Lemma body_forward_inR:
   (fn_body f_forward)
   (normal_ret_assert
      ((EX (g' : LGraph) (t_info' : thread_info) (roots' : roots_t),
-       PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots' outlier;
+       PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
        roots' = upd_roots from to (inr p) g roots;
        forward_relation from to (Z.to_nat depth)
          (forward_p2forward_t (inr p) roots g) g g';
@@ -612,7 +612,7 @@ abbreviate_semax.
                   apply lcv_forward_condition_unchanged; try assumption.
                   red. intuition. }
                 remember roots as roots'.
-                assert (super_compatible g1 (ti_heap t_info') (ti_frames t_info') roots' outlier). {
+                assert (super_compatible g1 (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier). {
 
                   subst g1 g' t_info' roots'.
                   apply lgd_super_compatible, lcv_super_compatible_unchanged;
@@ -633,7 +633,7 @@ abbreviate_semax.
                  forward_for_simple_bound
                    n'
                    (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
-                    PROP (super_compatible g3 (ti_heap t_info3) (ti_frames t_info3) roots' outlier;
+                    PROP (super_compatible g3 (ti_heap t_info3) (frames2rootpairs (ti_frames t_info3)) roots' outlier;
                           forward_loop
                             from to (Z.to_nat (depth - 1))
                             (sublist 0 i (vertex_pos_pairs g1 (new_copied_v g to)))

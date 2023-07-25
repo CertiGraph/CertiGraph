@@ -12,7 +12,7 @@ Lemma body_forward_inL:
       (from to : nat)
       (depth z : Z)
       (SH : readable_share rsh) (SH0 : writable_share sh)
-      (H: super_compatible g (ti_heap t_info) (ti_frames t_info) roots outlier)
+      (H: super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier)
       (H0 : forward_p_compatible (inl z) roots g from)
       (H1 : forward_condition g (ti_heap t_info) from to)
       (H2 : 0 <= depth <= Int.max_signed)
@@ -29,7 +29,7 @@ Lemma body_forward_inL:
   (fn_body f_forward)
   (normal_ret_assert
      ((EX (g' : LGraph) (t_info' : thread_info) (roots' : roots_t),
-       PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots' outlier;
+       PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
        roots' = upd_roots from to (inl z) g roots;
        forward_relation from to (Z.to_nat depth)
          (forward_p2forward_t (inl z) roots g) g g';
@@ -63,15 +63,14 @@ abbreviate_semax.
     - destruct g0. simpl. exact I.
     - specialize (H14 _ H13). apply isptr_is_pointer_or_integer. assumption. }
   red in H4. simpl fst in *. simpl snd in *.
+  rewrite <- frames2roots_eq in H4.
   sep_apply (isolate_frame sh (ti_frames t_info) z);
-      [rewrite <- H4, Zlength_map; assumption | ].
+    [rewrite <- H4, Zlength_map; assumption | ].
     set (W := allp _).
     Intros.
     rewrite <- H4. rewrite Znth_map by lia. rewrite <- Heqroot.
-    pose proof I. (*
-    assert (0 <= Znth z (live_roots_indices f_info) < MAX_ARGS) by
-        (apply (fi_index_range f_info), Znth_In; assumption).*)
-    forward. (*1: entailer!.*)
+    pose proof I. 
+    forward. 
     assert_PROP (valid_int_or_ptr (root2val g root)). {
       gather_SEP (graph_rep _) (outlier_rep _).
       sep_apply (root_valid_int_or_ptr _ _ _ _ H13 H5). entailer!. }
@@ -91,7 +90,7 @@ abbreviate_semax.
       1: exfalso; apply H20'; reflexivity.
       forward. Exists g t_info roots.
       entailer!.
-      * simpl; split3; [easy | | ].
+      * simpl; split3. rewrite frames2roots_eq in H4; easy.
         unfold upd_root. rewrite <- Heqroot, -> Heqroot, upd_Znth_unchanged'; auto.
         rewrite <- Heqroot.
         split3; [constructor | easy | apply tir_id].
@@ -139,7 +138,7 @@ abbreviate_semax.
         forward. Exists g t_info roots.
         entailer!.
         -- split3; [| |split3]; simpl; try rewrite <- Heqroot;
-             [ easy |  | constructor | hnf; intuition | apply tir_id].
+             [ rewrite frames2roots_eq in H4; easy |  | constructor | hnf; intuition | apply tir_id].
              unfold upd_root. rewrite  Heqroot. rewrite upd_Znth_unchanged'; auto.
         -- subst W.
         repeat sep_apply allp_sepcon1.
@@ -260,8 +259,9 @@ abbreviate_semax.
            rewrite <- H4, Zlength_map; auto.             
            }
            simpl.
-           split; split; [|split; [|split] | |split]; auto; simpl fst in *; simpl snd in *.
-           ++ red. simpl. unfold fr'.
+           split; split; [|split; [|split] | |split]; 
+               try solve [rewrite frames2roots_eq in H4; auto]; simpl fst in *; simpl snd in *.
+           ++ red. simpl. unfold fr'. rewrite <- frames2roots_eq.
            rewrite frames2roots_update_frames by (apply invariants.Zlength_eq; list_solve).
             rewrite <- upd_Znth_map. f_equal. auto.
            ++ specialize (H9 _ H19 H21). destruct H9 as [? _].
@@ -567,9 +567,51 @@ abbreviate_semax.
                 apply lcv_forward_condition; try assumption.
                 red. intuition. }
               remember (upd_Znth z roots (inr (new_copied_v g to))) as roots'.
-              assert (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots' outlier). {
+              assert (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier). {
                 subst g' t_info' roots'. rewrite H30, H32.
-                apply lcv_super_compatible; try assumption. red. intuition. }
+                simpl.
+              replace  (frames2rootpairs (update_frames (ti_frames t_info)
+                        (upd_Znth z (frames2roots (ti_frames t_info))
+                          (vertex_address g (new_copied_v g to))))) 
+               with (update_rootpairs (frames2rootpairs (ti_frames t_info))
+                       (upd_Znth z (map rp_val (frames2rootpairs (ti_frames t_info)))
+                     (vertex_address g (new_copied_v g to)))). 2:{
+Search frames2rootpairs. rewrite frames2roots_eq.
+Search update_rootpairs frames2rootpairs.
+Set Nested Proofs Allowed.
+ Lemma update_rootpairs_frames2rootpairs:
+  forall frames roots, 
+  Zlength roots = Zlength (frames2roots frames) ->
+ update_rootpairs (frames2rootpairs frames) roots = 
+ frames2rootpairs (update_frames frames roots).
+ Proof.
+  unfold frames2rootpairs, frame2rootpairs, frames2roots.
+  induction frames as [ | [ a r s ] rest] ;[ destruct roots; auto | ].
+  intros.
+  simpl in *. rewrite Zlength_app in H.
+  rewrite <- ZtoNat_Zlength, <- sublist_skip by rep_lia.
+  rewrite <- IHrest by list_solve; clear IHrest.
+    set (i:=0) at 1 3. clearbody i.
+   revert roots i H; induction s; destruct roots; simpl; intros; auto.
+   -
+   f_equal. list_solve.
+   - rewrite <- sublist_firstn. list_simplify.
+   -
+   autorewrite with sublist in H. specialize (IHs roots (Z.succ i) ltac:(lia)).
+   rewrite IHs; clear IHs. 
+   rewrite <- !sublist_firstn.
+   autorewrite with sublist.
+   change (?a :: ?b ++ ?c) with ((a :: b) ++ c). f_equal; [ |  f_equal; list_solve].
+   replace (sublist 0 (Z.succ (Zlength s)) (v::roots))
+        with (v :: sublist 0 (Zlength s) roots) by list_solve.
+   reflexivity.
+   Qed.
+  rewrite update_rootpairs_frames2rootpairs; auto.
+  rewrite Zlength_upd_Znth. rewrite frames2roots_eq. auto.
+                     }
+
+                apply lcv_super_compatible; try assumption. red.
+                split3; auto. red. rewrite <- frames2roots_eq; auto. }
               assert (thread_info_relation t_info t_info'). {
                 subst t_info'. split; [|split]; [reflexivity| |]; intros m.
                 - simpl. rewrite utiacti_gen_size. reflexivity.
@@ -587,7 +629,7 @@ abbreviate_semax.
                  forward_for_simple_bound
                    n
                    (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
-                    PROP (super_compatible g3 (ti_heap t_info3) (ti_frames t_info3) roots' outlier;
+                    PROP (super_compatible g3 (ti_heap t_info3) (frames2rootpairs (ti_frames t_info3)) roots' outlier;
                           forward_loop
                             from to (Z.to_nat (depth - 1))
                             (sublist 0 i (vertex_pos_pairs g' (new_copied_v g to)))
@@ -707,6 +749,7 @@ abbreviate_semax.
         -- unfold upd_root.
            rewrite <- Heqroot, if_false by assumption.
            split3; [| |simpl root2forward; constructor]; try easy.
+           split3; auto. red. rewrite <- frames2roots_eq; auto.
            rewrite Heqroot, upd_Znth_unchanged'; auto.
            now constructor.
         -- unfold thread_info_rep, heap_rep. entailer!.

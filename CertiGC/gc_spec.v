@@ -198,7 +198,7 @@ Definition forward_spec :=
        tptr int_or_ptr_type,
        tint]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info) (ti_frames t_info) roots outlier;
+          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
           forward_p_compatible forward_p roots g from;
           forward_condition g (ti_heap t_info) from to;
           0 <= depth <= Int.max_signed;
@@ -215,7 +215,7 @@ Definition forward_spec :=
          thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots' outlier;
+    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info'))  roots' outlier;
           roots' = upd_roots from to forward_p g roots;
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
@@ -237,7 +237,7 @@ Definition forward_roots_spec :=
        tptr (tptr int_or_ptr_type),
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info) (ti_frames t_info) roots outlier;
+          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
           forward_condition g (ti_heap t_info) from to;
           from <> to)
     PARAMS (gen_start g from;
@@ -251,7 +251,7 @@ Definition forward_roots_spec :=
          thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots' outlier;
+    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
           forward_roots_relation from to roots g roots' g';
           forward_condition g' (ti_heap t_info') from to;
           thread_info_relation t_info t_info')
@@ -284,7 +284,7 @@ Definition do_scan_spec :=
        tptr int_or_ptr_type,
        tptr (tptr int_or_ptr_type)]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info) (ti_frames t_info) roots outlier;
+          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
           forward_condition g (ti_heap t_info) from to;
           from <> to; closure_has_index g to to_index;
           0 < gen_size (ti_heap t_info) to; gen_unmarked g to)
@@ -299,7 +299,7 @@ Definition do_scan_spec :=
          thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info,
-    PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots outlier;
+    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots outlier;
           forward_condition g' (ti_heap t_info') from to;
           do_scan_relation from to to_index g g';
           thread_info_relation t_info t_info')
@@ -318,7 +318,7 @@ Definition do_generation_spec :=
        tptr space_type,
        tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info) (ti_frames t_info) roots outlier;
+          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
           do_generation_condition g (ti_heap t_info) from to;
           from <> to)
     PARAMS (space_address (ti_heap_p t_info) from;
@@ -331,7 +331,7 @@ Definition do_generation_spec :=
          thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots' outlier;
+    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
           thread_info_relation t_info t_info';
           do_generation_relation from to roots roots' g g')
     LOCAL ()
@@ -431,7 +431,7 @@ Definition garbage_collect_spec :=
        roots : roots_t, outlier: outlier_t
   PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info) (ti_frames t_info) roots outlier;
+          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
           garbage_collect_condition g (ti_heap t_info) roots;
           safe_to_copy g)
     PARAMS (ti)
@@ -443,7 +443,7 @@ Definition garbage_collect_spec :=
          ti_token_rep (ti_heap t_info) (ti_heap_p t_info))
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots' outlier;
+    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
           garbage_collect_relation roots roots' g g';
           garbage_collect_condition g' (ti_heap t_info') roots';
           safe_to_copy g')

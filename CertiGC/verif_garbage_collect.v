@@ -119,7 +119,7 @@ Proof.
   forward_for_simple_bound
     (MAX_SPACES-1)
     (EX i: Z, EX g': LGraph, EX roots': roots_t, EX t_info': thread_info,
-     PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots' outlier;
+     PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
            garbage_collect_condition g' (ti_heap t_info') roots';
            safe_to_copy_to_except g' (Z.to_nat i);
            firstn_gen_clear g' (Z.to_nat i);
@@ -149,7 +149,7 @@ Proof.
     rewrite Znth_map by assumption. unfold space_tri at 1.
     forward_if
       (EX g1: LGraph, EX t_info1: thread_info,
-       PROP (super_compatible g1 (ti_heap t_info1) (ti_frames t_info1) roots' outlier;
+       PROP (super_compatible g1 (ti_heap t_info1) (frames2rootpairs (ti_frames t_info1)) roots' outlier;
              garbage_collect_condition g1 (ti_heap t_info1) roots';
              safe_to_copy_to_except g1 (Z.to_nat i);
              firstn_gen_clear g1 (Z.to_nat i);
@@ -228,7 +228,7 @@ Proof.
         remember (ti_add_new_space t_info' sp _ H20) as t_info1. pose proof H16.
         rewrite <- (space_start_isnull_iff g') in H16; auto. 2: apply (proj1 H8).
         assert (number_of_vertices gi = O) by (subst gi; simpl; reflexivity).
-        assert (super_compatible g1 (ti_heap t_info1) (ti_frames t_info1) roots' outlier). {
+        assert (super_compatible g1 (ti_heap t_info1) (frames2rootpairs (ti_frames t_info1)) roots' outlier). {
           subst g1 t_info1. simpl ti_heap. simpl ti_frames. apply super_compatible_add; auto.
           replace (i + 1 - 1) with i by lia. assumption. }
         assert (firstn_gen_clear g1 (Z.to_nat i)) by

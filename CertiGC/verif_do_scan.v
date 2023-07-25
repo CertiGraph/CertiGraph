@@ -45,7 +45,7 @@ Proof.
   start_function.
   forward.
   forward_loop (EX n: nat, EX g': LGraph, EX t_info': thread_info,
-                PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots outlier;
+                PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots outlier;
                       forward_condition g' (ti_heap t_info') from to;
                       thread_info_relation t_info t_info';
                       closure_has_index g' to (to_index + n);
@@ -59,7 +59,7 @@ Proof.
                 SEP (all_string_constants rsh gv;
                outlier_rep outlier; graph_rep g'; thread_info_rep sh t_info' ti))
   break: (EX g' : LGraph, EX t_info' : thread_info,
-          PROP (super_compatible g' (ti_heap t_info') (ti_frames t_info') roots outlier;
+          PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots outlier;
                 forward_condition g' (ti_heap t_info') from to;
                 do_scan_relation from to to_index g g';
                 thread_info_relation t_info t_info')
@@ -217,7 +217,7 @@ Proof.
           (unfold thread_info_rep, heap_rep; entailer!).
       forward_if
         (EX g'': LGraph, EX t_info'': thread_info,
-         PROP (super_compatible g'' (ti_heap t_info'') (ti_frames t_info'') roots outlier;
+         PROP (super_compatible g'' (ti_heap t_info'') (frames2rootpairs (ti_frames t_info'')) roots outlier;
                forward_condition g'' (ti_heap t_info'') from to;
                thread_info_relation t_info t_info'';
                (no_scan g' (to, index) /\ g'' = g') \/
@@ -253,7 +253,7 @@ Proof.
                    (sublist 0 (i - 1)
                             (nat_inc_list
                                (length (vlabel g' (to, index)).(raw_fields)))) g' g3;
-                super_compatible g3 (ti_heap t_info3) (ti_frames t_info3) roots outlier;
+                super_compatible g3 (ti_heap t_info3) (frames2rootpairs (ti_frames t_info3)) roots outlier;
                 forward_condition g3 (ti_heap t_info3) from to;
                 thread_info_relation t_info t_info3;
                 1 <= i <= z + 1)
@@ -274,7 +274,7 @@ Proof.
                    (sublist 0 i
                             (nat_inc_list
                                (length (vlabel g' (to, index)).(raw_fields)))) g' g3;
-                super_compatible g3 (ti_heap t_info3) (ti_frames t_info3) roots outlier;
+                super_compatible g3 (ti_heap t_info3) (frames2rootpairs (ti_frames t_info3)) roots outlier;
                 forward_condition g3 (ti_heap t_info3) from to;
                 thread_info_relation t_info t_info3;
                 1 <= i + 1 <= z + 1)

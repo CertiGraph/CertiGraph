@@ -89,11 +89,11 @@ Qed.
       frames_shell_rep sh rest
   end.
 
-Definition roots_rep (sh: share) (roots: list (val*val)) : mpred :=
-  iter_sepcon roots (fun av => data_at sh int_or_ptr_type (snd av) (fst av)).
+Definition roots_rep (sh: share) (roots: list rootpair) : mpred :=
+  iter_sepcon roots (fun av => data_at sh int_or_ptr_type (rp_val av) (rp_adr av)).
 
-Lemma rootpairs_app:  forall r i al bl,
- rootpairs r i (al++bl) = rootpairs r i al ++ rootpairs r (i+Zlength al) bl.
+Lemma frame2rootpairs'_app:  forall r i al bl,
+frame2rootpairs' r i (al++bl) = frame2rootpairs' r i al ++ frame2rootpairs' r (i+Zlength al) bl.
  Proof.
    intros.
    revert i bl; induction al; simpl; intros.
@@ -103,9 +103,9 @@ Lemma rootpairs_app:  forall r i al bl,
 
 Lemma frames_rep_localize: forall sh (frs: list frame),
    frames_rep sh frs |-- roots_rep sh (frames2rootpairs frs) *
-                       (ALL roots': list(val*val),
-                            (!!(map fst roots' = map fst (frames2rootpairs frs)) && roots_rep sh roots')
-                                -* frames_rep sh (update_frames frs (map snd roots'))).
+                       (ALL roots': list rootpair,
+                            (!!(map rp_adr roots' = map rp_adr (frames2rootpairs frs)) && roots_rep sh roots')
+                                -* frames_rep sh (update_frames frs (map rp_val roots'))).
 Proof.
  unfold frames2rootpairs, roots_rep.
  induction frs as [ | [a r s] frs']; simpl.
@@ -170,13 +170,13 @@ Proof.
         f_equal. f_equal. f_equal. list_solve.
 Qed.
      
-Lemma Zlength_rootpairs: forall r i s, Zlength (rootpairs r i s) = Zlength s.
+Lemma Zlength_frame2rootpairs': forall r i s, Zlength (frame2rootpairs' r i s) = Zlength s.
 Proof.
   intros.
   revert i; induction s; simpl; intros; auto.
   list_solve.
 Qed.   
-#[export] Hint Rewrite Zlength_rootpairs: sublist.
+#[export] Hint Rewrite Zlength_frame2rootpairs': sublist.
 
 
 Lemma field_compatible0_Tarray_offset:
@@ -241,28 +241,30 @@ intros until 1. intros ?H ?H Hni Hii Hp. subst p'.
   lia.
 Qed.
 
-Lemma frames_rep_unlocalize: forall sh frs (roots: list (val*val)),
-  map fst roots = map fst (frames2rootpairs frs) ->
+Lemma frames_rep_unlocalize: forall sh frs (roots: list rootpair),
+  map rp_adr roots = map rp_adr (frames2rootpairs frs) ->
   frames_shell_rep sh frs * roots_rep sh roots |-- 
-  frames_rep sh (update_frames frs (map snd roots)).
+  frames_rep sh (update_frames frs (map rp_val roots)).
 Proof.
   unfold frames2rootpairs, roots_rep.
   induction frs as [ | [a r s] frs']; simpl; intros.
   - destruct roots; inv H; rewrite emp_sepcon; apply derives_refl.
   -  Intros. rename H0 into FC.
      rewrite map_app in H.
-     unfold frame2rootpairs at 1 in H. simpl rootpairs in H.
+     unfold frame2rootpairs at 1 in H. simpl frame2rootpairs' in H.
      pose (r1 := sublist 0 (Zlength s) roots).
      pose (r2 := sublist (Zlength s) (Zlength roots) roots).
      assert (Zlength s <= Zlength roots).  {
-       set (j := map fst (concat _)) in H. clearbody j. clear - H.
+       set (j := map rp_adr (concat _)) in H. clearbody j. clear - H.
        forget 0 as i.
        revert i roots H; induction s; destruct roots; intros; simpl in *; subst; try list_solve.
        inv H. apply IHs in H2. list_solve.       
      }
-     assert (roots = r1 ++ r2) by (subst r1 r2; list_solve).
+     assert (roots = r1 ++ r2)
+       by (clear - H0; subst r1 r2; rewrite sublist_rejoin by rep_lia;
+               symmetry;  apply sublist_same; auto).  
      rewrite H1 at 1.
-     pose proof (Zlength_rootpairs r 0 s).
+     pose proof (Zlength_frame2rootpairs' r 0 s).
      rewrite iter_sepcon_app_sepcon.
      sep_apply (IHfrs' r2); clear IHfrs'. {
        subst r2.
@@ -282,7 +284,7 @@ Proof.
      cancel.
      fold r1.
      replace (Zlength s) with (Zlength r1) in FC|-* by (subst r1; list_solve).
-     assert (map fst r1 = map fst (rootpairs r 0 s)). {
+     assert (map rp_adr r1 = map rp_adr (frame2rootpairs' r 0 s)). {
       rewrite H1 in H. rewrite map_app in H.
       apply list_append_injective_l in H. apply H.
       rewrite <- ! ZtoNat_Zlength. f_equal. subst r1. list_solve.
@@ -305,7 +307,7 @@ Proof.
      apply IHr1 in H2; [ | list_solve]; clear IHr1.
      destruct a as [a b]. rewrite Zlength_cons in H1. simpl in *. subst. 
      sep_apply H2; clear H2.
-     change (b:: map snd r1) with ([b] ++ map snd r1).
+     change (b:: map rp_val r1) with ([b] ++ map rp_val r1).
      rewrite (split2_data_at_Tarray_app 1) by list_solve.
      rewrite (data_at_singleton_array_eq _ int_or_ptr_type (b) [b]); auto.
      autorewrite with sublist. replace (Z.succ _ - _) with (Zlength r1) by lia.
