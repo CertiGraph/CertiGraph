@@ -231,10 +231,10 @@ void forward_remset (struct space *from,  /* descriptor of from-space */
 void forward_roots (value *from_start,  /* beginning of from-space */
                     value *from_limit,  /* end of from-space */
                     value **next,       /* next available spot in to-space */
-                    struct thread_info *ti) /* where's the args array? */
+                    struct stack_frame *frames) /* data structure to find the roots */
 /* Forward each live root in the stack */
  {
-   struct stack_frame *frame = ti->fp;
+   struct stack_frame *frame = frames;
    value *curr, *limit;
    /* Scan the stack by traversing the stack pointers */
 
@@ -276,14 +276,14 @@ void do_scan(value *from_start,  /* beginning of from-space */
 
 void do_generation (struct space *from,  /* descriptor of from-space */
                     struct space *to,    /* descriptor of to-space */
-                    struct thread_info *ti)  /* where are the roots? */
+                    struct stack_frame *fr)  /* where are the roots? */
 /* Copy the live objects out of the "from" space, into the "to" space,
    using fi and ti to determine the roots of liveness. */
 {
   value *p = to->next;
   /*  assert(from->next-from->start + from->rem_limit-from->limit <= to->limit-to->next); */
   forward_remset(from, to, &to->next);
-  forward_roots(from->start, from->limit, &to->next, ti);
+  forward_roots(from->start, from->limit, &to->next, fr);
   do_scan(from->start, from->limit, p, &to->next);
   #ifdef CERTICOQ_DEBUG_GC
   fprintf(stderr,"%5.3f%% occupancy\n",
@@ -410,7 +410,7 @@ void garbage_collect(struct thread_info *ti)
       #ifdef CERTICOQ_DEBUG_GC
       fprintf(stderr, "Generation %d:  ", i);
       #endif
-      do_generation(h->spaces+i, h->spaces+(i+1), ti);
+      do_generation(h->spaces+i, h->spaces+(i+1), ti->fp);
       /* If there's enough space in gen i+1 to guarantee that the
          NEXT collection into i+1 will succeed, we can stop here.
          We need enough space in the (unlikely) scenario where
@@ -468,7 +468,7 @@ int garbage_collect_all(struct thread_info *ti) {
   h->spaces[0].limit = ti->limit;
   h->spaces[0].next = ti->alloc;  /* this line more necessary here than perhaps in garbage_collect() */
   for (i=0; i < MAX_SPACES - 1 && h->spaces[i+1].start != NULL; i++)
-    do_generation(h->spaces+i, h->spaces+(i+1), ti);
+    do_generation(h->spaces+i, h->spaces+(i+1), ti->fp);
 
   return i;
 }
@@ -496,11 +496,11 @@ void *export(struct thread_info *ti, value root) {
   struct space* fake_sp = (struct space*)malloc(sizeof(struct space));
 
   create_space(fake_sp, sp->next - sp->start);
-  do_generation(sp, fake_sp, ti);
+  do_generation(sp, fake_sp, ti->fp);
 
   struct space* value_sp = (struct space*)malloc(sizeof(struct space));
   create_space(value_sp, fake_sp->next - fake_sp->start);
-  do_generation(fake_sp, value_sp, ti);
+  do_generation(fake_sp, value_sp, ti->fp);
 
   /* offset start by the header */
   void* result_block = (void *)(value_sp->start +1);

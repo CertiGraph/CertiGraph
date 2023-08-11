@@ -171,25 +171,10 @@ Proof.
   rewrite !sepcon_emp, approx_idem. reflexivity.
 Qed.
 
-Definition forward_p_address
-           (p: forward_p_type) (ti: thread_info) (g: LGraph) :=
-  match p with
-  | inl root_index => frame_root_address (ti_frames ti) root_index
-  | inr (v, n) => offset_val (WORD_SIZE * n) (vertex_address g v)
-  end.
-
-Definition limit_address g t_info from :=
-  offset_val (WORD_SIZE * gen_size t_info from) (gen_start g from).
-
-Definition next_address t_info to :=
-  field_address heap_type
-                [StructField _next;
-                   ArraySubsc (Z.of_nat to); StructField _spaces] (ti_heap_p t_info).
-
 Definition forward_spec :=
   DECLARE _forward
-  WITH rsh: share, sh: share, gv: globals, ti: val,
-       g: LGraph, t_info: thread_info,
+  WITH rsh: share, sh: share, gv: globals,
+       g: LGraph, h: heap, hp: val, rootpairs: list rootpair,
        roots : roots_t, outlier: outlier_t,
        from: nat, to: nat, depth: Z, forward_p: forward_p_type
   PRE [tptr int_or_ptr_type,
@@ -198,85 +183,89 @@ Definition forward_spec :=
        tptr int_or_ptr_type,
        tint]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
+          super_compatible g h rootpairs roots outlier;
           forward_p_compatible forward_p roots g from;
-          forward_condition g (ti_heap t_info) from to;
+          forward_condition g h from to;
           0 <= depth <= Int.max_signed;
           from <> to)
     PARAMS (gen_start g from;
-           limit_address g (ti_heap t_info) from;
-           next_address t_info to;
-           forward_p_address forward_p t_info g;
+           limit_address g h from;
+           heap_next_address hp to;
+           forward_p_address' forward_p rootpairs g;
            Vint (Int.repr depth))
     GLOBALS ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g;
-         thread_info_rep sh t_info ti)
+         roots_rep sh rootpairs;
+         heap_rep sh h hp)
   POST [tvoid]
-    EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info'))  roots' outlier;
+    EX g': LGraph, EX h': heap, EX roots': roots_t,
+    PROP (super_compatible g' h' (update_rootpairs rootpairs (map (root2val g') roots'))  roots' outlier;
           roots' = upd_roots from to forward_p g roots;
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
-          forward_condition g' (ti_heap t_info') from to;
-          thread_info_relation t_info t_info')
+          forward_condition g' h' from to;
+          heap_relation h h')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
-         thread_info_rep sh t_info' ti).
+         roots_rep sh (update_rootpairs rootpairs (map (root2val g') roots'));
+         heap_rep sh h' hp).
 
 Definition forward_roots_spec :=
   DECLARE _forward_roots
-  WITH rsh: share, sh: share, gv: globals,  ti: val,
-       g: LGraph, t_info: thread_info,
+  WITH rsh: share, sh: share, gv: globals,
+       g: LGraph, h: heap, hp: val, fr: list frame,
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [tptr int_or_ptr_type,
        tptr int_or_ptr_type,
        tptr (tptr int_or_ptr_type),
-       tptr thread_info_type]
+       tptr (Tstruct _stack_frame noattr)]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
-          forward_condition g (ti_heap t_info) from to;
+          super_compatible g h (frames2rootpairs fr) roots outlier;
+          forward_condition g h from to;
           from <> to)
     PARAMS (gen_start g from;
-           limit_address g (ti_heap t_info) from;
-           next_address t_info to;
-           ti)
+           limit_address g h from;
+           heap_next_address hp to;
+           frames_p fr)
     GLOBALS (gv)
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g;
-         thread_info_rep sh t_info ti)
+         frames_rep sh fr;
+         heap_rep sh h hp)
   POST [tvoid]
-    EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
+    EX g' : LGraph, EX h': heap, EX fr': list frame, EX roots': roots_t,
+    PROP (super_compatible g' h' (frames2rootpairs fr') roots' outlier;
           forward_roots_relation from to roots g roots' g';
-          forward_condition g' (ti_heap t_info') from to;
-          thread_info_relation t_info t_info')
+          forward_condition g' h' from to;
+          heap_relation h h')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
-         thread_info_rep sh t_info' ti).
+         frames_rep sh fr';
+         heap_rep sh h' hp).
 
 Definition forward_remset_spec :=
   DECLARE _forward_remset
-  WITH sh: share, ti: val, t_info: thread_info, from: nat, to: nat, next: val
+  WITH sh: share, h: heap, hp: val, from: nat, to: nat, next: val
   PRE [ tptr space_type, tptr space_type, tptr (tptr int_or_ptr_type) ]
      PROP (readable_share sh)
-     PARAMS ( space_address (ti_heap_p t_info) from ; space_address (ti_heap_p t_info) to; next )
-     SEP (thread_info_rep sh t_info ti)
+     PARAMS ( space_address hp from ; space_address hp to; next )
+     SEP (heap_rep sh h hp)
   POST [ tvoid ]
      PROP()
      RETURN ()
-     SEP(thread_info_rep sh t_info ti).
+     SEP(heap_rep sh h hp).
 
 Definition do_scan_spec :=
   DECLARE _do_scan
-  WITH rsh: share, sh: share, gv: globals, ti: val,
-       g: LGraph, t_info: thread_info,
+  WITH rsh: share, sh: share, gv: globals,
+       g: LGraph, h: heap, hp: val, rootpairs: list rootpair,
        roots : roots_t, outlier: outlier_t,
        from: nat, to: nat, to_index: nat
   PRE [tptr int_or_ptr_type,
@@ -284,61 +273,65 @@ Definition do_scan_spec :=
        tptr int_or_ptr_type,
        tptr (tptr int_or_ptr_type)]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
-          forward_condition g (ti_heap t_info) from to;
+          super_compatible g h rootpairs roots outlier;
+          forward_condition g h from to;
           from <> to; closure_has_index g to to_index;
-          0 < gen_size (ti_heap t_info) to; gen_unmarked g to)
+          0 < gen_size h to; gen_unmarked g to)
     PARAMS (gen_start g from;
-           limit_address g (ti_heap t_info) from;
+           limit_address g h from;
            offset_val (- WORD_SIZE) (vertex_address g (to, to_index));
-           next_address t_info to)
+           heap_next_address hp to)
     GLOBALS ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g;
-         thread_info_rep sh t_info ti)
+         roots_rep sh rootpairs;
+         heap_rep sh h hp)
   POST [tvoid]
-    EX g': LGraph, EX t_info': thread_info,
-    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots outlier;
-          forward_condition g' (ti_heap t_info') from to;
+    EX g': LGraph, EX h': heap, EX rootpairs': list rootpair,
+    PROP (super_compatible g' h' rootpairs' roots outlier;
+          forward_condition g' h' from to;
           do_scan_relation from to to_index g g';
-          thread_info_relation t_info t_info')
+          heap_relation h h')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
-         thread_info_rep sh t_info' ti).
+         roots_rep sh rootpairs';
+         heap_rep sh h' hp).
 
 Definition do_generation_spec :=
   DECLARE _do_generation
-  WITH rsh: share, sh: share, gv: globals, ti: val,
-       g: LGraph, t_info: thread_info,
+  WITH rsh: share, sh: share, gv: globals,
+       g: LGraph, h: heap, hp: val, fr: list frame, 
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [tptr space_type,
        tptr space_type,
-       tptr thread_info_type]
+       tptr (Tstruct _stack_frame noattr)]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
-          do_generation_condition g (ti_heap t_info) from to;
+          super_compatible g h (frames2rootpairs fr) roots outlier;
+          do_generation_condition g h from to;
           from <> to)
-    PARAMS (space_address (ti_heap_p t_info) from;
-           space_address (ti_heap_p t_info) to;
-           ti)
+    PARAMS (space_address hp from;
+           space_address hp to;
+           frames_p fr)
     GLOBALS (gv)
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g;
-         thread_info_rep sh t_info ti)
+         frames_rep sh fr;
+         heap_rep sh h hp)
   POST [tvoid]
-    EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
-          thread_info_relation t_info t_info';
+    EX g' : LGraph, EX h': heap, EX fr': list frame, EX roots': roots_t,
+    PROP (super_compatible g' h' (frames2rootpairs fr') roots' outlier;
+          heap_relation h h';
           do_generation_relation from to roots roots' g g')
     LOCAL ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
-         thread_info_rep sh t_info' ti).
+         frames_rep sh fr';
+         heap_rep sh h' hp).
 
 Definition create_space_spec :=
   DECLARE _create_space

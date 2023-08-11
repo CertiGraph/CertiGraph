@@ -658,6 +658,26 @@ Proof.
   rewrite skipn_all by lia. simpl. auto.
 Qed.
 
+Lemma update_update_rootpairs: forall rp v1 v2,
+  (Zlength v1 >= Zlength rp)%Z ->
+  (Zlength v2 >= Zlength rp)%Z ->
+  update_rootpairs (update_rootpairs rp v1) v2 = update_rootpairs rp v2.
+  Proof.
+        induction rp as [ | [? ? ]]; destruct v1; destruct v2; simpl; intros; try list_solve.
+        f_equal.
+        apply IHrp; list_solve.
+  Qed.
+
+Lemma Zlength_update_rootpairs':
+  forall (rootpairs : list rootpair) (roots : list val),
+  (Zlength rootpairs <= Zlength roots)%Z <->
+  Zlength (update_rootpairs rootpairs roots) = Zlength rootpairs.
+  Proof. induction rootpairs as [|[??]]; destruct roots; simpl; intros; try list_solve.
+      
+  rewrite !Zlength_cons. specialize (IHrootpairs roots).
+      split; intros. f_equal; apply IHrootpairs. lia. lia.
+  Qed.
+  
 Definition rootpairs_compatible (g: LGraph) (rootpairs: list rootpair) (roots: roots_t) : Prop :=
   map (root2val g) roots = map rp_val rootpairs.
 
@@ -3538,6 +3558,17 @@ Proof.
   - apply IHl; [|assumption| |assumption].
     + erewrite <- fr_graph_has_gen; eauto.
     + eapply fr_graph_has_v; eauto.
+Qed.
+
+Lemma hr_refl: forall h, heap_relation h h.
+Proof.
+  intros; split; auto.
+Qed.
+
+Lemma hr_trans: forall h1 h2 h3,
+  heap_relation h1 h2 -> heap_relation h2 h3 -> heap_relation h1 h3.
+Proof.
+  intros ? ? ? [? ?] [? ?]; split; intros; congruence.
 Qed.
 
 Lemma tir_trans: forall t1 t2 t3,
