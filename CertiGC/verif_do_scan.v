@@ -472,5 +472,5 @@ Proof.
            rewrite nat_seq_S, Nat.add_comm. destruct H30 as [[? ?] | [? ?]].
            ++ subst g''. split; [| apply svwl_add_tail_no_scan]; easy.
            ++ split; [|apply svwl_add_tail_scan with g']; easy.
-  - Intros g' h'. Exists g' h' rootpairs. entailer!.
+  - Intros g' h'. Exists g' h'. entailer!.
 Qed.

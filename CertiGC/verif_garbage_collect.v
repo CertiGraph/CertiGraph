@@ -318,19 +318,40 @@ Proof.
           (rewrite H23 in *; eapply gc_cond_implies_do_gen_cons; eauto;
            apply (proj1 H16)). pose proof (t_info_space_address _ _ (proj1 H7) H22).
       pose proof (t_info_space_address _ _ (proj1 H14) H22).
-      forward_call (rsh, sh, gv, ti, g1, t_info1, roots', outlier,
+      unfold thread_info_rep. Intros.
+      forward.
+         {entailer. unfold ti_fp. destruct (ti_frames t_info1) as [|[??]]. apply prop_right; simpl; auto.
+          simpl. entailer!. }
+      freeze FR1 := (data_at _ _ _ _) (mem_mgr gv) (ti_token_rep _ _).
+      forward_call (rsh, sh, gv, g1, (ti_heap t_info1), (ti_heap_p t_info1),
+                    (ti_frames t_info1), roots', outlier,
                     (Z.to_nat i), (Z.to_nat (i + 1))).
       1: simpl; entailer!; now rewrite !Tf.
-      Intros vret. destruct vret as [[g2 t_info2] roots2]. simpl fst in *.
-      simpl snd in *. replace (ti_heap_p t_info1) with (ti_heap_p t_info2) by
-          (rewrite (proj1 H28); reflexivity). unfold thread_info_rep, heap_rep, heap_struct_rep.
+      Intros vret. destruct vret as [[g2 h2] roots2].
+      simpl fst in *. simpl snd in *.
+      set (fr2 := update_frames _ _) in *.
+      thaw FR1.      
+      pose (t_info2 := {| ti_heap_p := ti_heap_p t_info1;
+                          ti_heap := h2; ti_args := ti_args t_info1;
+                          arg_size := arg_size t_info1;
+                          ti_frames := fr2; ti_nalloc := ti_nalloc t_info1|}).
+      change (ti_heap_p t_info1) with (ti_heap_p t_info2).
+      change h2 with (ti_heap t_info2).
+      change (ti_args t_info1) with (ti_args t_info2).
+      replace (ti_fp t_info1) with (ti_fp t_info2).
+      2:{ unfold ti_fp; simpl. unfold fr2. rewrite frames_p_update_frames. auto. }
+      change (ti_nalloc t_info1) with (ti_nalloc t_info2).
+      change fr2 with (ti_frames t_info2).
+      unfold heap_rep. Intros. unfold heap_struct_rep.
+      sep_apply gather_thread_info_rep.
+      unfold thread_info_rep, heap_rep, heap_struct_rep.
       Intros. assert (graph_has_gen g2 (Z.to_nat (i + 1))) by
           (rewrite <- do_gen_graph_has_gen; eauto).
       assert (graph_has_gen g2 (Z.to_nat i)) by (red in H30 |-* ; lia).
       assert (isptr (space_start (Znth i (spaces (ti_heap t_info2))))). {
           rewrite <- (Z2Nat.id i), <- nth_space_Znth by lia.
           pose proof (proj1 (gt_gs_compatible _ _ (proj1 H27) _ H31)).
-          simpl in H32. rewrite <- H32.
+          change (ti_heap _) with h2. rewrite <- H32.
         apply start_isptr. }
       assert (0 <= i < Zlength (spaces (ti_heap t_info2))) by
           (rewrite spaces_size; rep_lia). forward.
@@ -344,7 +365,7 @@ Proof.
       assert (isptr (space_start (Znth (i + 1) (spaces (ti_heap t_info2))))). {
         rewrite <- (Z2Nat.id (i + 1)), <- nth_space_Znth by lia.
         pose proof (proj1 (gt_gs_compatible _ _ (proj1 H27) _ H30)).
-        simpl in H35; rewrite <- H35.
+        simpl in H35. change (ti_heap _) with h2. rewrite <- H35.
         apply start_isptr. }
       forward.
         1:{ apply prop_right. clear - H7. rewrite MAX_SPACES_eq in H7. lia. }
@@ -354,32 +375,24 @@ Proof.
       1: tc_val_Znth; rewrite isptr_offset_val; assumption.
       rewrite Znth_map by assumption. unfold space_tri at 1 2. rewrite H23 in *.
 
-      assert (garbage_collect_condition g2 (ti_heap t_info2) roots2) 
-        by (destruct H16 as [? [? [? ?]]], H28;
-            eapply (do_gen_gcc g1 (ti_heap t_info1) roots'); eassumption).
+      assert (garbage_collect_condition g2 (ti_heap t_info2) roots2). {
+         destruct H16 as [? [? [? ?]]], H28;
+            eapply (do_gen_gcc g1 (ti_heap t_info1) roots'); try eassumption.
+            split; auto.
+      } 
       assert (firstn_gen_clear g2 (Z.to_nat (i + 1))) by
           (rewrite H23; eapply do_gen_firstn_gen_clear; eauto).
       assert (safe_to_copy_to_except g2 (Z.to_nat (i + 1))) by
           (rewrite H23; eapply do_gen_stcte; eauto).
-    match goal with |- context [SEPx [_; _; _; ?a; ?b; ?c; ?d; _; _]] =>
-      gather_SEP a b c d
-    end.
-   (* the "match goal" above replaces the following, which is absurdly slow:
-      gather_SEP
-        (data_at sh thread_info_type _ _)
-        (data_at sh heap_type  _ _)
-        (heap_rest_rep _).
-*)
-      rewrite sepcon_assoc.
-      replace_SEP 0 (thread_info_rep sh t_info2 ti) by
-          (unfold thread_info_rep, heap_struct_rep; entailer!).
+     sep_apply gather_thread_info_rep.
       assert (garbage_collect_loop (nat_inc_list (Z.to_nat (i + 1))) roots g roots2 g2) by
           (rewrite H23, nat_inc_list_S; eapply gcl_add_tail; eauto).
-      replace_SEP 4 (ti_token_rep (ti_heap t_info2) (ti_heap_p t_info2))
-        by (destruct H28;  erewrite ti_rel_token_the_same; eauto; entailer!).
+      replace_SEP 5 (ti_token_rep (ti_heap t_info2) (ti_heap_p t_info2))
+         by (erewrite ti_rel_token_the_same; eauto; entailer!; apply derives_refl).
+      simpl spaces in *.
       forward_if.
-      * destruct (space_start (Znth i (spaces (ti_heap t_info2)))); try contradiction.
-        destruct (space_start (Znth (i + 1) (spaces (ti_heap t_info2))));
+      * destruct (space_start (Znth i (spaces h2))); try contradiction.
+        destruct (space_start (Znth (i + 1) (spaces h2)));
           try contradiction. Transparent denote_tc_samebase.
         unfold denote_tc_samebase. simpl. Opaque denote_tc_samebase. entailer!.
       * change (Tpointer tvoid

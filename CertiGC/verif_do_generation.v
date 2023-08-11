@@ -73,8 +73,9 @@ Proof.
       - destruct H as [[_ [_ ?]] _]. unfold field_compatible in *.
         simpl in *. unfold in_members. simpl. intuition. } thaw FR.
     forward_call (rsh, sh, gv, g, h, hp, fr, roots, outlier, from, to).
-    1: intuition. Intros vret. destruct vret as [[[g1 h1] fr1] roots1]. simpl fst in *.
-    simpl snd in *. freeze [0;1;2;3] FR.  
+    Intros vret. destruct vret as [[g1 h1] roots1]. simpl fst in *. simpl snd in *.
+    freeze [0;1;2;3] FR.
+    set (fr1 := update_frames fr (map (root2val g1) roots1))  in *.
     assert (space_start (nth_space h1 from) = gen_start g1 from). {
       destruct H20 as [? _]. destruct H22 as [_ [? _]]. 
       destruct (gt_gs_compatible _ _ H20 _ H22) as [H24 _]. simpl in H24. rewrite <- H24.
@@ -109,29 +110,9 @@ Proof.
     forward_call (rsh, sh, gv, g1, h1, hp, frames2rootpairs fr1, roots1, outlier,
                   from, to, number_of_vertices (nth_gen g to)).
     Intros vret.
-    destruct vret as [[g2 h2] rootpairs2]. simpl fst in *. simpl snd in *.
-    assert (ADRS: map rp_adr rootpairs2 = map rp_adr (frames2rootpairs fr1)). {
-      clear H34 H33 H32 MORE_COMMANDS H30 H29 H28 H27 H26 H25 H24.
-      clear H21 H22 H23.
-      red in H20, H31.
-      destruct H20 as [_ [H20b [[H20c H20d] _]]].
-      destruct H31 as [_ [H31b [[H31c H31d] _]]].
-      red in H20b,H20c,H20d,H31b,H31c, H31d.
-      Print rootpairs_compatible.
-      admit.
-    }
+    destruct vret as [g2 h2]. simpl fst in *. simpl snd in *. 
     sep_apply frames_rep_unlocalize.
-    set (fr2 := update_frames fr1 (map rp_val rootpairs2)).
-    (*
-    gather_SEP 0 4 5.
-    replace_SEP 0 (thread_info_rep sh t_info2 ti). {
-      subst t_info2. unfold thread_info_rep.
-      entailer!. simpl. cancel.
-      apply derives_refl'; f_equal. f_equal. f_equal. f_equal.
-      f_equal. f_equal. unfold ti_fp.
-      simpl. rewrite frames_p_update_frames. auto.
-    }
-    *)
+    rewrite <- frames2roots_eq,  update_frames_same.
     assert (space_start (nth_space h2 from) = gen_start g2 from). {
       destruct H31 as [? _]. destruct H32 as [_ [? _]].
       destruct (gt_gs_compatible _ _ H31 _ H32) as [? _]. simpl in H35.
@@ -204,17 +185,21 @@ Proof.
         apply hr_trans with h2.
         - apply hr_trans with h1; try assumption.
         - subst h3. apply heaprel_reset. }      
-      Exists g3 h3 fr2 roots1.
+      Exists g3 h3 roots1.
       destruct H32 as [? [? [? ?]]].
-      assert (frames2rootpairs fr2 = rootpairs2). {
-          subst fr2.
-          rewrite <- update_rootpairs_frames2rootpairs.
-          clear - ADRS.
-          Search update_rootpairs.
-          admit.
-          admit.
-      }
-      rewrite H43 in *.
+      replace (update_frames fr (map _ _)) with fr1.
       entailer!.
+      unfold fr1 in *.
+      destruct H31 as [_ [? _]]. red in H31.
+      destruct H20 as [_ [? _]]. red in H20.
+      f_equal.
+      rewrite H31.
+      rewrite <- frames2roots_eq.
+      symmetry; apply frames2roots_update_frames.
+      apply invariants.Zlength_eq.
+      destruct H as [_ [? _]]. red in H. rewrite frames2roots_eq.
+      rewrite <- H.
+      rewrite !Zlength_map.
+      apply frr_roots_fi_compatible in H21; auto.
 Qed.
 
