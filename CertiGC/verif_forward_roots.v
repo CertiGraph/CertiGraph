@@ -1,7 +1,7 @@
 Require Import CertiGraph.CertiGC.gc_spec.
 
 Lemma frames_rep_ptr_or_null: forall sh frames,
-  frames_rep sh frames |-- !! is_pointer_or_null (frames_adr frames).
+  frames_rep sh frames |-- !! is_pointer_or_null (frames_p frames).
   Proof.
     destruct frames as [|[???]?]; simpl; entailer.
   Qed.
@@ -10,62 +10,153 @@ Hint Resolve frames_rep_ptr_or_null : saturate_local.
 
 Lemma frames_rep_valid_pointer: forall sh frames, 
    sepalg.nonidentity sh ->
-   frames_rep sh frames |-- valid_pointer (frames_adr frames).
+   frames_rep sh frames |-- valid_pointer (frames_p frames).
 Proof.
   intros.
-  destruct frames as [|[???]?]; simpl frames_adr; simpl frames_rep; auto with valid_pointer.
+  destruct frames as [|[???]?]; simpl frames_p; simpl frames_rep; auto with valid_pointer.
 Qed.
 Hint Resolve frames_rep_valid_pointer: valid_pointer.
 
+(*
 Definition ti_rep (sh: share) (t_info: thread_info) p :=
   data_at sh thread_info_type (Vundef,(Vundef,(ti_heap_p t_info,
        (ti_args t_info, (ti_fp t_info, (vptrofs (ti_nalloc t_info), nullval)))))) p.
+*)
 
+Print forward_roots_relation.
+(*
+Definition forwarded_roots (from to: nat) (k: Z) (roots: roots_t) (g: LGraph) (roots': roots_t) (g': LGraph) :=
+ 
+
+  upd_root from to g r r' 
+*)
+
+Inductive forward_roots_relation (from to: nat): forall (roots1: roots_t) (g1: LGraph) (roots2: roots_t) (g2: LGraph), Prop :=
+| fwd_roots_nil: forall g, forward_roots_relation from to nil g nil g
+| fwd_roots_cons: forall r roots1 g1 roots2 g2 g3,
+     forward_relation from to 0 (root2forward r) g1 g2 ->
+     forward_roots_relation from to roots1 g2 roots2 g3 ->
+     forward_roots_relation from to (r::roots1) g1 (upd_root from to g1 r :: roots2) g3.
+
+Lemma forward_roots_relation_snoc:
+ forall from to r roots1 g1 roots2 g2 g3,
+  forward_roots_relation from to roots1 g1 roots2 g2 ->
+  forward_relation from to 0 (root2forward r) g2 g3 ->
+  forward_roots_relation from to (roots1++[r]) g1 (roots2++[upd_root from to g2 r]) g3.
+Proof.
+  induction 1; intros.
+  - simpl. econstructor; eauto. constructor.
+  - simpl. econstructor; eauto.
+Qed.
+
+#[export] Instance Inh_frame: Inhabitant frame := Build_frame nullval nullval nil.
+
+Lemma frames_shell_rep_isolate:
+  forall sh frs k,
+   0 <= k < Zlength frs ->
+   frames_shell_rep sh frs |-- 
+     frame_shell_rep sh (Znth k frs) (frames_p (sublist (k+1) (Zlength frs) frs)) *
+      (frame_shell_rep sh (Znth k frs) (frames_p (sublist (k+1) (Zlength frs) frs)) -* frames_shell_rep sh frs).
+Proof.
+  induction frs; simpl; intros.
+  list_solve.
+  destruct (zeq k 0).
+  - subst k.
+    change (a::frs) with ([a]++frs).
+    autorewrite with sublist.
+    cancel.
+    apply wand_sepcon_adjoint. cancel.
+  - 
+    change (a::frs) with ([a]++frs).
+    replace (Znth k ([a]++frs)) with (Znth (k-1) frs) by list_solve.
+    autorewrite with sublist.
+    specialize (IHfrs (k-1)).
+    replace (k-1+1) with k in IHfrs by lia.
+    sep_apply IHfrs; clear IHfrs. list_solve. cancel.
+    apply -> wand_sepcon_adjoint.
+    cancel.
+    apply wand_sepcon_adjoint.
+    cancel.
+Qed.
+                    
 Lemma body_forward_roots: semax_body Vprog Gprog f_forward_roots forward_roots_spec.
 Proof.
   start_function.
   unfold thread_info_rep. Intros.
-  assert_PROP (is_pointer_or_null (ti_fp t_info)). {
-    unfold ti_fp.
-    destruct (ti_frames t_info) as [|[???]]; simpl frames_rep; entailer!.
-  }
   forward.
-  fold (ti_rep sh t_info ti).
-  forward_while (EX frames0: list frame, EX frames: list frame, 
-                 EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
-      PROP (forward_roots_loop from to (nat_inc_list (length (frames2roots frames0))) roots g roots' g';
-            thread_info_relation t_info t_info';
-            super_compatible (g', t_info', roots') outlier;
-            forward_condition g' t_info' from to)
-      LOCAL (temp _frame (frames_adr frames);
+  fold (frames_p fr).
+  rename fr into frs.
+  pose (n := Zlength frs).
+  pose (nr k := (Zlength (frames2rootpairs (sublist 0 k frs)))).
+  pose (oldroots k := sublist (nr k) (Zlength roots) roots).
+  forward_while (EX k: Z,
+                 EX g': LGraph, EX h': heap, EX roots': roots_t,
+      PROP (0 <= k <= n;
+            forward_roots_relation from to (sublist 0 (nr k) roots) g roots' g';
+            heap_relation h h';
+            super_compatible g' h' 
+                (update_rootpairs (frames2rootpairs frs) (map (root2val g') (roots'++oldroots k))) 
+                (roots'++oldroots k)
+                outlier;
+            forward_condition g' h' from to)
+      LOCAL (temp _frame (frames_p (sublist k n frs));
              temp _from_start (gen_start g' from);
-             temp _from_limit (limit_address g' t_info' from);
-             temp _next (next_address t_info' to))
+             temp _from_limit (limit_address g' h' from);
+             temp _next (heap_next_address hp to))
       SEP (all_string_constants rsh gv;
            outlier_rep outlier;
            graph_rep g';
-           ti_rep sh t_info ti;
-           frames_rep sh frames;
-           frames_rep sh frames -* frames_rep sh (ti_frames t_info');
-         heap_struct_rep sh (map space_tri (spaces (ti_heap t_info')))
-           (ti_heap_p t_info); heap_rest_rep (ti_heap t_info')))%assert.
-  - Exists (@nil frame) (ti_frames t_info) g t_info roots.
+           frames_rep sh (update_frames frs (map (root2val g') (roots'++oldroots k)));
+           heap_rep sh h' hp))%assert.
+  - Exists 0 g h (@nil root_t).
+    simpl app.
+    unfold oldroots, nr. autorewrite with sublist.
+    pose proof (proj1 (proj2 H)). red in H2. rewrite H2.
+    rewrite <- frames2roots_eq.
+    rewrite update_rootpairs_frames2rootpairs by auto.
+    rewrite update_frames_same.
     entailer!.
-    split. apply frl_nil. apply tir_id.    
-    apply wand_sepcon_adjoint; cancel. 
-  - entailer!.
-  - destruct frames as [|[a r s] frames']; [ contradiction HRE; auto | ].
-    simpl frames_rep.
-    Intros.
-    simpl frames_adr.
-    forward.
-    forward. {
-      entailer!. clear - H13. auto with field_compatible.
-      unfold field_address0. rewrite if_true.
-      destruct H13. destruct r; try contradiction. apply I.
-      eapply field_compatible0_cons_Tarray; try eassumption. reflexivity. rep_lia.
+    split. constructor. apply hr_refl. 
+  - Intros.
+    unfold frames_rep.
+    rewrite <- frames_shell_rep_update.
+    2:{ admit. }
+    assert (frames_shell_rep sh frs |-- valid_pointer (frames_p (sublist k n frs))). {
+      clear - SH0 H2. subst n.
+      revert k H2; induction frs as [ | [? ? ?] ?]; simpl; intros.
+      +
+      assert (k=0) by list_solve. subst k.
+      autorewrite with sublist. unfold frames_p. auto with valid_pointer.
+      +
+      Intros.
+      destruct (zeq k 0).
+      * subst. autorewrite with sublist. simpl. auto with valid_pointer.
+      * specialize (IHfrs (k-1)). rewrite Zlength_cons.
+      change (?A::?B) with ([A]++B).
+      rewrite sublist_app2 by list_solve.
+      autorewrite with sublist. replace (Z.succ _ - _) with (Zlength frs) by lia.
+      apply sepcon_valid_pointer2.
+      apply IHfrs. clear - H2 n. list_solve.     
     }
-  forward.
+    entailer!.
+  - assert (k<n). {
+     assert (~(k>=n)); [intro | lia].
+     autorewrite with sublist in HRE. contradiction HRE. reflexivity.
+    }
+    rewrite (sublist_split k (k+1) n) by list_solve.
+    rewrite (sublist_len_1 k) by list_solve.
+    simpl frames_p.
+    set (frs' := update_frames _ _).
+    unfold frames_rep.
+           
+     
+    sep_apply (isolate_frame sh frs' k).
+    admit.
+   Intros.
+   unfold frs' at 2.
+   rewrite frame_root_address_same by admit.
+   rewrite frame_root_address_eq by admit.
+   forward.
   forward_loop (EX i: Z, EX g' : LGraph, EX t_info': thread_info, EX roots' : roots_t,
      PROP (forward_roots_loop from to 
               (nat_inc_list (length (frames2roots frames0) + Z.to_nat i)) roots g roots' g';

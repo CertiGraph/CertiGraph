@@ -5938,3 +5938,186 @@ Proof.
   rewrite !Ptrofs.signed_repr by apply Ptrofs.signed_range.
   auto.
 Qed.
+   
+Lemma Zlength_frame2rootpairs': forall r i s, Zlength (frame2rootpairs' r i s) = Zlength s.
+Proof.
+  intros.
+  revert i; induction s; simpl; intros; auto.
+  list_solve.
+Qed.   
+#[export] Hint Rewrite Zlength_frame2rootpairs': sublist.
+
+#[export] Instance Inh_rootpair : Inhabitant rootpair := {| rp_adr:=Vundef; rp_val:=Vundef|}.
+
+Lemma Znth_frame2rootpairs' :
+forall z r s,
+  0 <= z < Zlength s ->
+  Znth z (frame2rootpairs' r 0 s) = 
+   {| rp_adr := offset_val (z * WORD_SIZE) r; rp_val := Znth z s|}.
+ Proof.
+ intros.
+ rewrite <- (Z.add_0_l z) at 2.
+ set (i:=0). clearbody i.
+ revert i z H; induction s; simpl; intros.
+ list_solve.
+ destruct (zeq z 0).
+ list_solve.
+ rewrite Znth_pos_cons by lia.
+ specialize (IHs (i+1) (z-1) ltac:(list_solve)).
+ unfold Z.succ.
+ rewrite IHs. f_equal. f_equal. lia. list_solve.
+Qed.
+
+Lemma frames2rootpairs_update_frames:
+forall fr z roots,
+ Zlength roots = Zlength (frames2rootpairs fr) ->
+ 0 <= z < Zlength roots ->
+ Znth z (frames2rootpairs (update_frames fr roots)) =
+  {| rp_adr := rp_adr (Znth z (frames2rootpairs fr));
+     rp_val := Znth z roots|}.
+Proof.
+ unfold frames2rootpairs, frame2rootpairs.
+ induction fr as [ | [ a r s ] fr']; simpl; intros.
+ - list_solve.
+ - rewrite <- ZtoNat_Zlength.
+   rewrite <- sublist_firstn, <- sublist_skip by rep_lia.
+   rewrite Zlength_app, Zlength_frame2rootpairs' in H.
+   destruct (zlt z (Zlength s)).
+   + rewrite !Znth_app1 by (rewrite Zlength_frame2rootpairs'; list_solve).
+   rewrite !Znth_frame2rootpairs' by list_solve. simpl.
+   f_equal. list_solve.
+   + rewrite !Znth_app2 by (rewrite Zlength_frame2rootpairs'; list_solve).
+     rewrite Zlength_frame2rootpairs'.
+     rewrite Zlength_sublist by list_solve.
+     rewrite Z.sub_0_r.
+     rewrite (IHfr' (z-Zlength s)) by list_solve.
+     rewrite Zlength_frame2rootpairs'.
+     f_equal. list_solve.
+Qed.
+
+
+Lemma Znth_update_rootpairs: forall rootpairs roots z,
+0 <= z < Zlength rootpairs ->
+Zlength rootpairs = Zlength roots ->
+Znth z (update_rootpairs rootpairs roots) = {| rp_adr := rp_adr (Znth z rootpairs); rp_val := Znth z roots |}.
+Proof.
+induction rootpairs; destruct roots; simpl; intros; try list_solve.
+ destruct a.
+ destruct (zeq z 0).
+ subst. rewrite !Znth_0_cons. simpl. auto.
+ rewrite !Znth_pos_cons by rep_lia.
+ rewrite (IHrootpairs roots (z-1)) by list_solve.
+ f_equal.
+Qed.
+
+Lemma Zlength_update_rootpairs: forall rootpairs roots,
+Zlength rootpairs = Zlength roots ->
+Zlength (update_rootpairs rootpairs roots) = Zlength rootpairs.
+Proof.
+induction rootpairs as [ | [ ? ? ] ? ]; destruct roots; simpl; intros; try list_solve.
+rewrite !Zlength_cons. rewrite IHrootpairs by list_solve. auto.
+Qed.
+
+Lemma rp_val_update_rootpairs:
+forall rootpairs roots, 
+  Zlength rootpairs = Zlength roots ->
+  map rp_val (update_rootpairs rootpairs roots) = roots.
+Proof.
+ induction rootpairs as [ | [? ?] ? ]; destruct roots; simpl; intros; try list_solve.
+ f_equal. apply IHrootpairs; list_solve.
+Qed.
+
+Fixpoint frame_root_address (frames: list frame) (i: Z) : val :=
+  match frames with
+  | nil => nullval (* oops! *)
+  | {|fr_adr:=a; fr_root:=r; fr_roots:=s |}::rest =>
+     if zlt i (Zlength s)
+     then offset_val (i * WORD_SIZE) r
+     else frame_root_address rest (i-Zlength s)
+  end.
+
+Lemma frame_root_address_eq: 
+ forall frames i, 
+ 0 <= i < Zlength (frames2rootpairs frames) ->
+ frame_root_address frames i = rp_adr (Znth i (frames2rootpairs frames)).
+ Proof.
+  unfold frames2rootpairs. 
+  induction frames as [ | [ a r s] fr']; simpl; intros.
+  - list_solve.
+  - 
+    pose proof (Zlength_frame2rootpairs' r 0 s).
+    unfold frame2rootpairs at 1.
+    unfold frame2rootpairs at 1 in H.
+    simpl in H|-*.
+    if_tac.
+    rewrite Znth_app1 by list_solve.
+    assert (0 <= i < Zlength s) by lia.
+    clear - H2.
+    change i with (0+i) at 1.
+    set (j:=0). clearbody j.
+    revert i j H2; induction s; simpl; intros.
+    list_solve.
+    destruct (zeq i 0).
+    subst. list_simplify.
+    rewrite Znth_pos_cons by list_solve.
+    rewrite <- IHs by list_solve.
+    f_equal. lia.
+    rewrite Znth_app2 by list_solve.
+    rewrite IHfr' by list_solve.
+    f_equal.
+    f_equal.
+    list_solve.
+Qed.
+
+Lemma update_rootpairs_frames2rootpairs:
+forall frames roots, 
+Zlength roots = Zlength (frames2roots frames) ->
+update_rootpairs (frames2rootpairs frames) roots = 
+frames2rootpairs (update_frames frames roots).
+Proof.
+unfold frames2rootpairs, frame2rootpairs, frames2roots.
+induction frames as [ | [ a r s ] rest] ;[ destruct roots; auto | ].
+intros.
+simpl in *. rewrite Zlength_app in H.
+rewrite <- ZtoNat_Zlength, <- sublist_skip by rep_lia.
+rewrite <- IHrest by list_solve; clear IHrest.
+  set (i:=0) at 1 3. clearbody i.
+ revert roots i H; induction s; destruct roots; simpl; intros; auto.
+ -
+ f_equal. list_solve.
+ - rewrite <- sublist_firstn. list_simplify.
+ -
+ autorewrite with sublist in H. specialize (IHs roots (Z.succ i) ltac:(lia)).
+ rewrite IHs; clear IHs. 
+ rewrite <- !sublist_firstn.
+ autorewrite with sublist.
+ change (?a :: ?b ++ ?c) with ((a :: b) ++ c). f_equal; [ |  f_equal; list_solve].
+ replace (sublist 0 (Z.succ (Zlength s)) (v::roots))
+      with (v :: sublist 0 (Zlength s) roots) by list_solve.
+ reflexivity.
+ Qed.
+
+ Lemma frame_root_address_same: forall frames roots z,
+ Zlength roots = Zlength (frames2roots frames) ->
+ 0 <= z < Zlength (frames2roots frames) ->
+ frame_root_address (update_frames frames roots) z = frame_root_address frames z.
+Proof.
+unfold frames2roots.
+induction frames as [|[a r s ] fr]; simpl; intros; auto.
+rewrite Zlength_app in *.
+if_tac.
+rewrite if_true; auto.
+rewrite Zlength_solver.Zlength_firstn in H1.
+rewrite <- Zlength_correct in H1. 
+lia.
+rewrite Zlength_solver.Zlength_firstn in *.
+rewrite <- Zlength_correct in *.
+rewrite IHfr; clear IHfr.
+rewrite if_false.
+f_equal. rep_lia.
+rep_lia.
+rewrite Zlength_solver.Zlength_skipn.
+rewrite <- Zlength_correct.
+rep_lia.
+rep_lia.
+Qed.
