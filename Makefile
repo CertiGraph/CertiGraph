@@ -135,7 +135,8 @@ CERTIGC_FILES = \
   gc_spec.v verif_create_space.v verif_create_heap.v verif_make_tinfo.v env_graph_gc.v verif_Is_block.v verif_garbage_collect.v verif_resume.v \
   GCGraph.v verif_forward.v verif_do_scan.v verif_forward_roots.v \
   forward_lemmas.v verif_forward1.v verif_forward2.v \
-  verif_do_generation.v gc_correct.v
+  verif_do_generation.v gc_correct.v \
+  refine_bug.v
 
 KRUSKAL_FILES = \
   WeightedEdgeListGraph.v env_kruskal_edgelist.v spatial_wedgearray_graph.v kruskal_specs.v \
