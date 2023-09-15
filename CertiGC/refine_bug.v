@@ -230,4 +230,5 @@ clear.
 refine (ex_intro _ _ eq_refl).
 
 (* BUG:   H23 is a free variable. *)
-
+Check J.
+Check H23.
