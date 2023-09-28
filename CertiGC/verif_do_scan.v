@@ -173,13 +173,15 @@ Proof.
                                   [unfold WORD_SIZE; lia | apply space_order].
     + assert (index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
-        rewrite H24 in H25; unfold typed_true in H25. easy. }
+        match type of H24 with force_val ?A = _ => destruct A; inv H24 end. simpl in H26; subst. inv H25. 
+      }
       forward. entailer!. red. rewrite <- H20 in H26.
       rewrite <- Z.mul_lt_mono_pos_l in H26 by (unfold WORD_SIZE; lia).
       apply pvs_lt_rev in H26. assumption.
     + assert (~ index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
-        now rewrite H24 in H25; unfold typed_false in H25. }
+        match type of H24 with force_val ?A = _ => destruct A; inv H24 end. simpl in H26; subst. inv H25. 
+      }
       forward. thaw FR. unfold thread_info_rep, heap_rep, heap_struct_rep.
       Exists g' h'. unfold forward_condition. entailer!.
       split; [split3; auto | exists n; split; trivial].
@@ -240,9 +242,12 @@ Proof.
          SEP (roots_rep sh rootpairs;
               heap_rep sh h'' hp; graph_rep g'';
               all_string_constants rsh gv; outlier_rep outlier)).
-      * try (rewrite Int64.unsigned_repr in H27;
-             [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia]).
-        apply typed_true_tag in H27.
+      * rewrite Int64.unsigned_repr in H27;
+             [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia].
+        pose proof typed_true_tag to g' index as Hxx.
+        destruct (negb (Int.lt (Int.repr (raw_tag (vlabel g' (to, index)))) (Int.repr 251))); try discriminate.
+        clear H27; rename Hxx into H27.
+        specialize (H27 (eq_refl _)).
         remember (Zlength (raw_fields (vlabel g' (to, index)))).
         assert (1 <= z < (if Archi.ptr64 then Int64.max_signed else Int.max_signed)).
         {
@@ -408,9 +413,14 @@ Proof.
            ++ entailer!. clear -H28 H33. simpl in H28.
               first [rewrite !Int.signed_repr | rewrite Int64.signed_repr]; rep_lia.
            ++ Exists (i + 1) g3 h3. replace (i + 1 - 1) with i by lia. entailer!.
-      * try (rewrite Int64.unsigned_repr in H27;
-             [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia]).
-        apply typed_false_tag in H27. forward. Exists g' h'.
+      * rewrite Int64.unsigned_repr in H27;
+             [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia].
+        pose proof typed_false_tag to g' index as Hxx.
+        destruct (negb (Int.lt (Int.repr (raw_tag (vlabel g' (to, index)))) (Int.repr 251))).
+        2: simpl in H27; contradiction H27; reflexivity.
+        clear H27; rename Hxx into H27.
+        specialize (H27 (eq_refl _)). 
+        forward. Exists g' h'.
         unfold forward_condition. entailer!.
         try (rewrite Int64.unsigned_repr;
              [|pose proof (raw_tag_range (vlabel g' (to, (to_index + n)%nat)));

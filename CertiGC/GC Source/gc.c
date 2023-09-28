@@ -235,15 +235,15 @@ void forward_roots (value *from_start,  /* beginning of from-space */
 /* Forward each live root in the stack */
  {
    struct stack_frame *frame = frames;
-   value *curr, *limit;
+   value *start; size_t i, limit;
    /* Scan the stack by traversing the stack pointers */
 
    while (frame != NULL) {
-     curr = frame->root;
-     limit = frame->next;
+     start = frame->root;
+     limit = frame->next - start;
      frame = frame->prev;
-     for (; curr<limit; curr++)
-        forward(from_start, from_limit, next, curr, DEPTH);
+     for (i=0; i<limit; i++)
+        forward(from_start, from_limit, next, start+i, DEPTH);
    }
 }
 

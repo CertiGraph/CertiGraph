@@ -416,7 +416,7 @@ abbreviate_semax.
            ++ unfold vertex_rep, vertex_at. Intros.
               rewrite fields_eq_length, <- Heqn. forward.
               ** entailer!. pose proof (mfv_all_is_ptr_or_int _ _ H9 H10 H19).
-                 rewrite Forall_forall in H44. apply H44, Znth_In.
+                 rewrite Forall_forall in H45. apply H45, Znth_In.
                  rewrite fields_eq_length. assumption.
               ** rewrite (data_at__tarray_value _ _ 1) by lia. Intros.
                  rewrite data_at__singleton_array_eq.
