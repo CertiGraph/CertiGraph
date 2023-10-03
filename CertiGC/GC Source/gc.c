@@ -77,10 +77,14 @@ struct space {
 #define NURSERY_SIZE (1<<LOG_NURSERY_SIZE)
 
 #define MAX_SPACES (8*sizeof(value)-(4+LOG_NURSERY_SIZE)) /* how many generations */
-/* The "4" in the line above should properly be (1+log2(sizeof(value))), but 4 will do.
-   This formula is designed so that the sum of all the sizes of the
+/* The "4" in the line above should properly be (1+log2(sizeof(value))).
+   We overestimate as 4.  This makes no difference when sizeof(size_t)=64,
+   because we can never hope to use a full 64-bit address space,
+   but might be a minor pain for 32-bit address spaces. Fix this someday
+    (but still get the proofs to go through).
+   (This formula is designed so that the sum of all the sizes of the
    generations is about equal to the total size of the address space
-   (but less than sizeof(size_t)/2 ).
+   (but less than sizeof(size_t)/2 )).
 */
 
 #ifndef DEPTH

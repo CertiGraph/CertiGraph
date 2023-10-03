@@ -85,7 +85,7 @@ Proof.
     rewrite sublist_repeat by rep_lia. simpl repeat at 1.
     rewrite space_array_1_eq. Intros. forward_call (Ews, h, Z.shiftl 1 LOG_NURSERY_SIZE, gv, sh).
     (* make succeed *)
-    + compute; split; discriminate.
+    + compute; split; auto; discriminate.
     + Intros p0. freeze [0;1;2;3;5] FR.
       (* change back to "data_at sh heap_type v h" *)
       rewrite <- space_array_1_eq. rewrite sublist_repeat by rep_lia.

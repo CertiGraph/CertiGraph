@@ -320,8 +320,9 @@ Proof.
       pose proof (t_info_space_address _ _ (proj1 H14) H22).
       unfold thread_info_rep. Intros.
       forward.
-         {entailer. unfold ti_fp. destruct (ti_frames t_info1) as [|[??]]. apply prop_right; simpl; auto.
-          simpl. entailer!. }
+         {entailer. unfold ti_fp. destruct (ti_frames t_info1) as [|[??]].
+          apply prop_right; simpl; auto.
+          simpl. unfold frames_rep; simpl.  entailer!. }
       freeze FR1 := (data_at _ _ _ _) (mem_mgr gv) (ti_token_rep _ _).
       forward_call (rsh, sh, gv, g1, (ti_heap t_info1), (ti_heap_p t_info1),
                     (ti_frames t_info1), roots', outlier,

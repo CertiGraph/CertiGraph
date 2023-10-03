@@ -73,7 +73,7 @@ Proof.
       unfold Ptrofs.divs in H7.
       first [rewrite (Ptrofs.signed_repr 8) in H7 by rep_lia |
              rewrite (Ptrofs.signed_repr 4) in H7 by rep_lia].
-      rewrite Ptrofs.signed_repr in H7 by (apply total_space_signed_range).
+      rewrite Ptrofs.signed_repr in H7 by (pose proof (total_space_signed_range h); lia).
       unfold WORD_SIZE in H7. rewrite Z.mul_comm, Z.quot_mul in H7 by lia.
       unfold Ptrofs.ltu in H7.
       rewrite !Ptrofs.unsigned_repr in H7
