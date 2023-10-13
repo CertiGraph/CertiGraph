@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include "m.h"  /* use printm.c to create m.h */
 #include "config.h"
 #include "gc.h"
 
@@ -75,16 +76,33 @@ struct space {
 */
 
 #define NURSERY_SIZE (1<<LOG_NURSERY_SIZE)
+/* NURSERY_SIZE is measured in words, not bytes */
 
-#define MAX_SPACES (8*sizeof(value)-(4+LOG_NURSERY_SIZE)) /* how many generations */
-/* The "4" in the line above should properly be (1+log2(sizeof(value))).
-   We overestimate as 4.  This makes no difference when sizeof(size_t)=64,
-   because we can never hope to use a full 64-bit address space,
-   but might be a minor pain for 32-bit address spaces. Fix this someday
-    (but still get the proofs to go through).
-   (This formula is designed so that the sum of all the sizes of the
-   generations is about equal to the total size of the address space
-   (but less than sizeof(size_t)/2 )).
+#if  SIZEOF_PTR == 8
+#define LOG_WORDSIZE 3
+#endif
+#if SIZEOF_PTR == 4
+#define LOG_WORDSIZE 2
+#endif
+
+
+#define MAX_SPACES (8*sizeof(value)-(2+LOG_WORDSIZE+LOG_NURSERY_SIZE)) /* how many generations */
+
+/* This allows the largest generation to be as big as half the entire address space.
+   Here's the math: 8*sizeof(value) is the number of bits per word.
+   Counting the nursery as generation 0, the largest generation is MAX_SPACES-1,
+   and generation i+1 is twice as big as generation i.
+   Therefore the number of bytes in the largest generation is,
+      WORDSIZE*2^(MAX_SPACES-1)*NURSERY_SIZE
+   = 2^(LOG_WORDSIZE + MAX_SPACES-1 + LOG_NURSERY_SIZE)
+   = 2^(LOG_WORDSIZE + 8*WORDSIZE - (2+LOG_WORDDSIZE+LOG_NURSERY_SIZE) + LOG_NURSERY_SIZE)
+   = 2^(8*WORDSIZE - 2)
+   On a 64-bit machine this is 2^(64-2) = 2^62;  on a 32-bit machine it is 4*2^26 = 2^30.
+
+   On a 32-bit machine, that's actually a problem!  We would like the largest generation
+   to be as big as 2^31, so the sum of all the generations could approach 2^32, and we use
+   the entire address space.  To make that work, we would have to reason more carefully
+   about pointer subtractions; see NOTE-POINTER-ARITH below.  This could probably be done.
 */
 
 #ifndef DEPTH
@@ -244,7 +262,7 @@ void forward_roots (value *from_start,  /* beginning of from-space */
 
    while (frame != NULL) {
      start = frame->root;
-     limit = frame->next - start;
+     limit = frame->next - start; /* See NOTE-POINTER-ARITH below */
      frame = frame->prev;
      for (i=0; i<limit; i++)
         forward(from_start, from_limit, next, start+i, DEPTH);
@@ -384,7 +402,7 @@ void resume(struct thread_info *ti)
   assert (h);
   lo = h->spaces[0].start;
   hi = h->spaces[0].limit;
-  if (hi-lo < num_allocs)
+  if (hi-lo < num_allocs)   /* See NOTE-POINTER-ARITH below */
     abort_with ("Nursery is too small for function's num_allocs\n");
   ti->alloc = lo;
   ti->limit = hi;
@@ -407,7 +425,7 @@ void garbage_collect(struct thread_info *ti)
 
       /* If the next generation does not yet exist, create it */
       if (h->spaces[i+1].start==NULL) {
-        intnat w = h->spaces[i].rem_limit-h->spaces[i].start;
+        intnat w = h->spaces[i].rem_limit-h->spaces[i].start;    /* See NOTE-POINTER-ARITH below */
         create_space(h->spaces+(i+1), RATIO*w);
       }
       /* Copy all the objects in generation i, into generation i+1 */
@@ -421,7 +439,7 @@ void garbage_collect(struct thread_info *ti)
 	 * all the data in gen i is live ([i].limit-[i].start), and
 	 * all the remembered set in i is preserved ([i].rem_limit-[i].limit).
       */
-      if (h->spaces[i].rem_limit - h->spaces[i].start
+      if (h->spaces[i].rem_limit - h->spaces[i].start    /* See NOTE-POINTER-ARITH below */
           <= h->spaces[i+1].limit - h->spaces[i+1].next) {
         resume(ti);
         return;
@@ -538,3 +556,15 @@ void print_heapsize(struct thread_info *ti) {
     printf("  remembered: %d\n", remembered);
   }
 }
+
+/* NOTE-POINTER-ARITH:  In a few places, we do a pointer subtraction, such as
+       h->spaces[i].limit - h->spaces[i].start.
+ When p and q have type  *foo,  then this is much like  ((int)p-(int)q)/sizeof(foo).
+ But note this is a SIGNED division, which makes it quite dangerous if ((int)p-(int)q)
+ can be larger than the maximum signed integer.  So we have to be quite careful in
+ the program and the proof, especially when (on a 32-bit machines) our largest generation 
+ might be similar in size to the entire address space. 
+*/
+
+    
+    

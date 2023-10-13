@@ -71,7 +71,7 @@ Proof.
       unfold space_address, heap_next_address, field_address. rewrite if_true.
       - simpl. rewrite offset_offset_val. f_equal.
       - destruct H as [[_ [_ ?]] _]. unfold field_compatible in *.
-        simpl in *. unfold in_members. simpl. intuition. } thaw FR.
+        simpl in *. unfold in_members. simpl. intuition auto with *. } thaw FR.
     forward_call (rsh, sh, gv, g, h, hp, fr, roots, outlier, from, to).
     Intros vret. destruct vret as [[g1 h1] roots1]. simpl fst in *. simpl snd in *.
     freeze [0;1;2;3] FR.
@@ -135,7 +135,7 @@ Proof.
                                hp). {
       entailer!. unfold space_address. unfold field_address. rewrite if_true.
       - simpl. f_equal.
-      - unfold field_compatible in *. simpl in *. intuition. }
+      - unfold field_compatible in *. simpl in *. intuition auto with *. }
     rewrite H37. clear H37. Opaque Znth. forward. Transparent Znth.
     rewrite Znth_map by (rewrite spaces_size; rep_lia).
     rewrite <- nth_space_Znth. unfold space_tri at 2 3.
@@ -175,7 +175,7 @@ Proof.
       2: { apply (frr_not_pointing from to roots g roots1 g1); auto.
            - clear -H0. destruct H0 as [_ [_ [_ [? _]]]]. assumption.
            - clear -H. destruct H as [_ [_ [[_ ?] _]]]. assumption.
-           - apply frl_roots_Zlength in H21; auto. 
+           - apply frr_roots_fi_compatible in H21; auto. 
       }
       remember (reset_nth_heap from h2) as h3.
       remember (reset_graph from g2) as g3.

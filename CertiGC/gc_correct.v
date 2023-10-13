@@ -823,7 +823,7 @@ Section GENERAL_GRAPH_PROP.
 
   Hypothesis fr_O_P_holds: forall g1 g2 from to p,
       P g1 -> graph_has_gen g1 to -> forward_relation from to O p g1 g2 -> P g2.
-
+(*
   Lemma frl_P_holds: forall from to l g1 g2 r1 r2,
       P g1 -> graph_has_gen g1 to ->
       forward_roots_loop from to l r1 g1 r2 g2 -> P g2.
@@ -831,11 +831,15 @@ Section GENERAL_GRAPH_PROP.
     do 3 intro. induction l; intros; inversion H1; subst; auto.
     eapply (IHl g3); eauto. rewrite <- fr_graph_has_gen; eauto.
   Qed.
+*)
 
   Lemma frr_P_holds: forall from to r1 r2 g1 g2,
       P g1 -> graph_has_gen g1 to ->
       forward_roots_relation from to r1 g1 r2 g2 -> P g2.
-  Proof. intros. red in H1. eapply frl_P_holds; eauto. Qed.
+  Proof. intros. revert H H0; induction H1; simpl; intros; auto.
+    apply IHforward_roots_relation; auto.
+    eapply fr_O_P_holds; eauto.
+    rewrite <- fr_graph_has_gen; eauto. Qed.
 
   Lemma svfl_P_holds: forall from to v l g1 g2,
       P g1 -> graph_has_gen g1 to ->
@@ -1124,7 +1128,7 @@ Proof.
     destruct H1 as [? [? ?]]. destruct H as [? _]. red in H. rewrite H in H2.
     red in H0. destruct H2. rewrite H3 in *. destruct v as [? idx]. simpl in *.
     subst n. specialize (H0 H2 _ H4). rewrite H1 in H0. inversion H0.
-  - red. split. 1: constructor. split; [split|]; intros; intuition.
+  - red. split. 1: constructor. split; [split|]; intros; intuition auto with *.
 Qed.
 
 Lemma semi_iso_DoubleNoDup: forall g1 g2 from to l,
@@ -1418,7 +1422,7 @@ Proof.
         -- rewrite <- H1. destruct H8. now apply H8.
       * destruct_eq_dec v0 v.
         -- subst. split; [|intuition]. apply lcv_raw_mark_old.
-        -- simpl in H25. destruct H25. 1: intuition.
+        -- simpl in H25. destruct H25. 1: intuition auto with *.
            rewrite <- lcv_raw_mark; auto; rewrite <- H11 in H25; auto.
            destruct H25 as [_ [? _]]. rewrite <- H1. destruct H8. now apply H8.
     + split; auto. split.
@@ -1729,6 +1733,7 @@ Proof.
   now destruct H0 as [_ [_ ?]].
 Qed.
 
+(*
 Lemma frl_semi_iso: forall from to g l l1 roots1 roots2 g1 g2,
     from <> to -> sound_gc_graph g -> sound_gc_graph g1 -> graph_has_gen g1 to ->
     roots_graph_compatible roots1 g1 ->
@@ -1764,6 +1769,7 @@ Proof.
   - eapply fr_O_no_dangling_dst; eauto. now simpl.
   - eapply fr_copy_compatible; eauto.
 Qed.
+*)
 
 (*
 Lemma In_gather_indices_spec: forall l1 l2 z,
@@ -1809,6 +1815,60 @@ Lemma frr_semi_iso: forall (from to : nat) (roots1 roots2: roots_t)
     forward_roots_relation from to roots1 g1 roots2 g2 ->
     exists l, gc_graph_semi_iso g1 g2 from to l /\ roots2 = roots_map l roots1.
 Proof.
+  intros.
+  pose proof (semi_iso_refl g1 from to H0 H2). clear H2. rename H7 into H2.
+  pose (g := g1). change (gc_graph_semi_iso g g1 from to nil) in H2.
+  assert (no_dangling_dst g) by auto.
+  assert (sound_gc_graph g) by auto.
+  Admitted.
+  (*
+  change g1 with g. clearbody g.
+  set (vl := @nil (VType*VType)) in H2. clearbody vl. 
+  revert vl H0 H1 H2 H3 H4 H5; induction H6; intros.
+  - exists vl; split; auto.
+  - specialize (IHforward_roots_relation vl). destruct IHforward_roots_relation as [l [? ?]].
+    + eapply fr_O_sound; eauto.
+    + erewrite <- fr_graph_has_gen; eauto.
+    +
+     destruct (fr_O_semi_iso _ _ (inl 0%Z) g g1 g2 _ vl H H8 H1 H2 H4)
+        as [l3 [? [? ?]]]; simpl; auto; try list_solve.
+     destruct H10 as []
+    
+    red.
+    apply semi_iso_refl; auto. red.  Search gen_unmarked.
+     eapply fr_gen_unmarked; try apply H0.   try eassumption. eauto.
+    subst roots3; now apply upd_roots_rf_compatible.
+  - subst roots3; eapply fr_roots_graph_compatible; eauto.
+  - intros. rewrite H13, <- ZtoNat_Zlength. destruct H3.
+    rewrite restricted_roots_map_Zlength, ZtoNat_Zlength; auto. apply H5; now right.
+  - eapply fr_O_no_dangling_dst; eauto. now simpl.
+  - eapply fr_copy_compatible; eauto.
+    
+  remember (upd_roots from to (inl (Z.of_nat a)) g1 roots1 f_info) as roots3.
+  change (root2forward (Znth (Z.of_nat a) roots1)) with
+      (forward_p2forward_t (inl (Z.of_nat a)) roots1 g1) in H13. pose proof H13.
+  assert (0 <= Z.of_nat a < Zlength roots1) by
+      (rewrite Zlength_correct; split; [lia | apply inj_lt, H5; now left]).
+  eapply (fr_O_semi_iso from to _ g g1) in H13; simpl; eauto.
+  destruct H13 as [l3 [? [? ?N]]]. rewrite <- Heqroots3 in H13. simpl in H13.
+  eapply IHl in H18; eauto. clear IHl.
+  - destruct H18 as [l2 [? ?]]. exists (l2 ++ l3). rewrite <- app_assoc. split; auto.
+    subst roots2. rewrite H13. rewrite quasi_roots_map_cons. f_equal.
+    assert (DoubleNoDup (l2 ++ l3 ++ l1)) by (eapply semi_iso_DoubleNoDup; eauto).
+    assert (Zlength roots1 = Zlength (live_roots_indices f_info)) by (now destruct H3).
+    apply restricted_roots_map_incl; auto. simpl in N. red in N. repeat intro.
+    apply (N _ H17 H18 _ H19). eapply semi_iso_In_map_fst in H20; eauto.
+  - eapply fr_O_sound; eauto.
+  - erewrite <- fr_graph_has_gen; eauto.
+  - subst roots3; now apply upd_roots_rf_compatible.
+  - subst roots3; eapply fr_roots_graph_compatible; eauto.
+  - intros. rewrite H13, <- ZtoNat_Zlength. destruct H3.
+    rewrite restricted_roots_map_Zlength, ZtoNat_Zlength; auto. apply H5; now right.
+  - eapply fr_O_no_dangling_dst; eauto. now simpl.
+  - eapply fr_copy_compatible; eauto.
+Qed.
+ 
+
   pose (H3:=True).
   intros. pose proof (semi_iso_refl g1 from to H0 H2). red in H7.
   eapply frl_semi_iso in H7; eauto.
@@ -1830,6 +1890,7 @@ Proof.
       apply nat_inc_list_In_iff. rewrite Zlength_correct in H10. lia.
   - intros. now rewrite nat_inc_list_In_iff in H9.
 Qed.
+*)
 
 Lemma svfl_semi_iso: forall from to v l l1 g1 g2 g3 roots,
     from <> to -> sound_gc_graph g1 -> sound_gc_graph g2 -> graph_has_gen g2 to ->

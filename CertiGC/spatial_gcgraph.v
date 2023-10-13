@@ -63,7 +63,8 @@ Qed.
 Definition frame_shell_rep (sh: share) (fr: frame) (next: val) : mpred :=
   match fr with
     {| fr_adr := a; fr_root := r; fr_roots := s |}  =>
-     !! field_compatible0 (tarray int_or_ptr_type (Zlength s)) nil r && 
+     !! (field_compatible0 (tarray int_or_ptr_type (Zlength s)) nil r
+          /\ WORD_SIZE * Zlength s <= Ptrofs.max_signed) && 
      data_at sh (Tstruct _stack_frame noattr) 
        (field_address0 (tarray int_or_ptr_type (Zlength s))
          [ArraySubsc (Zlength s)] r,

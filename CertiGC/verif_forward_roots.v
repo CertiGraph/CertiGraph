@@ -6,16 +6,16 @@ Lemma frames_rep_ptr_or_null: forall sh frames,
     destruct frames as [|[???]?]; simpl; entailer.
   Qed.
 
-Hint Resolve frames_rep_ptr_or_null : saturate_local.
+#[export] Hint Resolve frames_rep_ptr_or_null : saturate_local.
 
 Lemma frames_rep_valid_pointer: forall sh frames, 
    sepalg.nonidentity sh ->
    frames_rep sh frames |-- valid_pointer (frames_p frames).
 Proof.
   intros.
-  destruct frames as [|[???]?]; simpl frames_p; simpl frames_rep; auto with valid_pointer.
+  destruct frames as [|[???]?]; simpl frames_p; unfold frames_rep; simpl; auto with valid_pointer.
 Qed.
-Hint Resolve frames_rep_valid_pointer: valid_pointer.
+#[export] Hint Resolve frames_rep_valid_pointer: valid_pointer.
 
 (*
 Definition ti_rep (sh: share) (t_info: thread_info) p :=
@@ -343,6 +343,12 @@ Proof.
        apply arr_field_compatible0; auto. rep_lia.
     }
     forward. {
+      rewrite arr_field_address0 by (auto with field_compatible; list_solve).
+      entailer!.
+      apply prop_right. rewrite sameblock_symm. hnf; auto.
+      rewrite isptr_offset_val_sameblock; auto.
+    }
+    forward. {
       unfold NEXT.
       simpl tc_val.
       entailer!.
@@ -353,73 +359,107 @@ Proof.
       rewrite e. autorewrite with sublist. hnf. auto.
       apply isptr_is_pointer_or_null; apply FRAMESP; list_solve.
       rewrite Zlength_update_frames; auto.
+    }(*
+    assert (X: (Z * LGraph * heap * roots_t)%type ) by  apply (0,g',h',nil).
+    deadvars!. clear X.*)
+    replace (force_val _) with (vptrofs (Zlength s)). 2: {
+      rewrite arr_field_address0 by (auto with field_compatible; list_solve).
+    simpl sem_binary_operation'.
+    destruct r; try solve [exfalso; destruct H9; contradiction].
+    unfold sem_sub_pp. simpl force_val; rewrite if_true by auto.
+    simpl force_val.
+    rewrite Ptrofs.sub_add_l, Ptrofs.sub_idem, Ptrofs.add_zero_l.
+    unfold WORD_SIZE in H10.
+    rewrite ptrofs_divs_repr by rep_lia.
+    rewrite (Z.mul_comm 8). rewrite Z.quot_mul by lia.
+    auto.
     }
-    forward_loop (EX i: Z, EX g'' : LGraph, EX h'': heap, EX roots'' : roots_t,
-     PROP (0 <= i <= Zlength s;
-       forward_roots_relation from to (sublist 0 (nr k + i) roots) g roots'' g'';
-       heap_relation h' h'';
-       super_compatible g'' h'' 
-         (update_rootpairs (frames2rootpairs frs) (map (root2val g'') (roots''++oldroots k i))) 
-         (roots''++oldroots k i)
-         outlier;
-     forward_condition g'' h'' from to)
+    forward_for_simple_bound (Zlength s) 
+       (EX i: Z,  EX g'': LGraph, EX h'': heap, EX roots'':roots_t,
+       PROP (
+         forward_roots_relation from to (sublist 0 (nr k + i) roots) g roots'' g'';
+         heap_relation h' h'';
+         super_compatible g'' h'' 
+           (update_rootpairs (frames2rootpairs frs) (map (root2val g'') (roots''++oldroots k i))) 
+           (roots''++oldroots k i)
+           outlier;
+           forward_condition g'' h'' from to)
 LOCAL (temp _frame NEXT;
-       temp _limit  (field_address0 (tarray int_or_ptr_type (Zlength s)) (SUB Zlength s) r);
-       temp _curr (field_address0 (tarray int_or_ptr_type (Zlength s)) (SUB i) r);
+       temp _limit  (vptrofs (Zlength s));
       temp _from_start (gen_start g'' from);
       temp _from_limit (limit_address g'' h'' from);
-      temp _next (heap_next_address hp to))
+      temp _start r; temp _next (heap_next_address hp to))
 SEP (all_string_constants rsh gv;
     outlier_rep outlier;
     graph_rep g'';
     data_at sh (Tstruct _stack_frame noattr)
-       (field_address0 (tarray int_or_ptr_type (Zlength s))
-           (SUB Zlength s) r, (r, NEXT)) a; 
+       (field_address0 (tarray int_or_ptr_type (Zlength s)) (SUB Zlength s) r, (r, NEXT)) a; 
     OTHERS;
     roots_rep sh (frames2rootpairs (update_frames frs (map (root2val g'') (roots''++oldroots k i))));
     heap_rep sh h'' hp))%assert.
-  + Exists 0 g' h' roots'.
-    entailer!; [ split | ].
-    * apply hr_refl.
-    * unfold field_address0; simpl. rewrite if_true. normalize. auto with field_compatible.
-    * apply derives_refl.
-  + Intros i g'' h'' roots''.
-    forward_if.
+  + unfold WORD_SIZE in H10; rep_lia.
+  + Exists g' h' roots'.
+    entailer!!; [ split | ]; auto.
+    subst frs'.
+    apply derives_refl.
+  + set (rp'' := frames2rootpairs (update_frames _ _)).
+    forward_call (rsh,sh,gv,g'',h'',hp,rp'',roots''++oldroots k i,outlier,from,to,0, @inl _ (VType*Z) (k+i)).
+      (*simpl length. unfold firstn. simpl eval_cast.
+      simpl forward_p_address'.*)
     *
-    rewrite isptr_denote_tc_test_order
-      by (unfold field_address0; rewrite if_true by auto with field_compatible;
-          destruct r, H9; try contradiction; auto).
-     unfold test_order_ptrs.
-      replace (sameblock _ _) with true
-       by (unfold field_address0; rewrite !if_true by auto with field_compatible; simpl;
-        destruct r, H9; try contradiction; simpl;
-        destruct (peq _ _); try contradiction; auto).
-      replace r with (fr_root (Znth k frs)).
-      2:{ clear - H8 LEN'.
-          subst frs'. admit.
-      }
-      replace (Zlength s) with (Zlength (fr_roots (Znth k frs))) by admit.
-      apply andp_right;
-      apply sepcon_weak_valid_pointer1; repeat apply sepcon_weak_valid_pointer2;
-      apply roots_weak_valid_pointer; auto; try rep_lia.
-      admit. admit. admit. admit. admit.
-      
-    * set (rp'' := frames2rootpairs _).
-      forward_call (rsh,sh,gv,g'',h'',hp,rp'',roots''++oldroots k i,outlier,from,to,0, @inl _ (VType*Z) i).
-      entailer!. simpl. repeat f_equal. admit.
-      rewrite update_rootpairs_frames2rootpairs in H13 by admit.
-      fold rp'' in H13. split; auto.
-      simpl. admit. (* ?? *)
-      Intros vret.
+      apply prop_right; simpl. f_equal. f_equal. f_equal. f_equal.
+      subst rp''. admit.  (* probably true *)
+    * admit.
+    * Intros vret.
       destruct vret as [[g3 h3] roots3].
       simpl fst in *. simpl snd in *.
-      forward.
-      entailer!. admit.
-      Exists (i+1) g3 h3 roots3.
-      entailer!.
+      Exists g3 h3 roots3.
+      entailer!!.
       admit.
       admit.
-    * forward.
+  + Intros g3 h3 roots3. Exists (k+1, g3, h3, roots3 ).
+    assert (oldroots (k+1) 0 = oldroots k (Zlength s)). {
+       unfold oldroots. f_equal. unfold nr.
+      rewrite (sublist_split 0 k (k+1)) by list_solve.
+      rewrite Z.add_0_r.
+      admit.  (* might well be true *)
+    }
+    entailer!!; [split3; [ | | split3] | ].
+    * lia.
+    * admit.
+    * eapply hr_trans; eassumption.
+    * rewrite H15. auto.
+    * subst NEXT. subst frs'.
+      rewrite Zlength_update_frames by list_solve. fold n.
+      admit.  (* quite likely true *)
+    * cancel. subst OTHERS.
+      rewrite <- H15.
+      admit.
+ - 
+   forward.
+  Exists g' h' (roots' ++ oldroots k 0).
+  entailer!!.
+  split.
+  rewrite <- update_rootpairs_frames2rootpairs; auto.
+  unfold oldroots.
+  unfold nr. autorewrite with sublist.
+  admit.
+  Print GCGraph.forward_roots_relation.
+    list_simplify.
+  Search frames2rootpairs update_frames. 
+      Search frame_shell_rep.
+      Searc
+      rewrite <- frames_rep_unlocalize.
+      Search frames_rep roots_rep.
+    Print frames_p.
+    Search frames2rootpairs app.
+
+
+    Print oldroots.
+    Search super_compatible.
+
+  
+  forward.
       Exists (k+1, g'', h'', roots'').
       simpl fst. simpl snd.
       assert (i=Zlength s). {

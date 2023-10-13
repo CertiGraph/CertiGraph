@@ -478,7 +478,7 @@ Lemma nat_inc_list_S: forall num, nat_inc_list (S num) = nat_inc_list num ++ [nu
 Proof. intros. unfold nat_inc_list. rewrite nat_seq_S. repeat f_equal. lia. Qed.
 
 Lemma nat_inc_list_In_iff: forall i n, In i (nat_inc_list n) <-> i < n.
-Proof. intros. unfold nat_inc_list. rewrite nat_seq_In_iff. intuition. Qed.
+Proof. intros. unfold nat_inc_list. rewrite nat_seq_In_iff. lia. Qed.
 
 Lemma nat_inc_list_nth: forall i n a, i < n -> nth i (nat_inc_list n) a = i.
 Proof. intros. unfold nat_inc_list. rewrite nat_seq_nth; [lia | assumption]. Qed.
@@ -909,7 +909,7 @@ Local Open Scope Z_scope.
 Lemma make_header_mark_iff: forall g v,
     make_header g v = 0 <-> raw_mark (vlabel g v) = true.
 Proof.
-  intros. unfold make_header. destruct (raw_mark (vlabel g v)). 1: intuition.
+  intros. unfold make_header. destruct (raw_mark (vlabel g v)). tauto.
   split; intros. 2: inversion H. exfalso.
   destruct (raw_tag_range (vlabel g v)) as [? _].
   assert (0 <= Z.shiftl (raw_color (vlabel g v)) 8). {
@@ -1494,7 +1494,7 @@ Proof.
         replace (Z.succ (Z.of_nat n) - 1) with (Z.of_nat n) by lia.
         assumption. }
     destruct (eqdec target a).
-    + simpl. rewrite IHl. clear IHl. split; intros; destruct H4; [|intuition|].
+    + simpl. rewrite IHl. clear IHl. split; intros; destruct H4; [|intuition auto with *| ].
       * subst j. split; [split|]; [lia | | rewrite <- e in H3; assumption].
         pose proof (Zlength_skipn ind c). rewrite <- H in H4.
         rewrite Zlength_cons in H4. pose proof (Zlength_nonneg l).
@@ -1567,6 +1567,25 @@ Definition upd_roots (from to: nat) (forward_p: forward_p_type)
   | inl index => upd_Znth index roots (upd_root from to g (Znth index roots))
   end.
 
+  Inductive forward_roots_relation (from to: nat): forall (roots1: roots_t) (g1: LGraph) (roots2: roots_t) (g2: LGraph), Prop :=
+  | fwd_roots_nil: forall g, forward_roots_relation from to nil g nil g
+  | fwd_roots_cons: forall r roots1 g1 roots2 g2 g3,
+       forward_relation from to 0 (root2forward r) g1 g2 ->
+       forward_roots_relation from to roots1 g2 roots2 g3 ->
+       forward_roots_relation from to (r::roots1) g1 (upd_root from to g1 r :: roots2) g3.
+  
+  Lemma forward_roots_relation_snoc:
+   forall from to r roots1 g1 roots2 g2 g3,
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
+    forward_relation from to 0 (root2forward r) g2 g3 ->
+    forward_roots_relation from to (roots1++[r]) g1 (roots2++[upd_root from to g2 r]) g3.
+  Proof.
+    induction 1; intros.
+    - simpl. econstructor; eauto. constructor.
+    - simpl. econstructor; eauto.
+  Qed.
+
+  (*
 Inductive forward_roots_loop (from to: nat):
   list nat -> roots_t -> LGraph -> roots_t -> LGraph -> Prop :=
 | frl_nil: forall g roots, forward_roots_loop from to nil roots g roots g
@@ -1579,6 +1598,7 @@ Inductive forward_roots_loop (from to: nat):
 
 Definition forward_roots_relation from to roots1 g1 roots2 g2 :=
   forward_roots_loop from to (nat_inc_list (length roots1)) roots1 g1 roots2 g2.
+*)
 
 Definition nth_space (h: heap) (n: nat): space :=
   nth n h.(spaces) null_space.
@@ -1611,7 +1631,7 @@ Proof.
                     exists gen, graph_has_gen g gen /\
                                 x = (gen, nth_gen g gen, nth_space h gen)).
   - intros. split; intros.
-    + apply H3. rewrite H2. exists gen. subst l1; intuition.
+    + apply H3. rewrite H2. exists gen. subst l1; intuition auto.
     + rewrite H2 in H4. destruct H4 as [gen [? ?]]. subst l1 x. apply H3. assumption.
   - intros.
     assert (forall gen,
@@ -1909,7 +1929,7 @@ Proof.
   assert (length (firstn to l) = to) by (rewrite firstn_length_le; lia).
   destruct (Nat.lt_ge_cases n to).
   - rewrite app_nth1 by lia. apply nth_firstn. assumption.
-  - rewrite Nat.lt_eq_cases in H2. destruct H2. 2: exfalso; intuition.
+  - rewrite Nat.lt_eq_cases in H2. destruct H2. 2: exfalso; intuition auto.
     rewrite <- (firstn_skipn (to + 1) l) at 4. rewrite app_cons_assoc, !app_nth2.
     + do 2 f_equal. rewrite app_length, H1, firstn_length_le by lia. reflexivity.
     + rewrite firstn_length_le; lia.
@@ -1987,7 +2007,7 @@ Lemma graph_has_v_in_closure: forall g v, graph_has_v g v -> closure_has_v g v.
 Proof.
   intros g v. destruct v as [gen index].
   unfold graph_has_v, closure_has_v, closure_has_index, gen_has_index.
-  simpl. intros. intuition.
+  simpl. intros. intuition auto with *.
 Qed.
 
 Lemma lacv_vertex_address_old: forall (g : LGraph) (v : VType) (to: nat) x,
@@ -2099,7 +2119,7 @@ Lemma lacv_make_fields_not_eq: forall (g : LGraph) (v : VType) (to : nat) x,
     make_fields (lgraph_add_copied_v g v to) x = make_fields g x.
 Proof.
   intros. unfold make_fields. simpl. unfold update_copied_new_vlabel, update_vlabel.
-  rewrite if_false. 1: reflexivity. intuition.
+  rewrite if_false. 1: reflexivity. intuition auto.
 Qed.
 
 Lemma lacv_field2val_make_fields_old:  forall (g : LGraph) (v : VType) (to : nat) x,
@@ -2158,7 +2178,7 @@ Proof.
   remember (raw_fields (vlabel g v)). remember 0 as n.
   assert (forall m, In m (map snd (filter_sum_right (make_fields' l v n))) ->
                     In m (map snd (get_edges g v))). {
-    unfold get_edges, make_fields. subst. intuition. }
+    unfold get_edges, make_fields. subst. intuition auto. }
   clear Heql Heqn. revert n H2. induction l; intros; simpl. 1: reflexivity.
   destruct a; [destruct s|].
   - simpl in *. rewrite IHl; [reflexivity | assumption].
@@ -2237,7 +2257,7 @@ Lemma lmc_vlabel_not_eq: forall g v new_v x,
     x <> v -> vlabel (lgraph_mark_copied g v new_v) x = vlabel g x.
 Proof.
   intros. unfold lgraph_mark_copied, update_copied_old_vlabel, update_vlabel. simpl.
-  rewrite if_false. 1: reflexivity. unfold equiv. intuition.
+  rewrite if_false. 1: reflexivity. unfold equiv. intuition auto.
 Qed.
 
 Lemma lmc_make_fields_vals_not_eq: forall (g : LGraph) (v new_v : VType) x,
@@ -2262,7 +2282,7 @@ Qed.
 
 Lemma lcv_graph_has_gen: forall g v to x,
     graph_has_gen g to -> graph_has_gen g x <-> graph_has_gen (lgraph_copy_v g v to) x.
-Proof. unfold graph_has_gen. intros. simpl. rewrite cvmgil_length; intuition. Qed.
+Proof. unfold graph_has_gen. intros. simpl. rewrite cvmgil_length; intuition auto. Qed.
 
 Lemma lmc_graph_has_v: forall g old new x,
     graph_has_v g x <-> graph_has_v (lgraph_mark_copied g old new) x.
@@ -2278,7 +2298,7 @@ Proof.
   - compute in e. subst old. rewrite <- lmc_graph_has_v. simpl.
     unfold update_copied_old_vlabel, update_vlabel. rewrite if_true by reflexivity.
     simpl. split; assumption.
-  - assert (v <> old) by intuition. clear c.
+  - assert (v <> old) by intuition auto with *. clear c.
     rewrite lmc_vlabel_not_eq, <- lmc_graph_has_v in * by assumption.
     apply H1; assumption.
 Qed.
@@ -2291,7 +2311,7 @@ Proof.
   - unfold equiv in e; right; assumption.
   - left. destruct H0. split.
     + rewrite lacv_graph_has_gen in H0; assumption.
-    + assert (x <> (new_copied_v g to)) by intuition. clear c H0.
+    + assert (x <> (new_copied_v g to)) by intuition auto. clear c H0.
       unfold gen_has_index in *. unfold nth_gen, lgraph_add_copied_v in H1.
       simpl in H1. destruct x as [gen index]. simpl in *. unfold new_copied_v in H2.
       destruct (Nat.eq_dec gen to).
@@ -2309,7 +2329,7 @@ Proof.
   repeat intro. destruct (V_EqDec v0 (new_copied_v g to)).
   - unfold equiv in e. subst v0. rewrite lacv_vlabel_new in *.
     rewrite H3 in H. inversion H.
-  - assert (v0 <> (new_copied_v g to)) by intuition. clear c.
+  - assert (v0 <> (new_copied_v g to)) by intuition auto. clear c.
     rewrite lacv_vlabel_old in * by assumption.
     assert (graph_has_v g v0). {
       apply lacv_graph_has_v_inv in H2. 2: assumption. destruct H2. 1: assumption.
@@ -2333,7 +2353,7 @@ Proof.
   intros. unfold get_edges, make_fields. remember (raw_fields (vlabel g v)).
   remember 0 as n. clear Heqn Heql. revert n. induction l; intros; simpl.
   1: reflexivity. destruct a; [destruct s0 |]; simpl; rewrite IHl; try reflexivity.
-  intuition. inversion H0. left; reflexivity.
+  intuition auto. inversion H0. left; reflexivity.
 Qed.
 
 Lemma get_edges_fst: forall g v e, In e (get_edges g v) -> fst e = v.
@@ -2372,7 +2392,7 @@ Proof.
     rewrite get_edges_In, Heqnew, lacv_get_edges_new in H4. rewrite pcv_dst_new.
     2: assumption. apply lacv_graph_has_v_old. 1: assumption.
     apply (H v); [|rewrite get_edges_In]; assumption.
-  - assert (x <> new_copied_v g to) by intuition. clear c. rewrite pcv_dst_old.
+  - assert (x <> new_copied_v g to) by intuition auto. clear c. rewrite pcv_dst_old.
     + apply lacv_graph_has_v_old. 1: assumption. apply lacv_graph_has_v_inv in H2.
       2: assumption. destruct H2. 2: contradiction. apply (H x). 1: assumption.
       unfold get_edges in *. rewrite lacv_make_fields_not_eq in H3; assumption.
@@ -3005,7 +3025,7 @@ Proof. reflexivity. Qed.
 
 Lemma lgd_graph_has_gen: forall g e v x,
     graph_has_gen (labeledgraph_gen_dst g e v) x <-> graph_has_gen g x.
-Proof. intros; unfold graph_has_gen; intuition. Qed.
+Proof. intros; unfold graph_has_gen; intuition auto. Qed.
 
 Lemma lgd_raw_fld_length_eq: forall (g: LGraph) v e v',
     Zlength (raw_fields (vlabel g v)) =
@@ -3166,13 +3186,13 @@ Lemma lgd_enough_space_to_copy: forall g e v' t_info gen sp,
     enough_space_to_copy g t_info gen sp ->
     enough_space_to_copy (labeledgraph_gen_dst g e v') t_info gen sp.
 Proof.
-  intros. unfold enough_space_to_copy in *. intuition. Qed.
+  intros. unfold enough_space_to_copy in *. intuition auto. Qed.
 
 Lemma lgd_copy_compatible: forall g v' e,
     copy_compatible g ->
     copy_compatible (labeledgraph_gen_dst g e v').
 Proof.
-  intros. unfold copy_compatible in *. intuition. Qed.
+  intros. unfold copy_compatible in *. intuition auto. Qed.
 
 Lemma lgd_forward_condition: forall g t_info v to v' e,
     vgeneration v <> to ->
@@ -3461,7 +3481,7 @@ Proof.
   intros. destruct (V_EqDec old x).
   - unfold equiv in e. subst. simpl. unfold update_copied_old_vlabel, update_vlabel.
     rewrite if_true by reflexivity. simpl. reflexivity.
-  - assert (x <> old) by intuition.
+  - assert (x <> old) by intuition auto with *.
     rewrite lmc_vlabel_not_eq; [reflexivity | assumption].
 Qed.
 
@@ -3921,7 +3941,7 @@ Lemma dgc_imply_fc: forall g t_info (*roots*) from to,
     forward_condition g t_info from to /\ 0 < gen_size t_info to /\
     gen_unmarked g to.
 Proof.
-  intros. destruct H. do 2 (split; [|intuition]). clear H0. red in H |-* .
+  intros. destruct H. do 2 (split; [|intuition auto]). clear H0. red in H |-* .
   transitivity (graph_gen_size g from); [apply unmarked_gen_size_le | assumption].
 Qed.
 
@@ -3931,6 +3951,7 @@ Proof.
   intros. unfold upd_roots. destruct p. 2: reflexivity. list_solve.
 Qed.
 
+(*
 Lemma frl_roots_Zlength: forall from to l roots g roots' g',
     forward_roots_loop from to l roots g roots' g' ->
     Zlength roots' = Zlength roots.
@@ -3955,12 +3976,13 @@ Proof.
 Qed.
 
 Transparent upd_roots.
+*)
 
 Lemma frr_vertex_address: forall from to roots1 g1 roots2 g2,
     graph_has_gen g1 to -> forward_roots_relation from to roots1 g1 roots2 g2 ->
     forall v, closure_has_v g1 v -> vertex_address g1 v = vertex_address g2 v.
 Proof.
-  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_loop.
+  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_relation.
   - eapply fr_vertex_address; eauto.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_closure_has_v; eauto.
@@ -3970,7 +3992,7 @@ Lemma frr_closure_has_v: forall from to roots1 g1 roots2 g2,
     graph_has_gen g1 to -> forward_roots_relation from to roots1 g1 roots2 g2 ->
     forall v, closure_has_v g1 v -> closure_has_v g2 v.
 Proof.
-  intros. induction H0. 1: assumption. apply IHforward_roots_loop.
+  intros. induction H0. 1: assumption. apply IHforward_roots_relation.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_closure_has_v; eauto.
 Qed.
@@ -3979,7 +4001,7 @@ Lemma frr_gen_unmarked: forall from to roots1 g1 roots2 g2,
     graph_has_gen g1 to -> forward_roots_relation from to roots1 g1 roots2 g2 ->
     forall gen, gen <> from -> gen_unmarked g1 gen -> gen_unmarked g2 gen.
 Proof.
-  intros. induction H0. 1: assumption. apply IHforward_roots_loop.
+  intros. induction H0. 1: assumption. apply IHforward_roots_relation.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_gen_unmarked; eauto.
 Qed.
@@ -4010,7 +4032,7 @@ Proof.
     specialize (H _ H2). red in H. simpl. unfold nth_gen, nth_space in *. simpl.
     rewrite remove_ve_glabel_unchanged. destruct (Nat.eq_dec n gen).
     + subst gen. red in H2. rewrite reset_nth_gen_info_same.
-      rewrite reset_nth_space_same by lia. intuition.
+      rewrite reset_nth_space_same by lia. intuition auto.
     + rewrite reset_nth_gen_info_diff, reset_nth_space_diff by assumption.
       destruct H as [? [? ?]]. split. 1: assumption. split. 1: assumption.
       rewrite pvs_reset_unchanged. assumption.
@@ -4126,7 +4148,7 @@ Proof.
           (eapply fr_raw_fields; eauto). rewrite <- H7.
       intros; apply H4; right; assumption.
   - specialize (H4 _ (in_eq a l)). eapply fr_right_roots_graph_compatible; eauto.
-    simpl. intuition. rewrite Zlength_correct. apply inj_lt; assumption.
+    simpl. intuition auto with *. rewrite Zlength_correct. apply inj_lt; assumption.
 Qed.
 
 
@@ -4208,6 +4230,7 @@ Proof.
   - eapply fr_roots_graph_compatible; eauto.
 Qed.
 
+(*
 Lemma frl_not_pointing: forall from to (*t_info*) l roots1 g1 roots2 g2,
     copy_compatible g1 -> roots_graph_compatible roots1 g1 -> from <> to ->
     (forall i, In i l -> i < length roots1)%nat ->
@@ -4230,9 +4253,19 @@ Proof.
       apply H2; right; assumption.
     + rewrite <- (fr_graph_has_gen _ _ _ _ _ _ H4 H7); assumption.
 Qed.
+*)
 
 Definition roots_have_no_gen (roots: roots_t) (gen: nat): Prop :=
   forall v, In (inr v) roots -> vgeneration v <> gen.
+
+Lemma Forall_filter_sum_right_cons_e:
+   forall {A}{B} (f: B -> Prop) (x: A+B) (xs: list (A+B)),
+       Forall f (filter_sum_right (x::xs)) -> Forall f (filter_sum_right xs).
+Proof.
+ intros.
+ destruct x; simpl in H; auto.
+ inv H; auto.
+Qed.      
 
 Lemma frr_not_pointing: forall from to roots1 g1 roots2 g2,
     copy_compatible g1 -> roots_graph_compatible roots1 g1 -> from <> to ->
@@ -4241,14 +4274,27 @@ Lemma frr_not_pointing: forall from to roots1 g1 roots2 g2,
     roots_have_no_gen roots2 from.
 Proof.
   intros.
-  unfold forward_roots_relation in H0. eapply frl_not_pointing in H0; eauto.
-  red; intros. 2: intros; rewrite nat_inc_list_In_iff in H5; assumption. red in H0.
-  apply In_Znth in H5. destruct H5 as [i [? ?]]. specialize (H0 _ _ H6). destruct H0.
-  apply H0.
-  rewrite <- (Z2Nat.id i) by lia.
-  apply in_map. apply nat_inc_list_In_iff.
-  rewrite !Zlength_correct in H3. rewrite Zlength_correct in H5.
-  clear - H3 H5. fold root_t in H5. lia.
+  revert H H0 H2 H3; induction H4; intros.
+  intros ? Hx; inv Hx.
+  intros ? ?. destruct H6.
+  - clear IHforward_roots_relation.
+    pose proof upd_roots_not_pointing from to 0 g1 (r::roots1) (upd_root from to g1 r :: roots1) H0 H2 
+        H1 ltac:(list_solve).
+    simpl in H7. rewrite upd_Znth0 in H7. rewrite Znth_0_cons in H7.
+    specialize (H7 (eq_refl _) v 0).
+    rewrite Znth_0_cons in H7.
+    specialize (H7 H6). destruct H7.
+    apply H7. constructor. auto.
+  - apply IHforward_roots_relation; auto.
+  eapply fr_copy_compatible; eassumption.
+    pose proof fr_roots_graph_compatible 0 from to (inl 0) g1 g2 (r::roots1) H3 ltac:(simpl; list_solve) H0.
+  simpl in H7.
+  autorewrite with sublist in H7.
+  specialize (H7 H H1 H2).
+  rewrite upd_Znth0 in H7.
+  apply Forall_filter_sum_right_cons_e in H7; auto.
+  erewrite <- fr_graph_has_gen; eassumption.
+  list_solve.
 Qed.
 
 Lemma fta_compatible_reset: forall g rootpairs r gen,
@@ -4270,8 +4316,8 @@ Lemma gen_has_index_reset: forall (g: LGraph) gen1 gen2 idx,
 Proof.
   intros. unfold gen_has_index. unfold nth_gen. simpl.
   rewrite remove_ve_glabel_unchanged. destruct (Nat.eq_dec gen1 gen2).
-  - subst. rewrite reset_nth_gen_info_same. simpl. intuition.
-  - rewrite reset_nth_gen_info_diff by auto. intuition.
+  - subst. rewrite reset_nth_gen_info_same. simpl. intuition auto with *.
+  - rewrite reset_nth_gen_info_diff by auto. intuition auto.
 Qed.
 
 Lemma graph_has_v_reset: forall (g: LGraph) gen v,
@@ -4279,8 +4325,8 @@ Lemma graph_has_v_reset: forall (g: LGraph) gen v,
     graph_has_v g v /\ gen <> vgeneration v.
 Proof.
   intros. split; intros; destruct v; unfold graph_has_v in *; simpl in *.
-  - rewrite graph_has_gen_reset, gen_has_index_reset in H. intuition.
-  - rewrite graph_has_gen_reset, gen_has_index_reset. intuition.
+  - rewrite graph_has_gen_reset, gen_has_index_reset in H. intuition auto.
+  - rewrite graph_has_gen_reset, gen_has_index_reset. intuition auto.
 Qed.
 
 Lemma rgc_reset: forall g gen roots,
@@ -4347,7 +4393,7 @@ Lemma frr_graph_has_gen: forall from to roots1 g1 roots2 g2,
     forward_roots_relation from to roots1 g1 roots2 g2 ->
     forall gen, graph_has_gen g1 gen <-> graph_has_gen g2 gen.
 Proof.
-  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_loop.
+  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_relation.
   - eapply fr_graph_has_gen; eauto.
   - rewrite <- fr_graph_has_gen; eauto.
 Qed.
@@ -4449,7 +4495,7 @@ Lemma graph_has_e_reset: forall g gen e,
     graph_has_e g e /\ gen <> egeneration e.
 Proof.
   intros. unfold graph_has_e, egeneration. destruct e as [v idx]. simpl.
-  rewrite graph_has_v_reset, get_edges_reset. intuition.
+  rewrite graph_has_v_reset, get_edges_reset. intuition auto.
 Qed.
 
 Lemma gen2gen_no_edge_reset_inv: forall g gen1 gen2 gen3,
@@ -4483,7 +4529,7 @@ Lemma frr_dst_unchanged: forall from to roots1 g1 roots2 g2,
     graph_has_gen g1 to -> forward_roots_relation from to roots1 g1 roots2 g2 ->
     forall e, graph_has_v g1 (fst e) -> dst g1 e = dst g2 e.
 Proof.
-  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_loop.
+  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_relation.
   - eapply fr_O_dst_unchanged_root; eauto.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_graph_has_v; eauto.
@@ -4671,7 +4717,7 @@ Lemma frr_gen_v_num_to: forall from to roots1 g1 roots2 g2,
 Proof.
   intros. induction H0. 1: lia. transitivity (gen_v_num g2 to).
   - eapply fr_O_gen_v_num_to; eauto.
-  - apply IHforward_roots_loop; rewrite <- fr_graph_has_gen; eauto.
+  - apply IHforward_roots_relation; rewrite <- fr_graph_has_gen; eauto.
 Qed.
 
 Lemma frr_graph_has_v_inv: forall from to roots1 g1 roots2 g2,
@@ -4682,7 +4728,7 @@ Lemma frr_graph_has_v_inv: forall from to roots1 g1 roots2 g2,
 Proof.
   intros. induction H0. 1: left; assumption.
   assert (graph_has_gen g2 to) by (rewrite <- fr_graph_has_gen; eauto).
-  specialize (IHforward_roots_loop H3 H1). destruct IHforward_roots_loop.
+  specialize (IHforward_roots_relation H3 H1). destruct IHforward_roots_relation.
   - eapply (fr_O_graph_has_v_inv from to _ g1 g2) in H0; eauto. destruct H0.
     1: left; assumption. right. unfold new_copied_v in H0. subst v.
     clear H2. destruct H1. red in H1. simpl in *. unfold gen_v_num. lia.
@@ -4694,7 +4740,7 @@ Lemma frr_raw_fields: forall from to roots1 g1 roots2 g2,
     graph_has_gen g1 to -> forward_roots_relation from to roots1 g1 roots2 g2 ->
     forall v, graph_has_v g1 v -> raw_fields (vlabel g1 v) = raw_fields (vlabel g2 v).
 Proof.
-  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_loop.
+  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_relation.
   - eapply fr_raw_fields; eauto.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_graph_has_v; eauto.
@@ -4742,7 +4788,7 @@ Proof.
   intros ? ? ? ?. induction l; intros; inversion H4; subst. 1: reflexivity.
   transitivity (dst g3 e).
   - eapply fr_O_dst_unchanged_field; eauto.
-    + simpl. intuition. rewrite Zlength_correct. apply inj_lt. apply H2.
+    + simpl. intuition auto with *. rewrite Zlength_correct. apply inj_lt. apply H2.
       left; reflexivity.
     + apply H6. left; reflexivity.
   - apply IHl; auto.
@@ -4874,7 +4920,7 @@ Lemma frr_graph_has_v: forall from to roots1 g1 roots2 g2,
     forall v, graph_has_v g1 v -> graph_has_v g2 v.
 Proof.
   intros. induction H0; subst. 1: assumption. cut (graph_has_v g2 v).
-  - intros. apply IHforward_roots_loop; auto. erewrite <- fr_graph_has_gen; eauto.
+  - intros. apply IHforward_roots_relation; auto. erewrite <- fr_graph_has_gen; eauto.
   - eapply fr_graph_has_v; eauto.
 Qed.
 
@@ -4960,13 +5006,13 @@ Proof.
       * intros. subst e. intro. inversion H11. subst. apply NoDup_cons_2 in H6.
         contradiction.
     + eapply (fr_O_dst_changed_field from to); eauto.
-      * simpl. intuition. rewrite Zlength_correct. apply inj_lt. apply H5.
+      * simpl. intuition auto with *. rewrite Zlength_correct. apply inj_lt. apply H5.
         left; reflexivity.
       * unfold make_fields in H8 |-*. erewrite svfl_raw_fields; eauto.
   - eapply (IHl g3); eauto.
     + eapply (fr_copy_compatible _ _ _ _ g1); eauto.
     + eapply (fr_O_no_dangling_dst _ _ _ g1); eauto.
-      * simpl. intuition. rewrite Zlength_correct. apply inj_lt. apply H5.
+      * simpl. intuition auto with *. rewrite Zlength_correct. apply inj_lt. apply H5.
         left; reflexivity.
       * simpl. constructor.
     + apply NoDup_cons_1 in H6; assumption.
@@ -5028,7 +5074,7 @@ Proof.
     + erewrite <- fr_graph_has_gen; eauto.
     + intros. erewrite <- fr_raw_fields; eauto. apply H6. right; assumption.
   - eapply fr_O_no_dangling_dst; eauto.
-    + simpl. intuition. rewrite Zlength_correct. apply inj_lt.
+    + simpl. intuition auto with *. rewrite Zlength_correct. apply inj_lt.
       apply H6. left; reflexivity.
     + simpl. constructor.
 Qed.
@@ -5076,9 +5122,9 @@ Proof.
   rewrite graph_has_v_reset in *. destruct H1. rewrite get_edges_reset in H2.
   rewrite remove_ve_dst_unchanged. split.
   - apply (H v); assumption.
-  - cut (vgeneration (dst g e) <> gen). 1: intuition. unfold gen2gen_no_edge in H0.
+  - cut (vgeneration (dst g e) <> gen). 1: intuition auto. unfold gen2gen_no_edge in H0.
     destruct e as [[vgen vidx] eidx]. pose proof H2. apply get_edges_fst in H2.
-    simpl in H2. subst v. simpl in *. apply H0; intuition. split; simpl; assumption.
+    simpl in H2. subst v. simpl in *. apply H0;  intuition auto. split; simpl; assumption.
 Qed.
 
 Lemma frr_copy_compatible: forall from to roots g roots' g',
@@ -5086,11 +5132,12 @@ Lemma frr_copy_compatible: forall from to roots g roots' g',
     forward_roots_relation from to roots g roots' g' ->
     copy_compatible g -> copy_compatible g'.
 Proof.
-  intros. induction H1. 1: assumption. apply IHforward_roots_loop.
+  intros. induction H1. 1: assumption. apply IHforward_roots_relation.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_copy_compatible; eauto.
 Qed.
 
+(*
 Lemma frl_no_dangling_dst: forall from to l roots g roots' g',
     graph_has_gen g to -> copy_compatible g -> from <> to ->
     (forall i, In i l -> i < length roots) ->
@@ -5113,6 +5160,7 @@ Proof.
   - fold (forward_p2forward_t (inl (Z.of_nat a)) roots g) in H9.
     eapply fr_O_no_dangling_dst; eauto.
 Qed.
+*)
 
 Lemma frr_no_dangling_dst: forall from to roots g roots' g',
     graph_has_gen g to -> copy_compatible g -> from <> to ->
@@ -5120,8 +5168,17 @@ Lemma frr_no_dangling_dst: forall from to roots g roots' g',
     forward_roots_relation from to roots g roots' g' ->
     no_dangling_dst g -> no_dangling_dst g'.
 Proof.
-  intros. eapply frl_no_dangling_dst; eauto. intros.
-  rewrite nat_inc_list_In_iff in H5. assumption.
+  intros.
+  induction H3; auto.
+  apply IHforward_roots_relation; clear IHforward_roots_relation.
+  - rewrite <- fr_graph_has_gen; eauto.
+  - eapply fr_copy_compatible; eauto.
+  - pose proof fr_roots_graph_compatible 0 from to (inl 0%Z) g1 g2 (r::roots1).
+    simpl in H6. rewrite upd_Znth0, Znth_0_cons in H6.
+    spec H6; auto. spec H6; [list_solve| ].
+    repeat (spec H6;[ auto  |]).
+    apply Forall_filter_sum_right_cons_e in H6; auto.
+  - apply (fr_O_no_dangling_dst from to (inl 0%Z) g1 g2 (r::roots1)); auto; simpl; try list_solve.
 Qed.
 
 Lemma frr_dsr_no_edge2gen: forall from to roots roots' g g1 g2,
@@ -5194,9 +5251,7 @@ Lemma frr_roots_fi_compatible: forall from to roots1 g1 roots2 g2,
     Zlength roots1 = Zlength roots2.
 Proof.
   intros. induction H; subst; auto.
-  rewrite <- IHforward_roots_loop; clear.
-  unfold upd_roots, upd_root.
-  destruct (Znth _); list_solve. 
+  list_solve.
 Qed.
 
 Definition no_backward_edge (g: LGraph): Prop :=
@@ -5609,7 +5664,7 @@ Lemma frr_nth_gen_unchanged: forall from to roots1 g1 roots2 g2,
     graph_has_gen g1 to -> forward_roots_relation from to roots1 g1 roots2 g2 ->
     forall gen, gen <> to -> nth_gen g1 gen = nth_gen g2 gen.
 Proof.
-  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_loop.
+  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_relation.
   - eapply fr_O_nth_gen_unchanged; eauto.
   - rewrite <- fr_graph_has_gen; eauto.
 Qed.
@@ -5761,7 +5816,7 @@ Lemma frr_stcg: forall from to roots1 g1 roots2 g2,
     forall gen1 gen2, graph_has_gen g1 gen2 -> gen2 <> to ->
                       safe_to_copy_gen g1 gen1 gen2 -> safe_to_copy_gen g2 gen1 gen2.
 Proof.
-  intros. induction H0. 1: assumption. apply IHforward_roots_loop.
+  intros. induction H0. 1: assumption. apply IHforward_roots_relation.
   - erewrite <- (fr_graph_has_gen O from to); eauto.
   - erewrite <- (fr_graph_has_gen O from to); eauto.
   - eapply (fr_O_stcg from to); eauto.
