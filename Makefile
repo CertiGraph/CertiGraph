@@ -234,20 +234,20 @@ VST_CRITICAL_FILES = \
 
 
 clightgen:
-	cp CertiGC/'GC Source'/{config.h,gc.h,mem.h,values.h,gc.c} CertiGC
+	cp 'CertiGC/GC Source'/config.h 'CertiGC/GC Source'/gc.h 'CertiGC/GC Source'/mem.h 'CertiGC/GC Source'/values.h 'CertiGC/GC Source'/gc.c CertiGC
 	cd CertiGC/'GC Source'; `dirname $(CLIGHTGEN)`/ccomp printm.c -o printm
 	CertiGC/'GC Source'/printm >CertiGC/m.h
 	$(CLIGHTGEN) -DCOMPCERT -normalize -isystem . $(C_FILES)
 
 clightgen64:
-	cp CertiGC/'GC Source'/{config.h,gc.h,mem.h,values.h,gc.c} CertiGC
+	cp 'CertiGC/GC Source'/config.h 'CertiGC/GC Source'/gc.h 'CertiGC/GC Source'/mem.h 'CertiGC/GC Source'/values.h 'CertiGC/GC Source'/gc.c CertiGC
 	cd CertiGC/'GC Source'; `dirname $(CLIGHTGEN64)`/ccomp printm.c -o printm
 	CertiGC/'GC Source'/printm >CertiGC/m.h
 	$(CLIGHTGEN64) -DCOMPCERT -normalize -isystem . $(C_FILES)
 	$(foreach x,$(C_FILES:%.c=%), mv $(x).v $(x)64.v; )
 
 clightgen32:
-	cp CertiGC/'GC Source'/{config.h,gc.h,mem.h,values.h,gc.c} CertiGC
+	cp 'CertiGC/GC Source'/config.h 'CertiGC/GC Source'/gc.h 'CertiGC/GC Source'/mem.h 'CertiGC/GC Source'/values.h 'CertiGC/GC Source'/gc.c CertiGC
 	cd CertiGC/'GC Source'; `dirname $(CLIGHTGEN32)`/ccomp printm.c -o printm
 	CertiGC/'GC Source'/printm >CertiGC/m.h
 	$(CLIGHTGEN32) -DCOMPCERT -normalize -isystem . $(C_FILES)
