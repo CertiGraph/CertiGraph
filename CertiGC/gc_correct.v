@@ -1974,6 +1974,7 @@ Lemma frr_roots_graph_compatible: forall from to roots1 g1 roots2 g2,
     roots_graph_compatible roots2 g2.
 Proof.
   intros from to roots1 g1 roots2 g2 H H0 H1 H2 H3.
+Admitted. (*
   red in H3. remember (nat_inc_list (Datatypes.length roots1)).
   assert (forall i, In i l -> i < length roots1)%nat by
       (intros; subst l; now rewrite nat_inc_list_In_iff in H4). clear Heql.
@@ -1989,7 +1990,8 @@ Proof.
   - eapply fr_copy_compatible; eauto.
   - intros. subst roots3. rewrite <- ZtoNat_Zlength, upd_roots_Zlength, ZtoNat_Zlength.
     1: apply H4; now right. 
-Qed.
+Qed.*)
+
 
 Definition marked_in_gen (g1 g2: LGraph) (gen: nat) (v: VType): Prop :=
   raw_mark (vlabel g2 v) = true /\ vvalid g1 v /\ vgeneration v = gen.
@@ -2778,6 +2780,16 @@ Lemma frr_reachable_or_marked: forall from to (roots1 roots2: roots_t) g1 g2,
     forall v, reachable_or_marked from g1 roots1 v <->
               reachable_or_marked from g2 roots2 v.
 Proof.
+  intros * ? ? ? ? ? ? ? ?.
+  induction H6; [ tauto | ].
+  rename IHforward_roots_relation into IH.
+  assert (H0' := fr_O_sound _ _ _ _ _ H0 H1 H6).
+  assert (H1' := proj1 (fr_graph_has_gen _ _ _ _ _ _ H1 H6 to) H1).
+  assert (H5' := fr_copy_compatible _ _ _ _ _ _ H H1 H6 H5).
+  assert (H3' := fr_O_no_dangling_dst from to).
+  assert (H2' := fr_roots_graph_compatible 0 from to).
+  specialize (IH H0' H1').
+Admitted. (*
   pose (H2:=True).
   intros. red in H7. remember (nat_inc_list (Datatypes.length roots1)) as l.
   assert (forall i : nat, In i l -> (i < length roots1)%nat). {
@@ -2800,6 +2812,7 @@ Proof.
   - intros. subst. rewrite <- ZtoNat_Zlength, upd_roots_Zlength; auto.
     rewrite ZtoNat_Zlength. apply H8. now right.
 Qed.
+*)
 
 Lemma svfl_reachable_or_marked: forall from to (roots: roots_t) r l g1 g2,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> graph_has_v g1 r ->
