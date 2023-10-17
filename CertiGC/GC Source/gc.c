@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "m.h"  /* use printm.c to create m.h */
 #include "config.h"
+#include "values.h"
 #include "gc.h"
 
 /* A version of GC that scans a stack in order to find the roots. It is useful

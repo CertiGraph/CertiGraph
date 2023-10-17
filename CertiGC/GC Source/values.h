@@ -53,7 +53,18 @@ extern "C" {
          This is for use only by the GC.
 */
 
+
+/* This differs from OCaml's original! We replaced
+
 typedef intnat value;
+
+with */
+typedef void  * value
+#ifdef COMPCERT
+  __attribute((aligned(_Alignof(void *))))
+#endif
+  ;
+/* because of VST's restrictions. */
 typedef uintnat header_t;
 typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
@@ -62,7 +73,12 @@ typedef uintnat mark_t;
 
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
+/* This differs from OCaml's original! We commented out
+
 #define Is_block(x)  (((x) & 1) == 0)
+
+because it exists as a function in gc.c.
+*/
 
 /* Conversion macro names are always of the form  "to_from". */
 /* Example: Val_long as in "Val from long" or "Val of long". */
