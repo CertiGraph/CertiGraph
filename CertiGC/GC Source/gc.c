@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "m.h"  /* use printm.c to create m.h */
 #include "config.h"
+#include "values.h"
 #include "gc.h"
 
 /* A version of GC that scans a stack in order to find the roots. It is useful
@@ -35,7 +36,7 @@ value ptr_to_int_or_ptr(void *x) /* precondition: is aligned */ {
     return (value)x;
 }
 
-int Is_block(value x) {
+int is_ptr(value x) {
     return test_int_or_ptr(x) == 0;
 }
 
@@ -127,7 +128,7 @@ int in_heap(struct heap *h, value v) {
 }
 
 void printtree(FILE *f, struct heap *h, value v) {
-  if(Is_block(v))
+  if(is_ptr(v))
     if (in_heap(h,v)) {
       header_t hd = Field(v,-1);
       int sz = Wosize_hd(hd);
@@ -175,7 +176,7 @@ void abort_with(char *s) {
 int Is_from(value* from_start, value * from_limit,  value * v) {
     return (from_start <= v && v < from_limit);
 }
-/* Assuming v is a pointer (Is_block(v)), tests whether v points
+/* Assuming v is a pointer (is_ptr(v)), tests whether v points
    somewhere into the "from-space" defined by from_start and from_limit */
 
 void forward (value *from_start,  /* beginning of from-space */
@@ -196,7 +197,7 @@ void forward (value *from_start,  /* beginning of from-space */
 {
   value * v;
   value va = *p;
-  if(Is_block(va)) {
+  if(is_ptr(va)) {
     v = (value*)int_or_ptr_to_ptr(va);
     /* printf("Start: %lld end"" %lld word %lld \n", from_start, from_limit, v); */
     /* if  (v == 4360698480) printf ("Found it\n"); */
@@ -509,7 +510,7 @@ void *export(struct thread_info *ti, value root) {
   ti->fp= &frame;
   
   /* if root is unboxed, return it */
-  if(!Is_block(root))
+  if(!is_ptr(root))
     return (void *)root;
 
   /* otherwise collect all that is reachable from it to the last generation, then compact it into value_sp */
@@ -538,7 +539,7 @@ void *export(struct thread_info *ti, value root) {
 void certicoq_modify(struct thread_info *ti, value *p_cell, value p_val) {
   assert (ti->alloc < ti->limit);
   *p_cell = p_val;
-  if (Is_block(p_val)) {
+  if (is_ptr(p_val)) {
     *(value **)(--ti->limit) = p_cell;
   }
 }

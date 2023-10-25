@@ -103,8 +103,8 @@ Definition ptr_to_int_or_ptr_spec :=
   POST [ int_or_ptr_type ]
     PROP() LOCAL (temp ret_temp x) SEP().
 
-Definition Is_block_spec :=
-  DECLARE _Is_block
+Definition is_ptr_spec :=
+  DECLARE _is_ptr
   WITH x : val
   PRE [int_or_ptr_type ]
     PROP (valid_int_or_ptr x)
@@ -474,7 +474,7 @@ Definition Gprog: funspecs :=
                       int_or_ptr_to_ptr_spec;
                       int_to_int_or_ptr_spec;
                       ptr_to_int_or_ptr_spec;
-                      Is_block_spec;
+                      is_ptr_spec;
                       Is_from_spec;
                       abort_with_spec;
                       forward_spec;

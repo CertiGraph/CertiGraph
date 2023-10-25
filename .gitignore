@@ -38,7 +38,14 @@ final
 poster.run.xml
 project.pbxproj
 xcschememanagement.plist
+CertiGC/config.h
+CertiGC/gc.c
+CertiGC/gc.h
+CertiGC/m.h
+CertiGC/mem.h
+CertiGC/values.h
 CertiGC/gc.v
+CertiGC/GC\ Source/printm
 append/append.v
 binheap/binary_heap.v
 binheap/binary_heap_pro.v
