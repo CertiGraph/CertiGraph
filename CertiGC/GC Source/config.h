@@ -16,6 +16,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "m.h"
+
 #if SIZEOF_PTR > 0
 #else
 #error "Oops! SIZEOF_PTR is not defined"

@@ -54,17 +54,20 @@ extern "C" {
 */
 
 
-/* This differs from OCaml's original! We replaced
-
-typedef intnat value;
-
-with */
-typedef void  * value
-#ifdef COMPCERT
-  __attribute((aligned(_Alignof(void *))))
+/* CHANGE BY THE CERTICOQ/VERIFFI TEAM:
+We do this for CertiCoq's FFI system because for technical reasons related to
+VST's program logic type system, we need the value type to be void* with this
+attribute. On the other hand, standard OCaml wants the value to be intnat.
+*/
+#ifdef VERIFFI
+  typedef void * value
+    #ifdef COMPCERT
+    __attribute((aligned(_Alignof(void *))))
+    #endif
+    ;
+#else
+  typedef intnat value;
 #endif
-  ;
-/* because of VST's restrictions. */
 typedef uintnat header_t;
 typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
@@ -73,12 +76,12 @@ typedef uintnat mark_t;
 
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
-/* This differs from OCaml's original! We commented out
-
-#define Is_block(x)  (((x) & 1) == 0)
-
-because it exists as a function in gc.c.
-*/
+/* CHANGE BY THE CERTICOQ/VERIFFI TEAM: */
+#ifdef VERIFFI
+  #define Is_block(x)  (((int)(((intnat) x) & 1)) == 0)
+#else
+  #define Is_block(x)  (((x) & 1) == 0)
+#endif
 
 /* Conversion macro names are always of the form  "to_from". */
 /* Example: Val_long as in "Val from long" or "Val of long". */
