@@ -38,6 +38,12 @@ final
 poster.run.xml
 project.pbxproj
 xcschememanagement.plist
+CertiGC/config.h
+CertiGC/gc.c
+CertiGC/gc.h
+CertiGC/m.h
+CertiGC/mem.h
+CertiGC/values.h
 CertiGC/gc.v
 CertiGC/GC\ Source/printm
 append/append.v
