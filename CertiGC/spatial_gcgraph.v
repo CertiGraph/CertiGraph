@@ -247,13 +247,10 @@ Proof.
   rewrite Zlength_app in H.
   unfold frame2rootpairs at 1 in H. simpl Zlength in H.
   rewrite Zlength_frame2rootpairs' in H.
-  rewrite <- ZtoNat_Zlength.
-  rewrite <- sublist_firstn.
   rewrite Zlength_sublist by list_solve.
   rewrite Z.sub_0_r.
   rewrite frames_p_update_frames.
   f_equal.
-  rewrite <- sublist_skip by rep_lia.
   apply IHfrs'.
   rewrite Zlength_sublist by list_solve.
   unfold frames2rootpairs. lia.
@@ -276,8 +273,6 @@ Proof.
   unfold frame2rootpairs at 1.
   unfold frame2rootpairs at 1 in H.
   simpl frame2rootpairs' in *.
-  rewrite <- ZtoNat_Zlength.
-  rewrite <- sublist_firstn.
   rewrite map_app in *.
   assert (Zlength s <= Zlength roots).
   apply (f_equal (@Zlength val)) in H.
@@ -321,7 +316,6 @@ Proof.
     autorewrite with sublist in H. lia. 
     unfold roots_rep.
     f_equal.
-    rewrite <- sublist_skip by rep_lia.
     autorewrite with sublist.
     replace (_ + (_ - _)) with (Zlength roots) by lia. rewrite <- map_sublist.
     autorewrite with sublist. auto.
@@ -1969,9 +1963,6 @@ if_tac.
  cancel.
  apply allp_right; intro v.
  rewrite !upd_Znth_app1 by lia.
- rewrite <- !ZtoNat_Zlength.
- rewrite <- !sublist_skip by lia.
- rewrite <- !sublist_firstn.
  autorewrite with sublist.
  rewrite prop_true_andp by auto.
  rewrite (sublist_same 0 (Zlength (concat _))) by lia.
@@ -2018,9 +2009,6 @@ if_tac.
   repeat sep_apply log_normalize.sepcon_wand_wand_sepcon.
   apply wand_derives; auto.
  rewrite !upd_Znth_app2 by lia.
- rewrite <- !ZtoNat_Zlength.
- rewrite <- !sublist_skip by rep_lia.
- rewrite <- !sublist_firstn.
  fold (frames2roots rest).
  autorewrite with sublist.
  rewrite prop_true_andp by auto.

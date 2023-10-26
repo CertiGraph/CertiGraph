@@ -636,8 +636,8 @@ Fixpoint update_rootpairs (rootpairs: list rootpair) (roots: list val) : list ro
 Fixpoint update_frames (frames: list frame) (roots: list val) : list frame :=
  match frames with
  | {| fr_adr := a; fr_root := r; fr_roots := s |} :: rest => 
-       let n := length s in
-                {| fr_adr := a; fr_root := r; fr_roots := firstn n roots |} :: update_frames rest (skipn n roots)
+ {| fr_adr := a; fr_root := r; fr_roots := sublist 0 (Zlength s) roots |}
+    :: update_frames rest (sublist (Zlength s) (Zlength roots) roots)
   | nil => nil
  end.
 
@@ -653,11 +653,10 @@ Proof.
   f_equal.
   f_equal; auto.
   unfold frames2roots. simpl.
-  rewrite firstn_app1 by lia.
-  apply firstn_same; lia.
+  list_solve.
   unfold frames2roots; simpl.
-  rewrite skipn_app1 by lia.
-  rewrite skipn_all by lia. simpl. auto.
+  rewrite sublist_app2 by Zlength_solve.
+  autorewrite with sublist. auto. 
 Qed.
 
 Lemma update_update_rootpairs: forall rp v1 v2,
@@ -5923,31 +5922,24 @@ Qed.
 
 
 Lemma frames2roots_update_frames: forall frames r, 
-   length r = length (frames2roots frames) ->
+   Zlength r = Zlength (frames2roots frames) ->
    frames2roots (update_frames frames r) = r.
 Proof.
   unfold frames2roots.
   induction frames as [ | [a r s] ?]; simpl; intros.
-  - destruct r; auto. discriminate.
-  - rewrite app_length in H.
-    rewrite (IHframes (skipn (length s) r0)); clear IHframes.
-    apply firstn_skipn.
-    rewrite skipn_length. rewrite H. lia. 
+  - destruct r; auto. list_solve.
+  - rewrite (IHframes (sublist (Zlength s) (Zlength r0) r0)); clear IHframes; list_solve.
 Qed.    
 
 Lemma update_update_frames: forall frames r1 r2,
-  length r1 = length (frames2roots frames) ->
-  length r1 = length r2 ->
+  Zlength r1 = Zlength (frames2roots frames) ->
+  Zlength r1 = Zlength r2 ->
   update_frames (update_frames frames r1) r2 = update_frames frames r2.
 Proof.
   unfold frames2roots.
   induction frames as [ | [a r s] ?]; simpl; intros; auto.
-  rewrite app_length in H.
-  rewrite firstn_length. rewrite Nat.min_l by lia.
-  f_equal.
-  rewrite IHframes; clear IHframes; auto.
-  rewrite skipn_length. lia.
-  rewrite !skipn_length. lia.
+  f_equal. f_equal. list_solve.
+  rewrite IHframes; clear IHframes; auto; list_solve.
 Qed.
 
 Lemma ptrofs_divs_repr
@@ -6055,9 +6047,7 @@ Proof.
  unfold frames2rootpairs, frame2rootpairs.
  induction fr as [ | [ a r s ] fr']; simpl; intros.
  - list_solve.
- - rewrite <- ZtoNat_Zlength.
-   rewrite <- sublist_firstn, <- sublist_skip by rep_lia.
-   rewrite Zlength_app, Zlength_frame2rootpairs' in H.
+ - rewrite Zlength_app, Zlength_frame2rootpairs' in H.
    destruct (zlt z (Zlength s)).
    + rewrite !Znth_app1 by (rewrite Zlength_frame2rootpairs'; list_solve).
    rewrite !Znth_frame2rootpairs' by list_solve. simpl.
@@ -6155,17 +6145,15 @@ unfold frames2rootpairs, frame2rootpairs, frames2roots.
 induction frames as [ | [ a r s ] rest] ;[ destruct roots; auto | ].
 intros.
 simpl in *. rewrite Zlength_app in H.
-rewrite <- ZtoNat_Zlength, <- sublist_skip by rep_lia.
 rewrite <- IHrest by list_solve; clear IHrest.
   set (i:=0) at 1 3. clearbody i.
  revert roots i H; induction s; destruct roots; simpl; intros; auto.
  -
  f_equal. list_solve.
- - rewrite <- sublist_firstn. list_simplify.
+ - list_solve.
  -
  autorewrite with sublist in H. specialize (IHs roots (Z.succ i) ltac:(lia)).
  rewrite IHs; clear IHs. 
- rewrite <- !sublist_firstn.
  autorewrite with sublist.
  change (?a :: ?b ++ ?c) with ((a :: b) ++ c). f_equal; [ |  f_equal; list_solve].
  replace (sublist 0 (Z.succ (Zlength s)) (v::roots))
@@ -6183,17 +6171,7 @@ induction frames as [|[a r s ] fr]; simpl; intros; auto.
 rewrite Zlength_app in *.
 if_tac.
 rewrite if_true; auto.
-rewrite Zlength_solver.Zlength_firstn in H1.
-rewrite <- Zlength_correct in H1. 
-lia.
-rewrite Zlength_solver.Zlength_firstn in *.
-rewrite <- Zlength_correct in *.
-rewrite IHfr; clear IHfr.
-rewrite if_false.
-f_equal. rep_lia.
-rep_lia.
-rewrite Zlength_solver.Zlength_skipn.
-rewrite <- Zlength_correct.
-rep_lia.
-rep_lia.
+list_solve.
+rewrite IHfr; clear IHfr; try list_solve.
+rewrite if_false; try list_solve.
 Qed.

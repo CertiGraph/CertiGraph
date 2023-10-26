@@ -136,7 +136,10 @@ Proof.
       entailer!. unfold space_address. unfold field_address. rewrite if_true.
       - simpl. f_equal.
       - unfold field_compatible in *. simpl in *. intuition auto with *. }
-    rewrite H37. clear H37. Opaque Znth. forward. Transparent Znth.
+    rewrite H37. clear H37. Opaque Znth. 
+     (* FIXME!  investigate why this "forward" takes so long *)
+        forward. 
+    Transparent Znth.
     rewrite Znth_map by (rewrite spaces_size; rep_lia).
     rewrite <- nth_space_Znth. unfold space_tri at 2 3.
     simpl fst. simpl snd.
@@ -196,7 +199,6 @@ Proof.
       rewrite H31.
       rewrite <- frames2roots_eq.
       symmetry; apply frames2roots_update_frames.
-      apply invariants.Zlength_eq.
       destruct H as [_ [? _]]. red in H. rewrite frames2roots_eq.
       rewrite <- H.
       rewrite !Zlength_map.
