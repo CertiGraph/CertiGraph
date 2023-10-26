@@ -6002,8 +6002,15 @@ Proof.
   intros.
   revert i; induction s; simpl; intros; auto.
   list_solve.
-Qed.   
-#[export] Hint Rewrite Zlength_frame2rootpairs': sublist.
+Qed.  
+
+Lemma Zlength_frame2rootpairs: forall f, Zlength (frame2rootpairs f) = Zlength (fr_roots f).
+Proof.
+  intros.
+  apply Zlength_frame2rootpairs'.
+Qed. 
+
+#[export] Hint Rewrite Zlength_frame2rootpairs Zlength_frame2rootpairs': sublist Zlength.
 
 #[export] Instance Inh_rootpair : Inhabitant rootpair := {| rp_adr:=Vundef; rp_val:=Vundef|}.
 
@@ -6025,6 +6032,17 @@ forall z r s,
  unfold Z.succ.
  rewrite IHs. f_equal. f_equal. lia. list_solve.
 Qed.
+
+Lemma Znth_frame2rootpairs:
+ forall z f, 0 <= z < Zlength (fr_roots f) ->
+   Znth z (frame2rootpairs f) = 
+   {| rp_adr := offset_val (z * WORD_SIZE) (fr_root f); rp_val := Znth z (fr_roots f)|}.
+Proof.
+intros.
+apply Znth_frame2rootpairs'; auto.
+Qed.
+
+#[export] Hint Rewrite Znth_frame2rootpairs Znth_frame2rootpairs' using Zlength_solve : sublist Znth.
 
 Lemma frames2rootpairs_update_frames:
 forall fr z roots,
