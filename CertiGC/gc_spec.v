@@ -34,10 +34,12 @@ Definition all_string_constants (sh: share) (gv: globals) : mpred :=
   cstring sh (map init_data2byte (gvar_init v___stringlit_14)) (gv ___stringlit_14) *
   cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15).
 
+  (*  obsolete?
 Definition MSS_constant (gv: globals): mpred :=
   data_at Ews (if Archi.ptr64 then tulong else tuint)
           (if Archi.ptr64 then Vlong (Int64.repr MAX_SPACE_SIZE) else
              Vint (Int.repr MAX_SPACE_SIZE)) (gv _MAX_SPACE_SIZE).
+*)
 
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
@@ -101,8 +103,8 @@ Definition ptr_to_int_or_ptr_spec :=
   POST [ int_or_ptr_type ]
     PROP() LOCAL (temp ret_temp x) SEP().
 
-Definition Is_block_spec :=
-  DECLARE _Is_block
+Definition is_ptr_spec :=
+  DECLARE _is_ptr
   WITH x : val
   PRE [int_or_ptr_type ]
     PROP (valid_int_or_ptr x)
@@ -169,28 +171,10 @@ Proof.
   rewrite !sepcon_emp, approx_idem. reflexivity.
 Qed.
 
-Definition forward_p_address
-           (p: forward_p_type) (ti: val) (f_info: fun_info) (g: LGraph) :=
-  match p with
-  | inl root_index => field_address
-                        thread_info_type
-                        [ArraySubsc (Znth root_index (live_roots_indices f_info));
-                           StructField _args] ti
-  | inr (v, n) => offset_val (WORD_SIZE * n) (vertex_address g v)
-  end.
-
-Definition limit_address g t_info from :=
-  offset_val (WORD_SIZE * gen_size t_info from) (gen_start g from).
-
-Definition next_address t_info to :=
-  field_address heap_type
-                [StructField _next;
-                   ArraySubsc (Z.of_nat to); StructField _spaces] (ti_heap_p t_info).
-
 Definition forward_spec :=
   DECLARE _forward
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
-       g: LGraph, t_info: thread_info, f_info: fun_info,
+  WITH rsh: share, sh: share, gv: globals,
+       g: LGraph, h: heap, hp: val, rootpairs: list rootpair,
        roots : roots_t, outlier: outlier_t,
        from: nat, to: nat, depth: Z, forward_p: forward_p_type
   PRE [tptr int_or_ptr_type,
@@ -199,78 +183,89 @@ Definition forward_spec :=
        tptr int_or_ptr_type,
        tint]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible (g, t_info, roots) f_info outlier;
+          super_compatible g h rootpairs roots outlier;
           forward_p_compatible forward_p roots g from;
-          forward_condition g t_info from to;
+          forward_condition g h from to;
           0 <= depth <= Int.max_signed;
           from <> to)
     PARAMS (gen_start g from;
-           limit_address g t_info from;
-           next_address t_info to;
-           forward_p_address forward_p ti f_info g;
+           limit_address g h from;
+           heap_next_address hp to;
+           forward_p_address' forward_p rootpairs g;
            Vint (Int.repr depth))
     GLOBALS ()
     SEP (all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g;
-         thread_info_rep sh t_info ti)
+         roots_rep sh rootpairs;
+         heap_rep sh h hp)
   POST [tvoid]
-    EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible (g', t_info', roots') f_info outlier;
-          roots' = upd_roots from to forward_p g roots f_info;
+    EX g': LGraph, EX h': heap, EX roots': roots_t,
+    PROP (super_compatible g' h' (update_rootpairs rootpairs (map (root2val g') roots'))  roots' outlier;
+          roots' = upd_roots from to forward_p g roots;
           forward_relation from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p roots g) g g';
-          forward_condition g' t_info' from to;
-          thread_info_relation t_info t_info')
+          forward_condition g' h' from to;
+          heap_relation h h')
     LOCAL ()
     SEP (all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g';
-         thread_info_rep sh t_info' ti).
+         roots_rep sh (update_rootpairs rootpairs (map (root2val g') roots'));
+         heap_rep sh h' hp).
 
 Definition forward_roots_spec :=
   DECLARE _forward_roots
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
-       g: LGraph, t_info: thread_info, f_info: fun_info,
+  WITH rsh: share, sh: share, gv: globals,
+       g: LGraph, h: heap, hp: val, fr: list frame,
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [tptr int_or_ptr_type,
        tptr int_or_ptr_type,
        tptr (tptr int_or_ptr_type),
-       tptr (if Archi.ptr64 then tulong else tuint),
-       tptr thread_info_type]
+       tptr (Tstruct _stack_frame noattr)]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible (g, t_info, roots) f_info outlier;
-          forward_condition g t_info from to;
+          super_compatible g h (frames2rootpairs fr) roots outlier;
+          forward_condition g h from to;
           from <> to)
     PARAMS (gen_start g from;
-           limit_address g t_info from;
-           next_address t_info to;
-           fi; ti)
+           limit_address g h from;
+           heap_next_address hp to;
+           frames_p fr)
     GLOBALS (gv)
     SEP (all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g;
-         thread_info_rep sh t_info ti)
+         frames_rep sh fr;
+         heap_rep sh h hp)
   POST [tvoid]
-    EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible (g', t_info', roots') f_info outlier;
-          forward_roots_relation from to f_info roots g roots' g';
-          forward_condition g' t_info' from to;
-          thread_info_relation t_info t_info')
+    EX g' : LGraph, EX h': heap, EX roots': roots_t,
+    PROP (super_compatible g' h' (frames2rootpairs (update_frames fr (map (root2val g') roots'))) roots' outlier;
+          forward_roots_relation from to roots g roots' g';
+          forward_condition g' h' from to;
+          heap_relation h h')
     LOCAL ()
     SEP (all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g';
-         thread_info_rep sh t_info' ti).
+         frames_rep sh (update_frames fr (map (root2val g') roots'));
+         heap_rep sh h' hp).
+
+Definition forward_remset_spec :=
+  DECLARE _forward_remset
+  WITH sh: share, h: heap, hp: val, from: nat, to: nat, next: val
+  PRE [ tptr space_type, tptr space_type, tptr (tptr int_or_ptr_type) ]
+     PROP (readable_share sh)
+     PARAMS ( space_address hp from ; space_address hp to; next )
+     SEP (heap_rep sh h hp)
+  POST [ tvoid ]
+     PROP()
+     RETURN ()
+     SEP(heap_rep sh h hp).
 
 Definition do_scan_spec :=
   DECLARE _do_scan
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
-       g: LGraph, t_info: thread_info, f_info: fun_info,
+  WITH rsh: share, sh: share, gv: globals,
+       g: LGraph, h: heap, hp: val, rootpairs: list rootpair,
        roots : roots_t, outlier: outlier_t,
        from: nat, to: nat, to_index: nat
   PRE [tptr int_or_ptr_type,
@@ -278,66 +273,65 @@ Definition do_scan_spec :=
        tptr int_or_ptr_type,
        tptr (tptr int_or_ptr_type)]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible (g, t_info, roots) f_info outlier;
-          forward_condition g t_info from to;
+          super_compatible g h rootpairs roots outlier;
+          forward_condition g h from to;
           from <> to; closure_has_index g to to_index;
-          0 < gen_size t_info to; gen_unmarked g to)
+          0 < gen_size h to; gen_unmarked g to)
     PARAMS (gen_start g from;
-           limit_address g t_info from;
+           limit_address g h from;
            offset_val (- WORD_SIZE) (vertex_address g (to, to_index));
-           next_address t_info to)
+           heap_next_address hp to)
     GLOBALS ()
     SEP (all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g;
-         thread_info_rep sh t_info ti)
+         roots_rep sh rootpairs;
+         heap_rep sh h hp)
   POST [tvoid]
-    EX g': LGraph, EX t_info': thread_info,
-    PROP (super_compatible (g', t_info', roots) f_info outlier;
-          forward_condition g' t_info' from to;
+    EX g': LGraph, EX h': heap,
+    PROP (super_compatible g' h' rootpairs roots outlier;
+          forward_condition g' h' from to;
           do_scan_relation from to to_index g g';
-          thread_info_relation t_info t_info')
+          heap_relation h h')
     LOCAL ()
     SEP (all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g';
-         thread_info_rep sh t_info' ti).
+         roots_rep sh rootpairs;
+         heap_rep sh h' hp).
 
 Definition do_generation_spec :=
   DECLARE _do_generation
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
-       g: LGraph, t_info: thread_info, f_info: fun_info,
+  WITH rsh: share, sh: share, gv: globals,
+       g: LGraph, h: heap, hp: val, fr: list frame, 
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [tptr space_type,
        tptr space_type,
-       tptr (if Archi.ptr64 then tulong else tuint),
-       tptr thread_info_type]
+       tptr (Tstruct _stack_frame noattr)]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible (g, t_info, roots) f_info outlier;
-          do_generation_condition g t_info roots f_info from to;
+          super_compatible g h (frames2rootpairs fr) roots outlier;
+          do_generation_condition g h from to;
           from <> to)
-    PARAMS (space_address t_info from;
-           space_address t_info to;
-           fi; ti)
+    PARAMS (space_address hp from;
+           space_address hp to;
+           frames_p fr)
     GLOBALS (gv)
     SEP (all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g;
-         thread_info_rep sh t_info ti)
+         frames_rep sh fr;
+         heap_rep sh h hp)
   POST [tvoid]
-    EX g' : LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible (g', t_info', roots') f_info outlier;
-          thread_info_relation t_info t_info';
-          do_generation_relation from to f_info roots roots' g g')
+    EX g' : LGraph, EX h': heap, EX roots': roots_t,
+    PROP (super_compatible g' h' (frames2rootpairs (update_frames fr (map (root2val g') roots'))) roots' outlier;
+          heap_relation h h';
+          do_generation_relation from to roots roots' g g')
     LOCAL ()
     SEP (all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g';
-         thread_info_rep sh t_info' ti).
+         frames_rep sh (update_frames fr (map (root2val g') roots'));
+         heap_rep sh h' hp).
 
 Definition create_space_spec :=
   DECLARE _create_space
@@ -345,20 +339,20 @@ Definition create_space_spec :=
   PRE [tptr space_type, if Archi.ptr64 then tulong else tuint]
     PROP (writable_share sh;
           readable_share rsh;
-          0 <= n < MAX_SPACE_SIZE)
+          0 <= n <= MAX_SPACE_SIZE)
     PARAMS (s; if Archi.ptr64 then Vlong (Int64.repr n) else Vint (Int.repr n))
     GLOBALS (gv)
-    SEP (mem_mgr gv; all_string_constants rsh gv; data_at_ sh space_type s;
-        MSS_constant gv)
+    SEP (mem_mgr gv; all_string_constants rsh gv; data_at_ sh space_type s (*;
+        MSS_constant gv*))
   POST [tvoid]
     EX p: val,
     PROP () LOCAL ()
-    SEP (mem_mgr gv; all_string_constants rsh gv; MSS_constant gv;
+    SEP (mem_mgr gv; all_string_constants rsh gv; (*MSS_constant gv;*)
          malloc_token Ews (tarray int_or_ptr_type n) p;
          data_at_ Ews (tarray int_or_ptr_type n) p;
-         data_at sh space_type (p, (p, (offset_val (WORD_SIZE * n) p))) s).
+         data_at sh space_type (p, (p, (offset_val (WORD_SIZE * n) p,offset_val (WORD_SIZE * n) p))) s).
 
-Definition zero_triple: (val * (val * val)) := (nullval, (nullval, nullval)).
+Definition zero_triple: (val * (val * (val*val))) := (nullval, (nullval, (nullval,nullval))).
 
 Definition create_heap_spec :=
   DECLARE _create_heap
@@ -367,14 +361,14 @@ Definition create_heap_spec :=
     PROP (readable_share sh)
     PARAMS ()
     GLOBALS (gv)
-    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv)
+    SEP (mem_mgr gv; all_string_constants sh gv(*; MSS_constant gv*))
   POST [tptr heap_type]
     EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp h)
-    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv;
+    SEP (mem_mgr gv; all_string_constants sh gv; (*MSS_constant gv;*)
         malloc_token Ews heap_type h;
          data_at Ews heap_type
-                 ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
+                 ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,offset_val (WORD_SIZE * NURSERY_SIZE) p)))
                     :: repeat zero_triple (Z.to_nat (MAX_SPACES - 1))) h;
          malloc_token Ews (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
@@ -386,79 +380,73 @@ Definition make_tinfo_spec :=
     PROP (readable_share sh)
     PARAMS ()
     GLOBALS (gv)
-    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv)
+    SEP (mem_mgr gv; all_string_constants sh gv(*; MSS_constant gv*))
   POST [tptr thread_info_type]
     EX t: val, EX h: val, EX p: val,
     PROP () LOCAL (temp ret_temp t)
-    SEP (mem_mgr gv; all_string_constants sh gv; MSS_constant gv;
+    SEP (mem_mgr gv; all_string_constants sh gv; (*MSS_constant gv;*)
          malloc_token Ews thread_info_type t;
          data_at Ews thread_info_type
                  (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,
-                      (h, repeat Vundef (Z.to_nat MAX_ARGS)))) t;
+                      (h, (repeat Vundef (Z.to_nat MAX_ARGS), (nullval,(vptrofs 0,nullval)))))) t;
          malloc_token Ews heap_type h;
          data_at Ews heap_type
-                 ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p)))
+                 ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,offset_val (WORD_SIZE * NURSERY_SIZE) p)))
                     :: repeat zero_triple (Z.to_nat (MAX_SPACES - 1))) h;
          malloc_token Ews (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
 
 Definition resume_spec :=
   DECLARE _resume
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
-       g: LGraph, t_info: thread_info, f_info: fun_info,
+  WITH rsh: share, sh: share, gv: globals, ti: val,
+       g: LGraph, t_info: thread_info,
        roots : roots_t
-  PRE [tptr (if Archi.ptr64 then tulong else tuint),
-       tptr thread_info_type]
+  PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          graph_thread_info_compatible g t_info;
+          graph_heap_compatible g (ti_heap t_info);
           graph_gen_clear g O)
-    PARAMS (fi; ti)
+    PARAMS (ti)
     GLOBALS (gv)
     SEP (all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
-    PROP (fun_word_size f_info <= total_space (heap_head (ti_heap t_info)))
+    PROP (Ptrofs.unsigned (ti_nalloc t_info) <= total_space (heap_head (ti_heap t_info)))
     LOCAL ()
     SEP (all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          graph_rep g;
          before_gc_thread_info_rep sh t_info ti).
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
-  WITH rsh: share, sh: share, gv: globals, fi: val, ti: val,
-       g: LGraph, t_info: thread_info, f_info: fun_info,
+  WITH rsh: share, sh: share, gv: globals, ti: val,
+       g: LGraph, t_info: thread_info,
        roots : roots_t, outlier: outlier_t
-  PRE [tptr (if Archi.ptr64 then tulong else tuint),
-       tptr thread_info_type]
+  PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible (g, t_info, roots) f_info outlier;
-          garbage_collect_condition g t_info roots f_info;
+          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
+          garbage_collect_condition g (ti_heap t_info) roots;
           safe_to_copy g)
-    PARAMS (fi; ti)
+    PARAMS (ti)
     GLOBALS (gv)
-    SEP (all_string_constants rsh gv; MSS_constant gv;
-         fun_info_rep rsh f_info fi;
+    SEP (all_string_constants rsh gv; (*MSS_constant gv;*)
          outlier_rep outlier;
          graph_rep g;
          before_gc_thread_info_rep sh t_info ti;
-         ti_token_rep t_info)
+         ti_token_rep (ti_heap t_info) (ti_heap_p t_info))
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible (g', t_info', roots') f_info outlier;
-          garbage_collect_relation f_info roots roots' g g';
-          garbage_collect_condition g' t_info' roots' f_info;
+    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
+          garbage_collect_relation roots roots' g g';
+          garbage_collect_condition g' (ti_heap t_info') roots';
           safe_to_copy g')
     LOCAL ()
-    SEP (mem_mgr gv; MSS_constant gv;
+    SEP (mem_mgr gv; (*MSS_constant gv;*)
          all_string_constants rsh gv;
-         fun_info_rep rsh f_info fi;
          outlier_rep outlier;
          graph_rep g';
          before_gc_thread_info_rep sh t_info' ti;
-         ti_token_rep t_info').
+         ti_token_rep (ti_heap t_info') (ti_heap_p t_info')).
 
 Definition reset_heap_spec :=
   DECLARE _reset_heap
@@ -486,11 +474,12 @@ Definition Gprog: funspecs :=
                       int_or_ptr_to_ptr_spec;
                       int_to_int_or_ptr_spec;
                       ptr_to_int_or_ptr_spec;
-                      Is_block_spec;
+                      is_ptr_spec;
                       Is_from_spec;
                       abort_with_spec;
                       forward_spec;
                       forward_roots_spec;
+                      forward_remset_spec;
                       do_scan_spec;
                       do_generation_spec;
                       create_space_spec;

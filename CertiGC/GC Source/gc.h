@@ -1,3 +1,8 @@
+#ifndef CERTICOQ_GC_STACK_H
+#define CERTICOQ_GC_STACK_H
+
+#include "values.h"
+
 /* EXPLANATION OF THE CERTICOQ GENERATIONAL GARBAGE COLLECTOR.
  Andrew W. Appel, September 2016
 
@@ -86,36 +91,8 @@ recent collection.
 To call the garbage collector, the mutator passes a fun_info and
 a thread_info, as follows. */
 
-typedef void  * value
-#ifdef COMPCERT
-  __attribute((aligned(_Alignof(void *))))
-#endif
-  ;
-typedef uintnat header_t;
-typedef uintnat mlsize_t;
-typedef unsigned int tag_t;             /* Actually, an unsigned char */
-typedef uintnat color_t;
-typedef uintnat mark_t;
-
-#define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
-#define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
-#define PROFINFO_SHIFT (64 - PROFINFO_WIDTH)
-#define PROFINFO_MASK ((1ull << PROFINFO_WIDTH) - 1ull)
-
-#define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
-#ifdef WITH_SPACETIME
-#define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK << PROFINFO_SHIFT))
-#define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
-#else
-#define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
-#endif /* SPACETIME */
-#ifdef ARCH_SIXTYFOUR
-/* [Profinfo_hd] is used when the compiler is not configured for Spacetime
-   (e.g. when decoding profiles). */
-#define Profinfo_hd(hd) (((mlsize_t) ((hd) >> PROFINFO_SHIFT)) & PROFINFO_MASK)
-#else
-#define Profinfo_hd(hd) ((hd) & 0)
-#endif /* ARCH_SIXTYFOUR */
+#define No_scan_tag 251
+#define No_scan(t) ((t) >= No_scan_tag)
 
 typedef const uintnat *fun_info;
 /* fi[0]: How many words the function might allocate
@@ -127,16 +104,27 @@ struct heap;     /* abstract, opaque */
 
 #define MAX_ARGS 1024
 
+/* A frame of the shadow stack used to keep track of the live roots */
+struct stack_frame {
+  value *next;
+  value *root; /* the array of roots of the function. Allocated in the stack of the function */
+  struct stack_frame *prev; /* pointer to the previous stack frame */
+};
+
+
 struct thread_info {
   value *alloc; /* alloc pointer  */
   value *limit; /* limit pointer */
   struct heap *heap;  /* Description of the generations in the heap */
   value args[MAX_ARGS];   /* the args array */
+  struct stack_frame *fp; /* stack pointer */
+  uintnat nalloc; /* Remaining allocation until next GC call*/
+  void *odata;
 };
 
 struct thread_info *make_tinfo(void);
 
-void garbage_collect(fun_info fi, struct thread_info *ti);
+void garbage_collect(struct thread_info *ti);
 /* Performs one garbage collection; 
    or if ti->heap==NULL, initializes the heap. 
 
@@ -181,3 +169,11 @@ value* extract_answer(struct thread_info *ti);
   can be treated uniformly by the caller of extract_answer().
 */
 
+void* export(struct thread_info *ti, value root);
+
+/* mutable write barrier */
+void certicoq_modify(struct thread_info *ti, value *p_cell, value p_val);
+
+void print_heapsize(struct thread_info *ti);
+
+#endif /* CERTICOQ_GC_STACK_H */

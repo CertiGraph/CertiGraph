@@ -252,7 +252,7 @@ Proof.
   - destruct l2. 1: simpl in H; inversion H. simpl. f_equal.
     + specialize (H0 O). simpl in H0. apply H0. apply NPeano.Nat.lt_0_succ.
     + simpl in H. apply (IHl1 _ _ _ x y); eauto. intros. specialize (H0 (S i)).
-      simpl in H0. apply H0. rewrite <- PeanoNat.Nat.succ_lt_mono. assumption.
+      simpl in H0. apply H0. apply Lt.lt_n_S. assumption.
 Qed.
 
 #[global] Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> (pointwise_relation B eq) ==> eq) iter_sepcon.

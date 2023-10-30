@@ -771,11 +771,11 @@ Proof.
   unfold graph_has_gen in H, n. lia.
 Qed.
 
-Lemma gcl_graph_has_gen: forall fi s n g1 g2 r1 r2,
+Lemma gcl_graph_has_gen: forall s n g1 g2 r1 r2,
     graph_has_gen g1 s ->
-    garbage_collect_loop fi (nat_seq s n) r1 g1 r2 g2 -> graph_has_gen g2 (s + n).
+    garbage_collect_loop (nat_seq s n) r1 g1 r2 g2 -> graph_has_gen g2 (s + n).
 Proof.
-  do 3 intro. revert s. induction n; intros; simpl in H0; inversion H0; subst.
+  do 2 intro. revert s. induction n; intros; simpl in H0; inversion H0; subst.
   - rewrite Nat.add_0_r; assumption.
   - apply ngr_graph_has_gen in H3; auto. erewrite do_gen_graph_has_gen in H3; eauto.
     apply IHn in H9; auto. rewrite <- Nat.add_succ_comm. assumption.
@@ -823,19 +823,23 @@ Section GENERAL_GRAPH_PROP.
 
   Hypothesis fr_O_P_holds: forall g1 g2 from to p,
       P g1 -> graph_has_gen g1 to -> forward_relation from to O p g1 g2 -> P g2.
-
-  Lemma frl_P_holds: forall from to l g1 g2 r1 r2 fi,
+(*
+  Lemma frl_P_holds: forall from to l g1 g2 r1 r2,
       P g1 -> graph_has_gen g1 to ->
-      forward_roots_loop from to fi l r1 g1 r2 g2 -> P g2.
+      forward_roots_loop from to l r1 g1 r2 g2 -> P g2.
   Proof.
     do 3 intro. induction l; intros; inversion H1; subst; auto.
     eapply (IHl g3); eauto. rewrite <- fr_graph_has_gen; eauto.
   Qed.
+*)
 
-  Lemma frr_P_holds: forall from to fi r1 r2 g1 g2,
+  Lemma frr_P_holds: forall from to r1 r2 g1 g2,
       P g1 -> graph_has_gen g1 to ->
-      forward_roots_relation from to fi r1 g1 r2 g2 -> P g2.
-  Proof. intros. red in H1. eapply frl_P_holds; eauto. Qed.
+      forward_roots_relation from to r1 g1 r2 g2 -> P g2.
+  Proof. intros. revert H H0; induction H1; simpl; intros; auto.
+    apply IHforward_roots_relation; auto.
+    eapply fr_O_P_holds; eauto.
+    rewrite <- fr_graph_has_gen; eauto. Qed.
 
   Lemma svfl_P_holds: forall from to v l g1 g2,
       P g1 -> graph_has_gen g1 to ->
@@ -863,9 +867,9 @@ Section GENERAL_GRAPH_PROP.
 
   Hypothesis reset_P_holds: forall g gen, P g -> P (reset_graph gen g).
 
-  Lemma do_gen_P_holds: forall from to fi r1 r2 g1 g2,
+  Lemma do_gen_P_holds: forall from to r1 r2 g1 g2,
       P g1 -> graph_has_gen g1 to ->
-      do_generation_relation from to fi r1 r2 g1 g2 -> P g2.
+      do_generation_relation from to r1 r2 g1 g2 -> P g2.
   Proof.
     intros. destruct H1 as [g3 [g4 [? [? ?]]]]. subst g2. apply reset_P_holds.
     eapply (dsr_P_holds g3); eauto.
@@ -875,19 +879,19 @@ Section GENERAL_GRAPH_PROP.
 
   Hypothesis ngr_P_holds: forall g1 g2 gen, P g1 -> new_gen_relation gen g1 g2 -> P g2.
 
-  Lemma gcl_P_holds: forall fi s n g1 g2 r1 r2,
+  Lemma gcl_P_holds: forall s n g1 g2 r1 r2,
       P g1 -> graph_has_gen g1 s ->
-      garbage_collect_loop fi (nat_seq s n) r1 g1 r2 g2 -> P g2.
+      garbage_collect_loop (nat_seq s n) r1 g1 r2 g2 -> P g2.
   Proof.
-    do 3 intro. revert s. induction n; intros; simpl in H1; inversion H1; subst; auto.
+    do 2 intro. revert s. induction n; intros; simpl in H1; inversion H1; subst; auto.
     clear H1. assert (graph_has_gen g3 (S s)) by (apply ngr_graph_has_gen in H4; auto).
     eapply (IHn (S s) g4); eauto.
-    - eapply (do_gen_P_holds _ _ _ _ _ g3); eauto.
-    - erewrite <- (do_gen_graph_has_gen _ _ _ _ _ g3); eauto.
+    - eapply (do_gen_P_holds _ _ _ _ g3); eauto.
+    - erewrite <- (do_gen_graph_has_gen _ _ _ _ g3); eauto.
   Qed.
 
-  Lemma gc_P_holds: forall fi r1 r2 g1 g2,
-      P g1 -> garbage_collect_relation fi r1 r2 g1 g2 -> P g2.
+  Lemma gc_P_holds: forall r1 r2 g1 g2,
+      P g1 -> garbage_collect_relation r1 r2 g1 g2 -> P g2.
   Proof.
     intros. red in H0. destruct H0 as [n [? ?]]. unfold nat_inc_list in H0.
     apply gcl_P_holds in H0; auto. apply graph_has_gen_O.
@@ -1084,8 +1088,8 @@ Proof.
   - eapply fr_O_src_edge; eauto.
 Qed.
 
-Lemma gc_sound: forall fi r1 r2 g1 g2,
-    sound_gc_graph g1 -> garbage_collect_relation fi r1 r2 g1 g2 ->
+Lemma gc_sound: forall r1 r2 g1 g2,
+    sound_gc_graph g1 -> garbage_collect_relation r1 r2 g1 g2 ->
     sound_gc_graph g2.
 Proof.
   intros. eapply gc_P_holds; eauto;
@@ -1124,7 +1128,7 @@ Proof.
     destruct H1 as [? [? ?]]. destruct H as [? _]. red in H. rewrite H in H2.
     red in H0. destruct H2. rewrite H3 in *. destruct v as [? idx]. simpl in *.
     subst n. specialize (H0 H2 _ H4). rewrite H1 in H0. inversion H0.
-  - red. split. 1: constructor. split; [split|]; intros; intuition.
+  - red. split. 1: constructor. split; [split|]; intros; intuition auto with *.
 Qed.
 
 Lemma semi_iso_DoubleNoDup: forall g1 g2 from to l,
@@ -1152,15 +1156,12 @@ Defined.
 
 Lemma fold_left_upd_Znth_Zlength: forall
     {A : Type} {d : Inhabitant A} (f : A -> A) (ps : list Z) (l : list A),
-    (forall e : Z, In e ps -> 0 <= e < Zlength l) ->
     Zlength
       (fold_left (fun (il : list A) (i : Z) => upd_Znth i il (f (Znth i il))) ps l) =
     Zlength l.
 Proof.
   do 3 intro. induction ps; intros; simpl; auto.
-  assert (Zlength (upd_Znth a l (f (Znth a l))) = Zlength l) by
-      (rewrite upd_Znth_Zlength; auto; apply H; left; easy).
-  rewrite IHps; auto. rewrite H0. intros. apply H. now right.
+  rewrite IHps. list_solve.
 Qed.
 
 Definition restricted_map {A} {d: Inhabitant A}
@@ -1168,30 +1169,26 @@ Definition restricted_map {A} {d: Inhabitant A}
   fold_left (fun il i => upd_Znth i il (f (Znth i il))) positions l.
 
 Lemma restricted_map_Zlength: forall {A} {d: Inhabitant A} (f: A->A) positions l,
-    (forall e, In e positions -> 0 <= e < Zlength l) ->
+(*    (forall e, In e positions -> 0 <= e < Zlength l) ->*)
     Zlength (restricted_map f l positions) = Zlength l.
-Proof. intros. unfold restricted_map. apply fold_left_upd_Znth_Zlength. easy. Qed.
+Proof. intros. unfold restricted_map. apply fold_left_upd_Znth_Zlength.  Qed.
 
 Lemma fold_left_upd_Znth_diff:
   forall (A : Type) (X : Inhabitant A) (f : A -> A) (ps : list Z) (l : list A) (i : Z),
-    (forall e : Z, In e ps -> 0 <= e < Zlength l) -> ~ In i ps -> 0 <= i < Zlength l ->
+    ~ In i ps -> 0 <= i < Zlength l ->
     Znth i
          (fold_left (fun (il : list A) (i0 : Z) => upd_Znth i0 il (f (Znth i0 il)))
                     ps l) = Znth i l.
 Proof.
   do 3 intro. induction ps; intros; simpl; auto.
-  assert (Zlength (upd_Znth a l (f (Znth a l))) = Zlength l) by
-      (rewrite upd_Znth_Zlength; auto; apply H; now left). rewrite IHps.
-  - rewrite upd_Znth_diff; auto. 1: apply H; now left. intro. apply H0. now left.
-  - rewrite H2. intros. apply H. now right.
-  - intro. apply H0. now right.
-  - rewrite H2. assumption.
+  assert (a<>i /\ ~In i ps) by (apply Decidable.not_or; assumption).
+  clear H; destruct H1.
+  rewrite IHps; auto. list_solve. list_solve.
 Qed.
 
 Lemma restricted_map_Znth_diff: forall {A} {d: Inhabitant A} (f: A->A) ps l i,
-    (forall e, In e ps -> 0 <= e < Zlength l) -> ~ In i ps ->
-    0 <= i < Zlength l -> Znth i (restricted_map f l ps) = Znth i l.
-Proof. intros. unfold restricted_map. apply fold_left_upd_Znth_diff; assumption. Qed.
+    ~ In i ps -> 0 <= i < Zlength l -> Znth i (restricted_map f l ps) = Znth i l.
+Proof. intros. unfold restricted_map.  apply fold_left_upd_Znth_diff; auto. Qed.
 
 Lemma restricted_map_Znth_same: forall {A} {d: Inhabitant A} (f: A->A) ps l i,
     (forall e, In e ps -> 0 <= e < Zlength l) -> NoDup ps -> In i ps ->
@@ -1202,7 +1199,6 @@ Proof.
     rewrite upd_Znth_Zlength; auto. apply H. now left. } destruct H1.
   - subst i. rewrite fold_left_upd_Znth_diff.
     + rewrite upd_Znth_same; auto. apply H. now left.
-    + rewrite H2. intros. apply H. now right.
     + apply NoDup_cons_2 in H0. assumption.
     + rewrite H2. apply H. now left.
   - rewrite IHps; auto.
@@ -1230,115 +1226,80 @@ Proof.
     + rewrite upd_Znth_diff; auto.
 Qed.
 
-Definition restricted_roots_map (index: Z) (f_info: fun_info)
+Definition restricted_roots_map (index: Z)
            (roots: roots_t) (l: list (VType * VType)): roots_t :=
-  restricted_map (root_map (list_map l)) roots
-                 (get_indices index (live_roots_indices f_info)).
-
-Lemma restricted_roots_map_Zlength: forall index f_info roots l,
-    Zlength roots = Zlength (live_roots_indices f_info) ->
-    Zlength (restricted_roots_map index f_info roots l) = Zlength roots.
+           (* could avoid restricted_map and just use upd_Znth *)
+  restricted_map (root_map (list_map l)) roots [index].
+                 
+Lemma restricted_roots_map_Znth_diff: forall z roots l j,
+  j <> z ->
+  Znth j (restricted_roots_map z roots l) = Znth j roots.
 Proof.
-  intros. unfold restricted_roots_map. rewrite restricted_map_Zlength; auto.
-  intros. rewrite get_indices_spec in H0. destruct H0. rewrite <- H in H0. easy.
+  intros. unfold restricted_roots_map; simpl. list_solve.
 Qed.
 
-Lemma collect_Z_indices_In_le:
-  forall {A} {d: Inhabitant A} eqdec (target: A) (l: list A) (ind: Z) i,
-    In i (collect_Z_indices eqdec target l ind) -> ind <= i.
+Lemma restricted_roots_map_Zlength: forall index roots l,
+    Zlength (restricted_roots_map index roots l) = Zlength roots.
 Proof.
-  do 4 intro. induction l; intros; simpl in H. 1: easy. if_tac in H.
-  - simpl in H. destruct H; [|apply IHl in H]; lia.
-  - apply IHl in H. lia.
+  intros. unfold restricted_roots_map. simpl. list_solve.
 Qed.
 
-Lemma collect_Z_indices_NoDup:
-  forall {A} {d: Inhabitant A} eqdec (target: A) (l: list A) (ind: Z),
-    NoDup (collect_Z_indices eqdec target l ind).
-Proof.
-  do 4 intro. induction l; intros; simpl. 1: constructor. if_tac. 2: apply IHl.
-  constructor. 2: apply IHl. intro; apply collect_Z_indices_In_le in H0; lia.
-Qed.
-
-Lemma restricted_roots_map_Znth_diff: forall z f_info roots l j,
-  0 <= j < Zlength roots ->
-  Zlength roots = Zlength (live_roots_indices f_info) ->
-  Znth j (live_roots_indices f_info) <> Znth z (live_roots_indices f_info) ->
-  Znth j (restricted_roots_map z f_info roots l) = Znth j roots.
-Proof.
-  intros. unfold restricted_roots_map. rewrite restricted_map_Znth_diff; auto.
-  - intros. rewrite get_indices_spec in H2. destruct H2. rewrite H0. easy.
-  - intro. rewrite get_indices_spec in H2. destruct H2. easy.
-Qed.
-
-Lemma get_indices_NoDup: forall i l, NoDup (get_indices i l).
-Proof. intros. unfold get_indices. apply collect_Z_indices_NoDup. Qed.
-
-Lemma restricted_roots_map_Znth_same: forall z f_info roots l j,
+Lemma restricted_roots_map_Znth_same: forall z roots l j,
     0 <= j < Zlength roots ->
-    Zlength roots = Zlength (live_roots_indices f_info) ->
-    Znth j (live_roots_indices f_info) = Znth z (live_roots_indices f_info) ->
-    Znth j (restricted_roots_map z f_info roots l) =
+    j = z ->
+    Znth j (restricted_roots_map z roots l) =
     root_map (list_map l) (Znth j roots).
 Proof.
-  intros. unfold restricted_roots_map. rewrite restricted_map_Znth_same; auto.
-  - intros. rewrite get_indices_spec in H2. destruct H2. rewrite H0. easy.
-  - apply get_indices_NoDup.
-  - rewrite get_indices_spec. split; [rewrite <- H0 |]; easy.
+  intros. unfold restricted_roots_map. subst; simpl. list_solve.  
 Qed.
 
-Lemma rrm_non_vertex_id: forall index f_info (roots: roots_t) l,
+Lemma rrm_non_vertex_id: forall index  (roots: roots_t) l,
     (forall v, Znth index roots <> inr v) -> 0 <= index < Zlength roots ->
-    roots_fi_compatible roots f_info ->
-    restricted_roots_map index f_info roots l = roots.
+    restricted_roots_map index roots l = roots.
 Proof.
-  intros. apply Znth_list_eq. destruct H1. split.
+  intros. apply Znth_list_eq. split.
   - rewrite restricted_roots_map_Zlength; easy.
-  - intros. rewrite restricted_roots_map_Zlength in H3 by easy.
-    destruct (Z.eq_dec (Znth j (live_roots_indices f_info))
-                       (Znth index (live_roots_indices f_info))).
+  - intros. rewrite restricted_roots_map_Zlength in H1 by easy.
+    destruct (Z.eq_dec j index).
     + rewrite restricted_roots_map_Znth_same; auto. destruct (Znth j roots) eqn:? .
       * simpl. reflexivity.
-      * exfalso. apply (H v). apply H2 in e; auto. rewrite <- e. easy.
+      * exfalso. subst. apply (H v); auto.
     + rewrite restricted_roots_map_Znth_diff; auto.
 Qed.
 
-Lemma rrm_not_in_id: forall index f_info (roots: roots_t) l v,
+Lemma rrm_not_in_id: forall index (roots: roots_t) l v,
     Znth index roots = inr v -> ~ In v (map fst l) -> 0 <= index < Zlength roots ->
-    roots_fi_compatible roots f_info ->
-    restricted_roots_map index f_info roots l = roots.
+    restricted_roots_map index roots l = roots.
 Proof.
-  intros. apply Znth_list_eq. destruct H2. split.
+  intros. apply Znth_list_eq. split.
   - rewrite restricted_roots_map_Zlength; easy.
-  - intros. rewrite restricted_roots_map_Zlength in H4 by easy.
-    destruct (Z.eq_dec (Znth j (live_roots_indices f_info))
-                       (Znth index (live_roots_indices f_info))).
+  - intros. rewrite restricted_roots_map_Zlength in H2 by easy.
+    destruct (Z.eq_dec j index).
     + rewrite restricted_roots_map_Znth_same; auto. destruct (Znth j roots) eqn:? .
       * simpl. reflexivity.
-      * apply H3 in e; auto. rewrite e, H in Heqr. inversion Heqr. subst v0.
+      * subst. assert (v0=v) by congruence. subst v0.
         simpl. now rewrite list_map_not_In.
     + now rewrite restricted_roots_map_Znth_diff.
 Qed.
 
-Lemma rmm_eq_upd_bunch: forall z f_info (roots: roots_t) k v l,
+Lemma rmm_eq_upd_bunch: forall z (roots: roots_t) k v l,
     Znth z roots = inr k -> In (k, v) l -> 0 <= z < Zlength roots ->
-    roots_fi_compatible roots f_info -> NoDup (map fst l) ->
-    restricted_roots_map z f_info roots l = upd_bunch z f_info roots (inr v).
+    NoDup (map fst l) ->
+    restricted_roots_map z roots l = upd_Znth z roots (inr v).
 Proof.
-  intros. destruct H2. apply Znth_list_eq. split.
-  - now rewrite restricted_roots_map_Zlength, upd_bunch_Zlength.
-  - intros. rewrite restricted_roots_map_Zlength in H5; auto.
-    destruct (Z.eq_dec (Znth j (live_roots_indices f_info))
-                       (Znth z (live_roots_indices f_info))).
-    + rewrite restricted_roots_map_Znth_same, upd_bunch_same; auto.
-      apply H4 in e; auto. rewrite e, H. simpl. now rewrite (list_map_In _ _ v).
-    + rewrite restricted_roots_map_Znth_diff, upd_bunch_diff; auto.
+  intros. apply Znth_list_eq. split.
+  - rewrite restricted_roots_map_Zlength. list_solve.
+  - intros. rewrite restricted_roots_map_Zlength in H3; auto.
+    destruct (Z.eq_dec j z).
+    + subst. rewrite restricted_roots_map_Znth_same; auto. rewrite upd_Znth_same; auto.
+      rewrite H. simpl. now rewrite (list_map_In _ _ v).
+    + rewrite restricted_roots_map_Znth_diff by auto. list_solve.
 Qed.
 
-Definition semi_roots_map (f_info: fun_info) (l1 l2: list (VType * VType))
+Definition semi_roots_map (l1 l2: list (VType * VType))
            (fp: forward_p_type) (roots: roots_t): roots_t :=
   match fp with
-  | inl index => restricted_roots_map index f_info roots l2
+  | inl index => restricted_roots_map index roots l2
   | inr _ => roots_map l2 (roots_map l1 roots)
   end.
 
@@ -1461,7 +1422,7 @@ Proof.
         -- rewrite <- H1. destruct H8. now apply H8.
       * destruct_eq_dec v0 v.
         -- subst. split; [|intuition]. apply lcv_raw_mark_old.
-        -- simpl in H25. destruct H25. 1: intuition.
+        -- simpl in H25. destruct H25. 1: intuition auto with *.
            rewrite <- lcv_raw_mark; auto; rewrite <- H11 in H25; auto.
            destruct H25 as [_ [? _]]. rewrite <- H1. destruct H8. now apply H8.
     + split; auto. split.
@@ -1583,36 +1544,34 @@ Proof.
   - intros. apply H. now right.
 Qed.
 
-Definition rf_list_relation (roots: roots_t) (f_info: fun_info)
+Definition rf_list_relation (roots: roots_t)
            (l: list (VType * VType)) (z: Z) (n: nat): Prop :=
   forall j, 0 <= j < Zlength roots ->
-            Znth j (live_roots_indices f_info) = Znth z (live_roots_indices f_info) ->
+            j=z ->
             forall v, Znth j roots = inr v -> vgeneration v = n -> In v (map fst l).
 
-Definition semi_rf_list_relation (roots: roots_t) (f_info: fun_info)
+Definition semi_rf_list_relation (roots: roots_t)
            (l: list (VType * VType)) (p: forward_p_type) (n: nat): Prop :=
   match p with
-  | inl z => rf_list_relation roots f_info l z n
+  | inl z => rf_list_relation roots l z n
   | inr _ => True
   end.
 
 Lemma inl_rf_list_relation: forall (from : nat) (z : Z) (roots : roots_t)
-                                   (f_info : fun_info) (l1 : list (VType * VType)) s,
-    roots_fi_compatible roots f_info -> 0 <= z < Zlength roots ->
-    Znth z roots = inl s -> rf_list_relation roots f_info l1 z from.
+                                   (l1 : list (VType * VType)) s,
+    0 <= z < Zlength roots ->
+    Znth z roots = inl s -> rf_list_relation roots l1 z from.
 Proof.
-  intros. destruct H. red. intros. specialize (H2 _ _ H3 H0 H4). rewrite H2, H1 in H5.
-  inversion H5.
+  intros. destruct H. red. intros. congruence. 
 Qed.
 
 Lemma not_rf_list_relation: forall (from : nat) (z : Z) (roots : roots_t)
-                                   (f_info : fun_info) (l : list (VType * VType)) v,
-    roots_fi_compatible roots f_info -> 0 <= z < Zlength roots ->
+                                   (l : list (VType * VType)) v,
+    0 <= z < Zlength roots ->
     Znth z roots = inr v -> vgeneration v <> from ->
-    rf_list_relation roots f_info l z from.
+    rf_list_relation roots l z from.
 Proof.
-  intros. destruct H. red. intros. specialize (H3 _ _ H4 H0 H5). rewrite H3, H1 in H6.
-  inversion H6. subst v0. now rewrite H7 in H2.
+  intros. destruct H. red. intros. congruence.
 Qed.
 
 Lemma roots_map_bijective: forall l,
@@ -1621,30 +1580,37 @@ Proof. intros. now apply bijective_map, bijective_root_map, bijective_list_bi_ma
 
 Lemma fr_O_semi_iso:
   forall (from to : nat) (p : forward_p_type) (g g1 g2 : LGraph)
-         (roots : roots_t) (f_info : fun_info) l1,
+         (roots : roots_t) l1,
     from <> to -> sound_gc_graph g -> sound_gc_graph g1 -> graph_has_gen g1 to ->
-    roots_fi_compatible roots f_info -> roots_graph_compatible roots g1 ->
+    roots_graph_compatible roots g1 ->
     gc_graph_semi_iso g g1 from to l1 -> forward_p_compatible p roots g1 from ->
     no_dangling_dst g -> no_dangling_dst g1 -> special_edge_cond g p ->
     special_roots_cond p roots from ->
     forward_relation from to O (forward_p2forward_t p roots g1) g1 g2 ->
     exists l2, gc_graph_semi_iso g g2 from to (l2 ++ l1) /\
-               upd_roots from to p g1 roots f_info =
-               semi_roots_map f_info l1 (l2 ++ l1) p roots /\
-               semi_rf_list_relation roots f_info (l2 ++ l1) p from.
+               upd_roots from to p g1 roots =
+               semi_roots_map l1 (l2 ++ l1) p roots /\
+               semi_rf_list_relation roots (l2 ++ l1) p from.
 Proof.
-  intros from to p g g1 g2 roots f_info l1 H Hs H0 H1 H2 Hg H3 H4 H7 Hd Hp Hr H5.
+  pose (H2:=True).
+  intros from to p g g1 g2 roots l1 H Hs H0 H1 Hg H3 H4 H7 Hd Hp Hr H5.
   assert (DoubleNoDup l1) by (eapply semi_iso_DoubleNoDup; eauto).
   assert (bijective (roots_map l1) (roots_map l1)) by (now apply roots_map_bijective).
   destruct p; simpl in H4, H5.
   - destruct (Znth z roots) eqn:? ; [destruct s|]; simpl in *; rewrite Heqr;
       inversion H5; subst; [exists []; simpl..|].
-    + split; [|split; [rewrite rrm_non_vertex_id|]]; auto. 1: intros; now rewrite Heqr.
+    + split; [|split; [rewrite rrm_non_vertex_id|]]; auto.
+      rewrite <- Heqr; apply upd_Znth_unchanged'.
+      intros; now rewrite Heqr.
       eapply inl_rf_list_relation; eauto.
-    + split; [|split; [rewrite rrm_non_vertex_id|]]; auto. 1: intros; now rewrite Heqr.
+    + split; [|split; [rewrite rrm_non_vertex_id|]]; auto.
+    rewrite <- Heqr; apply upd_Znth_unchanged'.
+      intros; now rewrite Heqr.
       eapply inl_rf_list_relation; eauto.
     + split; [|split; [rewrite if_false|]]; auto.
-      * erewrite rrm_not_in_id; eauto. simpl. intro. destruct H3 as [_ [_ ?]].
+      * erewrite rrm_not_in_id; eauto.
+       rewrite <- Heqr; apply upd_Znth_unchanged'.
+       simpl. intro. destruct H3 as [_ [_ ?]].
         rewrite map_fst_split in H9. destruct (split l1). simpl in H9.
         destruct H3 as [[_ ?] _]. rewrite <- H3 in H9. now destruct H9 as [_ [_ ?]].
       * eapply not_rf_list_relation; eauto.
@@ -1661,9 +1627,8 @@ Proof.
       * erewrite rmm_eq_upd_bunch; eauto. 2: rewrite map_fst_split, Heqp; now simpl.
         rewrite In_map_fst_iff in H14. destruct H14 as [b ?].
         destruct (H3 _ _ H14) as [? _]. now subst b.
-      * red. intros. destruct H2. specialize (H19 _ _ H15 H4 H16).
-        rewrite H19, Heqr in H17. inversion H17. now subst v0.
-    + rewrite if_true, H11; auto. exists [(v, (new_copied_v g1 to))].
+      * red. intros. congruence.
+    + unfold upd_root. rewrite if_true, H11; auto. exists [(v, (new_copied_v g1 to))].
       simpl. split3.
       * apply lcv_semi_iso; auto. red in Hg. rewrite Forall_forall in Hg.
         destruct H0. red in H0. rewrite H0. apply Hg.
@@ -1672,8 +1637,7 @@ Proof.
         destruct H3 as [_ [_ ?]]. destruct (split l1) as [from_l to_l] eqn: ?.
         destruct H3 as [[? ?] _]. rewrite map_fst_split, Heqp. simpl. constructor.
         2: easy. intro. rewrite <- H9 in H10. destruct H10. now rewrite H11 in H10.
-      * red. intros. simpl. left. destruct H2. specialize (H14 _ _ H9 H4 H10).
-        rewrite H14, Heqr in H12. now inversion H12.
+      * red. intros. simpl. left. congruence.
   - destruct p as [v n]. destruct H4 as [? [? [? ?]]]. rewrite H10 in H5. simpl in *.
     destruct (Znth n (make_fields g1 v)) eqn:? ; [destruct s|]; simpl in H5;
       inversion H5; subst;
@@ -1719,50 +1683,50 @@ Proof.
            simpl in H15. red in H15. lia.
 Qed.
 
+(*
 Definition gather_indices (il: list Z) (live_indices: list Z) :=
   fold_right (fun z l => get_indices z live_indices ++ l) nil il.
+*)
 
-Definition quasi_roots_map (il: list nat) (f_info: fun_info)
+Definition quasi_roots_map
            (roots: roots_t) (l: list (VType * VType)): roots_t :=
-  restricted_map (root_map (list_map l)) roots
-                 (gather_indices (map Z.of_nat il) (live_roots_indices f_info)).
+  map (root_map (list_map l)) roots.
 
-Lemma quasi_roots_map_cons: forall a l f_info roots il,
-  quasi_roots_map (a :: l) f_info roots il =
-  quasi_roots_map l f_info (restricted_roots_map (Z.of_nat a) f_info roots il) il.
+  (*
+Lemma quasi_roots_map_cons: forall a l roots,
+  quasi_roots_map (a :: l) roots =
+  quasi_roots_map l (map (root_map (Z.of_nat a) roots)).
 Proof.
-  intros. unfold quasi_roots_map. simpl.
-  remember (gather_indices (map Z.of_nat l) (live_roots_indices f_info)).
-  unfold restricted_roots_map. remember (root_map (list_map il)) as f.
-  remember (get_indices (Z.of_nat a) (live_roots_indices f_info)).
-  unfold restricted_map. now rewrite fold_left_app.
+  intros. reflexivity. 
 Qed.
+*)
 
-Definition rf_list_pair_relation (roots: roots_t) (f_info: fun_info)
+Definition rf_list_pair_relation (roots: roots_t) 
            (l1 l2: list (VType * VType)) (z: Z): Prop :=
   forall j, 0 <= j < Zlength roots ->
-            Znth j (live_roots_indices f_info) = Znth z (live_roots_indices f_info) ->
+            j=z ->
             forall v, Znth j roots = inr v -> In v (map fst (l2 ++ l1)) ->
                       In v (map fst l1).
 
-Lemma restricted_roots_map_incl: forall roots f_info l1 l2 i,
-    rf_list_pair_relation roots f_info l1 l2 i -> DoubleNoDup (l2 ++ l1) ->
-    Zlength roots = Zlength (live_roots_indices f_info) ->
-    restricted_roots_map i f_info roots l1 =
-    restricted_roots_map i f_info roots (l2 ++ l1).
+                    (*
+Lemma restricted_roots_map_incl: forall roots l1 l2 i,
+    rf_list_pair_relation roots l1 l2 i -> DoubleNoDup (l2 ++ l1) ->
+    restricted_roots_map i roots l1 =
+    restricted_roots_map i roots (l2 ++ l1).
 Proof.
-  intros roots f_info l1 l2 i Hr Hd H. apply Znth_list_eq.
-  assert (forall l, Zlength (restricted_roots_map i f_info roots l) = Zlength roots)
-    by (intros; now rewrite restricted_roots_map_Zlength). split. 1: now rewrite H0.
-  intros. rewrite H0 in H1.
-  destruct (Z.eq_dec (Znth j (live_roots_indices f_info))
-                     (Znth i (live_roots_indices f_info))).
+  intros roots l1 l2 i Hr Hd. apply Znth_list_eq.
+  assert (forall l, Zlength (restricted_roots_map i roots l) = Zlength roots)
+    by (intros; now rewrite restricted_roots_map_Zlength).
+  split. 1: rewrite !restricted_roots_map_Zlength; auto.
+  intros. rewrite restricted_roots_map_Zlength in H0.
+  destruct (Z.eq_dec j i).
   - rewrite !restricted_roots_map_Znth_same; auto.
     destruct (Znth j roots) eqn:? ; simpl; auto. f_equal.
     apply list_map_DoubleNoDup_incl_eq; auto. intros.
-    destruct (in_dec equiv_dec v (map fst l1)); auto. eapply Hr in H2; eauto.
+    destruct (in_dec equiv_dec v (map fst l1)); auto. eapply Hr in H1; eauto.
   - now rewrite !restricted_roots_map_Znth_diff.
 Qed.
+*)
 
 Lemma semi_iso_In_map_fst: forall g1 g2 from to l,
     gc_graph_semi_iso g1 g2 from to l ->
@@ -1771,62 +1735,6 @@ Proof.
   intros. destruct H as [_ [_ ?]]. destruct (split l) eqn:? . destruct H as [[_ ?] _].
   rewrite map_fst_split, Heqp in H0. simpl in H0. rewrite <- H in H0.
   now destruct H0 as [_ [_ ?]].
-Qed.
-
-Lemma frl_semi_iso: forall from to f_info g l l1 roots1 roots2 g1 g2,
-    from <> to -> sound_gc_graph g -> sound_gc_graph g1 -> graph_has_gen g1 to ->
-    roots_fi_compatible roots1 f_info -> roots_graph_compatible roots1 g1 ->
-    (forall i : nat, In i l -> (i < length roots1)%nat) ->
-    no_dangling_dst g -> no_dangling_dst g1 -> copy_compatible g1 ->
-    gc_graph_semi_iso g g1 from to l1 ->
-    forward_roots_loop from to f_info l roots1 g1 roots2 g2 ->
-    exists l2, gc_graph_semi_iso g g2 from to (l2 ++ l1) /\
-               roots2 = quasi_roots_map l f_info roots1 (l2 ++ l1).
-Proof.
-  do 4 intro. induction l; intros; inversion H10; subst.
-  1: (exists []; split; auto). clear H10.
-  remember (upd_roots from to (inl (Z.of_nat a)) g1 roots1 f_info) as roots3.
-  change (root2forward (Znth (Z.of_nat a) roots1)) with
-      (forward_p2forward_t (inl (Z.of_nat a)) roots1 g1) in H13. pose proof H13.
-  assert (0 <= Z.of_nat a < Zlength roots1) by
-      (rewrite Zlength_correct; split; [lia | apply inj_lt, H5; now left]).
-  eapply (fr_O_semi_iso from to _ g g1) in H13; simpl; eauto.
-  destruct H13 as [l3 [? [? ?N]]]. rewrite <- Heqroots3 in H13. simpl in H13.
-  eapply IHl in H18; eauto. clear IHl.
-  - destruct H18 as [l2 [? ?]]. exists (l2 ++ l3). rewrite <- app_assoc. split; auto.
-    subst roots2. rewrite H13. rewrite quasi_roots_map_cons. f_equal.
-    assert (DoubleNoDup (l2 ++ l3 ++ l1)) by (eapply semi_iso_DoubleNoDup; eauto).
-    assert (Zlength roots1 = Zlength (live_roots_indices f_info)) by (now destruct H3).
-    apply restricted_roots_map_incl; auto. simpl in N. red in N. repeat intro.
-    apply (N _ H17 H18 _ H19). eapply semi_iso_In_map_fst in H20; eauto.
-  - eapply fr_O_sound; eauto.
-  - erewrite <- fr_graph_has_gen; eauto.
-  - subst roots3; now apply upd_roots_rf_compatible.
-  - subst roots3; eapply fr_roots_graph_compatible; eauto.
-  - intros. rewrite H13, <- ZtoNat_Zlength. destruct H3.
-    rewrite restricted_roots_map_Zlength, ZtoNat_Zlength; auto. apply H5; now right.
-  - eapply fr_O_no_dangling_dst; eauto. now simpl.
-  - eapply fr_copy_compatible; eauto.
-Qed.
-
-Lemma In_gather_indices_spec: forall l1 l2 z,
-    In z (gather_indices l1 l2) <->
-    exists s, In s l1 /\ 0 <= z < Zlength l2 /\ Znth z l2 = Znth s l2.
-Proof.
-  induction l1; intros; simpl. 1: intuition; now destruct H as [s [? _]].
-  rewrite in_app_iff, IHl1, get_indices_spec.
-  split; intros; [destruct H|]; [|destruct H as [s [? [? ?]]]..].
-  - exists a. intuition.
-  - exists s. split; [now right | now split].
-  - destruct H; [left; subst a | right; exists s]; intuition.
-Qed.
-
-Lemma quasi_roots_map_Zlength: forall l1 f_info roots l2,
-    Zlength roots = Zlength (live_roots_indices f_info) ->
-    Zlength (quasi_roots_map l1 f_info roots l2) = Zlength roots.
-Proof.
-  intros. unfold quasi_roots_map. rewrite restricted_map_Zlength; auto. intros.
-  rewrite In_gather_indices_spec in H0. destruct H0 as [s [? [? ?]]]. now rewrite H.
 Qed.
 
 Lemma root_map_idempotent: forall f, idempotent f -> idempotent (root_map f).
@@ -1844,38 +1752,141 @@ Proof.
   rewrite H in H0. now destruct H0.
 Qed.
 
-Lemma frr_semi_iso: forall (from to : nat) (f_info : fun_info) (roots1 roots2: roots_t)
-                           (g1 g2 : LGraph),
-    from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> gen_unmarked g1 from ->
-    roots_fi_compatible roots1 f_info -> roots_graph_compatible roots1 g1 ->
-    no_dangling_dst g1 -> copy_compatible g1 ->
-    forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
-    exists l, gc_graph_semi_iso g1 g2 from to l /\ roots2 = roots_map l roots1.
+Lemma fr_roots_graph_compatible: forall depth from to p g g' roots,
+    graph_has_gen g to -> forward_p_compatible p roots g from -> copy_compatible g ->
+    forward_relation from to depth (forward_p2forward_t p roots g) g g' ->
+    from <> to -> roots_graph_compatible roots g ->
+    roots_graph_compatible (upd_roots from to p g roots) g'.
 Proof.
-  intros. pose proof (semi_iso_refl g1 from to H0 H2). red in H7.
-  eapply frl_semi_iso in H7; eauto.
-  - destruct H7 as [l2 [? ?]]. rewrite app_nil_r in *. exists l2. split; auto.
-    rewrite H9. apply Znth_list_eq. rewrite !quasi_roots_map_Zlength by
-        (now destruct H3). split. 1: unfold roots_map; now rewrite Zlength_map.
-    intros. unfold quasi_roots_map. destruct H3. rewrite restricted_map_Znth_same'.
-    + unfold roots_map. rewrite Znth_map; auto.
-      destruct (Znth j roots1) eqn:? ; simpl; auto. f_equal. apply list_map_bi_map.
-      intro. eapply semi_iso_In_map_snd in H12; eauto. apply H12. red in H4.
-      rewrite Forall_forall in H4. destruct H0. red in H0. rewrite H0. apply H4.
-      rewrite <- filter_sum_right_In_iff, <- Heqr. now apply Znth_In.
-    + intros. rewrite In_gather_indices_spec in H12. destruct H12 as [_ [_ [? _]]].
-      now rewrite H3.
-    + apply root_map_idempotent, list_map_idempotent.
-      eapply semi_iso_DoubleNoDup; eauto.
-    + rewrite In_gather_indices_spec. exists j. rewrite <- H3. split3; auto.
-      rewrite <- (Z2Nat.id j) by lia. apply in_map. rewrite nat_inc_list_In_iff.
-      rewrite <- ZtoNat_Zlength. apply Z2Nat.inj_lt; lia.
-  - intros. now rewrite nat_inc_list_In_iff in H9.
+  intros.
+  unfold upd_roots, upd_root in *.
+  destruct p.
+  - simpl in *. destruct (Znth z roots) eqn: ?; simpl in H2.
+    + rewrite <- Heqr. rewrite upd_Znth_unchanged'. destruct s; inversion H2; subst; assumption.
+    + assert (graph_has_v g v). {
+        red in H4. rewrite Forall_forall in H4. apply H4.
+        rewrite <- filter_sum_right_In_iff. rewrite <- Heqr. apply Znth_In.
+        assumption. }
+      inversion H2; destruct (Nat.eq_dec (vgeneration v) from);
+        try contradiction; subst; try assumption.
+      * rewrite <- Heqr, upd_Znth_unchanged'; auto.
+      * rewrite H9.
+        apply upd_Znth_graph_compatible. 1: assumption. specialize (H1 _ H5 H9).
+        destruct H1; assumption.
+      * destruct (raw_mark (vlabel g v)) eqn:? . 1: inversion H9.
+        apply lcv_roots_graph_compatible; assumption.
+      * destruct (raw_mark (vlabel g v)) eqn:? . 1: inversion H8.
+        remember (upd_Znth z roots (inr (new_copied_v g to))) as roots'.
+        assert (roots_graph_compatible roots' new_g) by
+            (subst; subst new_g; apply lcv_roots_graph_compatible; assumption).
+        assert (raw_mark (vlabel new_g (new_copied_v g to)) = false). {
+          subst new_g. unfold lgraph_copy_v. rewrite <- lmc_raw_mark.
+          - rewrite lacv_vlabel_new. assumption.
+          - unfold new_copied_v. destruct v. destruct H5. simpl in H7.
+            red in H7. intro HS. inversion HS. lia. }
+        assert (graph_has_v new_g (new_copied_v g to)) by
+            (subst new_g; apply lcv_graph_has_v_new; assumption).
+        unfold vertex_pos_pairs in H10.
+        remember (nat_inc_list
+                    (length (raw_fields (vlabel new_g (new_copied_v g to))))).
+        eapply (fl_edge_roots_graph_compatible
+                  depth0 (vgeneration v) to l new_g); eauto.
+        -- unfold new_copied_v. simpl; auto.
+        -- subst new_g. rewrite <- lcv_graph_has_gen; assumption.
+        -- intros. subst l. rewrite nat_inc_list_In_iff in H11. assumption.
+  - simpl. eapply fr_right_roots_graph_compatible; eauto.
 Qed.
 
-Lemma svfl_semi_iso: forall from to v l l1 g1 g2 g3 roots f_info,
+Lemma filter_sum_right_app: forall {A B} (al bl: list (A+B)),
+  filter_sum_right (al ++ bl) = filter_sum_right al ++ filter_sum_right bl.
+ Proof.
+   induction al as [ | [|]]; simpl; intros; auto.
+   f_equal; auto.
+ Qed.
+
+Lemma roots_graph_compatible_app: forall roots1 roots2 g,
+   roots_graph_compatible (roots1 ++ roots2) g <-> 
+   roots_graph_compatible roots1 g /\ roots_graph_compatible roots2 g.
+Proof.
+ intros.
+ unfold roots_graph_compatible.
+ rewrite @filter_sum_right_app.
+ apply Forall_app_iff.
+Qed.
+
+Lemma frl_semi_iso: forall (from to : nat) g l1 (roots1' roots1 roots2: roots_t)
+                           (g1 g2 : LGraph),
+    from <> to -> sound_gc_graph g -> sound_gc_graph g1 -> graph_has_gen g1 to ->
+    roots_graph_compatible roots1 g1 ->
+    no_dangling_dst g -> no_dangling_dst g1 -> copy_compatible g1 ->
+    gc_graph_semi_iso g g1 from to l1 ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
+    exists l2, gc_graph_semi_iso g g2 from to (l2++l1)
+              /\ roots2 = quasi_roots_map roots1 (l2++l1).
+Proof.
+  intros.
+  revert l1 H1 H2 H3 H5 H6 H7.
+  induction H8; intros; [ exists nil; simpl; auto | ].
+  destruct (fr_O_semi_iso from to (inl 0) g g1 g2 (r::roots1) l1) as [l2 [? [? ?]]]; simpl; auto; try list_solve.
+  destruct (IHforward_roots_relation (l2++l1)) as [l3 [? ?]]; auto.
+  - eapply fr_O_sound; eauto.
+  - erewrite <- fr_graph_has_gen; eauto.
+  - pose proof fr_roots_graph_compatible 0 from to (inl 0) g1 g2 (r::roots1)
+          H3 ltac:(simpl; list_solve) H7.
+      simpl in H13. rewrite Znth_0_cons, upd_Znth0 in H13.
+      specialize (H13 H1 H H5).
+      change (?A :: ?B) with ([A]++B) in H13.
+      rewrite roots_graph_compatible_app in H13.
+      destruct H13.
+      auto.
+  - pose proof fr_O_no_dangling_dst from to (inl 0) g1 g2 (r::roots1) ltac:(simpl; list_solve)
+      H3 H5 H7.
+    simpl in H13. rewrite Znth_0_cons in H13. auto.
+  - eapply fr_copy_compatible; eauto.
+  - exists (l3++l2). rewrite <- app_assoc.
+    split; auto.
+    subst roots2. f_equal.
+    simpl in H11.
+    unfold restricted_roots_map in H11. simpl in H11.
+    rewrite !upd_Znth0, !Znth_0_cons in H11.
+    inv H11. rewrite H15.
+    unfold root_map.
+    destruct r; auto.
+    f_equal.
+    assert (DoubleNoDup (l3 ++ l2 ++ l1)) by (eapply semi_iso_DoubleNoDup; eauto).
+    apply list_map_DoubleNoDup_incl_eq; auto.
+    simpl in H12.
+    intros. apply (H12 0); auto. list_solve.
+    eapply semi_iso_In_map_fst in H14; eauto.
+Qed.
+
+Lemma frr_semi_iso: forall (from to : nat) (roots1 roots2: roots_t)
+                           (g1 g2 : LGraph),
+    from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> gen_unmarked g1 from ->
+    roots_graph_compatible roots1 g1 ->
+    no_dangling_dst g1 -> copy_compatible g1 ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
+    exists l, gc_graph_semi_iso g1 g2 from to l /\ roots2 = roots_map l roots1.
+Proof.
+  intros.
+  pose proof (semi_iso_refl g1 from to H0 H2).
+  apply frl_semi_iso with (g:=g1)(l1:=nil) in H6; auto.
+  destruct H6 as [l2 [? ?]].
+  rewrite app_nil_r in *. exists l2; split; auto.
+  subst roots2. unfold quasi_roots_map, roots_map.
+  apply Znth_eq_ext. list_solve.
+  intros.
+  rewrite Zlength_map in H8.
+  rewrite !Znth_map by auto.
+  destruct (Znth i roots1) eqn:? ; simpl; auto. f_equal. apply list_map_bi_map.
+  intro. eapply semi_iso_In_map_snd in H9; eauto. apply H9. red in H3.
+  rewrite Forall_forall in H3. destruct H0. red in H0. rewrite H0. apply H3.
+  rewrite <- filter_sum_right_In_iff, <- Heqr. apply Znth_In; auto.
+Qed.
+
+Lemma svfl_semi_iso: forall from to v l l1 g1 g2 g3 roots,
     from <> to -> sound_gc_graph g1 -> sound_gc_graph g2 -> graph_has_gen g2 to ->
-    roots_fi_compatible roots f_info -> roots_graph_compatible roots g2 ->
+    roots_graph_compatible roots g2 ->
     no_dangling_dst g1 -> no_dangling_dst g2 -> roots_have_no_gen roots from ->
     (forall i : nat, In i l -> (i < length (raw_fields (vlabel g2 v)))%nat) ->
     ~ vvalid g1 v -> vvalid g2 v -> raw_mark (vlabel g2 v) = false ->
@@ -1885,13 +1896,14 @@ Lemma svfl_semi_iso: forall from to v l l1 g1 g2 g3 roots f_info,
     exists l2, gc_graph_semi_iso g1 g3 from to (l2 ++ l1) /\
                roots = roots_map (l2 ++ l1) (roots_map l1 roots).
 Proof.
+  pose (H3:=True).
   do 3 intro. induction l; intros; inversion H15; subst; clear H15.
   - exists []. simpl. split; auto. symmetry. apply surjective, roots_map_bijective.
     eapply (semi_iso_DoubleNoDup _ _ from); eauto.
   - pose proof H18. change (forward_p2forward_t (inr (v, Z.of_nat a)) [] g2) with
                         (forward_p2forward_t (inr (v, Z.of_nat a)) roots g2) in H18.
     assert (forward_p_compatible (inr (v, Z.of_nat a)) roots g2 from). {
-      simpl. destruct H1. red in H1. rewrite <- H1. intuition.
+      simpl. destruct H1. red in H1. rewrite <- H1. intuition auto with *.
       rewrite Zlength_correct. apply inj_lt, H8. now left. }
     eapply (fr_O_semi_iso _ _ _ g1) in H18; eauto.
     destruct H18 as [l3 [? [? _]]]. simpl in H18.
@@ -1911,9 +1923,9 @@ Proof.
     + eapply (fr_copy_compatible O from); eauto.
 Qed.
 
-Lemma svwl_semi_iso: forall from to l l1 roots f_info g1 g2 g3,
+Lemma svwl_semi_iso: forall from to l l1 roots g1 g2 g3,
     from <> to -> sound_gc_graph g1 -> sound_gc_graph g2 -> graph_has_gen g2 to ->
-    roots_fi_compatible roots f_info -> roots_graph_compatible roots g2 ->
+    roots_graph_compatible roots g2 ->
     no_dangling_dst g1 -> no_dangling_dst g2 -> roots_have_no_gen roots from ->
     (forall i, In i l -> ~ gen_has_index g1 to i) -> copy_compatible g2 ->
     gen_unmarked g2 to -> gc_graph_semi_iso g1 g2 from to l1 ->
@@ -1921,13 +1933,14 @@ Lemma svwl_semi_iso: forall from to l l1 roots f_info g1 g2 g3,
     exists l2, gc_graph_semi_iso g1 g3 from to (l2 ++ l1) /\
                roots = roots_map (l2 ++ l1) (roots_map l1 roots).
 Proof.
+  pose (H3:=True).
   do 3 intro. induction l; intros; inversion H12; subst.
   - exists []; simpl. split; auto. assert (bijective (roots_map l1) (roots_map l1)). {
       apply roots_map_bijective. eapply semi_iso_DoubleNoDup; eauto. }
     symmetry. now apply surjective.
   - eapply IHl; eauto. intros. apply H8. now right.
   - pose proof H17. eapply (svfl_semi_iso _ _ _ _ _ g1) in H17; eauto.
-    + destruct H17 as [l3 [? ?]]. eapply (IHl (l3 ++ l1) _ _ g1) in H20; eauto.
+    + destruct H17 as [l3 [? ?]]. eapply (IHl (l3 ++ l1) _ g1) in H20; eauto.
       * destruct H20 as [l2 [? ?]]. exists (l2 ++ l3). rewrite <- app_assoc.
         split; auto. rewrite H19 at 1. f_equal. rewrite H17 at 1.
         apply surjective, roots_map_bijective. eapply semi_iso_DoubleNoDup; eauto.
@@ -1946,30 +1959,41 @@ Proof.
     + destruct H1. red in H1. rewrite H1. split; now simpl.
 Qed.
 
-Lemma frr_roots_graph_compatible: forall from to f_info roots1 g1 roots2 g2,
+Lemma frr_rgc_aux: forall from to roots1 g1 roots2 g2,
     from <> to -> graph_has_gen g1 to -> copy_compatible g1 ->
-    roots_fi_compatible roots1 f_info -> roots_graph_compatible roots1 g1 ->
-    forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    roots_graph_compatible roots1 g1 ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
+    forall done, roots_graph_compatible done g1 ->
+    roots_graph_compatible done g2 /\ roots_graph_compatible roots2 g2.
+Proof.
+   induction 5; intros; auto.
+   pose proof fr_roots_graph_compatible 0 from to (inl 0) g1 g2 (r:: done ++ roots1) H0
+       ltac:(simpl; list_solve) H1 H3 H.
+       simpl in H6. rewrite upd_Znth0, Znth_0_cons in H6.
+       spec H6. change (?A :: ?B) with ([A]++B) in H2|-*.
+       rewrite !roots_graph_compatible_app in *.
+       destruct H2; split; auto.
+   assert (graph_has_gen g2 to) by (erewrite <- fr_graph_has_gen; eauto).
+   assert (copy_compatible g2) by (eapply fr_copy_compatible; try apply H3; eauto).
+   change (?A :: ?B) with ([A]++B) in H6|-*.
+   rewrite !roots_graph_compatible_app in *.
+   destruct H6 as [? [? ?]].
+   specialize (IHforward_roots_relation H7 H8 H10 (done+:: upd_root from to g1 r)).
+   rewrite !roots_graph_compatible_app in *.
+   destruct IHforward_roots_relation; auto.
+   destruct H11.
+   split; auto.
+Qed.
+
+Lemma frr_roots_graph_compatible: forall from to roots1 g1 roots2 g2,
+    from <> to -> graph_has_gen g1 to -> copy_compatible g1 ->
+    roots_graph_compatible roots1 g1 ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
     roots_graph_compatible roots2 g2.
 Proof.
-  intros from to f_info roots1 g1 roots2 g2 H H0 H1 Hc H2 H3.
-  red in H3. remember (nat_inc_list (Datatypes.length roots1)).
-  assert (forall i, In i l -> i < length roots1)%nat by
-      (intros; subst l; now rewrite nat_inc_list_In_iff in H4). clear Heql.
-  revert g1 roots1 g2 roots2 H0 H1 Hc H2 H3 H4.
-  induction l; intros; inversion H3; subst; auto; clear H3.
-  assert (forward_p_compatible (inl (Z.of_nat a)) roots1 g1 from). {
-    simpl. rewrite Zlength_correct. split; [lia | apply inj_lt].
-    apply H4. now left. }
-  eapply (fr_roots_graph_compatible O from to (inl (Z.of_nat a)))
-    with (f_info := f_info) in H2; eauto.
-  remember (upd_roots from to (inl (Z.of_nat a)) g1 roots1 f_info) as roots3.
-  eapply (IHl g3 roots3); eauto.
-  - erewrite <- fr_graph_has_gen; eauto.
-  - eapply fr_copy_compatible; eauto.
-  - subst roots3. now apply upd_roots_rf_compatible.
-  - intros. subst roots3. rewrite <- ZtoNat_Zlength, upd_roots_Zlength, ZtoNat_Zlength.
-    1: apply H4; now right. destruct Hc; auto.
+   intros.
+   eapply frr_rgc_aux in H3; eauto.
+   destruct H3; auto.
 Qed.
 
 Definition marked_in_gen (g1 g2: LGraph) (gen: nat) (v: VType): Prop :=
@@ -2432,54 +2456,56 @@ Proof.
   unfold VType in *. now rewrite H3 in H1.
 Qed.
 
-Lemma fr_O_backward_edge_prop: forall from to p g1 g2 roots f_info,
+Lemma fr_O_backward_edge_prop: forall from to p g1 g2 roots,
     from <> to -> graph_has_gen g1 to -> sound_gc_graph g1 -> no_dangling_dst g1 ->
-    roots_fi_compatible roots f_info -> forward_p_compatible p roots g1 from ->
+    forward_p_compatible p roots g1 from ->
     forward_relation from to O (forward_p2forward_t p roots g1) g1 g2 ->
     copied_vertex_prop g1 from to -> gen_unmarked g1 to ->
     edge_from_gen_cond p to -> backward_edge_prop g1 roots from to ->
-    backward_edge_prop g2 (upd_roots from to p g1 roots f_info) from to.
+    backward_edge_prop g2 (upd_roots from to p g1 roots) from to.
 Proof.
-  intros from to p g1 g2 roots f_info H H0 H1 H2 H3 H4 H5 H6 Hu Hc H7.
+  pose (H3:=True).
+  intros from to p g1 g2 roots H H0 H1 H2 H4 H5 H6 Hu Hc H7.
   assert (He: forall e, evalid g1 e -> fst e <> new_copied_v g1 to). {
     intros. destruct H1 as [_ [? _]]. red in H1. rewrite H1 in H8.
     destruct H8. eapply graph_has_v_not_eq in H8; eauto. }
+  unfold upd_roots, upd_root.
   pose proof H1. destruct H8 as [Hv _]. red in Hv. destruct p; simpl in H4, H5.
   - destruct (Znth z roots) eqn:? ;
-      [destruct s|]; simpl in *; rewrite Heqr; inversion H5; subst; clear H5; try easy.
-    + now rewrite if_false.
+      [destruct s|]; simpl in *; rewrite ?Heqr; inversion H5; subst; clear H5;
+        try (rewrite <- Heqr, upd_Znth_unchanged'); auto.
+    + rewrite if_false; auto. rewrite <- Heqr, upd_Znth_unchanged'; auto. 
     + rewrite if_true, H11; auto. red in H7 |-* ; intros. specialize (H7 _ H5 H8 H9).
       rewrite reachable_from_roots in *. destruct H7 as [i [r [? [? ?]]]].
-      destruct H3. rewrite upd_bunch_Zlength; auto.
-      destruct (Z.eq_dec (Znth i (live_roots_indices f_info))
-                         (Znth z (live_roots_indices f_info))).
-      * exists i, (copied_vertex (vlabel g2 v)). rewrite upd_bunch_same; auto.
-        do 2 (split; auto). specialize (H13 _ _ H7 H4 e0). rewrite H13, Heqr in H10.
+      pose proof I. rewrite upd_Znth_Zlength; auto.
+      destruct (Z.eq_dec i z).
+      * exists i, (copied_vertex (vlabel g2 v)). subst i. rewrite upd_Znth_same; auto.
+        do 2 (split; auto). rewrite Heqr in H10.
         inversion H10. subst v. pose proof H12. apply reachable_foot_valid in H14.
         eapply copied_vertex_reachable in H12; eauto. destruct H12; auto.
         rewrite Hv in H14. specialize (H6 _ H14 H12). destruct H6 as [_ [_ [? _]]].
         rewrite H6 in H8. now rewrite H8 in H.
-      * exists i, r. rewrite upd_bunch_diff; auto.
+      * exists i, r. split3; auto. clear - n H10. list_solve.
     + rewrite if_true, H10; auto. red in H7 |-* ; intros. simpl in H5.
       rewrite pcv_evalid_iff in H5. simpl in H9.
       assert (Hi: ~ vvalid g1 (new_copied_v g1 to)). {
         rewrite Hv. intro. now apply (graph_has_v_not_eq _ to) in H11. } destruct H5.
       * rewrite pcv_dst_old in H9. 2: apply He; auto.
         specialize (H7 _ H5 H8 H9). rewrite reachable_from_roots in *.
-        destruct H7 as [i [r [? [? ?]]]]. destruct H3. pose proof H12.
-        rewrite upd_bunch_Zlength; auto. apply reachable_head_valid in H14.
-        destruct (Z.eq_dec (Znth i (live_roots_indices f_info))
-                           (Znth z (live_roots_indices f_info))).
-        -- exists i, (new_copied_v g1 to). rewrite upd_bunch_same; auto.
-           do 2 (split; auto). specialize (H13 _ _ H7 H4 e0).
-           rewrite H13, Heqr in H11. inversion H11. subst v. simpl.
+        destruct H7 as [i [r [? [? ?]]]]. pose proof I. pose proof H12.
+        rewrite upd_Znth_Zlength; auto. apply reachable_head_valid in H14.
+        destruct (Z.eq_dec i z).
+        -- exists i, (new_copied_v g1 to). subst i. rewrite upd_Znth_same; auto.
+           do 2 (split; auto).
+           rewrite Heqr in H11. inversion H11. subst v. simpl.
            pose proof H12. apply reachable_head_valid in H15.
            rewrite (pcv_reachable_new _ _ (new_copied_v g1 to)) in H12; auto.
            destruct H12 as [? | [? ?]]; auto. now rewrite <- H12, H8 in H.
-        -- exists i, r. rewrite upd_bunch_diff; auto. do 2 (split; auto). simpl.
+        -- exists i, r.
+        rewrite upd_Znth_diff; auto. do 2 (split; auto). simpl.
            rewrite pcv_reachable_old; auto.
-      * rewrite reachable_from_roots. destruct H3. rewrite upd_bunch_Zlength; auto.
-        exists z, (new_copied_v g1 to). rewrite upd_bunch_same; auto.
+      * rewrite reachable_from_roots. pose proof I. rewrite upd_Znth_Zlength; auto.
+        exists z, (new_copied_v g1 to). rewrite upd_Znth_same; auto.
         do 2 (split; auto). simpl. rewrite in_map_iff in H5. destruct H5 as [ve [? ?]].
         subst e. simpl. apply reachable_refl. rewrite pcv_vvalid_iff. now right.
   - simpl. destruct p as [x n]. destruct H4 as [? [? [? ?]]].
@@ -2581,83 +2607,82 @@ Definition reachable_or_marked_special_cond (g: LGraph) (roots: roots_t)
   end.
 
 Lemma fr_O_reachable_or_marked: forall
-    (from to : nat) (p : forward_p_type) (g1 g2 : LGraph) (roots : roots_t) f_info,
+    (from to : nat) (p : forward_p_type) (g1 g2 : LGraph) (roots : roots_t),
     from <> to -> graph_has_gen g1 to -> sound_gc_graph g1 -> no_dangling_dst g1 ->
-    roots_fi_compatible roots f_info -> roots_graph_compatible roots g1 ->
+    roots_graph_compatible roots g1 ->
     copied_vertex_prop g1 from to -> forward_p_compatible p roots g1 from ->
     reachable_or_marked_special_cond g1 roots from to p ->
     forward_relation from to O (forward_p2forward_t p roots g1) g1 g2 ->
     forall v, reachable_or_marked from g1 roots v <->
-              reachable_or_marked from g2 (upd_roots from to p g1 roots f_info) v.
+              reachable_or_marked from g2 (upd_roots from to p g1 roots) v.
 Proof.
-  intros from to p g1 g2 roots f_info H H0 H1 Hd H2 H3 H4 H5 Hb H6 v.
+  pose (H2 := True).
+  intros from to p g1 g2 roots H H0 H1 Hd H3 H4 H5 Hb H6 v.
   assert (Hr: forall i r, 0 <= i < Zlength roots ->
                             Znth i roots = inr r -> graph_has_v g1 r). {
       intros. red in H3. rewrite Forall_forall in H3. apply H3.
       rewrite <- filter_sum_right_In_iff, <- H8. now apply Znth_In. }
+  unfold upd_roots, upd_root.
   pose proof H1. destruct H7 as [Hv _]. red in Hv. destruct p; simpl in H5, H6.
   - destruct (Znth z roots) eqn:? ;
-      [destruct s|]; simpl in *; rewrite Heqr; inversion H6; subst; clear H6; try easy.
-    + now rewrite if_false.
+      [destruct s|]; simpl in *; rewrite ?Heqr; inversion H6; subst; clear H6; try easy;
+      try (rewrite <- Heqr, upd_Znth_unchanged'); auto; try easy.
+    + rewrite if_false; auto; rewrite <- Heqr, upd_Znth_unchanged'; easy.
     + rewrite if_true, H10; auto.
       split; intros; red in H6 |-* ; destruct H6; split; auto.
       * destruct H7; [| right]; auto. rewrite reachable_from_roots in H7.
-        destruct H7 as [i [r [? [? ?]]]]. destruct H2.
-        destruct (Z.eq_dec (Znth i (live_roots_indices f_info))
-                           (Znth z (live_roots_indices f_info))).
-        -- specialize (H11 _ _ H7 H5 e). rewrite H11, Heqr in H8. inversion H8.
+        destruct H7 as [i [r [? [? ?]]]]. pose proof I.
+        destruct (Z.eq_dec i z).
+        -- subst i. rewrite Heqr in H8. inversion H8.
            assert (vvalid g2 v) by (apply reachable_foot_valid in H9; auto).
            subst v0. clear H8. eapply copied_vertex_reachable in H9; eauto.
            destruct H9. 2: right; auto. left. rewrite reachable_from_roots.
-           exists i, (copied_vertex (vlabel g2 r)).
-           rewrite upd_bunch_Zlength, upd_bunch_same; auto.
+           exists z, (copied_vertex (vlabel g2 r)).
+           rewrite upd_Znth_Zlength, upd_Znth_same; auto.
         -- left. rewrite reachable_from_roots. exists i, r.
-           rewrite upd_bunch_Zlength, upd_bunch_diff; auto.
-      * destruct H7; [| right]; auto. rewrite reachable_from_roots in H7. destruct H2.
-        rewrite upd_bunch_Zlength in H7; auto. destruct H7 as [i [r [? [? ?]]]].
-        destruct (Z.eq_dec (Znth i (live_roots_indices f_info))
-                           (Znth z (live_roots_indices f_info))).
-        -- specialize (H8 _ _ H7 H5 e). rewrite upd_bunch_same in H9; auto.
+           rewrite upd_Znth_Zlength, upd_Znth_diff; auto.
+      * destruct H7; [| right]; auto. rewrite reachable_from_roots in H7. pose proof I.
+        rewrite upd_Znth_Zlength in H7; auto. destruct H7 as [i [r [? [? ?]]]].
+        destruct (Z.eq_dec i z).
+        -- subst i. rewrite upd_Znth_same in H9; auto.
            inversion H9. subst r. clear H9. rename v0 into r. left.
            rewrite reachable_from_roots. exists z, r. do 2 (split; auto).
            eapply copied_vertex_reachable_inv; eauto.
         -- left. rewrite reachable_from_roots. exists i, r.
-           rewrite upd_bunch_diff in H9; auto.
+           rewrite upd_Znth_diff in H9; auto.
     + rewrite if_true, H9; auto.
       assert (Hs: sound_gc_graph (lgraph_copy_v g1 v0 to)) by (now apply lcv_sound).
       assert (~ vvalid g1 (new_copied_v g1 to)). {
         rewrite Hv. intro. now apply graph_has_v_not_eq with (to := to) in H6. }
       split; intros; red in H7 |-* ; destruct H7; split; auto; destruct H8.
       * rewrite reachable_from_roots in H8. destruct H8 as [i [r [? [? ?]]]].
-        destruct H2. assert (vvalid g1 r) by (now apply reachable_head_valid in H11).
-        destruct (Z.eq_dec (Znth i (live_roots_indices f_info))
-                           (Znth z (live_roots_indices f_info))).
-        -- specialize (H12 _ _ H8 H5 e). rewrite H12, Heqr in H10. inversion H10.
+        pose proof I. assert (vvalid g1 r) by (now apply reachable_head_valid in H11).
+        destruct (Z.eq_dec i z).
+        -- rewrite e, Heqr in H10. inversion H10.
            subst v0. rewrite (pcv_reachable_new _ _ (new_copied_v g1 to)) in H11; auto.
            clear H10. destruct H11; [right | left].
            ++ subst v. rewrite lcv_raw_mark_old. destruct Hs. red in H10. rewrite H10.
               split; auto. apply lcv_graph_has_v_old; auto. now rewrite <- Hv.
            ++ rewrite reachable_from_roots. exists i, (new_copied_v g1 to).
-              rewrite upd_bunch_Zlength, upd_bunch_same; auto. do 2 (split; auto).
+              subst i; rewrite upd_Znth_Zlength, upd_Znth_same; auto. do 2 (split; auto).
               simpl. now destruct H8.
         -- left. rewrite reachable_from_roots. exists i, r.
-           rewrite upd_bunch_Zlength, upd_bunch_diff; auto. do 2 (split; auto).
+           rewrite upd_Znth_Zlength, upd_Znth_diff; auto. do 2 (split; auto).
            simpl. rewrite pcv_reachable_old; auto.
       * destruct H8. right. destruct Hs. red in H11. rewrite H11.
         assert (graph_has_v g1 v) by (destruct H1; red in H1; now rewrite <- H1).
         split. 1: apply lcv_graph_has_v_old; auto. rewrite <- lcv_raw_mark; auto.
         intro. subst v0. now rewrite H9 in H10.
       * rewrite reachable_from_roots in *. destruct H8 as [i [r [? [? ?]]]].
-        destruct H2. rewrite upd_bunch_Zlength in H8; auto.
-        destruct (Z.eq_dec (Znth i (live_roots_indices f_info))
-                           (Znth z (live_roots_indices f_info))).
-        -- rewrite upd_bunch_same in H10; auto. specialize (H12 _ _ H8 H5 e).
+        pose proof I. rewrite upd_Znth_Zlength in H8; auto.
+        destruct (Z.eq_dec i z).
+        -- subst i. rewrite upd_Znth_same in H10; auto.
            inversion H10. subst r. clear H10. simpl in H11. left. exists z, v0.
            rewrite (pcv_reachable_new _ _ (new_copied_v g1 to)); auto.
            2: destruct H1; red in H1; rewrite H1; apply (Hr z); auto.
            do 2 (split; auto). right. split; auto. intro. subst v. rewrite <- H7 in H.
            unfold new_copied_v in H. now simpl in H.
-        -- left. rewrite upd_bunch_diff in H10; auto. simpl in H11.
+        -- left. rewrite upd_Znth_diff in H10; auto. simpl in H11.
            rewrite pcv_reachable_old in H11; auto. 1: exists i, r; auto.
            rewrite Hv. eapply Hr; eauto.
       * destruct H8. destruct_eq_dec v v0.
@@ -2750,47 +2775,68 @@ Proof.
         -- rewrite ucov_not_eq in H17; auto. rewrite lacv_vlabel_old in H17; auto.
 Qed.
 
-Lemma frr_reachable_or_marked: forall from to f_info (roots1 roots2: roots_t) g1 g2,
+
+Lemma frr_rom_aux: forall from to (roots1 roots2: roots_t) g1 g2,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to ->
-    roots_fi_compatible roots1 f_info -> roots_graph_compatible roots1 g1 ->
+    roots_graph_compatible roots1 g1 ->
     no_dangling_dst g1 -> copied_vertex_prop g1 from to -> copy_compatible g1 ->
-    forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
+    forall done v, 
+       roots_graph_compatible done g1 ->
+       (reachable_or_marked from g1 (done++roots1) v <->
+        reachable_or_marked from g2 (done++roots2) v).
+Proof.
+  intros * ? ? ? ? ? ? ? ?.
+  induction H6; [ tauto | ]; intros.
+  rename IHforward_roots_relation into IH.
+  assert (H0' := fr_O_sound _ _ _ _ _ H0 H1 H6).
+  assert (H1' := proj1 (fr_graph_has_gen _ _ _ _ _ _ H1 H6 to) H1).
+  assert (H5' := fr_copy_compatible _ _ _ _ _ _ H H1 H6 H5).
+  assert (H3' := fr_O_no_dangling_dst from to (inl 0) g1 g2 (r::roots1) ltac:(simpl; list_solve) H1 H2 H5 H6 H3).
+  assert (H2' := fr_roots_graph_compatible 0 from to (inl (Zlength done)) g1 g2 (done++r::roots1) H1 ltac:(simpl; list_solve) H5).
+  simpl in H2'. autorewrite with sublist in H2'. rewrite upd_Znth0 in H2'.
+  rewrite roots_graph_compatible_app in H2'.
+  specialize (H2' H6 H (conj H8 H2)).
+  change (?A::?B) with ([A]++B) in H2'.
+  rewrite !roots_graph_compatible_app in H2'; destruct H2' as [H11 [H2'' H2']].
+  assert (H4' :=fr_O_copied_vertex_prop from to (inl 0) g1 g2 (r::roots1) H H1 H0 H3 ltac:(simpl; list_solve) H6 H4).
+  specialize (IH H0' H1' H2' H3' H4' H5' (done +:: upd_root from to g1 r) v).
+  rewrite <- !app_assoc in IH.
+  rewrite <- IH; clear IH.
+  2: rewrite roots_graph_compatible_app; split; auto.
+  rewrite (fr_O_reachable_or_marked from to (inl (Zlength done)) g1 g2 (done++r::roots1)); auto.
+  - simpl. autorewrite with sublist. rewrite upd_Znth0. tauto.
+  - change (r::roots1) with ([r]++roots1).
+    rewrite roots_graph_compatible_app; split; auto.
+  - simpl; list_solve.
+  - hnf; auto. 
+  - simpl. autorewrite with sublist. auto.
+Qed.
+
+Lemma frr_reachable_or_marked: forall from to (roots1 roots2: roots_t) g1 g2,
+    from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to ->
+    roots_graph_compatible roots1 g1 ->
+    no_dangling_dst g1 -> copied_vertex_prop g1 from to -> copy_compatible g1 ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
     forall v, reachable_or_marked from g1 roots1 v <->
               reachable_or_marked from g2 roots2 v.
 Proof.
-  intros. red in H7. remember (nat_inc_list (Datatypes.length roots1)) as l.
-  assert (forall i : nat, In i l -> (i < length roots1)%nat). {
-    intros. subst l. now rewrite nat_inc_list_In_iff in H8. } clear Heql.
-  revert g1 g2 roots1 roots2 H0 H1 H2 H3 H4 H5 H6 H7 H8.
-  induction l; intros; inversion H7; subst; clear H7; try easy.
-  remember (upd_roots from to (inl (Z.of_nat a)) g1 roots1 f_info) as roots3.
-  change (root2forward (Znth (Z.of_nat a) roots1)) with
-      (forward_p2forward_t (inl (Z.of_nat a)) roots1 g1) in H11. pose proof H11.
-  assert (0 <= Z.of_nat a < Zlength roots1) by
-      (rewrite Zlength_correct; split; [lia | apply inj_lt, H8; now left]).
-  eapply fr_O_reachable_or_marked with (v := v) in H11; eauto. 2: easy. rewrite H11.
-  rewrite <- Heqroots3 in *. apply IHl; auto.
-  - eapply fr_O_sound; eauto.
-  - rewrite <- fr_graph_has_gen; eauto.
-  - subst roots3. apply upd_roots_rf_compatible; auto.
-  - subst. eapply fr_roots_graph_compatible; eauto.
-  - eapply fr_O_no_dangling_dst; eauto. now simpl.
-  - eapply fr_O_copied_vertex_prop; eauto. now simpl.
-  - eapply fr_copy_compatible; eauto.
-  - intros. subst. destruct H2. rewrite <- ZtoNat_Zlength, upd_roots_Zlength; auto.
-    rewrite ZtoNat_Zlength. apply H8. now right.
+  intros.
+  eapply frr_rom_aux  with (v:=v)(done:=nil) in H6; auto.
+  constructor.
 Qed.
 
-Lemma svfl_reachable_or_marked: forall from to f_info (roots: roots_t) r l g1 g2,
+Lemma svfl_reachable_or_marked: forall from to (roots: roots_t) r l g1 g2,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> graph_has_v g1 r ->
     raw_mark (vlabel g1 r) = false -> vgeneration r = to -> gen_unmarked g1 to ->
-    roots_fi_compatible roots f_info -> roots_graph_compatible roots g1 ->
+    roots_graph_compatible roots g1 ->
     no_dangling_dst g1 -> copied_vertex_prop g1 from to -> copy_compatible g1 ->
     (forall i : nat, In i l -> (i < length (raw_fields (vlabel g1 r)))%nat) ->
     backward_edge_prop g1 roots from to -> scan_vertex_for_loop from to r l g1 g2 ->
     forall v, reachable_or_marked from g1 roots v <->
               reachable_or_marked from g2 roots v.
 Proof.
+  pose (H6:=True).
   intros until l. induction l; intros; inversion H13; subst; clear H13; try easy.
   change (forward_p2forward_t (inr (r, Z.of_nat a)) [] g1)
     with (forward_p2forward_t (inr (r, Z.of_nat a)) roots g1) in H16. pose proof H16.
@@ -2809,15 +2855,7 @@ Proof.
   - eapply fr_O_copied_vertex_prop; eauto.
   - eapply fr_copy_compatible; eauto.
   - erewrite <- fr_raw_fields; eauto. intros. apply H11. now right.
-  - eapply fr_O_backward_edge_prop with (f_info := f_info) in H16; eauto. now simpl.
-Qed.
-
-Definition null_fun_info: fun_info.
-Proof.
-  apply (Build_fun_info 0 nil).
-  - intros. inversion H.
-  - rewrite Zlength_nil. unfold MAX_UINT. rep_lia.
-  - unfold MAX_UINT. rep_lia.
+  - eapply fr_O_backward_edge_prop in H16; eauto. now simpl.
 Qed.
 
 Lemma svfl_roots_graph_compatible: forall from to roots v l g1 g2,
@@ -2833,7 +2871,7 @@ Proof.
   assert (forward_p_compatible (inr (v, Z.of_nat a)) roots g1 from). {
     simpl. do 3 (split; auto). 1: lia. rewrite Zlength_correct. apply inj_lt, H5.
     now left. }
-  eapply fr_roots_graph_compatible with (f_info := null_fun_info) in H6; eauto.
+  eapply fr_roots_graph_compatible in H6; eauto.
   simpl in H6. apply (IHl g3); auto.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply (fr_copy_compatible O from to); eauto.
@@ -2863,22 +2901,23 @@ Proof.
   - eapply (fr_copy_compatible O from to); eauto.
 Qed.
 
-Lemma svfl_backward_edge_prop: forall from to roots f_info v l g1 g2,
+Lemma svfl_backward_edge_prop: forall from to roots v l g1 g2,
     from <> to -> graph_has_gen g1 to -> copy_compatible g1 -> sound_gc_graph g1 ->
-    no_dangling_dst g1 -> roots_fi_compatible roots f_info -> gen_unmarked g1 to ->
+    no_dangling_dst g1 -> gen_unmarked g1 to ->
     copied_vertex_prop g1 from to ->  roots_graph_compatible roots g1 ->
     graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> vgeneration v = to ->
     (forall i : nat, In i l -> (i < length (raw_fields (vlabel g1 v)))%nat) ->
     backward_edge_prop g1 roots from to -> scan_vertex_for_loop from to v l g1 g2 ->
     backward_edge_prop g2 roots from to.
 Proof.
+  pose (H4:=True).
   intros until l. induction l; intros; inversion H13; subst; clear H13; try easy.
   change (forward_p2forward_t (inr (v, Z.of_nat a)) [] g1)
     with (forward_p2forward_t (inr (v, Z.of_nat a)) roots g1) in H16. pose proof H16.
   assert (forward_p_compatible (inr (v, Z.of_nat a)) roots g1 from). {
     simpl. do 3 (split; auto). 1: lia. rewrite Zlength_correct. apply inj_lt, H11.
     now left. }
-  eapply fr_O_backward_edge_prop with (f_info := f_info) in H10; eauto. 2: now simpl.
+  eapply fr_O_backward_edge_prop in H10; eauto. 2: now simpl.
   simpl in H10. remember (vgeneration v) as to. apply (IHl g3); auto.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_copy_compatible; eauto.
@@ -2886,20 +2925,21 @@ Proof.
   - eapply fr_O_no_dangling_dst; eauto.
   - eapply fr_gen_unmarked; eauto.
   - eapply fr_O_copied_vertex_prop; eauto.
-  - eapply fr_roots_graph_compatible with (f_info := f_info) in H16; eauto.
+  - eapply fr_roots_graph_compatible in H16; eauto.
   - eapply fr_graph_has_v; eauto.
   - erewrite <- fr_raw_mark; eauto. subst to. auto.
   - intros. erewrite <- fr_raw_fields; eauto. apply H11. now right.
 Qed.
 
-Lemma svwl_reachable_or_marked: forall from to f_info (roots: roots_t) l g1 g2,
+Lemma svwl_reachable_or_marked: forall from to (roots: roots_t) l g1 g2,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> gen_unmarked g1 to ->
-    roots_fi_compatible roots f_info -> roots_graph_compatible roots g1 ->
+    roots_graph_compatible roots g1 ->
     no_dangling_dst g1 -> copied_vertex_prop g1 from to -> copy_compatible g1 ->
     backward_edge_prop g1 roots from to -> scan_vertex_while_loop from to l g1 g2 ->
     forall v, reachable_or_marked from g1 roots v <->
               reachable_or_marked from g2 roots v.
 Proof.
+  pose (H3:=True).
   do 4 intro. induction l; intros; inversion H9; subst; clear H9; try easy.
   1: apply IHl; auto. pose proof H14.
   eapply svfl_reachable_or_marked with (v := v) in H9; eauto.
@@ -2919,64 +2959,110 @@ Proof.
   - eapply svfl_backward_edge_prop; eauto.
 Qed.
 
-Lemma frr_copied_vertex_prop: forall from to f_info (roots1 roots2: roots_t) g1 g2,
+Lemma frr_copied_vertex_prop: forall from to (roots1 roots2: roots_t) g1 g2,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> no_dangling_dst g1 ->
     copy_compatible g1 -> roots_graph_compatible roots1 g1 ->
-    roots_fi_compatible roots1 f_info ->
-    forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
     copied_vertex_prop g1 from to -> copied_vertex_prop g2 from to.
 Proof.
-  intros. red in H6. remember (nat_inc_list (length roots1)) as l.
-  assert (forall i : nat, In i l -> (i < length roots1)%nat). {
-    intros. subst l. now rewrite nat_inc_list_In_iff in H8. } clear Heql.
-  revert g1 g2 roots1 roots2 H0 H1 H2 H3 H4 H5 H6 H7 H8.
-  induction l; intros; inversion H6; subst; clear H6; try easy.
-  remember (upd_roots from to (inl (Z.of_nat a)) g1 roots1 f_info) as roots3.
-  change (root2forward (Znth (Z.of_nat a) roots1)) with
-      (forward_p2forward_t (inl (Z.of_nat a)) roots1 g1) in H11. pose proof H11.
-  assert (0 <= Z.of_nat a < Zlength roots1) by
-      (rewrite Zlength_correct; split; [lia | apply inj_lt, H8; now left]).
-  apply fr_O_copied_vertex_prop in H11; auto. eapply (IHl g3 _ roots3); eauto.
-  - eapply fr_O_sound; eauto.
-  - rewrite <- fr_graph_has_gen; eauto.
-  - eapply fr_O_no_dangling_dst; eauto. now simpl.
-  - eapply fr_copy_compatible; eauto.
-  - subst roots3. eapply fr_roots_graph_compatible; eauto.
-  - subst roots3. apply upd_roots_rf_compatible; auto.
-  - intros. subst. destruct H5. rewrite <- ZtoNat_Zlength, upd_roots_Zlength; auto.
-    rewrite ZtoNat_Zlength. apply H8. now right.
+  induction 7; intros; auto.
+  assert (H0' := fr_O_sound _ _ _ _ _ H0 H1 H5).
+  assert (H1' := proj1 (fr_graph_has_gen _ _ _ _ _ _ H1 H5 to) H1).
+  assert (H5' := fr_copy_compatible _ _ _ _ _ _ H H1 H5 H3).
+  assert (H2' := fr_O_no_dangling_dst from to (inl 0) g1 g2 (r::roots1) ltac:(simpl; list_solve) H1 H4 H3 H5 H2).
+  assert (H4' := fr_roots_graph_compatible 0 from to (inl 0) g1 g2 (r::roots1) H1 ltac:(simpl; list_solve) H3 H5 H H4).
+  simpl in H4'. rewrite Znth_0_cons, upd_Znth0 in H4'.
+  change (?A::?B) with ([A]++B) in H4'.
+  rewrite roots_graph_compatible_app in H4'; destruct H4'.
+  apply IHforward_roots_relation; auto.
+  eapply fr_O_copied_vertex_prop with (p:=inl 0) (roots := r::roots1); try apply H5; auto.
+  simpl; list_solve.
 Qed.
 
-Lemma frr_backward_edge_prop: forall from to f_info (roots1 roots2: roots_t) g1 g2,
+Lemma backward_edge_prop_app_comm:
+ forall r1 r2 g from to,
+   backward_edge_prop g (r1++r2) from to <-> 
+   backward_edge_prop g (r2++r1) from to.
+Proof.
+ unfold backward_edge_prop; intros.
+ apply forall_iff; intro e.
+ apply forall_iff; intros ?H.
+ apply forall_iff; intros ?H.
+ apply forall_iff; intros ?H.
+ rewrite ! @filter_sum_right_app.
+ unfold reachable_through_set.
+ split; intros [s [? ?]]; exists s; split; auto;
+ (rewrite in_app in H2|-*; tauto).
+Qed.
+
+Lemma backward_edge_prop_incl:
+  forall r1 r2 g from to,
+     (forall x, In x r1 -> In x r2) ->
+   backward_edge_prop g r1 from to -> 
+   backward_edge_prop g r2 from to.
+Proof.
+unfold backward_edge_prop; intros.
+specialize (H0 e H1 H2 H3); clear - H H0.
+destruct H0 as [s [? ?]]; exists s; split; auto.
+clear H1.
+apply filter_sum_right_In_iff in H0.
+apply filter_sum_right_In_iff.
+auto.
+Qed.
+
+Lemma frr_bep_aux: forall from to (roots1 roots2: roots_t) g1 g2,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> no_dangling_dst g1 ->
     copy_compatible g1 -> roots_graph_compatible roots1 g1 ->
     copied_vertex_prop g1 from to ->
-    roots_fi_compatible roots1 f_info -> gen_unmarked g1 to ->
-    forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    gen_unmarked g1 to ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
+    forall done, 
+     backward_edge_prop g1 (done++roots1) from to -> 
+    backward_edge_prop g2 (done++roots2) from to.
+Proof.
+ induction 9; intros; auto.
+ assert (H0' := fr_O_sound _ _ _ _ _ H0 H1 H7).
+ assert (H1' := proj1 (fr_graph_has_gen _ _ _ _ _ _ H1 H7 to) H1).
+ assert (H3' := fr_copy_compatible _ _ _ _ _ _ H H1 H7 H3).
+ assert (H2' := fr_O_no_dangling_dst from to (inl 0) g1 g2 (r::roots1) ltac:(simpl; list_solve) H1 H4 H3 H7 H2).
+ assert (H4' := fr_roots_graph_compatible 0 from to (inl 0) g1 g2 (r::roots1) H1 ltac:(simpl; list_solve) H3 H7 H H4).
+ simpl in H4'. rewrite Znth_0_cons, upd_Znth0 in H4'.
+ change (?A::?B) with ([A]++B) in H4'.
+ rewrite roots_graph_compatible_app in H4'; destruct H4'.
+ assert (H5' := fr_O_copied_vertex_prop from to (inl 0) g1 g2 (r::roots1) H H1 H0 H2 ltac:(simpl; list_solve) H7 H5).
+ change (?A::?B) with ([A]++B) in H9|-*.
+ rewrite app_assoc in H9|-*.
+ apply IHforward_roots_relation; auto.
+ eapply fr_gen_unmarked; try apply H7; auto.
+ assert (backward_edge_prop g2 ([upd_root from to g1 r] ++ done++roots1) from to). {
+  pose proof fr_O_backward_edge_prop from to (inl 0) g1 g2 (r::done++roots1).
+  simpl in H12. rewrite upd_Znth0, Znth_0_cons in H12.
+  apply H12; auto.
+  simpl; list_solve.
+  clear - H9.
+  eapply backward_edge_prop_incl; try apply H9.
+  intros.
+  change (r::?B) with ([r]++B).
+  rewrite !in_app in H|-*.
+  tauto.
+ }
+ clear - H12.
+ eapply backward_edge_prop_incl; try apply H12.
+ clear; intros.
+ rewrite !in_app in H|-*.
+ tauto.
+Qed.
+
+Lemma frr_backward_edge_prop: forall from to (roots1 roots2: roots_t) g1 g2,
+    from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> no_dangling_dst g1 ->
+    copy_compatible g1 -> roots_graph_compatible roots1 g1 ->
+    copied_vertex_prop g1 from to ->
+    gen_unmarked g1 to ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
     backward_edge_prop g1 roots1 from to -> backward_edge_prop g2 roots2 from to.
 Proof.
-  intros. red in H8. remember (nat_inc_list (length roots1)) as l.
-  assert (forall i : nat, In i l -> (i < length roots1)%nat). {
-    intros. subst l. now rewrite nat_inc_list_In_iff in H10. } clear Heql.
-  revert g1 g2 roots1 roots2 H0 H1 H2 H3 H4 H5 H6 H7 H8 H9 H10.
-  induction l; intros; inversion H8; subst; clear H8; try easy.
-  remember (upd_roots from to (inl (Z.of_nat a)) g1 roots1 f_info) as roots3.
-  change (root2forward (Znth (Z.of_nat a) roots1)) with
-      (forward_p2forward_t (inl (Z.of_nat a)) roots1 g1) in H13. pose proof H13.
-  assert (0 <= Z.of_nat a < Zlength roots1) by
-      (rewrite Zlength_correct; split; [lia | apply inj_lt, H10; now left]).
-  eapply fr_O_backward_edge_prop in H13; eauto. rewrite <- Heqroots3 in *.
-  2: simpl; auto. apply (IHl g3 _ roots3); auto.
-  - eapply fr_O_sound; eauto.
-  - rewrite <- fr_graph_has_gen; eauto.
-  - eapply fr_O_no_dangling_dst; eauto. now simpl.
-  - eapply fr_copy_compatible; eauto.
-  - subst roots3. eapply fr_roots_graph_compatible; eauto.
-  - eapply fr_O_copied_vertex_prop; eauto. simpl; auto.
-  - subst roots3. apply upd_roots_rf_compatible; auto.
-  - eapply fr_gen_unmarked; eauto.
-  - intros. subst. destruct H6. rewrite <- ZtoNat_Zlength, upd_roots_Zlength; auto.
-    rewrite ZtoNat_Zlength. apply H10. now right.
+ intros.
+  eapply frr_bep_aux with (done:=nil); try eassumption.
 Qed.
 
 Lemma reachable_or_marked_iff_reachable: forall g roots from v,
@@ -3017,9 +3103,9 @@ Proof.
       simpl in *. rewrite H8 in H7. apply H0; auto.
 Qed.
 
-Lemma frr_sound: forall (g1 g2 : LGraph) from to f_info roots1 roots2,
+Lemma frr_sound: forall (g1 g2 : LGraph) from to roots1 roots2,
     sound_gc_graph g1 -> graph_has_gen g1 to ->
-    forward_roots_relation from to f_info roots1 g1 roots2 g2 -> sound_gc_graph g2.
+    forward_roots_relation from to roots1 g1 roots2 g2 -> sound_gc_graph g2.
 Proof. intros. eapply frr_P_holds; eauto. apply fr_O_sound. Qed.
 
 Lemma dsr_sound: forall (g1 g2 : LGraph) from to to_index,
@@ -3027,17 +3113,18 @@ Lemma dsr_sound: forall (g1 g2 : LGraph) from to to_index,
     do_scan_relation from to to_index g1 g2 -> sound_gc_graph g2.
 Proof. intros. eapply dsr_P_holds; eauto. apply fr_O_sound. Qed.
 
-Lemma frr_dsr_reachable_iff_marked : forall from to f_info roots1 roots2 g1 g2 g3,
+Lemma frr_dsr_reachable_iff_marked : forall from to roots1 roots2 g1 g2 g3,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> graph_unmarked g1 ->
-    roots_fi_compatible roots1 f_info -> roots_graph_compatible roots1 g1 ->
+    roots_graph_compatible roots1 g1 ->
     no_dangling_dst g1 -> no_edge2gen g1 from ->
-    forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
     do_scan_relation from to (number_of_vertices (nth_gen g1 to)) g2 g3 ->
     forall v,
       reachable_through_set g1 (filter_sum_right roots1) v /\ vgeneration v = from <->
       raw_mark (vlabel g3 v) = true /\ vvalid g3 v /\ vgeneration v = from.
 Proof.
-  intros from to f_info roots1 roots2 g1 g2 g3 H H0 H1 H2 H3 H4 H5 He H6 H7 v.
+  pose (H3:=True).
+  intros from to roots1 roots2 g1 g2 g3 H H0 H1 H2 H4 H5 He H6 H7 v.
   assert (copied_vertex_prop g1 from to) by
       (now apply graph_unmarked_copied_vertex_prop).
   assert (copy_compatible g1) by (now apply graph_unmarked_copy_compatible).
@@ -3047,36 +3134,37 @@ Proof.
   assert (gen_unmarked g1 to) by (rewrite graph_gen_unmarked_iff in H2; apply H2).
   assert (sound_gc_graph g2) by (eapply frr_sound; eauto).
   assert (graph_has_gen g2 to) by (rewrite <- frr_graph_has_gen; eauto).
-  eapply (svwl_reachable_or_marked _ _ f_info roots2) in H11; eauto.
+  eapply (svwl_reachable_or_marked _ _ roots2) in H11; eauto.
   instantiate (1 := v) in H11.
   - rewrite <- H10 in H11. assert (no_edge2gen g3 from) by
-        (destruct H3; eapply (frr_dsr_no_edge2gen _ _ _ _ _ g1 g2 g3); eauto).
-    assert (roots_have_no_gen roots2 from) by (eapply frr_not_pointing; eauto).
+        ( eapply (frr_dsr_no_edge2gen _ _ _ _ g1 g2 g3); eauto).
+    assert (roots_have_no_gen roots2 from)
+     by (eapply frr_not_pointing; eauto; eapply frr_roots_fi_compatible; eauto).
     rewrite <- reachable_or_marked_iff_reachable; auto.
     rewrite <- reachable_or_marked_iff_marked; eauto. eapply dsr_sound; eauto.
-  - eapply (frr_gen_unmarked from to _ _ g1); eauto.
-  - eapply frr_roots_fi_compatible; eauto.
-  - eapply (frr_roots_graph_compatible _ _ _ _ g1); eauto.
-  - destruct H3. eapply (frr_no_dangling_dst _ _ _ _ g1); eauto.
-  - eapply (frr_copied_vertex_prop _ _ _ _ _ g1 g2); eauto.
-  - eapply (frr_copy_compatible _ _ _ _ g1); eauto.
-  - eapply (frr_backward_edge_prop _ _ _ _ _ g1 g2); eauto.
+  - eapply (frr_gen_unmarked from to _ g1); eauto.
+  - eapply (frr_roots_graph_compatible _ _ _ g1); eauto.
+  - eapply (frr_no_dangling_dst _ _ _ g1); eauto.
+  - eapply (frr_copied_vertex_prop _ _ _ _ g1 g2); eauto.
+  - eapply (frr_copy_compatible _ _ _ g1); eauto.
+  - eapply (frr_backward_edge_prop _ _ _ _ g1 g2); eauto.
 Qed.
 
-Lemma frr_dsr_quasi_iso: forall from to f_info roots1 roots2 g1 g2 g3,
+Lemma frr_dsr_quasi_iso: forall from to roots1 roots2 g1 g2 g3,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> graph_unmarked g1 ->
-    roots_fi_compatible roots1 f_info -> roots_graph_compatible roots1 g1 ->
-    no_dangling_dst g1 -> forward_roots_relation from to f_info roots1 g1 roots2 g2 ->
+    roots_graph_compatible roots1 g1 ->
+    no_dangling_dst g1 -> forward_roots_relation from to roots1 g1 roots2 g2 ->
     do_scan_relation from to (number_of_vertices (nth_gen g1 to)) g2 g3 ->
     no_edge2gen g1 from -> gc_graph_quasi_iso g1 roots1 g3 roots2 from to.
 Proof.
-  intros from to f_info roots1 roots2 g1 g2 g3 H H0 H1 H2 H3 H4 H5 H6 H7 Hn.
+  pose (H3:=True).
+  intros from to roots1 roots2 g1 g2 g3 H H0 H1 H2 H4 H5 H6 H7 Hn.
   pose proof H6. assert (Hc: copy_compatible g1) by
       (now apply graph_unmarked_copy_compatible). apply frr_semi_iso in H6; auto.
   2: rewrite graph_gen_unmarked_iff in H2; apply H2. destruct H6 as [l1 [? ?]].
   assert (sound_gc_graph g2) by (eapply frr_sound; eauto).
   pose proof H7. destruct H7 as [n [? ?]].
-  eapply (svwl_semi_iso _ _ _ _ roots2 f_info g1) in H7; eauto.
+  eapply (svwl_semi_iso _ _ _ _ roots2 g1) in H7; eauto.
   - destruct H7 as [l2 [? ?]]. rewrite H9 in H13 at 2.
     rewrite (surjective (roots_map l1) (roots_map l1)) in H13.
     2: apply roots_map_bijective; eapply semi_iso_DoubleNoDup; eauto.
@@ -3096,22 +3184,22 @@ Proof.
     unfold roots_reachable_in_gen, marked_in_gen. rewrite H16.
     eapply frr_dsr_reachable_iff_marked; eauto.
   - rewrite <- frr_graph_has_gen; eauto.
-  - eapply frr_roots_fi_compatible; eauto.
   - eapply frr_roots_graph_compatible; eauto.
-  - destruct H3. eapply frr_no_dangling_dst; eauto.
-  - eapply frr_not_pointing; eauto.
+  - eapply frr_no_dangling_dst; eauto.
+  - eapply frr_not_pointing; eauto. eapply frr_roots_fi_compatible; eauto.
   - intros. rewrite nat_seq_In_iff in H13. unfold gen_has_index. lia.
   - eapply frr_copy_compatible; eauto.
   - eapply frr_gen_unmarked; eauto. rewrite graph_gen_unmarked_iff in H2; apply H2.
 Qed.
 
-Lemma do_gen_iso: forall from to f_info roots1 roots2 g1 g2,
+Lemma do_gen_iso: forall from to roots1 roots2 g1 g2,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> graph_unmarked g1 ->
-    roots_fi_compatible roots1 f_info -> roots_graph_compatible roots1 g1 ->
+    roots_graph_compatible roots1 g1 ->
     no_dangling_dst g1 -> no_edge2gen g1 from ->
-    do_generation_relation from to f_info roots1 roots2 g1 g2 ->
+    do_generation_relation from to roots1 roots2 g1 g2 ->
     gc_graph_iso g1 roots1 g2 roots2.
 Proof.
+  pose (H3:=True).
   intros. destruct H7 as [g3 [g4 [? [? ?]]]]. subst g2.
   apply (quasi_iso_reset_iso _ _ _ _ _ to); auto.
   - eapply frr_dsr_quasi_iso; eauto.
@@ -3121,7 +3209,6 @@ Proof.
   - eapply frr_dsr_no_edge2gen; eauto.
     + rewrite graph_gen_unmarked_iff in H2. apply H2.
     + apply graph_unmarked_copy_compatible; auto.
-    + destruct H3; auto.
 Qed.
 
 Lemma ngr_graph_unmarked: forall g1 g2 gen,
@@ -3190,9 +3277,9 @@ Proof.
   - destruct H0 as [gen_i [? ?]]. subst g2. apply no_backward_edge_add; auto.
 Qed.
 
-Lemma do_gen_sound: forall from to fi r1 r2 g1 g2,
+Lemma do_gen_sound: forall from to r1 r2 g1 g2,
     sound_gc_graph g1 -> graph_has_gen g1 to ->
-    do_generation_relation from to fi r1 r2 g1 g2 -> sound_gc_graph g2.
+    do_generation_relation from to r1 r2 g1 g2 -> sound_gc_graph g2.
 Proof. intros. eapply do_gen_P_holds; eauto. apply fr_O_sound. apply reset_sound. Qed.
 
 Lemma svwl_roots_graph_compatible: forall from to roots l g1 g2,
@@ -3210,28 +3297,29 @@ Proof.
   - intros. rewrite nat_inc_list_In_iff in H5. auto.
 Qed.
 
-Lemma do_gen_roots_graph_compatible: forall g1 g2 roots1 roots2 f_info from to,
+Lemma do_gen_roots_graph_compatible: forall g1 g2 roots1 roots2 from to,
     graph_has_gen g1 to -> copy_compatible g1 -> gen_unmarked g1 to ->
     from <> to -> roots_graph_compatible roots1 g1 ->
-    roots_fi_compatible roots1 f_info ->
-    do_generation_relation from to f_info roots1 roots2 g1 g2 ->
+    do_generation_relation from to roots1 roots2 g1 g2 ->
     roots_graph_compatible roots2 g2.
 Proof.
+  pose (H3 := True).
   intros. destruct H5 as [g3 [g4 [? [? ?]]]]. subst g2. apply rgc_reset.
   - destruct H6 as [n [? ?]]. eapply svwl_roots_graph_compatible in H6; eauto.
     + rewrite <- frr_graph_has_gen; eauto.
     + eapply frr_copy_compatible; eauto.
     + eapply frr_gen_unmarked; eauto.
     + eapply frr_roots_graph_compatible; eauto.
-  - eapply frr_not_pointing; eauto.
+  - eapply frr_not_pointing; eauto. eapply frr_roots_fi_compatible; eauto.
 Qed.
 
-Theorem garbage_collect_isomorphism: forall f_info roots1 roots2 g1 g2,
+Theorem garbage_collect_isomorphism: forall roots1 roots2 g1 g2,
     graph_unmarked g1 -> no_backward_edge g1 -> no_dangling_dst g1 ->
-    roots_fi_compatible roots1 f_info -> roots_graph_compatible roots1 g1 ->
-    sound_gc_graph g1 -> garbage_collect_relation f_info roots1 roots2 g1 g2 ->
+    roots_graph_compatible roots1 g1 ->
+    sound_gc_graph g1 -> garbage_collect_relation roots1 roots2 g1 g2 ->
     gc_graph_iso g1 roots1 g2 roots2.
 Proof.
+  pose (H2 := True).
   intros. destruct H5 as [n [? ?]]. clear H6. unfold nat_inc_list in H5.
   pose proof (graph_has_gen_O g1).
   assert (firstn_gen_clear g1 O) by (red; intros; lia). remember O as s. clear Heqs.
@@ -3254,10 +3342,9 @@ Proof.
   assert (no_backward_edge g3) by (eapply ngr_no_backward_edge; eauto).
   assert (copy_compatible g3) by (apply graph_unmarked_copy_compatible; auto).
   assert (no_dangling_dst g4). {
-    eapply do_gen_no_dangling_dst; eauto. destruct H2; auto. } apply (IHn (S s)); auto.
+    eapply do_gen_no_dangling_dst; eauto. } apply (IHn (S s)); auto.
   - eapply (do_gen_graph_unmarked s (S s)); eauto.
   - eapply do_gen_no_backward_edge; eauto.
-  - destruct H5 as [? [? [? _]]]. eapply frr_roots_fi_compatible; eauto.
   - eapply do_gen_roots_graph_compatible; eauto.
   - eapply do_gen_sound; eauto.
   - rewrite <- do_gen_graph_has_gen; eauto.

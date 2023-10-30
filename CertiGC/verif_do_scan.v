@@ -3,15 +3,18 @@ Require Import CertiGraph.CertiGC.gc_spec.
 Local Open Scope logic.
 
 Lemma typed_true_tag: forall (to : nat) (g : LGraph) (index : nat),
-    Int.repr (Z.b2z
-                (negb
-                   (Int.lt (Int.repr (raw_tag (vlabel g (to, index))))
-                      (Int.repr 251)))) = Int.zero ->
+    typed_true tint
+               (force_val
+                  (option_map (fun b : bool => Val.of_bool (negb b))
+                              (bool_val_i
+                                 (Val.of_bool
+                                    (negb (Int.lt (Int.repr (raw_tag
+                                                               (vlabel g (to, index))))
+                                                  (Int.repr 251))))))) ->
     ~ no_scan g (to, index).
 Proof.
-  intros.
-  remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index)))) (Int.repr 251)).
-  destruct b; simpl in H; [|inversion H].
+  intros. remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index)))) (Int.repr 251)).
+  unfold typed_true in H. destruct b; simpl in H; [|inversion H].
   symmetry in Heqb. apply lt_repr in Heqb.
   - unfold no_scan. rep_lia.
   - red. pose proof (raw_tag_range (vlabel g (to, index))). rep_lia.
@@ -19,16 +22,18 @@ Proof.
 Qed.
 
 Lemma typed_false_tag: forall (to : nat) (g : LGraph) (index : nat),
-    Int.repr
-      (Z.b2z
-         (negb
-            (Int.lt (Int.repr (raw_tag (vlabel g (to, index))))
-               (Int.repr 251)))) <> Int.zero ->
+    typed_false tint
+               (force_val
+                  (option_map (fun b : bool => Val.of_bool (negb b))
+                              (bool_val_i
+                                 (Val.of_bool
+                                    (negb (Int.lt (Int.repr (raw_tag
+                                                               (vlabel g (to, index))))
+                                                  (Int.repr 251))))))) ->
     no_scan g (to, index).
 Proof.
-  intros.
-  remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index)))) (Int.repr 251)).
-  destruct b; simpl in H; [exfalso; apply H; reflexivity |].
+  intros. remember (Int.lt (Int.repr (raw_tag (vlabel g (to, index)))) (Int.repr 251)).
+  unfold typed_false in H. destruct b; simpl in H; [inversion H|].
   symmetry in Heqb. apply lt_repr_false in Heqb.
   - unfold no_scan. rep_lia.
   - red. pose proof (raw_tag_range (vlabel g (to, index))). rep_lia.
@@ -39,44 +44,49 @@ Lemma body_do_scan: semax_body Vprog Gprog f_do_scan do_scan_spec.
 Proof.
   start_function.
   forward.
-  forward_loop (EX n: nat, EX g': LGraph, EX t_info': thread_info,
-                PROP (super_compatible (g', t_info', roots) f_info outlier;
-                      forward_condition g' t_info' from to;
-                      thread_info_relation t_info t_info';
+  forward_loop (EX n: nat, EX g': LGraph, EX h': heap,
+                PROP (super_compatible g' h' rootpairs roots outlier;
+                      forward_condition g' h' from to;
+                      heap_relation h h';
                       closure_has_index g' to (to_index + n);
                       scan_vertex_while_loop from to (nat_seq to_index n) g g')
                 LOCAL
                 (temp _s (offset_val (- WORD_SIZE)
                                      (vertex_address g' (to, (to_index + n)%nat)));
                  temp _from_start (gen_start g' from);
-                 temp _from_limit (limit_address g' t_info' from);
-                 temp _next (next_address t_info' to))
-                SEP (all_string_constants rsh gv; fun_info_rep rsh f_info fi;
-               outlier_rep outlier; graph_rep g'; thread_info_rep sh t_info' ti))
-  break: (EX g' : LGraph, EX t_info' : thread_info,
-          PROP (super_compatible (g', t_info', roots) f_info outlier;
-                forward_condition g' t_info' from to;
+                 temp _from_limit (limit_address g' h' from);
+                 temp _next (heap_next_address hp to))
+                SEP (all_string_constants rsh gv;
+               outlier_rep outlier; graph_rep g'; 
+               roots_rep sh rootpairs;
+               heap_rep sh h' hp))
+  break: (EX g' : LGraph, EX h': heap,
+          PROP (super_compatible g' h' rootpairs roots outlier;
+                forward_condition g' h' from to;
                 do_scan_relation from to to_index g g';
-                thread_info_relation t_info t_info')
+                heap_relation h h')
           LOCAL ()
-          SEP (all_string_constants rsh gv; fun_info_rep rsh f_info fi;
-               outlier_rep outlier; graph_rep g'; thread_info_rep sh t_info' ti)).
-  - Exists O g t_info. destruct H as [? [? [? ?]]].
+          SEP (all_string_constants rsh gv;
+               outlier_rep outlier; graph_rep g'; 
+               roots_rep sh rootpairs;
+               heap_rep sh h' hp)).
+  - Exists O g h. destruct H as [? [? [? ?]]].
+    simpl fst in *; simpl snd in *; 
     replace (to_index + 0)%nat with to_index by lia. entailer!.
-    split; [|split]; [red; auto | apply tir_id | constructor].
-  - Intros n g' t_info'. remember (to_index + n)%nat as index.
-    unfold next_address, thread_info_rep. Intros.
+    split; [|split]; [ split3; simpl; auto | apply hr_refl | constructor].
+  - Intros n g' h'. remember (to_index + n)%nat as index.
+    unfold heap_next_address, heap_rep. Intros.
     unfold heap_struct_rep. destruct H5 as [? [? [? ?]]].
-    destruct H6 as [? [? [? [? ?]]]].
-    assert (0 <= Z.of_nat to < 12). {
+    destruct H6 as [? [? [? [? ?]]]]; simpl fst in *; simpl snd in *.
+    assert (0 <= Z.of_nat to < MAX_SPACES). {
       clear -H5 H14. destruct H5 as [_ [_ ?]]. red in H14.
-      pose proof (spaces_size (ti_heap t_info')).
+      pose proof (spaces_size h').
       rewrite Zlength_correct in H0. rep_lia. }
     destruct (gt_gs_compatible _ _ H5 _ H14) as [? [? ?]]. rewrite nth_space_Znth in *.
-    remember (Znth (Z.of_nat to) (spaces (ti_heap t_info'))) as sp_to.
+    remember (Znth (Z.of_nat to) (spaces h')) as sp_to.
     assert (isptr (space_start sp_to)) by (rewrite <- H18; apply start_isptr).
-    remember (map space_tri (spaces (ti_heap t_info'))).
-    assert (@Znth (val * (val * val)) (Vundef, (Vundef, Vundef))
+    remember (map space_tri (spaces h')).
+    assert (@Znth (val * (val * (val*val))) (Vundef, (Vundef, (Vundef,Vundef)))
                   (Z.of_nat to) l = space_tri sp_to). {
       subst l sp_to. now rewrite Znth_map by (rewrite spaces_size; rep_lia). }
     forward; rewrite H22; unfold space_tri. 1: entailer!.
@@ -87,18 +97,18 @@ Proof.
     unfold gen_start at 1. rewrite if_true by assumption. rewrite H18.
     remember (WORD_SIZE * used_space sp_to)%Z as used_offset.
     remember (WORD_SIZE * previous_vertices_size g' to index)%Z as index_offset.
-    freeze [0; 1; 2; 4; 5] FR.
-    gather_SEP (graph_rep g') (heap_rest_rep (ti_heap t_info')).
+    freeze [0; 1; 3; 4] FR.
+    gather_SEP (graph_rep g') (heap_rest_rep h').
     assert (
         forall b i,
           Vptr b i = space_start sp_to ->
-          graph_rep g' * heap_rest_rep (ti_heap t_info') |--
+          graph_rep g' * heap_rest_rep h' |--
       !! (WORD_SIZE * total_space sp_to + Ptrofs.unsigned i <= Ptrofs.max_unsigned)). {
       intros. sep_apply (graph_and_heap_rest_data_at_ _ _ _ H14 H5).
       assert (space_start sp_to = gen_start g' to) by
           (unfold gen_start; rewrite if_true by assumption;
            rewrite <- H18; reflexivity). rewrite H24 in H23.
-      sep_apply (generation_data_at__ptrofs g' t_info' to b i H23).
+      sep_apply (generation_data_at__ptrofs g' h' to b i H23).
       unfold gen_size; rewrite nth_space_Znth; entailer!. }
     assert_PROP (force_val
                    (sem_cmp_pp Clt (offset_val index_offset (space_start sp_to))
@@ -110,7 +120,7 @@ Proof.
       rewrite Ptrofs.unsigned_repr in H23 by rep_lia. sep_apply H23. Intros.
       assert (0 <= ofs + used_offset <= Ptrofs.max_unsigned). {
         subst.
-        pose proof (space_order (Znth (Z.of_nat to) (spaces (ti_heap t_info')))).
+        pose proof (space_order (Znth (Z.of_nat to) (spaces h'))).
         unfold WORD_SIZE in *. rep_lia. }
       assert (0 <= ofs + index_offset <= Ptrofs.max_unsigned). {
         subst. red in H8. pose proof (pvs_ge_zero g' to (to_index + n)%nat).
@@ -121,7 +131,7 @@ Proof.
       unfold Ptrofs.ltu. rewrite !Ptrofs.unsigned_repr; auto. f_equal.
       if_tac; if_tac; try reflexivity; lia. }
     forward_if (gen_has_index g' to index).
-    + remember (Znth (Z.of_nat to) (spaces (ti_heap t_info'))) as sp_to.
+    + remember (Znth (Z.of_nat to) (spaces h')) as sp_to.
       sep_apply (graph_and_heap_rest_data_at_ _ _ _ H14 H5).
       unfold generation_data_at_.
       assert (gen_start g' to = space_start sp_to) by
@@ -138,22 +148,22 @@ Proof.
         apply generation_share_writable. }
       assert (forall offset,
                  0 <= offset <= used_offset ->
-                 memory_block (nth_sh g' to) (WORD_SIZE * gen_size t_info' to)
+                 memory_block (nth_sh g' to) (WORD_SIZE * gen_size h' to)
                               (Vptr b i) * TT * FRZL FR |--
         weak_valid_pointer (Vptr b (Ptrofs.add i (Ptrofs.repr offset)))). {
         intros. change (Vptr b (Ptrofs.add i (Ptrofs.repr offset))) with
             (offset_val offset (Vptr b i)).
         sep_apply (memory_block_weak_valid_pointer
-                     (nth_sh g' to) (WORD_SIZE * gen_size t_info' to)
+                     (nth_sh g' to) (WORD_SIZE * gen_size h' to)
                      (Vptr b i) offset); auto.
         3: apply extend_weak_valid_pointer.
         - subst. unfold gen_size. split. 1: apply (proj1 H34).
-          transitivity (WORD_SIZE * used_space (nth_space t_info' to))%Z.
+          transitivity (WORD_SIZE * used_space (nth_space h' to))%Z.
           + rewrite nth_space_Znth. apply (proj2 H34).
           + apply Zmult_le_compat_l. apply (proj2 (space_order _)).
             unfold WORD_SIZE. lia.
-        - clear -H3 H7. destruct H7 as [? [? ?]].
-          rewrite <- H0. unfold WORD_SIZE. lia. }
+        - clear -H3 H7. destruct H7.
+          rewrite <- H. unfold WORD_SIZE. lia. }
       apply andp_right; apply H34.
       * subst. split.
         1: pose proof (pvs_ge_zero g' to (to_index + n)%nat); unfold WORD_SIZE; lia.
@@ -163,22 +173,22 @@ Proof.
                                   [unfold WORD_SIZE; lia | apply space_order].
     + assert (index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
-        unfold force_val in H24.
-        rewrite H24 in H25; unfold typed_true in H25. easy. }
+        match type of H24 with force_val ?A = _ => destruct A; inv H24 end. simpl in H26; subst. inv H25. 
+      }
       forward. entailer!. red. rewrite <- H20 in H26.
       rewrite <- Z.mul_lt_mono_pos_l in H26 by (unfold WORD_SIZE; lia).
       apply pvs_lt_rev in H26. assumption.
     + assert (~ index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
-        unfold force_val in H24.
-        now rewrite H24 in H25; unfold typed_false in H25. }
-      forward. thaw FR. unfold thread_info_rep, heap_struct_rep.
-      Exists g' t_info'. unfold forward_condition. entailer!.
-      split; [red; auto | exists n; split; trivial].
+        match type of H24 with force_val ?A = _ => destruct A; inv H24 end. simpl in H26; subst. inv H25. 
+      }
+      forward. thaw FR. unfold thread_info_rep, heap_rep, heap_struct_rep.
+      Exists g' h'. unfold forward_condition. entailer!.
+      split; [split3; auto | exists n; split; trivial].
       unfold gen_has_index. rewrite <- H20 in H26.
       rewrite <- Z.mul_lt_mono_pos_l in H26 by (unfold WORD_SIZE; lia).
       intro; apply H26. now apply pvs_mono_strict.
-    + clear H8 H23 H24. Intros. thaw FR. freeze [1;2;3;4;5;6] FR.
+    + clear H8 H23 H24. Intros. thaw FR. freeze [1;2;3;4;5] FR.
       assert (graph_has_v g' (to, index)) by easy.
       (* annotation theta 7 *)
       localize [vertex_rep (nth_sh g' to) g' (to, index)].
@@ -203,18 +213,17 @@ Proof.
         destruct H0 as [_ [_ [? _]]]. assumption. }
       specialize (H26 H14 _ H8).
       rewrite make_header_Wosize, make_header_tag by assumption.
-      fold (next_address t_info' to). thaw FR.
-      fold (heap_struct_rep sh l (ti_heap_p t_info')).
+      fold (heap_next_address hp to). thaw FR.
+      fold (heap_struct_rep sh l hp).
       gather_SEP
-        (data_at _ thread_info_type _ _)
         (heap_struct_rep _ _ _ ) (heap_rest_rep _).
-      replace_SEP 0 (thread_info_rep sh t_info' ti) by
-          (unfold thread_info_rep; entailer!).
+      replace_SEP 0 (heap_rep sh h' hp) by
+          (unfold thread_info_rep, heap_rep; entailer!).
       forward_if
-        (EX g'': LGraph, EX t_info'': thread_info,
-         PROP (super_compatible (g'', t_info'', roots) f_info outlier;
-               forward_condition g'' t_info'' from to;
-               thread_info_relation t_info t_info'';
+        (EX g'': LGraph, EX h'': heap,
+         PROP (super_compatible g'' h'' rootpairs roots outlier;
+               forward_condition g'' h'' from to;
+               heap_relation h h'';
                (no_scan g' (to, index) /\ g'' = g') \/
                (~ no_scan g' (to, index) /\
                 scan_vertex_for_loop
@@ -228,14 +237,17 @@ Proof.
                       else vint (Zlength (raw_fields (vlabel g' (to, index)))));
                 temp _s (offset_val (- WORD_SIZE) (vertex_address g'' (to, index)));
                 temp _from_start (gen_start g'' from);
-                temp _from_limit (limit_address g'' t_info'' from);
-                temp _next (next_address t_info'' to))
-         SEP (thread_info_rep sh t_info'' ti; graph_rep g'';
-              fun_info_rep rsh f_info fi;
+                temp _from_limit (limit_address g'' h'' from);
+                temp _next (heap_next_address hp to))
+         SEP (roots_rep sh rootpairs;
+              heap_rep sh h'' hp; graph_rep g'';
               all_string_constants rsh gv; outlier_rep outlier)).
-      * try (rewrite Int64.unsigned_repr in H27;
-             [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia]).
-        apply typed_true_tag in H27.
+      * rewrite Int64.unsigned_repr in H27;
+             [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia].
+        pose proof typed_true_tag to g' index as Hxx.
+        destruct (negb (Int.lt (Int.repr (raw_tag (vlabel g' (to, index)))) (Int.repr 251))); try discriminate.
+        clear H27; rename Hxx into H27.
+        specialize (H27 (eq_refl _)).
         remember (Zlength (raw_fields (vlabel g' (to, index)))).
         assert (1 <= z < (if Archi.ptr64 then Int64.max_signed else Int.max_signed)).
         {
@@ -243,57 +255,57 @@ Proof.
           split; [lia|]. transitivity (two_p (WORD_SIZE * 8 - 10));
                            [lia | vm_compute; reflexivity]. }
         forward_loop
-          (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
+          (EX i: Z, EX g3: LGraph, EX h3: heap,
            PROP (scan_vertex_for_loop
                    from to (to, index)
                    (sublist 0 (i - 1)
                             (nat_inc_list
                                (length (vlabel g' (to, index)).(raw_fields)))) g' g3;
-                super_compatible (g3, t_info3, roots) f_info outlier;
-                forward_condition g3 t_info3 from to;
-                thread_info_relation t_info t_info3;
+                super_compatible g3 h3 rootpairs roots outlier;
+                forward_condition g3 h3 from to;
+                heap_relation h h3;
                 1 <= i <= z + 1)
            LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
                   temp _j (if Archi.ptr64 then (Vlong (Int64.repr i)) else vint i);
                   temp _sz (if Archi.ptr64 then (Vlong (Int64.repr z)) else vint z);
                   temp _s (offset_val (- WORD_SIZE) (vertex_address g3 (to, index)));
                   temp _from_start (gen_start g3 from);
-                  temp _from_limit (limit_address g3 t_info3 from);
-                  temp _next (next_address t_info3 to))
+                  temp _from_limit (limit_address g3 h3 from);
+                  temp _next (heap_next_address hp to))
            SEP (all_string_constants rsh gv;
                 outlier_rep outlier;
-                fun_info_rep rsh f_info fi;
                 graph_rep g3;
-                thread_info_rep sh t_info3 ti))
-          continue: (EX i: Z, EX g3: LGraph, EX t_info3: thread_info,
+                roots_rep sh rootpairs;
+                heap_rep sh h3 hp))
+          continue: (EX i: Z, EX g3: LGraph, EX h3: heap,
            PROP (scan_vertex_for_loop
                    from to (to, index)
                    (sublist 0 i
                             (nat_inc_list
                                (length (vlabel g' (to, index)).(raw_fields)))) g' g3;
-                super_compatible (g3, t_info3, roots) f_info outlier;
-                forward_condition g3 t_info3 from to;
-                thread_info_relation t_info t_info3;
+                super_compatible g3 h3 rootpairs roots outlier;
+                forward_condition g3 h3 from to;
+                heap_relation h h3;
                 1 <= i + 1 <= z + 1)
            LOCAL (temp _tag (vint (raw_tag (vlabel g' (to, index))));
                   temp _j (if Archi.ptr64 then (Vlong (Int64.repr i)) else vint i);
                   temp _sz (if Archi.ptr64 then (Vlong (Int64.repr z)) else vint z);
                   temp _s (offset_val (- WORD_SIZE) (vertex_address g3 (to, index)));
                   temp _from_start (gen_start g3 from);
-                  temp _from_limit (limit_address g3 t_info3 from);
-                  temp _next (next_address t_info3 to))
+                  temp _from_limit (limit_address g3 h3 from);
+                  temp _next (heap_next_address hp to))
            SEP (all_string_constants rsh gv;
-                fun_info_rep rsh f_info fi;
                 outlier_rep outlier;
                 graph_rep g3;
-                thread_info_rep sh t_info3 ti)).
-        -- forward. Exists 1 g' t_info'. replace (1 - 1) with 0 by lia.
+                roots_rep sh rootpairs;
+                heap_rep sh h3 hp)).
+        -- forward. Exists 1 g' h'. replace (1 - 1) with 0 by lia.
            autorewrite with sublist. unfold forward_condition. entailer!.
            try (rewrite Int64.unsigned_repr;
                 [| pose proof (raw_tag_range (vlabel g' (to, (to_index + n)%nat)));
                    rep_lia]).
-           split; [apply svfl_nil | unfold super_compatible; auto].
-        -- Intros i g3 t_info3. forward_if (i <= z).
+           split; [apply svfl_nil | split3; auto]. split3; auto.
+        -- Intros i g3 h3. forward_if (i <= z).
            ++ forward. entailer!.
               first [rewrite !Int.unsigned_repr in H34 |
                      apply ltu64_repr_false in H34]; try lia.
@@ -313,7 +325,7 @@ Proof.
               remember (raw_fields (vlabel g' (to, index))) as r.
               replace (sublist 0 z (nat_inc_list (Datatypes.length r))) with
                   (nat_inc_list (Datatypes.length r)) in H29.
-              ** Exists g3 t_info3. entailer!.
+              ** Exists g3 h3. entailer!.
               ** rewrite sublist_same; trivial.
                  subst z. rewrite !Zlength_correct, nat_inc_list_length. reflexivity.
            ++ Intros.
@@ -332,7 +344,7 @@ Proof.
                   (eapply svfl_graph_has_gen in H29; [rewrite <- H29|]; assumption).
               assert (graph_has_v g3 (to, index)) by
                   (eapply svfl_graph_has_v in H29; [apply H29| assumption..]).
-              forward_call (rsh, sh, gv, fi, ti, g3, t_info3, f_info, roots,
+              forward_call (rsh, sh, gv, g3, h3, hp, rootpairs, roots,
                             outlier, from, to, 0, (@inr Z _ ((to, index), i - 1))).
               ** simpl snd. apply prop_right. simpl.
                  do 4 f_equal.
@@ -347,17 +359,36 @@ Proof.
                      eapply svfl_raw_mark in H29; [apply H29 | assumption..|].
                      simpl. lia.
                  --- simpl; auto.
-              ** Intros vret. destruct vret as [[g4 t_info4] roots']. simpl fst in *.
-                 simpl snd in *. simpl in H37. subst roots'. Exists i g4 t_info4.
+              ** Intros vret. destruct vret as [[g4 h4] roots']. simpl fst in *.
+                 simpl snd in *. simpl in H37.
+                 simpl in H39.
+                 subst roots'.
+                 Exists i g4 h4.
+                 revert H38.
+                 replace (update_rootpairs _ _) with rootpairs. 2:{
+                   replace (map (root2val g4) roots) with (map (root2val g) roots).
+                   destruct H as [_ [? _]]; rewrite H. symmetry. apply update_rootpairs_same.
+                   destruct H as [_ [? _]]. rewrite H.
+                   destruct H30 as [_ [? [[_ ?] _]]]. red in H30. rewrite <- H30.
+                   apply Znth_eq_ext. list_solve. intros.
+                   rewrite !Znth_map by list_solve.
+                   destruct (Znth i0 roots) eqn:?H; auto.
+                   simpl.
+                   eapply fr_vertex_address; try eassumption.
+                   red in H38. rewrite Forall_forall in H38.
+                   apply graph_has_v_in_closure. apply H38.
+                   apply filter_sum_right_In_iff. rewrite <- H43. apply Znth_In.
+                   rewrite Zlength_map in H39. auto. 
+                 }
+                 intros H38.
                  destruct H38 as [? [? [? ?]]].
                  assert (gen_start g3 from = gen_start g4 from) by
                      (eapply fr_gen_start; eauto).
-                 assert (limit_address g3 t_info3 from =
-                         limit_address g4 t_info4 from). {
+                 assert (limit_address g3 h3 from =
+                         limit_address g4 h4 from). {
                    unfold limit_address. rewrite H45.
-                   do 2 f_equal. apply (proj2 H42). }
-                 assert (next_address t_info3 to = next_address t_info4 to) by
-                     (unfold next_address; f_equal; apply (proj1 H42)). entailer!.
+                   do 2 f_equal. apply H42. }
+                 entailer!.
                  split; [|split; [|split]]; try easy.
                  --- remember (nat_inc_list
                                  (Datatypes.length
@@ -372,24 +403,29 @@ Proof.
                      assert (Z.of_nat (Znth (i - 1) l) = i - 1). {
                        rewrite <- nth_Znth by lia. subst l.
                        rewrite nat_inc_list_nth; [rewrite Z2Nat.id; lia|].
-                       rewrite <- ZtoNat_Zlength. rewrite Zlength_correct in H52.
-                       rewrite nat_inc_list_length in H52. rewrite Nat2Z.inj_lt.
-                       rewrite !Z2Nat.id; lia. } rewrite H53. assumption.
-                 --- apply tir_trans with t_info3; assumption.
+                       rewrite <- ZtoNat_Zlength. rewrite Zlength_correct in H51.
+                       rewrite nat_inc_list_length in H51. rewrite Nat2Z.inj_lt.
+                       rewrite !Z2Nat.id; lia. } rewrite H52. assumption.                     
+                 --- apply hr_trans with h3; assumption.
                  --- f_equal. symmetry. eapply fr_vertex_address; eauto.
                      apply graph_has_v_in_closure; assumption.
-        -- Intros i g3 t_info3. cbv [Archi.ptr64]. forward.
+        -- Intros i g3 h3. cbv [Archi.ptr64]. forward.
            ++ entailer!. clear -H28 H33. simpl in H28.
               first [rewrite !Int.signed_repr | rewrite Int64.signed_repr]; rep_lia.
-           ++ Exists (i + 1) g3 t_info3. replace (i + 1 - 1) with i by lia. entailer!.
-      * try (rewrite Int64.unsigned_repr in H27;
-             [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia]).
-        apply typed_false_tag in H27. forward. Exists g' t_info'.
+           ++ Exists (i + 1) g3 h3. replace (i + 1 - 1) with i by lia. entailer!.
+      * rewrite Int64.unsigned_repr in H27;
+             [|pose proof (raw_tag_range (vlabel g' (to, index))); rep_lia].
+        pose proof typed_false_tag to g' index as Hxx.
+        destruct (negb (Int.lt (Int.repr (raw_tag (vlabel g' (to, index)))) (Int.repr 251))).
+        2: simpl in H27; contradiction H27; reflexivity.
+        clear H27; rename Hxx into H27.
+        specialize (H27 (eq_refl _)). 
+        forward. Exists g' h'.
         unfold forward_condition. entailer!.
         try (rewrite Int64.unsigned_repr;
              [|pose proof (raw_tag_range (vlabel g' (to, (to_index + n)%nat)));
                rep_lia]). easy.
-      * Intros g'' t_info''. assert (isptr (vertex_address g'' (to, index))). {
+      * Intros g'' h''. assert (isptr (vertex_address g'' (to, index))). {
           assert (isptr (vertex_address g' (to, index))). {
             unfold vertex_address. rewrite isptr_offset_val. unfold gen_start.
             rewrite <- H18 in H21. rewrite if_true; assumption. }
@@ -441,10 +477,10 @@ Proof.
              destruct H30 as [[? ?] | [? ?]].
              - subst g''. destruct H23. assumption.
              - eapply svfl_graph_has_v in H33; eauto. destruct H33. assumption. }
-           Exists (n + 1)%nat g'' t_info''. destruct H27 as [? [? [? ?]]]. entailer!.
+           Exists (n + 1)%nat g'' h''. destruct H27 as [? [? [? ?]]]. entailer!.
            clear H37 H38 H39 H40. replace (n + 1)%nat with (S n) by lia.
            rewrite nat_seq_S, Nat.add_comm. destruct H30 as [[? ?] | [? ?]].
            ++ subst g''. split; [| apply svwl_add_tail_no_scan]; easy.
            ++ split; [|apply svwl_add_tail_scan with g']; easy.
-  - Intros g' t_info'. Exists g' t_info'. entailer!.
+  - Intros g' h'. Exists g' h'. entailer!.
 Qed.
