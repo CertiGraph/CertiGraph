@@ -613,7 +613,7 @@ Definition frames2rootpairs (frames: list frame) : list rootpair :=
     List.concat (map frame2rootpairs frames). 
 
 Definition frames2roots (frames: list frame) : list val := 
-    List.concat (map fr_roots frames). 
+    List.concat (map fr_roots frames).
 
 Lemma frames2roots_eq: forall frames, 
    frames2roots frames = map rp_val (frames2rootpairs frames).
@@ -1573,32 +1573,6 @@ Definition upd_roots (from to: nat) (forward_p: forward_p_type)
        forward_roots_relation from to roots1 g2 roots2 g3 ->
        forward_roots_relation from to (r::roots1) g1 (upd_root from to g1 r :: roots2) g3.
   
-  Lemma forward_roots_relation_snoc:
-   forall from to r roots1 g1 roots2 g2 g3,
-    forward_roots_relation from to roots1 g1 roots2 g2 ->
-    forward_relation from to 0 (root2forward r) g2 g3 ->
-    forward_roots_relation from to (roots1++[r]) g1 (roots2++[upd_root from to g2 r]) g3.
-  Proof.
-    induction 1; intros.
-    - simpl. econstructor; eauto. constructor.
-    - simpl. econstructor; eauto.
-  Qed.
-
-  (*
-Inductive forward_roots_loop (from to: nat):
-  list nat -> roots_t -> LGraph -> roots_t -> LGraph -> Prop :=
-| frl_nil: forall g roots, forward_roots_loop from to nil roots g roots g
-| frl_cons: forall g1 g2 g3 i il roots1 roots3,
-    forward_relation from to O (root2forward (Znth (Z.of_nat i) roots1)) g1 g2 ->
-    forward_roots_loop from to il
-                       (upd_roots from to (inl (Z.of_nat i)) g1 roots1)
-                       g2 roots3 g3 ->
-    forward_roots_loop from to (i :: il) roots1 g1 roots3 g3.
-
-Definition forward_roots_relation from to roots1 g1 roots2 g2 :=
-  forward_roots_loop from to (nat_inc_list (length roots1)) roots1 g1 roots2 g2.
-*)
-
 Definition nth_space (h: heap) (n: nat): space :=
   nth n h.(spaces) null_space.
 
@@ -5245,7 +5219,7 @@ Proof.
     + intros. rewrite nat_inc_list_In_iff in H5. assumption.
 Qed.
 
-Lemma frr_roots_fi_compatible: forall from to roots1 g1 roots2 g2,
+Lemma frr_Zlength_roots: forall from to roots1 g1 roots2 g2,
     forward_roots_relation from to roots1 g1 roots2 g2 ->
     Zlength roots1 = Zlength roots2.
 Proof.

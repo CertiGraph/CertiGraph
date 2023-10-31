@@ -3139,7 +3139,7 @@ Proof.
   - rewrite <- H10 in H11. assert (no_edge2gen g3 from) by
         ( eapply (frr_dsr_no_edge2gen _ _ _ _ g1 g2 g3); eauto).
     assert (roots_have_no_gen roots2 from)
-     by (eapply frr_not_pointing; eauto; eapply frr_roots_fi_compatible; eauto).
+     by (eapply frr_not_pointing; eauto; eapply frr_Zlength_roots; eauto).
     rewrite <- reachable_or_marked_iff_reachable; auto.
     rewrite <- reachable_or_marked_iff_marked; eauto. eapply dsr_sound; eauto.
   - eapply (frr_gen_unmarked from to _ g1); eauto.
@@ -3186,7 +3186,7 @@ Proof.
   - rewrite <- frr_graph_has_gen; eauto.
   - eapply frr_roots_graph_compatible; eauto.
   - eapply frr_no_dangling_dst; eauto.
-  - eapply frr_not_pointing; eauto. eapply frr_roots_fi_compatible; eauto.
+  - eapply frr_not_pointing; eauto. eapply frr_Zlength_roots; eauto.
   - intros. rewrite nat_seq_In_iff in H13. unfold gen_has_index. lia.
   - eapply frr_copy_compatible; eauto.
   - eapply frr_gen_unmarked; eauto. rewrite graph_gen_unmarked_iff in H2; apply H2.
@@ -3310,7 +3310,7 @@ Proof.
     + eapply frr_copy_compatible; eauto.
     + eapply frr_gen_unmarked; eauto.
     + eapply frr_roots_graph_compatible; eauto.
-  - eapply frr_not_pointing; eauto. eapply frr_roots_fi_compatible; eauto.
+  - eapply frr_not_pointing; eauto. eapply frr_Zlength_roots; eauto.
 Qed.
 
 Theorem garbage_collect_isomorphism: forall roots1 roots2 g1 g2,

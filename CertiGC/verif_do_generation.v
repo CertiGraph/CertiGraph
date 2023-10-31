@@ -178,7 +178,7 @@ Proof.
       2: { apply (frr_not_pointing from to roots g roots1 g1); auto.
            - clear -H0. destruct H0 as [_ [_ [_ [? _]]]]. assumption.
            - clear -H. destruct H as [_ [_ [[_ ?] _]]]. assumption.
-           - apply frr_roots_fi_compatible in H21; auto. 
+           - apply frr_Zlength_roots in H21; auto. 
       }
       remember (reset_nth_heap from h2) as h3.
       remember (reset_graph from g2) as g3.
@@ -202,6 +202,6 @@ Proof.
       destruct H as [_ [? _]]. red in H. rewrite frames2roots_eq.
       rewrite <- H.
       rewrite !Zlength_map.
-      apply frr_roots_fi_compatible in H21; auto.
+      apply frr_Zlength_roots in H21; auto.
 Qed.
 
