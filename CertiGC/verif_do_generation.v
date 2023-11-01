@@ -112,7 +112,7 @@ Proof.
     Intros vret.
     destruct vret as [g2 h2]. simpl fst in *. simpl snd in *. 
     sep_apply frames_rep_unlocalize.
-    rewrite <- frames2roots_eq,  update_frames_same.
+    rewrite update_frames_same.
     assert (space_start (nth_space h2 from) = gen_start g2 from). {
       destruct H31 as [? _]. destruct H32 as [_ [? _]].
       destruct (gt_gs_compatible _ _ H31 _ H32) as [? _]. simpl in H35.
@@ -197,11 +197,8 @@ Proof.
       destruct H20 as [_ [? _]]. red in H20.
       f_equal.
       rewrite H31.
-      rewrite <- frames2roots_eq.
-      symmetry; apply frames2roots_update_frames.
-      destruct H as [_ [? _]]. red in H. rewrite frames2roots_eq.
-      rewrite <- H.
-      rewrite !Zlength_map.
-      apply frr_Zlength_roots in H21; auto.
+      rewrite frames2rootpairs_update_frames; auto.
+      apply sc_Zlength in H.
+      apply frr_Zlength_roots in H21; list_solve.
 Qed.
 

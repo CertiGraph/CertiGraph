@@ -167,8 +167,8 @@ Proof.
       Transparent denote_tc_test_eq. destruct v0; try contradiction; simpl; entailer!.
         assert (isptr (Vptr b i0)) by exact I. rewrite Heqv0 in *.
         pull_left (heap_rest_rep (ti_heap t_info')). pull_left (graph_rep g').
-        destruct H8. rewrite <- (space_start_isptr_iff g') in H23 by assumption.
-        sep_apply (graph_and_heap_rest_valid_ptr g' (ti_heap t_info') _ H23); auto.
+        destruct H8. rewrite <- (space_start_isptr_iff g') in H24 by assumption.
+        sep_apply (graph_and_heap_rest_valid_ptr g' (ti_heap t_info') _ H24); auto.
         hnf in H9; apply H9.
         rewrite nth_space_Znth, Z2Nat.id by lia.
         sep_apply (valid_pointer_weak
@@ -320,9 +320,6 @@ Proof.
       pose proof (t_info_space_address _ _ (proj1 H14) H22).
       unfold thread_info_rep. Intros.
       forward.
-         {entailer. unfold ti_fp. destruct (ti_frames t_info1) as [|[??]].
-          apply prop_right; simpl; auto.
-          simpl. unfold frames_rep; simpl.  entailer!. }
       freeze FR1 := (data_at _ _ _ _) (mem_mgr gv) (ti_token_rep _ _).
       forward_call (rsh, sh, gv, g1, (ti_heap t_info1), (ti_heap_p t_info1),
                     (ti_frames t_info1), roots', outlier,

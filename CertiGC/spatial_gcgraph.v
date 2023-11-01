@@ -1921,22 +1921,19 @@ Qed.
 
 Lemma isolate_frame: 
     forall sh frames z, 
-    0 <= z < Zlength (frames2roots frames) ->
+    0 <= z < Zlength (map rp_val (frames2rootpairs frames)) ->
     frames_rep sh frames |--
-    data_at sh int_or_ptr_type (Znth z (frames2roots frames)) (frame_root_address frames z) *
+    data_at sh int_or_ptr_type (Znth z (map rp_val (frames2rootpairs frames))) (frame_root_address frames z) *
     ALL v:val, data_at sh int_or_ptr_type v (frame_root_address frames z) -* 
-           frames_rep sh (update_frames frames (upd_Znth z (frames2roots frames) v)).
+           frames_rep sh (update_frames frames (upd_Znth z (map rp_val (frames2rootpairs frames)) v)).
 Proof.
 intros.
 unfold frames_rep.
 revert z H.
-unfold frames2roots.
+unfold frames2rootpairs.
 induction frames as [ | [a r s] rest ]; simpl; intros.
--
-rewrite Zlength_nil in H.
-lia.
--
-rewrite Zlength_app in H.
+- list_solve.
+- autorewrite with sublist in H. simpl in H.
 if_tac.
 + clear IHrest.
  Intros.
@@ -1947,8 +1944,9 @@ if_tac.
  unfold frame2rootpairs.
  rewrite iter_sepcon_frame2rootpairs' by auto with field_compatible.
  simpl fr_roots. simpl fr_root.
- rewrite Znth_app1 by auto.
- erewrite (data_at_tarray_split _ _ z); try reflexivity; try list_solve.
+ rewrite !Znth_map by list_solve.
+ rewrite Znth_app1 by list_solve.
+ erewrite (data_at_tarray_split _ _ z) by (try reflexivity; list_solve).
  erewrite (data_at_tarray_split _ (Zlength s - z) 1).
  3: instantiate (1 := (sublist z (Zlength s) s)).
  all: try reflexivity. all: try list_solve.
@@ -1960,16 +1958,17 @@ if_tac.
 (*) rewrite Znth_app1 by lia.*)
  change (sizeof int_or_ptr_type) with WORD_SIZE.
  rewrite <- (Z.mul_comm WORD_SIZE).
+ autorewrite with sublist.
  cancel.
  apply allp_right; intro v.
- rewrite !upd_Znth_app1 by lia.
+ rewrite !map_app.
+ rewrite !upd_Znth_app1 by list_solve.
  autorewrite with sublist.
  rewrite prop_true_andp by auto.
- rewrite (sublist_same 0 (Zlength (concat _))) by lia.
- fold (frames2roots rest).
+ rewrite (sublist_same 0 (Zlength (concat _))) by list_solve.
+ change (concat (map _ rest)) with(frames2rootpairs rest).
  rewrite update_frames_same.
  apply -> wand_sepcon_adjoint.
- cancel.
  rewrite iter_sepcon_app_sepcon.
  rewrite iter_sepcon_frame2rootpairs' by list_simplify.
  autorewrite with sublist.
@@ -2001,15 +2000,17 @@ if_tac.
   unfold frame2rootpairs.
   rewrite iter_sepcon_frame2rootpairs' by auto with field_compatible.
   simpl fr_roots. simpl fr_root.
-  sep_apply (IHrest (z-Zlength s)); clear IHrest; try lia.
-  rewrite Znth_app2 by lia. cancel.
+  rewrite !map_app. rewrite Znth_app2 by list_solve.
+  change (concat (map _ rest)) with (frames2rootpairs rest) in *.
+  sep_apply (IHrest (z-Zlength s)); clear IHrest; try list_solve.
+  autorewrite with sublist.
+  cancel.
   do 2 sep_apply allp_sepcon1.
   apply allp_right; intro v.
   apply allp_left with (x:=v).
   repeat sep_apply log_normalize.sepcon_wand_wand_sepcon.
   apply wand_derives; auto.
- rewrite !upd_Znth_app2 by lia.
- fold (frames2roots rest).
+ rewrite !upd_Znth_app2 by list_solve.
  autorewrite with sublist.
  rewrite prop_true_andp by auto.
  rewrite frames_p_update_frames.
@@ -2081,3 +2082,26 @@ match p with
 | inl root_index => rp_adr (Znth root_index rootpairs)
 | inr (v,n) => offset_val (WORD_SIZE * n) (vertex_address g v)
 end.
+
+Lemma frames_rep_ptr_or_null: forall sh frames,
+  frames_rep sh frames |-- !! is_pointer_or_null (frames_p frames).
+  Proof.
+    destruct frames as [|[???]?]; simpl; entailer.
+  unfold frames_rep.
+  simpl.
+  Intros.
+  sep_apply data_at_isptr; Intros.
+  apply prop_right.
+  auto.
+Qed.
+
+#[export] Hint Resolve frames_rep_ptr_or_null : saturate_local.
+
+Lemma frames_rep_valid_pointer: forall sh frames, 
+   sepalg.nonidentity sh ->
+   frames_rep sh frames |-- valid_pointer (frames_p frames).
+Proof.
+  intros.
+  destruct frames as [|[???]?]; simpl frames_p; unfold frames_rep; simpl; auto with valid_pointer.
+Qed.
+#[export] Hint Resolve frames_rep_valid_pointer: valid_pointer.
