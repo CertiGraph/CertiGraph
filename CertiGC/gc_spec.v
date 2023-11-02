@@ -429,7 +429,8 @@ Definition garbage_collect_spec :=
           safe_to_copy g)
     PARAMS (ti)
     GLOBALS (gv)
-    SEP (all_string_constants rsh gv; (*MSS_constant gv;*)
+    SEP (mem_mgr gv;
+         all_string_constants rsh gv; (*MSS_constant gv;*)
          outlier_rep outlier;
          graph_rep g;
          before_gc_thread_info_rep sh t_info ti;

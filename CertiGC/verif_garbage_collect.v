@@ -87,7 +87,6 @@ Proof.
              0 <= j -> offset_val (sizeof (Tstruct _space noattr) * j) (ti_heap_p tif)=
                        space_address (ti_heap_p tif) (Z.to_nat j)). {
           intros. unfold space_address. now rewrite Z2Nat.id. }
-  sep_apply (create_mem_mgr gv).
   unfold before_gc_thread_info_rep, heap_rep, heap_struct_rep. Intros. forward. pose proof H.
   destruct H as [? _]. pose proof (gt_gs_compatible _ _ H _ (graph_has_gen_O _)).
   destruct H3 as [? [? ?]].

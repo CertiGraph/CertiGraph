@@ -40,10 +40,10 @@ int is_ptr(value x) {
     return test_int_or_ptr(x) == 0;
 }
 
-/* A "space" describes one generation of the generational collector. */
+/* A "space" describes one generation of the generational collector. 
 struct space {
   value *start, *next, *limit, *rem_limit;
-};
+  };*/
 /* Either start==NULL (meaning that this generation has not yet been created),
    or start <= next <= limit.  The words in start..next  are allocated
    and initialized, and the words from next..limit are available to allocate. */
@@ -53,10 +53,8 @@ struct space {
 /*  Using RATIO=2 is faster than larger ratios, empirically */
 #endif
 
-#ifndef LOG_NURSERY_SIZE
-#define LOG_NURSERY_SIZE 16
-#endif
-/* The size of generation 0 (the "nursery") should approximately match the
+/* Rationale for LOG_NURSERY_SIZE = 16:  
+   The size of generation 0 (the "nursery") should approximately match the
    size of the level-2 cache of the machine, according to:
       Cache Performance of Fast-Allocating Programs,
       by Marcelo J. R. Goncalves and Andrew W. Appel.
@@ -76,20 +74,9 @@ struct space {
 
 */
 
-#define NURSERY_SIZE (1<<LOG_NURSERY_SIZE)
-/* NURSERY_SIZE is measured in words, not bytes */
 
-#if  SIZEOF_PTR == 8
-#define LOG_WORDSIZE 3
-#endif
-#if SIZEOF_PTR == 4
-#define LOG_WORDSIZE 2
-#endif
-
-
-#define MAX_SPACES (8*sizeof(value)-(2+LOG_WORDSIZE+LOG_NURSERY_SIZE)) /* how many generations */
-
-/* This allows the largest generation to be as big as half the entire address space.
+/* The definition of MAX_SPACES allows the largest generation to be as big 
+   as half the entire address space.
    Here's the math: 8*sizeof(value) is the number of bits per word.
    Counting the nursery as generation 0, the largest generation is MAX_SPACES-1,
    and generation i+1 is twice as big as generation i.
@@ -109,11 +96,6 @@ struct space {
 #ifndef DEPTH
 #define DEPTH 0  /* how much depth-first search to do */
 #endif
-
-struct heap {
-  /* A heap is an array of generations; generation 0 must be already-created */
-  struct space spaces[MAX_SPACES];
-};
 
 #ifdef DEBUG
 
