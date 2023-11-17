@@ -21,7 +21,7 @@ Require Export CertiGraph.graph.graph_gen.
 Import ListNotations.
 
 Local Open Scope Z_scope.
-Require CertiGraph.CertiGC.gc.
+Require CertiGraph.CertiGC.gc_stack.
 Import Ctypes compspecs Cop2 Clight.
 
 Fixpoint find_struct (i: ident) (cs: list composite_definition) : option members :=
@@ -32,16 +32,16 @@ Fixpoint find_struct (i: ident) (cs: list composite_definition) : option members
   |  _ :: rest => find_struct i rest
   end.
 
-Definition MAX_SPACES: Z := Eval compute in (match find_struct gc._heap gc.composites with
+Definition MAX_SPACES: Z := Eval compute in (match find_struct gc_stack._heap gc_stack.composites with
 | Some  (Member_plain _ (Tarray _ n _) :: nil) => n | _ => 0
 end).
 Lemma MAX_SPACES_eq: MAX_SPACES = ltac:(let n := eval compute in MAX_SPACES in exact n). Proof. reflexivity. Qed.
 #[export] Hint Rewrite MAX_SPACES_eq: rep_lia.
 
 Definition LOG_NURSERY_SIZE : Z.
-let f := constr:(fn_body gc.f_create_heap) in
+let f := constr:(fn_body gc_stack.f_create_heap) in
 let f := eval hnf in f in
-match f with context [Scall _ (Evar gc._create_space _) [_; Ebinop _ _ (Econst_int (Int.repr ?e) _) _]] =>
+match f with context [Scall _ (Evar gc_stack._create_space _) [_; Ebinop _ _ (Econst_int (Int.repr ?e) _) _]] =>
   exact e
 end.
 Defined.

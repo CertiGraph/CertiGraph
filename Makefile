@@ -128,8 +128,6 @@ UNION_FIND_FILES = \
 HIP_FILES = \
   hip_graphmark.v hip_graphmark_proofs.v spanningtree.v
 
-# Using "clightgen -DCOMPCERT -normalize -isystem . gc.c" to generate gc.v
-
 CERTIGC_FILES = \
   data_at_test.v spatial_gcgraph.v verif_conversion.v verif_Is_from.v \
   gc_spec.v verif_create_space.v verif_create_heap.v verif_make_tinfo.v env_graph_gc.v verif_is_ptr.v verif_garbage_collect.v verif_resume.v \
@@ -168,7 +166,7 @@ APPEND_FILES = \
   list_dt.v verif_append.v
 
 CLIGHT_FILES = \
-  CertiGC/gc.v summatrix/summatrix.v kruskal/kruskal_edgelist.v unionfind/unionfind.v \
+  CertiGC/gc_stack.v summatrix/summatrix.v kruskal/kruskal_edgelist.v unionfind/unionfind.v \
   unionfind/unionfind_iter.v unionfind/unionfind_arr.v append/append.v mark/mark_bin.v \
   binheap/binary_heap_pro.v binheap/binary_heap.v prim/noroot_prim.v prim/prim1.v \
   prim/prim2.v prim/prim3.v priq/priq_arr.v dispose/dispose_bin.v copy/copy_bin.v \
@@ -234,20 +232,20 @@ VST_CRITICAL_FILES = \
 
 
 clightgen:
-	cp 'CertiGC/GC Source'/config.h 'CertiGC/GC Source'/gc.h 'CertiGC/GC Source'/mem.h 'CertiGC/GC Source'/values.h 'CertiGC/GC Source'/gc.c CertiGC
+	cp 'CertiGC/GC Source'/config.h 'CertiGC/GC Source'/gc_stack.h 'CertiGC/GC Source'/mem.h 'CertiGC/GC Source'/values.h 'CertiGC/GC Source'/gc_stack.c CertiGC
 	cd CertiGC/'GC Source'; `dirname $(CLIGHTGEN)`/ccomp printm.c -o printm
 	CertiGC/'GC Source'/printm >CertiGC/m.h
 	$(CLIGHTGEN) -DVERIFFI -DCOMPCERT -normalize -isystem . $(C_FILES)
 
 clightgen64:
-	cp 'CertiGC/GC Source'/config.h 'CertiGC/GC Source'/gc.h 'CertiGC/GC Source'/mem.h 'CertiGC/GC Source'/values.h 'CertiGC/GC Source'/gc.c CertiGC
+	cp 'CertiGC/GC Source'/config.h 'CertiGC/GC Source'/gc_stack.h 'CertiGC/GC Source'/mem.h 'CertiGC/GC Source'/values.h 'CertiGC/GC Source'/gc_stack.c CertiGC
 	cd CertiGC/'GC Source'; `dirname $(CLIGHTGEN64)`/ccomp printm.c -o printm
 	CertiGC/'GC Source'/printm >CertiGC/m.h
 	$(CLIGHTGEN64) -DVERIFFI -DCOMPCERT -normalize -isystem . $(C_FILES)
 	$(foreach x,$(C_FILES:%.c=%), mv $(x).v $(x)64.v; )
 
 clightgen32:
-	cp 'CertiGC/GC Source'/config.h 'CertiGC/GC Source'/gc.h 'CertiGC/GC Source'/mem.h 'CertiGC/GC Source'/values.h 'CertiGC/GC Source'/gc.c CertiGC
+	cp 'CertiGC/GC Source'/config.h 'CertiGC/GC Source'/gc_stack.h 'CertiGC/GC Source'/mem.h 'CertiGC/GC Source'/values.h 'CertiGC/GC Source'/gc_stack.c CertiGC
 	cd CertiGC/'GC Source'; `dirname $(CLIGHTGEN32)`/ccomp printm.c -o printm
 	CertiGC/'GC Source'/printm >CertiGC/m.h
 	$(CLIGHTGEN32) -DVERIFFI -DCOMPCERT -normalize -isystem . $(C_FILES)
@@ -271,7 +269,7 @@ cav:
 
 
 .PHONY: depend
-.depend depend: $(CLIGHT_FILES)
+.depend depend: 
 	@echo 'coqdep ... >.depend'
 	@$(COQDEP) $(NORMAL_FLAG) $(NORMAL_FILES) > .depend
 	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend

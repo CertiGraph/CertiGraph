@@ -6,7 +6,7 @@ Local Open Scope string_scope.
 Local Open Scope clight_scope.
 
 Module Info.
-  Definition version := "3.11".
+  Definition version := "3.12".
   Definition build_number := "".
   Definition build_tag := "".
   Definition build_branch := "".
@@ -20,7 +20,6 @@ Module Info.
 End Info.
 
 Definition _E : ident := $"E".
-Definition _Is_block : ident := $"Is_block".
 Definition _Is_from : ident := $"Is_from".
 Definition _MAX_EDGES : ident := $"MAX_EDGES".
 Definition _Node : ident := $"Node".
@@ -94,11 +93,7 @@ Definition ___stringlit_14 : ident := $"__stringlit_14".
 Definition ___stringlit_15 : ident := $"__stringlit_15".
 Definition ___stringlit_16 : ident := $"__stringlit_16".
 Definition ___stringlit_17 : ident := $"__stringlit_17".
-Definition ___stringlit_18 : ident := $"__stringlit_18".
-Definition ___stringlit_19 : ident := $"__stringlit_19".
 Definition ___stringlit_2 : ident := $"__stringlit_2".
-Definition ___stringlit_20 : ident := $"__stringlit_20".
-Definition ___stringlit_21 : ident := $"__stringlit_21".
 Definition ___stringlit_3 : ident := $"__stringlit_3".
 Definition ___stringlit_4 : ident := $"__stringlit_4".
 Definition ___stringlit_5 : ident := $"__stringlit_5".
@@ -163,7 +158,7 @@ Definition _edge_list : ident := $"edge_list".
 Definition _empty_graph : ident := $"empty_graph".
 Definition _exch : ident := $"exch".
 Definition _exit : ident := $"exit".
-Definition _export : ident := $"export".
+Definition _export_heap : ident := $"export_heap".
 Definition _fa : ident := $"fa".
 Definition _fake_sp : ident := $"fake_sp".
 Definition _fill_edge : ident := $"fill_edge".
@@ -174,7 +169,9 @@ Definition _forward_remset : ident := $"forward_remset".
 Definition _forward_roots : ident := $"forward_roots".
 Definition _fp : ident := $"fp".
 Definition _fprintf : ident := $"fprintf".
+Definition _fr : ident := $"fr".
 Definition _frame : ident := $"frame".
+Definition _frames : ident := $"frames".
 Definition _free : ident := $"free".
 Definition _freeN : ident := $"freeN".
 Definition _freePQ : ident := $"freePQ".
@@ -215,6 +212,7 @@ Definition _insert_nc : ident := $"insert_nc".
 Definition _int_or_ptr_to_int : ident := $"int_or_ptr_to_int".
 Definition _int_or_ptr_to_ptr : ident := $"int_or_ptr_to_ptr".
 Definition _int_to_int_or_ptr : ident := $"int_to_int_or_ptr".
+Definition _is_ptr : ident := $"is_ptr".
 Definition _item : ident := $"item".
 Definition _j : ident := $"j".
 Definition _k : ident := $"k".
@@ -245,10 +243,10 @@ Definition _minWeight : ident := $"minWeight".
 Definition _mst : ident := $"mst".
 Definition _n : ident := $"n".
 Definition _nalloc : ident := $"nalloc".
-Definition _new : ident := $"new".
 Definition _newWeight : ident := $"newWeight".
 Definition _newp : ident := $"newp".
 Definition _newpri : ident := $"newpri".
+Definition _newv : ident := $"newv".
 Definition _next : ident := $"next".
 Definition _num_allocs : ident := $"num_allocs".
 Definition _odata : ident := $"odata".
@@ -336,6 +334,7 @@ Definition _ufind : ident := $"ufind".
 Definition _unionS : ident := $"unionS".
 Definition _v : ident := $"v".
 Definition _v__1 : ident := $"v__1".
+Definition _va : ident := $"va".
 Definition _value_sp : ident := $"value_sp".
 Definition _vertex : ident := $"vertex".
 Definition _vfind : ident := $"vfind".
@@ -455,8 +454,8 @@ Definition f_setup := {|
   fn_callconv := cc_default;
   fn_params := ((_graph, (tptr tint)) :: nil);
   fn_vars := nil;
-  fn_temps := ((_i, tint) :: (_j, tint) :: (_random, tint) :: (_t'4, tint) ::
-               (_t'3, tint) :: (_t'2, tint) :: (_t'1, tlong) :: nil);
+  fn_temps := ((_i, tint) :: (_j, tint) :: (_random, tint) :: (_t'3, tint) ::
+               (_t'2, tint) :: (_t'1, tlong) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
@@ -496,13 +495,13 @@ Definition f_setup := {|
                     (Sifthenelse (Ebinop Ogt (Etempvar _random tint)
                                    (Econst_int (Int.repr 50) tint) tint)
                       (Ssequence
-                        (Sset _t'4
+                        (Sset _t'3
                           (Ecast (Econst_int (Int.repr 2147483647) tint)
                             tint))
-                        (Sset _t'3 (Ecast (Etempvar _t'4 tint) tint)))
+                        (Sset _t'3 (Ecast (Etempvar _t'3 tint) tint)))
                       (Ssequence
-                        (Sset _t'4 (Ecast (Etempvar _random tint) tint))
-                        (Sset _t'3 (Ecast (Etempvar _t'4 tint) tint)))))
+                        (Sset _t'3 (Ecast (Etempvar _random tint) tint))
+                        (Sset _t'3 (Ecast (Etempvar _t'3 tint) tint)))))
                   (Sassign
                     (Ederef
                       (Ebinop Oadd (Etempvar _graph (tptr tint))

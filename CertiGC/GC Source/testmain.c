@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "values.h"
-#include "gc.h"
+#include "gc_stack.h"
 
 extern void build(void)   __attribute__ ((returns_twice)) ;
 extern void done(void)   __attribute__ ((returns_twice)) ;

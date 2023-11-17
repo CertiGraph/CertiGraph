@@ -102,7 +102,7 @@ typedef const uintnat *fun_info;
 
 /* ideally struct heap should be more abstract (opaque)
       struct heap;
-  and ideally, the following definitions should live in gc.c rather than gc.h:
+  and ideally, the following definitions should live in gc_stack.c rather than gc_stack.h:
 */
 #if  SIZEOF_PTR == 8
 #define LOG_WORDSIZE 3

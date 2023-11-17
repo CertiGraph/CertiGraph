@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "values.h"
-#include "gc.h"
+#include "gc_stack.h"
 
 #define Null ((value)1)
 

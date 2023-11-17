@@ -6,7 +6,7 @@ Local Open Scope string_scope.
 Local Open Scope clight_scope.
 
 Module Info.
-  Definition version := "3.11".
+  Definition version := "3.12".
   Definition build_number := "".
   Definition build_tag := "".
   Definition build_branch := "".
@@ -19,7 +19,6 @@ Module Info.
   Definition normalized := true.
 End Info.
 
-Definition _Is_block : ident := $"Is_block".
 Definition _Is_from : ident := $"Is_from".
 Definition ___builtin_annot : ident := $"__builtin_annot".
 Definition ___builtin_annot_intval : ident := $"__builtin_annot_intval".
@@ -89,11 +88,7 @@ Definition ___stringlit_14 : ident := $"__stringlit_14".
 Definition ___stringlit_15 : ident := $"__stringlit_15".
 Definition ___stringlit_16 : ident := $"__stringlit_16".
 Definition ___stringlit_17 : ident := $"__stringlit_17".
-Definition ___stringlit_18 : ident := $"__stringlit_18".
-Definition ___stringlit_19 : ident := $"__stringlit_19".
 Definition ___stringlit_2 : ident := $"__stringlit_2".
-Definition ___stringlit_20 : ident := $"__stringlit_20".
-Definition ___stringlit_21 : ident := $"__stringlit_21".
 Definition ___stringlit_3 : ident := $"__stringlit_3".
 Definition ___stringlit_4 : ident := $"__stringlit_4".
 Definition ___stringlit_5 : ident := $"__stringlit_5".
@@ -132,19 +127,20 @@ Definition _args : ident := $"args".
 Definition _certicoq_modify : ident := $"certicoq_modify".
 Definition _create_heap : ident := $"create_heap".
 Definition _create_space : ident := $"create_space".
-Definition _curr : ident := $"curr".
 Definition _depth : ident := $"depth".
 Definition _do_generation : ident := $"do_generation".
 Definition _do_scan : ident := $"do_scan".
 Definition _exit : ident := $"exit".
-Definition _export : ident := $"export".
+Definition _export_heap : ident := $"export_heap".
 Definition _fake_sp : ident := $"fake_sp".
 Definition _forward : ident := $"forward".
 Definition _forward_remset : ident := $"forward_remset".
 Definition _forward_roots : ident := $"forward_roots".
 Definition _fp : ident := $"fp".
 Definition _fprintf : ident := $"fprintf".
+Definition _fr : ident := $"fr".
 Definition _frame : ident := $"frame".
+Definition _frames : ident := $"frames".
 Definition _free : ident := $"free".
 Definition _free_heap : ident := $"free_heap".
 Definition _from : ident := $"from".
@@ -162,6 +158,7 @@ Definition _i : ident := $"i".
 Definition _int_or_ptr_to_int : ident := $"int_or_ptr_to_int".
 Definition _int_or_ptr_to_ptr : ident := $"int_or_ptr_to_ptr".
 Definition _int_to_int_or_ptr : ident := $"int_to_int_or_ptr".
+Definition _is_ptr : ident := $"is_ptr".
 Definition _j : ident := $"j".
 Definition _limit : ident := $"limit".
 Definition _lo : ident := $"lo".
@@ -170,8 +167,8 @@ Definition _make_tinfo : ident := $"make_tinfo".
 Definition _malloc : ident := $"malloc".
 Definition _n : ident := $"n".
 Definition _nalloc : ident := $"nalloc".
-Definition _new : ident := $"new".
 Definition _newp : ident := $"newp".
+Definition _newv : ident := $"newv".
 Definition _next : ident := $"next".
 Definition _num_allocs : ident := $"num_allocs".
 Definition _odata : ident := $"odata".
@@ -208,6 +205,7 @@ Definition _tinfo : ident := $"tinfo".
 Definition _to : ident := $"to".
 Definition _twobytwo : ident := $"twobytwo".
 Definition _v : ident := $"v".
+Definition _va : ident := $"va".
 Definition _value_sp : ident := $"value_sp".
 Definition _w : ident := $"w".
 Definition _x : ident := $"x".

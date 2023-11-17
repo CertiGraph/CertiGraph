@@ -1,6 +1,6 @@
 Require Export VST.floyd.proofauto.
 Require Export VST.floyd.library.
-Require Export CertiGraph.CertiGC.gc.
+Require Export CertiGraph.CertiGC.gc_stack.
 
 (* BEGIN these patches are necessary for VST 2.12 with Coq 8.17,
    but should no longer be necessary in VST 2.13 and beyond *)
