@@ -393,7 +393,7 @@ abbreviate_semax.
              n
              (EX i: Z,
               PROP ( )
-              LOCAL (temp _new nv;
+              LOCAL (temp _newv nv;
                      temp _sz (if Archi.ptr64 then Vlong (Int64.repr n) else vint n);
                      temp _v (vertex_address g v);
                      temp _from_start fp;
@@ -608,7 +608,7 @@ abbreviate_semax.
                             g' g3;
                           forward_condition g3 h3 from to;
                           heap_relation h' h3)
-                    LOCAL (temp _new nv;
+                    LOCAL (temp _newv nv;
                            temp _sz (if Archi.ptr64 then
                                        Vlong (Int64.repr n) else vint n);
                            temp _from_start (gen_start g3 from);

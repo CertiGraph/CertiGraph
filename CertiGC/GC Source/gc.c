@@ -191,24 +191,24 @@ void forward (value *from_start,  /* beginning of from-space */
       } else {
         intnat i;
         intnat sz;
-        value *new;
+        value *newv;
         sz = Wosize_hd(hd);
-        new = *next+1;
-        *next = new+sz;
+        newv = *next+1;
+        *next = newv+sz;
 	/*        if (sz > 50) printf("Moving value %p with tag %ld with %d fields\n", (void*)v, hd, sz); */
-        Hd_val(new) = hd;
+        Hd_val(newv) = hd;
         for(i = 0; i < sz; i++) {
           /* printf("Moving field %d\n", i); */
-          Field(new, i) = Field(v, i);
+          Field(newv, i) = Field(v, i);
         }
         Hd_val(v) = 0;
-	Field(v, 0) = ptr_to_int_or_ptr((void *)new);
-	*p = ptr_to_int_or_ptr((void *)new);
-        /* printf("New %lld\n", new); */
+	Field(v, 0) = ptr_to_int_or_ptr((void *)newv);
+	*p = ptr_to_int_or_ptr((void *)newv);
+        /* printf("New %lld\n", newv); */
         /* if (*p == 73832) printf("Found it\n"); */
         if (depth>0)
           for (i=0; i<sz; i++)
-            forward(from_start, from_limit, next, &Field(new,i), depth-1);
+            forward(from_start, from_limit, next, &Field(newv,i), depth-1);
       }
     }
   }
@@ -478,8 +478,8 @@ int garbage_collect_all(struct thread_info *ti) {
   return i;
 }
 
-/* export (deep copy if boxed) from the given root */
-void *export(struct thread_info *ti, value root) {
+/* export_heap (deep copy if boxed) from the given root */
+void *export_heap(struct thread_info *ti, value root) {
 
 
   /* This block of 7 lines is new (appel 2023/06/27) and untested */
