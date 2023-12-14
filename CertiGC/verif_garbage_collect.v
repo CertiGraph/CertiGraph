@@ -123,7 +123,9 @@ Proof.
            safe_to_copy_to_except g' (Z.to_nat i);
            firstn_gen_clear g' (Z.to_nat i);
            garbage_collect_loop (nat_inc_list (Z.to_nat i)) roots g roots' g';
-           graph_has_gen g' (Z.to_nat i))
+           graph_has_gen g' (Z.to_nat i);
+           frame_shells_eq (ti_frames t_info) (ti_frames t_info');
+           ti_nalloc t_info = ti_nalloc t_info')
      LOCAL (temp _h (ti_heap_p t_info'); temp _ti ti;
             gvars gv)
      SEP (thread_info_rep sh t_info' ti;
@@ -133,12 +135,14 @@ Proof.
           graph_rep g';
           ti_token_rep (ti_heap t_info') (ti_heap_p t_info'))).
   - Exists g roots t_info. destruct H2 as [? [? [? ?]]].
-    pose proof (graph_has_gen_O g). entailer!. split; [|split; [|split]].
+    pose proof (graph_has_gen_O g). entailer!. split; [|split; [|split3]].
     + split3; auto.
     + apply stc_stcte_O_iff; assumption.
     + red. intros. simpl in H12. lia.
     + unfold nat_inc_list. simpl. constructor.
-  - cbv beta. Intros g' roots' t_info'. unfold thread_info_rep, heap_rep. Intros.
+    + apply frame_shells_eq_refl.
+  - cbv beta. Intros g' roots' t_info'. rename H14 into FSE. rename H15 into HN.
+    unfold thread_info_rep, heap_rep. Intros.
     unfold heap_struct_rep. assert (0 <= i + 1 < Zlength (spaces (ti_heap t_info'))) by
         (rewrite spaces_size; rep_lia).
     pose proof (space_start_is_pointer_or_null _ _ _ (proj1 H8) H14). 
@@ -153,7 +157,9 @@ Proof.
              safe_to_copy_to_except g1 (Z.to_nat i);
              firstn_gen_clear g1 (Z.to_nat i);
              new_gen_relation (Z.to_nat (i + 1)) g' g1;
-             graph_has_gen g1 (Z.to_nat (i + 1)))
+             graph_has_gen g1 (Z.to_nat (i + 1));
+             frame_shells_eq (ti_frames t_info) (ti_frames t_info1);
+             ti_nalloc t_info = ti_nalloc t_info1)
        LOCAL (temp _h (ti_heap_p t_info1); temp _ti ti;
               gvars gv; temp _i (Vint (Int.repr i)))
        SEP (thread_info_rep sh t_info1 ti;
@@ -307,7 +313,7 @@ Proof.
           (unfold new_gen_relation; rewrite if_true; auto).
       Exists g' t_info'. entailer!. unfold thread_info_rep, heap_rep, heap_struct_rep.
       entailer!.
-    + Intros g1 t_info1.
+    + Intros g1 t_info1. clear FSE. rename H22 into FSE. clear HN; rename H23 into HN.
       assert_PROP (isptr (ti_heap_p t_info1))
         by (unfold thread_info_rep, heap_rep, heap_struct_rep; entailer!).
       assert (Z.to_nat (i + 1) = S (Z.to_nat i)) by
@@ -387,6 +393,27 @@ Proof.
       replace_SEP 5 (ti_token_rep (ti_heap t_info2) (ti_heap_p t_info2))
          by (erewrite ti_rel_token_the_same; eauto; entailer!; apply derives_refl).
       simpl spaces in *.
+      assert (FSE': frame_shells_eq (ti_frames t_info)
+               (update_frames (ti_frames t_info1) (map (root2val g2) roots2))). {
+            eapply frame_shells_eq_trans. eassumption.
+            apply sc_Zlength in H8, H16.
+            destruct H29 as [? [? [FRR _]]]. 
+            apply frr_Zlength_roots in FRR.
+            clear - FRR H8 H16.
+            forget (Zlength roots') as n; subst n.
+            rewrite H16 in FRR; clear H16.
+            set (frs := ti_frames t_info1) in *; clearbody frs.
+            rewrite <- (Zlength_map _ _ (root2val g2) roots2) in FRR.
+            set (al := map _ roots2) in *. clearbody al.
+            revert al FRR; induction frs as [ | [?? r]]; simpl; intros.
+            constructor.
+            rewrite frames2rootpairs_cons in *.
+            rewrite Zlength_app, Zlength_frame2rootpairs in FRR.
+            simpl in FRR.
+            constructor; auto. simpl. list_solve.
+            apply IHfrs. list_solve.
+      }
+
       forward_if.
       * destruct (space_start (Znth i (spaces h2))); try contradiction.
         destruct (space_start (Znth (i + 1) (spaces h2)));
@@ -410,9 +437,10 @@ Proof.
         assert (graph_heap_compatible g2 (ti_heap t_info2)) by (apply (proj1 H27)).
         assert (graph_gen_clear g2 O) by (apply H37; rewrite H23; lia).
         forward_call (rsh, sh, gv, ti, g2, t_info2, roots2). forward.
-        Exists g2 t_info2 roots2. entailer!. split.
+        Exists g2 t_info2 roots2. entailer!. split3.
         -- exists (Z.to_nat i). rewrite <- H23 at 1. split; assumption.
         -- rewrite H23 in H38. eapply safe_to_copy_complete; eauto.
+        -- rewrite HN. auto.
       * forward. Intros. Exists g2 roots2 t_info2. rewrite <- H23 in *. entailer!.
   - Intros g2 roots2 t_info2. unfold all_string_constants. Intros.
      forward_call; contradiction.

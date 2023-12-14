@@ -411,7 +411,9 @@ Definition resume_spec :=
          graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
-    PROP (Ptrofs.unsigned (ti_nalloc t_info) <= total_space (heap_head (ti_heap t_info)))
+    PROP (Ptrofs.unsigned (ti_nalloc t_info) <= 
+           total_space (heap_head (ti_heap t_info))
+          - used_space (heap_head (ti_heap t_info)))
     LOCAL ()
     SEP (all_string_constants rsh gv;
          graph_rep g;
@@ -440,7 +442,11 @@ Definition garbage_collect_spec :=
     PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
           garbage_collect_relation roots roots' g g';
           garbage_collect_condition g' (ti_heap t_info') roots';
-          safe_to_copy g')
+          safe_to_copy g';
+          frame_shells_eq (ti_frames t_info) (ti_frames t_info');
+          Ptrofs.unsigned (ti_nalloc t_info) <= 
+                 total_space (heap_head (ti_heap t_info'))
+                    - used_space (heap_head (ti_heap t_info')))
     LOCAL ()
     SEP (mem_mgr gv; (*MSS_constant gv;*)
          all_string_constants rsh gv;

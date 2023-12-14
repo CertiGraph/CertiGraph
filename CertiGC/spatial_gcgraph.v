@@ -2105,3 +2105,31 @@ Proof.
   destruct frames as [|[???]?]; simpl frames_p; unfold frames_rep; simpl; auto with valid_pointer.
 Qed.
 #[export] Hint Resolve frames_rep_valid_pointer: valid_pointer.
+
+Inductive frame_shells_eq: forall frames1 frames2 : list frame, Prop :=
+| fse_nil: frame_shells_eq nil nil
+| fse_cons: forall fr1 fr2 r1 r2,
+    fr_adr fr1 = fr_adr fr2 ->
+    fr_root fr1 = fr_root fr2 ->
+    Zlength (fr_roots fr1) = Zlength (fr_roots fr2) ->
+    frame_shells_eq r1 r2 ->
+    frame_shells_eq (fr1::r1) (fr2::r2).
+
+
+Lemma frame_shells_eq_refl: reflexive _ frame_shells_eq.
+Proof.
+intros frs.
+induction frs.
+constructor.
+constructor; auto.
+Qed.
+
+
+Lemma frame_shells_eq_trans: transitive _ frame_shells_eq.
+Proof.
+hnf; intros.
+revert z H0.
+induction H; intros; auto.
+inversion H3; clear H3; subst.
+constructor; auto; congruence. 
+Qed.
