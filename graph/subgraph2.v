@@ -154,7 +154,7 @@ Proof.
   apply reachable_by_through_set_eq_partialgraph_reachable_through_set.
 Qed.
 
-Lemma predicate_subgraph_reachable_included (p: V -> Prop): 
+Lemma predicate_subgraph_reachable_included (p: V -> Prop):
   forall (n: V), Included (reachable (predicate_subgraph g p) n) (reachable g n).
 Proof.
   intros.
@@ -173,7 +173,7 @@ Proof.
     exists e; auto.
 Qed.
 
-Lemma predicate_partialgraph_reachable_included (p: V -> Prop): 
+Lemma predicate_partialgraph_reachable_included (p: V -> Prop):
   forall (n: V), Included (reachable (predicate_partialgraph g p) n) (reachable g n).
 Proof.
   intros.
@@ -357,7 +357,7 @@ Proof.
   reflexivity.
 Defined.
 
-Lemma predicate_partialgraph_reachable_by_included (g: PreGraph V E) (p p0: V -> Prop): 
+Lemma predicate_partialgraph_reachable_by_included (g: PreGraph V E) (p p0: V -> Prop):
   forall (n: V), Included (reachable_by (predicate_partialgraph g p) n p0) (reachable_by g n p0).
 Proof.
   intros.
@@ -371,7 +371,7 @@ Proof.
   auto.
 Qed.
 
-Lemma reachable_partialgraph_reachable (g: PreGraph V E): 
+Lemma reachable_partialgraph_reachable (g: PreGraph V E):
   forall (n: V), Included (reachable g n) (reachable (predicate_partialgraph g (reachable g n)) n).
 Proof.
   intros.
@@ -644,10 +644,10 @@ Proof.
 Qed.
 
 Lemma Complement_reachable_by_through_app_strong: forall (g: PreGraph V E) P l1 l2,
-  Same_set 
+  Same_set
    (Complement _ (reachable_by_through_set g (l1 ++ l2) P))
    (Intersection _
-     (Complement _ (reachable_by_through_set g l1 P)) 
+     (Complement _ (reachable_by_through_set g l1 P))
      (Complement _ (reachable_by_through_set (predicate_partialgraph g (Complement _ (reachable_by_through_set g l1 P))) l2 P))).
 Proof.
   intros.
@@ -733,6 +733,14 @@ Definition reachable_sub_labeledgraph (g: Graph) (S : list V): Graph :=
 Definition unreachable_partial_labeledgraph (g: Graph) (S : list V): Graph :=
   predicate_partial_labeledgraph g (fun n => ~ reachable_through_set g S n).
 
+Lemma reachable_through_set_iff: forall (g: Graph) S v,
+    reachable_through_set g S v <-> vvalid (reachable_sub_labeledgraph g S) v.
+Proof.
+  intros. split; intros.
+  - hnf. split; auto. destruct H as [s [? ?]]. eapply reachable_foot_valid; eauto.
+  - destruct H. assumption.
+Qed.
+
 End PartialLabeledGraph.
 
 Section GRAPH_DISJOINT_UNION.
@@ -748,12 +756,12 @@ Section GRAPH_DISJOINT_UNION.
     Disjoint _ PV1 PV2 /\ Disjoint _ PE1 PE2.
 
   (* In assumption, why need decidability in Type? Because we need at least an existence (in Prop) of a function, which requires decidability in Type. *)
-  (* In conclusion, it is possible to generate this stronger existential (In Type) property. *) 
+  (* In conclusion, it is possible to generate this stronger existential (In Type) property. *)
   Definition disjointed_union_labeledgraph_sig_ll: forall (G1 G2: LabeledGraph V E DV DE DG),
     disjointed_guard (vvalid G1) (vvalid G2) (evalid G1) (evalid G2) ->
     (forall v, Decidable (vvalid G1 v)) ->
     (forall e, Decidable (evalid G1 e)) ->
-    { G: LabeledGraph V E DV DE DG | 
+    { G: LabeledGraph V E DV DE DG |
       guarded_labeled_graph_equiv (vvalid G1) (evalid G1) G1 G /\
       guarded_labeled_graph_equiv (vvalid G2) (evalid G2) G2 G /\
       Prop_join (vvalid G1) (vvalid G2) (vvalid G) /\
@@ -814,7 +822,7 @@ Section GRAPH_DISJOINT_UNION.
   Definition disjointed_union_pregraph_sig_l: forall (G1 G2: PreGraph V E),
     Disjoint _ (evalid G1) (evalid G2) ->
     (forall e, Decidable (evalid G1 e)) ->
-    { G: PreGraph V E | 
+    { G: PreGraph V E |
       guarded_structurally_identical (vvalid G1) (evalid G1) G1 G /\
       guarded_structurally_identical (vvalid G2) (evalid G2) G2 G /\
       Same_set (Union _ (vvalid G1) (vvalid G2)) (vvalid G) /\
@@ -857,7 +865,7 @@ Section GRAPH_DISJOINT_UNION.
   Definition disjointed_union_pregraph_sig_r: forall (G1 G2: PreGraph V E),
     Disjoint _ (evalid G1) (evalid G2) ->
     (forall e, Decidable (evalid G2 e)) ->
-    { G: PreGraph V E | 
+    { G: PreGraph V E |
       guarded_structurally_identical (vvalid G1) (evalid G1) G1 G /\
       guarded_structurally_identical (vvalid G2) (evalid G2) G2 G /\
       Same_set (Union _ (vvalid G1) (vvalid G2)) (vvalid G) /\
@@ -890,4 +898,3 @@ Section GRAPH_DISJOINT_UNION.
   Qed.
 
 End GRAPH_DISJOINT_UNION.
-

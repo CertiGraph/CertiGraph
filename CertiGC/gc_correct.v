@@ -169,15 +169,23 @@ Proof.
   clear. induction roots; simpl; auto. rewrite <- IHroots. f_equal. destruct a; auto.
 Qed.
 
+Lemma map_root_map_bijective:
+  forall (roots1 roots2 : roots_t) (vmap12 vmap21 : VType -> VType),
+    roots2 = map (root_map vmap12) roots1 ->
+    bijective vmap12 vmap21 -> roots1 = map (root_map vmap21) roots2.
+Proof.
+  intros roots1 roots2 vmap12 vmap21 H H0.
+  apply bijective_root_map, bijective_map, bijective_sym in H0. destruct H0.
+  now rewrite H, surjective.
+Qed.
+
 Lemma gc_graph_iso_sym: forall g1 roots1 g2 roots2,
     gc_graph_iso g1 roots1 g2 roots2 -> gc_graph_iso g2 roots2 g1 roots1.
 Proof.
   intros. unfold gc_graph_iso in *.
   destruct H as [vmap12 [vmap21 [emap12 [emap21 [? ?]]]]].
   exists vmap21, vmap12, emap21, emap12. split.
-  - destruct H0 as [[?H _] _]. clear -H H0.
-    apply bijective_root_map, bijective_map, bijective_sym in H0. destruct H0.
-    now rewrite H, surjective.
+  - destruct H0 as [[?H _] _]. eapply map_root_map_bijective; eauto.
   - now apply lp_graph_iso_exp_sym.
 Qed.
 
@@ -1230,7 +1238,7 @@ Definition restricted_roots_map (index: Z)
            (roots: roots_t) (l: list (VType * VType)): roots_t :=
            (* could avoid restricted_map and just use upd_Znth *)
   restricted_map (root_map (list_map l)) roots [index].
-                 
+
 Lemma restricted_roots_map_Znth_diff: forall z roots l j,
   j <> z ->
   Znth j (restricted_roots_map z roots l) = Znth j roots.
@@ -1250,7 +1258,7 @@ Lemma restricted_roots_map_Znth_same: forall z roots l j,
     Znth j (restricted_roots_map z roots l) =
     root_map (list_map l) (Znth j roots).
 Proof.
-  intros. unfold restricted_roots_map. subst; simpl. list_solve.  
+  intros. unfold restricted_roots_map. subst; simpl. list_solve.
 Qed.
 
 Lemma rrm_non_vertex_id: forall index  (roots: roots_t) l,
@@ -1562,7 +1570,7 @@ Lemma inl_rf_list_relation: forall (from : nat) (z : Z) (roots : roots_t)
     0 <= z < Zlength roots ->
     Znth z roots = inl s -> rf_list_relation roots l1 z from.
 Proof.
-  intros. destruct H. red. intros. congruence. 
+  intros. destruct H. red. intros. congruence.
 Qed.
 
 Lemma not_rf_list_relation: forall (from : nat) (z : Z) (roots : roots_t)
@@ -1697,11 +1705,11 @@ Lemma quasi_roots_map_cons: forall a l roots,
   quasi_roots_map (a :: l) roots =
   quasi_roots_map l (map (root_map (Z.of_nat a) roots)).
 Proof.
-  intros. reflexivity. 
+  intros. reflexivity.
 Qed.
 *)
 
-Definition rf_list_pair_relation (roots: roots_t) 
+Definition rf_list_pair_relation (roots: roots_t)
            (l1 l2: list (VType * VType)) (z: Z): Prop :=
   forall j, 0 <= j < Zlength roots ->
             j=z ->
@@ -1805,7 +1813,7 @@ Lemma filter_sum_right_app: forall {A B} (al bl: list (A+B)),
  Qed.
 
 Lemma roots_graph_compatible_app: forall roots1 roots2 g,
-   roots_graph_compatible (roots1 ++ roots2) g <-> 
+   roots_graph_compatible (roots1 ++ roots2) g <->
    roots_graph_compatible roots1 g /\ roots_graph_compatible roots2 g.
 Proof.
  intros.
@@ -2474,7 +2482,7 @@ Proof.
   - destruct (Znth z roots) eqn:? ;
       [destruct s|]; simpl in *; rewrite ?Heqr; inversion H5; subst; clear H5;
         try (rewrite <- Heqr, upd_Znth_unchanged'); auto.
-    + rewrite if_false; auto. rewrite <- Heqr, upd_Znth_unchanged'; auto. 
+    + rewrite if_false; auto. rewrite <- Heqr, upd_Znth_unchanged'; auto.
     + rewrite if_true, H11; auto. red in H7 |-* ; intros. specialize (H7 _ H5 H8 H9).
       rewrite reachable_from_roots in *. destruct H7 as [i [r [? [? ?]]]].
       pose proof I. rewrite upd_Znth_Zlength; auto.
@@ -2781,7 +2789,7 @@ Lemma frr_rom_aux: forall from to (roots1 roots2: roots_t) g1 g2,
     roots_graph_compatible roots1 g1 ->
     no_dangling_dst g1 -> copied_vertex_prop g1 from to -> copy_compatible g1 ->
     forward_roots_relation from to roots1 g1 roots2 g2 ->
-    forall done v, 
+    forall done v,
        roots_graph_compatible done g1 ->
        (reachable_or_marked from g1 (done++roots1) v <->
         reachable_or_marked from g2 (done++roots2) v).
@@ -2809,7 +2817,7 @@ Proof.
   - change (r::roots1) with ([r]++roots1).
     rewrite roots_graph_compatible_app; split; auto.
   - simpl; list_solve.
-  - hnf; auto. 
+  - hnf; auto.
   - simpl. autorewrite with sublist. auto.
 Qed.
 
@@ -2981,7 +2989,7 @@ Qed.
 
 Lemma backward_edge_prop_app_comm:
  forall r1 r2 g from to,
-   backward_edge_prop g (r1++r2) from to <-> 
+   backward_edge_prop g (r1++r2) from to <->
    backward_edge_prop g (r2++r1) from to.
 Proof.
  unfold backward_edge_prop; intros.
@@ -2998,7 +3006,7 @@ Qed.
 Lemma backward_edge_prop_incl:
   forall r1 r2 g from to,
      (forall x, In x r1 -> In x r2) ->
-   backward_edge_prop g r1 from to -> 
+   backward_edge_prop g r1 from to ->
    backward_edge_prop g r2 from to.
 Proof.
 unfold backward_edge_prop; intros.
@@ -3016,8 +3024,8 @@ Lemma frr_bep_aux: forall from to (roots1 roots2: roots_t) g1 g2,
     copied_vertex_prop g1 from to ->
     gen_unmarked g1 to ->
     forward_roots_relation from to roots1 g1 roots2 g2 ->
-    forall done, 
-     backward_edge_prop g1 (done++roots1) from to -> 
+    forall done,
+     backward_edge_prop g1 (done++roots1) from to ->
     backward_edge_prop g2 (done++roots2) from to.
 Proof.
  induction 9; intros; auto.
@@ -3349,4 +3357,124 @@ Proof.
   - eapply do_gen_sound; eauto.
   - rewrite <- do_gen_graph_has_gen; eauto.
   - eapply do_gen_firstn_gen_clear; eauto.
+Qed.
+
+Lemma vvalid_reachable_sub_cons:
+  forall {roots: list root_t} {g : LGraph} {x: VType} (v : VType),
+    vvalid (reachable_sub_labeledgraph g (filter_sum_right roots)) x ->
+    vvalid (reachable_sub_labeledgraph g (v :: filter_sum_right roots)) x.
+Proof.
+  intros. simpl in *. unfold predicate_vvalid in *. destruct H.
+  rewrite !reachable_through_set_eq. split; [auto | right]. assumption.
+Qed.
+
+Lemma pregraph_iso_cons_vvalid:
+  forall {roots1 roots2 : list root_t} {g1 g2 : LGraph} {v : VType}
+    {vmap12 vmap21 : VType -> VType} {emap12 emap21 : EType -> EType},
+    pregraph_isomorphism_explicit
+      (reachable_sub_labeledgraph g1 (v :: filter_sum_right roots1))
+      (reachable_sub_labeledgraph g2 (vmap12 v :: filter_sum_right roots2)) vmap12 vmap21
+      emap12 emap21 ->
+    roots2 = map (root_map vmap12) roots1 ->
+    forall v0 : VType,
+      vvalid (reachable_sub_labeledgraph g1 (filter_sum_right roots1)) v0 ->
+      vvalid (reachable_sub_labeledgraph g2 (filter_sum_right roots2)) (vmap12 v0).
+Proof.
+  intros roots1 roots2 g1 g2 v vmap12 vmap21 emap12 emap21 lp_pregraph_iso Hrest.
+  intros v0 Hv. pose proof (vvalid_reachable_sub_cons v Hv) as Hr1.
+  destruct lp_pregraph_iso. simpl in *. unfold predicate_vvalid, predicate_evalid in *.
+  hnf in *. destruct Hv as [Hv1 Hr].
+  destruct (vvalid_bij _ Hr1) as [Hv2 Hr2]. split; auto.
+  destruct Hr2 as [s [Hin Hr2]]. simpl in Hin. destruct Hin as [Hin | Hin].
+  2: (exists s; split; auto). subst s. destruct Hr as [s [Hin Hr]].
+  destruct Hr as [p Hr]. destruct p as [v' p]. destruct Hr as [[Hh Hf] [Hvp _]].
+  simpl in Hh. subst v'. exists (vmap12 s). split.
+  1: subst roots2; rewrite <- filter_sum_right_In_iff in Hin |- * ; rewrite in_map_iff;
+  exists (inr s); split; auto. clear Hr2. destruct Hr1 as [_ Hr1].
+  revert dependent v0. induction p using rev_ind; intros.
+  - simpl in Hf. subst v0. apply reachable_refl. assumption.
+  - assert (valid_path g1 (s, p)) as Hvp1. {
+      rewrite valid_path_app in Hvp. destruct Hvp; assumption. }
+    pose proof (pfoot_split _ _ _ _ _ Hvp) as Hfs.
+    assert (reachable_through_set g1 (v :: filter_sum_right roots1) (src g1 x)) as Hr1s. {
+      exists s. split. 1: simpl; right; assumption. exists (s, p). split; split; simpl; auto.
+      constructor; auto. simpl. rewrite Forall_forall. intros; auto. }
+    assert (vvalid g1 (src g1 x)) as Hv1s. {
+      apply valid_path_valid with (s, p); auto. apply pfoot_in. assumption. }
+    destruct (vvalid_bij _ (conj Hv1s Hr1s)) as [Hv2s _].
+    specialize (IHp Hvp1 _ Hv1s Hfs Hr1s Hv2s). eapply reachable_edge; eauto.
+    do 2 (split; auto). rewrite pfoot_last in Hf. subst v0.
+    assert (evalid g1 x) as Hev1. {
+      eapply valid_path_evalid. apply Hvp. rewrite in_app_iff. right. left. reflexivity. }
+    pose proof (conj Hev1 (conj Hr1s Hr1)) as Hc. destruct (evalid_bij _ Hc) as [Hev2 _].
+    specialize (src_bij _ Hc). specialize (dst_bij _ Hc).
+    econstructor; eauto.
+Qed.
+
+Lemma evalid_reachable_sub_cons:
+  forall {roots: list root_t} {g : LGraph} {e: EType} (v : VType),
+    evalid (reachable_sub_labeledgraph g (filter_sum_right roots)) e ->
+    evalid (reachable_sub_labeledgraph g (v :: filter_sum_right roots)) e.
+Proof.
+  intros. simpl in *. unfold predicate_evalid in *.
+  rewrite !reachable_through_set_eq. split; [auto | split; right]; intuition.
+Qed.
+
+Lemma pregraph_iso_cons_evalid:
+  forall (roots1 roots2 : list root_t) (g1 g2 : LGraph) (v : VType)
+    (vmap12 vmap21 : VType -> VType) (emap12 emap21 : EType -> EType),
+    pregraph_isomorphism_explicit
+      (reachable_sub_labeledgraph g1 (v :: filter_sum_right roots1))
+      (reachable_sub_labeledgraph g2 (vmap12 v :: filter_sum_right roots2)) vmap12 vmap21
+      emap12 emap21 ->
+    roots2 = map (root_map vmap12) roots1 ->
+    forall e : EType,
+      evalid (reachable_sub_labeledgraph g1 (filter_sum_right roots1)) e ->
+      evalid (reachable_sub_labeledgraph g2 (filter_sum_right roots2)) (emap12 e).
+Proof.
+  intros roots1 roots2 g1 g2 v vmap12 vmap21 emap12 emap21 lp_pregraph_iso Hrest.
+  intros e He1v. pose proof (evalid_reachable_sub_cons v He1v) as Hersd.
+  hnf in *. destruct He1v as [He1v [Hr1s Hr1d]].
+  rewrite reachable_through_set_iff in Hr1s, Hr1d |- * . rewrite reachable_through_set_iff.
+  pose proof (pregraph_iso_cons_vvalid lp_pregraph_iso Hrest _ Hr1s) as Hv2s.
+  pose proof (pregraph_iso_cons_vvalid lp_pregraph_iso Hrest _ Hr1d) as Hv2d.
+  destruct lp_pregraph_iso. simpl in *. unfold predicate_vvalid, predicate_evalid in *.
+  destruct (evalid_bij _ Hersd) as [He2v _].
+  specialize (src_bij _ Hersd). specialize (dst_bij _ Hersd).
+  rewrite <- src_bij, <- dst_bij. split; [|split]; auto.
+Qed.
+
+Lemma gc_graph_iso_cons_roots_inv: forall roots1 roots2 g1 g2 p1 p2,
+    gc_graph_iso g1 (p1 :: roots1) g2 (p2 :: roots2) ->
+    gc_graph_iso g1 roots1 g2 roots2.
+Proof.
+  intros. destruct H as [vmap12 [vmap21 [emap12 [emap21 [Hroots Hiso]]]]].
+  simpl in Hroots. inversion Hroots as [[Hhead Hrest]]. clear Hroots.
+  exists vmap12, vmap21, emap12, emap21. split. 1: reflexivity. simpl in Hiso.
+  destruct p1; simpl in Hhead; subst p2. 1: subst; assumption. rewrite <- Hrest.
+  destruct Hiso. split.
+  - clear - Hrest lp_pregraph_iso.
+    assert (v = vmap21 (vmap12 v)) as Hv. {
+      destruct lp_pregraph_iso. rewrite surjective; auto. apply bijective_sym. assumption. }
+    assert (roots1 = map (root_map vmap21) roots2) as Hrest'. {
+      eapply map_root_map_bijective; eauto. destruct lp_pregraph_iso. assumption. }
+    split.
+    + destruct lp_pregraph_iso. assumption.
+    + destruct lp_pregraph_iso. assumption.
+    + eapply pregraph_iso_cons_vvalid; eauto.
+    + remember (vmap12 v) as v'. clear Heqv'. subst v.
+      apply pregraph_iso_exp_sym in lp_pregraph_iso.
+      eapply pregraph_iso_cons_vvalid; eauto.
+    + eapply pregraph_iso_cons_evalid; eauto.
+    + remember (vmap12 v) as v'. clear Heqv'. subst v.
+      apply pregraph_iso_exp_sym in lp_pregraph_iso.
+      eapply pregraph_iso_cons_evalid; eauto.
+    + intros e Hev. pose proof (evalid_reachable_sub_cons v Hev) as Hersd.
+      destruct lp_pregraph_iso. simpl in *. unfold predicate_evalid in *.
+      apply src_bij; assumption.
+    + intros e Hev. pose proof (evalid_reachable_sub_cons v Hev) as Hersd.
+      destruct lp_pregraph_iso. simpl in *. unfold predicate_evalid in *.
+      apply dst_bij; assumption.
+  - intros v0 Hv. apply vlabel_iso. apply vvalid_reachable_sub_cons. assumption.
+  - intros e He. apply elabel_iso. apply evalid_reachable_sub_cons. assumption.
 Qed.
