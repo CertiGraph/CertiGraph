@@ -276,7 +276,7 @@ cav:
 
 .PHONY: clean
 clean:
-	@rm -f */*.vo */*.glob */.*.aux $(CLIGHT_FILES) .depend
+	@rm -f */*.vo */*.glob */.*.aux .depend
 
 .PHONY: coqide
 coqide:
