@@ -1,10 +1,11 @@
-Require Export VST.veric.rmaps.
-Require Export CertiGraph.lib.List_ext.
-Require Export CertiGraph.graph.graph_model.
+Require Import VST.veric.rmaps.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
 Require Export CertiGraph.CertiGC.GCGraph.
+Require Import VST.concurrency.conclib.
 Require Export CertiGraph.CertiGC.spatial_gcgraph.
-Require Export CertiGraph.CertiGC.env_graph_gc.
-Require Export CertiGraph.msl_ext.iter_sepcon.
+Require Import CertiGraph.CertiGC.env_graph_gc.
+Require Import CertiGraph.msl_ext.iter_sepcon.
 
 Local Open Scope logic.
 

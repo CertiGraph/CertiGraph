@@ -1,4 +1,4 @@
-Require Import CertiGraph.CertiGC.gc_spec.
+From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 
 Local Open Scope Z_scope.
 

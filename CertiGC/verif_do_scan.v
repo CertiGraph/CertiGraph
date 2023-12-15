@@ -1,4 +1,16 @@
+Require Import VST.veric.rmaps.
+Require Import CertiGraph.lib.List_ext.
+Require Import CertiGraph.graph.graph_model.
+Require Import Coq.Program.Basics.
+Require Import CertiGraph.graph.graph_gen.
+Require Import CertiGraph.CertiGC.GCGraph.
+Require Import VST.msl.wand_frame.
+Require Import VST.concurrency.conclib.
+Require Import CertiGraph.CertiGC.env_graph_gc.
+Require Import CertiGraph.CertiGC.spatial_gcgraph.
+Require Import CertiGraph.msl_ext.iter_sepcon. 
 Require Import CertiGraph.CertiGC.gc_spec.
+Require Import CertiGraph.msl_ext.ramification_lemmas.
 
 Local Open Scope logic.
 

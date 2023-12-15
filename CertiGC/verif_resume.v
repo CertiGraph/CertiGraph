@@ -1,4 +1,4 @@
-Require Import CertiGraph.CertiGC.gc_spec.
+From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 
 Lemma int64_ltu_ptrofs_to_int_64:
   forall x y, Archi.ptr64 = true ->

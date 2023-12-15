@@ -1,4 +1,4 @@
-Require Import CertiGraph.CertiGC.gc_spec.
+From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 
 Lemma body_make_tinfo: semax_body Vprog Gprog f_make_tinfo make_tinfo_spec.
 Proof.
