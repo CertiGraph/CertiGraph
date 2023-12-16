@@ -1,4 +1,4 @@
-Require Import CertiGraph.CertiGC.gc_spec.
+From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 
 Ltac hif_tac H :=
   match type of H with context [if ?a then _ else _] => destruct a eqn: ?H end.

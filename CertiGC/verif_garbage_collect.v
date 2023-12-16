@@ -1,4 +1,5 @@
-Require Import CertiGraph.CertiGC.gc_spec.
+From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
+Require Import VST.concurrency.conclib.
 
 Local Open Scope logic.
 

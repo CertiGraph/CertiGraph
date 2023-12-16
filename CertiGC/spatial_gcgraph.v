@@ -1,13 +1,13 @@
 Require Import VST.veric.compcert_rmaps.
 Require Import VST.msl.shares.
-Require Export VST.msl.wand_frame.
-Require Export VST.concurrency.conclib.
+Require Import VST.msl.wand_frame.
+Require Import VST.concurrency.conclib.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.msl_ext.log_normalize.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.CertiGC.GCGraph.
-Require Export CertiGraph.CertiGC.env_graph_gc.
+Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import Coq.Lists.List.
 
