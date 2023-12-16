@@ -35,8 +35,10 @@ Definition edge_valid (g: LGraph): Prop := forall e, evalid g e <-> graph_has_e 
 
 Definition src_edge (g: PreGraph VType EType): Prop := forall e, src g e = fst e.
 
+Definition edge_label_same (g: LGraph): Prop := forall e, elabel g e = snd e.
+
 Definition sound_gc_graph (g: LGraph): Prop :=
-  vertex_valid g /\ edge_valid g /\ src_edge g.
+  vertex_valid g /\ edge_valid g /\ src_edge g /\ edge_label_same g.
 
 (** Reset is sound *)
 
@@ -128,12 +130,20 @@ Proof.
     destruct H0 as [x [? _]]; now subst v.
 Qed.
 
+Lemma edge_label_same_resset: forall g gen,
+    edge_label_same g -> edge_label_same (reset_graph gen g).
+Proof.
+  unfold edge_label_same. intros g gen He e. simpl.
+  rewrite remove_ve_elabel_unchanged. apply He.
+Qed.
+
 Lemma reset_sound: forall (g: LGraph) gen,
     sound_gc_graph g -> sound_gc_graph (reset_graph gen g).
 Proof.
-  intros. destruct H as [? [? ?]].
-  now split3;
-    [apply vertex_valid_reset | apply edge_valid_reset | apply src_edge_reset].
+  intros. destruct H as [? [? [? ?]]].
+  now split; [|split; [|split]];
+    [apply vertex_valid_reset | apply edge_valid_reset |
+      apply src_edge_reset | apply edge_label_same_resset ].
 Qed.
 
 (** Quasi-Isomorphism to Full-Isomorphism *)
@@ -451,9 +461,10 @@ Proof.
     destruct H14 as [_ ?]. contradiction. }
   remember (list_bi_map vpl) as vmap.
   remember (list_bi_map (gen_edge_pair_list g1 vpl)) as emap.
-  destruct (reset_sound _ from H0) as [? [? ?]]. destruct H0 as [? [? ?]].
-  destruct H1 as [? [? ?]]. unfold vertex_valid, edge_valid, src_edge in *.
-  simpl in H14, H15, H16.
+  destruct (reset_sound _ from H0) as [? [? [? Helsr]]]. destruct H0 as [? [? [? Hels]]].
+  destruct H1 as [? [? [? Hels1]]].
+  unfold vertex_valid, edge_valid, src_edge, edge_label_same in *.
+  simpl in H14, H15, H16, Helsr.
   assert (Hs: forall e, evalid g1 e -> vmap (src g1 e) = src g2 (emap e)). {
     intros. rewrite H19 in H21. destruct H21. rewrite H20 in *. rewrite <- H1 in H21.
     subst vmap emap. destruct (InEither_dec (fst e) vpl).
@@ -765,8 +776,14 @@ Proof.
       specialize (H6 _ _ H13). subst v. rewrite H24. destruct H6; auto.
     + rewrite list_bi_map_not_In; auto. apply N0; auto. intro. apply n. red.
       rewrite Heqp, in_app_iff. left; assumption.
-  - simpl. destruct (elabel g1 e).
-    destruct (elabel (remove_nth_gen_ve g2 from) (emap e)). reflexivity.
+  - simpl in H21 |- * . rewrite remove_ve_elabel_unchanged. subst emap.
+    destruct (InEither_dec (fst e) vpl).
+    + destruct H21 as [? _]. rewrite H19 in H21. destruct H21. rewrite <- H1 in H21.
+      destruct (H13 _ H21 i) as [k [v [? [? ?]]]]. subst k.
+      pose proof (gepl_key _ _ _ _ H22 H23).
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hn H24) as [? _]. now rewrite H26, Hels1, Hels.
+    + rewrite list_bi_map_not_In; auto. 1: rewrite Hels, Hels1; reflexivity.
+      intro. apply n. apply gepl_InEither in H22. assumption.
 Qed.
 
 (** Other graph relation is sound *)
@@ -816,13 +833,22 @@ Proof.
   - destruct H0 as [gen_i [? ?]]. subst g2. now unfold src_edge in *.
 Qed.
 
+Lemma ngr_edge_label_same: forall (g1 g2: LGraph) gen,
+    edge_label_same g1 -> new_gen_relation gen g1 g2 -> edge_label_same g2.
+Proof.
+  intros. red in H0. destruct (graph_has_gen_dec g1 gen).
+  - now subst.
+  - destruct H0 as [gen_i [? ?]]. subst g2. now unfold edge_label_same in *.
+Qed.
+
 Lemma ngr_sound: forall g1 g2 gen,
     sound_gc_graph g1 -> new_gen_relation gen g1 g2 -> sound_gc_graph g2.
 Proof.
-  intros. destruct H as [? [? ?]]. split3.
+  intros. destruct H as [? [? [? ?]]]. split; [|split; [|split]].
   - eapply ngr_vertex_valid; eauto.
   - eapply ngr_edge_valid; eauto.
   - eapply ngr_src_edge; eauto.
+  - eapply ngr_edge_label_same; eauto.
 Qed.
 
 Section GENERAL_GRAPH_PROP.
@@ -1086,14 +1112,19 @@ Proof.
     apply pcv_src_edge; assumption.
 Qed.
 
+Lemma fr_O_edge_label_same: forall (g1 g2: LGraph) from to p,
+    edge_label_same g1 -> forward_relation from to O p g1 g2 -> edge_label_same g2.
+Proof. intros. inversion H0; subst; try assumption. Qed.
+
 Lemma fr_O_sound: forall g1 g2 from to p,
     sound_gc_graph g1 -> graph_has_gen g1 to ->
     forward_relation from to O p g1 g2 -> sound_gc_graph g2.
 Proof.
-  intros. destruct H as [? [? ?]]. split3.
+  intros. destruct H as [? [? [? ?]]]. split; [|split; [|split]].
   - eapply fr_O_vertex_valid; eauto.
   - eapply fr_O_edge_valid; eauto.
   - eapply fr_O_src_edge; eauto.
+  - eapply fr_O_edge_label_same; eauto.
 Qed.
 
 Lemma gc_sound: forall r1 r2 g1 g2,
@@ -1315,7 +1346,7 @@ Lemma pcv_is_partial_graph: forall (g: LGraph) old new,
     sound_gc_graph g -> ~ vvalid g new ->
     is_partial_graph g (pregraph_copy_v g old new).
 Proof.
-  intros. destruct H as [? [? ?]]. red in H, H1, H2. split; [|split; [|split]]; intros.
+  intros. destruct H as [? [? [? Hels]]]. red in H, H1, H2. split; [|split; [|split]]; intros.
   - rewrite pcv_vvalid_iff. now left.
   - rewrite pcv_evalid_iff. now left.
   - rewrite pcv_src_old; auto. intro. now rewrite H2, H5 in H4.
@@ -1338,10 +1369,11 @@ Qed.
 Lemma lcv_sound: forall g v to,
     graph_has_gen g to -> sound_gc_graph g -> sound_gc_graph (lgraph_copy_v g v to).
 Proof.
-  intros. unfold sound_gc_graph in *. destruct H0 as [? [? ?]]. split3.
+  intros. unfold sound_gc_graph in *. destruct H0 as [? [? [? ?]]]. split; [|split; [|split]].
   - eapply lcv_vertex_valid; eauto.
   - eapply lcv_edge_valid; eauto.
   - eapply pcv_src_edge; eauto.
+  - assumption.
 Qed.
 
 Lemma ucov_rawmark: forall g old_v new_v,
@@ -1366,8 +1398,8 @@ Proof.
   assert (sound_gc_graph (lgraph_copy_v g1 v to)) by (apply lcv_sound; auto).
   assert (N4: DoubleNoDup l1) by (eapply semi_iso_DoubleNoDup; eauto).
   destruct H8 as [? [? ?]]. destruct (split l1) as [from_l to_l] eqn: ?.
-  destruct H10 as [[? ?] [[? [? ?]] ?]]. destruct H0 as [? [? ?]]. red in H0, H16, H17.
-  pose proof H1. rename H18 into N1. destruct H1 as [? [? ?]]. red in H1, H18, H19.
+  destruct H10 as [[? ?] [[? [? ?]] ?]]. destruct H0 as [? [? [? Hels]]]. red in H0, H16, H17.
+  pose proof H1. rename H18 into N1. destruct H1 as [? [? [? Hels1]]]. red in H1, H18, H19.
   assert (vvalid g v). {
     destruct (vvalid_lcm g v H0); auto. exfalso.
     assert (In v to_l) by (rewrite H13; now split). apply H14 in H21.
@@ -1435,7 +1467,7 @@ Proof.
            destruct H25 as [_ [? _]]. rewrite <- H1. destruct H8. now apply H8.
     + split; auto. split.
       * intros. destruct H2. red in H2. rewrite H2. rewrite lcv_graph_has_v_iff; auto.
-        rewrite <- H1. simpl. rewrite H13. intuition. rewrite H28 in H21. apply H21.
+        rewrite <- H1. simpl. rewrite H13. intuition. rewrite H29 in H21. apply H21.
         destruct H8. now apply H8.
       * intros. unfold new_copied_v in H25. simpl in H25.
         destruct H25; [subst v0; now simpl | now apply H14].
@@ -1457,8 +1489,8 @@ Proof.
   simpl in H3. destruct H3 as [? [? [? ?]]].
   assert (Hd: DoubleNoDup l1) by (now apply (semi_iso_DoubleNoDup g g1 from to)).
   destruct H8 as [? [? ?]]. destruct (split l1) as [from_l to_l] eqn: ?.
-  destruct H13 as [[? ?] [[? [? ?]] ?]]. destruct H0 as [? [? ?]]. red in H0, H19, H20.
-  destruct H1 as [? [? ?]]. red in H1, H21, H22.
+  destruct H13 as [[? ?] [[? [? ?]] ?]]. destruct H0 as [? [? [? Hels]]]. red in H0, H19, H20.
+  destruct H1 as [? [? [? Hels1]]]. red in H1, H21, H22.
   assert (Hf: from_l = map fst l1) by (rewrite map_fst_split, Heqp; reflexivity).
   assert (Ht: to_l = map snd l1) by (now rewrite map_snd_split, Heqp).
   split3.
@@ -2050,7 +2082,7 @@ Qed.
 Lemma step_vvalid: forall g s t,
     sound_gc_graph g -> no_dangling_dst g -> step g s t -> vvalid g t.
 Proof.
-  intros. destruct H as [? [? ?]]. red in H, H0, H2, H3. rewrite step_spec in H1.
+  intros. destruct H as [? [? [? Hels]]]. red in H, H0, H2, H3. rewrite step_spec in H1.
   destruct H1 as [e [? [? ?]]]. rewrite <- H5, H. rewrite H2 in H1. destruct H1.
   now apply (H0 (fst e)).
 Qed.
@@ -2060,7 +2092,7 @@ Lemma pcv_edge: forall (g: LGraph) old_v new_v z,
     g |= old_v ~> z <-> (pregraph_copy_v g old_v new_v) |= new_v ~> z.
 Proof.
   intros g old_v new_v z H0 Hd H H1.
-  unfold edge. destruct H0 as [? [? ?]]. red in H0, H2, H3.
+  unfold edge. destruct H0 as [? [? [? Hels]]]. red in H0, H2, H3.
   split; intros; destruct H4 as [? [? ?]].
   - split3; auto.
     + apply pcv_vvalid_iff. now right.
@@ -2099,7 +2131,7 @@ Proof.
     assert (valid_path g (s, p)). {
       clear H4 H2. revert s H0 H3. induction p; intros. 1: simpl; easy.
       rewrite valid_path_cons_iff in *. destruct H3 as [? [? ?]].
-      destruct Hg as [? [? ?]]. pose proof (pcv_src_edge g old_v new_v H6). red in H7.
+      destruct Hg as [? [? [? Hels]]]. pose proof (pcv_src_edge g old_v new_v H6). red in H7.
       destruct H2 as [? [? ?]]. rewrite H7 in *. rewrite pcv_evalid_iff in H2.
       rewrite H6. split; auto. destruct H2.
       - clear H8. assert (fst a <> new_v) by (intro; rewrite H8 in H1; now subst s).
@@ -2161,7 +2193,7 @@ Proof.
   intros. unfold copied_vertex_prop in *. intro s; intros.
   apply lcv_graph_has_v_inv in H5; auto. destruct H5.
   2: subst s; rewrite lcv_vlabel_new in H6; auto; now rewrite H2 in H6.
-  pose proof H0. destruct H0 as [? [? ?]]. red in H0, H8, H9.
+  pose proof H0. destruct H0 as [? [? [? Hels]]]. red in H0, H8, H9.
   assert (vvalid g s) by (now rewrite <- H0 in H5).
   assert (~ vvalid g (new_copied_v g to)) by
       (intro; rewrite H0 in H11; now apply (graph_has_v_not_eq g to) in H11).
@@ -2227,7 +2259,7 @@ Proof.
     + subst new_g.
       assert (fst e = v) by (apply make_fields_Znth_edge in Heqf; auto; now subst e).
       assert (evalid g1 e). {
-        destruct H1 as [? [? ?]]. red in H1, H10, H11. rewrite H10. split; rewrite H9.
+        destruct H1 as [? [? [? _]]]. red in H1, H10, H11. rewrite H10. split; rewrite H9.
         1: easy. unfold get_edges. rewrite <- filter_sum_right_In_iff, <- Heqf.
         apply Znth_In. now rewrite make_fields_eq_length. }
       apply lgd_copied_vertex_prop; auto. rewrite H9; auto.
@@ -2243,14 +2275,14 @@ Proof.
         1: easy. unfold get_edges. rewrite <- filter_sum_right_In_iff, <- Heqf.
         apply Znth_In. now rewrite make_fields_eq_length. }
       assert (evalid g1 e). {
-        destruct H1 as [? [? ?]]. red in H1, H14, H15. now rewrite H14. }
+        destruct H1 as [? [? [? _]]]. red in H1, H14, H15. now rewrite H14. }
       rewrite H12, H10. apply lgd_copied_vertex_prop; try (now rewrite <- H10).
       * subst g3. apply lcv_no_dangling_dst; auto. red in H2. apply H2 with v; auto.
         destruct H13. now rewrite H9 in H15.
       * subst g3. rewrite <- lcv_graph_has_gen; auto.
       * now rewrite H9, <- H10.
       * rewrite <- H10. subst g3. apply lcv_raw_mark_old.
-      * subst g3. destruct H1 as [? [? ?]]. pose proof H0.
+      * subst g3. destruct H1 as [? [? [? _]]]. pose proof H0.
         apply (lcv_edge_valid _ (dst g1 e)) in H0; auto. red in H0. rewrite H0.
         split; rewrite H9. 1: apply lcv_graph_has_v_old; auto.
         unfold get_edges, make_fields. rewrite <- lcv_raw_fields; auto.
@@ -2275,7 +2307,7 @@ Proof.
       change (e :: p) with ([] ++ e :: p) in H2.
       apply reachable_by_path_app_cons in H2. now destruct H2. }
     destruct H2 as [_ [? _]]. rewrite valid_path_cons_iff in H2. red in H0.
-    destruct H2 as [? [[? [? ?]] ?]]. destruct H as [? [? ?]]. red in H, H9, H10.
+    destruct H2 as [? [[? [? ?]] ?]]. destruct H as [? [? [? _]]]. red in H, H9, H10.
     assert (graph_has_v g r) by (rewrite <- H; now rewrite <- H2 in H6).
     specialize (H0 _ H11 H1). destruct H0 as [? [? [_ [? ?]]]]. rewrite H10 in H2.
     destruct e as [r' idx]. simpl in H2. subst r'. rewrite H9 in H5. destruct H5.
@@ -2340,7 +2372,7 @@ Proof.
       change (e :: p) with ([] ++ e :: p) in H5.
       apply reachable_by_path_app_cons in H5. now destruct H5. }
       destruct H5 as [_ [? _]]. rewrite valid_path_cons_iff in H5.
-      destruct H5 as [? [[? [? ?]] ?]]. destruct H as [? [? ?]]. red in H, H16, H17.
+      destruct H5 as [? [[? [? ?]] ?]]. destruct H as [? [? [? _]]]. red in H, H16, H17.
       rewrite H17 in H5. destruct e as [cr' idx]. simpl in H5. subst cr'.
       rewrite H16 in H12. destruct H12. simpl fst in *. rewrite get_edges_In in H12.
       rewrite <- H9 in H12. specialize (H10 _ H12).
@@ -2521,7 +2553,7 @@ Proof.
     assert (forall e, Znth n (make_fields g1 x) = inr e -> fst e = x) by
         (intros; apply make_fields_Znth_edge in H11; auto; now subst e).
     assert (forall e, Znth n (make_fields g1 x) = inr e -> graph_has_e g1 e). {
-      destruct H1 as [? [? ?]]. red in H1, H12, H13. intros. split; rewrite H11; auto.
+      destruct H1 as [? [? [? _]]]. red in H1, H12, H13. intros. split; rewrite H11; auto.
       unfold get_edges. rewrite <- filter_sum_right_In_iff, <- H14.
       apply Znth_In. now rewrite make_fields_eq_length. }
     assert (forall e, Znth n (make_fields g1 x) = inr e -> evalid g1 e). {
@@ -2589,7 +2621,7 @@ Proof.
               rewrite Ht in H23; auto. destruct H23; [|easy].
               apply reachable_trans with (fst e); auto. exists (fst e, [e]).
               split; split; simpl; auto. 3: red; rewrite Forall_forall; intros; auto.
-              1: rewrite updateEdgeFunc_eq; auto. destruct H1 as [? [? ?]]. red in H25.
+              1: rewrite updateEdgeFunc_eq; auto. destruct H1 as [? [? [? _]]]. red in H25.
               split. 1: rewrite pcv_src_old; auto. red. simpl. red in H1, H24.
               rewrite updateEdgeFunc_eq. rewrite pcv_src_old; auto. split3.
               ** rewrite pcv_evalid_iff. now left.
@@ -2705,7 +2737,7 @@ Proof.
     assert (forall e, Znth n (make_fields g1 x) = inr e -> fst e = x) by
         (intros; apply make_fields_Znth_edge in H10; auto; now subst e).
     assert (forall e, Znth n (make_fields g1 x) = inr e -> graph_has_e g1 e). {
-      destruct H1 as [? [? ?]]. red in H1, H11, H12. intros. split; rewrite H10; auto.
+      destruct H1 as [? [? [? _]]]. red in H1, H11, H12. intros. split; rewrite H10; auto.
       unfold get_edges. rewrite <- filter_sum_right_In_iff, <- H13.
       apply Znth_In. now rewrite make_fields_eq_length. }
     assert (forall e, Znth n (make_fields g1 x) = inr e -> evalid g1 e). {
@@ -2775,14 +2807,13 @@ Proof.
              apply make_fields_Znth_edge in Heqf; auto. subst e. now simpl. }
            specialize (Hb _ H19 H20 H14). rewrite reachable_from_roots in *.
            destruct Hb as [i [r [? [? ?]]]]. exists i, r. do 2 (split; auto).
-           apply reachable_trans with (fst e); auto. destruct H1 as [? [? ?]].
+           apply reachable_trans with (fst e); auto. destruct H1 as [? [? [? _]]].
            red in H1, H24, H25. exists (fst e, [e]). split; split; simpl; auto.
            2: red; rewrite Forall_forall; intros; auto. rewrite H25. split; auto.
            red. do 2 (split; auto). rewrite H25. rewrite H24 in H19. destruct H19.
            rewrite <- H1 in H19. easy.
         -- rewrite ucov_not_eq in H17; auto. rewrite lacv_vlabel_old in H17; auto.
 Qed.
-
 
 Lemma frr_rom_aux: forall from to (roots1 roots2: roots_t) g1 g2,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to ->
@@ -3106,7 +3137,7 @@ Proof.
       assert (length p <= n)%nat by (simpl in H3; lia). specialize (IHn _ _ H5 H1).
       apply IHn. red in H0. unfold gen2gen_no_edge in H0.
       destruct H4 as [_ [? _]]. rewrite valid_path_cons_iff in H4.
-      destruct H4 as [? [[? _] _]]. destruct H as [? [? ?]]. red in H, H8, H9.
+      destruct H4 as [? [[? _] _]]. destruct H as [? [? [? _]]]. red in H, H8, H9.
       rewrite H9 in *. destruct e as [[gen vidx] eidx]. simpl in *. subst r.
       simpl in *. rewrite H8 in H7. apply H0; auto.
 Qed.
