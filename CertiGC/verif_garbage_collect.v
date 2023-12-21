@@ -120,7 +120,7 @@ Proof.
     (MAX_SPACES-1)
     (EX i: Z, EX g': LGraph, EX roots': roots_t, EX t_info': thread_info,
      PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
-           garbage_collect_condition g' (ti_heap t_info') roots';
+           garbage_collect_condition g' (ti_heap t_info');
            safe_to_copy_to_except g' (Z.to_nat i);
            firstn_gen_clear g' (Z.to_nat i);
            garbage_collect_loop (nat_inc_list (Z.to_nat i)) roots g roots' g';
@@ -154,7 +154,7 @@ Proof.
     forward_if
       (EX g1: LGraph, EX t_info1: thread_info,
        PROP (super_compatible g1 (ti_heap t_info1) (frames2rootpairs (ti_frames t_info1)) roots' outlier;
-             garbage_collect_condition g1 (ti_heap t_info1) roots';
+             garbage_collect_condition g1 (ti_heap t_info1);
              safe_to_copy_to_except g1 (Z.to_nat i);
              firstn_gen_clear g1 (Z.to_nat i);
              new_gen_relation (Z.to_nat (i + 1)) g' g1;
@@ -303,7 +303,7 @@ Proof.
           change (S O) with (Z.to_nat 1). rewrite <- Z2Nat.inj_add by lia. auto. }
         assert (safe_to_copy_to_except g1 (Z.to_nat i)) by
             (subst g1; apply stcte_add; auto; subst gi; simpl; reflexivity).
-        assert (garbage_collect_condition g1 (ti_heap t_info1) roots') by
+        assert (garbage_collect_condition g1 (ti_heap t_info1)) by
             (subst g1 t_info1; apply gcc_add; assumption).
         Local Opaque super_compatible. Exists g1 t_info1. entailer!.
     + forward. remember (space_start (Znth (i + 1) (spaces (ti_heap t_info')))).
@@ -379,7 +379,7 @@ Proof.
       1: tc_val_Znth; rewrite isptr_offset_val; assumption.
       rewrite Znth_map by assumption. unfold space_tri at 1 2. rewrite H23 in *.
 
-      assert (garbage_collect_condition g2 (ti_heap t_info2) roots2). {
+      assert (garbage_collect_condition g2 (ti_heap t_info2)). {
          destruct H16 as [? [? [? ?]]], H28;
             eapply (do_gen_gcc g1 (ti_heap t_info1) roots'); try eassumption.
             split; auto.

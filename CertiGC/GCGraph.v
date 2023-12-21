@@ -5345,9 +5345,9 @@ Definition garbage_collect_relation
   exists n, garbage_collect_loop (nat_inc_list (S n)) roots1 g1 roots2 g2 /\
             safe_to_copy_gen g2 n (S n).
 
-Definition garbage_collect_condition (g: LGraph) (h : heap)
-           (roots : roots_t) : Prop :=
-  graph_unmarked g /\ no_backward_edge g /\ no_dangling_dst g /\ ti_size_spec h.
+Definition garbage_collect_condition (g: LGraph) (h : heap) : Prop :=
+  graph_unmarked g /\ no_backward_edge g /\ no_dangling_dst g
+   /\ ti_size_spec h.
 
 Local Open Scope Z_scope.
 
@@ -5618,11 +5618,11 @@ Proof.
   apply ang_graph_has_v, (H0 v); auto.
 Qed.
 
-Lemma gcc_add: forall g h gi sp i (Hs: 0 <= i < MAX_SPACES) roots,
+Lemma gcc_add: forall g h gi sp i (Hs: 0 <= i < MAX_SPACES),
     number_of_vertices gi = O -> total_space sp = nth_gen_size (Z.to_nat i) ->
-    garbage_collect_condition g h roots ->
+    garbage_collect_condition g h ->
     garbage_collect_condition (lgraph_add_new_gen g gi)
-                              (add_new_space h sp i Hs) roots.
+                              (add_new_space h sp i Hs).
 Proof.
   intros. destruct H1 as [? [? [? ?]]]. split; [|split; [|split]].
   - apply graph_unmarked_add; assumption.
@@ -5639,11 +5639,11 @@ Proof.
   cut (two_p (16 + Z.of_nat i) > 0); [|apply two_p_gt_ZERO]; lia.
 Qed.
 
-Lemma gc_cond_implies_do_gen_cons: forall g h roots i,
+Lemma gc_cond_implies_do_gen_cons: forall g h i,
     safe_to_copy_to_except g i ->
     graph_has_gen g (S i) ->
     graph_heap_compatible g h ->
-    garbage_collect_condition g h roots ->
+    garbage_collect_condition g h ->
     do_generation_condition g h i (S i).
 Proof.
   intros. destruct H2 as [? [? [? ?]]].
@@ -5792,9 +5792,9 @@ Lemma do_gen_gcc: forall g1 h1 roots1 g2 h2 roots2 i out,
     outlier_compatible g1 out ->
     firstn_gen_clear g1 i -> graph_has_gen g1 (S i) ->
     heap_relation h1 h2 ->
-    garbage_collect_condition g1 h1 roots1 ->
+    garbage_collect_condition g1 h1 ->
     do_generation_relation i (S i) roots1 roots2 g1 g2 ->
-    garbage_collect_condition g2 h2 roots2.
+    garbage_collect_condition g2 h2.
 Proof.
   intros. destruct H5 as [? [? [? ?]]].
   assert (gen_unmarked g1 (S i)) by (rewrite graph_gen_unmarked_iff in H5; apply H5).
