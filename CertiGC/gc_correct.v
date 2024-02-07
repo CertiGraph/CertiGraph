@@ -1678,7 +1678,7 @@ Proof.
         destruct H3 as [[? ?] _]. rewrite map_fst_split, Heqp. simpl. constructor.
         2: easy. intro. rewrite <- H9 in H10. destruct H10. now rewrite H11 in H10.
       * red. intros. simpl. left. congruence.
-  - destruct p as [v n]. destruct H4 as [? [? [? ?]]]. rewrite H10 in H5. simpl in *.
+  - destruct p as [v n]. destruct H4 as [? [? [? [H10' H11]]]]. rewrite H10 in H5. simpl in *.
     destruct (Znth n (make_fields g1 v)) eqn:? ; [destruct s|]; simpl in H5;
       inversion H5; subst;
         try (exists []; split; [easy | now rewrite (surjective _ _ H8)]).
@@ -1704,10 +1704,11 @@ Proof.
         -- now apply lcv_sound.
         -- now rewrite <- lcv_graph_has_gen.
         -- Opaque lgraph_copy_v. simpl. Transparent lgraph_copy_v.
-           split; [|split; [|split]]; auto.
+           split; [|split; [|split3]]; auto.
            ++ rewrite lcv_graph_has_v_iff; auto.
            ++ rewrite <- lcv_raw_fields; auto.
            ++ rewrite <- lcv_raw_mark; auto. intro. now subst v.
+           ++ rewrite <- lcv_raw_tag; auto. intro. now subst v.
         -- simpl. rewrite pcv_dst_old; auto.
         -- unfold lgraph_copy_v. rewrite lmc_make_fields, lacv_make_fields_not_eq.
               1: easy. apply make_fields_Znth_edge in Heqf; auto. now subst e.
@@ -1826,14 +1827,18 @@ Proof.
             red in H7. intro HS. inversion HS. lia. }
         assert (graph_has_v new_g (new_copied_v g to)) by
             (subst new_g; apply lcv_graph_has_v_new; assumption).
-        unfold vertex_pos_pairs in H10.
+        unfold vertex_pos_pairs in H11.
         remember (nat_inc_list
                     (length (raw_fields (vlabel new_g (new_copied_v g to))))).
         eapply (fl_edge_roots_graph_compatible
                   depth0 (vgeneration v) to l new_g); eauto.
         -- unfold new_copied_v. simpl; auto.
         -- subst new_g. rewrite <- lcv_graph_has_gen; assumption.
-        -- intros. subst l. rewrite nat_inc_list_In_iff in H11. assumption.
+        -- subst new_g. unfold lgraph_copy_v. rewrite <- lmc_raw_tag.
+          ++ rewrite lacv_vlabel_new. assumption.
+          ++ unfold new_copied_v. destruct v. destruct H5. simpl in H12.
+            red in H12. intro HS. inversion HS. lia.
+        -- intros. subst l. rewrite nat_inc_list_In_iff in H12. assumption.
   - simpl. eapply fr_right_roots_graph_compatible; eauto.
 Qed.
 
@@ -1930,6 +1935,7 @@ Lemma svfl_semi_iso: forall from to v l l1 g1 g2 g3 roots,
     no_dangling_dst g1 -> no_dangling_dst g2 -> roots_have_no_gen roots from ->
     (forall i : nat, In i l -> (i < length (raw_fields (vlabel g2 v)))%nat) ->
     ~ vvalid g1 v -> vvalid g2 v -> raw_mark (vlabel g2 v) = false ->
+    raw_tag (vlabel g2 v) < NO_SCAN_TAG ->
     vgeneration v <> from -> copy_compatible g2 ->
     gc_graph_semi_iso g1 g2 from to l1 ->
     scan_vertex_for_loop from to v l g2 g3 ->
@@ -1937,14 +1943,17 @@ Lemma svfl_semi_iso: forall from to v l l1 g1 g2 g3 roots,
                roots = roots_map (l2 ++ l1) (roots_map l1 roots).
 Proof.
   pose (H3:=True).
-  do 3 intro. induction l; intros; inversion H15; subst; clear H15.
+  do 3 intro. induction l; intros ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? NOSCAN; intros;
+    inversion H15; subst; clear H15.
   - exists []. simpl. split; auto. symmetry. apply surjective, roots_map_bijective.
     eapply (semi_iso_DoubleNoDup _ _ from); eauto.
   - pose proof H18. change (forward_p2forward_t (inr (v, Z.of_nat a)) [] g2) with
                         (forward_p2forward_t (inr (v, Z.of_nat a)) roots g2) in H18.
     assert (forward_p_compatible (inr (v, Z.of_nat a)) roots g2 from). {
       simpl. destruct H1. red in H1. rewrite <- H1. intuition auto with *.
-      rewrite Zlength_correct. apply inj_lt, H8. now left. }
+      rewrite Zlength_correct. apply inj_lt, H8. now left.
+     
+ }
     eapply (fr_O_semi_iso _ _ _ g1) in H18; eauto.
     destruct H18 as [l3 [? [? _]]]. simpl in H18.
     assert (sound_gc_graph g4) by (eapply fr_O_sound; eauto).
@@ -1960,6 +1969,7 @@ Proof.
     + intros. erewrite <- fr_raw_fields; eauto. apply H8; now right.
     + destruct H19. red in H19. rewrite H19. eapply fr_graph_has_v; eauto.
     + erewrite <- fr_raw_mark; eauto.
+    + erewrite <- fr_raw_tag; eauto.
     + eapply (fr_copy_compatible O from); eauto.
 Qed.
 
@@ -1988,7 +1998,9 @@ Proof.
       * erewrite <- svfl_graph_has_gen; eauto.
       * red. rewrite Forall_forall. intros. eapply svfl_graph_has_v; eauto.
         red in H4. rewrite Forall_forall in H4. now apply H4.
-      * eapply (svfl_no_dangling_dst from to); eauto. 1: split; now simpl. intros.
+      * eapply (svfl_no_dangling_dst from to); eauto. 1: split; now simpl.
+        unfold no_scan in H16; lia.
+        intros.
         now rewrite nat_inc_list_In_iff in H18.
       * intros. apply H8. now right.
       * eapply svfl_copy_compatible; eauto.
@@ -1997,6 +2009,7 @@ Proof.
     + destruct H0. red in H0. rewrite H0. intro. destruct H18. simpl in H19.
       apply (H8 a); [left |]; auto.
     + destruct H1. red in H1. rewrite H1. split; now simpl.
+    + unfold no_scan in H16; lia.
 Qed.
 
 Lemma frr_rgc_aux: forall from to roots1 g1 roots2 g2,
@@ -2253,7 +2266,7 @@ Proof.
   intros. destruct p; simpl in H3, H4.
   - destruct (Znth z roots) eqn:? ; [destruct s |]; inversion H4; subst; try easy.
     apply lcv_copied_vertex_prop; auto.
-  - destruct p as [v n]. destruct H3 as [? [? [? ?]]]. rewrite H7 in H4. simpl in H4.
+  - destruct p as [v n]. destruct H3 as [? [? [? [H7' ?]]]]. rewrite H7 in H4. simpl in H4.
     destruct (Znth n (make_fields g1 v)) eqn:? ; [destruct s|]; simpl in H4;
       inversion H4; subst; try easy.
     + subst new_g.
@@ -2867,7 +2880,9 @@ Qed.
 
 Lemma svfl_reachable_or_marked: forall from to (roots: roots_t) r l g1 g2,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> graph_has_v g1 r ->
-    raw_mark (vlabel g1 r) = false -> vgeneration r = to -> gen_unmarked g1 to ->
+    raw_mark (vlabel g1 r) = false -> 
+    raw_tag (vlabel g1 r) < NO_SCAN_TAG ->
+    vgeneration r = to -> gen_unmarked g1 to ->
     roots_graph_compatible roots g1 ->
     no_dangling_dst g1 -> copied_vertex_prop g1 from to -> copy_compatible g1 ->
     (forall i : nat, In i l -> (i < length (raw_fields (vlabel g1 r)))%nat) ->
@@ -2876,18 +2891,21 @@ Lemma svfl_reachable_or_marked: forall from to (roots: roots_t) r l g1 g2,
               reachable_or_marked from g2 roots v.
 Proof.
   pose (H6:=True).
-  intros until l. induction l; intros; inversion H13; subst; clear H13; try easy.
+  intros until l. induction l; intros ? ? ? ? ? ? ? NOSCAN; intros; inversion H13; subst; clear H13; try easy.
   change (forward_p2forward_t (inr (r, Z.of_nat a)) [] g1)
     with (forward_p2forward_t (inr (r, Z.of_nat a)) roots g1) in H16. pose proof H16.
   assert (forward_p_compatible (inr (r, Z.of_nat a)) roots g1 from). {
-    simpl. do 3 (split; auto). 1: lia. rewrite Zlength_correct. apply inj_lt, H11.
-    now left. } eapply fr_O_reachable_or_marked with (v := v) in H4; eauto.
+    simpl. split3; [ | | split3]; auto. split; auto. lia. rewrite Zlength_correct. apply inj_lt, H11.
+    now left.
+     
+ } eapply fr_O_reachable_or_marked with (v := v) in H4; eauto.
   2: simpl; split; auto. remember (vgeneration r) as to. simpl in H4. rewrite H4.
   apply IHl; auto.
   - eapply fr_O_sound; eauto.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_graph_has_v; eauto.
   - erewrite <- fr_raw_mark; eauto. subst to; auto.
+  - erewrite <- fr_raw_tag; eauto. subst to; auto.  
   - eapply fr_gen_unmarked; eauto.
   - eapply fr_right_roots_graph_compatible; eauto.
   - eapply fr_O_no_dangling_dst; eauto.
@@ -2899,12 +2917,14 @@ Qed.
 
 Lemma svfl_roots_graph_compatible: forall from to roots v l g1 g2,
     from <> to -> graph_has_gen g1 to -> copy_compatible g1 ->
-    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> vgeneration v <> from ->
+    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> 
+    raw_tag (vlabel g1 v) < NO_SCAN_TAG ->
+    vgeneration v <> from ->
     (forall i : nat, In i l -> (i < length (raw_fields (vlabel g1 v)))%nat) ->
     roots_graph_compatible roots g1 -> scan_vertex_for_loop from to v l g1 g2 ->
     roots_graph_compatible roots g2.
 Proof.
-  intros until l. induction l; intros; inversion H7; subst; clear H7; try easy.
+  intros until l. induction l; intros ? ? ? ? ? ? ? NOSCAN; intros; inversion H7; subst; clear H7; try easy.
   change (forward_p2forward_t (inr (v, Z.of_nat a)) [] g1)
     with (forward_p2forward_t (inr (v, Z.of_nat a)) roots g1) in H10. pose proof H10.
   assert (forward_p_compatible (inr (v, Z.of_nat a)) roots g1 from). {
@@ -2916,17 +2936,20 @@ Proof.
   - eapply (fr_copy_compatible O from to); eauto.
   - eapply fr_graph_has_v; eauto.
   - erewrite <- fr_raw_mark; eauto.
+  - erewrite <- fr_raw_tag; eauto.
   - intros. erewrite <- fr_raw_fields; eauto. apply H5. now right.
 Qed.
 
 Lemma svfl_copied_vertex_prop: forall from to v l g1 g2,
     from <> to -> graph_has_gen g1 to -> sound_gc_graph g1 -> no_dangling_dst g1 ->
-    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> vgeneration v <> from ->
+    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> 
+    raw_tag (vlabel g1 v) < NO_SCAN_TAG ->
+    vgeneration v <> from ->
     (forall i : nat, In i l -> (i < length (raw_fields (vlabel g1 v)))%nat) ->
     copy_compatible g1 -> scan_vertex_for_loop from to v l g1 g2 ->
     copied_vertex_prop g1 from to -> copied_vertex_prop g2 from to.
 Proof.
-  intros until l. induction l; intros; inversion H8; subst; clear H8; try easy.
+  intros until l. induction l; intros ? ? ? ? ? ? ? ? NOSCAN; intros; inversion H8; subst; clear H8; try easy.
   pose proof H12. assert (forward_p_compatible (inr (v, Z.of_nat a)) [] g1 from). {
     simpl. do 3 (split; auto). 1: lia. rewrite Zlength_correct. apply inj_lt, H6.
     now left. } eapply (fr_O_copied_vertex_prop _ _ _ g1 g3) in H9; eauto.
@@ -2936,6 +2959,7 @@ Proof.
   - eapply fr_O_no_dangling_dst; eauto. red. simpl. constructor.
   - eapply fr_graph_has_v; eauto.
   - erewrite <- fr_raw_mark; eauto.
+  - erewrite <- fr_raw_tag; eauto.
   - intros. erewrite <- fr_raw_fields; eauto. apply H6. now right.
   - eapply (fr_copy_compatible O from to); eauto.
 Qed.
@@ -2944,13 +2968,15 @@ Lemma svfl_backward_edge_prop: forall from to roots v l g1 g2,
     from <> to -> graph_has_gen g1 to -> copy_compatible g1 -> sound_gc_graph g1 ->
     no_dangling_dst g1 -> gen_unmarked g1 to ->
     copied_vertex_prop g1 from to ->  roots_graph_compatible roots g1 ->
-    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> vgeneration v = to ->
+    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> 
+    raw_tag (vlabel g1 v) < NO_SCAN_TAG ->
+    vgeneration v = to ->
     (forall i : nat, In i l -> (i < length (raw_fields (vlabel g1 v)))%nat) ->
     backward_edge_prop g1 roots from to -> scan_vertex_for_loop from to v l g1 g2 ->
     backward_edge_prop g2 roots from to.
 Proof.
   pose (H4:=True).
-  intros until l. induction l; intros; inversion H13; subst; clear H13; try easy.
+  intros until l. induction l; intros ? ? ? ? ? ? ? ? ? ? ? ? NOSCAN; intros; inversion H13; subst; clear H13; try easy.
   change (forward_p2forward_t (inr (v, Z.of_nat a)) [] g1)
     with (forward_p2forward_t (inr (v, Z.of_nat a)) roots g1) in H16. pose proof H16.
   assert (forward_p_compatible (inr (v, Z.of_nat a)) roots g1 from). {
@@ -2967,6 +2993,7 @@ Proof.
   - eapply fr_roots_graph_compatible in H16; eauto.
   - eapply fr_graph_has_v; eauto.
   - erewrite <- fr_raw_mark; eauto. subst to. auto.
+  - erewrite <- fr_raw_tag; eauto. subst to. auto.
   - intros. erewrite <- fr_raw_fields; eauto. apply H11. now right.
 Qed.
 
@@ -2982,7 +3009,9 @@ Proof.
   do 4 intro. induction l; intros; inversion H9; subst; clear H9; try easy.
   1: apply IHl; auto. pose proof H14.
   eapply svfl_reachable_or_marked with (v := v) in H9; eauto.
-  2: split; simpl; auto. 2: intros; now rewrite nat_inc_list_In_iff in H10.
+  2: split; simpl; auto. 
+  2: unfold no_scan in H13; lia.
+  2: intros; now rewrite nat_inc_list_In_iff in H10.
   rewrite H9. assert (graph_has_v g1 (to, a)) by (now split).
   assert (forall i : nat,
              In i (nat_inc_list (length (raw_fields (vlabel g1 (to, a))))) ->
@@ -2992,10 +3021,14 @@ Proof.
   - rewrite <- svfl_graph_has_gen; eauto.
   - eapply svfl_gen_unmarked; eauto.
   - eapply svfl_roots_graph_compatible; eauto.
+     unfold no_scan in H13; lia.
   - eapply (svfl_no_dangling_dst from to); eauto.
+     unfold no_scan in H13; lia.
   - eapply svfl_copied_vertex_prop; eauto.
+     unfold no_scan in H13; lia.
   - eapply svfl_copy_compatible; eauto.
   - eapply svfl_backward_edge_prop; eauto.
+     unfold no_scan in H13; lia.
 Qed.
 
 Lemma frr_copied_vertex_prop: forall from to (roots1 roots2: roots_t) g1 g2,
@@ -3333,6 +3366,7 @@ Proof.
     + eapply svfl_copy_compatible; eauto.
     + eapply svfl_gen_unmarked; eauto.
   - split; auto.
+  - unfold no_scan in H8; lia.
   - intros. rewrite nat_inc_list_In_iff in H5. auto.
 Qed.
 

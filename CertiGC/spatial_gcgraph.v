@@ -1448,7 +1448,7 @@ Proof.
   f_equal. unfold make_fields_vals.
   rewrite <- lgd_raw_mark_eq.
   simple_if_tac; [f_equal |];
-    rewrite (lgd_map_f2v_diff_vert_eq g v v' v1 e n);
+    rewrite (lgd_map_f2v_diff_vert_eq _ g v v' v1 e n);
     try reflexivity; assumption.
 Qed.
 

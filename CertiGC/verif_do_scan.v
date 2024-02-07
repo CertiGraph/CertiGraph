@@ -370,6 +370,9 @@ Proof.
                  --- rewrite <- H26. symmetry.
                      eapply svfl_raw_mark in H29; [apply H29 | assumption..|].
                      simpl. lia.
+                 --- eapply svfl_raw_tag in H29; try eassumption.
+                     rewrite <- H29. 
+                     unfold no_scan in H27. lia. simpl; auto.
                  --- simpl; auto.
               ** Intros vret. destruct vret as [[g4 h4] roots']. simpl fst in *.
                  simpl snd in *. simpl in H37.

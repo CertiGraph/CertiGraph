@@ -60,7 +60,7 @@ abbreviate_semax.
   destruct H as [? [? [? ?]]]. destruct H1 as [? [? [? [? ?]]]].
   unfold limit_address, heap_next_address, forward_p_address'.
   (* p is Vtype * Z, ie located in graph *)
-    destruct p as [v n]. destruct H0 as [? [? [? ?]]].
+    destruct p as [v n]. destruct H0 as [? [? [? [SCAN ?]]]].
     freeze [0; 1; 3;4] FR.
     localize [vertex_rep (nth_sh g (vgeneration v)) g v].
     unfold vertex_rep, vertex_at. Intros.
@@ -83,11 +83,13 @@ abbreviate_semax.
     unlocalize [graph_rep g]. 1: apply graph_vertex_ramif_stable; assumption. thaw FR.
     unfold make_fields_vals.
     rewrite H12, Znth_map; [|rewrite make_fields_eq_length; assumption].
-    assert_PROP (valid_int_or_ptr (field2val g (Znth n (make_fields g v)))). {
+    assert_PROP (valid_int_or_ptr (field2val (raw_tag (vlabel g v)) g (Znth n (make_fields g v)))). {
       destruct (Znth n (make_fields g v)) eqn:?; [destruct s|].
-      - unfold field2val; unfold odd_Z2val.
-        replace (2 * z + 1) with (z + z + 1) by lia.
-        entailer!. apply valid_int_or_ptr_ii1.
+      - unfold field2val.
+        apply prop_right. rewrite if_true by auto.
+        unfold odd_Z2val;
+          replace (2 * z + 1) with (z + z + 1) by lia.
+          apply valid_int_or_ptr_ii1.
       - unfold field2val, outlier_rep.
         apply in_gcptr_outlier with (gcptr:= g0) (outlier:=outlier) (n:=n) in H0;
           try assumption.
@@ -109,7 +111,8 @@ abbreviate_semax.
         1: sep_apply (graph_rep_valid_int_or_ptr g (dst g e) H0); entailer!.
         unfold get_edges; rewrite <- filter_sum_right_In_iff, <- Heqf.
         now apply Znth_In; rewrite make_fields_eq_length. }
-    forward_call (field2val g (Znth n (make_fields g v))).
+    forward_call (field2val (raw_tag (vlabel g v)) g (Znth n (make_fields g v))).
+
     remember (graph_rep g * heap_rest_rep h * outlier_rep outlier) as P.
     pose proof (graph_and_heap_rest_data_at_ _ _ _ H7 H).
     unfold generation_data_at_ in H18. remember (gen_start g from) as fp.
@@ -124,7 +127,7 @@ abbreviate_semax.
     destruct (Znth n (make_fields g v)) eqn:? ; [destruct s|].
     (* Z + GC_Pointer + EType *)
     + (* Z *)
-      unfold field2val, odd_Z2val. forward_if.
+      unfold field2val, odd_Z2val. rewrite if_true by auto. forward_if.
       1: exfalso; apply H20'; reflexivity.
       forward. Exists g h roots. 
       red in H4. rewrite H4. rewrite update_rootpairs_same.
@@ -248,7 +251,6 @@ abbreviate_semax.
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
         forward_if.
         -- (* yes, already forwarded *)
-          try apply Int64.same_if_eq in H22.
           pose proof (make_header_int_rep_mark_iff g v'). simpl in H23.
           rewrite H23 in H22. clear H23.
           localize [vertex_rep (nth_sh g (vgeneration v')) g v'].
@@ -357,10 +359,12 @@ abbreviate_semax.
            rewrite <- Heqsp_to. thaw FR. simpl fst. simpl snd.
            gather_SEP (data_at _ _ _ _) (heap_rest_rep _).
            replace_SEP 0 (heap_rep sh (cut_heap h _ _ Hi Hh) hp). {
-             entailer. unfold heap_rep.  cancel.
-             simpl spaces. rewrite <- upd_Znth_map. unfold cut_space.
-             unfold space_tri at 3. simpl. unfold heap_struct_rep.
-             cancel.
+             entailer!!.
+             unfold heap_rep, heap_struct_rep.
+             apply sepcon_derives; [ | apply derives_refl].
+             apply derives_refl'; f_equal.
+             unfold space_tri at 2. simpl spaces.
+             rewrite <- upd_Znth_map. f_equal.
              }
            sep_apply (graph_vertex_ramif_stable _ _ H19). Intros.
            freeze [1; 2; 3; 4] FR. rewrite v0.
@@ -405,6 +409,7 @@ abbreviate_semax.
               PROP ( )
               LOCAL (temp _newv nv;
                      temp _sz (if Archi.ptr64 then Vlong (Int64.repr n') else vint n');
+                     temp _hd (Z2val (make_header g v')); 
                      temp _v (vertex_address g v');
                      temp _from_start fp;
                      temp _from_limit (offset_val fn fp);
@@ -639,7 +644,40 @@ abbreviate_semax.
                 - simpl. rewrite cti_gen_size. reflexivity.
                 - simpl. rewrite cti_space_start. reflexivity. }
                 forward_if.
-              ** destruct H54. replace fp with (gen_start g1 from) by
+              ** forward_if.
+                 assert (SCAN': raw_tag (vlabel g v') < NO_SCAN_TAG). {
+                   pose proof raw_fields_range (vlabel g v').
+                   pose proof raw_color_range (vlabel g v').
+                   pose proof raw_tag_range (vlabel g v').
+                   clear - H56 H22 H57 H58 H59.
+                   destruct (Int.ltu _ _) eqn:?H in H56; try discriminate.
+                   clear H56.
+                   unfold make_header in H. rewrite H22 in  H; clear H22.
+                   forget (raw_color (vlabel g v')) as c.
+                   forget (Zlength (raw_fields (vlabel g v'))) as f.
+                   forget (raw_tag (vlabel g v')) as tag.
+                   rewrite !Z.shiftl_mul_pow2 in H by (intro; discriminate).
+                   change WORD_SIZE with 8 in *.
+                   simpl in *.
+                   revert H; really_simplify (Z.pow_pos 2 8);
+                     really_simplify (Z.pow_pos 2 10); intro.
+                   rewrite and64_repr in H.
+                   change 255 with (Z.ones 8) in H.
+                   rewrite Z.land_ones in H by (intro; discriminate).
+                   simpl in H.
+                   change (Z.pow_pos 2 8) with 256 in H.
+                   rewrite Z.add_mod in H by (intro; discriminate).
+                   change 1024 with (4 * 256)%Z in H.
+                   rewrite Z.mul_assoc, Z_mod_mult, Z.add_0_r, Z.mod_mod in H by (intro; discriminate).
+                   rewrite Z.add_mod in H by (intro; discriminate).
+                   rewrite Z_mod_mult, Z.add_0_r, Z.mod_mod in H by (intro; discriminate).
+                   assert (0 <= tag mod 256 < 256) by (apply Z_mod_lt; reflexivity).
+                   rewrite Int64.unsigned_repr in H by rep_lia.
+                   apply ltu_repr in H; auto; try rep_lia.
+                   rewrite Zmod_small in H by auto.
+                   auto.
+                } clear H56.
+                 destruct H54. replace fp with (gen_start g1 from) by
                      (subst fp g1 g'; apply lcv_gen_start; assumption).
                  replace (offset_val fn (gen_start g1 from)) with
                      (limit_address g1 h' from) by
@@ -697,7 +735,7 @@ abbreviate_semax.
                              subst v1. apply (fl_vertex_address _ _ _ _ _ _ H62 H59).
                              apply graph_has_v_in_closure; assumption.
                          *** rewrite <- H31. assumption.
-                     +++ split3; [| |split].
+                     +++ split3; [| |split3].
                          *** destruct H53 as [_ [_ [? _]]].
                              apply (fl_graph_has_v _ _ _ _ _ _ H62 H59 _ H63).
                          *** erewrite <- fl_raw_fields; eauto. subst g1.
@@ -707,7 +745,11 @@ abbreviate_semax.
                              assumption. rewrite v0. lia.
                          *** erewrite <- fl_raw_mark; eauto. subst g1 from.
                              rewrite <- lgd_raw_mark_eq. subst g'.
-                             rewrite lcv_vlabel_new; try assumption.
+                             rewrite lcv_vlabel_new; assumption.
+                         *** erewrite <- fl_raw_tag; eauto. subst g1 from.
+                             change (raw_tag _) with (raw_tag (vlabel g' (new_copied_v g to))).
+                             subst g'.
+                             rewrite lcv_vlabel_new; assumption.
                          *** simpl; lia.
                      +++ Intros vret. destruct vret as [[g4 h4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 h4.
@@ -749,6 +791,50 @@ abbreviate_semax.
                      rewrite Heqf, H12. simpl.
                      constructor; [reflexivity | assumption..].
                      Local Transparent super_compatible.
+                --- 
+                 assert (SCAN': raw_tag (vlabel g v') >= NO_SCAN_TAG). {
+                   pose proof raw_fields_range (vlabel g v').
+                   pose proof raw_color_range (vlabel g v').
+                   pose proof raw_tag_range (vlabel g v').
+                   clear - H56 H22 H57 H58 H59.
+                   destruct (Int.ltu _ _) eqn:?H in H56.
+                   contradiction H56; reflexivity.
+                   clear H56.
+                   unfold make_header in H. rewrite H22 in  H; clear H22.
+                   forget (raw_color (vlabel g v')) as c.
+                   forget (Zlength (raw_fields (vlabel g v'))) as f.
+                   forget (raw_tag (vlabel g v')) as tag.
+                   rewrite !Z.shiftl_mul_pow2 in H by (intro; discriminate).
+                   change WORD_SIZE with 8 in *.
+                   simpl in *.
+                   revert H; really_simplify (Z.pow_pos 2 8);
+                     really_simplify (Z.pow_pos 2 10); intro.
+                   rewrite and64_repr in H.
+                   change 255 with (Z.ones 8) in H.
+                   rewrite Z.land_ones in H by (intro; discriminate).
+                   simpl in H.
+                   change (Z.pow_pos 2 8) with 256 in H.
+                   rewrite Z.add_mod in H by (intro; discriminate).
+                   change 1024 with (4 * 256)%Z in H.
+                   rewrite Z.mul_assoc, Z_mod_mult, Z.add_0_r, Z.mod_mod in H by (intro; discriminate).
+                   rewrite Z.add_mod in H by (intro; discriminate).
+                   rewrite Z_mod_mult, Z.add_0_r, Z.mod_mod in H by (intro; discriminate).
+                   assert (0 <= tag mod 256 < 256) by (apply Z_mod_lt; reflexivity).
+                   rewrite Int64.unsigned_repr in H by rep_lia.
+                   apply ltu_repr_false in H; auto; try rep_lia.
+                   rewrite Zmod_small in H by auto.
+                   auto.
+                 }
+                 deadvars!. clear Heqnv. rename H55 into H55'. forward.
+                 Exists g1 h' roots.
+                 replace (update_rootpairs _ _) with rootpairs. 2:{
+                  destruct H53 as [_ [? _]]. red in H53. subst roots'. rewrite H53.
+                  rewrite update_rootpairs_same. auto.
+                 }
+                 entailer!. simpl. rewrite Heqf.
+                 simpl field2forward. rewrite H12. simpl. forget (dst g e) as v'.
+                 clear - H22 SCAN'.
+                 admit.  (* Need a new case in forward_relation *)
               ** assert (depth = 0) by lia. subst depth. clear H55.
                  deadvars!. clear Heqnv. forward.
                  Exists g1 h' roots.
@@ -757,7 +843,8 @@ abbreviate_semax.
                   rewrite update_rootpairs_same. auto.
                  }
                  entailer!. simpl. rewrite Heqf.
-                 simpl field2forward. rewrite H12. simpl. now constructor.
+                 simpl field2forward. rewrite H12. simpl.
+                 now constructor.
       * forward_if. 1: exfalso; apply H22'; reflexivity.
         rewrite H21 in n0. forward.
         Exists g h roots.
@@ -771,4 +858,4 @@ abbreviate_semax.
            ++ split; auto.
            ++ apply hr_refl.
         -- unfold thread_info_rep, heap_rep. entailer!.
-Qed.
+Admitted.

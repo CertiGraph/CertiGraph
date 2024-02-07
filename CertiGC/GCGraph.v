@@ -1058,9 +1058,9 @@ Definition field_t: Type := Z + GC_Pointer + EType.
 
 #[export] Instance field_t_inhabitant: Inhabitant field_t := inl (inl Z.zero).
 
-Definition field2val (g: LGraph) (fd: field_t) : val :=
+Definition field2val (tag: Z) (g: LGraph) (fd: field_t) : val :=
   match fd with
-  | inl (inl z) => odd_Z2val z
+  | inl (inl z) => if zlt tag NO_SCAN_TAG then odd_Z2val z else Vlong (Int64.repr z)
   | inl (inr p) => GC_Pointer2val p
   | inr e => vertex_address g (dst g e)
   end.
@@ -1189,7 +1189,7 @@ Qed.
 
 Definition make_fields_vals (g: LGraph) (v: VType): list val :=
   let vb := vlabel g v in
-  let original_fields_val := map (field2val g) (make_fields g v) in
+  let original_fields_val := map (field2val (raw_tag vb) g) (make_fields g v) in
   if vb.(raw_mark)
   then vertex_address g vb.(copied_vertex) :: tl original_fields_val
   else original_fields_val.
@@ -1343,7 +1343,8 @@ Lemma make_fields_the_same: forall (g1 g2: LGraph) v,
 Proof.
   intros. unfold make_fields_vals, make_fields. remember O. clear Heqn. rewrite H0.
   remember (raw_fields (vlabel g2 v)) as l. clear Heql.
-  cut (forall fl, map (field2val g1) fl = map (field2val g2) fl).
+  cut (forall fl, map (field2val (raw_tag (vlabel g2 v)) g1) fl = 
+                  map (field2val (raw_tag (vlabel g2 v)) g2) fl).
   - intros. rewrite H2. rewrite (vertex_address_the_same g1 g2) by assumption.
     reflexivity.
   - apply map_ext. intros. unfold field2val. destruct a. 1: reflexivity.
@@ -1484,6 +1485,7 @@ Inductive forward_relation (from to: nat):
     forward_relation from to O (inl (inr v)) g (lgraph_copy_v g v to)
 | fr_v_in_not_forwarded_Sn: forall depth v g g',
     vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
+    (vlabel g v).(raw_tag) < NO_SCAN_TAG ->
     let new_g := lgraph_copy_v g v to in
     forward_loop from to depth (vertex_pos_pairs new_g (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inl (inr v)) g g'
@@ -1500,6 +1502,7 @@ Inductive forward_relation (from to: nat):
     forward_relation from to O (inr e) g new_g
 | fr_e_to_not_forwarded_Sn: forall depth e (g g': LGraph),
     vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = false ->
+    (vlabel g (dst g e)).(raw_tag) < NO_SCAN_TAG ->
     let new_g := labeledgraph_gen_dst (lgraph_copy_v g (dst g e) to) e
                                       (new_copied_v g to) in
     forward_loop from to depth (vertex_pos_pairs new_g (new_copied_v g to)) new_g g' ->
@@ -1516,7 +1519,9 @@ Definition forward_p_compatible
   match p with
   | inl root_index => 0 <= root_index < Zlength roots
   | inr (v, n) => graph_has_v g v /\ 0 <= n < Zlength (vlabel g v).(raw_fields) /\
-                  (vlabel g v).(raw_mark) = false /\ vgeneration v <> from
+                  (vlabel g v).(raw_mark) = false /\ 
+                  (vlabel g v).(raw_tag) < NO_SCAN_TAG /\
+                  vgeneration v <> from
   end.
 
 Fixpoint collect_Z_indices {A} (eqdec: forall (a b: A), {a = b} + {a <> b})
@@ -1908,13 +1913,13 @@ Qed.
 Lemma isptr_is_pointer_or_integer: forall p, isptr p -> is_pointer_or_integer p.
 Proof. intros. destruct p; try contradiction. exact I. Qed.
 
-Lemma mfv_unmarked_all_is_ptr_or_int: forall (g : LGraph) (v : VType),
+Lemma mfv_unmarked_all_is_ptr_or_int: forall (tag: Z) (g : LGraph) (v : VType),
     no_dangling_dst g -> graph_has_v g v ->
-    Forall is_pointer_or_integer (map (field2val g) (make_fields g v)).
+    Forall is_pointer_or_integer (map (field2val tag g) (make_fields g v)).
 Proof.
   intros. rewrite Forall_forall. intros f ?. apply list_in_map_inv in H1.
   destruct H1 as [x [? ?]]. destruct x as [[? | ?] | ?]; simpl in H1; subst.
-  - unfold odd_Z2val. exact I.
+  - if_tac; apply I.
   - destruct g0. exact I.
   - apply isptr_is_pointer_or_integer. unfold vertex_address.
     rewrite isptr_offset_val. apply graph_has_gen_start_isptr.
@@ -1926,7 +1931,7 @@ Lemma mfv_all_is_ptr_or_int: forall g v,
     Forall is_pointer_or_integer (make_fields_vals g v).
 Proof.
   intros. rewrite Forall_forall. intros f ?. unfold make_fields_vals in H2.
-  pose proof (mfv_unmarked_all_is_ptr_or_int _ _ H0 H1). rewrite Forall_forall in H3.
+  pose proof (mfv_unmarked_all_is_ptr_or_int (raw_tag (vlabel g v)) _ _ H0 H1). rewrite Forall_forall in H3.
   specialize (H3 f). destruct (raw_mark (vlabel g v)) eqn:? . 2: apply H3; assumption.
   simpl in H2. destruct H2. 2: apply H3, In_tail; assumption.
   subst f. unfold vertex_address. apply isptr_is_pointer_or_integer.
@@ -2157,11 +2162,11 @@ Proof.
   rewrite if_false. 1: reflexivity. intuition auto.
 Qed.
 
-Lemma lacv_field2val_make_fields_old:  forall (g : LGraph) (v : VType) (to : nat) x,
+Lemma lacv_field2val_make_fields_old:  forall (tag: Z) (g : LGraph) (v : VType) (to : nat) x,
     graph_has_v g x -> graph_has_gen g to -> no_dangling_dst g ->
-    map (field2val (lgraph_add_copied_v g v to))
+    map (field2val tag (lgraph_add_copied_v g v to))
         (make_fields (lgraph_add_copied_v g v to) x) =
-    map (field2val g) (make_fields g x).
+    map (field2val tag g) (make_fields g x).
 Proof.
   intros. unfold make_fields. pose proof (graph_has_v_not_eq _ to _ H).
   rewrite lacv_vlabel_old by assumption. apply map_ext_in.
@@ -2177,7 +2182,7 @@ Lemma lacv_make_fields_vals_old: forall (g : LGraph) (v : VType) (to: nat) x,
     graph_has_v g x -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     make_fields_vals (lgraph_add_copied_v g v to) x = make_fields_vals g x.
 Proof.
-  intros. pose proof (lacv_field2val_make_fields_old _ v _ _ H H0 H1).
+  intros. pose proof (lacv_field2val_make_fields_old (raw_tag (vlabel g x))  _ v _ _ H H0 H1).
   unfold make_fields_vals. pose proof (graph_has_v_not_eq g to x H).
   rewrite lacv_vlabel_old by assumption. rewrite H3.
   destruct (raw_mark (vlabel g x)) eqn:? ; [f_equal | reflexivity].
@@ -2203,11 +2208,11 @@ Lemma lacv_make_header_new: forall g v to,
     make_header (lgraph_add_copied_v g v to) (new_copied_v g to) = make_header g v.
 Proof. intros. unfold make_header. rewrite lacv_vlabel_new. reflexivity. Qed.
 
-Lemma lacv_field2val_make_fields_new: forall g v to,
+Lemma lacv_field2val_make_fields_new: forall (tag: Z) g v to,
     graph_has_v g v -> graph_has_gen g to -> no_dangling_dst g ->
-    map (field2val (lgraph_add_copied_v g v to))
+    map (field2val tag (lgraph_add_copied_v g v to))
         (make_fields (lgraph_add_copied_v g v to) (new_copied_v g to)) =
-    map (field2val g) (make_fields g v).
+    map (field2val tag g) (make_fields g v).
 Proof.
   intros. unfold make_fields. rewrite lacv_vlabel_new.
   remember (raw_fields (vlabel g v)). remember 0 as n.
@@ -2235,7 +2240,7 @@ Lemma lacv_make_fields_vals_new: forall g v to,
     make_fields_vals g v.
 Proof.
   intros. unfold make_fields_vals. rewrite lacv_vlabel_new.
-  rewrite (lacv_field2val_make_fields_new _ _ _ H H0 H1).
+  rewrite (lacv_field2val_make_fields_new _ _ _ _ H H0 H1).
   destruct (raw_mark (vlabel g v)) eqn:? . 2: reflexivity. f_equal.
   apply lacv_vertex_address_old. 2: assumption. apply H2; assumption.
 Qed.
@@ -2279,10 +2284,10 @@ Proof.
   if_tac; [unfold equiv in H; subst v |]; reflexivity.
 Qed.
 
-Lemma lmc_field2val_make_fields: forall (g : LGraph) (v new_v x: VType),
-    map (field2val (lgraph_mark_copied g v new_v))
+Lemma lmc_field2val_make_fields: forall (tag: Z) (g : LGraph) (v new_v x: VType),
+    map (field2val tag (lgraph_mark_copied g v new_v))
         (make_fields (lgraph_mark_copied g v new_v) x) =
-    map (field2val g) (make_fields g x).
+    map (field2val tag g) (make_fields g x).
 Proof.
   intros. rewrite lmc_make_fields. apply map_ext; intros.
   destruct a; [destruct s|]; simpl; [| |rewrite lmc_vertex_address]; reflexivity.
@@ -2310,7 +2315,7 @@ Proof.
   intros. unfold make_fields_vals at 1. simpl.
   unfold update_copied_old_vlabel, graph_gen.update_vlabel.
   rewrite if_true by reflexivity. simpl. rewrite lmc_vertex_address.
-  assert (tl (make_fields_vals g v) = tl (map (field2val g) (make_fields g v))) by
+  assert (tl (make_fields_vals g v) = tl (map (field2val (raw_tag (vlabel g v)) g) (make_fields g v))) by
       (unfold make_fields_vals; destruct (raw_mark (vlabel g v)); simpl; reflexivity).
   rewrite H. clear H. do 2 f_equal. apply lmc_field2val_make_fields.
 Qed.
@@ -3093,9 +3098,9 @@ Lemma lgd_dst_new: forall (g: LGraph) e v,
     dst (labeledgraph_gen_dst g e v) e = v.
 Proof. intros. simpl. unfold updateEdgeFunc. rewrite if_true; reflexivity. Qed.
 
-Lemma lgd_f2v_eq_except_one: forall g fd e v',
+Lemma lgd_f2v_eq_except_one: forall tag g fd e v',
     fd <> (inr e) ->
-    field2val g fd = field2val (labeledgraph_gen_dst g e v') fd.
+    field2val tag g fd = field2val tag (labeledgraph_gen_dst g e v') fd.
 Proof.
   intros; unfold field2val; simpl.
   destruct fd; [destruct s|]; try reflexivity.
@@ -3123,12 +3128,12 @@ Proof.
     replace (j + 1 - 1) with j in H0 by lia. assumption.
 Qed.
 
-Lemma lgd_map_f2v_diff_vert_eq: forall g v v' v1 e n,
+Lemma lgd_map_f2v_diff_vert_eq: forall tag g v v' v1 e n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = inr e ->
     v1 <> v ->
-    map (field2val g) (make_fields g v1) =
-    map (field2val (labeledgraph_gen_dst g e v'))
+    map (field2val tag g) (make_fields g v1) =
+    map (field2val tag (labeledgraph_gen_dst g e v'))
         (make_fields (labeledgraph_gen_dst g e v') v1).
 Proof.
     intros.
@@ -3144,14 +3149,14 @@ Proof.
     apply (H1 H5).
 Qed.
 
-Lemma lgd_f2v_eq_after_update: forall g v v' e n j,
+Lemma lgd_f2v_eq_after_update: forall tag g v v' e n j,
   0 <= n < Zlength (make_fields g v) ->
   0 <= j < Zlength (make_fields g v) ->
   Znth n (make_fields g v) = inr e ->
-  Znth j (upd_Znth n (map (field2val g)
+  Znth j (upd_Znth n (map (field2val tag g)
                           (make_fields g v)) (vertex_address g v')) =
   Znth j
-    (map (field2val (labeledgraph_gen_dst g e v'))
+    (map (field2val tag (labeledgraph_gen_dst g e v'))
          (make_fields (labeledgraph_gen_dst g e v') v)).
 Proof.
   intros.
@@ -3168,7 +3173,7 @@ Proof.
     apply H2 in H3; exfalso; assumption.
   + rewrite upd_Znth_diff_strong; [|rewrite Zlength_map|]; try assumption.
     rewrite Znth_map by assumption.
-    apply (lgd_f2v_eq_except_one g (Znth j (make_fields g v))).
+    apply (lgd_f2v_eq_except_one _ g (Znth j (make_fields g v))).
     intro. pose proof (make_fields_edge_unique g e v v n j H H0 H1 H3).
     lia.
 Qed.
@@ -3318,11 +3323,11 @@ Proof.
     apply (H0 _ _ _ _ IHdepth IHl). }
     clear IHdepth. inversion H3; subst; try (specialize (H to g'); assumption).
     + cut (P to g new_g).
-      * intros. apply (H0 to g new_g g'). 1: assumption. apply (H4 _ _ _ _ _ H8).
+      * intros. apply (H0 to g new_g g'). 1: assumption. apply (H4 _ _ _ _ _ H9).
       * subst new_g. apply H2.
     + subst new_g. apply H1.
     + cut (P to g new_g).
-      * intros. apply (H0 to g new_g g'). 1: assumption. apply (H4 _ _ _ _ _ H8).
+      * intros. apply (H0 to g new_g g'). 1: assumption. apply (H4 _ _ _ _ _ H9).
       * subst new_g. remember (lgraph_copy_v g (dst g e) to) as g1.
         remember (labeledgraph_gen_dst g1 e (new_copied_v g to)) as g2.
         cut (P to g1 g2). 2: subst; apply H1. intros. apply (H0 to g g1 g2).
@@ -3393,14 +3398,14 @@ Proof.
       * intros. apply (H2 g new_g g'). 1: assumption.
         assert (graph_has_gen new_g to) by
             (subst new_g; rewrite <- lcv_graph_has_gen; assumption).
-        apply (H10 _ _ _ _ _ H12 H14 H). subst new_g. apply H6; assumption.
+        apply (H10 _ _ _ _ _ H12 H15 H). subst new_g. apply H6; assumption.
       * subst new_g. apply (H4 (vgeneration v0)); [assumption.. | reflexivity].
     + subst new_g. apply H3.
     + cut (P g new_g v).
       * intros. apply (H2 g new_g g'). 1: assumption.
         assert (graph_has_gen new_g to) by
             (subst new_g; rewrite lgd_graph_has_gen, <- lcv_graph_has_gen; assumption).
-        apply (H10 _ _ _ _ _ H12 H14 H). subst new_g. apply H7, H6; assumption.
+        apply (H10 _ _ _ _ _ H12 H15 H). subst new_g. apply H7, H6; assumption.
       * subst new_g. remember (lgraph_copy_v g (dst g e) to) as g1.
         remember (labeledgraph_gen_dst g1 e (new_copied_v g to)) as g2.
         cut (P g1 g2 v). 2: subst; apply H3. intros. apply (H2 g g1 g2).
@@ -3604,6 +3609,46 @@ Proof.
   - split; assumption.
 Qed.
 
+
+Lemma lmc_raw_tag: forall g old new x,
+    x <> old -> raw_tag (vlabel g x) =
+                raw_tag (vlabel (lgraph_mark_copied g old new) x).
+Proof.
+  intros. destruct (V_EqDec x old).
+  - unfold equiv in e. contradiction.
+  - rewrite lmc_vlabel_not_eq; [reflexivity | assumption].
+Qed.
+
+Lemma lcv_raw_tag: forall g v to x,
+    x <> v -> graph_has_gen g to -> graph_has_v g x ->
+    raw_tag (vlabel g x) = raw_tag (vlabel (lgraph_copy_v g v to) x).
+Proof.
+  intros. unfold lgraph_copy_v. rewrite <- lmc_raw_tag by assumption.
+  rewrite lacv_vlabel_old. 1: reflexivity. apply graph_has_v_not_eq; assumption.
+Qed.
+
+
+Lemma fr_raw_tag: forall depth from to p g g',
+    graph_has_gen g to -> forward_relation from to depth p g g' ->
+    forall v, graph_has_v g v -> vgeneration v <> from ->
+              raw_tag (vlabel g v) = raw_tag (vlabel g' v).
+Proof.
+  intros. remember (fun (g: LGraph) (v: VType) (x: nat) =>
+                      graph_has_v g v /\ vgeneration v <> x) as Q.
+  remember (fun (g1 g2: LGraph) v =>
+              raw_tag (vlabel g1 v) = raw_tag (vlabel g2 v)) as P.
+  remember (fun (x1 x2: nat) => True) as R.
+  pose proof (fr_general_prop depth from to p g g' _ Q P R). subst Q P R.
+  apply H3; clear H3; intros; try assumption; try reflexivity.
+  - rewrite H3. apply H4.
+  - destruct H4. rewrite <- lcv_raw_tag; [reflexivity | try assumption..].
+    destruct x, v0. simpl in *. intro. inversion H9. subst. contradiction.
+  - destruct H5. split. 2: assumption.
+    apply (fr_graph_has_v _ _ _ _ _ _ H3 H4 _ H5).
+  - destruct H4. split. 2: assumption. apply lcv_graph_has_v_old; assumption.
+  - split; assumption.
+Qed.
+
 Lemma fl_raw_mark: forall depth from to l g g',
     graph_has_gen g to -> forward_loop from to depth l g g' ->
     forall v, graph_has_v g v -> vgeneration v <> from ->
@@ -3616,6 +3661,20 @@ Proof.
     + erewrite <- fr_graph_has_gen; eauto.
     + eapply fr_graph_has_v; eauto.
 Qed.
+
+Lemma fl_raw_tag: forall depth from to l g g',
+    graph_has_gen g to -> forward_loop from to depth l g g' ->
+    forall v, graph_has_v g v -> vgeneration v <> from ->
+              raw_tag (vlabel g v) = raw_tag (vlabel g' v).
+Proof.
+  intros. revert g g' H H0 v H1 H2. induction l; intros; inversion H0; subst.
+  1: reflexivity. transitivity (raw_tag (vlabel g2 v)).
+  - apply (fr_raw_tag _ _ _ _ _ _ H H6 _ H1 H2).
+  - apply IHl; [|assumption| |assumption].
+    + erewrite <- fr_graph_has_gen; eauto.
+    + eapply fr_graph_has_v; eauto.
+Qed.
+
 
 Lemma hr_refl: forall h, heap_relation h h.
 Proof.
@@ -3901,6 +3960,19 @@ Proof.
   eapply fr_raw_mark; eauto.
 Qed.
 
+Lemma svfl_raw_tag: forall from to v l g g',
+    graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
+    forall x, graph_has_v g x -> vgeneration x <> from ->
+              raw_tag (vlabel g x) = raw_tag (vlabel g' x).
+Proof.
+  do 4 intro. revert from to v. induction l; intros; simpl; inversion H0; subst.
+  1: reflexivity. assert (graph_has_gen g2 to) by
+      (eapply fr_graph_has_gen in H5; [rewrite <- H5 |]; assumption).
+  assert (graph_has_v g2 x) by (eapply fr_graph_has_v in H5; eauto).
+  eapply (IHl from to _ g2) in H8; eauto. rewrite <- H8.
+  eapply fr_raw_tag; eauto.
+Qed.
+
 Lemma forward_p2t_inr_roots: forall v n roots g,
     forward_p2forward_t (inr (v, n)) roots g = forward_p2forward_t (inr (v, n)) nil g.
 Proof. intros. simpl. reflexivity. Qed.
@@ -4169,6 +4241,7 @@ Qed.
 Lemma fl_edge_roots_graph_compatible: forall depth from to l g g' v roots,
     vgeneration v <> from ->
     graph_has_gen g to -> graph_has_v g v -> raw_mark (vlabel g v) = false ->
+    forall (Htag: raw_tag (vlabel g v) < NO_SCAN_TAG),
     forward_loop from to depth (map (fun x : nat => inr (v, Z.of_nat x)) l) g g' ->
     (forall i, In i l -> i < length (raw_fields (vlabel g v)))%nat ->
     roots_graph_compatible roots g -> roots_graph_compatible roots g'.
@@ -4179,6 +4252,7 @@ Proof.
     + rewrite <- fr_graph_has_gen; eauto.
     + eapply fr_graph_has_v; eauto.
     + rewrite <- H2. symmetry. eapply fr_raw_mark; eauto.
+    + erewrite <- fr_raw_tag; try eassumption.
     + assert (raw_fields (vlabel g v) = raw_fields (vlabel g2 v)) by
           (eapply fr_raw_fields; eauto). rewrite <- H7.
       intros; apply H4; right; assumption.
@@ -4243,14 +4317,19 @@ Proof.
             red in H7. intro HS. inversion HS. lia. }
         assert (graph_has_v new_g (new_copied_v g to)) by
             (subst new_g; apply lcv_graph_has_v_new; assumption).
-        unfold vertex_pos_pairs in H10.
+        unfold vertex_pos_pairs in H11.
         remember (nat_inc_list
                     (length (raw_fields (vlabel new_g (new_copied_v g to))))).
         eapply (fl_edge_roots_graph_compatible
-                  depth0 (vgeneration v) to l new_g); eauto.
+                  depth0 (vgeneration v) to l new_g); try eassumption.
         -- unfold new_copied_v. simpl; auto.
         -- subst new_g. rewrite <- lcv_graph_has_gen; assumption.
-        -- intros. subst l. rewrite nat_inc_list_In_iff in H11. assumption.
+        -- clear H11 e H8 roots' Heqroots' H6 Heql l.
+           subst new_g. unfold lgraph_copy_v. rewrite <- lmc_raw_tag.
+           rewrite lacv_vlabel_new; auto.
+           unfold new_copied_v. destruct v. destruct H5. simpl in H6.
+            red in H6. intro HS. inversion HS. lia.
+        -- intros. subst l. rewrite nat_inc_list_In_iff in H12. assumption.
   - simpl. eapply fr_right_roots_graph_compatible; eauto.
 Qed.
 
@@ -4813,25 +4892,27 @@ Proof.
 Qed.
 
 Lemma svfl_dst_unchanged: forall from to v l g1 g2,
-    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> vgeneration v <> from ->
+    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> 
+    (raw_tag (vlabel g1 v) < NO_SCAN_TAG)%Z -> vgeneration v <> from ->
     (forall i,  In i l -> i < length (raw_fields (vlabel g1 v))) ->
     graph_has_gen g1 to -> scan_vertex_for_loop from to v l g1 g2 ->
     forall e, graph_has_v g1 (fst e) -> (forall i, In i l -> e <> (v, i)) ->
               dst g1 e = dst g2 e.
 Proof.
-  intros ? ? ? ?. induction l; intros; inversion H4; subst. 1: reflexivity.
+  intros ? ? ? ?. induction l; intros; inversion H5; subst. 1: reflexivity.
   transitivity (dst g3 e).
   - eapply fr_O_dst_unchanged_field; eauto.
-    + simpl. intuition auto with *. rewrite Zlength_correct. apply inj_lt. apply H2.
+    + simpl. intuition auto with *. rewrite Zlength_correct. apply inj_lt. apply H3.
       left; reflexivity.
-    + apply H6. left; reflexivity.
+    + apply H7. left; reflexivity.
   - apply IHl; auto.
     + eapply fr_graph_has_v; eauto.
     + erewrite <- fr_raw_mark; eauto.
-    + intros. erewrite <- fr_raw_fields; eauto. apply H2. right; assumption.
+    + erewrite <- fr_raw_tag; eauto.
+    + intros. erewrite <- fr_raw_fields; eauto. apply H3. right; assumption.
     + erewrite <- fr_graph_has_gen; eauto.
     + eapply fr_graph_has_v; eauto.
-    + intros. apply H6. right; assumption.
+    + intros. apply H7. right; assumption.
 Qed.
 
 Lemma svwl_dst_unchanged: forall from to l g1 g2,
@@ -4847,6 +4928,7 @@ Proof.
   - transitivity (dst g2 e).
     + eapply (svfl_dst_unchanged from to (to, i)); eauto.
       * split; assumption.
+      * unfold no_scan in H5. lia.
       * intros. rewrite nat_inc_list_In_iff in H8. assumption.
       * intros. destruct (Nat.eq_dec (vgeneration (fst e)) to).
         -- specialize (H4 e0). intro. subst e. simpl in H4. apply H4. left; auto.
@@ -5015,14 +5097,16 @@ Proof.
 Qed.
 
 Lemma svfl_dst_changed: forall from to v l g1 g2,
-    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> vgeneration v <> from ->
+    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> 
+    (raw_tag (vlabel g1 v) < NO_SCAN_TAG)%Z ->
+    vgeneration v <> from ->
     copy_compatible g1 -> no_dangling_dst g1 -> from <> to ->
     (forall i,  In i l -> i < length (raw_fields (vlabel g1 v))) -> NoDup l ->
     graph_has_gen g1 to -> scan_vertex_for_loop from to v l g1 g2 ->
     forall e i, In i l -> Znth (Z.of_nat i) (make_fields g2 v) = inr e ->
                 vgeneration (dst g2 e) <> from.
 Proof.
-  intros ? ? ? ?. induction l; intros; inversion H8; subst. 1: inversion H9.
+  intros ? ? ? ?. induction l; intros ? ? ? ? SCAN; intros;  inversion H8; subst. 1: inversion H9.
   assert (e = (v, i)). {
     apply make_fields_Znth_edge in H10. 1: rewrite Nat2Z.id in H10; assumption.
     split. 1: lia. rewrite Zlength_correct. apply inj_lt.
@@ -5036,6 +5120,7 @@ Proof.
   - subst a. cut (vgeneration (dst g3 e) <> from).
     + intros. cut (dst g2 e = dst g3 e). 1: intro HS; rewrite HS; assumption.
       symmetry. apply (svfl_dst_unchanged from to v l); auto.
+      * erewrite <- fr_raw_tag; eauto. 
       * subst e; simpl; assumption.
       * intros. subst e. intro. inversion H11. subst. apply NoDup_cons_2 in H6.
         contradiction.
@@ -5044,6 +5129,7 @@ Proof.
         left; reflexivity.
       * unfold make_fields in H8 |-*. erewrite svfl_raw_fields; eauto.
   - eapply (IHl g3); eauto.
+    + erewrite <- fr_raw_tag; eauto. 
     + eapply (fr_copy_compatible _ _ _ _ g1); eauto.
     + eapply (fr_O_no_dangling_dst _ _ _ g1); eauto.
       * simpl. intuition auto with *. rewrite Zlength_correct. apply inj_lt. apply H5.
@@ -5053,13 +5139,15 @@ Proof.
 Qed.
 
 Lemma svfl_no_edge2from: forall from to v g1 g2,
-    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> vgeneration v <> from ->
+    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> 
+    (raw_tag (vlabel g1 v) < NO_SCAN_TAG)%Z ->
+    vgeneration v <> from ->
     copy_compatible g1 -> no_dangling_dst g1 -> from <> to -> graph_has_gen g1 to ->
     scan_vertex_for_loop
       from to v (nat_inc_list (length (raw_fields (vlabel g1 v)))) g1 g2 ->
     forall e, In e (get_edges g2 v) -> vgeneration (dst g2 e) <> from.
 Proof.
-  intros. unfold get_edges in H7. rewrite <- filter_sum_right_In_iff in H7.
+  intros ? ? ?  ? ? ? ? SCAN; intros. unfold get_edges in H7. rewrite <- filter_sum_right_In_iff in H7.
   apply In_Znth in H7. destruct H7 as [i [? ?]].
   rewrite <- (Z2Nat.id i) in H8 by lia. eapply svfl_dst_changed; eauto.
   - intros. rewrite nat_inc_list_In_iff in H9. assumption.
@@ -5093,23 +5181,27 @@ Proof.
 Qed.
 
 Lemma svfl_no_dangling_dst: forall from to v l g1 g2,
-    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> vgeneration v <> from ->
+    graph_has_v g1 v -> raw_mark (vlabel g1 v) = false -> 
+    (raw_tag (vlabel g1 v) < NO_SCAN_TAG)%Z ->
+    vgeneration v <> from ->
     copy_compatible g1 -> graph_has_gen g1 to -> from <> to ->
     scan_vertex_for_loop from to v l g1 g2 ->
     (forall i,  In i l -> i < length (raw_fields (vlabel g1 v))) ->
     no_dangling_dst g1 -> no_dangling_dst g2.
 Proof.
-  do 4 intro. induction l; intros; inversion H5; subst. 1: assumption.
+  do 4 intro. induction l; intros; inversion H6; subst. 1: assumption.
   cut (no_dangling_dst g3).
   - intros. apply (IHl g3); auto.
     + eapply fr_graph_has_v; eauto.
     + erewrite <- fr_raw_mark; eauto.
+    + erewrite <- fr_raw_tag; eauto.
     + eapply (fr_copy_compatible O from to); eauto.
     + erewrite <- fr_graph_has_gen; eauto.
-    + intros. erewrite <- fr_raw_fields; eauto. apply H6. right; assumption.
+    + intros. erewrite <- fr_raw_fields; eauto. apply H7. right; assumption.
   - eapply fr_O_no_dangling_dst; eauto.
-    + simpl. intuition auto with *. rewrite Zlength_correct. apply inj_lt.
-      apply H6. left; reflexivity.
+    + simpl. intuition auto with *.
+      rewrite Zlength_correct. apply inj_lt.
+      apply H7. left; reflexivity.
     + simpl. constructor.
 Qed.
 
@@ -5138,12 +5230,15 @@ Proof.
         -- intros. erewrite get_edges_fst; eauto. simpl.
            apply NoDup_cons_2 in H5. assumption.
       * assert (graph_has_v g1 (to, i)) by (split; simpl; assumption).
-        eapply svfl_no_edge2from; eauto. unfold get_edges, make_fields in H7 |-*.
+        eapply svfl_no_edge2from; eauto.
+        unfold no_scan in H11; lia.
+        unfold get_edges, make_fields in H7 |-*.
         erewrite svwl_raw_fields; eauto. eapply (svfl_graph_has_v _ _ _ _ g1); eauto.
     + eapply (IHl g3); eauto.
       * eapply (svfl_copy_compatible _ _ _ _ g1); eauto.
       * eapply (svfl_no_dangling_dst from to); eauto.
         -- split; simpl; assumption.
+        -- unfold no_scan in H11. lia.
         -- intros. rewrite nat_inc_list_In_iff in H13. assumption.
       * apply NoDup_cons_1 in H5. assumption.
 Qed.
@@ -5277,6 +5372,7 @@ Proof.
     + eapply svfl_copy_compatible; eauto.
   - eapply (svfl_no_dangling_dst from to _ _ g1); eauto.
     + split; simpl; assumption.
+    + unfold no_scan in H8; lia.
     + intros. rewrite nat_inc_list_In_iff in H5. assumption.
 Qed.
 
@@ -5545,8 +5641,8 @@ Lemma ang_make_fields_vals_old: forall g gi v,
     make_fields_vals g v = make_fields_vals (lgraph_add_new_gen g gi) v.
 Proof.
   intros. unfold make_fields_vals. simpl.
-  assert (map (field2val g) (make_fields g v) =
-          map (field2val (lgraph_add_new_gen g gi))
+  assert (map (field2val (raw_tag (vlabel g v)) g) (make_fields g v) =
+          map (field2val (raw_tag (vlabel g v)) (lgraph_add_new_gen g gi))
               (make_fields (lgraph_add_new_gen g gi) v)). {
     unfold make_fields. simpl. apply map_ext_in. intros.
     destruct a; [destruct s|]; simpl; auto. rewrite ang_vertex_address_old; auto.
