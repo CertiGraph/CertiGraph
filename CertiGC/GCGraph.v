@@ -1489,6 +1489,10 @@ Inductive forward_relation (from to: nat):
     let new_g := lgraph_copy_v g v to in
     forward_loop from to depth (vertex_pos_pairs new_g (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inl (inr v)) g g'
+| fr_v_in_not_forwarded_noscan: forall depth v g,
+    vgeneration v = from -> (vlabel g v).(raw_mark) = false ->
+    (vlabel g v).(raw_tag) >= NO_SCAN_TAG ->
+    forward_relation from to (S depth) (inl (inr v)) g (lgraph_copy_v g v to)
 | fr_e_not_to: forall depth e (g: LGraph),
     vgeneration (dst g e) <> from -> forward_relation from to depth (inr e) g g
 | fr_e_to_forwarded: forall depth e (g: LGraph),
@@ -1507,6 +1511,12 @@ Inductive forward_relation (from to: nat):
                                       (new_copied_v g to) in
     forward_loop from to depth (vertex_pos_pairs new_g (new_copied_v g to)) new_g g' ->
     forward_relation from to (S depth) (inr e) g g'
+| fr_e_to_not_forwarded_noscan: forall depth e (g: LGraph),
+    vgeneration (dst g e) = from -> (vlabel g (dst g e)).(raw_mark) = false ->
+    (vlabel g (dst g e)).(raw_tag) >= NO_SCAN_TAG ->
+    let new_g := labeledgraph_gen_dst (lgraph_copy_v g (dst g e) to) e
+                                      (new_copied_v g to) in
+    forward_relation from to (S depth) (inr e) g new_g
 with
 forward_loop (from to: nat): nat -> list forward_p_type -> LGraph -> LGraph -> Prop :=
 | fl_nil: forall depth g, forward_loop from to depth nil g g
@@ -3309,8 +3319,7 @@ Lemma fr_general_prop_bootstrap: forall depth from to p g g'
     forward_relation from to depth p g g' -> P to g g'.
 Proof.
   induction depth; intros.
-  - inversion H3; subst; try (specialize (H to g'); assumption).
-    + apply H2.
+  - inversion H3; subst; try (specialize (H to g'); assumption); try solve [auto].
     + subst new_g. apply H1.
     + subst new_g. remember (lgraph_copy_v g (dst g e) to) as g1.
       remember (labeledgraph_gen_dst g1 e (new_copied_v g to)) as g2.
@@ -3325,6 +3334,7 @@ Proof.
     + cut (P to g new_g).
       * intros. apply (H0 to g new_g g'). 1: assumption. apply (H4 _ _ _ _ _ H9).
       * subst new_g. apply H2.
+    + inv H3; eauto.
     + subst new_g. apply H1.
     + cut (P to g new_g).
       * intros. apply (H0 to g new_g g'). 1: assumption. apply (H4 _ _ _ _ _ H9).
@@ -3332,6 +3342,7 @@ Proof.
         remember (labeledgraph_gen_dst g1 e (new_copied_v g to)) as g2.
         cut (P to g1 g2). 2: subst; apply H1. intros. apply (H0 to g g1 g2).
         2: assumption. subst g1. apply H2.
+    + subst new_g. inv H3; eauto.
 Qed.
 
 Lemma fr_graph_has_gen: forall depth from to p g g',
@@ -3377,14 +3388,7 @@ Lemma fr_general_prop:
     forall v, Q g v from -> P g g' v.
 Proof.
   induction depth; intros.
-  - inversion H8; subst; try (specialize (H1 g' v); assumption).
-    + apply (H4 (vgeneration v0)); [assumption.. | reflexivity].
-    + subst new_g. apply H3.
-    + subst new_g. remember (lgraph_copy_v g (dst g e) to) as g1.
-      remember (labeledgraph_gen_dst g1 e (new_copied_v g to)) as g2.
-      cut (P g1 g2 v). 2: subst; apply H3. intros. apply (H2 g g1 g2).
-      2: assumption. subst g1.
-      apply (H4 (vgeneration (dst g e))); [assumption.. | reflexivity].
+  - inversion H8; subst; try (specialize (H1 g' v); assumption); try solve [eauto].
   - assert (forall l from to g1 g2,
                graph_has_gen g1 to -> forward_loop from to depth l g1 g2 ->
                R from to -> forall v, Q g1 v from -> P g1 g2 v). {
@@ -3393,14 +3397,13 @@ Proof.
       apply (H5 _ _ _ _ _ _ H10 H17) in H13.
       rewrite (fr_graph_has_gen _ _ _ _ _ _ H10 H17) in H10.
       specialize (IHl _ _ _ _ H10 H20 H12 _ H13). apply (H2 _ _ _ _ IHdepth IHl). }
-    clear IHdepth. inversion H8; subst; try (specialize (H1 g' v); assumption).
+    clear IHdepth. inversion H8; subst; try (specialize (H1 g' v); assumption); try solve [eauto].
     + cut (P g new_g v).
       * intros. apply (H2 g new_g g'). 1: assumption.
         assert (graph_has_gen new_g to) by
             (subst new_g; rewrite <- lcv_graph_has_gen; assumption).
         apply (H10 _ _ _ _ _ H12 H15 H). subst new_g. apply H6; assumption.
       * subst new_g. apply (H4 (vgeneration v0)); [assumption.. | reflexivity].
-    + subst new_g. apply H3.
     + cut (P g new_g v).
       * intros. apply (H2 g new_g g'). 1: assumption.
         assert (graph_has_gen new_g to) by
@@ -4330,6 +4333,7 @@ Proof.
            unfold new_copied_v. destruct v. destruct H5. simpl in H6.
             red in H6. intro HS. inversion HS. lia.
         -- intros. subst l. rewrite nat_inc_list_In_iff in H12. assumption.
+      * rewrite H8. apply lcv_roots_graph_compatible; assumption.
   - simpl. eapply fr_right_roots_graph_compatible; eauto.
 Qed.
 
@@ -4632,10 +4636,10 @@ Lemma fr_O_dst_unchanged_root: forall from to r g g',
     forward_relation from to O (root2forward r) g g' ->
     forall e, graph_has_v g (fst e) -> dst g e = dst g' e.
 Proof.
-  intros. destruct r; [destruct s|]; simpl in H; inversion H; subst; try reflexivity.
-  simpl. rewrite pcv_dst_old. 1: reflexivity. destruct e as [[gen vidx] eidx].
-  unfold graph_has_v in H0. unfold new_copied_v. simpl in *. destruct H0. intro.
-  inversion H2. subst. red in H1. lia.
+  intros. destruct r; [destruct s|]; simpl in H; inversion H; subst; try reflexivity;
+   (simpl; rewrite pcv_dst_old; [ reflexivity |  destruct e as [[gen vidx] eidx]];
+    unfold graph_has_v in H0; unfold new_copied_v; simpl in *; destruct H0; intro;
+     inversion H2; subst; red in H1; lia).
 Qed.
 
 Lemma frr_dst_unchanged: forall from to roots1 g1 roots2 g2,
@@ -4652,9 +4656,9 @@ Lemma fr_O_graph_has_v_inv: forall from to p g g',
     graph_has_gen g to -> forward_relation from to O p g g' ->
     forall v, graph_has_v g' v -> graph_has_v g v \/ v = new_copied_v g to.
 Proof.
-  intros. inversion H0; subst; try (left; assumption);
-            [|subst new_g; rewrite <- lgd_graph_has_v in H1];
-            apply lcv_graph_has_v_inv in H1; assumption.
+  intros. inversion H0; subst;try (left; assumption);
+   try (subst new_g; rewrite <- lgd_graph_has_v in H1);
+   apply lcv_graph_has_v_inv in H1; assumption.
 Qed.
 
 Definition gen_v_num (g: LGraph) (gen: nat): nat := number_of_vertices (nth_gen g gen).
@@ -4818,10 +4822,10 @@ Lemma fr_O_gen_v_num_to: forall from to p g g',
     graph_has_gen g to -> forward_relation from to O p g g' ->
     gen_v_num g to <= gen_v_num g' to.
 Proof.
-  intros. inversion H0; subst; try lia; [|subst new_g..].
+  intros. inversion H0; subst; try lia; try subst new_g.
   - apply lcv_gen_v_num_to; auto.
   - rewrite lgd_gen_v_num_to. lia.
-  - rewrite lgd_gen_v_num_to. apply lcv_gen_v_num_to. assumption.
+  - rewrite lgd_gen_v_num_to. apply lcv_gen_v_num_to. assumption. 
 Qed.
 
 Lemma frr_gen_v_num_to: forall from to roots1 g1 roots2 g2,

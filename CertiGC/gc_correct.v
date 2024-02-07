@@ -972,11 +972,7 @@ Lemma fr_O_vertex_valid: forall g g' from to p,
     vertex_valid g -> graph_has_gen g to -> forward_relation from to 0 p g g' ->
     vertex_valid g'.
 Proof.
-  intros. inversion H1; subst; try assumption.
-  - now apply lcv_vertex_valid.
-  - replace (vertex_valid new_g) with
-        (vertex_valid (lgraph_copy_v g (dst g e) to)) by (subst new_g; reflexivity).
-    now apply lcv_vertex_valid.
+  intros. inversion H1; subst; try assumption; try now apply lcv_vertex_valid.
 Qed.
 
 Lemma lcv_get_edges_old: forall (g: LGraph) v v' to,
@@ -1035,11 +1031,7 @@ Lemma fr_O_edge_valid: forall g1 g2 from to p,
     edge_valid g1 -> graph_has_gen g1 to ->
     forward_relation from to O p g1 g2 -> edge_valid g2.
 Proof.
-  intros. inversion H1; subst; try assumption.
-  - now apply lcv_edge_valid.
-  - replace (edge_valid new_g) with
-        (edge_valid (lgraph_copy_v g1 (dst g1 e) to)) by (subst new_g; reflexivity).
-    now apply lcv_edge_valid.
+  intros. inversion H1; subst; try assumption; try now apply lcv_edge_valid.
 Qed.
 
 Lemma flcvae_src_old: forall g new (l: list (EType * VType)) e,
@@ -1105,11 +1097,7 @@ Qed.
 Lemma fr_O_src_edge: forall (g1 g2: LGraph) from to p,
     src_edge g1 -> forward_relation from to O p g1 g2 -> src_edge g2.
 Proof.
-  intros. inversion H0; subst; try assumption.
-  - apply pcv_src_edge; assumption.
-  - replace (src_edge new_g) with
-        (src_edge (lgraph_copy_v g1 (dst g1 e) to)) by (subst new_g; reflexivity).
-    apply pcv_src_edge; assumption.
+  intros. inversion H0; subst; try assumption; try (apply pcv_src_edge; assumption).
 Qed.
 
 Lemma fr_O_edge_label_same: forall (g1 g2: LGraph) from to p,
@@ -1839,6 +1827,10 @@ Proof.
           ++ unfold new_copied_v. destruct v. destruct H5. simpl in H12.
             red in H12. intro HS. inversion HS. lia.
         -- intros. subst l. rewrite nat_inc_list_In_iff in H12. assumption.
+      * rewrite H8. clear e.
+        set (new_g := lgraph_copy_v g v to).
+        remember (upd_Znth z roots (inr (new_copied_v g to))) as roots'.
+        subst; subst new_g; apply lcv_roots_graph_compatible; assumption.
   - simpl. eapply fr_right_roots_graph_compatible; eauto.
 Qed.
 
