@@ -645,6 +645,7 @@ abbreviate_semax.
                 - simpl. rewrite cti_space_start. reflexivity. }
                 forward_if.
               ** forward_if.
+                ---
                  assert (SCAN': raw_tag (vlabel g v') < NO_SCAN_TAG). {
                    pose proof raw_fields_range (vlabel g v').
                    pose proof raw_color_range (vlabel g v').
@@ -706,9 +707,9 @@ abbreviate_semax.
                          graph_rep g3;
                          roots_rep sh (update_rootpairs rootpairs (map (root2val g3) roots'));
                          heap_rep sh h3 hp))%assert.
-                 --- pose proof (raw_fields_range2 (vlabel g v')). simpl in H57.
+                 +++ pose proof (raw_fields_range2 (vlabel g v')). simpl in H57.
                      now rewrite <- Heqn' in H57.
-                 --- Exists g1 h'. autorewrite with sublist.
+                 +++ Exists g1 h'. autorewrite with sublist.
                      assert (forward_loop from to (Z.to_nat (depth - 1)) [] g1 g1) by
                          constructor. unfold thread_info_relation.
                      destruct H53 as [? [? [? ?]]].
@@ -716,7 +717,7 @@ abbreviate_semax.
                      red in H58; rewrite H58.
                      rewrite update_rootpairs_same.
                      entailer!. easy.
-                 --- Intros.
+                 +++ Intros.
                      assert (graph_has_gen g1 to) by
                          (rewrite Heqg1, lgd_graph_has_gen; subst g';
                           rewrite <- lcv_graph_has_gen; assumption).
@@ -726,32 +727,32 @@ abbreviate_semax.
                      forward_call (rsh, sh, gv, g3, h3, hp, (update_rootpairs rootpairs (map (root2val g3) roots')), roots',
                                    outlier, from, to, depth - 1,
                                    (@inr Z _ (new_copied_v g to, i))).
-                     +++ apply prop_right. simpl. rewrite sub_repr.
+                     *** apply prop_right. simpl. rewrite sub_repr.
                          do 4 f_equal. rewrite H31.
                          first [rewrite sem_add_pi_ptr_special' |
                                 rewrite sem_add_pl_ptr_special']; auto.
-                         *** simpl. f_equal.
+                         ---- simpl. f_equal.
                              rewrite <- (lgd_vertex_address_eq g' e v1), <- Heqg1.
                              subst v1. apply (fl_vertex_address _ _ _ _ _ _ H62 H59).
                              apply graph_has_v_in_closure; assumption.
-                         *** rewrite <- H31. assumption.
-                     +++ split3; [| |split3].
-                         *** destruct H53 as [_ [_ [? _]]].
+                         ---- rewrite <- H31. assumption.
+                     *** split3; [| |split3].
+                         ---- destruct H53 as [_ [_ [? _]]].
                              apply (fl_graph_has_v _ _ _ _ _ _ H62 H59 _ H63).
-                         *** erewrite <- fl_raw_fields; eauto. subst g1.
+                         ---- erewrite <- fl_raw_fields; eauto. subst g1.
                              unfold lgraph_copy_v. subst n'.
                              rewrite <- lgd_raw_fld_length_eq.
                              subst g'. rewrite lcv_vlabel_new.
                              assumption. rewrite v0. lia.
-                         *** erewrite <- fl_raw_mark; eauto. subst g1 from.
+                         ---- erewrite <- fl_raw_mark; eauto. subst g1 from.
                              rewrite <- lgd_raw_mark_eq. subst g'.
                              rewrite lcv_vlabel_new; assumption.
-                         *** erewrite <- fl_raw_tag; eauto. subst g1 from.
+                         ---- erewrite <- fl_raw_tag; eauto. subst g1 from.
                              change (raw_tag _) with (raw_tag (vlabel g' (new_copied_v g to))).
                              subst g'.
                              rewrite lcv_vlabel_new; assumption.
-                         *** simpl; lia.
-                     +++ Intros vret. destruct vret as [[g4 h4] roots4].
+                         ---- simpl; lia.
+                     *** Intros vret. destruct vret as [[g4 h4] roots4].
                          simpl fst in *. simpl snd in *. Exists g4 h4.
                          simpl in H65. subst roots4.
                          assert (gen_start g3 from = gen_start g4 from). {
@@ -776,7 +777,7 @@ abbreviate_semax.
                          rewrite update_update_rootpairs
                            by (clear - Heqroots' H4; apply (f_equal (@Zlength _)) in H4; list_solve).
                          entailer!.
-                 --- Intros g3 h3.
+                 +++ Intros g3 h3.
                      assert (heap_relation h h3).
                         { apply hr_trans with h'; try assumption.
                            split; intros; auto. }
@@ -789,7 +790,7 @@ abbreviate_semax.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
                          (rewrite <- Z2Nat.inj_succ; [f_equal|]; lia).
                      rewrite Heqf, H12. simpl.
-                     constructor; [reflexivity | assumption..].
+                     apply fr_e_to_not_forwarded_Sn; [reflexivity | assumption..].
                      Local Transparent super_compatible.
                 --- 
                  assert (SCAN': raw_tag (vlabel g v') >= NO_SCAN_TAG). {
@@ -825,6 +826,7 @@ abbreviate_semax.
                    rewrite Zmod_small in H by auto.
                    auto.
                  }
+                 subst v'.
                  deadvars!. clear Heqnv. rename H55 into H55'. forward.
                  Exists g1 h' roots.
                  replace (update_rootpairs _ _) with rootpairs. 2:{
@@ -832,9 +834,9 @@ abbreviate_semax.
                   rewrite update_rootpairs_same. auto.
                  }
                  entailer!. simpl. rewrite Heqf.
-                 simpl field2forward. rewrite H12. simpl. forget (dst g e) as v'.
-                 clear - H22 SCAN'.
-                 admit.  (* Need a new case in forward_relation *)
+                 simpl field2forward. rewrite H12. simpl.
+                 replace (Z.to_nat depth) with (S (Z.to_nat (depth-1))) by (clear - H55'; lia).
+                 apply fr_e_to_not_forwarded_noscan; auto.
               ** assert (depth = 0) by lia. subst depth. clear H55.
                  deadvars!. clear Heqnv. forward.
                  Exists g1 h' roots.
@@ -857,5 +859,6 @@ abbreviate_semax.
            ++ constructor. auto.
            ++ split; auto.
            ++ apply hr_refl.
-        -- unfold thread_info_rep, heap_rep. entailer!.
-Admitted.
+        -- unfold thread_info_rep, heap_rep. entailer!!.
+Qed.
+

@@ -744,7 +744,7 @@ abbreviate_semax.
                      rewrite <- Heqroot, H21, if_true by reflexivity. split; auto.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
                          (rewrite <- Z2Nat.inj_succ; [f_equal|]; lia).
-                     constructor; easy.
+                     apply fr_v_in_not_forwarded_Sn; easy.
                      Local Transparent super_compatible.
                  ---
                  assert (SCAN': raw_tag (vlabel g v) >= NO_SCAN_TAG). {
@@ -804,7 +804,8 @@ abbreviate_semax.
                  entailer!!.
                  unfold upd_roots, upd_root. simpl. rewrite <- Heqroot.
                  rewrite if_true by auto. rewrite H21. split; auto.
-                 admit.  (* Need a new case in forward_relation *)
+                 replace (Z.to_nat depth) with (S (Z.to_nat (depth-1))) by (clear - H42; lia).
+                 apply fr_v_in_not_forwarded_noscan; easy.
               ** assert (depth = 0) by lia. subst depth. clear H42.
                  clear Heqnv. forward.
                  Exists g' h' (upd_Znth z roots (inr (new_copied_v g to))).
@@ -858,5 +859,6 @@ abbreviate_semax.
            rewrite <- Znth_map by lia. rewrite <- H4.
            rewrite Znth_map by lia. auto.
            rewrite <- Heqroot. reflexivity.
-Admitted.
+Qed.
+
 
