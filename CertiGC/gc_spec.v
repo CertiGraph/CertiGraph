@@ -18,22 +18,31 @@ Definition init_data2byte (d: init_data) : byte :=
   | _ => Byte.one
   end.
 
-Definition all_string_constants (sh: share) (gv: globals) : mpred :=
-  cstring sh (map init_data2byte (gvar_init v___stringlit_1)) (gv ___stringlit_1) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_2)) (gv ___stringlit_2) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_3)) (gv ___stringlit_3) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_4)) (gv ___stringlit_4) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_5)) (gv ___stringlit_5) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_6)) (gv ___stringlit_6) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_7)) (gv ___stringlit_7) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_8)) (gv ___stringlit_8) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_9)) (gv ___stringlit_9) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_10)) (gv ___stringlit_10) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_11)) (gv ___stringlit_11) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_12)) (gv ___stringlit_12) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_13)) (gv ___stringlit_13) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_14)) (gv ___stringlit_14) *
-  cstring sh (map init_data2byte (gvar_init v___stringlit_15)) (gv ___stringlit_15).
+Definition is_string_constant (d: ident * globdef Clight.fundef type) : bool :=
+  match d with 
+  | (_, Gvar {| gvar_info := Tarray (Tint I8 _ _) _ _;
+             gvar_init := _; gvar_readonly := true; gvar_volatile := _ |})
+     => true
+  | _ => false
+  end.
+
+Definition sep_of_string_constant sh gv (d: ident * globdef Clight.fundef type) : mpred :=
+  match d with
+  | (i, Gvar v) => cstring sh (map init_data2byte (gvar_init v)) (gv i)
+  | _ => emp
+  end.
+
+Definition all_string_constants' (sh: share) (gv: globals) : mpred :=
+ fold_left sepcon
+  (map (sep_of_string_constant sh gv) (filter is_string_constant gc_stack.global_definitions))
+  emp.
+
+Definition all_string_constants (sh: share) (gv: globals) : mpred := 
+  ltac:(
+   let x := constr:(all_string_constants' sh gv) in
+   let x := eval hnf in x in
+   let x := eval unfold sep_of_string_constant in x in
+   match x with ?S ?A ?B => exact (sepcon A B) end).
 
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
@@ -45,12 +54,11 @@ Definition test_int_or_ptr_spec :=
    SEP ()
  POST [ tint ]
    PROP()
-   LOCAL(temp ret_temp
-          (Vint (Int.repr (match x with
+   RETURN(Vint (Int.repr (match x with
                            | Vint _ => if Archi.ptr64 then 0 else 1
                            | Vlong _ => if Archi.ptr64 then 1 else 0
                            | _ => 0
-                           end))))
+                           end)))
    SEP().
 
 Definition int_or_ptr_to_int_spec :=
@@ -62,7 +70,7 @@ Definition int_or_ptr_to_int_spec :=
     GLOBALS ()
     SEP ()
   POST [ (if Archi.ptr64 then tlong else tint) ]
-    PROP() LOCAL (temp ret_temp x) SEP().
+    PROP() RETURN (x) SEP().
 
 Definition int_or_ptr_to_ptr_spec :=
   DECLARE _int_or_ptr_to_ptr
@@ -73,7 +81,7 @@ Definition int_or_ptr_to_ptr_spec :=
     GLOBALS ()
     SEP ()
   POST [ tptr tvoid ]
-    PROP() LOCAL (temp ret_temp x) SEP().
+    PROP() RETURN (x) SEP().
 
 Definition int_to_int_or_ptr_spec :=
   DECLARE _int_to_int_or_ptr
@@ -84,7 +92,7 @@ Definition int_to_int_or_ptr_spec :=
     GLOBALS ()
     SEP ()
   POST [ int_or_ptr_type ]
-    PROP() LOCAL (temp ret_temp x) SEP().
+    PROP() RETURN (x) SEP().
 
 Definition ptr_to_int_or_ptr_spec :=
   DECLARE _ptr_to_int_or_ptr
@@ -95,7 +103,7 @@ Definition ptr_to_int_or_ptr_spec :=
     GLOBALS ()
     SEP()
   POST [ int_or_ptr_type ]
-    PROP() LOCAL (temp ret_temp x) SEP().
+    PROP() RETURN (x) SEP().
 
 Definition is_ptr_spec :=
   DECLARE _is_ptr
@@ -107,11 +115,10 @@ Definition is_ptr_spec :=
     SEP()
   POST [ tint ]
     PROP()
-    LOCAL(temp ret_temp
-               (Vint (Int.repr (match x with
+    RETURN(Vint (Int.repr (match x with
                                 | Vptr _ _ => 1
                                 | _ => 0
-                                end))))
+                                end)))
     SEP().
 
 Definition abort_with_spec :=
@@ -123,7 +130,7 @@ Definition abort_with_spec :=
     GLOBALS ()
     SEP (cstring sh str s)
   POST [ tvoid ]
-    PROP (False) LOCAL() SEP().
+    PROP (False) RETURN() SEP().
 
 Definition IS_FROM_TYPE :=
   ProdType (ProdType (ProdType
@@ -145,7 +152,7 @@ Program Definition Is_from_spec :=
   POST [tint]
     EX b: {v_in_range v start n} + {~ v_in_range v start n},
     PROP ()
-    LOCAL (temp ret_temp (Vint (Int.repr (if b then 1 else 0))))
+    RETURN (Vint (Int.repr (if b then 1 else 0)))
     SEP (P).
 Next Obligation.
 Proof.
@@ -201,7 +208,7 @@ Definition forward_spec :=
                            (forward_p2forward_t forward_p roots g) g g';
           forward_condition g' h' from to;
           heap_relation h h')
-    LOCAL ()
+    RETURN ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
@@ -237,7 +244,7 @@ Definition forward_roots_spec :=
           forward_roots_relation from to roots g roots' g';
           forward_condition g' h' from to;
           heap_relation h h')
-    LOCAL ()
+    RETURN ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
@@ -287,7 +294,7 @@ Definition do_scan_spec :=
           forward_condition g' h' from to;
           do_scan_relation from to to_index g g';
           heap_relation h h')
-    LOCAL ()
+    RETURN ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
@@ -320,7 +327,7 @@ Definition do_generation_spec :=
     PROP (super_compatible g' h' (frames2rootpairs (update_frames fr (map (root2val g') roots'))) roots' outlier;
           heap_relation h h';
           do_generation_relation from to roots roots' g g')
-    LOCAL ()
+    RETURN ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
@@ -339,7 +346,7 @@ Definition create_space_spec :=
     SEP (mem_mgr gv; all_string_constants rsh gv; data_at_ sh space_type s)
   POST [tvoid]
     EX p: val,
-    PROP () LOCAL ()
+    PROP () RETURN ()
     SEP (mem_mgr gv; all_string_constants rsh gv;
          malloc_token Ews (tarray int_or_ptr_type n) p;
          data_at_ Ews (tarray int_or_ptr_type n) p;
@@ -357,7 +364,7 @@ Definition create_heap_spec :=
     SEP (mem_mgr gv; all_string_constants sh gv)
   POST [tptr heap_type]
     EX h: val, EX p: val,
-    PROP () LOCAL (temp ret_temp h)
+    PROP () RETURN (h)
     SEP (mem_mgr gv; all_string_constants sh gv;
         malloc_token Ews heap_type h;
          data_at Ews heap_type
@@ -376,7 +383,7 @@ Definition make_tinfo_spec :=
     SEP (mem_mgr gv; all_string_constants sh gv)
   POST [tptr thread_info_type]
     EX t: val, EX h: val, EX p: val,
-    PROP () LOCAL (temp ret_temp t)
+    PROP () RETURN (t)
     SEP (mem_mgr gv; all_string_constants sh gv;
          malloc_token Ews thread_info_type t;
          data_at Ews thread_info_type
@@ -407,7 +414,7 @@ Definition resume_spec :=
     PROP (Ptrofs.unsigned (ti_nalloc t_info) <= 
            total_space (heap_head (ti_heap t_info))
           - used_space (heap_head (ti_heap t_info)))
-    LOCAL ()
+    RETURN ()
     SEP (all_string_constants rsh gv;
          graph_rep g;
          before_gc_thread_info_rep sh t_info ti).
@@ -440,7 +447,7 @@ Definition garbage_collect_spec :=
           Ptrofs.unsigned (ti_nalloc t_info) <= 
                  total_space (heap_head (ti_heap t_info'))
                     - used_space (heap_head (ti_heap t_info')))
-    LOCAL ()
+    RETURN ()
     SEP (mem_mgr gv;
          all_string_constants rsh gv;
          outlier_rep outlier;
@@ -448,7 +455,9 @@ Definition garbage_collect_spec :=
          before_gc_thread_info_rep sh t_info' ti;
          ti_token_rep (ti_heap t_info') (ti_heap_p t_info')).
 
+(*
 Definition reset_heap_spec :=
+   (* THIS IS A PLACEHOLDER AND NOT CORRECT *)
   DECLARE _reset_heap
   WITH h: val
   PRE [tptr heap_type]
@@ -457,15 +466,20 @@ Definition reset_heap_spec :=
     GLOBALS ()
     SEP ()
   POST [tvoid]
-  PROP () LOCAL () SEP ().
+  PROP () RETURN () SEP ().
 
 Definition free_heap_spec :=
+   (* THIS IS A PLACEHOLDER AND NOT CORRECT *)
   DECLARE _free_heap
-  WITH h: val
+  WITH h: heap, p: val, rsh: share, gv: globals
   PRE [tptr heap_type]
-    PROP () PARAMS (h) GLOBALS () SEP ()
+    PROP (readable_share rsh) PARAMS (p) GLOBALS (gv) 
+    SEP (heap_rep Ews h p; ti_token_rep h p; 
+         mem_mgr gv; all_string_constants rsh gv)
   POST [tvoid]
-  PROP () LOCAL () SEP ().
+  PROP () RETURN () 
+  SEP (mem_mgr gv; all_string_constants rsh gv).
+*)
 
 Definition Gprog: funspecs :=
   ltac:(with_library prog
@@ -486,6 +500,4 @@ Definition Gprog: funspecs :=
                       create_heap_spec;
                       make_tinfo_spec;
                       resume_spec;
-                      garbage_collect_spec;
-                      reset_heap_spec;
-                      free_heap_spec]).
+                      garbage_collect_spec]).
