@@ -2,7 +2,6 @@ Require Import VST.veric.rmaps.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Export CertiGraph.CertiGC.GCGraph.
-Require Import VST.concurrency.conclib.
 Require Export CertiGraph.CertiGC.spatial_gcgraph.
 Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.msl_ext.iter_sepcon.
@@ -388,7 +387,7 @@ Definition make_tinfo_spec :=
          malloc_token Ews thread_info_type t;
          data_at Ews thread_info_type
                  (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,
-                      (h, (repeat Vundef (Z.to_nat MAX_ARGS), (nullval,(vptrofs 0,nullval)))))) t;
+                      (h, (repeat Vundef (Z.to_nat MAX_ARGS), (nullval,(Vptrofs (Ptrofs.repr 0),nullval)))))) t;
          malloc_token Ews heap_type h;
          data_at Ews heap_type
                  ((p, (p, (offset_val (WORD_SIZE * NURSERY_SIZE) p,offset_val (WORD_SIZE * NURSERY_SIZE) p)))

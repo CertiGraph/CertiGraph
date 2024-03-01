@@ -1,5 +1,4 @@
 From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
-Require Import VST.concurrency.conclib.
 
 Local Open Scope logic.
 
@@ -19,10 +18,10 @@ Proof.
   replace (ofs + WORD_SIZE * total_space s - ofs) with
       (WORD_SIZE * total_space s)%Z by lia. simpl.
   pose proof (total_space_signed_range s). unfold Ptrofs.divs.
-  rewrite !Ptrofs.signed_repr by rep_lia. unfold vptrofs, Archi.ptr64.
-  unfold WORD_SIZE. rewrite Z.mul_comm, Z.quot_mul by lia.
-  first [rewrite ptrofs_to_int64_repr by easy | rewrite ptrofs_to_int_repr].
-  reflexivity.
+  rewrite !Ptrofs.signed_repr by rep_lia.
+  rewrite Vptrofs_unfold_true, ptrofs_to_int64_repr by reflexivity.
+  do 2 f_equal.
+  unfold WORD_SIZE. rewrite Z.mul_comm, Z.quot_mul by lia. auto.
 Qed.
 
 Lemma sem_sub_pp_rest_space: forall s,
@@ -42,10 +41,12 @@ Proof.
           (WORD_SIZE * (total_space s - used_space s))%Z by
       (rewrite Z.mul_sub_distr_l; lia). simpl.
   pose proof (rest_space_signed_range s). rewrite <- Z.mul_sub_distr_l in H0.
+  rewrite Vptrofs_unfold_true by reflexivity.
   unfold Ptrofs.divs. rewrite !Ptrofs.signed_repr by rep_lia.
-  unfold vptrofs, Archi.ptr64. unfold WORD_SIZE.
-  rewrite Z.mul_comm, Z.quot_mul by lia.
-  first [rewrite ptrofs_to_int64_repr by easy | rewrite ptrofs_to_int_repr]. easy.
+  rewrite ptrofs_to_int64_repr by reflexivity.
+  do 2 f_equal.
+  unfold WORD_SIZE.
+  rewrite Z.mul_comm, Z.quot_mul by lia. auto.
 Qed.
 
 Lemma t_info_space_address: forall t_info i,
@@ -54,7 +55,7 @@ Lemma t_info_space_address: forall t_info i,
       force_val (sem_add_ptr_long space_type (offset_val 0 (ti_heap_p t_info))
                                   (Vlong (Int64.repr i))) else
       force_val (sem_add_ptr_int space_type Signed
-                                 (offset_val 0 (ti_heap_p t_info)) (vint i))) =
+                                 (offset_val 0 (ti_heap_p t_info)) (Vint (Int.repr i)))) =
     space_address (ti_heap_p t_info) (Z.to_nat i).
 Proof.
   intros. rewrite isptr_offset_val_zero by assumption. simpl.
@@ -62,7 +63,7 @@ Proof.
   unfold space_address. rewrite Z2Nat.id by lia. simpl. f_equal.
 Qed.
 
-Ltac tc_val_Znth := entailer!; rewrite Znth_map by assumption;
+Ltac tc_val_Znth := entailer!!; rewrite Znth_map by assumption;
                     unfold space_tri; apply isptr_is_pointer_or_null;
                     try assumption.
 
@@ -136,10 +137,10 @@ Proof.
           graph_rep g';
           ti_token_rep (ti_heap t_info') (ti_heap_p t_info'))).
   - Exists g roots t_info. destruct H2 as [? [? [? ?]]].
-    pose proof (graph_has_gen_O g). entailer!. split; [|split; [|split3]].
+    pose proof (graph_has_gen_O g). entailer!!. split; [|split; [|split3]].
     + split3; auto.
     + apply stc_stcte_O_iff; assumption.
-    + red. intros. simpl in H12. lia.
+    + red. intros. lia.
     + unfold nat_inc_list. simpl. constructor.
     + apply frame_shells_eq_refl.
   - cbv beta. Intros g' roots' t_info'. rename H14 into FSE. rename H15 into HN.
@@ -148,8 +149,8 @@ Proof.
         (rewrite spaces_size; rep_lia).
     pose proof (space_start_is_pointer_or_null _ _ _ (proj1 H8) H14). 
     forward.
-      entailer!.
-      1: entailer!; rewrite Znth_map by assumption; unfold space_tri; assumption.
+      entailer!!.
+      1: entailer!!; rewrite Znth_map by assumption; unfold space_tri; assumption.
     rewrite Znth_map by assumption. unfold space_tri at 1.
     forward_if
       (EX g1: LGraph, EX t_info1: thread_info,
@@ -170,7 +171,7 @@ Proof.
             outlier_rep outlier;
             graph_rep g1)).
     + remember (space_start (Znth (i + 1) (spaces (ti_heap t_info')))).
-      Transparent denote_tc_test_eq. destruct v0; try contradiction; simpl; entailer!.
+      Transparent denote_tc_test_eq. destruct v0; try contradiction; simpl; entailer!!.
         assert (isptr (Vptr b i0)) by exact I. rewrite Heqv0 in *.
         pull_left (heap_rest_rep (ti_heap t_info')). pull_left (graph_rep g').
         destruct H8. rewrite <- (space_start_isptr_iff g') in H24 by assumption.
@@ -182,15 +183,15 @@ Proof.
         apply extend_weak_valid_pointer. Opaque denote_tc_test_eq.
     + assert (0 <= i < Zlength (spaces (ti_heap t_info'))) by lia.
       pose proof (space_start_isptr _ _ _ (proj1 H8) H17 H13). forward.
-      entailer!.
-      1: entailer!; rewrite Znth_map by assumption; unfold space_tri;
+      entailer!!.
+      1: entailer!!; rewrite Znth_map by assumption; unfold space_tri;
         apply isptr_is_pointer_or_null, isptr_offset_val'; assumption.
       rewrite Znth_map by assumption. unfold space_tri at 1. forward.
-      entailer!.
-      1: entailer!; rewrite Znth_map by assumption; unfold space_tri;
+      entailer!!.
+      1: entailer!!; rewrite Znth_map by assumption; unfold space_tri;
         apply isptr_is_pointer_or_null; assumption.
       rewrite Znth_map by assumption. unfold space_tri at 1. forward.
-      1: entailer!; destruct (space_start (Znth i (spaces (ti_heap t_info'))));
+      1: entailer!!; destruct (space_start (Znth i (spaces (ti_heap t_info'))));
         try contradiction; simpl; unfold denote_tc_samebase;
           apply prop_right; simpl; destruct (peq b b); simpl; [|apply n]; auto.
       simpl sem_binary_operation'.
@@ -220,7 +221,7 @@ Proof.
       * first [rewrite Int64.signed_repr by (apply ngs_int_signed_range; rep_lia) |
                rewrite Int.signed_repr by (apply ngs_int_singed_range; rep_lia)].
         rewrite ngs_S by lia. apply ngs_int_signed_range. rep_lia.
-      * simpl. entailer!. f_equal. now rewrite Tf.
+      * simpl. entailer!!. f_equal. now rewrite Tf.
       * rewrite ngs_S by lia. Intros p. rewrite ngs_S in H22 by lia.
         assert (Hso: 0 <= 0 <= (nth_gen_size (Z.to_nat (i + 1)))) by lia.
         rewrite data_at__isptr. Intros.
@@ -283,16 +284,16 @@ Proof.
           replace (space_sh sp) with Ews by (subst sp; simpl; reflexivity).
           replace (used_space sp) with 0 by (subst sp; simpl; reflexivity).
           rewrite Z.sub_0_r, Z.mul_0_r, isptr_offset_val_zero by
-              (subst; simpl; assumption). entailer!. }
+              (subst; simpl; assumption). entailer!!. }
         gather_SEP (heap_rest_rep (ti_heap t_info')) (space_rest_rep sp).
-        rewrite (heap_rest_rep_add _ _ (i + 1) H20) (*, <- Heqt_info1*) by assumption.
+        rewrite (heap_rest_rep_add _ _ (i + 1) H20) by assumption.
         gather_SEP
           (data_at sh thread_info_type _ _)
           (frames_rep _ _)
           (heap_struct_rep _ _ _)
           (heap_rest_rep _).
         replace_SEP 0 (thread_info_rep sh t_info1 ti) by
-            (unfold thread_info_rep, heap_rep; entailer!). rewrite (graph_rep_add g' gi); auto.
+            (unfold thread_info_rep, heap_rep; entailer!!). rewrite (graph_rep_add g' gi); auto.
         3: apply H9.
         2: apply graph_unmarked_copy_compatible, H9. 
         rewrite <- Heqg1.
@@ -305,15 +306,15 @@ Proof.
             (subst g1; apply stcte_add; auto; subst gi; simpl; reflexivity).
         assert (garbage_collect_condition g1 (ti_heap t_info1)) by
             (subst g1 t_info1; apply gcc_add; assumption).
-        Local Opaque super_compatible. Exists g1 t_info1. entailer!.
+        Local Opaque super_compatible. Exists g1 t_info1. entailer!!.
     + forward. remember (space_start (Znth (i + 1) (spaces (ti_heap t_info')))).
       assert (isptr v). { 
         destruct v; try contradiction. simpl in H15. subst i0. contradiction.
         simpl. exact I. } subst v. rewrite <- (space_start_isptr_iff g') in H17; auto.
       2: destruct H8; auto. assert (new_gen_relation (Z.to_nat (i + 1)) g' g') by
           (unfold new_gen_relation; rewrite if_true; auto).
-      Exists g' t_info'. entailer!. unfold thread_info_rep, heap_rep, heap_struct_rep.
-      entailer!.
+      Exists g' t_info'. entailer!!. unfold thread_info_rep, heap_rep, heap_struct_rep.
+      entailer!!.
     + Intros g1 t_info1. clear FSE. rename H22 into FSE. clear HN; rename H23 into HN.
       assert_PROP (isptr (ti_heap_p t_info1))
         by (unfold thread_info_rep, heap_rep, heap_struct_rep; entailer!).
@@ -330,7 +331,7 @@ Proof.
       forward_call (rsh, sh, gv, g1, (ti_heap t_info1), (ti_heap_p t_info1),
                     (ti_frames t_info1), roots', outlier,
                     (Z.to_nat i), (Z.to_nat (i + 1))).
-      1: simpl; entailer!; now rewrite !Tf.
+      1: simpl; entailer!!; now rewrite !Tf.
       Intros vret. destruct vret as [[g2 h2] roots2].
       simpl fst in *. simpl snd in *.
       set (fr2 := update_frames _ _) in *.
@@ -392,7 +393,7 @@ Proof.
       assert (garbage_collect_loop (nat_inc_list (Z.to_nat (i + 1))) roots g roots2 g2) by
           (rewrite H23, nat_inc_list_S; eapply gcl_add_tail; eauto).
       replace_SEP 5 (ti_token_rep (ti_heap t_info2) (ti_heap_p t_info2))
-         by (erewrite ti_rel_token_the_same; eauto; entailer!; apply derives_refl).
+         by (erewrite ti_rel_token_the_same; eauto; entailer!!; apply derives_refl).
       simpl spaces in *.
       assert (FSE': frame_shells_eq (ti_frames t_info)
                (update_frames (ti_frames t_info1) (map (root2val g2) roots2))). {
@@ -419,7 +420,7 @@ Proof.
       * destruct (space_start (Znth i (spaces h2))); try contradiction.
         destruct (space_start (Znth (i + 1) (spaces h2)));
           try contradiction. Transparent denote_tc_samebase.
-        unfold denote_tc_samebase. simpl. Opaque denote_tc_samebase. entailer!.
+        unfold denote_tc_samebase. simpl. Opaque denote_tc_samebase. entailer!!.
       * change (Tpointer tvoid
                          {| attr_volatile := false; attr_alignas := Some 2%N |})
           with int_or_ptr_type in H39.
@@ -438,11 +439,11 @@ Proof.
         assert (graph_heap_compatible g2 (ti_heap t_info2)) by (apply (proj1 H27)).
         assert (graph_gen_clear g2 O) by (apply H37; rewrite H23; lia).
         forward_call (rsh, sh, gv, ti, g2, t_info2, roots2). forward.
-        Exists g2 t_info2 roots2. entailer!. split3.
+        Exists g2 t_info2 roots2. entailer!!. split3.
         -- exists (Z.to_nat i). rewrite <- H23 at 1. split; assumption.
         -- rewrite H23 in H38. eapply safe_to_copy_complete; eauto.
         -- rewrite HN. auto.
-      * forward. Intros. Exists g2 roots2 t_info2. rewrite <- H23 in *. entailer!.
+      * forward. Intros. Exists g2 roots2 t_info2. rewrite <- H23 in *. entailer!!.
   - Intros g2 roots2 t_info2. unfold all_string_constants. Intros.
      forward_call; contradiction.
 Qed.

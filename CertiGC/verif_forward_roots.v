@@ -5,7 +5,6 @@ Require Import Coq.Program.Basics.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.CertiGC.GCGraph.
 Require Import VST.msl.wand_frame.
-Require Import VST.concurrency.conclib.
 Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.CertiGC.spatial_gcgraph.
 Require Import CertiGraph.msl_ext.iter_sepcon. 
@@ -107,7 +106,7 @@ Proof.
   pose (nr k := (Zlength (frames2rootpairs (sublist 0 k frs)))).
   pose (oldroots k i := sublist (nr k + i) (Zlength roots) roots).
   assert_PROP (forall k, 0 <= k < Zlength frs -> isptr (frames_p (sublist k (Zlength frs) frs))) as FRAMESP. { 
-    unfold frames_rep. sep_apply frames_p_isptr. entailer!.
+    unfold frames_rep. sep_apply frames_p_isptr. entailer!!.
   }
   assert (H' := sc_Zlength H).
   forward_while (EX k: Z,
@@ -164,7 +163,7 @@ Proof.
       apply sepcon_valid_pointer2.
       apply IHfrs. clear - H2 n. list_solve.     
     }
-    entailer!.
+    entailer!!.
   - 
      assert (H5' := sc_Zlength H5).
      assert (k<n). {
@@ -247,7 +246,7 @@ Proof.
     }
     destruct Hnr as [Hnr Hi].
     forward. forward.
-    entailer!. {
+    entailer!!. {
        clear - H8.
        unfold field_address0.
        rewrite if_true. simpl. destruct H8, r; try contradiction; hnf; auto.
@@ -270,7 +269,7 @@ Proof.
       rewrite e. autorewrite with sublist. hnf. auto.
       apply isptr_is_pointer_or_null; apply FRAMESP; list_solve.
     }
-    replace (force_val _) with (vptrofs (Zlength s)). 2: {
+    replace (force_val _) with (Vptrofs (Ptrofs.repr (Zlength s))). 2: {
       rewrite arr_field_address0 by (auto with field_compatible; list_solve).
     simpl sem_binary_operation'.
     destruct r; try solve [exfalso; destruct H8; contradiction].
@@ -292,7 +291,7 @@ Proof.
            (roots''++oldroots k i)
            outlier;
            forward_condition g'' h'' from to)
-        LOCAL (temp _frame NEXT; temp _limit  (vptrofs (Zlength s));
+        LOCAL (temp _frame NEXT; temp _limit  (Vptrofs (Ptrofs.repr (Zlength s)));
               temp _from_start (gen_start g'' from); temp _from_limit (limit_address g'' h'' from);
               temp _start r; temp _next (heap_next_address hp to))
         SEP (all_string_constants rsh gv; outlier_rep outlier; graph_rep g'';
@@ -713,7 +712,7 @@ Proof.
            (frames_p (sublist (k + 1) (Zlength frs') frs'))).
       2: sep_apply H17; apply modus_ponens_wand.
       unfold frame_shell_rep.
-      entailer!.
+      entailer!!.
  - 
   forward.
   assert (k=n). {

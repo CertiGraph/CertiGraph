@@ -5,7 +5,6 @@ Require Import Coq.Program.Basics.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.CertiGC.GCGraph.
 Require Import VST.msl.wand_frame.
-Require Import VST.concurrency.conclib.
 Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.CertiGC.spatial_gcgraph.
 Require Import CertiGraph.msl_ext.iter_sepcon. 
@@ -34,7 +33,7 @@ Lemma body_forward_inL:
    temp _from_limit (limit_address g h from);
    temp _next (heap_next_address hp to);
    temp _p (forward_p_address' (inl z) rootpairs g); 
-   temp _depth (vint depth))
+   temp _depth (Vint (Int.repr depth)))
    SEP (all_string_constants rsh gv;
    outlier_rep outlier; graph_rep g; 
    roots_rep sh rootpairs;
@@ -88,7 +87,7 @@ abbreviate_semax.
   forward. 
     assert_PROP (valid_int_or_ptr (root2val g root)). {
       gather_SEP (graph_rep _) (outlier_rep _).
-      sep_apply (root_valid_int_or_ptr _ _ _ _ H13 H5). entailer!. }
+      sep_apply (root_valid_int_or_ptr _ _ _ _ H13 H5). entailer!!. }
     rewrite <- Heqroot.
     forward_call (root2val g root).
     remember (graph_rep g * heap_rest_rep h * outlier_rep outlier)
@@ -105,7 +104,7 @@ abbreviate_semax.
     + unfold odd_Z2val. forward_if.
       1: exfalso; apply H20'; reflexivity.
       forward. Exists g h roots. rewrite H4, update_rootpairs_same.
-      entailer!.
+      entailer!!.
       * simpl; split3. easy.
         unfold upd_root. rewrite <- Heqroot, -> Heqroot, upd_Znth_unchanged'; auto.
         rewrite <- Heqroot.
@@ -146,7 +145,7 @@ abbreviate_semax.
       * forward_if. 1: exfalso; apply H19'; reflexivity.
         forward. Exists g h roots.
         rewrite H4, update_rootpairs_same.
-        entailer!.
+        entailer!!.
         -- split3; [| |split3]; simpl; try rewrite <- Heqroot;
            [easy | | constructor | hnf; intuition | split; reflexivity ].
              unfold upd_root. rewrite  Heqroot. rewrite upd_Znth_unchanged'; auto.
@@ -218,7 +217,7 @@ abbreviate_semax.
         gather_SEP (data_at _ (if Archi.ptr64 then tulong else tuint) _ _)
                    (data_at _ _ _ _).
         replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v) by
-            (unfold vertex_rep, vertex_at; entailer!).
+            (unfold vertex_rep, vertex_at; entailer!!).
         unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
         forward_if.
         -- try apply Int64.same_if_eq in H21.
@@ -240,7 +239,7 @@ abbreviate_semax.
                       (data_at _ _ _ _).
            replace_SEP 0 (vertex_rep (nth_sh g (vgeneration v)) g v). {
              unfold vertex_rep, vertex_at. unfold make_fields_vals at 3.
-             rewrite H21. entailer!. }
+             rewrite H21. entailer!!. }
            unlocalize [graph_rep g]. 1: apply (graph_vertex_ramif_stable _ _ H19).
            thaw FR.
            unfold roots_rep. 
@@ -270,7 +269,7 @@ abbreviate_semax.
            pose (rootpairs' := update_rootpairs rootpairs (map (root2val g) roots')).
            Exists g h roots'.
            fold rootpairs'.
-           entailer!.
+           entailer!!.
            2:{ 
           unfold heap_rep.
            cancel.          
@@ -278,7 +277,7 @@ abbreviate_semax.
             by (unfold rootpairs', roots'; apply Zlength_update_rootpairs; list_solve). 
           unfold roots_rep.
           rewrite (sepcon_isolate_nth _ _ z) by list_solve.
-          rewrite H33.
+          rewrite H24.
           unfold rootpairs', roots'.
           rewrite !Znth_update_rootpairs by list_solve. simpl.
           rewrite Znth_map by list_solve.
@@ -328,7 +327,7 @@ abbreviate_semax.
              subst l sp_to. rewrite Znth_map by (rewrite spaces_size; rep_lia).
              reflexivity. }
            unfold heap_next_address.
-           forward; rewrite H27; unfold space_tri. 1: entailer!.
+           forward; rewrite H27; unfold space_tri. 1: entailer!!.
            forward. simpl sem_binary_operation'.
            rewrite sapi_ptr_val; [|assumption | rep_lia].
            Opaque Znth. forward. Transparent Znth.
@@ -380,7 +379,7 @@ abbreviate_semax.
                            (if Archi.ptr64 then tulong else tuint) Signed
                            (offset_val (WORD_SIZE * (used_space sp_to + 1))
                                        (space_start sp_to))
-                           (eval_unop Oneg tint (vint 1))) =
+                           (eval_unop Oneg tint (Vint (Int.repr 1)))) =
               field_address (if Archi.ptr64 then tulong else tuint) [] v1). {
              subst v1. entailer!. simpl. rewrite neg_repr.
              rewrite sem_add_pi_ptr_special; auto. 2: rep_lia. simpl in *.
@@ -408,14 +407,14 @@ abbreviate_semax.
              (EX i: Z,
               PROP ( )
               LOCAL (temp _newv nv;
-                     temp _sz (if Archi.ptr64 then Vlong (Int64.repr n) else vint n);
+                     temp _sz (if Archi.ptr64 then Vlong (Int64.repr n) else Vint (Int.repr n));
                      temp _hd (Z2val (make_header g v));
                      temp _v (vertex_address g v);
                      temp _from_start fp;
                      temp _from_limit (offset_val fn fp);
                      temp _next n_addr;
                      temp _p p_addr;
-                     temp _depth (vint depth))
+                     temp _depth (Vint (Int.repr depth)))
               SEP (vertex_rep shv g v;
                    data_at sht (tarray int_or_ptr_type i)
                            (sublist 0 i (make_fields_vals g v)) nv;
@@ -427,7 +426,7 @@ abbreviate_semax.
               replace (WORD_SIZE * 0)%Z with 0 by lia.
               rewrite isptr_offset_val_zero by assumption.
               rewrite data_at_zero_array_eq;
-                [|reflexivity | assumption | reflexivity]. entailer!.
+                [|reflexivity | assumption | reflexivity]. entailer!!.
            ++ unfold vertex_rep, vertex_at. Intros.
               rewrite fields_eq_length, <- Heqn. forward.
               ** entailer!. pose proof (mfv_all_is_ptr_or_int _ _ H9 H10 H19).
@@ -446,7 +445,7 @@ abbreviate_semax.
                       force_val (sem_add_ptr_long int_or_ptr_type
                                                   nv (Vlong (Int64.repr i)))
                      else force_val (sem_add_ptr_int int_or_ptr_type
-                                                     Signed nv (vint i)))=
+                                                     Signed nv (Vint (Int.repr i))))=
                     field_address int_or_ptr_type []
                                   (offset_val (WORD_SIZE * i) nv)). {
                    unfold field_address. rewrite if_true by assumption.
@@ -456,17 +455,17 @@ abbreviate_semax.
                             (data_at _ _ _ (vertex_address g v)).
                  replace_SEP 0 (vertex_rep shv g v) by
                      (unfold vertex_rep, vertex_at;
-                      rewrite fields_eq_length; entailer!). forward.
+                      rewrite fields_eq_length; entailer!!). forward.
                  rewrite offset_offset_val.
                  replace (n - i - 1) with (n - (i + 1)) by lia.
                  replace (WORD_SIZE * i + WORD_SIZE * 1) with
                      (WORD_SIZE * (i + 1))%Z by lia.
                  gather_SEP (data_at sht _ _ nv) (field_at _ _ _ _ _).
                  rewrite data_at_mfs_eq. 2: assumption.
-                 2: subst n; assumption. entailer!.
+                 2: subst n; assumption. entailer!!.
            ++ thaw FR. rewrite v0, <- Heqshv.
               gather_SEP (vertex_rep _ _ _) (_ -* _).
-              replace_SEP 0 (graph_rep g) by (entailer!; apply wand_frame_elim).
+              replace_SEP 0 (graph_rep g) by (entailer!!; apply wand_frame_elim).
               rewrite sublist_same by (rewrite ?fields_eq_length; lia).
               replace_SEP 2 emp. {
                 replace (n - n) with 0 by lia. clear. entailer.
@@ -488,7 +487,7 @@ abbreviate_semax.
                 replace (offset_val (WORD_SIZE * used_space sp_to) (space_start sp_to))
                   with (offset_val (- WORD_SIZE) nv) by
                     (rewrite Heqnv; rewrite offset_offset_val; f_equal; rep_lia).
-                rewrite <- H30. unfold vertex_at; entailer!. }
+                rewrite <- H30. unfold vertex_at; entailer!!. }
               gather_SEP (vertex_at _ _ _ _) (graph_rep _).
               rewrite (copied_v_derives_new_g g v to) by assumption.
               freeze [1; 2; 3; 4] FR. remember (lgraph_add_copied_v g v to) as g'.
@@ -514,7 +513,7 @@ abbreviate_semax.
               Intros. forward. clear H37. try rewrite Int.signed_repr by rep_lia.
               sep_apply (field_at_data_at_cancel
                            sh' (if Archi.ptr64 then tulong else tuint)
-                           (if Archi.ptr64 then (Vlong (Int64.repr 0)) else (vint 0))
+                           (if Archi.ptr64 then (Vlong (Int64.repr 0)) else (Vint (Int.repr 0)))
                            (offset_val (- WORD_SIZE) (vertex_address g' v))).
               forward_call (nv). remember (make_fields_vals g' v) as l'.
               assert (0 < Zlength l'). {
@@ -522,7 +521,7 @@ abbreviate_semax.
                 apply (proj1 (raw_fields_range (vlabel g' v))). }
               rewrite data_at_tarray_value_split_1 by assumption. Intros.
               assert_PROP (force_val (sem_add_ptr_int int_or_ptr_type Signed
-                                                      (vertex_address g' v) (vint 0)) =
+                                                      (vertex_address g' v) (Vint (Int.repr 0))) =
                            field_address int_or_ptr_type [] (vertex_address g' v)). {
                 clear. entailer!. unfold field_address. rewrite if_true by assumption.
                 simpl. rewrite isptr_offset_val_zero. 1: reflexivity.
@@ -651,11 +650,11 @@ abbreviate_semax.
                           heap_relation h' h3)
                     LOCAL (temp _newv nv;
                            temp _sz (if Archi.ptr64 then
-                                       Vlong (Int64.repr n) else vint n);
+                                       Vlong (Int64.repr n) else Vint (Int.repr n));
                            temp _from_start (gen_start g3 from);
                            temp _from_limit (limit_address g3 h3 from);
                            temp _next (heap_next_address hp to);
-                           temp _depth (vint depth))
+                           temp _depth (Vint (Int.repr depth)))
                     SEP (all_string_constants rsh gv;
                          outlier_rep outlier;
                          graph_rep g3;
@@ -674,7 +673,7 @@ abbreviate_semax.
                      rewrite <- H44.
                      fold rootpairs'.
                      assert (forward_loop from to (Z.to_nat (depth - 1)) [] g' g') by
-                         constructor. unfold heap_relation. entailer!.
+                         constructor. unfold heap_relation. entailer!!.
                  --- change (Tpointer tvoid {| attr_volatile := false;
                                                attr_alignas := Some 2%N |})
                        with (int_or_ptr_type). Intros.
@@ -730,7 +729,7 @@ abbreviate_semax.
                          subst rootpairs3.
                          revert H51.
                          rewrite update_update_rootpairs by (subst roots'; list_solve).
-                         entailer!.
+                         entailer!!.
                  --- Intros g3 h3.
                      assert (heap_relation h h3) by
                          (apply hr_trans with h';
@@ -739,7 +738,7 @@ abbreviate_semax.
                      2: { subst n g' from.
                           rewrite vpp_Zlength, lcv_vlabel_new; auto. }
                      Local Opaque super_compatible.
-                     Exists g3 h3 roots'. entailer!. simpl.
+                     Exists g3 h3 roots'. entailer!!. simpl.
                      unfold upd_root.
                      rewrite <- Heqroot, H21, if_true by reflexivity. split; auto.
                      replace (Z.to_nat depth) with (S (Z.to_nat (depth - 1))) by
@@ -829,25 +828,24 @@ abbreviate_semax.
                   apply Znth_In; auto.
                  }
                  rewrite H42.
-                 entailer!. clear PNn_addr H45 H46 H44 H43.
+                 entailer!!. 
                  unfold upd_roots, upd_root. simpl. rewrite <- Heqroot.
                  rewrite if_true by auto. rewrite H21. split; auto.
       * forward_if. 1: exfalso; apply H21'; reflexivity.
         rewrite H20 in n. forward.
-        Exists g h roots. entailer!; simpl.
+        Exists g h roots. entailer!!; simpl.
         -- unfold upd_root.
            rewrite <- Heqroot, if_false by assumption.
-           clear H27 H26 H24 H25 H23 H22 H21.
            split3; [| |simpl root2forward; constructor]; try easy.
            split3; auto. red. rewrite rp_val_update_rootpairs by list_solve. auto.
            rewrite Heqroot, upd_Znth_unchanged'; auto.
            now constructor.
-        -- unfold heap_rep. entailer!.
+        -- unfold heap_rep. entailer!!.
           apply derives_refl'. f_equal.
           apply Znth_eq_ext.
           rewrite !Zlength_update_rootpairs; list_solve.
           intros.
-          rewrite Zlength_update_rootpairs in H28 by list_solve.
+          rewrite Zlength_update_rootpairs in H22 by list_solve.
           rewrite Znth_update_rootpairs by list_solve.
           rewrite <- H4.
           replace (vertex_address g v) with (root2val g (Znth z roots)).

@@ -46,8 +46,8 @@ Proof.
   unfold thread_info_rep, heap_rep, heap_struct_rep. Intros.
   forward. forward.
   forward_if True.
-  - forward; entailer!.
-  - remember (ti_heap_p t_info). rewrite (data_at_isptr sh heap_type).
+  - forward; entailer!!.
+  - remember (ti_heap_p t_info). rewrite (@data_at_isptr CompSpecs sh heap_type).
     Intros. exfalso. destruct t_info. simpl in *. subst. contradiction.
   - Intros. destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]].
     rewrite H1, <- H2, map_cons.
@@ -55,13 +55,13 @@ Proof.
     assert (isptr (space_start (heap_head (ti_heap t_info)))). {
       rewrite H2. unfold nth_space in H3. rewrite H1 in H3. simpl in H3.
       rewrite <- H3. apply start_isptr. } unfold space_tri at 1.
-    do 2 forward; try solve [entailer!].
+    do 2 forward; try solve [entailer!!].
     rewrite Znth_0_cons.
     destruct (space_start (heap_head (ti_heap t_info))) eqn:? ; try contradiction.
     forward_if (Ptrofs.unsigned (ti_nalloc t_info) <= total_space hs).
-    + unfold denote_tc_samebase. simpl. entailer!.
+    + unfold denote_tc_samebase. simpl. entailer!!.
     + unfold all_string_constants; Intros; forward_call; contradiction.
-    + forward. entailer!.
+    + forward. entailer!!.
       unfold sem_sub_pp in H7. destruct eq_block in H7; [|easy]; simpl in H7.
       inv_int i.
       clear -H7.
@@ -96,7 +96,7 @@ Proof.
                     offset_val (WORD_SIZE * total_space (heap_head (ti_heap t_info)))
                               (space_start (heap_head (ti_heap t_info))))))
                    :: map space_tri hl) (ti_heap_p t_info))
-         by (unfold heap_struct_rep; entailer!).
+         by (unfold heap_struct_rep; entailer!!).
       do 2 forward.
       unfold before_gc_thread_info_rep. rewrite !heap_struct_rep_eq. rewrite <- H5.
       simpl fold_left.

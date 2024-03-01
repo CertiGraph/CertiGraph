@@ -2,9 +2,12 @@ From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 
 Local Open Scope logic.
 
-Lemma data_at_heaptype_eq: forall (sh: share) v h,
-    isptr h -> field_compatible heap_type [StructField _spaces] h ->
-    data_at sh heap_type v h = data_at sh (tarray space_type MAX_SPACES) v h.
+
+Lemma data_at_heaptype_eq:  forall (sh: share) v h,
+    isptr h -> 
+    field_compatible heap_type [StructField _spaces] h ->
+    @data_at CompSpecs sh heap_type v h = @data_at CompSpecs sh (tarray space_type MAX_SPACES) v h.
+   (* for some reason, leaving the CompSpecs implicit takes a long time to typecheck. *)
 Proof.
   intros. unfold_data_at (data_at _ heap_type _ _). rewrite field_at_data_at. simpl nested_field_type.
   rewrite field_address_offset; auto. simpl nested_field_offset.
@@ -72,11 +75,11 @@ Proof.
     unfold all_string_constants; Intros.
     forward_call. 
     contradiction. 
-  - Intros. forward_if True; [contradiction | forward; entailer! |]. Intros.
+  - Intros. forward_if True; [contradiction | forward; entailer!! |]. Intros.
     (* make "data_at sh space_type v h " in SEP *)
     assert_PROP (isptr h) by entailer!. remember (Vundef, (Vundef, (Vundef,Vundef))) as vn.
     assert_PROP (field_compatible heap_type [StructField _spaces] h) by entailer!.
-    replace_SEP 2 (data_at Ews heap_type (default_val heap_type) h) by entailer!.
+    replace_SEP 2 (data_at Ews heap_type (default_val heap_type) h) by entailer!!.
     change (default_val heap_type) with
         (repeat (Vundef, (Vundef, (Vundef,Vundef))) (Z.to_nat MAX_SPACES)).
     rewrite <- Heqvn. rewrite data_at_heaptype_eq; auto.
@@ -89,7 +92,6 @@ Proof.
     + Intros p0. freeze [0;1;2;3;5] FR.
       (* change back to "data_at sh heap_type v h" *)
       rewrite <- space_array_1_eq. rewrite sublist_repeat by rep_lia.
-(*      change (MAX_SPACES - 1) with 11 at 2.*)
       gather_SEP (data_at Ews (tarray space_type 1) _ h)
                  (data_at Ews (tarray space_type (MAX_SPACES - 1)) _ _).
       remember (p0, (p0, (offset_val (WORD_SIZE * Z.shiftl 1 LOG_NURSERY_SIZE) p0,
@@ -105,13 +107,7 @@ Proof.
       rewrite <- split2_data_at_Tarray_space_type;
         [| rep_lia | rewrite Heqvl, Zlength_cons, Zlength_repeat; rep_lia].
       set (v0 := (nullval,(nullval,(nullval,nullval)))).
-(*      remember (if Archi.ptr64 then
-                  (Vlong (Int64.repr 0),
-                   (Vlong (Int64.repr 0), Vlong (Int64.repr 0))) else
-                  (Vint (Int.repr 0), (Vint (Int.repr 0), Vint (Int.repr 0)))) as v0.
-                  *)
-      (* change succeed *) subst vl. rewrite <- data_at_heaptype_eq; auto.
-(*      cbv [Archi.ptr64] in Heqv0.*)
+      subst vl. rewrite <- data_at_heaptype_eq; auto.
       forward_for_simple_bound
         MAX_SPACES
         (EX i: Z,
@@ -120,7 +116,7 @@ Proof.
          SEP (data_at Ews heap_type
                       (vh :: repeat v0 (Z.to_nat (i - 1)) ++
                           repeat vn (Z.to_nat (MAX_SPACES - i))) h; FRZL FR))%assert.
-      * entailer!.
+      * entailer!!.
       * Opaque Znth.
         forward; [apply prop_right; rep_lia | ].
         rewrite (repeat_cons (MAX_SPACES - i)) at 2 by rep_lia.
@@ -143,7 +139,7 @@ Proof.
                with ([v0] ++ repeat vn (Z.to_nat (MAX_SPACES - (i + 1)))).
         rewrite app_assoc.
         replace (repeat v0 (Z.to_nat (i - 1)) ++ [v0]) with
-            (repeat v0 (Z.to_nat i)). 1: entailer!.
+            (repeat v0 (Z.to_nat i)). 1: entailer!!.
         replace [v0] with (repeat v0 (Z.to_nat 1)) by (simpl; auto).
         rewrite <- repeat_app. f_equal. rewrite <- Z2Nat.inj_add by lia.
         f_equal. lia.
@@ -151,5 +147,5 @@ Proof.
         rewrite app_nil_r. thaw FR.
         change (Z.shiftl 1 LOG_NURSERY_SIZE) with NURSERY_SIZE in *.
         assert (v0 = zero_triple) by (subst v0; unfold zero_triple; reflexivity).
-        rewrite H2. forward. Exists h p0. entailer!. Transparent Znth.
+        rewrite H2. forward. Exists h p0. entailer!!. Transparent Znth.
 Qed.

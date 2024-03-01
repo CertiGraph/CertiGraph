@@ -5,7 +5,6 @@ Require Import Coq.Program.Basics.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.CertiGC.GCGraph.
 Require Import VST.msl.wand_frame.
-Require Import VST.concurrency.conclib.
 Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.CertiGC.spatial_gcgraph.
 Require Import CertiGraph.msl_ext.iter_sepcon. 
@@ -47,7 +46,7 @@ Proof.
              _ (space_address hp to)).
   replace_SEP 0 (space_struct_rep sh hp h from 
                   * space_struct_rep sh hp h to) by
-    (unfold space_struct_rep; entailer!).
+    (unfold space_struct_rep; entailer!!).
   unlocalize [heap_rep sh h hp].
   1: apply heap_rep_ramif_stable;  assumption.
   assert_PROP (isptr (space_address hp to)). {
@@ -61,7 +60,7 @@ Proof.
     forward.
     forward.
     replace_SEP 0 (space_struct_rep sh hp h from) by
-        (unfold space_struct_rep, space_tri; entailer!).
+        (unfold space_struct_rep, space_tri; entailer!!).
     unlocalize [heap_rep sh h hp].
     1: apply heap_rep_ramif_stable_1; assumption. apply dgc_imply_fc in H0.
     remember (space_start (nth_space h from)) as from_p.
@@ -100,7 +99,7 @@ Proof.
     unfold space_struct_rep, space_tri. 
     do 2 forward.
     replace_SEP 0 (space_struct_rep sh hp h1 from) by
-        (unfold space_struct_rep, space_tri; entailer!).
+        (unfold space_struct_rep, space_tri; entailer!!).
     unlocalize [heap_rep sh h1 hp].
     1: apply heap_rep_ramif_stable_1; assumption. thaw FR. rewrite H24.
     replace (offset_val (WORD_SIZE * total_space (nth_space h1 from))
@@ -138,7 +137,7 @@ Proof.
     unfold space_struct_rep, space_tri.
     forward.
     replace_SEP 0 (space_struct_rep sh hp h2 from) by
-        (unfold space_struct_rep, space_tri; entailer!).
+        (unfold space_struct_rep, space_tri; entailer!!).
     unlocalize [heap_rep sh h2 hp].
     1: apply heap_rep_ramif_stable_1; assumption. thaw FR.
     unfold thread_info_rep, heap_rep. Intros.
@@ -149,10 +148,9 @@ Proof.
       entailer!. unfold space_address. unfold field_address. rewrite if_true.
       - simpl. f_equal.
       - unfold field_compatible in *. simpl in *. intuition auto with *. }
-    rewrite H37. clear H37. Opaque Znth. 
-     (* FIXME!  investigate why this "forward" takes so long *)
-        forward. 
-    Transparent Znth.
+    rewrite H37. clear H37.
+    deadvars!.
+    forward.
     rewrite Znth_map by (rewrite spaces_size; rep_lia).
     rewrite <- nth_space_Znth. unfold space_tri at 2 3.
     simpl fst. simpl snd.
@@ -181,10 +179,10 @@ Proof.
     simpl fst. simpl snd.
     gather_SEP 0 4. 
     replace_SEP 0 (heap_rep sh (reset_nth_heap from h2) hp).
-    + unfold heap_rep. entailer!.
+    + unfold heap_rep. entailer!!.
       assert (from < length (spaces h2))%nat by
           (destruct H31 as [[_ [_ ?]] _]; simpl in H31; red in H37; lia). simpl.
-      rewrite (reset_nth_space_Znth _ _ H48), <- nth_space_Znth, <- upd_Znth_map.
+      rewrite (reset_nth_space_Znth _ _ H38), <- nth_space_Znth, <- upd_Znth_map.
       unfold space_tri at 3. simpl. replace (WORD_SIZE * 0)%Z with 0 by lia.
       rewrite isptr_offset_val_zero by assumption. cancel.
     + apply super_compatible_reset with (gen := from) in H31.
@@ -204,7 +202,7 @@ Proof.
       Exists g3 h3 roots1.
       destruct H32 as [? [? [? ?]]].
       replace (update_frames fr (map _ _)) with fr1.
-      entailer!.
+      entailer!!.
       unfold fr1 in *.
       destruct H31 as [_ [? _]]. red in H31.
       destruct H20 as [_ [? _]]. red in H20.

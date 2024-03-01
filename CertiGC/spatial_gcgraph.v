@@ -438,7 +438,7 @@ Proof.
   rewrite nat_inc_list_S, map_app, iter_sepcon_app_sepcon.
   assert_PROP (WORD_SIZE * previous_vertices_size g gen num +
                Ptrofs.unsigned i < Ptrofs.modulus) by
-      (unfold generation_rep in IHnum; sep_apply IHnum; entailer!). clear IHnum.
+      (unfold generation_rep in IHnum; sep_apply IHnum; entailer!!). clear IHnum.
   simpl iter_sepcon. entailer. unfold vertex_rep at 2. unfold vertex_at.
   rewrite vertex_head_address_eq. unfold vertex_address, vertex_offset. simpl.
   rewrite <- H. inv_int i. entailer. destruct H1 as [_ [_ [? _]]]. simpl in H1.
@@ -536,7 +536,7 @@ Proof.
   unfold field_compatible. entailer. unfold size_compatible.
   rewrite sizeof_tarray_int_or_ptr by apply pvs_ge_zero.
   sep_apply (generation_rep_ptrofs g gen b i Heqv). entailer. rewrite Heqv.
-  sep_apply (generation_rep_align_compatible g gen H0). entailer!.
+  sep_apply (generation_rep_align_compatible g gen H0). entailer!!.
 Qed.
 
 Lemma generation_rep_data_at_: forall g gen,
@@ -595,9 +595,9 @@ Lemma data_at_tarray_fold: forall sh n n1 p t (v v' v1 v2: list (reptype t)),
 Proof.
   intros. rewrite (split2_data_at_Tarray sh t n n1 v v' v1 v2);
             [|assumption..]. entailer!. unfold field_address0. rewrite if_true.
-  - simpl nested_field_offset. entailer!.
-  - pose proof (field_compatible_tarray_join n _ p _ H H4 H5 H7). clear -H1 H.
-    red in H1. red. simpl in *. intuition.
+  - simpl nested_field_offset. entailer!!.
+ - pose proof (field_compatible_tarray_join n _ p _ H H4 H5 H7). clear -H1 H.
+    red in H1. red. simpl in *. tauto.
 Qed.
 
 Lemma data_at_tarray_unfold: forall sh n n1 p t (v v' v1 v2: list (reptype t)),
@@ -613,8 +613,8 @@ Proof.
   intros. sep_apply (data_at_local_facts sh (tarray t n) v p).
   Intros. rewrite (split2_data_at_Tarray sh t n n1 v v' v1 v2);
             [|assumption..]. cancel. unfold field_address0. rewrite if_true.
-  - simpl nested_field_offset. entailer!.
-  - clear -H H4. red. red in H4. simpl in *. intuition.
+  - simpl nested_field_offset. entailer!!.
+  - clear -H H4. red. red in H4. simpl in *. tauto.
 Qed.
 
 Lemma data_at_tarray_split: forall sh n n1 p t (v v' v1 v2: list (reptype t)),
@@ -759,7 +759,7 @@ Lemma graph_rep_vertex_rep: forall g v,
 Proof.
   intros. destruct H. sep_apply (graph_rep_generation_rep g (vgeneration v) H).
   red in H0. sep_apply (generation_rep_vertex_rep g (vgeneration v) _ H0).
-  Exists (nth_sh g (vgeneration v)). destruct v. simpl. entailer!.
+  Exists (nth_sh g (vgeneration v)). destruct v. simpl. entailer!!.
   apply generation_share_writable.
 Qed.
 
@@ -767,7 +767,7 @@ Lemma graph_rep_valid_int_or_ptr: forall g v,
     graph_has_v g v -> graph_rep g |-- !! (valid_int_or_ptr (vertex_address g v)).
 Proof.
   intros. sep_apply (graph_rep_vertex_rep g v H). Intros sh.
-  sep_apply (vertex_rep_valid_int_or_ptr sh g v). entailer!.
+  sep_apply (vertex_rep_valid_int_or_ptr sh g v). entailer!!.
 Qed.
 
 (* weak derives for use in funspecs *)
@@ -912,7 +912,7 @@ Proof.
   unfold heap_rest_gen_data_at_, generation_data_at_.
   remember (nth_sh g gen) as sh.
   rewrite <- (data_at__tarray_value sh _ _ (gen_start g gen)).
-  - unfold gen_size. entailer!.
+  - unfold gen_size. entailer!!.
   - unfold graph_gen_size. destruct (gt_gs_compatible _ _ H0 _ H) as [_ [_ ?]].
     rewrite H1. apply space_order.
 Qed.
@@ -967,7 +967,7 @@ Proof.
   sep_apply (memory_block_valid_ptr
                (nth_sh g gen) (WORD_SIZE * gen_size h gen)
                (space_start (nth_space h gen))); unfold WORD_SIZE;
-    [|pose proof (ti_size_gt_0 g h gen H1 H5 H0); lia | entailer!].
+    [|pose proof (ti_size_gt_0 g h gen H1 H5 H0); lia | entailer!!].
   unfold nth_sh. apply readable_nonidentity, writable_readable,
                  generation_share_writable.
 Qed.
@@ -1069,7 +1069,7 @@ Proof.
   rewrite <- (memory_block_share_join _ _ _ _ _ H5).
   rewrite <- sepcon_assoc, (sepcon_comm (memory_block sh m1 p)),
   (sepcon_assoc (memory_block shr m1 p)).
-  sep_apply (memory_block_conflict sh _ _ p H3 H1 H2). entailer!.
+  sep_apply (memory_block_conflict sh _ _ p H3 H1 H2). entailer!!.
 Qed.
 
 Lemma v_in_range_data_at_: forall v p n sh,
@@ -1088,7 +1088,7 @@ Proof.
   remember (WORD_SIZE * n - o) as m.
   rewrite H5 in *. rewrite (memory_block_split sh b ofs o m) by lia.
   clear Heqm n H5 H3. assert (0 < m <= Ptrofs.max_unsigned) by rep_lia.
-  rewrite <- H0. Exists m. entailer!.
+  rewrite <- H0. Exists m. entailer!!.
 Qed.
 
 Lemma single_outlier_rep_memory_block_FF: forall gp p n wsh,
@@ -1101,7 +1101,7 @@ Proof.
   sep_apply (data_at__memory_block_cancel rsh (tptr tvoid) gp). simpl sizeof.
   rewrite <- sepcon_assoc. fold WORD_SIZE.
   sep_apply (readable_writable_memory_block_FF _ _ WORD_SIZE m gp H1 H); auto;
-    [unfold WORD_SIZE; rep_lia | entailer].
+    [unfold WORD_SIZE; rep_lia | entailer!!].
 Qed.
 
 Lemma graph_and_heap_rest_v_in_range_iff: forall g h gen v,
@@ -1551,7 +1551,7 @@ Proof.
   - unfold_data_at (@data_at CompSpecs _ heap_type _ _).
     entailer!. clear H0. rewrite field_at_data_at.
     unfold field_address. rewrite if_true by assumption. simpl.
-    entailer!.
+    entailer!!.
   - unfold_data_at (@data_at CompSpecs _ heap_type _ _). entailer!. clear H0 H1.
     rewrite field_at_data_at. unfold field_address. rewrite if_true.
     + simpl. rewrite isptr_offset_val_zero by assumption. entailer!.
