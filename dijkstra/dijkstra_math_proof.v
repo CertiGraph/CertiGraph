@@ -496,7 +496,6 @@ Section DijkstraMathLemmas.
       + unfold path_cost. simpl fold_left.
         pose proof (size_representable g).
         apply Z.mul_nonneg_nonneg; [|apply Z.div_pos]; try ulia.
-      + rewrite Forall_forall; intros; simpl in H3; lia.
       + apply acyclic_nil_path.
     - unfold path_in_popped. intros. destruct H3 as [? | [? [? _]]].
       + simpl in H3.

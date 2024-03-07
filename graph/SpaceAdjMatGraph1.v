@@ -8,16 +8,16 @@ Require Import compcert.common.Values.
 Require Import compcert.export.Clightdefs.
 *)
 Require Import VST.floyd.proofauto.
-(*
-Require Import VST.msl.iter_sepcon.
-Require Import VST.msl.seplog.
+Export iter_sepcon.
+(*Require Import VST.msl.iter_sepcon.
+ Require Import VST.msl.seplog.
 *)
 
 
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.MathAdjMatGraph.
-Import invariants.
+(*Import invariants.*)
 
 Section Spatial_AdjMat_Model_1.
   (* Model 1 is for a heap-allocated graph,
@@ -131,7 +131,7 @@ Existing Instance E_EqDec.
     rewrite nat_inc_list_i.
     2: rewrite Z2Nat_id', Z.max_r; lia.
     repeat rewrite iter_sepcon_app.
-    simpl. rewrite predicates_sl.sepcon_emp. rewrite H.
+    simpl. rewrite sepcon_emp. rewrite H.
     reflexivity.
   Qed.
 

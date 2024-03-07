@@ -373,7 +373,7 @@ Local Open Scope Z_scope.
       (dijk_setup_loop_inv g sh src dist_ptr
                            prev_ptr priq_ptr keys_pv ti graph_ptr).
     - Exists h (@nil key_type) (@nil int).
-      entailer!.
+      entailer!!.
       1: { unfold heap_size in H_h_sz.
            apply Zlength_nil_inv in H_h_sz.
            rewrite H_h_sz in *.
@@ -381,13 +381,8 @@ Local Open Scope Z_scope.
            1,3: apply NoDup_nil.
            inversion 1.
       }
-
-      rewrite app_nil_l, data_at__tarray.
-      replace (size * sizeof tint / sizeof tint) with size.
-      2: rewrite Z.div_mul; trivial; simpl; lia.
-      entailer!.
-      apply (malloc_hitem (pointer_val_val ti)).
-      trivial.
+      eapply derives_trans; [ | apply (malloc_hitem (pointer_val_val ti)); trivial].
+      apply derives_refl.
 
     - rename keys into keys0.
       forward. forward.
@@ -1182,10 +1177,12 @@ Local Open Scope Z_scope.
               apply (Permutation_in x) in H15; trivial.
               destruct H15. subst x. reflexivity. auto.
             }
-
+            repeat simple apply conj; auto.
+(* 
             split3; [| | split3; [| |split3; [| |split3;
                                                  [| |split3; [| |split3;
                     [| |split3; [| |split]]]]]]]; trivial.
+*)
             ++ (* if popped = [], then
                 prove inv_popped for [u].
                 if popped <> [], then we're set
@@ -1266,8 +1263,6 @@ Local Open Scope Z_scope.
                exists (src, []). split3.
                ** split3; [| |split3; [| |split]]; trivial.
                   --- split; trivial.
-                  --- apply Forall_forall.
-                      inversion 1.
                   --- apply acyclic_nil_path.
                ** unfold path_in_popped.
                   intros.
@@ -1291,8 +1286,6 @@ Local Open Scope Z_scope.
                destruct popped eqn:?.
                2: right; apply H4; inversion 1.
                simpl. left. symmetry. apply Hl; trivial.
-
-            ++ red. intros. inversion H21.
 
             ++ apply in_eq.
 
@@ -1588,7 +1581,6 @@ Local Open Scope Z_scope.
                   assert (0 <= i < Zlength keys) by lia.
                   forward. forward. forward. forward.
                   forward; rewrite upd_Znth_same; trivial.
-                  1: entailer!.
                   1,3: repeat rewrite Zlength_map; lia.
                   forward_call (priq_ptr, h',
                                 Znth i keys, Int.repr (Znth u dist' + cost)).
@@ -1621,12 +1613,7 @@ Local Open Scope Z_scope.
 
                   assert (u <> i) by (intro; subst; lia).
 
-                  split3; [| | split3;
-                               [| | split3;
-                                    [| | split3;
-                                         [| |split3;
-                          [| |split3; [| |split3; [| |split3; [| |split3]]]]]]]];
-                  intros.
+                  repeat simple apply conj; intros.
                   (* 19 goals *)
                   --- apply inv_popped_newcost; ulia.
                   --- apply inv_unpopped_newcost; ulia.

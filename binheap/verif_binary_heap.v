@@ -357,12 +357,14 @@ Proof.
   forward_if (PROP (if bo then Zright_child i' <  first_available /\  cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents')
                           else Zright_child i' >= first_available \/ ~cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents') )
               LOCAL (temp _t'1 (Val.of_bool bo); temp _k (Vint (Int.repr i')); temp _j (Vint (Int.repr j')); temp _arr arr; temp _first_available (Vint (Int.repr first_available)))
-              SEP (harray arr_contents' arr)).
+              SEP (harray arr_contents' arr));
+      [ destruct bo; try discriminate H7 .. | ].
     { forward. subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. entailer!. tauto. }
-    { forward. entailer!. }
+    { forward. entailer!!. }
     Intros. (* Need to get the PROP above the bar... why doesn't forward_call do this for me? *)
     forward_call (i', j', arr, arr_contents'). { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct bo; lia. }
-    forward_if (~cmp_rel (Znth i' arr_contents') (Znth j' arr_contents')).
+    forward_if (~cmp_rel (Znth i' arr_contents') (Znth j' arr_contents'));
+      [destruct (cmp _ _) eqn:?H in H8; try discriminate H8 .. | ].
       { forward. (* Prove function postcondition *)
         Exists arr_contents'. entailer!. unfold sink at 2 in H4. erewrite sink_done in H4; intros.
         rewrite <- H4. split. apply sink_hO_bounded. apply cmp_po. apply cmp_linear. apply H2.
@@ -371,7 +373,7 @@ Proof.
         * rewrite <- (Nat2Z.id (left_child _)) in H0. change (Z.of_nat _) with (Zleft_child i') in H0.
           rewrite Znth_nth_error in H0. 2: rewrite Zright_child_unfold, Zleft_child_unfold in *; lia.
           inversion H0. subst b0. clear H0.
-          destruct bo; subst j'; auto.
+          destruct bo; subst j'; auto.          
           transitivity (Znth (Zright_child i') arr_contents'); tauto.
         * assert (0 <= Zright_child i' < Zlength arr_contents'). {
             split. unfold Zright_child. lia.
@@ -454,10 +456,11 @@ Proof.
   Intro b.
   forward_if (PROP (i' > 0 /\ cmp_rel (Znth i' arr_contents') (Znth (Zparent i') arr_contents'))
               LOCAL (temp _k (Vint (Int.repr i')); temp _arr arr)
-              SEP (harray arr_contents' arr)).
-    { subst b. forward. entailer!. tauto. }
-    { subst b. forward. (* Prove postcondition *)
-      Exists arr_contents'. entailer!. split.
+              SEP (harray arr_contents' arr));
+    [ destruct b; try discriminate H4 .. | ].
+    { forward. entailer!!. tauto. }
+    { forward. (* Prove postcondition *)
+      Exists arr_contents'. entailer!!. split.
       { assert (heap_ordered (swim arr_contents (Z.to_nat i))). { apply swim_hO; auto. apply cmp_po. apply cmp_linear. }
         unfold swim at 2 in H2. destruct H5.
         * subst i'. simpl in H2. rewrite swim_0 in H2. rewrite <- H2. trivial.
@@ -468,7 +471,7 @@ Proof.
       { unfold swim in H2.
         generalize (swim_permutation _ cmp_rel cmp_dec arr_contents (Z.to_nat i)); intro.
         generalize (swim_permutation _ cmp_rel cmp_dec arr_contents' (Z.to_nat i')); intro.
-        rewrite H2 in H4. etransitivity. apply H4. symmetry. trivial. } }
+        rewrite H2 in H6. etransitivity. apply H6. symmetry. trivial. } }
   forward_call (i', Zparent i', arr, arr_contents').
     { entailer!. rewrite Zparent_repr by lia. rewrite divu_repr by lia. reflexivity. }
     { unfold Zparent. lia. }
@@ -666,16 +669,12 @@ Proof.
   unfold harray.
   forward.
   rewrite Znth_map; trivial.
-  entailer!.
   forward.
   do 2 (rewrite Znth_map; trivial).
-  entailer!.
   forward.
-  repeat rewrite Znth_map in *; trivial. simpl.
-  try (rewrite sem_cast_i2i_correct_range;
-       [|destruct (negb (Int.lt (fst (Znth j arr_contents))
-                                (fst (Znth i arr_contents))));
-         now simpl]). entailer !.
+  entailer!!.
+  repeat rewrite Znth_map in * by trivial. simpl.
+  unfold cmp. destruct (negb _); auto.
 Time Qed.
 
 Lemma body_size: semax_body Vprog Gprog f_size size_spec.
@@ -711,7 +710,7 @@ Lemma body_exch: semax_body Vprog Gprog f_exch exch_spec.
 Proof.
   start_function. rename H1 into Hal.
   unfold harray.
-  forward. { rewrite Znth_map; trivial. entailer!. }
+  forward. { rewrite Znth_map; trivial. }
   forward. { rewrite Znth_map; trivial. entailer!.
     (* C-typing issue? *)
     apply Forall_map in H3.
@@ -721,7 +720,7 @@ Proof.
     simplify_value_fits in H3. destruct H3.
     rewrite Znth_map in H4; trivial.
     apply H4. discriminate. }
-  forward. { repeat rewrite Znth_map; trivial. entailer!. }
+  forward. { repeat rewrite Znth_map; trivial. }
   forward.
   forward. {
     repeat rewrite Znth_map; trivial.

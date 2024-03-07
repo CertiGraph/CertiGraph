@@ -108,6 +108,16 @@ Proof.
   - apply sepcon_valid_pointer1. apply graph_local_facts; auto.
 Qed.
 
+Ltac quick_typecheck3 ::=
+ apply quick_derives_right; go_lowerx; intros;
+ repeat apply andp_right; 
+ try apply derives_refl; (* This extra line is the workaround
+   explained in https://github.com/PrincetonUniversity/VST/issues/756
+   Eventually, in version 2.14 of VST, perhaps this will be built
+   in to quick_typecheck3 and this redefinition can be
+   deleted. *)
+ auto; fail.
+
 Lemma body_spanning: semax_body Vprog Gprog f_spanning spanning_spec.
 Proof.
   start_function.
@@ -147,10 +157,13 @@ Proof.
      SEP (vertices_at sh (reachable g1 x) g2)).
   - apply denote_tc_test_eq_split. 2: entailer!. apply (graph_left_local_facts _ _ _ true l r); auto.
   - (* root_mark = l -> m; *)
+    fold (pointer_val_val l) in H4.
     localize [data_at sh node_type (vgamma2cdata (vgamma g1 l)) (pointer_val_val l)].
     remember (vgamma g1 l) as dlr in |-*.
     destruct dlr as [[dd ll] rr].
-    forward. simpl vgamma2cdata at 1.
+    forward. 
+
+    simpl vgamma2cdata at 1.
     replace (if dd then 1 else 0) with (if node_pred_dec (marked g1) l then 1 else 0).
     2: {
       destruct (node_pred_dec (marked g1)); destruct dd; auto; symmetry in Heqdlr.

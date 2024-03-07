@@ -601,11 +601,11 @@ Proof.
   start_function. rename H1 into Hl1. rename H2 into Hl2.
   unfold linked_heap_array, heap_array. Intros.
   forward. (* BUG, fst and snd are unfolded too far; array subscripting doesn't rewrite Znth_map *)
-    { rewrite Znth_map; trivial. entailer!. }
-  forward. { rewrite Znth_map; trivial. entailer!. }
-  forward. { repeat rewrite Znth_map; trivial. entailer!. }
-  forward. { repeat rewrite Znth_map; trivial. entailer!. }
-  forward. { repeat rewrite Znth_map; trivial. entailer!. }
+    { rewrite Znth_map; trivial. }
+  forward. { rewrite Znth_map; trivial. }
+  forward. { repeat rewrite Znth_map; trivial. }
+  forward. { repeat rewrite Znth_map; trivial. }
+  forward. { repeat rewrite Znth_map; trivial. }
   forward.
   forward. { repeat rewrite Znth_map; trivial. entailer!.
     (* We may be in another C-typing issue... *)
@@ -759,12 +759,14 @@ Proof.
               LOCAL (temp _t'1 (Val.of_bool b); temp _k (Vint (Int.repr k'));
                      temp _j (Vint (Int.repr j')); temp _arr arr; temp _lookup lookup;
                      temp _first_available (Vint (Int.repr first_available)))
-              SEP (linked_heap_array arr_contents' arr lookup_contents' lookup)).
-    { forward. subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. entailer!. tauto. }
-    { forward. entailer!. }
+              SEP (linked_heap_array arr_contents' arr lookup_contents' lookup));
+      [ destruct b; try discriminate H8.. | ].
+    { forward. subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. entailer!!. apply H9. }
+    { forward. entailer!!. }
     Intros. (* Need to get the PROP above the bar... why doesn't forward_call do this for me? *)
     forward_call (k', j', arr, arr_contents', lookup, lookup_contents'). { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct b; lia. }
-    forward_if (~cmp_rel (Znth k' arr_contents') (Znth j' arr_contents')).
+    forward_if (~cmp_rel (Znth k' arr_contents') (Znth j' arr_contents'));
+       try (destruct (cmp _ _) eqn:?H in H9; try discriminate H9).
       { forward. (* Prove function postcondition *)
         Exists arr_contents' lookup_contents'. entailer!. unfold sink at 2 in H4. erewrite sink_done in H4; intros.
         rewrite <- H4. split. apply sink_hO. apply cmp_po. apply cmp_linear. apply H2.
@@ -773,7 +775,7 @@ Proof.
         * rewrite <- (Nat2Z.id (left_child _)) in H0. change (Z.of_nat _) with (Zleft_child k') in H0.
           rewrite Znth_nth_error in H0. 2: rewrite Zright_child_unfold, Zleft_child_unfold in *; lia.
           inversion H0. subst b0. clear H0.
-          destruct b; subst j'; auto.
+          destruct b; subst j'; auto.          
           transitivity (Znth (Zright_child k') arr_contents'); tauto.
         * assert (0 <= Zright_child k' < Zlength arr_contents'). {
             split. unfold Zright_child. lia.
@@ -785,7 +787,7 @@ Proof.
           rewrite <- (Nat2Z.id (right_child _)) in H0. change (Z.of_nat _) with (Zright_child k') in H0.
           rewrite Znth_nth_error in H0; try lia.
           inversion H0. subst b0. clear H0.
-          destruct b; subst j'. tauto. destruct H8. lia.
+          destruct b; subst j'; auto. destruct H8. lia.
           transitivity (Znth (Zleft_child k') arr_contents'). trivial.
           destruct (cmp_linear (Znth (Zleft_child k') arr_contents') (Znth (Zright_child k') arr_contents')); auto.
           contradiction. }
@@ -866,9 +868,10 @@ Proof.
   Intro b.
   forward_if (PROP (k' > 0 /\ cmp_rel (Znth k' arr_contents') (Znth (Zparent k') arr_contents'))
               LOCAL (temp _k (Vint (Int.repr k')); temp _lookup lookup; temp _arr arr)
-              SEP (linked_heap_array arr_contents' arr lookup_contents' lookup)).
-    { subst b. forward. entailer!. tauto. }
-    { subst b. forward. (* Prove postcondition *)
+              SEP (linked_heap_array arr_contents' arr lookup_contents' lookup));
+     [ destruct b; try discriminate H5 .. | ].
+    { forward. entailer!. tauto. }
+    { forward. (* Prove postcondition *)
       Exists arr_contents' lookup_contents'. entailer!. split.
       { assert (heap_ordered (swim arr_contents (Z.to_nat k))). { apply swim_hO; auto. apply cmp_po. apply cmp_linear. }
         unfold swim at 2 in H2. destruct H6.
@@ -880,7 +883,7 @@ Proof.
       { unfold swim in H2.
         generalize (swim_permutation _ cmp_rel cmp_dec arr_contents (Z.to_nat k)); intro.
         generalize (swim_permutation _ cmp_rel cmp_dec arr_contents' (Z.to_nat k')); intro.
-        rewrite H2 in H5. etransitivity. apply H5. symmetry. trivial. } }
+        rewrite H2 in H7. etransitivity. apply H7. symmetry. trivial. } }
   forward_call (k', Zparent k', arr, arr_contents', lookup, lookup_contents').
     { entailer!. rewrite Zparent_repr by lia. rewrite divu_repr by lia. reflexivity. }
     { split3; [unfold Zparent | | destruct H3; apply Permutation_Zlength in H3]; lia. }
@@ -907,17 +910,14 @@ Proof.
   Intros.
   forward.
   rewrite Znth_map; trivial.
-  entailer!.
   forward.
   do 2 (rewrite Znth_map; trivial).
-  entailer!.
   forward.
-  repeat rewrite Znth_map in *; trivial.
+  repeat rewrite Znth_map in * by trivial.
   unfold linked_heap_array, heap_array. simpl.
-  try (rewrite sem_cast_i2i_correct_range;
-       [|destruct (negb (Int.lt (snd (fst (Znth j arr_contents)))
-                                (snd (fst (Znth i arr_contents)))));
-         now simpl]). entailer !.
+  entailer!!.
+  unfold cmp.
+  destruct (negb _); reflexivity.
 Qed.
 
 Lemma body_size: semax_body Vprog Gprog f_pq_size pq_size_spec.

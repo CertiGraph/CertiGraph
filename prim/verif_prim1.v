@@ -34,7 +34,7 @@ Proof.
   rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u); trivial.
   assert ((Zlength (map Int.repr (Znth u (@graph_to_symm_mat size g)))) = size). {
     unfold graph_to_symm_mat, graph_to_mat, vert_to_list.
-    rewrite Znth_map; repeat rewrite Zlength_map.
+    rewrite Znth_map; repeat rewrite Zlength_map by rep_lia.
     all: rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
   }
   assert (0 <= i < Zlength (map Int.repr (Znth u (@graph_to_symm_mat size g)))) by lia.
@@ -49,8 +49,7 @@ Proof.
   rewrite (SpaceAdjMatGraph_unfold'  _ _ _ addresses u); trivial.	
   entailer!.
 
-  all: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; trivial.
-  apply Zlength_nonneg. lia.
+  all: unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; rep_lia.
 Qed.
 
 Lemma body_initialise_list: semax_body Vprog (@Gprog size inf) f_initialise_list (@initialise_list_spec size).

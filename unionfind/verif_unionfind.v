@@ -138,50 +138,15 @@ Qed.
 
 
 
-
-(*
-Lemma localize': forall R_L PureG Espec {cs: compspecs} Delta P Q R R_FR R_G c Post,
-    split_FRZ_in_SEP R R_G R_FR ->
-    (forall e, @derives (forall _ : environ, mpred) (@LiftNatDed' mpred Nveric) (PROPx P e) (!! PureG)) ->
-
-  (let FR_L := @abbreviate _ R_L in
-   let FR_G := @abbreviate _ R_G in
-   exists  (w: FRZRw FR_L FR_G),
-  @semax cs Espec Delta (PROPx (PureG :: P) (LOCALx Q (SEPx (R_L ++ @FRZR FR_L FR_G w :: R_FR)))) c Post) ->
-  @semax cs Espec Delta (PROPx P (LOCALx Q (SEPx R))) c Post.
-Proof.
-  intros.
-  destruct H1 as [? ?].
-  eapply semax_pre; [clear H1 | exact H1].
-  apply split_FRZ_in_SEP_spec in H.
-  apply andp_left2.
-  apply andp_derives; auto.
-  simpl fold_right at 2.
-  rewrite prop_and.
-  apply andp_right. 2: apply derives_refl.
-  eapply derives_trans. 2: apply H0.
-  apply andp_right.
-   apply derives_refl. apply derives_refl.
-
-  apply prop_derives. intro.
-  simpl.
-  apply andp_derives; auto.
-  unfold SEPx; intro.
-  rewrite H.
-  rewrite fold_right_sepcon_app.
-  simpl.
-  cancel.
-  apply Freezer.FRZR1.
-Qed.
-
-Ltac localize' R_L PureG :=
-  eapply (localize' R_L PureG); [prove_split_FRZ_in_SEP | |];
-  let FR_L := fresh "RamL" in
-  let FR_G := fresh "RamG" in
-  intros FR_L FR_G;
-  eexists;
-  unfold_app.
-*)
+Ltac quick_typecheck3 ::=
+ apply quick_derives_right; go_lowerx; intros;
+ repeat apply andp_right; 
+ try apply derives_refl; (* This extra line is the workaround
+   explained in https://github.com/PrincetonUniversity/VST/issues/756
+   Eventually, in version 2.14 of VST, perhaps this will be built
+   in to quick_typecheck3 and this redefinition can be
+   deleted. *)
+ auto; fail.
 
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
 Proof.

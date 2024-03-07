@@ -1306,8 +1306,6 @@ Section DijkstraProof.
                   --- rewrite (path_cost_zero g).
                       apply Z.mul_nonneg_nonneg. lia.
                       apply Z.div_pos; lia.
-                  --- apply Forall_forall.
-                      inversion 1.
                   --- apply acyclic_nil_path.
                ** unfold path_in_popped.
                   intros.
@@ -1628,7 +1626,6 @@ Section DijkstraProof.
                   assert (0 <= i < Zlength keys) by lia.
                   forward. forward. forward. forward.
                   forward; rewrite upd_Znth_same; trivial.
-                  1: entailer!.
                   1,3: repeat rewrite Zlength_map; lia.
                   forward_call (priq_ptr, h',
                                 Znth i keys, Int.repr (Znth u dist' + cost)).
@@ -2100,7 +2097,7 @@ Section DijkstraProof.
       rewrite Zlength_map in H1. lia.
     }
     Intros.
-    freeze FR := (invariants.iter_sepcon _ _) (invariants.iter_sepcon _ _).
+    freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
     unfold list_rep.
     forward. forward. forward. thaw FR.
     rewrite (SpaceAdjMatGraph_unfold _ id _ _ addresses u); trivial.

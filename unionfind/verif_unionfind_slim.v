@@ -83,6 +83,17 @@ Definition makeSet_spec :=
 
 Definition Gprog : funspecs := ltac:(with_library prog [mallocN_spec; makeSet_spec; find_spec; unionS_spec]).
 
+
+Ltac quick_typecheck3 ::=
+ apply quick_derives_right; go_lowerx; intros;
+ repeat apply andp_right; 
+ try apply derives_refl; (* This extra line is the workaround
+   explained in https://github.com/PrincetonUniversity/VST/issues/756
+   Eventually, in version 2.14 of VST, perhaps this will be built
+   in to quick_typecheck3 and this redefinition can be
+   deleted. *)
+ auto; fail.
+
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
   start_function.

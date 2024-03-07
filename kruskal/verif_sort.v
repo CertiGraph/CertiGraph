@@ -345,12 +345,14 @@ Proof.
   forward_if (PROP (if bo then Zright_child i' <  first_available /\  cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents')
                           else Zright_child i' >= first_available \/ ~cmp_rel (Znth (Zright_child i') arr_contents') (Znth (Zleft_child i') arr_contents') )
               LOCAL (temp _t'1 (Val.of_bool bo); temp _k (Vint (Int.repr i')); temp _j (Vint (Int.repr j')); temp _arr arr; temp _first_available (Vint (Int.repr first_available))) 
-              SEP (harray sh arr_contents' arr)).
+              SEP (harray sh arr_contents' arr));
+     [ destruct bo; try discriminate H7 .. | ].
     { forward. subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. entailer!. tauto. }
-    { forward. entailer!. }
+    { forward. entailer!!. }
     Intros. (* Need to get the PROP above the bar... why doesn't forward_call do this for me? *)
     forward_call (sh, i', j', arr, arr_contents'). { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct bo; lia. }
-    forward_if (~cmp_rel (Znth i' arr_contents') (Znth j' arr_contents')).
+    forward_if (~cmp_rel (Znth i' arr_contents') (Znth j' arr_contents'));
+     try (destruct (cmp _ _) eqn:?H in H8; try discriminate H8).
       { forward. (* Prove function postcondition *)
         Exists arr_contents'. entailer!. unfold sink at 2 in H4. erewrite sink_done in H4; intros.
         rewrite <- H4. split. apply sink_hO_bounded. apply cmp_po. apply cmp_linear. apply H2.
@@ -451,16 +453,14 @@ Proof.
   unfold harray.
   forward.
   rewrite Znth_map; trivial.
-  entailer!.
   forward.
   do 2 (rewrite Znth_map; trivial).
-  entailer!.
   forward.
-  repeat rewrite Znth_map in *; trivial. simpl.
-  try (rewrite sem_cast_i2i_correct_range;
-       [| destruct (negb (Int.lt (fst (Znth i arr_contents))
-                                 (fst (Znth j arr_contents)))); now simpl]).
-  simpl. entailer!.
+  rewrite !Znth_map by trivial. simpl.
+  entailer!!.
+  unfold Val.of_bool, cmp.  
+  destruct (negb (Int.lt (fst (Znth i arr_contents))
+                                 (fst (Znth j arr_contents)))); auto.
 Time Qed.
 
 Lemma heap_item_rep_morph: forall x y,
@@ -472,10 +472,10 @@ Lemma body_exch: semax_body Vprog (@Gprog sz) f_exch exch_spec.
 Proof.
   start_function. rename H1 into Ha.
   unfold harray.
-  forward. { rewrite Znth_map; trivial. entailer!. }
-  forward. { rewrite Znth_map; trivial. entailer!. }
-  forward. { rewrite Znth_map; trivial. entailer!. }
-  forward. { repeat rewrite Znth_map; trivial. entailer!. }
+  forward. { rewrite Znth_map; trivial. }
+  forward. { rewrite Znth_map; trivial. }
+  forward. { rewrite Znth_map; trivial. }
+  forward. { repeat rewrite Znth_map; trivial. }
   forward.
   rewrite !Znth_map; auto.
   destruct (Znth i arr_contents) as [i1 [i2 i3]] eqn: ?S.

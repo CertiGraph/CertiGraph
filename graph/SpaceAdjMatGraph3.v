@@ -8,7 +8,7 @@ Require Import VST.floyd.proofauto.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.MathAdjMatGraph.
-Import invariants.
+Export iter_sepcon.
 
 Section Spatial_AdjMat_Model_3.
   (* Model 3 is for a stack-allocated graph,
@@ -119,7 +119,7 @@ Existing Instance E_EqDec.
     rewrite nat_inc_list_i.
     2: rewrite Z2Nat_id', Z.max_r; lia.
     repeat rewrite iter_sepcon_app.
-    simpl. rewrite predicates_sl.sepcon_emp. rewrite H0.
+    simpl. rewrite sepcon_emp. rewrite H0.
     reflexivity.
   Qed.
 

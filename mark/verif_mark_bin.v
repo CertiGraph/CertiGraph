@@ -165,11 +165,14 @@ Proof.
       destruct x. 2: exfalso; apply H; reflexivity. split; simpl; auto.
       exists b, i. reflexivity.
     } destruct H0 as [? [b [i ?]]]. clear H0 H_weak_valid.
+    pose proof (@root_stable_ramify _ (sSGG_VST sh) g x _ H_GAMMA_g gx_vvalid).
+    change (@pred pSGG_VST bool unit (sSGG_VST sh)) with mpred in H0.
+    sep_apply H0; clear H0.
     (* root_mark = x -> m; *)
     localize [data_at sh node_type (Vint (Int.repr (if d then 1 else 0)), (pointer_val_val l, pointer_val_val r)) (pointer_val_val x)].
     forward.
     unlocalize [graph sh x g].
-    1: apply (@root_stable_ramify _ (sSGG_VST sh) g x _ H_GAMMA_g); auto.
+    apply derives_refl.
     (* if (root_mark == 1) *)
     forward_if.
     + (* return *)

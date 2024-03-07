@@ -42,7 +42,7 @@ Proof.
   }
 
   Intros.
-  freeze FR := (invariants.iter_sepcon _ _) (invariants.iter_sepcon _ _).
+  freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
   unfold list_rep.
   
   assert_PROP (force_val
@@ -221,16 +221,14 @@ rewrite (iter_sepcon.iter_sepcon_func_strong _
            (list_address arr index))
    (fun i : Z =>
       data_at Tsh (tarray tint size) (map (fun x : Z => Vint (Int.repr x)) (repeat a (Z.to_nat size)))
-              (@list_address size CompSpecs arr i))).
+              (@list_address size CompSpecs arr i)))
+  by reflexivity.
 repeat change (invariants.iter_sepcon ?A ?B) with (iter_sepcon A B).
 change (predicates_hered.pred _) with mpred.
- entailer!.
-unfold iter_sepcon at 2. 
+ entailer!!.
+unfold iter_sepcon at 1. 
 cancel.
 entailer.
-intros.
-destruct H3; [ | inv H3]. subst x.
-reflexivity.
 Qed.
 
 (******************PRIM'S***************)
@@ -291,11 +289,12 @@ forward_for_simple_bound size
       free_tok v_pq (sizeof tint * size)
     )
   )%assert.
-entailer!.
+entailer!!.
+(*
 rewrite sublist_nil, sublist_same, app_nil_l.
 entailer!.
 trivial. rewrite Zlength_repeat; lia.
-
+*)
 (*precon taken care of*)
 (*loop*)
 Transparent size.

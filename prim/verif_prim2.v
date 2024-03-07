@@ -133,10 +133,11 @@ forward_for_simple_bound size
     )
   )%assert.
 entailer!.
+(*
 rewrite sublist_nil, sublist_same, app_nil_l.
 entailer!.
 trivial. rewrite Zlength_repeat; lia.
-
+*)
 (*precon taken care of*)
 (*loop*)
 Transparent size.

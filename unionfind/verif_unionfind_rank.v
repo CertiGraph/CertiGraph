@@ -89,6 +89,16 @@ Definition makeSet_spec :=
 
 Definition Gprog : funspecs := ltac:(with_library prog [mallocN_spec; makeSet_spec; find_spec; unionS_spec]).
 
+Ltac quick_typecheck3 ::=
+ apply quick_derives_right; go_lowerx; intros;
+ repeat apply andp_right; 
+ try apply derives_refl; (* This extra line is the workaround
+   explained in https://github.com/PrincetonUniversity/VST/issues/756
+   Eventually, in version 2.14 of VST, perhaps this will be built
+   in to quick_typecheck3 and this redefinition can be
+   deleted. *)
+ auto; fail.
+
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
   start_function.
@@ -317,7 +327,7 @@ Proof.
            ++ subst g3. remember (Graph_gen_redirect_parent g2 y_root x_root H6 H11 H16) as g3.
               apply (graph_gen_redirect_parent_vgamma _ _ _ rankXRoot paXRoot) in Heqg3; auto. intros. inversion H20; auto.
         -- Exists (Graph_vgen g3 x_root (rankXRoot + 1)%nat). entailer!. rewrite H1 in *; rewrite H2 in *.
-           assert (Z.of_nat (vlabel g2 x_root) = Z.of_nat (vlabel g2 y_root)) by (clear -H5 H18; intuition). apply Nat2Z.inj in H24.
+           assert (Z.of_nat (vlabel g2 x_root) = Z.of_nat (vlabel g2 y_root)) by (clear -H5 H18; intuition auto with *). apply Nat2Z.inj in H24.
            simpl in H13. inversion H13. apply uf_under_bound_redirect_parent_eq; auto. rewrite (uf_equiv_root_the_same g1 g2) in H4; auto. destruct H4. auto.
     + Intros g'. Exists g'. entailer!.
 Qed. (* Original: 192.772 secs; VST 2.*: 4.786 secs *)
