@@ -7,6 +7,7 @@ Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListDec.
+Require Import Coq.Arith.PeanoNat.
 
 Section PATH_LEM.
 
@@ -345,8 +346,9 @@ Proof.
   destruct (epath_to_vpath_split _ _ _ _ _ H4 H6) as [p3 [p4 [? [? [? [? ?]]]]]]. exists (p1 +++ p4).
   split; [|split; [|split]];
   [destruct p as [v p]; destruct p1 as [v1 p1]; destruct p2 as [v2 p2]; destruct p3 as [v3 p3]; destruct p4 as [v4 p4]; unfold path_glue, fst, snd in * ..|].
-  + clear - H2 H7 H10. inversion H2. subst p. rewrite !app_length. apply Plus.plus_lt_compat_l. inversion H7. rewrite app_length.
-    destruct p3. 1: simpl in H10 |-* ; inversion H10; destruct L2; inversion H5. simpl; intuition.
+  + clear - H2 H7 H10. inversion H2. subst p. rewrite !app_length, <- Nat.add_lt_mono_l.
+    inversion H7. rewrite app_length.
+    destruct p3. 1: simpl in H10 |-* ; inversion H10; destruct L2; inversion H5. simpl; intuition auto with *.
   + clear - H2 H7. inversion H2. subst p. inversion H7. split. 2: left; simpl; auto. simpl. apply incl_app.
     * apply incl_appl, incl_refl.
     * apply incl_appr, incl_appr, incl_refl.

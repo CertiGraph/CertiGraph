@@ -7,6 +7,7 @@ Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import Coq.Lists.List.
 Require Import Coq.Sorting.Permutation.
+Require Import Coq.Arith.PeanoNat.
 Require Export Coq.Classes.Morphisms.
 Require Import CertiGraph.msl_ext.seplog.
 Require Import CertiGraph.msl_ext.log_normalize.
@@ -252,7 +253,7 @@ Proof.
   - destruct l2. 1: simpl in H; inversion H. simpl. f_equal.
     + specialize (H0 O). simpl in H0. apply H0. apply NPeano.Nat.lt_0_succ.
     + simpl in H. apply (IHl1 _ _ _ x y); eauto. intros. specialize (H0 (S i)).
-      simpl in H0. apply H0. apply Lt.lt_n_S. assumption.
+      simpl in H0. apply H0. rewrite <- Nat.succ_lt_mono. assumption.
 Qed.
 
 #[global] Instance iter_sepcon_permutation_proper : Proper ((@Permutation B) ==> (pointwise_relation B eq) ==> eq) iter_sepcon.

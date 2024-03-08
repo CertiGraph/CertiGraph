@@ -64,11 +64,11 @@ Definition frame_shell_rep (sh: share) (fr: frame) (next: val) : mpred :=
   match fr with
     {| fr_adr := a; fr_root := r; fr_roots := s |}  =>
      !! (field_compatible0 (tarray int_or_ptr_type (Zlength s)) nil r
-          /\ WORD_SIZE * Zlength s <= Ptrofs.max_signed) && 
-     data_at sh (Tstruct _stack_frame noattr) 
+          /\ WORD_SIZE * Zlength s <= Ptrofs.max_signed) &&
+     data_at sh (Tstruct _stack_frame noattr)
        (field_address0 (tarray int_or_ptr_type (Zlength s))
          [ArraySubsc (Zlength s)] r,
-         (r, next)) a 
+         (r, next)) a
   end.
 
   Fixpoint frames_shell_rep (sh: share) (frames: list frame) : mpred :=
@@ -91,10 +91,10 @@ frame2rootpairs' r i (al++bl) = frame2rootpairs' r i al ++ frame2rootpairs' r (i
   f_equal. rewrite IHal. f_equal. f_equal. rewrite Zlength_cons; lia.
   Qed.
 
- Lemma data_at_tarray_field_compatible0: 
- forall sh t s r, 
- data_at sh (tarray t (Zlength s)) s r = 
-!! field_compatible0 (tarray t (Zlength s)) [] r 
+ Lemma data_at_tarray_field_compatible0:
+ forall sh t s r,
+ data_at sh (tarray t (Zlength s)) s r =
+!! field_compatible0 (tarray t (Zlength s)) [] r
  && data_at sh (tarray t (Zlength s)) s r.
 Proof.
  intros.
@@ -171,7 +171,7 @@ Lemma iter_sepcon_frame2rootpairs':
  forall (sh: share) (r: val) (s: list val),
  field_compatible0 (tarray int_or_ptr_type (Zlength s)) [] r ->
   iter_sepcon (frame2rootpairs' r 0 s)
-    (fun av  =>  data_at sh int_or_ptr_type (rp_val av) (rp_adr av)) = 
+    (fun av  =>  data_at sh int_or_ptr_type (rp_val av) (rp_adr av)) =
   data_at sh (tarray int_or_ptr_type (Zlength s)) s r.
 Proof.
   intros.
@@ -203,11 +203,11 @@ Proof.
   instantiate (1:= n - Zlength s).
   1,2,3,4,5: list_solve.
   f_equal.
-  simpl. change WORD_SIZE with 8. lia. 
+  simpl. change WORD_SIZE with 8. lia.
 Qed.
 
 (*
-Lemma frames_rep_eq: forall sh frs, frames_rep sh frs = 
+Lemma frames_rep_eq: forall sh frs, frames_rep sh frs =
 Proof.
   induction frs as [ | [a r s] frs'].
   - simpl; rewrite emp_sepcon; auto.
@@ -254,7 +254,7 @@ Proof.
   apply IHfrs'.
   rewrite Zlength_sublist by list_solve.
   unfold frames2rootpairs. lia.
-Qed. 
+Qed.
 
 Lemma roots_rep_update_frames:
  forall (sh: share) (frs: list frame) (roots: list rootpair),
@@ -276,7 +276,7 @@ Proof.
   rewrite map_app in *.
   assert (Zlength s <= Zlength roots).
   apply (f_equal (@Zlength val)) in H.
-  rewrite Zlength_app, !Zlength_map, Zlength_frame2rootpairs' in H. list_solve. 
+  rewrite Zlength_app, !Zlength_map, Zlength_frame2rootpairs' in H. list_solve.
   assert (roots = sublist 0 (Zlength s) roots ++ sublist (Zlength s) (Zlength roots) roots) by list_solve.
   rewrite H1.
   unfold roots_rep.
@@ -307,13 +307,13 @@ Proof.
     replace (_ - _)%Z with (Zlength s) in H3 by list_solve.
     apply IHs. list_solve.
     auto.
-  + etransitivity. apply IHfrs'. rewrite map_sublist at 1. rewrite H. 
+  + etransitivity. apply IHfrs'. rewrite map_sublist at 1. rewrite H.
     rewrite sublist_app2
     by (rewrite ?Zlength_map, ?Zlength_frame2rootpairs'; list_solve).
     rewrite ?Zlength_map. rewrite ?Zlength_frame2rootpairs'.
-    rewrite sublist_same; auto. lia.  rewrite Zlength_map. 
+    rewrite sublist_same; auto. lia.  rewrite Zlength_map.
     apply (f_equal (@Zlength val)) in H.
-    autorewrite with sublist in H. lia. 
+    autorewrite with sublist in H. lia.
     unfold roots_rep.
     f_equal.
     autorewrite with sublist.
@@ -337,7 +337,7 @@ Lemma frames_rep_localize: forall sh frs, frames_rep sh frs |-- frames_shell_rep
 Proof.
   intros. apply derives_refl.
 Qed.
- 
+
   Definition heap_rep (sh: share) (h: heap) (p: val) :=
     heap_struct_rep sh (map space_tri h.(spaces)) p * heap_rest_rep h.
 
@@ -355,7 +355,7 @@ Qed.
   heap_rest_rep ti.(ti_heap).
 
 Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
-  data_at sh thread_info_type 
+  data_at sh thread_info_type
      (Vundef, (Vundef, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (Vptrofs (ti.(ti_nalloc)), nullval)))))) t *
   frames_rep sh (ti_frames ti) *
   heap_rep sh ti.(ti_heap) ti.(ti_heap_p).
@@ -1590,7 +1590,7 @@ Proof.
                    (offset_val (SPACE_STRUCT_SIZE * (i1 + 1)) heap_p)).
   rewrite heap_struct_rep_eq. rewrite (data_at_tarray_space sh MAX_SPACES i1) by rep_lia.
   rewrite (sublist_next i1 MAX_SPACES l) by rep_lia.
-  replace (MAX_SPACES - i1) with (Zlength (sublist (i1 + 1) MAX_SPACES l) + 1) 
+  replace (MAX_SPACES - i1) with (Zlength (sublist (i1 + 1) MAX_SPACES l) + 1)
     by (rewrite Zlength_sublist; rep_lia).
   rewrite data_at_tarray_split_1 by reflexivity. unfold space_address.
   rewrite Z2Nat.id by lia. rewrite sepcon_comm, !sepcon_assoc. f_equal.
@@ -1650,7 +1650,7 @@ Proof.
   rewrite H6, !Nat2Z.id.
   assert (forall i, 0 <= Z.of_nat i < MAX_SPACES ->
                     data_at sh space_type (Znth (Z.of_nat i) l)
-                            (space_address p i) = 
+                            (space_address p i) =
                     space_struct_rep sh p h i). {
     intros. unfold space_struct_rep. subst l. rewrite Zlength_map in H5.
     rewrite nth_space_Znth, Znth_map by rep_lia. reflexivity. }
@@ -1707,7 +1707,7 @@ Lemma heap_struct_rep_split_single: forall sh l heap_p i,
       data_at sh space_type (Znth i l) (space_address heap_p (Z.to_nat i)) * B.
 Proof.
   intros.
-  eexists. 
+  eexists.
   erewrite hsr_single_explicit; eauto.
 Qed.
 
@@ -1832,7 +1832,7 @@ Proof.
   apply (iter_sepcon_pointwise_eq _ _ _ _ null_space null_space).
   - rewrite <- !ZtoNat_Zlength, !spaces_size. reflexivity.
   - intros. fold (nth_space h1 i). fold (nth_space h2 i). unfold gen_size in H.
-    unfold space_token_rep. rewrite H, H0.  
+    unfold space_token_rep. rewrite H, H0.
     reflexivity.
 Qed.
 
@@ -1919,12 +1919,12 @@ Proof.
   split; subst; simpl; assumption.
 Qed.
 
-Lemma isolate_frame: 
-    forall sh frames z, 
+Lemma isolate_frame:
+    forall sh frames z,
     0 <= z < Zlength (map rp_val (frames2rootpairs frames)) ->
     frames_rep sh frames |--
     data_at sh int_or_ptr_type (Znth z (map rp_val (frames2rootpairs frames))) (frame_root_address frames z) *
-    ALL v:val, data_at sh int_or_ptr_type v (frame_root_address frames z) -* 
+    ALL v:val, data_at sh int_or_ptr_type v (frame_root_address frames z) -*
            frames_rep sh (update_frames frames (upd_Znth z (map rp_val (frames2rootpairs frames)) v)).
 Proof.
 intros.
@@ -2072,7 +2072,7 @@ field_address heap_type
      [StructField _next;
         ArraySubsc (Z.of_nat to); StructField _spaces] (ti_heap_p t_info).
 
-Definition heap_next_address (hp: val) (to: nat) := 
+Definition heap_next_address (hp: val) (to: nat) :=
 field_address heap_type
 [StructField _next; ArraySubsc (Z.of_nat to); StructField _spaces]
 hp.
@@ -2097,7 +2097,7 @@ Qed.
 
 #[export] Hint Resolve frames_rep_ptr_or_null : saturate_local.
 
-Lemma frames_rep_valid_pointer: forall sh frames, 
+Lemma frames_rep_valid_pointer: forall sh frames,
    sepalg.nonidentity sh ->
    frames_rep sh frames |-- valid_pointer (frames_p frames).
 Proof.
@@ -2131,5 +2131,5 @@ hnf; intros.
 revert z H0.
 induction H; intros; auto.
 inversion H3; clear H3; subst.
-constructor; auto; congruence. 
+constructor; auto; congruence.
 Qed.

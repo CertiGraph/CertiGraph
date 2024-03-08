@@ -92,7 +92,7 @@ Add Parametric Relation {A} : (list A) eq_as_set
 
 Lemma eq_as_set_app: forall A (L1 L2 L3 L4: list A),
     L1 ~= L2 -> L3 ~= L4 -> (L1 ++ L3) ~= (L2 ++ L4).
-Proof. intros; hnf in *; intuition. Qed.
+Proof. intros; hnf in *; intuition auto with *. Qed.
 
 Lemma eq_as_set_nil: forall {A} (l : list A), nil ~= l -> l = nil.
 Proof.
@@ -170,7 +170,7 @@ Proof.
   rewrite Zlength_repeat by lia.
   replace (i-i)%Z with 0%Z by lia.
   rewrite <- repeat_app' by lia.
-  rewrite app_assoc_reverse; f_equal.
+  rewrite <- app_assoc; f_equal.
   rewrite upd_Znth0_old.
   2: rewrite Zlength_repeat; lia.
   rewrite Zlength_repeat, sublist_repeat by lia.
@@ -335,7 +335,7 @@ Lemma not_in_app: forall {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) x a (
 Proof. intros; split. destruct (eq_dec x a); auto. subst; intro; apply H. apply in_eq. intro. apply H; apply in_cons; auto. Qed.
 
 Lemma remove_In_iff: forall (A : Type) (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A) (x y : A), In x (remove eq_dec y l) <-> In x l /\ x <> y.
-Proof. intros. induction l; simpl. 1: tauto. destruct (eq_dec y a); [subst | simpl ]; rewrite IHl; intuition. apply n. subst; auto. Qed.
+Proof. intros. induction l; simpl. 1: tauto. destruct (eq_dec y a); [subst | simpl ]; rewrite IHl; intuition auto with *. apply n. subst; auto. Qed.
 
 Lemma remove_incl: forall (A : Type) (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A) (x : A), incl (remove eq_dec x l) l.
 Proof. intros. hnf. intros. rewrite remove_In_iff in H. destruct H; auto. Qed.
@@ -349,7 +349,7 @@ Proof.
 Qed.
 
 Lemma remove_len_le: forall  (A : Type) (eq_dec : forall x y : A, {x = y} + {x <> y}) (l : list A) (x : A), length (remove eq_dec x l) <= length l.
-Proof. induction l; intros; simpl in *. auto. destruct (eq_dec x a). intuition. simpl. intuition. Qed.
+Proof. induction l; intros; simpl in *. auto. destruct (eq_dec x a). intuition. simpl. intuition auto with *. Qed.
 
 Fixpoint intersect {A: Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (l1 l2 : list A) : list A :=
   match l1 with
@@ -918,7 +918,7 @@ Proof.
 Qed.
 
 Ltac rev_induction l :=
-  revert dependent l;
+  generalize dependent l;
   refine (rev_ind _ _ _); intros.
 
 Lemma in_cprefix: forall {A: Type} (xs: list A) xs0 x0,
@@ -1104,7 +1104,7 @@ Fixpoint filter_option {A} (l: list (option A)) : list A :=
 Lemma filter_sum_right_In_iff {A B}: forall e (l: list (A + B)),
     In (inr e) l <-> In e (filter_sum_right l).
 Proof.
-  intros. induction l; simpl; intuition.
+  intros. induction l; simpl; intuition auto with *.
   - inversion H2.
   - inversion H2. simpl. left; reflexivity.
   - simpl in H1. destruct H1.
@@ -1115,7 +1115,7 @@ Qed.
 Lemma filter_sum_left_In_iff {A B}: forall e (l: list (A + B)),
     In (inl e) l <-> In e (filter_sum_left l).
 Proof.
-  intros. induction l; simpl; intuition.
+  intros. induction l; simpl; intuition auto with *.
   - inversion H2. simpl. left; reflexivity.
   - simpl in H1. destruct H1.
     + subst a0. left; reflexivity.
@@ -1126,7 +1126,7 @@ Qed.
 Lemma filter_option_In_iff {A}: forall e (l: list (option A)),
     In (Some e) l <-> In e (filter_option l).
 Proof.
-  intros. induction l; simpl; try reflexivity. destruct a; intuition.
+  intros. induction l; simpl; try reflexivity. destruct a; intuition auto with *.
   - inversion H2. simpl. left; reflexivity.
   - simpl in H1. destruct H1.
     + subst a. left; reflexivity.
@@ -1200,7 +1200,7 @@ Lemma fold_left_Z_mono: forall {A} (f: Z -> A -> Z) (l1 l2 l3: list A) s,
     Permutation (l1 ++ l2) l3 -> fold_left f l1 s <= fold_left f l3 s.
 Proof.
   intros. rewrite <- (fold_left_comm _ _ _ _ H0 H1). rewrite fold_left_app.
-  remember (fold_left f l1 s). clear -H. rev_induction l2. 1: simpl; intuition.
+  remember (fold_left f l1 s). clear -H. rev_induction l2. 1: simpl; intuition auto with *.
   rewrite fold_left_app. simpl. transitivity (fold_left f l z); [apply H0 | apply H].
 Qed.
 
@@ -1219,7 +1219,7 @@ Lemma fold_left_ext: forall {A B} (f g: A -> B -> A) l init,
 Proof.
   intros. revert init. rev_induction l; intros; simpl. 1: reflexivity.
   rewrite !fold_left_app. simpl.
-  rewrite H; intros; apply H0; rewrite in_app_iff; intuition.
+  rewrite H; intros; apply H0; rewrite in_app_iff; intuition auto with *.
 Qed.
 
 Lemma fold_left_Zadd_diff_accum:
@@ -1480,7 +1480,7 @@ Section LIST_DERIVED_BIJECTION.
       InEither v (a :: l) <-> IsEither v a \/ InEither v l.
   Proof.
     do 3 intro. revert v a. induction l; intros.
-    - destruct a. unfold InEither at 1. simpl. unfold IsEither. simpl. intuition.
+    - destruct a. unfold InEither at 1. simpl. unfold IsEither. simpl. intuition auto with *.
     - rewrite IHl. unfold InEither. simpl. destruct (split l) as [l1 l2].
       destruct a. destruct a0. unfold IsEither. simpl. rewrite !in_app_iff. simpl.
       clear. firstorder.
@@ -1554,7 +1554,7 @@ Section LIST_DERIVED_BIJECTION.
     unfold DoubleNoDup in H. simpl in H. unfold InEither in *. simpl.
     destruct (split l) as [l1 l2]. split.
     - simpl in H. apply NoDup_cons_2 in H. simpl in *. intro. apply H.
-      destruct H2; auto. right. rewrite in_app_iff in H2 |-* . destruct H2; intuition.
+      destruct H2; auto. right. rewrite in_app_iff in H2 |-* . destruct H2; intuition auto with *.
     - apply NoDup_remove_2 in H. intro. apply H. rewrite in_app_iff in H2 |-* .
       destruct H2; auto. left. right. assumption.
   Qed.
@@ -1615,8 +1615,8 @@ Section LIST_DERIVED_BIJECTION.
           [left; reflexivity | right; intro; apply c; inversion H1; reflexivity..]. }
     destruct H1.
     - subst. simpl. apply DoubleNoDup_cons_hd in H.
-      destruct (equiv_dec k k); intuition. destruct (equiv_dec k v); intuition.
-      destruct (equiv_dec v v); intuition.
+      destruct (equiv_dec k k); intuition auto with *. destruct (equiv_dec k v); intuition.
+      destruct (equiv_dec v v); intuition auto with *.
     - destruct a. simpl. destruct (equiv_dec a k); unfold equiv in *.
       + exfalso. subst a. apply H1. f_equal. eapply DoubleNoDup_In_fst_eq; eauto.
         simpl. left; reflexivity.
@@ -1685,7 +1685,7 @@ Section LIST_DERIVED_BIJECTION.
   Lemma InEither_app_iff: forall a l1 l2,
       InEither a (l1 ++ l2) <-> InEither a l1 \/ InEither a l2.
   Proof.
-    intros a l1. revert a. induction l1; simpl; intros. 1: intuition.
+    intros a l1. revert a. induction l1; simpl; intros. 1: intuition auto with *.
     rewrite !InEither_cons_iff, IHl1. intuition.
   Qed.
 
@@ -1769,7 +1769,7 @@ Section LIST_DERIVED_MAPPING.
   Proof.
     do 3 intro. induction l; intros. 1: inversion H0. simpl in *.
     destruct a as [k0 v0]. destruct H0.
-    - inversion H0. subst. destruct (equiv_dec k k). reflexivity. exfalso. intuition.
+    - inversion H0. subst. destruct (equiv_dec k k). reflexivity. exfalso. intuition auto with *.
     - simpl in H. destruct (equiv_dec k0 k); unfold equiv in *.
       + apply NoDup_cons_2 in H. exfalso. apply H. subst. now apply (in_map fst) in H0.
       + apply NoDup_cons_1 in H. now apply IHl.
@@ -2045,7 +2045,7 @@ Fixpoint nat_inc_list (n: nat) : list Z :=
 Lemma nat_inc_list_in_iff: forall n v, List.In v (nat_inc_list n) <-> 0 <= v < Z.of_nat n.
 Proof.
   induction n; intros; [simpl; lia|]. rewrite Nat2Z.inj_succ. unfold Z.succ. simpl. rewrite in_app_iff.
-  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by lia. rewrite H. clear H. rewrite IHn. simpl. intuition.
+  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by lia. rewrite H. clear H. rewrite IHn. simpl. intuition auto with *.
 Qed.
 
 Lemma nat_inc_list_NoDup: forall n, NoDup (nat_inc_list n).

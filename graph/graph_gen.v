@@ -229,10 +229,10 @@ Lemma addEdge_add_vvalid: forall g e s t, vvalid (pregraph_add_whole_edge g e s 
 Lemma addEdge_add_evalid: forall g e s t, evalid (pregraph_add_whole_edge g e s t) e. Proof. intros. hnf. right; auto. Qed.
 
 Lemma addEdge_src_iff: forall g e s t e' x, src (pregraph_add_whole_edge g e s t) e' = x <-> ((e <> e' /\ src g e' = x) \/ (e = e' /\ s = x)).
-Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuition. Qed.
+Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuition auto with *. Qed.
 
 Lemma addEdge_dst_iff: forall g e s t e' x, dst (pregraph_add_whole_edge g e s t) e' = x <-> ((e <> e' /\ dst g e' = x) \/ (e = e' /\ t = x)).
-Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuition. Qed.
+Proof. intros. simpl. unfold updateEdgeFunc. destruct (equiv_dec e e'); intuition auto with *. Qed.
 
 Definition pregraph_remove_vertex (g: Graph) (v: V) : Graph :=
   @Build_PreGraph V E EV EE (removeValidFunc v (vvalid g)) (evalid g) (src g) (dst g).

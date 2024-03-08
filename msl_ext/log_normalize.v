@@ -92,7 +92,7 @@ Qed.
 
 Lemma corable_wand_corable: forall {A} {NA: NatDed A} {SA: SepLog A} {ClA: ClassicalSep A} {CoA: CorableSepLog A} (P Q: A),
   corable P ->
-  corable Q -> 
+  corable Q ->
   P --> Q |-- P -* Q.
 Proof.
   intros.
@@ -103,7 +103,7 @@ Qed.
 
 Lemma corable_andp_wand_corable_andp: forall {A} {NA: NatDed A} {SA: SepLog A} {ClA: ClassicalSep A} {CoA: CorableSepLog A} (P1 P2 Q1 Q2: A),
   corable P1 ->
-  corable Q1 -> 
+  corable Q1 ->
   (P1 --> Q1) && (P2 -* Q2) |-- P1 && P2 -* Q1 && Q2.
 Proof.
   intros.
@@ -432,7 +432,7 @@ Proof.
   + apply wand_sepcon_adjoint; auto.
   + apply wand_sepcon_adjoint; auto.
 Qed.
-  
+
 #[export] Instance ocon_owand_CCC: forall A `{OverlapSepLog A}, CCCviaNatDed A ocon owand.
 Proof.
   intros.
@@ -464,7 +464,7 @@ Proof.
   apply (proj1 (@CartesianClosedCat.adjoint _ _ _ _ _ CCC _ _ _)).
   rewrite CartesianClosedCat.assoc by eauto.
   rewrite (@CartesianClosedCat.comm _ _ _ _ _ CCC Q P).
-  rewrite <- CartesianClosedCat.assoc by eauto.
+  rewrite <- (@CartesianClosedCat.assoc _ _ _ _ _ CCC _ _) by eauto.
   apply (proj2 (@CartesianClosedCat.adjoint _ _ _ _ _ CCC _ _ _)).
   apply (proj2 (@CartesianClosedCat.adjoint _ _ _ _ _ CCC _ _ _)).
   apply derives_refl.
