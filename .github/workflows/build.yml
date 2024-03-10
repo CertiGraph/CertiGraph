@@ -7,24 +7,18 @@ on:
   pull_request:
     branches:
       - "**"  # forall submitted Pull Requests
-  workflow_dispatch:
-    inputs:
 
 jobs:
-  build-matrix:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        opam_file:
-          - 'coq-certigraph.opam'
-          - 'coq-certigraph-32.opam'
-        image:
-          - 'tcarstens/coq-vst:8.14.1-ocaml-4.12.0-flambda--compcert-3.9--vst-2.8'
-          - 'tcarstens/coq-vst:8.13.2-ocaml-4.11.2-flambda--compcert-3.9--vst-2.8'
+        coq_version:
+          - '8.17'
       fail-fast: false  # don't stop jobs if one fails
     steps:
       - uses: actions/checkout@v2
       - uses: coq-community/docker-coq-action@v1
         with:
-          custom_image: ${{ matrix.image }}
-          opam_file: ${{ matrix.opam_file }}
+          opam_file: './coq-certigraph.opam'
+          coq_version: ${{ matrix.coq_version }}
