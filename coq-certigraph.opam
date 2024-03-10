@@ -11,7 +11,6 @@ authors: ["Aquinas Hobor"
     "Anshuman Mohan"
 ]
 build: [
-    [make "BITSIZE=64" "clean"]
     [make "BITSIZE=64" "depend"]
     [make "BITSIZE=64" "-j%{jobs}%"]
 ]

@@ -269,7 +269,7 @@ cav:
 
 
 .PHONY: depend
-.depend depend: 
+.depend depend: $(CLIGHT_FILES)
 	@echo 'coqdep ... >.depend'
 	@$(COQDEP) $(NORMAL_FLAG) $(NORMAL_FILES) > .depend
 	@$(COQDEP) $(CLIGHT_FLAG) $(CLIGHT_FILES) >> .depend
