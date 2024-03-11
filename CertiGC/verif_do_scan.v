@@ -11,6 +11,8 @@ Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.CertiGC.gc_spec.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 
+Local Opaque Int64.repr.
+
 Local Open Scope logic.
 
 Lemma typed_true_tag: forall (to : nat) (g : LGraph) (index : nat),

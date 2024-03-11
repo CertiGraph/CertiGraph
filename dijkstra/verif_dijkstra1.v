@@ -4,7 +4,8 @@ Require Import CertiGraph.dijkstra.MathDijkGraph.
 Require Import CertiGraph.dijkstra.dijkstra_math_proof.
 Require Import CertiGraph.dijkstra.dijkstra_spec1.
 
-Set Nested Proofs Allowed.
+Local Opaque Int64.repr.
+
 Local Open Scope Z_scope.
 
 Section DijkstraProof.
@@ -937,12 +938,13 @@ Section DijkstraProof.
           simpl fst in *. simpl snd in *.
 
           thaw FR.
-          unfold hitem.
+          change (hitem min_item (pointer_val_val ti))
+           with  (@data_at CompSpecs Tsh t_item
+                (heap_item_rep min_item) (pointer_val_val ti)).
           forward.
-          replace (data_at Tsh t_item (heap_item_rep min_item)
-                           (pointer_val_val ti)) with
-              (hitem min_item (pointer_val_val ti)).
-          2: unfold hitem; trivial.
+          change (@data_at CompSpecs  Tsh t_item
+                   (heap_item_rep min_item) (pointer_val_val ti))
+          with (hitem min_item (pointer_val_val ti)).
           simpl.
           remember (Int.signed (snd min_item)) as u.
 

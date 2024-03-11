@@ -13,6 +13,8 @@ Require Import Coq.Lists.List.
 Require Import CertiGraph.unionfind.uf_arr_specs.
 Require Import VST.floyd.library.
 
+Local Opaque Int64.repr.
+
 Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
 Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.

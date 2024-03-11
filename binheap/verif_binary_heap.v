@@ -389,7 +389,7 @@ Proof.
           transitivity (Znth (Zleft_child i') arr_contents'). trivial.
           destruct (cmp_linear (Znth (Zleft_child i') arr_contents') (Znth (Zright_child i') arr_contents')); auto.
           contradiction. }
-      { forward.  entailer!. unfold cmp_rel, j' in H0. congruence. }
+      { forward.  entailer!!. }
     forward_call (i', j', arr, arr_contents').
       { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct bo; lia. }
     forward.

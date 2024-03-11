@@ -155,7 +155,7 @@ Section MathDijkGraph.
     rewrite <- (Z2Nat.id b); [|lia].
     remember (Z.to_nat a) as n1.
     remember (Z.to_nat b) as n2.
-    rewrite <- div_Zdiv by lia.
+    rewrite <- Nat2Z.inj_div.
     apply inj_le.
     replace n1 with (Nat.div n1 1) at 2.
     2: apply Nat.div_1_r.

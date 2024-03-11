@@ -225,7 +225,7 @@ Lemma Zparent_unfold: forall i,
   Zparent i = (i - 1) / 2.
 Proof.
   unfold Zparent, parent. intros.
-  rewrite Nat.div2_div, div_Zdiv; auto.
+  rewrite Nat.div2_div, Nat2Z.inj_div.
   rewrite Nat2Z.inj_sub. rewrite Z2Nat.id; lia.
   lia.
 Qed.

@@ -681,8 +681,9 @@ Lemma valid_int_or_ptr_ii1:
   forall i, valid_int_or_ptr (Z2val (i + i + 1)).
 Proof.
   intros.
-  simpl.
+  unfold Z2val, valid_int_or_ptr. unfold Int64.testbit.
   first [rewrite Int.unsigned_repr_eq | rewrite Int64.unsigned_repr_eq].
+  simpl.
   rewrite Zodd_mod.
   apply Zeq_is_eq_bool.
   replace (i+i) with (2 * i)%Z by lia.

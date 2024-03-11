@@ -24,6 +24,8 @@ Definition Gprog : funspecs :=
 
 Set Nested Proofs Allowed.
 
+Local Opaque Int64.repr.
+
 Lemma body_free: semax_body Vprog Gprog f_pq_free pq_free_spec.
 Proof.
   start_function. unfold valid_pq, linked_heap_array, heap_array, lookup_array.
@@ -791,8 +793,7 @@ Proof.
           transitivity (Znth (Zleft_child k') arr_contents'). trivial.
           destruct (cmp_linear (Znth (Zleft_child k') arr_contents') (Znth (Zright_child k') arr_contents')); auto.
           contradiction. }
-      { forward.  entailer!. unfold cmp_rel in H0.
-        subst j'. congruence. }
+      { forward.  entailer!!. }
       forward_call (k', j', arr, arr_contents', lookup, lookup_contents'). {
     subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. split3.
     - destruct b; lia.

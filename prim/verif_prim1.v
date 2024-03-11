@@ -5,6 +5,8 @@ Require Import CertiGraph.graph.MathUAdjMatGraph.
 Require Import CertiGraph.graph.SpaceUAdjMatGraph1.
 Require Import CertiGraph.prim.prim_spec1.
 
+Local Opaque Int64.repr.
+
 Local Open Scope Z.
 
 
