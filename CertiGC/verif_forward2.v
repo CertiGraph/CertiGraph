@@ -12,6 +12,8 @@ Require Import CertiGraph.CertiGC.gc_spec.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 Require Import CertiGraph.CertiGC.forward_lemmas.
 
+Local Opaque Int64.repr.
+
 Local Open Scope logic.
 
 Lemma body_forward_inR:

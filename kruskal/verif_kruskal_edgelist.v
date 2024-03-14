@@ -844,7 +844,7 @@ Proof.
     assert (forall x : reptype t_struct_edge, In x (map wedge_to_cdata []) -> exists j : Z, 0 <= j < 0 /\ x = Znth j sorted). {
       intros; contradiction.
     }
-    time "loop precon (originally 187 seconds)" entailer!.
+    entailer!!.
   + (******LOOP BODY******)
     Intros.
     rename H3 into Hinv1; rename H4 into Hinv2; rename H5 into Hinv3;
@@ -1317,7 +1317,7 @@ Proof.
         rewrite Heq_i. apply in_map. apply in_or_app. right. left; auto. contradiction.
         lia.
       }
-      time "if-branch postcon (originally 331.069 secs):" entailer!.
+      entailer!!.
       replace (numE adde) with (numE msf' + 1). 2: { unfold adde. symmetry; apply adde_numE. auto. }
       replace (map wedge_to_cdata (msflist +:: (w, (u, v)))) with ((map wedge_to_cdata msflist) ++ [Znth i sorted]).
       2: { rewrite map_app. simpl. rewrite Heq_i; auto. } rewrite <- app_assoc.
@@ -1331,7 +1331,7 @@ Proof.
       2: { simpl; auto. }
       2: { unfold Vundef_cwedges; simpl. rewrite Zlength_repeat by lia. lia. }
       rewrite (data_at_singleton_array_eq' sh t_struct_edge (Znth i sorted)).
-      entailer!.
+      entailer!!.
     --- (* no, don't add this edge *)
       forward.
       Exists msf' msflist subsetsGraph_uv.
@@ -1376,8 +1376,7 @@ Proof.
       assert (Ha1: forall v0 : VType, vvalid g v0 <-> vvalid subsetsGraph_uv v0). {
         intros. rewrite Hinv5. symmetry. destruct Hequiv_trans. rewrite H4. split; auto.
       }
-      time "else-branch postcon (originally 192 secs): " entailer!.
-      clear H20 H21 H22 H23 H4 H5 H6 H7 H8 H9 H10 H11 H12 H13 H14 H15 H16 H17 H18 H19.
+      entailer!!.
       intros.
       destruct (Z.eq_dec j i).
       2: apply Hinv9; trivial; lia.

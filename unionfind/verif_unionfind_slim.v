@@ -83,8 +83,8 @@ Definition makeSet_spec :=
 
 Definition Gprog : funspecs := ltac:(with_library prog [mallocN_spec; makeSet_spec; find_spec; unionS_spec]).
 
-
 Ltac quick_typecheck3 ::=
+ (* this should not be needed starting with VST 2.14 *)
  apply quick_derives_right; go_lowerx; intros;
  repeat apply andp_right; 
  try apply derives_refl; (* This extra line is the workaround
@@ -93,6 +93,33 @@ Ltac quick_typecheck3 ::=
    in to quick_typecheck3 and this redefinition can be
    deleted. *)
  auto; fail.
+
+Definition protect_evar {A} (x: A) := x.
+
+Ltac localize R_L ::=
+  eapply (localize R_L); [prove_split_FRZ_in_SEP |];
+  let FR_L := fresh "RamL" in
+  let FR_G := fresh "RamG" in
+  intros FR_L FR_G;
+  (* regarding the next 4 lines, see 
+      https://github.com/PrincetonUniversity/VST/issues/756 *)
+  let w := fresh "w" in let wx := fresh "wx" in 
+  evar(wx: FRZRw FR_L FR_G);
+  pose (w := protect_evar wx); subst wx;
+  exists w;
+  unfold_app.
+
+(*
+Ltac localize R_L := freezer.localize R_L; set_evars.
+*)
+
+Ltac unprotect_evar := 
+ match goal with w := protect_evar _ |- _ => 
+        unfold protect_evar in w; subst w 
+ end.
+
+Tactic Notation "unlocalize" constr(R_G2) :=
+  unprotect_evar; unlocalize_plain R_G2.
 
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
 Proof.
@@ -150,7 +177,9 @@ Proof.
   start_function.
   remember (vgamma g x) as rpa eqn:?H. destruct rpa as [r pa].
   (* p = x -> parent; *)
-  localize [data_at sh node_type (vgamma2cdata (vgamma g x)) (pointer_val_val x)]. rewrite <- H0. simpl vgamma2cdata.
+(*  evar (e99: Z).*)
+  localize [data_at sh node_type (vgamma2cdata (vgamma g x)) (pointer_val_val x)].
+  rewrite <- H0. simpl vgamma2cdata.
   forward. 1: entailer!; destruct pa; simpl; auto.
   unlocalize [whole_graph sh g].
   1: rewrite <- H0; simpl vgamma2cdata; apply (@vertices_at_ramif_1_stable _ _ _ _ SGBA_VST _ _ (SGA_VST sh) g (vvalid g) x (r, pa)); auto.

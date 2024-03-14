@@ -18,8 +18,8 @@ install: [
     make "BITSIZE=64" "install"
 ]
 depends: [
-    "coq" {>= "8.17.1" & < "8.18~"}
-    "coq-vst" {= "2.12"}
+    "coq" {>= "8.18.0" & < "8.19~"}
+    "coq-vst" {= "2.13"}
 ]
 synopsis: "A library for verifying graph-manipulating programs"
 description: """

@@ -306,7 +306,7 @@ Proof.
   forward.
   Exists arr_contents. entailer!.
   eapply weak_heapOrdered_bounded_oob. 2: apply H3.
-  rewrite Zlength_correct, Nat2Z.id. apply le_refl.
+  rewrite Zlength_correct, Nat2Z.id. apply Nat.le_refl.
 * (* Main line *)
   assert (Hx : i < Zlength arr_contents) by lia. specialize (H2 Hx). clear H1 Hx. rename H2 into H1. rename H3 into H2.
   forward_loop (EX i' : Z, EX arr_contents' : list heap_item,
@@ -389,7 +389,10 @@ Proof.
           transitivity (Znth (Zleft_child i') arr_contents'). trivial.
           destruct (cmp_linear (Znth (Zleft_child i') arr_contents') (Znth (Zright_child i') arr_contents')); auto.
           contradiction. }
-      { forward.  entailer!. unfold cmp_rel, j' in H0. congruence. }
+      { forward.  entailer!!. 
+        (* next line needed only for backward compatibility before Coq 8.18 and VST 2.13 *)
+        all: unfold cmp_rel, j' in H0; congruence.
+      }
     forward_call (i', j', arr, arr_contents').
       { subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. destruct bo; lia. }
     forward.
@@ -420,7 +423,7 @@ Proof.
     + subst j'. destruct bo.
       - rewrite H5 in H7. apply nth_error_None in H0. destruct H7. unfold Zright_child in H7. rewrite Zlength_correct in H7. lia.
       - split. unfold Zleft_child. lia. tauto.
-Time Qed.
+Qed.
 
 Lemma body_swim: semax_body Vprog Gprog f_swim swim_spec.
 Proof.
@@ -486,7 +489,7 @@ Proof.
     3: rewrite <- Znth_nth_error. 3: rewrite Nat2Z.id; trivial.
     1,2,3: lia.
   * rewrite Zparent_repr by lia. rewrite divu_repr by lia. reflexivity.
-Time Qed.
+Qed.
 
 Lemma body_insert_nc: semax_body Vprog Gprog f_insert_nc insert_nc_spec.
 Proof.
@@ -544,7 +547,7 @@ Proof.
       cancel.
       rewrite harray_split. cancel.
       repeat rewrite Zlength_app. rewrite <- H10. rewrite Zlength_app. apply derives_refl.
-Time Qed.
+Qed.
 
 Lemma body_remove_min_nc: semax_body Vprog Gprog f_remove_min_nc remove_min_nc_spec.
 Proof.
@@ -661,7 +664,7 @@ Proof.
     do 2 rewrite Zlength_one.
     rewrite Zlength_cons.
     rewrite H3, H11. cancel.
-Time Qed.
+Qed.
 
 Lemma body_less: semax_body Vprog Gprog f_less less_spec.
 Proof.
@@ -675,7 +678,7 @@ Proof.
   entailer!!.
   repeat rewrite Znth_map in * by trivial. simpl.
   unfold cmp. destruct (negb _); auto.
-Time Qed.
+Qed.
 
 Lemma body_size: semax_body Vprog Gprog f_size size_spec.
 Proof.
@@ -687,7 +690,7 @@ Proof.
   unfold valid_pq.
   Exists arr. Exists junk.
   entailer!.
-Time Qed.
+Qed.
 
 Lemma body_capacity: semax_body Vprog Gprog f_capacity capacity_spec.
 Proof.
@@ -699,7 +702,7 @@ Proof.
   unfold valid_pq.
   Exists arr. Exists junk.
   entailer!.
-Time Qed.
+Qed.
 
 (* I need this to make a replace work... ugly... *)
 Lemma heap_item_rep_morph: forall x y,
@@ -784,4 +787,4 @@ Proof.
       rewrite upd_Znth_diff. rewrite upd_Znth_same. rewrite Znth_Zexchange; trivial. 1,2,3,4: autorewrite with sublist; trivial.
       rewrite Znth_Zexchange''; auto.
       repeat rewrite upd_Znth_diff; autorewrite with sublist; trivial.
-Time Qed.
+Qed.

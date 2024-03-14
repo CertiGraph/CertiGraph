@@ -13,12 +13,14 @@ Context {inf : Z}.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 Local Open Scope Z_scope.
 
+Local Opaque Int64.repr.
+
 Lemma body_init: semax_body Vprog (@Gprog size inf _) f_init (@init_spec size _). 
 Proof.
   start_function.
   assert (Int.max_signed < Int.max_unsigned) by now compute.
   forward_call (size * sizeof(tint)).
-  1: simpl; split; Lia.lia.
+  1: simpl; lia.
   Intro pq. forward. Exists pq.
   rewrite Z_div_mult by (simpl; lia).
   entailer!.

@@ -356,7 +356,7 @@ Local Open Scope heap_scope.
 Definition root_idx : nat := 0.
 Definition left_child (idx : nat) : nat := 1 + idx + idx. (* 2 * (idx + 1) - 1 *) 
 Definition right_child (idx : nat) : nat := (left_child idx) + 1. (* 2 + idx + idx. *) (* 2 * (idx + 1) + 1 - 1 *)
-Definition parent (idx : nat) : nat := div2 (idx - 1). (* ((idx + 1) / 2) - 1 *)
+Definition parent (idx : nat) : nat := Nat.div2 (idx - 1). (* ((idx + 1) / 2) - 1 *)
 
 Lemma parent_le: forall i,
   parent i <= i.
@@ -372,7 +372,7 @@ Proof.
   intros.
   destruct i. inversion H. destruct i. constructor.
   etransitivity.
-  apply lt_div2; lia.
+  apply Nat.lt_div2; lia.
   lia.
 Qed.
 
@@ -390,30 +390,30 @@ Proof. unfold right_child, left_child. lia. Qed.
 
 Lemma parent_left_child: forall i,
   parent (left_child i) = i.
-Proof. unfold parent, left_child. intro. replace (1 + i + i - 1) with (2 * i) by lia. apply div2_double. Qed.
+Proof. unfold parent, left_child. intro. replace (1 + i + i - 1) with (2 * i) by lia. apply Nat.div2_double. Qed.
 
 Lemma parent_right_child: forall i,
   parent (right_child i) = i.
-Proof. unfold parent, right_child, left_child. intro. replace (1 + i + i + 1 - 1) with (S (2 * i)) by lia. apply div2_double_plus_one. Qed.
+Proof. unfold parent, right_child, left_child. intro. replace (1 + i + i + 1 - 1) with (S (2 * i)) by lia. apply Nat.div2_succ_double. Qed.
 
 Lemma left_child_parent_odd: forall i,
-  odd i ->
+  Nat.Odd i ->
   left_child (parent i) = i.
 Proof. 
   unfold left_child, parent. intros.
-  inversion H.
-  replace (S n - 1) with n by lia.
-  simpl. f_equal. rewrite even_double; auto.
+  inversion H. subst i.
+  replace (2*x+1-1) with (2*x) by lia.
+  rewrite Nat.div2_double. lia.
 Qed.
 
 Lemma right_child_parent_even: forall i,
-  i > root_idx -> even i ->
+  i > root_idx -> Nat.Even i ->
   right_child (parent i) = i.
 Proof. 
   unfold right_child, left_child, parent, root_idx. intros.
-  inversion H0. lia.
-  replace (S n - 1) with n by lia. simpl. f_equal.
-  rewrite (odd_double n) at 3; auto. unfold double. lia.
+  inversion H0. subst i.
+  replace (2*x-1) with (S (2*(x-1))) by lia.
+  rewrite Nat.div2_succ_double. lia.
 Qed.
 
 Lemma left_child_monotone: forall i j,
@@ -516,7 +516,7 @@ Proof.
   * destruct i. simpl in H1. destruct L. discriminate. inversion H1.
     simpl in H0. inversion H0. subst. reflexivity.
     specialize (H _ _ H1). destruct H.
-    destruct (even_or_odd (S i)).
+    destruct (Nat.Even_or_Odd (S i)).
     apply H2. rewrite right_child_parent_even; auto. unfold root_idx; lia.
     apply H. rewrite left_child_parent_odd; auto.
   * split; intros; eapply H; try apply H1.
@@ -1069,7 +1069,7 @@ Proof.
   repeat intro. destruct i; inversion H1. inversion H. rename H into Hx.
   split; repeat intro.
   *  assert (left_child i < length L) by (apply nth_error_Some; congruence).
-     destruct (even_or_odd (length L)).
+     destruct (Nat.Even_or_Odd (length L)).
      + apply right_child_monotone in H.
        rewrite right_child_parent_even in H; auto.
        clear -H H2.
@@ -1077,7 +1077,7 @@ Proof.
      + apply left_child_monotone in H.
        rewrite left_child_parent_odd in H; auto. lia.
   * assert (right_child i < length L) by (apply nth_error_Some; congruence).
-    destruct (even_or_odd (length L)).
+    destruct (Nat.Even_or_Odd (length L)).
     + apply right_child_monotone in H.
       rewrite right_child_parent_even in H; auto.
       lia.
@@ -1176,7 +1176,7 @@ Proof.
                  assert (right_child j >= k) by (generalize (right_child_inc j); lia).
                  specialize (H _ _ H11 H10 H2). destruct H.
                  rewrite <- H6 in *.
-                 destruct (even_or_odd gs).
+                 destruct (Nat.Even_or_Odd gs).
                  apply H12. rewrite right_child_parent_even; auto. generalize (left_child_root j); intro. lia.
                  apply H. rewrite left_child_parent_odd; auto.
         ** case (a0 <<=? a). 2: (destruct (Aleq_linear a0 a); try contradiction; intros _).
@@ -1232,7 +1232,7 @@ Proof.
                  assert (left_child j >= k) by (generalize (left_child_inc j); lia).
                  specialize (H _ _ H12 H11 H0). destruct H.
                  rewrite <- H7 in *.
-                 destruct (even_or_odd gs).
+                 destruct (Nat.Even_or_Odd gs).
                  apply H13. rewrite right_child_parent_even; auto. generalize (left_child_root j); intro. lia.
                  apply H. rewrite left_child_parent_odd; auto.
       - assert (Hr: right_child j >= length L) by (apply nth_error_None in H2; auto).
@@ -1280,7 +1280,7 @@ Proof.
               assert (left_child j >= k) by (generalize (left_child_inc j); lia).
               destruct H. specialize (H _ _ H9 H8 H0). destruct H.
               rewrite <- H5 in *.
-              destruct (even_or_odd gs).
+              destruct (Nat.Even_or_Odd gs).
               apply H11. rewrite right_child_parent_even; auto. generalize (left_child_root j); intro. lia.
               apply H. rewrite left_child_parent_odd; auto.
     + repeat intro. case (eq_nat_dec i j); intro. 2: eapply H; auto.

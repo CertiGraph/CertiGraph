@@ -73,11 +73,11 @@ Section LIST_MODEL.
   Definition list_composed_by_edges (l: list Vertex) : Prop := forall l1 l2 s d, l = l1 ++ s :: d :: l2 -> G |= s ~> d.
 
   Lemma list_composed_by_edges_nil: list_composed_by_edges nil.
-  Proof. repeat intro. assert (@length Vertex nil = length (l1 ++ s :: d :: l2)) by (rewrite H; tauto). rewrite app_length in H0; simpl in H0. intuition. Qed.
+  Proof. repeat intro. assert (@length Vertex nil = length (l1 ++ s :: d :: l2)) by (rewrite H; tauto). rewrite app_length in H0; simpl in H0. intuition auto with *. Qed.
 
   Lemma list_composed_by_edges_single: forall v, list_composed_by_edges (v :: nil).
   Proof.
-    repeat intro. exfalso. assert (length (v :: nil) = length (l1 ++ s :: d :: l2)) by (rewrite H; tauto). rewrite app_length in H0. simpl in H0. intuition.
+    repeat intro. exfalso. assert (length (v :: nil) = length (l1 ++ s :: d :: l2)) by (rewrite H; tauto). rewrite app_length in H0. simpl in H0. intuition auto with *.
   Qed.
 
   Lemma lcbe_rev_cons: forall v l, list_composed_by_edges (rev (v :: l)) -> list_composed_by_edges (rev l).
@@ -110,21 +110,21 @@ Section LIST_MODEL.
     + intros. specialize (H7 _ H12). destruct x' as [x px]. assert (x = v) by (destruct H12 as [[? _] _]; simpl in H12; auto). subst x.
       unfold path_glue, fst, snd in H7. rewrite <- app_comm_cons, app_nil_l in H7. specialize (H9 _ H7). rewrite H9 in H11. inversion H11. auto.
     + simpl. destruct H10. subst py. simpl in *. clear -H10. unfold incl in *. intros. apply H10. right; auto.
-    + simpl. destruct H10. subst py. simpl in *. unfold In_path. clear -H6 H10. right. exists e. split; intuition.
+    + simpl. destruct H10. subst py. simpl in *. unfold In_path. clear -H6 H10. right. exists e. split; intuition auto with *.
   Qed.
 
   Lemma construct_reachable_edge:
     forall lim root r, vvalid G root -> is_list root -> list_composed_by_edges (rev (root :: r)) -> list_composed_by_edges (rev (@construct_reachable _ _ _ _ G is_null _ (lim, root :: nil, r))).
   Proof.
-    intros lim root r. remember (lengthInput (lim, root :: nil, r)) as n. assert (lengthInput (lim, root :: nil, r) <= n) by intuition. clear Heqn.
+    intros lim root r. remember (lengthInput (lim, root :: nil, r)) as n. assert (lengthInput (lim, root :: nil, r) <= n) by intuition auto with *. clear Heqn.
     revert n lim root r H. induction n; intros.
-    + simpl in H. rewrite construct_reachable_unfold. destruct (le_dec lim (length r)); [apply (lcbe_rev_cons root) | exfalso]; intuition.
+    + simpl in H. rewrite construct_reachable_unfold. destruct (le_dec lim (length r)); [apply (lcbe_rev_cons root) | exfalso]; intuition auto with *.
     + rewrite construct_reachable_unfold. unfold lengthInput in H, IHn. destruct (le_dec lim (length r)). 1: apply (lcbe_rev_cons root); auto.
       remember (@new_working_list _ _ is_null nil (map (dst G) (edge_func G root)) (root :: r)).
       assert (l = nil \/ exists v, l = (v :: nil) /\ G |= root ~> v) by (apply (list_expand_nil_or_single _ _ r); auto). destruct H3.
       - clear Heql. subst l. simpl. rewrite construct_reachable_unfold. auto.
       - destruct H3 as [v [? ?]]. rewrite H3. simpl. apply IHn.
-        * simpl. clear - H n0. intuition.
+        * simpl. clear - H n0. intuition auto with *.
         * hnf in H4. intuition.
         * apply (is_list_edge root); auto.
         * apply lcbe_rev_cons_inv; auto.
@@ -139,7 +139,7 @@ Section LIST_MODEL.
       + hnf. rewrite Forall_forall; intros; auto.
     } destruct H0 as [pf [? ?]]. apply H8 in H1. clear H8. destruct H1 as [ps [[? ?] ?]]. destruct ps as [v ps].
     assert (v = root) by (destruct H1 as [[? _] _]; simpl in H1; auto). subst v. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H1 H7). unfold path_glue, fst, snd in H10.
-    apply H8 in H10. inversion H10. pose proof (f_equal (@length Edge) H12). rewrite app_length in H11. simpl in H11. intuition.
+    apply H8 in H10. inversion H10. pose proof (f_equal (@length Edge) H12). rewrite app_length in H11. simpl in H11. intuition auto with *.
   Qed.
 
   Lemma is_list_edge_dst_the_same: forall root s d v, vvalid G root -> is_list root -> reachable G root s -> G |= s ~> d -> G |= s ~> v -> d = v.
@@ -164,11 +164,11 @@ Section LIST_MODEL.
     pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H1 H19). unfold path_glue, fst, snd in H21. clear H4 H5. pose proof (H7 _ H20). pose proof (H9 _ H21). destruct H13.
     + destruct H13 as [[v' pv'] ?]. assert (v' = v) by (destruct H13 as [[? _] _]; simpl in H13; auto). subst v'. 
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H21 H13). unfold path_glue, fst, snd in H22. apply H7 in H22. rewrite H4 in H22. inversion H22.
-      pose proof (f_equal (@length Edge) H24). rewrite !app_length in H23. simpl in H23. assert (length pv' = 0) by intuition. destruct pv'. 2: inversion H25.
+      pose proof (f_equal (@length Edge) H24). rewrite !app_length in H23. simpl in H23. assert (length pv' = 0) by intuition auto with *. destruct pv'. 2: inversion H25.
       clear H23 H25. rewrite app_nil_r in H24. apply app_inj_tail in H24. destruct H24. subst ed. rewrite H12 in H17. auto.
     + destruct H13 as [[d' pd'] ?]. assert (d' = d) by (destruct H13 as [[? _] _]; simpl in H13; auto). subst d'. 
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H20 H13). unfold path_glue, fst, snd in H22. apply H9 in H22. rewrite H5 in H22. inversion H22.
-      pose proof (f_equal (@length Edge) H24). rewrite !app_length in H23. simpl in H23. assert (length pd' = 0) by intuition. destruct pd'. 2: inversion H25.
+      pose proof (f_equal (@length Edge) H24). rewrite !app_length in H23. simpl in H23. assert (length pd' = 0) by intuition auto with *. destruct pd'. 2: inversion H25.
       clear H23 H25. rewrite app_nil_r in H24. apply app_inj_tail in H24. destruct H24. subst ed. rewrite H12 in H17. auto.
   Qed.
 
@@ -189,12 +189,12 @@ Section LIST_MODEL.
 
   Lemma construct_reachable_tail_preserve: forall lim p r, exists l', @construct_reachable _ _ _ _ G is_null _ (lim, p, r) = l' ++ r.
   Proof.
-    intros lim p r. remember (lengthInput (lim, p, r)) as n. assert (lengthInput (lim, p, r) <= n) by intuition. clear Heqn. revert lim p r H. induction n; intros.
+    intros lim p r. remember (lengthInput (lim, p, r)) as n. assert (lengthInput (lim, p, r) <= n) by intuition auto with *. clear Heqn. revert lim p r H. induction n; intros.
     + simpl in H. rewrite construct_reachable_unfold. destruct p. exists nil; rewrite app_nil_l; auto. destruct (le_dec lim (length r)).
-      exists nil; rewrite app_nil_l; auto. exfalso; intuition.
+      exists nil; rewrite app_nil_l; auto. exfalso; intuition auto with *.
     + simpl in H. rewrite construct_reachable_unfold. destruct p. exists nil; rewrite app_nil_l; auto. destruct (le_dec lim (length r)). exists nil; rewrite app_nil_l; auto.
       remember (@new_working_list _ _ is_null p (map (dst G) (edge_func G v)) (v :: r)). simpl. simpl in IHn. specialize (IHn lim l (v :: r)).
-      assert (lim - length (v :: r) <= n) by (simpl; intuition). apply IHn in H0. destruct H0 as [l1 ?]. rewrite app_cons_assoc in H0. exists (l1 +:: v). auto.
+      assert (lim - length (v :: r) <= n) by (simpl; intuition auto with *). apply IHn in H0. destruct H0 as [l1 ?]. rewrite app_cons_assoc in H0. exists (l1 +:: v). auto.
   Qed.
 
   Theorem is_list_is_list: forall root, vvalid G root -> EnumCovered Vertex (reachable G root) -> is_list root -> {l | graph_list_isomorphism l root}.

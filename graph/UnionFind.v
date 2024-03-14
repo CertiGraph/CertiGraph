@@ -235,7 +235,7 @@ Section UNION_FIND_SINGLE.
             + clear H2. simpl in H0, Heql. rewrite H0. inversion Heql. subst l. subst e. pose proof (vvalid_src_evalid g _ _ H). destruct H2.
               split; auto. apply IHl'; simpl; auto.
             + simpl in Heql. inversion Heql. subst e0. clear H2. destruct H1 as [? [? ?]]. split; auto. rewrite H6. apply IHl'; auto.
-        } specialize (IHb H5 H2). destruct IHb; [left; simpl in H6; intuition | right]. intros. simpl in H6. apply reachable_ind.reachable_ind in H7. destruct H7.
+        } specialize (IHb H5 H2). destruct IHb; [left; simpl in H6; intuition auto with * | right]. intros. simpl in H6. apply reachable_ind.reachable_ind in H7. destruct H7.
         * subst y. destruct (find_list_foreside b (dst g (out_edge x)) (out_edge x :: l)) as [l' ?]. rewrite <- H2 in H7. simpl in H7. rewrite H7. right. exists (out_edge x).
           simpl. rewrite <- app_assoc. rewrite in_app_iff. simpl. split. 1: right; left; auto. left. pose proof (vvalid_src_evalid g _ _ H). destruct H8; auto.
         * destruct H7 as [z [[_ [_ ?]] [_ ?]]]. rewrite (dst_step g gLst x (dst g (out_edge x))) in H7; auto. rewrite H7 in H8. specialize (H6 _ H8).
@@ -259,7 +259,7 @@ Section UNION_FIND_SINGLE.
         pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H10 H9). unfold path_glue in H11. simpl in H11. auto. } destruct H2.
       + destruct X as [li [? ?]]. simpl in Heql, H2. unfold In in i. pose proof (lst_path_NoDup _ _ _ _ _ _ H11). simpl in H12. assert (incl (l +:: e) li) by
             (repeat intro; apply i; rewrite in_app_iff in H13; destruct H13 as [? | [? | ?]]; [apply (valid_path_evalid g x) in H13 | subst a | exfalso]; auto).
-        pose proof (NoDup_incl_length H12 H13). rewrite app_length in H14. simpl in H14. intuition.
+        pose proof (NoDup_incl_length H12 H13). rewrite app_length in H14. simpl in H14. intuition auto with *.
       + assert (In_path g z (x, l)) by (apply H2; exists (x, l +:: e); auto). pose proof (reachable_path_in' _ _ _ _ H10 _ H12). destruct H13 as [[v li] ?].
         assert (g |= (v, li +:: e) is z ~o~> z satisfying (fun _ => True)). {
           pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H13 H9). unfold path_glue in H14. simpl in H14; auto.

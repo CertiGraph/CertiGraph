@@ -41,8 +41,8 @@ Qed.
 
 Lemma Z_inc_list_in_iff: forall n v, List.In v (Z_inc_list n) <-> 0 <= v < Z.of_nat n.
 Proof.
-  induction n; intros; [simpl; intuition|]. rewrite Nat2Z.inj_succ. unfold Z.succ. simpl. rewrite in_app_iff.
-  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by lia. rewrite H. clear H. rewrite IHn. simpl. intuition.
+  induction n; intros; [simpl; intuition auto with *|]. rewrite Nat2Z.inj_succ. unfold Z.succ. simpl. rewrite in_app_iff.
+  assert (0 <= v < Z.of_nat n + 1 <-> 0 <= v < Z.of_nat n \/ v = Z.of_nat n) by lia. rewrite H. clear H. rewrite IHn. simpl. intuition auto with *.
 Qed.
 
 Lemma Z_inc_list_eq: forall i len,
@@ -175,19 +175,10 @@ Proof.
        *  "(offset_val (i * (4 * size)) a)"
        *  is not in LOCAL. "a" is. Should I fix that?? 
        *)
-      Fail forward.
-      (* Anyway I tried forward. It failed. So I started
-       * doing what it hinted at... 
-       *)
       assert_PROP (force_val
                      (sem_add_ptr_int tuint Signed
                                       (force_val (sem_add_ptr_int (tarray tuint 2) Signed a (Vint (Int.repr i))))
                                       (Vint (Int.repr j))) = field_address (tarray tuint 2) [ArraySubsc j] (list_address a i 2)).
-      (* Btw, From vc.pdf I learnt that field_address actually needs 
-       * the type of the array (tarray tuint 2), 
-       * not the type of the j'th item. 
-       * Okay cool, changed. Let's go.
-       *)
       { entailer!. unfold list_address. simpl.
         rewrite field_address_offset.
         1: rewrite offset_offset_val; simpl; f_equal; rep_lia.

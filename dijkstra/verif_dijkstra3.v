@@ -913,12 +913,13 @@ Local Open Scope Z_scope.
           simpl fst in *. simpl snd in *.
 
           thaw FR.
-          unfold hitem.
+          change (hitem min_item (pointer_val_val ti))
+           with  (@data_at CompSpecs Tsh t_item
+                (heap_item_rep min_item) (pointer_val_val ti)).
           forward.
-          replace (data_at Tsh t_item (heap_item_rep min_item)
-                           (pointer_val_val ti)) with
-              (hitem min_item (pointer_val_val ti)).
-          2: unfold hitem; trivial.
+          change (@data_at CompSpecs  Tsh t_item
+                   (heap_item_rep min_item) (pointer_val_val ti))
+          with (hitem min_item (pointer_val_val ti)).
           simpl.
           remember (Int.signed (snd min_item)) as u.
 

@@ -24,6 +24,8 @@ Definition Gprog : funspecs :=
 
 Set Nested Proofs Allowed.
 
+Local Opaque Int64.repr.
+
 Lemma body_free: semax_body Vprog Gprog f_pq_free pq_free_spec.
 Proof.
   start_function. unfold valid_pq, linked_heap_array, heap_array, lookup_array.
@@ -50,7 +52,7 @@ Proof.
   sep_apply free_pq.
   forward_call (pq, if Archi.ptr64 then 6 else 4).
   entailer!.
-Time Qed.
+Qed.
 
 Lemma body_pq_make: semax_body Vprog Gprog f_pq_make pq_make_spec.
 Proof.
@@ -113,7 +115,7 @@ Proof.
     apply heapOrdered_empty. simpl heap_items. simpl.
     apply initial_link_ok. lia. }
   { rewrite Z2Nat.id. cancel. lia. }
-Time Qed.
+Qed.
 
 Lemma body_edit_priority: semax_body Vprog Gprog f_pq_edit_priority pq_edit_priority_spec.
 Proof.
@@ -333,7 +335,7 @@ Proof.
       rewrite H28.
       rewrite Heqhi. rewrite H28.
       rewrite upd_Znth_same_Znth. 2: lia. trivial.
-Time Qed.
+Qed.
 
 Lemma body_remove_min_nc: semax_body Vprog Gprog f_pq_remove_min_nc pq_remove_min_nc_spec.
 Proof.
@@ -586,7 +588,7 @@ Proof.
       destruct Hqq. rewrite app_Znth1 in H27. 2: specialize (H23 (Z.to_nat j)); lia.
       rewrite <- H25 in H27. 2: lia.
       rewrite H21 in H27. rewrite H19 in H27. specialize (H23 (Z.to_nat j)); lia.
-Time Qed.
+Qed.
 
 (* I need this to make a replace work... ugly... *)
 (* Perhaps a BUG, related to overly-aggressive unfolding of fst/snd that has to be repaired later?
@@ -688,7 +690,7 @@ Proof.
     rewrite <- upd_Znth_Zexchange; auto.
     rewrite H10, H12.
     trivial. }
-Time Qed.
+Qed.
 
 Lemma body_sink: semax_body Vprog Gprog f_sink sink_spec.
 Proof.
@@ -702,7 +704,7 @@ Proof.
   forward.
   Exists arr_contents lookup_contents. entailer!.
   eapply weak_heapOrdered_oob. 2: apply H3.
-  rewrite Zlength_correct, Nat2Z.id. apply le_refl.
+  rewrite Zlength_correct, Nat2Z.id. apply Nat.le_refl.
 * (* Main line *)
   assert (Hx : k < Zlength arr_contents) by lia. specialize (H2 Hx). clear H1 Hx. rename H2 into H1. rename H3 into H2.
   forward_loop (EX k' : Z, EX arr_contents' : list heap_item, EX lookup_contents' : list Z,
@@ -791,8 +793,10 @@ Proof.
           transitivity (Znth (Zleft_child k') arr_contents'). trivial.
           destruct (cmp_linear (Znth (Zleft_child k') arr_contents') (Znth (Zright_child k') arr_contents')); auto.
           contradiction. }
-      { forward.  entailer!. unfold cmp_rel in H0.
-        subst j'. congruence. }
+      { forward.  entailer!!.
+        (* next line needed only for backward compatibility before Coq 8.18 and VST 2.13 *)
+        all: unfold cmp_rel, j' in H0; congruence.
+      }
       forward_call (k', j', arr, arr_contents', lookup, lookup_contents'). {
     subst j'. rewrite Zright_child_unfold, Zleft_child_unfold in *; try lia. split3.
     - destruct b; lia.
@@ -831,7 +835,7 @@ Proof.
     + transitivity lookup_contents'; trivial.
       eapply lookup_oob_eq_shuffle. 2: apply H5.
       apply Permutation_map, Zexchange_Permutation.
-Time Qed.
+Qed.
 
 Lemma body_swim: semax_body Vprog Gprog f_swim swim_spec.
 Proof.
@@ -901,7 +905,7 @@ Proof.
     eapply lookup_oob_eq_shuffle. 2: apply H3.
     apply Permutation_map, Zexchange_Permutation.
   * rewrite Zparent_repr by lia. rewrite divu_repr by lia. reflexivity.
-Time Qed.
+Qed.
 
 Lemma body_less: semax_body Vprog Gprog f_less less_spec.
 Proof.
@@ -930,7 +934,7 @@ Proof.
   unfold valid_pq.
   Exists arr junk arr2 lookup.
   entailer!.
-Time Qed.
+Qed.
 
 Lemma body_capacity: semax_body Vprog Gprog f_capacity capacity_spec.
 Proof.
@@ -942,7 +946,7 @@ Proof.
   unfold valid_pq.
   Exists arr junk arr2 lookup.
   entailer!.
-Time Qed.
+Qed.
 
 Lemma body_insert_nc: semax_body Vprog Gprog f_pq_insert_nc pq_insert_nc_spec.
 Proof.
@@ -1034,4 +1038,4 @@ Proof.
         destruct H3 as [Hqq H3].
         specialize (H3 i H18). rewrite <- H20 in H3. destruct H5. unfold heap_item_key in H25.
         destruct H3. lia.
-Time Qed.
+Qed.

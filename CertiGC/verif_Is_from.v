@@ -265,7 +265,7 @@ Proof.
     do 4 (destruct vargs; try destruct v; try contradiction).
     destruct H2 as [_ [_ [_ [_ [_ [_ [_ ?]]]]]]].
     destruct H4 as [_ [_ [_ [_ [_ [_ [_ ?]]]]]]].
-    intuition; congruence.
+    intuition auto with *; congruence.
 Qed.
 
 

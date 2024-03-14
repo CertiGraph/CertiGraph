@@ -13,6 +13,8 @@ Require Import Coq.Lists.List.
 Require Import CertiGraph.unionfind.uf_arr_specs.
 Require Import VST.floyd.library.
 
+Local Opaque Int64.repr.
+
 Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
 Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
 Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
@@ -82,7 +84,7 @@ Qed.
 Lemma upd_Znth_progressive_list: forall i V,
     0 <= i < Z.of_nat V -> upd_Znth i (progressive_list (Z.to_nat i) V) (Vint (Int.repr i), Vint (Int.repr 0)) = progressive_list (Z.to_nat (i + 1)) V.
 Proof.
-  intros. induction V. 1: exfalso; simpl in H; intuition. rewrite Nat2Z.inj_succ in H. unfold Z.succ in H. unfold progressive_list. simpl. destruct (le_dec (Z.to_nat i) V).
+  intros. induction V. 1: exfalso; lia. rewrite Nat2Z.inj_succ in H. unfold Z.succ in H. unfold progressive_list. simpl. destruct (le_dec (Z.to_nat i) V).
   - destruct (le_dec (Z.to_nat (i + 1)) V).
     + simpl. assert (0 <= i < Z.of_nat V) by (apply inj_le in l0; rewrite Z2Nat.id in l0; lia). unfold progressive_list in IHV. rewrite <- IHV; auto.
       rewrite upd_Znth_app1; auto. change (rev (prog_list_helper (Z.to_nat i) V)) with (progressive_list (Z.to_nat i) V).
@@ -96,7 +98,7 @@ Qed.
 
 Lemma progressive_nat_inc_list: forall n i, (i >= n)%nat -> map (fun x : Z => (Vint (Int.repr x), Vint (Int.repr 0))) (nat_inc_list n) = progressive_list i n.
 Proof.
-  induction n; intros; unfold progressive_list in *; simpl; auto. destruct (le_dec i n). 1: exfalso; lia. rewrite map_app. simpl. rewrite <- IHn; intuition.
+  induction n; intros; unfold progressive_list in *; simpl; auto. destruct (le_dec i n). 1: exfalso; lia. rewrite map_app. simpl. rewrite <- IHn; auto. lia.
 Qed.
 
 Lemma body_makeSet: semax_body Vprog Gprog f_makeSet makeSet_spec.
@@ -109,15 +111,15 @@ Proof.
       - apply Z.le_lt_trans with (Int.max_signed / 8); [intuition | apply Z.div_lt; lia].
     } simpl. try rewrite ptrofs_to_int64_repr; auto. rewrite !Int.signed_repr; auto.
     try rewrite mul64_repr.
-    assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). try rewrite Int64.unsigned_repr by rep_lia. intros.
+    assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; lia). try rewrite Int64.unsigned_repr by rep_lia. intros.
     first [apply prop_right; auto | rep_lia].
-  - assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; intuition). rep_lia.
+  - assert (Z.mul 8 (Int.max_signed /8) <= Int.max_signed) by (apply Z_mult_div_ge; lia). rep_lia.
   - Intros rt.
     assert (memory_block sh (V * 8) (pointer_val_val rt) = data_at_ sh (tarray vertex_type V) (pointer_val_val rt)). {
       assert (memory_block sh (V * 8) (pointer_val_val rt) = memory_block sh (sizeof (tarray vertex_type V)) (pointer_val_val rt)). {
-        simpl sizeof. rewrite Zmax0r. 2: intuition. assert (V * 8 = 8 * V)%Z by lia. rewrite H1. auto.
+        simpl sizeof. rewrite Zmax0r. 2: lia. assert (V * 8 = 8 * V)%Z by lia. rewrite H1. auto.
       } rewrite <- memory_block_data_at_; auto. apply malloc_compatible_field_compatible; auto.
-      unfold malloc_compatible in *. destruct (pointer_val_val rt); auto. destruct H0. split; auto. simpl sizeof. rewrite Zmax0r; intuition.
+      unfold malloc_compatible in *. destruct (pointer_val_val rt); auto. destruct H0. split; auto. simpl sizeof. rewrite Zmax0r; lia.
     } rewrite H1. clear H1.
     assert (data_at_ sh (tarray vertex_type V) (pointer_val_val rt) = data_at sh (tarray vertex_type V) (progressive_list O (Z.to_nat V)) (pointer_val_val rt)). {
       unfold data_at_, field_at_, data_at. assert (default_val (nested_field_type (tarray vertex_type V) []) = repeat (Vundef, Vundef) (Z.to_nat V)) by reflexivity.
@@ -128,7 +130,8 @@ Proof.
        PROP ()
        LOCAL (temp _subsets (pointer_val_val rt); temp _V (Vint (Int.repr V)))
        SEP (progressive_array sh i V rt)); unfold progressive_array.
-    + destruct H. apply Z.le_trans with (Int.max_signed / 8); auto. rewrite Z.lt_eq_cases. left. apply Z_div_lt; intuition.
+    + destruct H. apply Z.le_trans with (Int.max_signed / 8); auto. rewrite Z.lt_eq_cases. left.
+       apply Z_div_lt; rep_lia.
     + entailer.
     + Opaque Znth.
       assert (Int.min_signed <= i <= Int.max_signed). {
@@ -141,13 +144,13 @@ Proof.
     + forward. Exists rt. entailer!.
       * intros. simpl. rewrite makeSet_vvalid. rewrite Z2Nat.id; lia.
       * unfold whole_graph, full_graph_at. simpl vvalid. Exists (Z.to_nat V). apply andp_right; intros; [apply andp_right; apply prop_right|].
-        -- intros. rewrite makeSet_vvalid. intuition.
+        -- intros. rewrite makeSet_vvalid.  lia.
         -- rewrite Z2Nat.id; lia.
-        -- simpl. unfold vcell_array_at, SAG_VST. rewrite map_length, nat_inc_list_length. rewrite Z2Nat.id. 2: intuition.
+        -- simpl. unfold vcell_array_at, SAG_VST. rewrite map_length, nat_inc_list_length. rewrite Z2Nat.id. 2: lia.
            assert (map (fun x : Z => vgamma (makeSet_discrete_LabeledGraph (Z.to_nat V)) x) (nat_inc_list (Z.to_nat V)) =
                    map (fun x => (0%nat, x)) (nat_inc_list (Z.to_nat V))). {
              apply list_map_exten. intros. unfold vgamma, UnionFindGraph.vgamma. simpl. rewrite makeSet_dst. simpl. auto.
-           } rewrite H6. clear H6. rewrite list_map_compose. unfold vgamma2cdata. simpl. rewrite <- progressive_nat_inc_list; intuition.
+           } rewrite H6. clear H6. rewrite list_map_compose. unfold vgamma2cdata. simpl. rewrite <- progressive_nat_inc_list by auto. apply derives_refl.
 Qed.
 
 Lemma whole_graph_fold: forall n sh g p,
@@ -157,8 +160,8 @@ Proof.
   intros. apply pred_ext; unfold whole_graph, full_graph_at, vcell_array_at, SAG_VST; [apply (exp_right n)|Intros n']; rewrite map_length, nat_inc_list_length, list_map_compose.
   - apply andp_right; auto. apply andp_right; apply prop_right; auto.
   - destruct (lt_eq_lt_dec n n') as [[? | ?] | ?]; [exfalso | subst n' | exfalso]; auto.
-    + assert (vvalid (lg_gg g) (Z.of_nat n)) by (rewrite <- H1; intuition). rewrite <- H in H3. intuition.
-    + assert (vvalid (lg_gg g) (Z.of_nat n')) by (rewrite <- H; intuition). rewrite <- H1 in H3. intuition.
+    + assert (vvalid (lg_gg g) (Z.of_nat n)) by (rewrite <- H1; lia). rewrite <- H in H3. lia.
+    + assert (vvalid (lg_gg g) (Z.of_nat n')) by (rewrite <- H; lia). rewrite <- H1 in H3. lia.
 Qed.
 
 Lemma whole_graph_unfold: forall sh g p,
@@ -174,12 +177,12 @@ Qed.
 Lemma Znth_nat_inc_list: forall {A: Type} {d: Inhabitant A} n (f: Z -> A) i, 0 <= i < Z.of_nat n -> Znth i (map f (nat_inc_list n)) = f i.
 Proof.
   intros. rewrite Znth_map. 2: rewrite Zlength_correct, nat_inc_list_length; auto. f_equal. induction n.
-  - exfalso. simpl in H. intuition.
+  - exfalso. simpl in H. lia.
   - simpl. assert (0 <= i < Z.of_nat n \/ i = Z.of_nat n). {
       rewrite Nat2Z.inj_succ in H. destruct H. rewrite Z.lt_succ_r, Z.lt_eq_cases in H0. destruct H0; [left | right]; auto.
     } assert (Zlength (nat_inc_list n) = Z.of_nat n) by (rewrite Zlength_correct, nat_inc_list_length; auto). destruct H0.
     + rewrite app_Znth1. 2: rewrite H1; destruct H0; auto. apply IHn; auto.
-    + rewrite app_Znth2. 2: rewrite H1; intuition. rewrite H0, H1. replace (Z.of_nat n - Z.of_nat n) with 0 by lia. rewrite Znth_0_cons. auto.
+    + rewrite app_Znth2. 2: rewrite H1; lia. rewrite H0, H1. replace (Z.of_nat n - Z.of_nat n) with 0 by lia. rewrite Znth_0_cons. auto.
 Qed.
 
 Lemma graph_same_size: forall (g g': UFGraph) n n', (forall x : Z, vvalid g x <-> vvalid g' x) -> (forall v : Z, 0 <= v < Z.of_nat n' <-> vvalid (lg_gg g') v) ->
@@ -194,8 +197,8 @@ Qed.
 Lemma list_eq_Znth {A} {d: Inhabitant A}: forall (l1 l2: list A) n, length l1 = n -> length l2 = n -> (forall j, 0 <= j < Z.of_nat n -> Znth j l1 = Znth j l2) -> l1 = l2.
 Proof.
   intros l1 l2 n. revert l1 l2. induction n; intros.
-  - simpl in *. destruct l1, l2; simpl in *; [auto | exfalso; intuition..].
-  - destruct l1, l2; simpl in H, H0; [exfalso; intuition..| ]. assert (a = a0) by (specialize (H1 0); rewrite !Znth_0_cons in H1; apply H1; rewrite Nat2Z.inj_succ; lia).
+  - simpl in *. destruct l1, l2; simpl in *; [auto | exfalso; lia..].
+  - destruct l1, l2; simpl in H, H0; [exfalso; lia..| ]. assert (a = a0) by (specialize (H1 0); rewrite !Znth_0_cons in H1; apply H1; rewrite Nat2Z.inj_succ; lia).
     subst a0. cut (l1 = l2); intros. 1: subst l2; auto. inversion H. inversion H0. apply (IHn _ _); auto. intros. specialize (H1 (j + 1)).
     assert (0 < j + 1) by lia. assert (j + 1 - 1 = j) by lia. rewrite !Znth_pos_cons in H1; auto. rewrite !H6 in H1. apply H1. rewrite Nat2Z.inj_succ. lia.
 Qed.
@@ -213,7 +216,7 @@ Proof.
   - intros. rewrite Znth_nat_inc_list; auto. rewrite (upd_Znth_lookup' (Z.of_nat n)); auto. rewrite Znth_nat_inc_list; auto.
     unfold vgamma2cdata, vgamma, UnionFindGraph.vgamma. simpl. unfold graph_gen.updateEdgeFunc. unfold EquivDec.equiv_dec, Z_EqDec, zeq. destruct (Z.eq_dec j i).
     + subst j. destruct (Z.eq_dec i i). 2: exfalso; apply n0; auto. f_equal. destruct (Z_lt_dec root 0); [exfalso; lia | auto].
-    + f_equal. destruct (Z.eq_dec i j). 1: exfalso; intuition. auto.
+    + f_equal. destruct (Z.eq_dec i j). 1: exfalso; lia. auto.
 Qed.
 
 Lemma body_find: semax_body Vprog Gprog f_find find_spec.
@@ -278,7 +281,8 @@ Lemma bounded_vertex: forall v n, 0 <= v < n -> n <= Int.max_signed / 8 -> Int.m
 Proof.
   intros. destruct H. split.
   - apply Z.le_trans with 0; auto. rewrite Z.lt_eq_cases. left. apply Int.min_signed_neg.
-  - apply Z.le_trans with n. 1: rewrite Z.lt_eq_cases; left; auto. apply Z.le_trans with (Int.max_signed / 8); auto. rewrite Z.lt_eq_cases; left. apply Z_div_lt; intuition.
+  - apply Z.le_trans with n. 1: rewrite Z.lt_eq_cases; left; auto. apply Z.le_trans with (Int.max_signed / 8); auto. rewrite Z.lt_eq_cases; left. 
+    apply Z_div_lt; rep_lia.
 Qed.
 
 Lemma body_union: semax_body Vprog Gprog f_Union union_spec.

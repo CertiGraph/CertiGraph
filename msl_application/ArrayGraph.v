@@ -23,7 +23,7 @@ Require Export CertiGraph.graph.FiniteGraph.
 Require Export CertiGraph.graph.MathGraph.
 Require Export CertiGraph.graph.LstGraph.
 Require Export CertiGraph.msl_application.UnionFindGraph.
-
+ 
 Local Open Scope logic.
 Local Open Scope Z_scope.
 
@@ -66,8 +66,8 @@ Lemma makeSet_vvalid: forall size x, vvalid (makeSet_discrete_PreGraph size) x <
 Proof.
   induction size; simpl; intros; split; intros.
   - exfalso; auto.
-  - destruct H. intuition.
-  - unfold addValidFunc in H. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r. destruct H; [rewrite IHsize in H|]; intuition.
+  - destruct H. intuition auto with *.
+  - unfold addValidFunc in H. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r. destruct H; [rewrite IHsize in H|]; intuition auto with *.
   - unfold addValidFunc. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r in H. rewrite IHsize. lia.
 Qed.
 
@@ -75,8 +75,8 @@ Lemma makeSet_evalid: forall size e, evalid (makeSet_discrete_PreGraph size) e <
 Proof.
   induction size; simpl; intros; split; intros.
   - exfalso. auto.
-  - destruct H; intuition.
-  - unfold addValidFunc in H. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r. destruct H; [apply IHsize in H | subst e]; intuition.
+  - destruct H; intuition auto with *.
+  - unfold addValidFunc in H. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r. destruct H; [apply IHsize in H | subst e]; intuition auto with *.
   - unfold addValidFunc. rewrite Zpos_P_of_succ_nat, <- Z.add_1_r in H. rewrite IHsize. lia.
 Qed.
 
@@ -96,15 +96,15 @@ Definition makeSet_discrete_MathGraph (size: nat) : MathGraph (makeSet_discrete_
 Proof.
   constructor; intros; [split|].
   - rewrite (makeSet_evalid_src _ _ H). rewrite makeSet_evalid in H. rewrite makeSet_vvalid. auto.
-  - left. rewrite makeSet_dst. hnf. rewrite Z.compare_lt_iff. intuition.
-  - rewrite makeSet_vvalid in H. hnf in H0. rewrite Z.compare_lt_iff in H0. intuition.
+  - left. rewrite makeSet_dst. hnf. rewrite Z.compare_lt_iff. intuition auto with *.
+  - rewrite makeSet_vvalid in H. hnf in H0. rewrite Z.compare_lt_iff in H0. intuition auto with *.
 Qed.
 
 Definition makeSet_discrete_LstGraph (size: nat) : LstGraph (makeSet_discrete_PreGraph size) id.
 Proof.
   constructor; intros.
   - unfold id. split; intros.
-    + destruct H0. apply makeSet_evalid_src in H1. intuition.
+    + destruct H0. apply makeSet_evalid_src in H1. intuition auto with *.
     + subst e. split.
       * rewrite makeSet_vvalid, <- makeSet_evalid in H. apply makeSet_evalid_src; auto.
       * rewrite makeSet_vvalid in H. rewrite makeSet_evalid. auto.
@@ -123,13 +123,13 @@ Lemma makeSet_discrete_list_iff: forall size x, List.In x (makeSet_discrete_list
 Proof.
   induction size; intros; simpl; split; intros.
   - exfalso; auto.
-  - destruct H; intuition.
-  - rewrite Zpos_P_of_succ_nat, <- Z.add_1_r. rewrite IHsize in H. intuition.
+  - destruct H; intuition auto with *.
+  - rewrite Zpos_P_of_succ_nat, <- Z.add_1_r. rewrite IHsize in H. intuition auto with *.
   - rewrite Zpos_P_of_succ_nat, <- Z.add_1_r in H. rewrite IHsize. lia.
 Qed.
 
 Lemma makeSet_discrete_list_NoDup: forall size, NoDup (makeSet_discrete_list size).
-Proof. induction size; simpl; constructor; auto; intro. rewrite makeSet_discrete_list_iff in H. intuition. Qed.
+Proof. induction size; simpl; constructor; auto; intro. rewrite makeSet_discrete_list_iff in H. intuition auto with *. Qed.
 
 Definition makeSet_discrete_FiniteGraph (size: nat) : FiniteGraph (makeSet_discrete_PreGraph size).
 Proof.

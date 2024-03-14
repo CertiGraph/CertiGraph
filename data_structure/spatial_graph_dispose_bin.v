@@ -65,9 +65,9 @@ Section SPATIAL_GRAPH_DISPOSE_BIN.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
       - intros. unfold updateEdgeFunc.
-        destruct (equiv_dec (x, L) e); intuition.
+        destruct (equiv_dec (x, L) e); intuition auto with *.
       - right. unfold updateEdgeFunc.
-        destruct (equiv_dec (x, L) (x, L)); intuition.
+        destruct (equiv_dec (x, L) (x, L)); intuition auto with *.
         * apply (valid_not_null g) in H3; auto. reflexivity.
         * apply (@left_valid _ _ _ _ _ _ g (binGraph g)) in H; auto.
     + simpl. tauto.
@@ -467,9 +467,9 @@ Section SPATIAL_GRAPH_DISPOSE_BIN.
     split.
     + hnf. simpl. split; [| split; [|split; [| split]]]; [tauto | tauto | tauto | | ].
       - intros. unfold updateEdgeFunc.
-        destruct (equiv_dec (x, R) e); intuition.
+        destruct (equiv_dec (x, R) e); intuition auto with *.
       - right. split; auto. unfold updateEdgeFunc.
-        destruct (equiv_dec (x, R) (x, R)); intuition.
+        destruct (equiv_dec (x, R) (x, R)); intuition auto with *.
         * apply (valid_not_null g) in H3; auto. reflexivity.
         * split; auto. apply (@right_valid _ _ _ _ _ _ g (binGraph g)) in H; auto.
     + simpl. tauto.
@@ -499,7 +499,7 @@ Section SPATIAL_GRAPH_DISPOSE_BIN.
     + unfold unmarked. rewrite negateP_spec. unfold marked. simpl. simpl in H2.
       inversion H2.
       change (lg_gg g) with (g: LGraph).
-      rewrite H8. intuition.
+      rewrite H8.  clear; congruence.
     + apply spanning_list_cons with g2; auto.
       apply spanning_list_cons with g3; auto.
       apply spanning_list_nil. auto.
