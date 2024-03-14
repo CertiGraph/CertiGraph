@@ -65,7 +65,7 @@ Section LIST_DEF.
     intros. destruct X as [pl [? ?]]. simpl in H. unfold Ensembles.In in i.
     assert (incl (listVertices' r) pl) by (hnf; intros; apply H2 in H4; apply i in H4; auto). apply NoDup_Permutation_bis in H4; auto.
     1: specialize (i _ H3); apply Permutation_sym in H4; apply Permutation_in with pl; auto.
-    apply NoDup_incl_length in H4; auto. rewrite <- listVertices'_length in H1. intuition.
+    apply NoDup_incl_length in H4; auto. rewrite <- listVertices'_length in H1. intuition auto with *.
   Qed.
 
   Definition listVertices (l: GList) :=
@@ -120,7 +120,7 @@ Section LIST_DEF.
       + apply IHl.
         * rewrite NoDup_cons_iff in H0. destruct H0; auto.
         * intros. apply H2. simpl; right; auto.
-    - clear -H H1 Heql. pose proof (map_length (src g) (listEdges' r)). rewrite <- Heql in *. rewrite listEdges'_length in H0. rewrite H0. intuition.
+    - clear -H H1 Heql. pose proof (map_length (src g) (listEdges' r)). rewrite <- Heql in *. rewrite listEdges'_length in H0. rewrite H0. intuition auto with *.
   Qed.
   
   Definition listEdges (l: GList) := listEdges' (snd l).
@@ -179,11 +179,11 @@ Section IS_LIST.
     pose proof (valid_path_reachable _ _ _ _ H H14 H19). clear H11 H13 H16 H18 H14 H19. pose proof (H15 _ H10). pose proof (H17 _ H12). destruct H20.
     + destruct H14 as [[vx px] ?]. assert (vx = dst g e1) by (destruct H14 as [[? _] _]; simpl in H14; auto). subst vx.
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H10 H14). unfold path_glue, fst, snd in H16. apply H17 in H16. rewrite H13 in H16. inversion H16.
-      pose proof (f_equal (@length Edge) H19). rewrite !app_length in H18. simpl in H18. assert (length px = 0) by intuition. destruct px. 2: inversion H20.
+      pose proof (f_equal (@length Edge) H19). rewrite !app_length in H18. simpl in H18. assert (length px = 0) by intuition auto with *. destruct px. 2: inversion H20.
       clear H18 H20. rewrite app_nil_r in H19. apply app_inj_tail in H19. destruct H19. auto.
     + destruct H14 as [[vx px] ?]. assert (vx = dst g e2) by (destruct H14 as [[? _] _]; simpl in H14; auto). subst vx.
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H12 H14). unfold path_glue, fst, snd in H16. apply H15 in H16. rewrite H11 in H16. inversion H16.
-      pose proof (f_equal (@length Edge) H19). rewrite !app_length in H18. simpl in H18. assert (length px = 0) by intuition. destruct px. 2: inversion H20.
+      pose proof (f_equal (@length Edge) H19). rewrite !app_length in H18. simpl in H18. assert (length px = 0) by intuition auto with *. destruct px. 2: inversion H20.
       clear H18 H20. rewrite app_nil_r in H19. apply app_inj_tail in H19. destruct H19. auto.
   Qed.
 
@@ -320,7 +320,7 @@ Section LIST_TO_GRAPH.
   Definition collectEdges (g: PreGraph Vertex Edge) (x: Vertex) (l: list Edge) := filter (fun e => if equiv_dec (src g e) x then true else false) l.
 
   Lemma collectEdges_In: forall g v l e, In e (collectEdges g v l) <-> In e l /\ src g e = v.
-  Proof. intros. unfold collectEdges. rewrite filter_In. destruct (equiv_dec (src g e) v); hnf in * |- ; intuition. Qed.
+  Proof. intros. unfold collectEdges. rewrite filter_In. destruct (equiv_dec (src g e) v); hnf in * |- ; intuition auto with *. Qed.
 
   Lemma listToGraph'_src: forall g v l e x, src (listToGraph' g v l) e = x -> src g e = x \/ In e (listEdges (v, l)) /\ In x (listVertices (v, l)).
   Proof.
@@ -346,7 +346,7 @@ Section LIST_TO_GRAPH.
     subst. remember (src (listToGraph' (pregraph_add_whole_edge g e v v0) v0 l) e) as x1. remember (dst (listToGraph' (pregraph_add_whole_edge g e v v0) v0 l) e) as x2.
     symmetry in Heqx1, Heqx2. pose proof Heqx1. pose proof Heqx2. apply listToGraph'_src in Heqx1. apply listToGraph'_dst in Heqx2. destruct Heqx1.
     + rewrite addEdge_src_iff in H1. destruct H1 as [[? ?] | [? ?]]. 1: exfalso; tauto. subst v. destruct Heqx2.
-      * rewrite addEdge_dst_iff in H2. destruct H2 as [[? ?] | [? ?]]. 1: exfalso; tauto. subst v0. intuition.
+      * rewrite addEdge_dst_iff in H2. destruct H2 as [[? ?] | [? ?]]. 1: exfalso; tauto. subst v0. intuition auto with *.
       * destruct H2. apply (IHl (pregraph_add_whole_edge g e x1 v0)) in H2. destruct H2. rewrite H0 in H4. simpl. intuition.
     + destruct H1. apply (IHl (pregraph_add_whole_edge g e v v0)) in H1. rewrite H, H0 in H1. simpl. intuition.
   Qed.
@@ -443,8 +443,8 @@ Section GRAPH_TO_LIST.
   Lemma inputOrder_wf': forall len i, lengthInput i <= len -> Acc inputOrder i.
   Proof.
     induction len; intros; constructor; intros; unfold inputOrder in * |-.
-    + exfalso. intuition.
-    + apply IHlen. intuition.
+    + exfalso. intuition auto with *.
+    + apply IHlen. intuition auto with *.
   Qed.
 
   Lemma inputOrder_wf : well_founded inputOrder. Proof. red; intro; eapply inputOrder_wf'; eauto. Qed.
@@ -499,12 +499,12 @@ Section GRAPH_TO_LIST.
     intros len x r. remember (lengthInput (len, x, r)) as n. assert (lengthInput (len, x, r) <= n) by lia. clear Heqn. revert len x r H.
     induction n; intros; simpl; unfold lengthInput in H; rewrite toEdgeList_unfold in H1; destruct (Compare_dec.le_dec len (length r)).
     - apply H0; auto.
-    - exfalso; intuition.
+    - exfalso; intuition auto with *.
     - apply H0; auto.
     - simpl in H1. destruct (filterE (edge_func g x)) eqn:? .
       + apply H0; auto.
       + specialize (IHn len (dst g e0) ((e0, dst g e0) :: r)). apply IHn; auto.
-        * simpl. clear -H. intuition.
+        * simpl. clear -H. intuition auto with *.
         * intros. simpl in H2. destruct H2.
           -- inversion H2. auto.
           -- apply H0; auto.
@@ -518,14 +518,14 @@ Section GRAPH_TO_LIST.
     intros root len x r. remember (lengthInput (len, x, r)) as n. assert (lengthInput (len, x, r) <= n) by lia. clear Heqn. revert len x r H.
     induction n; intros; simpl; unfold lengthInput in H; rewrite toEdgeList_unfold in H3; destruct (Compare_dec.le_dec len (length r)).
     - apply H0; auto.
-    - exfalso; intuition.
+    - exfalso; intuition auto with *.
     - apply H0; auto.
     - simpl in H3. destruct (filterE (edge_func g x)) eqn:? .
       + apply H0; auto.
       + specialize (IHn len (dst g e0) ((e0, dst g e0) :: r)). assert (In e0 (e0 :: l)) by (simpl; left; auto). rewrite <- Heql in H4. rewrite filter_valid in H4.
         2: rewrite Forall_forall; intros; rewrite edge_func_spec in H5; destruct H5; auto.
         destruct H4. rewrite edge_func_spec in H5. destruct H5. apply IHn; auto; clear IHn H4 H5.
-        * simpl. clear -H. intuition.
+        * simpl. clear -H. intuition auto with *.
         * intros. simpl in H4. destruct r.
           -- simpl in H4. assert (x = root) by (apply H1; auto). subst x. destruct H4. 2: exfalso; auto. inversion H4. subst e1. subst v0. auto.
           -- destruct p as [e' v']. simpl in H4. assert (x = v') by (apply (H2 e' v' r); auto). subst v'.
@@ -542,12 +542,12 @@ Section GRAPH_TO_LIST.
   Proof.
     intros root len x r ?. remember (lengthInput (len, x, r)) as n. assert (lengthInput (len, x, r) <= n) by lia. clear Heqn. revert len x r H0.
     induction n; intros; simpl; unfold lengthInput in H0; rewrite toEdgeList_unfold; destruct (Compare_dec.le_dec len (length r)); auto.
-    - exfalso; intuition.
+    - exfalso; intuition auto with *.
     - simpl. destruct (filterE (edge_func g x)) eqn:?; auto. specialize (IHn len (dst g e) ((e, dst g e) :: r)).
       assert (In e (e :: l)) by (simpl; left; auto). rewrite <- Heql in H4. rewrite filter_valid in H4.
       2: rewrite Forall_forall; intros; rewrite edge_func_spec in H5; destruct H5; auto. destruct H4. rewrite edge_func_spec in H5. destruct H5.
       assert (g |= x ~> (dst g e)) by (hnf; rewrite step_spec; apply reachable_foot_valid in H1; intuition; exists e; intuition). apply IHn; clear IHn; auto; simpl.
-      + intuition.
+      + intuition auto with *.
       + apply reachable_edge with x; auto.
       + apply NoDup_cons; auto. intro. apply H3 in H8. apply H8. rewrite H6. apply reachable_refl. apply reachable_foot_valid in H1. auto.
       + simpl. intros. destruct H8.
@@ -561,13 +561,13 @@ Section GRAPH_TO_LIST.
   Proof.
     intros root len x r. remember (lengthInput (len, x, r)) as n. assert (lengthInput (len, x, r) <= n) by lia. clear Heqn. revert len x r H.
     induction n; intros; simpl; unfold lengthInput in H; rewrite toEdgeList_unfold in H2;
-      destruct (Compare_dec.le_dec len (length r)); [apply H1; auto | exfalso; intuition | apply H1; auto |].
+      destruct (Compare_dec.le_dec len (length r)); [apply H1; auto | exfalso; intuition auto with * | apply H1; auto |].
     simpl in H2. destruct (filterE (edge_func g x)) eqn:? . 1: apply H1; auto. specialize (IHn len (dst g e) ((e, dst g e) :: r)).
     assert (reachable g root (dst g e)). {
       assert (In e (e :: l)) by (simpl; left; auto). rewrite <- Heql in H3. rewrite filter_valid in H3.
       2: rewrite Forall_forall; intros; rewrite edge_func_spec in H4; destruct H4; auto. apply reachable_edge with x; auto.
       destruct H3. rewrite edge_func_spec in H4. hnf. rewrite step_spec. apply reachable_foot_valid in H0. intuition. exists e. intuition.
-    } apply IHn; auto. 1: simpl; intuition. simpl; intros. destruct H4. 2: apply H1; auto. subst v0. auto.
+    } apply IHn; auto. 1: simpl; intuition auto with *. simpl; intros. destruct H4. 2: apply H1; auto. subst v0. auto.
   Qed.
 
   Lemma toEdgeList_edge_reachable: forall root len x r,
@@ -576,14 +576,14 @@ Section GRAPH_TO_LIST.
   Proof.
     intros root len x r. remember (lengthInput (len, x, r)) as n. assert (lengthInput (len, x, r) <= n) by lia. clear Heqn. revert len x r H.
     induction n; intros; simpl; unfold lengthInput in H; rewrite toEdgeList_unfold in H2; destruct (Compare_dec.le_dec len (length r));
-      [apply H0; auto | exfalso; intuition | apply H0; auto |]. simpl in H2.
+      [apply H0; auto | exfalso; intuition auto with * | apply H0; auto |]. simpl in H2.
     destruct (filterE (edge_func g x)) eqn:? . 1: apply H0; auto. specialize (IHn len (dst g e0) ((e0, dst g e0) :: r)). assert (In e0 (e0 :: l)) by (simpl; left; auto).
     rewrite <- Heql, filter_valid in H3. 2: rewrite Forall_forall; intros; rewrite edge_func_spec in H4; destruct H4; auto.
     destruct H3. rewrite edge_func_spec in H4. destruct H4.
     assert (reachable g root (dst g e0)). {
       apply reachable_edge with x; auto. hnf. rewrite step_spec. split; [|split]; [apply reachable_foot_valid in H1 | | exists e0; split]; auto.
     } apply IHn; auto; clear IHn.
-    + unfold lengthInput. simpl. intuition.
+    + unfold lengthInput. simpl. intuition auto with *.
     + intros. simpl in H7. destruct H7. 2: apply H0; auto. subst e1. rewrite H5; split; [|split]; auto.
   Qed.
 
@@ -605,14 +605,14 @@ Section GRAPH_TO_LIST.
   Proof.
     intros root len x r ? ?. remember (lengthInput (len, x, r)) as n. assert (lengthInput (len, x, r) <= n) by lia. clear Heqn. revert len x r H0.
     induction n; intros; simpl; unfold lengthInput in H0; rewrite toEdgeList_unfold; destruct (Compare_dec.le_dec len (length r));
-      [apply (listVertices'_In_length_reachable _ _ _ _ len _ X) | simpl; exfalso; intuition | apply (listVertices'_In_length_reachable _ _ _ _ len _ X)| ]; auto.
+      [apply (listVertices'_In_length_reachable _ _ _ _ len _ X) | simpl; exfalso; intuition auto with * | apply (listVertices'_In_length_reachable _ _ _ _ len _ X)| ]; auto.
     assert (HS: Forall (evalid g) (edge_func g x)) by (rewrite Forall_forall; intros; rewrite edge_func_spec in H10; destruct H10; auto).
     simpl. destruct (filterE (edge_func g x)) eqn:? .
     + specialize (H4 _ H8 H9). destruct H4; auto. clear IHn. apply reachable_by_ind in H4. destruct H4. 1: subst x; apply H7; auto.
       exfalso. destruct H4 as [z [[? [? ?]] ?]]. rewrite step_spec in H11. destruct H11 as [e [? [? ?]]].
       assert (vvalid g (dst g e) /\ In e (edge_func g x)) by (split; [rewrite H14 | rewrite edge_func_spec; split]; auto).
       rewrite <- filter_valid in H15; auto. rewrite Heql in H15. simpl in H15; auto.
-    + specialize (IHn len (dst g e) ((e, dst g e) :: r)). assert (S: len - length ((e, dst g e) :: r) <= n) by (simpl; clear -H0; intuition). specialize (IHn S H1); clear S.
+    + specialize (IHn len (dst g e) ((e, dst g e) :: r)). assert (S: len - length ((e, dst g e) :: r) <= n) by (simpl; clear -H0; intuition auto with *). specialize (IHn S H1); clear S.
       assert (g |= x ~> (dst g e)). {
         assert (In e (e :: l)) by (simpl; left; auto). rewrite <- Heql in H10. rewrite filter_valid in H10; auto.
         rewrite edge_func_spec in H10. hnf. rewrite step_spec. destruct H10 as [? [? ?]]. apply reachable_foot_valid in H2. split; [|split; [|exists e]]; auto.
@@ -640,7 +640,7 @@ Section GRAPH_TO_LIST.
       by (intros s e1 e2; apply (is_list_same_src_same_edge g root); auto).
     induction n; intros; simpl; unfold lengthInput in H1; rewrite toEdgeList_unfold; destruct (Compare_dec.le_dec len (length r)).
     - apply (listEdges'_In_length_reachable _ _ g root len _ X); auto.
-    - exfalso; intuition.
+    - exfalso; intuition auto with *.
     - apply (listEdges'_In_length_reachable _ _ g root len _ X); auto.
     - assert (HS: Forall (evalid g) (edge_func g x)) by (rewrite Forall_forall; intros; rewrite edge_func_spec in H11; destruct H11; auto).
       simpl. destruct (filterE (edge_func g x)) eqn:? .
@@ -653,7 +653,7 @@ Section GRAPH_TO_LIST.
       + specialize (IHn len (dst g e0) ((e0, dst g e0) :: r)). assert (In e0 (e0 :: l)) by (simpl; left; auto). rewrite <- Heql in H11.
         rewrite filter_valid in H11; auto. destruct H11. rewrite edge_func_spec in H12. destruct H12.
         assert (g |= x ~> (dst g e0)) by (apply reachable_foot_valid in H3; split; [|split; [|exists e0]]; auto). apply IHn; clear IHn; auto.
-        * simpl. clear -H1. intuition.
+        * simpl. clear -H1. intuition auto with *.
         * apply reachable_edge with x; auto.
         * simpl. apply NoDup_cons; auto. apply H7; auto. rewrite H13. apply reachable_refl. apply reachable_foot_valid in H3; auto.
         * intros. specialize (H5 _ H15 H16 H17). destruct H5.
@@ -696,7 +696,7 @@ Section GtoL_LtoG_EQ.
   #[export] Instance listToGraph_vva (gl: GList Vertex Edge) : ValidVertexAccessible (listToGraph gl).
   Proof.
     apply (Build_ValidVertexAccessible _ (fun (l: list Edge) => filter (fun e => if (listToGraph_vvalid_dec gl (dst (listToGraph gl) e)) then true else false) l)).
-    intros. rewrite filter_In. destruct (listToGraph_vvalid_dec gl (dst (listToGraph gl) e)); intuition.
+    intros. rewrite filter_In. destruct (listToGraph_vvalid_dec gl (dst (listToGraph gl) e)); intuition auto with *.
   Defined.
 
   Lemma gToLst_lstToG_eq': forall (g: PreGraph Vertex Edge) v l r len
@@ -706,8 +706,8 @@ Section GtoL_LtoG_EQ.
   Proof.
     intros g v l r len. remember (lengthInput (len, v, r)) as n. simpl in Heqn. assert (len - length r <= n) by lia. clear Heqn. revert  g v l r len H.
     induction n; intros; simpl.
-    + rewrite toEdgeList_unfold. destruct (Compare_dec.le_dec len (length r)). 2: exfalso; intuition. destruct l; simpl; auto. simpl in H1; exfalso; intuition.
-    + rewrite toEdgeList_unfold. destruct (Compare_dec.le_dec len (length r)). destruct l; simpl; auto. simpl in H1; exfalso; intuition. simpl. destruct l; simpl.
+    + rewrite toEdgeList_unfold. destruct (Compare_dec.le_dec len (length r)). 2: exfalso; intuition auto with *. destruct l; simpl; auto. simpl in H1; exfalso; intuition auto with *.
+    + rewrite toEdgeList_unfold. destruct (Compare_dec.le_dec len (length r)). destruct l; simpl; auto. simpl in H1; exfalso; intuition auto with *. simpl. destruct l; simpl.
       * destruct (filterE (edge_func g v)) eqn:?; auto. assert (In e (e :: l)) by (simpl; auto). rewrite <- Heql in H5. rewrite filter_valid, edge_func_spec in H5.
         exfalso. apply (H4 v e); simpl. 1: left; auto. hnf. destruct H5; auto. rewrite Forall_forall. intros. rewrite edge_func_spec in H6. destruct H6; auto.
       * destruct p as [e0 v0].
@@ -732,9 +732,9 @@ Section GtoL_LtoG_EQ.
         } subst e. clear l0 Heql0 H5. remember (dst (listToGraph' (pregraph_add_whole_edge g e0 v v0) v0 l) e0) as x. symmetry in Heqx. apply listToGraph'_dst in Heqx.
         destruct Heqx as [? | [? ?]]. 2: unfold listEdges in H5, H3; simpl in H5, H3; rewrite NoDup_cons_iff in H3; exfalso; intuition.
         rewrite addEdge_dst_iff in H5. destruct H5 as [[? ?] | [_ ?]]. 1: exfalso; tauto. subst x. rewrite <- app_assoc, <- app_comm_cons. simpl. rewrite IHn; auto.
-        - simpl; intuition.
+        - simpl; intuition auto with *.
         - apply addEdge_add_vvalid.
-        - simpl in H1 |-* ; intuition.
+        - simpl in H1 |-* ; intuition auto with *.
         - simpl in H2 |-* . rewrite NoDup_cons_iff in H2. destruct H2; auto.
         - clear -H3. unfold listEdges in *. simpl in *. rewrite NoDup_cons_iff in H3. destruct H3; auto.
         - intros xo eo ? ?. unfold out_edges in H4, H6. simpl in H6. unfold addValidFunc, updateEdgeFunc in H6. destruct H6.
@@ -750,7 +750,7 @@ Section GtoL_LtoG_EQ.
     remember (listToGraphLF (v, l)) as LF. clear HeqLF. unfold listToGraph in *. rewrite gToLst_lstToG_eq'; auto.
     + rewrite app_nil_r. apply rev_involutive.
     + simpl; auto.
-    + simpl; intuition.
+    + simpl; intuition auto with *.
     + intros. unfold out_edges. simpl. intro. destruct H2; auto.
   Qed.
 

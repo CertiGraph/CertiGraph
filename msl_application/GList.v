@@ -238,7 +238,7 @@ Section GRAPH_GList.
   Definition single_uf_LstGraph (v: addr) (H: v <> null): LstGraph (single_uf_pregraph v) (fun x => (x, tt)).
   Proof.
     constructor; simpl; intros; unfold updateEdgeFunc.
-    - unfold addValidFunc. subst. destruct (equiv_dec (x, tt) e); intuition.
+    - unfold addValidFunc. subst. destruct (equiv_dec (x, tt) e); intuition auto with *.
     - destruct H0 as [[? _] [? _]]. destruct p as [p l]. simpl in *. subst p.
       destruct l; auto. destruct H1. clear H0. simpl in H1. assert (strong_evalid (single_uf_pregraph v) p) by (destruct l; [|destruct H1]; auto). clear H1.
       hnf in H0. simpl in H0. unfold addValidFunc, updateEdgeFunc in H0. destruct H0 as [? [_ ?]]. exfalso. destruct H0; auto. subst p.

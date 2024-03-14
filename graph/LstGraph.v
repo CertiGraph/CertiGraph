@@ -35,13 +35,13 @@ Section LstGraph.
     - exists p2. simpl. auto.
     - pose proof H1. apply valid_path_app in H3. destruct H3 as [? _]. apply H in H3.
       + destruct H3 as [p4 ?]. destruct p4.
-        * rewrite app_nil_r in H3. subst p2. rewrite app_length in H2. simpl in H2. exfalso; intuition.
+        * rewrite app_nil_r in H3. subst p2. rewrite app_length in H2. simpl in H2. exfalso; intuition auto with *.
         * exists p4. subst p2. rewrite <- app_assoc. simpl. f_equal. f_equal. clear H H2. pose proof H1. pose proof H0. apply pfoot_split in H. apply pfoot_split in H2.
-          assert (strong_evalid g x) by (apply (valid_path_strong_evalid _ _ _ _ H1); rewrite in_app_iff; right; intuition). destruct H3 as [? _].
-          assert (strong_evalid g e) by (apply (valid_path_strong_evalid _ _ _ _ H0); rewrite in_app_iff; right; intuition). destruct H4 as [? [? _]]. rewrite <- H2 in H5.
+          assert (strong_evalid g x) by (apply (valid_path_strong_evalid _ _ _ _ H1); rewrite in_app_iff; right; intuition auto with *). destruct H3 as [? _].
+          assert (strong_evalid g e) by (apply (valid_path_strong_evalid _ _ _ _ H0); rewrite in_app_iff; right; intuition auto with *). destruct H4 as [? [? _]]. rewrite <- H2 in H5.
           assert (x = out_edge (pfoot g (v, l))) by (apply only_one_edge; auto). assert (e = out_edge (pfoot g (v, l))) by (apply only_one_edge; auto).
           rewrite <- H6 in H7. auto.
-      + rewrite app_length in H2. simpl in H2. intuition.
+      + rewrite app_length in H2. simpl in H2. intuition auto with *.
   Qed.
 
   Lemma lst_reachable_unique: forall v1 p1 v2 p2 x r1 r2 P,
@@ -72,7 +72,7 @@ Section LstGraph.
       + destruct (lst_reachable_unique v1 p1 v2 p2 x y y P H H0 l) as [p3 [? ?]].
         assert (g |= (y, p3) is y ~o~> y satisfying (fun _ => True)) by (apply reachable_by_path_weaken with P; auto; unfold Included, Ensembles.In; intros; auto).
         apply no_loop_path in H3. inversion H3. subst p3 p2. rewrite app_nil_r; auto.
-      + assert (length p2 <= length p1) by intuition. rename H1 into l. destruct (lst_reachable_unique v2 p2 v1 p1 x y y P H0 H l) as [p3 [? ?]].
+      + assert (length p2 <= length p1) by intuition auto with *. rename H1 into l. destruct (lst_reachable_unique v2 p2 v1 p1 x y y P H0 H l) as [p3 [? ?]].
         assert (g |= (y, p3) is y ~o~> y satisfying (fun _ => True)) by (apply reachable_by_path_weaken with P; auto; unfold Included, Ensembles.In; intros; auto).
         apply no_loop_path in H3. inversion H3. subst p3 p1. rewrite app_nil_r; auto.
   Qed.
@@ -90,7 +90,7 @@ Section LstGraph.
   Proof.
     intros. destruct H as [p1 ?]. destruct H0 as [p2 ?]. destruct (Compare_dec.le_dec (length (snd p1)) (length (snd p2))); [left | right].
     - apply (lst_reachable_unique' p1 p2 x); auto.
-    - apply (lst_reachable_unique' p2 p1 x); intuition.
+    - apply (lst_reachable_unique' p2 p1 x); intuition auto with *.
   Qed.
 
   Lemma lst_self_loop: forall x y, dst g (out_edge x) = x -> reachable g x y -> x = y.

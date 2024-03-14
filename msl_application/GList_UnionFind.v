@@ -110,7 +110,7 @@ Section GList_UnionFind.
       subst a. destruct l2. 1: destruct H as [[_ ?] ?]; simpl in H; subst root; exfalso; apply Hr; apply reachable_refl; auto.
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H7 H). unfold path_glue in H3. simpl in H3. destruct H3 as [[_ ?] [? _]].
       rewrite <- H5 in H3. pose proof (H0 _ H1 _ H6 H3). simpl in H8.
-      clear -H8. rewrite app_length in *. simpl in *. intuition.
+      clear -H8. rewrite app_length in *. simpl in *. intuition auto with *.
   Qed.
 
   Lemma uf_under_bound_redirect_parent_lt: forall (g: UFGraph) root x (Hw : weak_valid g root) (Hv : vvalid g x) (Hr: ~ reachable g root x),
@@ -119,7 +119,7 @@ Section GList_UnionFind.
     intros. hnf in H1 |-* . simpl. unfold uf_bound, id in *. intros. destruct p as [p l]. destruct (redirect_to_root g (liGraph g) _ _ _ _ _ Hv Hr H0 H3 H4).
     - destruct H5; apply H1; auto.
     - destruct H5 as [? [l1 [? ?]]]. subst l. clear H4. subst v. simpl. destruct H7 as [[_ ?] [? _]]. specialize (H1 _ Hv _ H5 H4). simpl in H1. rewrite app_length. simpl length.
-      clear - H H1. unfold UFGraph_LGraph in H. assert (vlabel (lg_gg g) x < vlabel (lg_gg g) root) by intuition. intuition.
+      clear - H H1. unfold UFGraph_LGraph in H. assert (vlabel (lg_gg g) x < vlabel (lg_gg g) root) by intuition. intuition auto with *.
   Qed.
 
   Lemma uf_under_bound_redirect_parent_eq: forall (g: UFGraph) root x (Hw : weak_valid g root) (Hv : vvalid g x) (Hr: ~ reachable g root x),
@@ -127,9 +127,9 @@ Section GList_UnionFind.
       uf_under_bound id (Graph_vgen (Graph_gen_redirect_parent g x root Hw Hv Hr) root (vlabel g root + 1)).
   Proof.
     intros. hnf in H1 |-* . simpl. unfold uf_bound, id, update_vlabel in *. intros. destruct p as [p l]. destruct (redirect_to_root g (liGraph g) _ _ _ _ _ Hv Hr H0 H3 H4).
-    - destruct H5. specialize (H1 _ H2 _ H5 H6). simpl in H1 |-* . clear -H1. destruct (equiv_dec root v); [hnf in e; subst v |]; intuition.
+    - destruct H5. specialize (H1 _ H2 _ H5 H6). simpl in H1 |-* . clear -H1. destruct (equiv_dec root v); [hnf in e; subst v |]; intuition auto with *.
     - destruct H5 as [? [l1 [? ?]]]. subst l. clear H4. subst v. destruct (equiv_dec root root). 2: compute in c; exfalso; apply c; auto. simpl. destruct H7 as [[_ ?] [? _]].
-      specialize (H1 _ Hv _ H5 H4). simpl in H1. rewrite app_length. simpl. clear -H H1. unfold UFGraph_LGraph in *. assert (vlabel (lg_gg g) x = vlabel g root) by intuition. intuition.
+      specialize (H1 _ Hv _ H5 H4). simpl in H1. rewrite app_length. simpl. clear -H H1. unfold UFGraph_LGraph in *. assert (vlabel (lg_gg g) x = vlabel g root) by intuition. intuition auto with *.
   Qed.
 
   Definition make_set_Graph (default_dv: nat) (default_de: unit) (default_dg: unit) (v: addr) (g: UFGraph) (Hn: v <> null) (Hi: ~ vvalid g v) : UFGraph := make_set_Graph default_dv default_de default_dg v g Hn Hi.

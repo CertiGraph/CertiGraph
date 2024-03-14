@@ -34,7 +34,7 @@ Section REACHABLE_COMPUTABLE.
 
   Lemma inputOrder_wf': forall len i, lengthInput i <= len -> Acc inputOrder i.
   Proof.
-    induction len; intros; constructor; intros; unfold inputOrder in * |-; [exfalso | apply IHlen]; intuition.
+    induction len; intros; constructor; intros; unfold inputOrder in * |-; [exfalso | apply IHlen]; intuition auto with *.
   Qed.
 
   Lemma inputOrder_wf : well_founded inputOrder.

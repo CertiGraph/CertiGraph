@@ -451,10 +451,7 @@ break: (
     destruct (in_dec V_EqDec i []); [contradiction | auto].
   }
   unfold starting_keys.
-  time "main loop precon (originally 446.87s):" entailer!.
-  
-
-
+  entailer!!.
 }
 (****MAIN LOOP****) {
   clear Hstarting_keys HZlength_starting_keys starting_keys.
@@ -731,7 +728,7 @@ break: (
       rewrite upd_Znth_diff. apply Hinv2_4. auto. rewrite HZlength_keys'; lia.
       rewrite HZlength_keys'; lia. auto.
     } (*entailer unable to solve but no change to timing*)
-    time "inner loop update-because-lt-postcon (orig 71 seconds)" entailer!.
+    entailer!!.
     -forward. (*nothing changed*)
     Exists parents'. Exists keys'. Exists pq_state'.
     assert (Hx1: forall v : Z,
@@ -780,8 +777,7 @@ break: (
       Znth v keys' = Znth v keys /\ Znth v pq_state' = Znth v upd_pq_state). {
       intros. apply Hinv2_3. lia.
     } (*entailer unable to solve but no change to timing*)
-    time "inner loop no-update-because-not-lt-postcon (originally 60s)" entailer!.
-    
+    entailer!!.
   +(*nothing changed because out of pq*)
   assert (In i (popped_vertices+::u)). {
     unfold typed_false in H5. destruct (V_EqDec u i); simpl in H5. unfold Equivalence.equiv in e; subst i. apply in_or_app; right; left; auto.
@@ -817,7 +813,7 @@ break: (
     Znth v keys' = Znth v keys /\ Znth v pq_state' = Znth v upd_pq_state). {
     intros. apply Hinv2_3. lia.
   }
-  time "inner loop no-update-because-out-postcon (originally 92 seconds):" entailer!.
+  entailer!!.
   +(*inner loop done, postcon leading to next outer loop iter*)
   Intros parents' keys' pq_state'.
   assert (Htmp: Znth u parents' = Znth u parents /\ Znth u keys' = Znth u keys /\ Znth u pq_state' = Znth u upd_pq_state). {
@@ -1548,10 +1544,9 @@ break: (
     ****destruct H9. 2: contradiction. destruct H10. 2: contradiction. subst u0. subst v.
         split; intros; apply connected_refl; rewrite vert_bound; lia.
   }
-  time "end of pop loop (adde_u) (did not record original):" entailer!.
+  entailer!!.
 
   remember (Zlength parents) as size.
-  clear H9 H10 H11 H12 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22.
 
   (*permutation of EList*)
     apply (Permutation_trans (l':=(eformat (u,Znth u parents))::(EList mst'))).
@@ -1731,7 +1726,7 @@ break: (
   assert (Hnot_adj: forall u0 v : V, In u0 (remove V_EqDec u unpopped_vertices) -> ~ adjacent mst' u0 v). {
     intros. apply Hinv_13. rewrite remove_In_iff in H6; apply H6.
   }
-  time "End of pop loop (same msf) (originally 150s):" entailer!.
+  entailer!!.
   }
   { (*break*) forward. (*no more vertices in queue*)
     assert (Hempty: @isEmpty inf pq_state = Vone). {
@@ -1798,7 +1793,7 @@ break: (
       apply Hr2. unfold not; intros. assert (In v (v::popped_vertices)) by (left; auto).
       rewrite H3 in H4; contradiction.
     }
-    time entailer!. (*was 55 seconds without PROP*)
+    entailer!!.
   }
 }
 (*POST-LOOP*) {

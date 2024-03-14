@@ -380,12 +380,9 @@ Proof.
   apply align_compatible_rec_Tarray; intros.
   assert (exists k, 0 <= k < size /\ (i0 = 3 * k + 0 \/ i0 = 3 * k + 1 \/ i0 = 3 * k + 2)).
   { exists (i0 / 3).
-    generalize (Z_div_mod_eq i0 3); intro. spec H5. lia.
-    generalize (Z.mod_pos_bound i0 3); intro. spec H6. lia.
-    split. 2: lia.
-    destruct H4. split.
-    apply Z.div_pos; lia.
-    apply Z.div_lt_upper_bound; lia. }
+    generalize (Z_div_mod_eq_full i0 3); intro.
+    generalize (Z.mod_pos_bound i0 3); intro. lia.
+  }
   destruct H5 as [k [? ?]].
   eapply align_compatible_rec_Tarray_inv in H2. 2: apply H5.
   destruct H6 as [? | [? | ?]]; subst i0;
