@@ -140,7 +140,7 @@ Section MathDijkGraph.
     destruct (@evalid_dec _ _ _ _ g (finGraph g) e).
     - apply H; trivial.
     - rewrite H0 in n.
-      replace (elabel g e) with inf by trivial.
+      replace (elabel g e) with inf by auto.
       pose proof (@inf_representable _ _ g). lia.
   Qed.
 
@@ -182,7 +182,7 @@ Section MathDijkGraph.
       etransitivity.
       apply div_pos_le; lia. lia.
     - rewrite H0 in n.
-      replace (elabel g e) with inf by trivial.
+      replace (elabel g e) with inf by auto.
       pose proof (inf_representable g).
       split; rep_lia.
   Qed.

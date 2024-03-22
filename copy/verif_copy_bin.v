@@ -166,7 +166,7 @@ Proof.
   {
     entailer!.
     rewrite value_fits_eq in H4; simpl in H4.
-    destruct H4 as [_ [? _]].
+    destruct H4 as [_ [H4 _]].
     rewrite value_fits_eq in H4; simpl in H4.
     unfold tc_val' in H4.
     simpl in H4.
@@ -178,7 +178,7 @@ Proof.
   {
     entailer!.
     rewrite value_fits_eq in H5; simpl in H5.
-    destruct H5 as [_ [? _]].
+    destruct H5 as [_ [H5 _]].
     rewrite value_fits_eq in H5; simpl in H5.
     unfold tc_val' in H5.
     simpl in H5.

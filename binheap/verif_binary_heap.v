@@ -631,6 +631,7 @@ Proof.
                                  rewrite <- harray_split; apply derives_refl]].
   * (* main line: heap still has items in it *)
     destruct l0; inversion H. subst h0.
+    assert (inh_heap: heap) by apply heap_inhabitant. (* needed since Coq 8.19 to make deadvars! work *)
     deadvars!.
     assert (Zlength (h :: l) = Zlength (root :: l0)). { rewrite H5, Zlength_app, Zlength_one, Zlength_cons. lia. }
     rewrite H3, Zexchange_head_foot. rewrite harray_split.

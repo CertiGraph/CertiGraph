@@ -980,7 +980,7 @@ break: (
         contradiction.
       }
       apply (invalid_edge_weight g) in H12.
-      replace (elabel g (eformat (u0, v))) with inf by trivial.
+      replace (elabel g (eformat (u0, v))) with inf by auto.
       rewrite graph_to_mat_eq by lia. apply (weight_inf_bound).
       (*u0 = u.*)
       destruct H9. 2: contradiction. subst u0.
@@ -1141,7 +1141,7 @@ break: (
           rewrite find_notIn, Z.add_0_r, sublist_same by auto. auto.
         rewrite eformat_adj in H14. apply (invalid_edge_weight g) in H14.
         replace (elabel g (eformat (u1, u2))) with inf
-          by trivial.
+          by auto.
         apply weight_inf_bound. }
     (*u2 <> u*) unfold RelationClasses.complement, Equivalence.equiv in c.
     assert (Znth u pq_state <= Znth u2 pq_state). apply Hu_min; lia.

@@ -154,7 +154,7 @@ Proof.
 destruct (evalid_dec g e). 
 auto. exfalso.
 rewrite (invalid_edge_weight g) in n.
-replace (elabel g e) with inf in * by trivial.
+replace (elabel g e) with inf in *.
 lia.
 Qed.
 
@@ -164,7 +164,7 @@ Proof.
   intros. destruct (evalid_dec g e).
 apply (evalid_meaning g e); auto.
 rewrite (invalid_edge_weight g) in n.
-replace (elabel g e) with inf in * by trivial.
+replace (elabel g e) with inf in *.
 pose proof (inf_representable g). rep_lia. 
 Qed.
 
@@ -174,7 +174,7 @@ Proof.
 intros. destruct (evalid_dec g e).
 apply Z.lt_le_incl. apply (evalid_meaning  g e). auto.
 apply (invalid_edge_weight g) in n.
-replace (elabel g e) with inf in * by trivial. lia.
+replace (elabel g e) with inf in *. lia.
 Qed.
 
 Lemma adj_edge_form:
@@ -489,8 +489,8 @@ Proof.
   intros.
   pose proof (edge_src_fst g e').
   pose proof (edge_src_fst UAdjMatGG_adde e').
-  replace (src g e') with (fst e') by trivial.
-  replace (src UAdjMatGG_adde e') with (fst e') by trivial.
+  replace (src g e') with (fst e').
+  replace (src UAdjMatGG_adde e') with (fst e').
   reflexivity.
 Qed.
 
@@ -500,8 +500,8 @@ Proof.
   intros.
   pose proof (edge_dst_snd g e').
   pose proof (edge_dst_snd UAdjMatGG_adde e').
-  replace (dst g e') with (snd e') by trivial.
-  replace (dst UAdjMatGG_adde e') with (snd e') by trivial.
+  replace (dst g e') with (snd e').
+  replace (dst UAdjMatGG_adde e') with (snd e').
   reflexivity.
 Qed.
 

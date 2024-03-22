@@ -199,8 +199,8 @@ Proof.
         localize [graph sh l g1].
         assert (vvalid g1 l). {
           apply gamma_left_weak_valid in H1. 2: auto.
-          destruct H2.
-          rewrite (weak_valid_si _ _ _ H2) in H1.
+          destruct H2 as [s a].
+          rewrite (weak_valid_si _ _ _ s) in H1.
           destruct H1. 2: auto.
           hnf in H1. subst l.
           simpl in H4. exfalso; auto.
