@@ -393,6 +393,7 @@ Proof.
   forward.
   forward.
   (* Time to cleanup! *)
+  assert (inh_heap: heap) by apply heap_inhabitant. (* needed since Coq 8.19 to make deadvars! work *)
   deadvars!.
   rewrite <- Hx.
   rewrite Znth_map. 2: rewrite Zlength_Zexchange; lia.

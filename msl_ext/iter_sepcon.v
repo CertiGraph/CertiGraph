@@ -251,7 +251,7 @@ Proof.
   induction l1; intros.
   - destruct l2. 2: simpl in H; inversion H. simpl. reflexivity.
   - destruct l2. 1: simpl in H; inversion H. simpl. f_equal.
-    + specialize (H0 O). simpl in H0. apply H0. apply NPeano.Nat.lt_0_succ.
+    + specialize (H0 O). simpl in H0. apply H0. apply Nat.lt_0_succ.
     + simpl in H. apply (IHl1 _ _ _ x y); eauto. intros. specialize (H0 (S i)).
       simpl in H0. apply H0. rewrite <- Nat.succ_lt_mono. assumption.
 Qed.

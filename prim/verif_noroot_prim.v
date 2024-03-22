@@ -888,8 +888,8 @@ break: (
     unfold upd_pq_state. destruct (Z.eq_dec v u). subst v. exfalso; apply n. apply in_or_app; right; left; auto.
     rewrite upd_Znth_diff. rewrite Hinv_6 by lia. destruct (in_dec V_EqDec v popped_vertices). exfalso; apply n. apply in_or_app; left; auto.
     rewrite Hinv_5 by lia. auto.
-    replace (Zlength pq_state) with size by lia. lia.
-    replace (Zlength pq_state) with size by lia. lia. auto.
+    replace (Zlength pq_state) with size by (symmetry; assumption). lia.
+    replace (Zlength pq_state) with size by (symmetry; assumption). lia. auto.
     ****
     replace (Znth v keys') with (Znth v keys). 2: symmetry; apply Hinv2_1; auto. rewrite Hinv_5.
     replace (Znth v parents') with (Znth v parents). 2: symmetry; apply Hinv2_1; auto. auto. auto.
@@ -995,7 +995,7 @@ break: (
         contradiction.
       }
       apply (invalid_edge_weight g) in H12.
-      replace (elabel g (eformat (u0, v))) with inf by trivial.
+      replace (elabel g (eformat (u0, v))) with inf by auto.
       rewrite graph_to_mat_eq by lia. apply (weight_inf_bound).
       (*u0 = u.*)
       destruct H9. 2: contradiction. subst u0.
@@ -1148,7 +1148,7 @@ break: (
           rewrite find_notIn, Z.add_0_r, sublist_same by auto. auto.
           rewrite eformat_adj in H14. apply (invalid_edge_weight g) in H14.
           replace (elabel g (eformat (u1, u2))) with inf
-                                                     by trivial. apply weight_inf_bound. }
+                                                     by auto. apply weight_inf_bound. }
     (*u2 <> u*) unfold RelationClasses.complement, Equivalence.equiv in c.
     assert (Znth u pq_state <= Znth u2 pq_state). apply Hu_min; lia.
     rewrite (Hinv_6 u2) in H14 by lia. destruct (in_dec V_EqDec u2 popped_vertices). contradiction.
