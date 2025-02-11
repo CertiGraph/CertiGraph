@@ -10,7 +10,6 @@ Require Import CertiGraph.CertiGC.spatial_gcgraph.
 Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.CertiGC.gc_spec.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
-Require Import CertiGraph.CertiGC.forward_lemmas.
 
 Local Open Scope logic.
 
@@ -34,7 +33,7 @@ Proof.
   freeze [0;1;2;3] FR.
   localize [space_struct_rep sh hp h from;
             space_struct_rep sh hp h to].
-  unfold space_struct_rep. unfold space_tri.
+  unfold space_struct_rep. unfold space_quad.
   forward.
   gather_SEP
     (data_at sh space_type
@@ -53,11 +52,11 @@ Proof.
   }
   forward_call. clear H16.
     localize [space_struct_rep sh hp h from].
-    unfold space_struct_rep, space_tri.
+    unfold space_struct_rep, space_quad.
     forward.
     forward.
     replace_SEP 0 (space_struct_rep sh hp h from) by
-        (unfold space_struct_rep, space_tri; entailer!!).
+        (unfold space_struct_rep, space_quad; entailer!!).
     unlocalize [heap_rep sh h hp].
     1: apply heap_rep_ramif_stable_1; assumption. apply dgc_imply_fc in H0.
     remember (space_start (nth_space h from)) as from_p.
@@ -70,7 +69,7 @@ Proof.
         (subst; unfold gen_start; rewrite if_true; assumption).
     replace (offset_val (WORD_SIZE * available_space (nth_space h from))
                         (gen_start g from)) with (limit_address g h from) by
-        (unfold limit_address, gen_size; reflexivity).
+        (unfold limit_address, available_size; reflexivity).
     assert_PROP (isptr (space_address hp to)). {
       unfold space_address. rewrite isptr_offset_val. unfold thread_info_rep, heap_rep.
       Intros. unfold heap_struct_rep. entailer!. }
@@ -93,15 +92,15 @@ Proof.
       rewrite H24. unfold gen_start. destruct H22 as [_ [? _]].
       rewrite if_true by assumption. apply start_isptr. }
     localize [space_struct_rep sh hp h1 from].
-    unfold space_struct_rep, space_tri.
+    unfold space_struct_rep, space_quad.
     do 2 forward.
     replace_SEP 0 (space_struct_rep sh hp h1 from) by
-        (unfold space_struct_rep, space_tri; entailer!!).
+        (unfold space_struct_rep, space_quad; entailer!!).
     unlocalize [heap_rep sh h1 hp].
     1: apply heap_rep_ramif_stable_1; assumption. thaw FR. rewrite H24.
     replace (offset_val (WORD_SIZE * available_space (nth_space h1 from))
                         (gen_start g1 from)) with (limit_address g1 h1 from) by
-        (unfold limit_address, gen_size; reflexivity).
+        (unfold limit_address, available_size; reflexivity).
     pose proof I.
     assert (closure_has_v g (to, number_of_vertices (nth_gen g to))) by
         (red; simpl; unfold closure_has_index; split; [assumption | lia]).
@@ -113,7 +112,7 @@ Proof.
          rewrite offset_offset_val, H11, H9, if_true by assumption;
          f_equal; unfold WORD_SIZE; lia). eapply frr_closure_has_v in H27; eauto.
     destruct H27. simpl in H27, H28.
-    assert (0 < gen_size h1 to) by (rewrite <- (proj1 H23); assumption).
+    assert (0 < available_size h1 to) by (rewrite <- (proj1 H23); assumption).
     assert (gen_unmarked g1 to) by (eapply (frr_gen_unmarked _ _ _ g _ g1); eauto).
     sep_apply frames_rep_localize. Intros.
     forward_call (rsh, sh, gv, g1, h1, hp, outlier,
@@ -136,10 +135,10 @@ Proof.
       rewrite H35. unfold gen_start. destruct H32 as [_ [? _]].
       rewrite if_true by assumption. apply start_isptr. }
     freeze [0;1;2;3] FR. localize [space_struct_rep sh hp h2 from].
-    unfold space_struct_rep, space_tri.
+    unfold space_struct_rep, space_quad.
     forward.
     replace_SEP 0 (space_struct_rep sh hp h2 from) by
-        (unfold space_struct_rep, space_tri; entailer!!).
+        (unfold space_struct_rep, space_quad; entailer!!).
     unlocalize [heap_rep sh h2 hp].
     1: apply heap_rep_ramif_stable_1; assumption. thaw FR.
     unfold thread_info_rep, heap_rep. Intros.
@@ -154,9 +153,9 @@ Proof.
     deadvars!.
     forward.
     rewrite Znth_map by (rewrite spaces_size; rep_lia).
-    rewrite <- nth_space_Znth. unfold space_tri at 2 3.
+    rewrite <- nth_space_Znth. unfold space_quad at 2 3.
     simpl fst. simpl snd.
-    assert (FROM_MAX: 0 <= Z.of_nat from < Zlength (map space_tri (spaces h2))). {
+    assert (FROM_MAX: 0 <= Z.of_nat from < Zlength (map space_quad (spaces h2))). {
         rewrite Zlength_map.
         destruct H20 as [[_ [_ ?]] _]; destruct H31 as [[_ [_ H31]] _]. simpl in H31.
         apply frr_graph_has_gen with (gen:=from) in H21; auto.
@@ -176,7 +175,7 @@ Proof.
     thaw FR.
     assert (graph_has_gen g2 from) by (destruct H32 as [_ [? _]]; assumption).
     rewrite (graph_rep_reset g2 from) by assumption. Intros.
-    sep_apply (heap_rest_rep_reset g2 h2 from (proj1 H31) H37).
+    sep_apply (heap_unused_rep_reset g2 h2 from (proj1 H31) H37).
         rewrite <- heap_struct_rep_eq.
     simpl fst. simpl snd.
     gather_SEP 0 4.
@@ -185,7 +184,7 @@ Proof.
       assert (from < length (spaces h2))%nat by
           (destruct H31 as [[_ [_ ?]] _]; simpl in H31; red in H37; lia). simpl.
       rewrite (reset_nth_space_Znth _ _ H38), <- nth_space_Znth, <- upd_Znth_map.
-      unfold space_tri at 3. simpl. replace (WORD_SIZE * 0)%Z with 0 by lia.
+      unfold space_quad at 3. simpl. replace (WORD_SIZE * 0)%Z with 0 by lia.
       rewrite isptr_offset_val_zero by assumption. cancel.
     + apply super_compatible_reset with (gen := from) in H31.
       2: { apply (frr_not_pointing from to roots g roots1 g1); auto.

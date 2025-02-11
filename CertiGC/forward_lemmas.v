@@ -187,8 +187,8 @@ Lemma graph_heap_outlier_FF: forall g h outlier gen gp,
     graph_has_gen g gen ->
     graph_heap_compatible g h ->
     In gp outlier ->
-    v_in_range (GC_Pointer2val gp) (gen_start g gen) (WORD_SIZE * (gen_size h gen)) ->
-    graph_rep g * heap_rest_rep h * outlier_rep outlier |-- FF.
+    v_in_range (GC_Pointer2val gp) (gen_start g gen) (WORD_SIZE * (available_size h gen)) ->
+    graph_rep g * heap_unused_rep h * outlier_rep outlier |-- FF.
 Proof.
   intros. sep_apply (graph_and_heap_rest_data_at_ g h gen). unfold generation_data_at_.
   sep_apply (outlier_rep_single_rep _ _ H1).

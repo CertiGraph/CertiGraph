@@ -220,14 +220,14 @@ void forward_remset (struct space *from,  /* descriptor of from-space */
 {
   value *from_start = from->start, *from_limit=from->limit, *from_rem_limit=from->rem_limit;
   value *q = from_limit;
-  assert (from_rem_limit-from_limit <= to->limit-to->start);
+  assert (from_rem_limit-from_limit <= to->limit-to->next);
   while (q != from_rem_limit) {
-    value *p = *(value **)q;
+    value *p = (value*)int_or_ptr_to_ptr(*q);
     if (!Is_from(from_start, from_limit, p)) {
-      value oldp= *p, newp;
+      /* value oldp= *p, newp; */
       forward(from_start, from_limit, next, p, DEPTH);
-      newp= *p;
-      if (oldp!=newp)
+      /* newp= *p; */
+      /* if (oldp!=newp) */
           *(--to->limit) = (value)p;
     }
     q++;

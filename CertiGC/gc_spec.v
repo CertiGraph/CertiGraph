@@ -250,15 +250,36 @@ Definition forward_roots_spec :=
 
 Definition forward_remset_spec :=
   DECLARE _forward_remset
-  WITH sh: share, h: heap, hp: val, from: nat, to: nat, next: val
+  WITH rsh: share, sh: share, gv: globals,
+       g: LGraph, h: heap, hp: val, outlier: outlier_t,
+       rh: remset_heap, rmst: remset, from: nat, to: nat
   PRE [ tptr space_type, tptr space_type, tptr (tptr int_or_ptr_type) ]
-     PROP (readable_share sh)
-     PARAMS ( space_address hp from ; space_address hp to; next )
-     SEP (heap_rep sh h hp)
+     PROP (readable_share rsh; writable_share sh;
+           graph_heap_compatible g h;
+           outlier_compatible g outlier;
+           forward_remset_condition g h from to;
+           remset_compatible g outlier rmst;
+           remset_heap_compatible g from rmst rh h;
+           from <> to)
+     PARAMS (space_address hp from;
+             space_address hp to;
+             heap_next_address hp to)
+     SEP (all_string_constants rsh gv;
+          outlier_rep outlier;
+          graph_rep g;
+          heap_rep sh h hp;
+          heap_remset_rep g h rh;
+          remset_rep sh g rmst)
   POST [ tvoid ]
-     PROP()
+     EX g': LGraph, EX h': heap, EX rh': remset_heap, EX rmst': remset,
+     PROP ((g', h', rh', rmst') = forward_remset_gh from to g h rh rmst)
      RETURN ()
-     SEP(heap_rep sh h hp).
+     SEP(all_string_constants rsh gv;
+         outlier_rep outlier;
+         graph_rep g';
+         heap_rep sh h' hp;
+         heap_remset_rep g' h' rh';
+         remset_rep sh g' rmst').
 
 Definition do_scan_spec :=
   DECLARE _do_scan
@@ -274,7 +295,7 @@ Definition do_scan_spec :=
           outlier_compatible g outlier;
           forward_condition g h from to;
           from <> to; closure_has_index g to to_index;
-          0 < gen_size h to; gen_unmarked g to)
+          0 < available_size h to; gen_unmarked g to)
     PARAMS (gen_start g from;
            limit_address g h from;
            offset_val (- WORD_SIZE) (vertex_address g (to, to_index));

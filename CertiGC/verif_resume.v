@@ -54,7 +54,7 @@ Proof.
     destruct (gt_gs_compatible _ _ H _ (graph_has_gen_O _)) as [? [? ?]].
     assert (isptr (space_start (heap_head (ti_heap t_info)))). {
       rewrite H2. unfold nth_space in H3. rewrite H1 in H3. simpl in H3.
-      rewrite <- H3. apply start_isptr. } unfold space_tri at 1.
+      rewrite <- H3. apply start_isptr. } unfold space_quad at 1.
     do 2 forward; try solve [entailer!!].
     rewrite Znth_0_cons.
     destruct (space_start (heap_head (ti_heap t_info))) eqn:? ; try contradiction.
@@ -95,7 +95,7 @@ Proof.
                               (space_start (heap_head (ti_heap t_info))),
                     offset_val (WORD_SIZE * available_space (heap_head (ti_heap t_info)))
                               (space_start (heap_head (ti_heap t_info))))))
-                   :: map space_tri hl) (ti_heap_p t_info))
+                   :: map space_quad hl) (ti_heap_p t_info))
          by (unfold heap_struct_rep; entailer!!).
       do 2 forward.
       unfold before_gc_thread_info_rep. rewrite !heap_struct_rep_eq. rewrite <- H5.
@@ -105,7 +105,7 @@ Proof.
       rewrite H1. simpl tl.
       rewrite Z.sub_0_r.
       entailer_for_return.
-      assert (MAX_SPACES = Zlength (map space_tri hl) + 1). {
+      assert (MAX_SPACES = Zlength (map space_quad hl) + 1). {
         pose proof (spaces_size (ti_heap t_info)).
         rewrite <- H2, H1, Zlength_cons, Zlength_map. lia. } rewrite !H2.
       rewrite !data_at_tarray_split_1 by reflexivity. cancel.

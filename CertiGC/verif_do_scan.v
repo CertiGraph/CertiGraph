@@ -97,11 +97,11 @@ Proof.
     destruct (gt_gs_compatible _ _ Hghc' _ Hto) as [Has [Hgen Hpre]].
     rewrite nth_space_Znth in *. remember (Znth (Z.of_nat to) (spaces h')) as sp_to.
     assert (isptr (space_start sp_to)) by (rewrite <- Has; apply start_isptr).
-    remember (map space_tri (spaces h')) as l.
+    remember (map space_quad (spaces h')) as l.
     assert (Hst: @Znth (val * (val * (val*val))) (Vundef, (Vundef, (Vundef, Vundef)))
-                   (Z.of_nat to) l = space_tri sp_to). {
+                   (Z.of_nat to) l = space_quad sp_to). {
       subst l sp_to. now rewrite Znth_map by (rewrite spaces_size; rep_lia). }
-    forward; rewrite Hst; unfold space_tri. 1: entailer !!.
+    forward; rewrite Hst; unfold space_quad. 1: entailer !!.
     unfold vertex_address, vertex_offset. rewrite offset_offset_val.
     simpl vgeneration; simpl vindex.
     replace (WORD_SIZE * (previous_vertices_size g' to index + 1) + - WORD_SIZE) with
@@ -109,17 +109,17 @@ Proof.
     unfold gen_start at 1. rewrite if_true by assumption. rewrite Has.
     remember (WORD_SIZE * used_space sp_to)%Z as used_offset.
     remember (WORD_SIZE * previous_vertices_size g' to index)%Z as index_offset.
-    freeze [0; 1; 3] FR. gather_SEP (graph_rep g') (heap_rest_rep h').
+    freeze [0; 1; 3] FR. gather_SEP (graph_rep g') (heap_unused_rep h').
     assert (Hspto: space_start sp_to = gen_start g' to) by
       (unfold gen_start; rewrite if_true by assumption; rewrite <- Has; reflexivity).
     assert (
         forall b i,
           Vptr b i = space_start sp_to ->
-          graph_rep g' * heap_rest_rep h' |--
+          graph_rep g' * heap_unused_rep h' |--
       !! (WORD_SIZE * available_space sp_to + Ptrofs.unsigned i <= Ptrofs.max_unsigned)) as Hf. {
       intros b i Hf. sep_apply (graph_and_heap_rest_data_at_ _ _ _ Hto Hghc').
       rewrite Hspto in Hf. sep_apply (generation_data_at__ptrofs g' h' to b i Hf).
-      unfold gen_size; rewrite nth_space_Znth; entailer !!. }
+      unfold available_size; rewrite nth_space_Znth; entailer !!. }
     assert_PROP (force_val
                    (sem_cmp_pp Clt (offset_val index_offset (space_start sp_to))
                       (offset_val used_offset (space_start sp_to))) =
@@ -129,7 +129,7 @@ Proof.
       specialize (Hf b (Ptrofs.repr ofs) eq_refl).
       rewrite Ptrofs.unsigned_repr in Hf by rep_lia. sep_apply Hf. Intros.
       assert (Hrg1: 0 <= ofs + used_offset <= Ptrofs.max_unsigned). {
-        subst. pose proof space_order (Znth (Z.of_nat to) (spaces h')).
+        subst. pose proof used_leq_available (Znth (Z.of_nat to) (spaces h')).
         unfold WORD_SIZE in *. rep_lia. }
       assert (Hrg2: 0 <= ofs + index_offset <= Ptrofs.max_unsigned). {
         subst. red in Hchi'. pose proof pvs_ge_zero g' to (to_index + n)%nat.
@@ -142,7 +142,7 @@ Proof.
       sep_apply (graph_and_heap_rest_data_at_ _ _ _ Hto Hghc').
       unfold generation_data_at_. rewrite <- Hspto.
       rewrite data_at__memory_block. Intros. rewrite sizeof_tarray_int_or_ptr.
-      2: unfold gen_size; apply available_space_range.
+      2: unfold available_size; apply available_space_range.
       remember (WORD_SIZE * used_space sp_to)%Z as used_offset.
       remember (to_index + n)%nat as index.
       remember (WORD_SIZE * previous_vertices_size g' to index)%Z as index_offset.
@@ -153,19 +153,19 @@ Proof.
         apply generation_share_writable. }
       assert (Hoffmem: forall offset,
                  0 <= offset <= used_offset ->
-                 memory_block (nth_sh g' to) (WORD_SIZE * gen_size h' to)
+                 memory_block (nth_sh g' to) (WORD_SIZE * available_size h' to)
                    (Vptr b i) * TT * FRZL FR |--
         weak_valid_pointer (Vptr b (Ptrofs.add i (Ptrofs.repr offset)))). {
         intros offset Hofsrg. change (Vptr b (Ptrofs.add i (Ptrofs.repr offset))) with
             (offset_val offset (Vptr b i)).
         sep_apply (memory_block_weak_valid_pointer
-                     (nth_sh g' to) (WORD_SIZE * gen_size h' to)
+                     (nth_sh g' to) (WORD_SIZE * available_size h' to)
                      (Vptr b i) offset); auto.
         3: apply extend_weak_valid_pointer.
-        - subst. unfold gen_size. split. 1: apply (proj1 Hofsrg).
+        - subst. unfold available_size. split. 1: apply (proj1 Hofsrg).
           transitivity (WORD_SIZE * used_space (nth_space h' to))%Z.
           + rewrite nth_space_Znth. apply (proj2 Hofsrg).
-          + apply Zmult_le_compat_l. apply (proj2 (space_order _)). unfold WORD_SIZE. lia.
+          + apply Zmult_le_compat_l. apply (proj2 (used_leq_available _)). unfold WORD_SIZE. lia.
         - clear -Hgsp Hhr. destruct Hhr as [Hgs _]. rewrite <- Hgs. unfold WORD_SIZE. lia. }
       apply andp_right; apply Hoffmem.
       * subst. split.
@@ -173,7 +173,7 @@ Proof.
         apply Zmult_le_compat_l. 2: unfold WORD_SIZE; lia. rewrite <- Hpre.
         apply pvs_mono. assumption.
       * split; [|lia]; subst; apply Z.mul_nonneg_nonneg;
-          [unfold WORD_SIZE; lia | apply space_order].
+          [unfold WORD_SIZE; lia | apply used_leq_available].
     + assert (Hidl: index_offset < used_offset). {
         destruct (zlt index_offset used_offset); trivial.
         match type of Hforce with force_val ?A = _ =>
@@ -215,7 +215,7 @@ Proof.
         destruct Hfc as [_ [_ [? _]]]. assumption. } specialize (Hgu Hto _ Hghi).
       rewrite make_header_Wosize, make_header_tag by assumption.
       fold (heap_next_address hp to). thaw FR. fold (heap_struct_rep sh l hp).
-      gather_SEP (heap_struct_rep _ _ _ ) (heap_rest_rep _).
+      gather_SEP (heap_struct_rep _ _ _ ) (heap_unused_rep _).
       replace_SEP 0 (heap_rep sh h' hp) by (unfold thread_info_rep, heap_rep; entailer !!).
       forward_if
         (EX g'': LGraph, EX h'': heap,

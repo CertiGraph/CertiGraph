@@ -20,7 +20,6 @@ Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
                   (Z2val header) (offset_val (- WORD_SIZE) p) *
           data_at sh (tarray int_or_ptr_type (Zlength lst_fields)) lst_fields p).
 
-
 Definition vertex_rep (sh: share) (g: LGraph) (v: VType): mpred :=
   vertex_at sh (vertex_address g v) (make_header g v) (make_fields_vals g v).
 
@@ -32,20 +31,39 @@ Definition generation_rep (g: LGraph) (gen: nat): mpred :=
 Definition graph_rep (g: LGraph): mpred :=
   iter_sepcon (nat_inc_list (length g.(glabel).(g_gen))) (generation_rep g).
 
-Definition space_rest_rep (sp: space): mpred :=
+Definition space_unused_rep (sp: space): mpred :=
   if (Val.eq sp.(space_start) nullval)
   then emp
   else data_at_ (space_sh sp)
                 (tarray int_or_ptr_type (sp.(available_space) - sp.(used_space)))
                 (offset_val (WORD_SIZE * used_space sp) sp.(space_start)).
 
-Definition heap_rest_rep (hp: heap): mpred :=
-  iter_sepcon hp.(spaces) space_rest_rep.
+Definition space_remset_rep (g: LGraph) '(sp, rs) : mpred :=
+  if (Val.eq sp.(space_start) nullval)
+  then emp
+  else data_at (space_sh sp)
+         (tarray int_or_ptr_type (total_space sp - available_space sp))
+         (map (remset_item_val g) rs)
+         (offset_val (WORD_SIZE * available_space sp) (space_start sp)).
 
-Definition space_tri (sp: space): (reptype space_type) :=
+Definition heap_unused_rep (hp: heap): mpred := iter_sepcon hp.(spaces) space_unused_rep.
+
+Definition heap_remset_rep (g: LGraph) (h: heap) (rh : remset_heap) : mpred :=
+  iter_sepcon (combine (spaces h) rh) (space_remset_rep g).
+
+Definition remset_ext_rep (sh: share) (g: LGraph) (ext: remset_ext) : mpred :=
+  match ext with
+  | RemSetOutlier p v => data_at sh int_or_ptr_type (GC_Pointer2val p) v
+  | RemSetVertex vertex v => data_at sh int_or_ptr_type (vertex_address g vertex) v
+  end.
+
+Definition remset_rep (sh: share) (g: LGraph) (rmst: remset) : mpred :=
+  iter_sepcon rmst (remset_ext_rep sh g).
+
+Definition space_quad (sp: space): (reptype space_type) :=
   let s := sp.(space_start) in (s, (offset_val (WORD_SIZE * sp.(used_space)) s,
                                     (offset_val (WORD_SIZE * sp.(available_space)) s,
-                                     offset_val (WORD_SIZE * sp.(available_space)) s))).
+                                     offset_val (WORD_SIZE * sp.(total_space)) s))).
 
 Definition heap_struct_rep (sh: share) (sp_reps: list (@reptype CompSpecs space_type)) (h: val):
   mpred := @data_at CompSpecs sh heap_type sp_reps h.
@@ -71,7 +89,7 @@ Definition frame_shell_rep (sh: share) (fr: frame) (next: val) : mpred :=
          (r, next)) a
   end.
 
-  Fixpoint frames_shell_rep (sh: share) (frames: list frame) : mpred :=
+Fixpoint frames_shell_rep (sh: share) (frames: list frame) : mpred :=
   match frames with
   | nil => emp
   | fr :: rest => frame_shell_rep sh fr (frames_p rest) * frames_shell_rep sh rest
@@ -339,7 +357,7 @@ Proof.
 Qed.
 
 Definition heap_rep (sh: share) (h: heap) (p: val) :=
-  heap_struct_rep sh (map space_tri h.(spaces)) p * heap_rest_rep h.
+  heap_struct_rep sh (map space_quad h.(spaces)) p * heap_unused_rep h.
 
 Definition before_gc_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   let nursery := heap_head ti.(ti_heap) in
@@ -351,8 +369,8 @@ Definition before_gc_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   frames_rep sh (ti_frames ti) *
   heap_struct_rep
     sh ((p, (Vundef, (n_lim,n_lim)))
-          :: map space_tri (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
-  heap_rest_rep ti.(ti_heap).
+          :: map space_quad (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
+  heap_unused_rep ti.(ti_heap).
 
 Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   data_at sh thread_info_type
@@ -850,21 +868,21 @@ Definition heap_rest_gen_data_at_ (g: LGraph) (h: heap) (gen: nat) :=
                    (available_space (nth_space h gen) - graph_gen_size g gen))
            (offset_val (WORD_SIZE * graph_gen_size g gen) (gen_start g gen)).
 
-Lemma heap_rest_rep_iter_sepcon: forall g h,
+Lemma heap_unused_rep_iter_sepcon: forall g h,
     graph_heap_compatible g h ->
-    heap_rest_rep h =
+    heap_unused_rep h =
     iter_sepcon (nat_inc_list (length (g_gen (glabel g))))
                 (heap_rest_gen_data_at_ g h).
 Proof.
-  intros. unfold heap_rest_rep.
+  intros. unfold heap_unused_rep.
   pose proof (gt_gs_compatible _ _ H). destruct H as [? [? ?]].
   rewrite <- (firstn_skipn (length (g_gen (glabel g))) (spaces h)).
   rewrite iter_sepcon_app_sepcon. rewrite <- map_skipn in H1.
   remember (skipn (length (g_gen (glabel g))) (spaces h)).
-  assert (iter_sepcon l space_rest_rep = emp). {
+  assert (iter_sepcon l space_unused_rep = emp). {
     clear Heql. induction l; simpl. 1: reflexivity.
     rewrite IHl by (simpl in H1; apply Forall_tl in H1; assumption).
-    rewrite Forall_forall in H1. simpl in H1. unfold space_rest_rep. rewrite if_true.
+    rewrite Forall_forall in H1. simpl in H1. unfold space_unused_rep. rewrite if_true.
     - rewrite emp_sepcon; reflexivity.
     - symmetry. apply H1. left; reflexivity.
   } rewrite H3.
@@ -872,7 +890,7 @@ Proof.
     with (map (nth_space h) (nat_inc_list (length (g_gen (glabel g))))).
   - rewrite <- iter_sepcon_map, sepcon_emp.
     apply iter_sepcon_func_strong. intros gen ?.
-    unfold space_rest_rep, heap_rest_gen_data_at_. rewrite nat_inc_list_In_iff in H4.
+    unfold space_unused_rep, heap_rest_gen_data_at_. rewrite nat_inc_list_In_iff in H4.
     specialize (H0 _ H4). destruct H0 as [? [? ?]]. rewrite <- H0, if_false.
     + unfold gen_start. rewrite if_true. 2: assumption. rewrite <- H5, <- H6. f_equal.
     + pose proof (start_isptr (nth_gen g gen)).
@@ -887,21 +905,22 @@ Proof.
       rewrite IHm by (simpl in H2; lia). simpl. destruct ls; reflexivity.
 Qed.
 
-Lemma heap_rest_rep_data_at_: forall (g: LGraph) (h: heap) gen,
+Lemma heap_unused_rep_data_at_: forall (g: LGraph) (h: heap) gen,
     graph_has_gen g gen ->
     graph_heap_compatible g h ->
-    heap_rest_rep h |-- heap_rest_gen_data_at_ g h gen * TT.
+    heap_unused_rep h |-- heap_rest_gen_data_at_ g h gen * TT.
 Proof.
-  intros. rewrite (heap_rest_rep_iter_sepcon g) by assumption.
+  intros. rewrite (heap_unused_rep_iter_sepcon g) by assumption.
   sep_apply (iter_sepcon_in_true (heap_rest_gen_data_at_ g h)
                                  (nat_inc_list (length (g_gen (glabel g)))) gen).
   - rewrite nat_inc_list_In_iff. assumption.
   - apply derives_refl.
 Qed.
 
+(* TODO maybe change the name of generation_data_at_? *)
 Definition generation_data_at_ g t_info gen :=
   data_at_ (nth_sh g gen)
-           (tarray int_or_ptr_type (gen_size t_info gen)) (gen_start g gen).
+           (tarray int_or_ptr_type (available_size t_info gen)) (gen_start g gen).
 
 Lemma gr_hrgda_data_at_: forall g h gen,
     graph_has_gen g gen ->
@@ -913,18 +932,18 @@ Proof.
   unfold heap_rest_gen_data_at_, generation_data_at_.
   remember (nth_sh g gen) as sh.
   rewrite <- (data_at__tarray_value sh _ _ (gen_start g gen)).
-  - unfold gen_size. entailer!!.
+  - unfold available_size. entailer!!.
   - unfold graph_gen_size. destruct (gt_gs_compatible _ _ H0 _ H) as [_ [_ ?]].
-    rewrite H1. apply space_order.
+    rewrite H1. apply used_leq_available.
 Qed.
 
 Lemma graph_heap_rest_iter_sepcon: forall g h,
     graph_heap_compatible g h ->
-    graph_rep g * heap_rest_rep h |--
+    graph_rep g * heap_unused_rep h |--
                                 iter_sepcon (nat_inc_list (length (g_gen (glabel g))))
                                 (generation_data_at_ g h).
 Proof.
-  intros. unfold graph_rep. rewrite (heap_rest_rep_iter_sepcon _ _ H).
+  intros. unfold graph_rep. rewrite (heap_unused_rep_iter_sepcon _ _ H).
   assert (forall gen,
              In gen (nat_inc_list (length (g_gen (glabel g)))) -> graph_has_gen g gen)
     by (intros; rewrite nat_inc_list_In_iff in H0; assumption).
@@ -941,7 +960,7 @@ Qed.
 Lemma graph_and_heap_rest_data_at_: forall (g: LGraph) (h: heap) gen,
     graph_has_gen g gen ->
     graph_heap_compatible g h ->
-    graph_rep g * heap_rest_rep h |--
+    graph_rep g * heap_unused_rep h |--
                                 generation_data_at_ g h gen * TT.
 Proof.
   intros. sep_apply (graph_heap_rest_iter_sepcon _ _ H0).
@@ -953,20 +972,20 @@ Qed.
 Lemma graph_and_heap_rest_valid_ptr: forall (g: LGraph) (h: heap) gen,
     graph_has_gen g gen -> ti_size_spec h ->
     graph_heap_compatible g h ->
-    graph_rep g * heap_rest_rep h |--
+    graph_rep g * heap_unused_rep h |--
                                 valid_pointer (space_start (nth_space h gen)).
 Proof.
   intros. sep_apply (graph_and_heap_rest_data_at_ _ _ _ H H1).
   unfold generation_data_at_. destruct (gt_gs_compatible _ _ H1 _ H) as [? [? ?]].
   sep_apply (data_at__memory_block_cancel
                (nth_sh g gen)
-               (tarray int_or_ptr_type (gen_size h gen)) (gen_start g gen)).
+               (tarray int_or_ptr_type (available_size h gen)) (gen_start g gen)).
   simpl sizeof. rewrite Z.max_r by
-      (unfold gen_size; apply (proj1 (available_space_range (nth_space h gen)))).
+      (unfold available_size; apply (proj1 (available_space_range (nth_space h gen)))).
   unfold gen_start. if_tac. 2: contradiction.
   rewrite H2. fold WORD_SIZE.
   sep_apply (memory_block_valid_ptr
-               (nth_sh g gen) (WORD_SIZE * gen_size h gen)
+               (nth_sh g gen) (WORD_SIZE * available_size h gen)
                (space_start (nth_space h gen))); unfold WORD_SIZE;
     [|pose proof (ti_size_gt_0 g h gen H1 H5 H0); lia | entailer!!].
   unfold nth_sh. apply readable_nonidentity, writable_readable,
@@ -976,13 +995,13 @@ Qed.
 Lemma generation_data_at__ptrofs: forall g h gen b i,
     Vptr b i = gen_start g gen ->
     generation_data_at_ g h gen |--
-                        !! (WORD_SIZE * gen_size h gen + Ptrofs.unsigned i <=
+                        !! (WORD_SIZE * available_size h gen + Ptrofs.unsigned i <=
                             Ptrofs.max_unsigned).
 Proof.
   intros. unfold generation_data_at_. rewrite <- H. entailer!.
   destruct H0 as [_ [_ [? _]]]. red in H0. simpl sizeof in H0. unfold WORD_SIZE.
   rewrite Z.max_r in H0; [rep_lia |
-                          unfold gen_size; apply (proj1 (available_space_range _))].
+                          unfold available_size; apply (proj1 (available_space_range _))].
 Qed.
 
 Lemma outlier_rep_single_rep: forall outlier p,
@@ -1108,9 +1127,9 @@ Qed.
 Lemma graph_and_heap_rest_v_in_range_iff: forall g h gen v,
     graph_heap_compatible g h ->
     graph_has_gen g gen -> graph_has_v g v ->
-    graph_rep g * heap_rest_rep h |--
+    graph_rep g * heap_unused_rep h |--
     !! (v_in_range (vertex_address g v) (gen_start g gen)
-                   (WORD_SIZE * gen_size h gen) <-> vgeneration v = gen).
+                   (WORD_SIZE * available_size h gen) <-> vgeneration v = gen).
 Proof.
   intros. unfold iff. rewrite and_comm. apply prop_and_right.
   - intros. rewrite <- H2. apply graph_thread_v_in_range; assumption.
@@ -1168,16 +1187,16 @@ Proof.
   simpl. cancel. apply wand_frame_ver.
 Qed.
 
-Lemma heap_rest_rep_cut: forall (h: heap) i s (H1: 0 <= i < Zlength (spaces h))
+Lemma heap_unused_rep_cut: forall (h: heap) i s (H1: 0 <= i < Zlength (spaces h))
                                 (H2: has_space (Znth i (spaces h)) s),
     space_start (Znth i (spaces h)) <> nullval ->
-    heap_rest_rep h =
+    heap_unused_rep h =
     data_at_ (space_sh (Znth i (spaces h))) (tarray int_or_ptr_type s)
              (offset_val (WORD_SIZE * used_space (Znth i (spaces h)))
                          (space_start (Znth i (spaces h)))) *
-    heap_rest_rep (cut_heap h i s).
+    heap_unused_rep (cut_heap h i s).
 Proof.
-  intros. unfold heap_rest_rep.
+  intros. unfold heap_unused_rep.
   pose proof (split3_full_length_list
                 0 i _ _ H1 (Zminus_0_l_reverse (Zlength (spaces h)))).
   replace (i - 0) with i in H0 by lia. simpl in *.
@@ -1193,7 +1212,7 @@ Proof.
                                  (space_start (Znth i (spaces h))))) as P.
   rewrite (sepcon_comm P), sepcon_assoc. f_equal.
   rewrite (sepcon_comm _ P), <- sepcon_assoc. f_equal. unfold_cut_space.
-  unfold space_rest_rep. simpl. do 2 rewrite if_false by assumption.
+  unfold space_unused_rep. simpl. do 2 rewrite if_false by assumption.
   red in H2. subst P. remember (Znth i (spaces h)) as sp.
   rewrite (data_at__tarray_value _ _ _ _ H2). rewrite offset_offset_val.
   replace (available_space sp - used_space sp - s) with
@@ -1543,7 +1562,7 @@ Proof.
 Qed.
 
 Definition space_struct_rep (sh: share) (heap_p: val) (h: heap) (gen: nat) :=
-  @data_at CompSpecs sh space_type (space_tri (nth_space h gen)) (space_address heap_p gen).
+  @data_at CompSpecs sh space_type (space_quad (nth_space h gen)) (space_address heap_p gen).
 
 Lemma heap_struct_rep_eq: forall sh l p,
     heap_struct_rep sh l p = @data_at CompSpecs sh (tarray space_type MAX_SPACES) l p.
@@ -1641,8 +1660,8 @@ Lemma heap_rep_ramif_stable: forall sh h p gen1 gen2,
        -* heap_rep sh h p).
 Proof.
   intros. unfold heap_rep.
-  set (Q := heap_rest_rep _).
-  remember (map space_tri (spaces h)).
+  set (Q := heap_unused_rep _).
+  remember (map space_quad (spaces h)).
   assert (0 <= Z.of_nat gen1 < MAX_SPACES) by rep_lia.
   assert (0 <= Z.of_nat gen2 < MAX_SPACES) by rep_lia.
   assert (Z.of_nat gen1 <> Z.of_nat gen2) by lia.
@@ -1720,8 +1739,8 @@ Lemma heap_rep_ramif_stable_1: forall sh h p gen,
     (space_struct_rep sh p h gen -* heap_rep sh h p).
 Proof.
   intros. unfold heap_rep.
-  set (Q := heap_rest_rep _). clearbody Q.
-  remember (map space_tri (spaces h)).
+  set (Q := heap_unused_rep _). clearbody Q.
+  remember (map space_quad (spaces h)).
   assert (Zlength l = MAX_SPACES) by (subst; rewrite Zlength_map; apply spaces_size).
   destruct (heap_struct_rep_split_single sh l p (Z.of_nat gen))
     as [B ?]; try rep_lia; try assumption. rewrite H1, !Nat2Z.id. clear H1.
@@ -1793,18 +1812,19 @@ Proof.
   rewrite emp_sepcon, sepcon_comm. reflexivity.
 Qed.
 
-Lemma heap_rest_rep_reset: forall (g: LGraph) h gen,
+(*
+Lemma heap_unused_rep_reset: forall (g: LGraph) h gen,
     graph_heap_compatible g h -> graph_has_gen g gen ->
-    heap_rest_rep h *
-    generation_rep g gen |-- heap_rest_rep (reset_nth_heap gen h).
+    heap_unused_rep h *
+    generation_rep g gen |-- heap_unused_rep (reset_nth_heap gen h).
 Proof.
-  intros. unfold heap_rest_rep. simpl.
+  intros. unfold heap_unused_rep. simpl.
   assert (gen < length (spaces h))%nat by
       (red in H0; destruct H as [_ [_ ?]]; lia).
   destruct (reset_nth_space_Permutation _ _ H1) as [l [? ?]].
   rewrite (iter_sepcon_permutation _ H3). rewrite (iter_sepcon_permutation _ H2).
   simpl. cancel. destruct (gt_gs_compatible _ _ H _ H0) as [? [? ?]].
-  fold (nth_space h gen). unfold space_rest_rep. unfold reset_space at 1.
+  fold (nth_space h gen). unfold space_unused_rep. unfold reset_space at 1.
   assert (isptr (space_start (nth_space h gen))) by
       (rewrite <- H4; apply start_isptr).
   assert (space_start (nth_space h gen) <> nullval). {
@@ -1816,8 +1836,9 @@ Proof.
   replace (WORD_SIZE * 0)%Z with 0 by lia.
   rewrite isptr_offset_val_zero by assumption.
   replace (available_space s - 0) with (available_space s) by lia.
-  rewrite <- data_at__tarray_value by apply space_order. cancel.
+  rewrite <- data_at__tarray_value by apply used_leq_available. cancel.
 Qed.
+*)
 
 Definition space_token_rep (sp: space): mpred :=
   if Val.eq (space_start sp) nullval then emp
@@ -1832,7 +1853,7 @@ Proof.
   intros. destruct H. unfold ti_token_rep. f_equal.
   apply (iter_sepcon_pointwise_eq _ _ _ _ null_space null_space).
   - rewrite <- !ZtoNat_Zlength, !spaces_size. reflexivity.
-  - intros. fold (nth_space h1 i). fold (nth_space h2 i). unfold gen_size in H.
+  - intros. fold (nth_space h1 i). fold (nth_space h2 i). unfold available_size in H.
     unfold space_token_rep. rewrite H, H0.
     reflexivity.
 Qed.
@@ -1854,26 +1875,26 @@ Proof.
 Qed.
 
 Lemma heap_struct_rep_add: forall (heap_p: val) (h: heap) sh sp i (Hs: 0 <= i < MAX_SPACES),
-    data_at sh space_type (space_tri sp) (space_address heap_p (Z.to_nat i)) *
+    data_at sh space_type (space_quad sp) (space_address heap_p (Z.to_nat i)) *
     (@data_at
        CompSpecs sh
        (tarray space_type
                (@Zlength (@reptype CompSpecs space_type)
                          (@sublist (@reptype CompSpecs space_type) (i + 1) MAX_SPACES
-                                   (map space_tri (spaces h)))))
+                                   (map space_quad (spaces h)))))
        (@sublist (@reptype CompSpecs space_type) (i + 1) MAX_SPACES
-                 (map space_tri (spaces h)))
+                 (map space_quad (spaces h)))
        (offset_val (@sizeof CompSpecs space_type)
                    (offset_val (SPACE_STRUCT_SIZE * i) heap_p)) *
      @data_at CompSpecs sh (tarray space_type i)
               (@sublist (@reptype CompSpecs space_type) 0 i
-                        (map space_tri (spaces h))) heap_p) =
+                        (map space_quad (spaces h))) heap_p) =
     (heap_struct_rep
-       sh (map space_tri (spaces (add_new_space h sp i Hs))) heap_p).
+       sh (map space_quad (spaces (add_new_space h sp i Hs))) heap_p).
 Proof.
-  intros. assert (Zlength (map space_tri (spaces h)) = MAX_SPACES) by
+  intros. assert (Zlength (map space_quad (spaces h)) = MAX_SPACES) by
       (rewrite Zlength_map, spaces_size; reflexivity).
-  assert (Zlength (map space_tri (spaces (add_new_space h sp i Hs))) =
+  assert (Zlength (map space_quad (spaces (add_new_space h sp i Hs))) =
           MAX_SPACES) by (rewrite Zlength_map, spaces_size; reflexivity).
   rewrite hsr_single_explicit with (i := i) by assumption. simpl.
   rewrite <- !upd_Znth_map, upd_Znth_same by lia.
@@ -1881,18 +1902,18 @@ Proof.
   rewrite sublist_upd_Znth_l by lia. reflexivity.
 Qed.
 
-Lemma heap_rest_rep_add: forall h sp i (Hs: 0 <= i < MAX_SPACES),
+Lemma heap_unused_rep_add: forall h sp i (Hs: 0 <= i < MAX_SPACES),
     space_start (Znth i (spaces h)) = nullval ->
-    heap_rest_rep h * space_rest_rep sp =
-    heap_rest_rep (add_new_space h sp i Hs).
+    heap_unused_rep h * space_unused_rep sp =
+    heap_unused_rep (add_new_space h sp i Hs).
 Proof.
-  intros. unfold heap_rest_rep. simpl. remember (spaces h).
+  intros. unfold heap_unused_rep. simpl. remember (spaces h).
   rewrite <- (sublist_same 0 (Zlength l) l) at 1 by lia.
   assert (Zlength l = MAX_SPACES) by (subst; rewrite spaces_size; reflexivity).
   rewrite upd_Znth_unfold. 2: now rewrite H0.
   rewrite <- (sublist_rejoin 0 i) by lia. rewrite !iter_sepcon_app_sepcon.
   rewrite sepcon_assoc. f_equal. rewrite (sublist_next i) by lia. simpl.
-  rewrite sepcon_emp, sepcon_comm. f_equal. subst l. unfold space_rest_rep at 1.
+  rewrite sepcon_emp, sepcon_comm. f_equal. subst l. unfold space_unused_rep at 1.
   rewrite if_true by assumption. rewrite emp_sepcon. reflexivity.
 Qed.
 
@@ -2059,7 +2080,7 @@ Lemma sepcon_isolate_nth: forall {A} `{INH: Inhabitant A} (P: A -> mpred) (al: l
 Qed.
 
 Definition limit_address g t_info from :=
-  offset_val (WORD_SIZE * gen_size t_info from) (gen_start g from).
+  offset_val (WORD_SIZE * available_size t_info from) (gen_start g from).
 
 Definition next_address t_info to :=
   field_address heap_type
@@ -2136,7 +2157,6 @@ Inductive frame_shells_eq: forall frames1 frames2 : list frame, Prop :=
     frame_shells_eq r1 r2 ->
     frame_shells_eq (fr1::r1) (fr2::r2).
 
-
 Lemma frame_shells_eq_refl: reflexive _ frame_shells_eq.
 Proof.
 intros frs.
@@ -2144,7 +2164,6 @@ induction frs.
 constructor.
 constructor; auto.
 Qed.
-
 
 Lemma frame_shells_eq_trans: transitive _ frame_shells_eq.
 Proof.

@@ -139,6 +139,7 @@ CertiGC/GCGraph.v
 CertiGC/verif_forward.v
 CertiGC/verif_do_scan.v
 CertiGC/verif_forward_roots.v
+CertiGC/verif_forward_remset.v
 CertiGC/forward_lemmas.v
 CertiGC/verif_forward1.v
 CertiGC/verif_forward2.v

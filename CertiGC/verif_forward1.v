@@ -64,15 +64,15 @@ Proof.
     gather_SEP (graph_rep _) (outlier_rep _).
     sep_apply (extr_valid_int_or_ptr _ _ _ Hfpc). entailer!!. }
   forward_call (exterior2val g extr).
-  remember (graph_rep g * heap_rest_rep h * outlier_rep outlier)
+  remember (graph_rep g * heap_unused_rep h * outlier_rep outlier)
     as P. pose proof graph_and_heap_rest_data_at_ _ _ _ Hfrom Hghc as Hgenat.
   unfold generation_data_at_ in Hgenat. remember (gen_start g from) as fp.
-  remember (nth_sh g from) as fsh. remember (gen_size h from) as gn.
+  remember (nth_sh g from) as fsh. remember (available_size h from) as gn.
   remember (WORD_SIZE * gn)%Z as fn.
   assert (Pweak: P |-- (weak_derives P (memory_block fsh fn fp * TT) && emp) * P). {
     apply weak_derives_strong. subst. sep_apply Hgenat.
     rewrite data_at__memory_block.
-    rewrite sizeof_tarray_int_or_ptr; [Intros; cancel | unfold gen_size].
+    rewrite sizeof_tarray_int_or_ptr; [Intros; cancel | unfold available_size].
     destruct (available_space_tight_range (nth_space h from)). assumption. }
   destruct extr as [z | gp | ev]; simpl exterior2val.
   - unfold odd_Z2val. forward_if. 1: contradiction.
@@ -82,7 +82,7 @@ Proof.
     2: apply Int.one_not_zero in H; contradiction.
     forward_call (Vptr b i).
     unfold heap_rep; Intros.
-    gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _). rewrite <- HeqP.
+    gather_SEP (graph_rep _) (heap_unused_rep _) (outlier_rep _). rewrite <- HeqP.
     replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
       (entailer; assumption). Intros. simpl exterior2val in *. simpl in Hfpc.
     assert (P |-- (weak_derives P (valid_pointer (Vptr b i) * TT) && emp) * P) as Hweakp. {
@@ -94,7 +94,7 @@ Proof.
       (entailer; assumption). Intros.
     forward_call (fsh, fp, fn, (Vptr b i), P). Intros vret. destruct vret as [Hv | Hv].
     + rewrite HeqP. Intros.
-      gather_SEP (graph_rep g) (heap_rest_rep _) (outlier_rep _).
+      gather_SEP (graph_rep g) (heap_unused_rep _) (outlier_rep _).
       change (Vptr b i) with (GC_Pointer2val (GCPtr b i)) in Hv.
       rewrite Heqfp, Heqfn, Heqgn in Hv.
       sep_apply (graph_heap_outlier_FF g h outlier from (GCPtr b i)).
@@ -106,7 +106,7 @@ Proof.
     forward_if. 2: apply Int.one_not_zero in H; contradiction. clear H H'.
     simpl in Hipi, Hvextr. forward_call (Vptr b i).
     rewrite <- Heqev in *. unfold heap_rep; Intros.
-    gather_SEP (graph_rep _) (heap_rest_rep _) (outlier_rep _). rewrite <- HeqP.
+    gather_SEP (graph_rep _) (heap_unused_rep _) (outlier_rep _). rewrite <- HeqP.
     replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
       (entailer; assumption). Intros.
     assert (P |-- (weak_derives P (valid_pointer (vertex_address g ev) * TT) && emp)
@@ -165,16 +165,16 @@ Proof.
         rewrite nth_space_Znth in *.
         remember (Znth (Z.of_nat to) (spaces h)) as sp_to.
         assert (Hss: isptr (space_start sp_to)) by (rewrite <- Has; apply start_isptr).
-        remember (map space_tri (spaces h)) as l.
+        remember (map space_quad (spaces h)) as l.
         assert (Hst: @Znth (val * (val * (val*val))) (Vundef, (Vundef, (Vundef,Vundef)))
-                  (Z.of_nat to) l = space_tri sp_to). {
+                  (Z.of_nat to) l = space_quad sp_to). {
           subst l sp_to. rewrite Znth_map by (rewrite spaces_size; rep_lia). reflexivity. }
         unfold heap_next_address.
-        forward; rewrite Hst; unfold space_tri. 1: entailer !!.
+        forward; rewrite Hst; unfold space_quad. 1: entailer !!.
         forward. simpl sem_binary_operation'.
         rewrite sapi_ptr_val; [|assumption | rep_lia].
         Opaque Znth. forward. Transparent Znth.
-        rewrite sapil_ptr_val by assumption. rewrite Hst. unfold space_tri.
+        rewrite sapil_ptr_val by assumption. rewrite Hst. unfold space_quad.
         rewrite <- Z.add_assoc.
         replace (1 + Zlength (raw_fields (vlabel g ev))) with (vertex_size g ev) by
           (unfold vertex_size; lia). thaw FR. freeze [0; 2; 3; 4; 5] FR.
@@ -184,14 +184,14 @@ Proof.
         assert (Hn: space_start (Znth (Z.of_nat to) (spaces h)) <> nullval). {
           rewrite <- Heqsp_to. destruct (space_start sp_to); try contradiction.
           discriminate. }
-        rewrite (heap_rest_rep_cut h (Z.of_nat to) (vertex_size g ev) Hi Hh Hn).
+        rewrite (heap_unused_rep_cut h (Z.of_nat to) (vertex_size g ev) Hi Hh Hn).
         rewrite <- Heqsp_to. thaw FR. simpl snd. simpl fst.
-        gather_SEP (data_at _ heap_type _ _) (heap_rest_rep _).
+        gather_SEP (data_at _ heap_type _ _) (heap_unused_rep _).
         replace_SEP 0 (heap_rep sh (cut_heap h (Z.of_nat to) (vertex_size g ev)) hp). {
           entailer !!. unfold heap_rep, heap_struct_rep.
           apply sepcon_derives; [ | apply derives_refl]. unfold_cut_heap. simpl spaces.
           apply derives_refl'; f_equal. unfold_cut_space.
-          unfold space_tri at 2. rewrite <- upd_Znth_map. f_equal. }
+          unfold space_quad at 2. rewrite <- upd_Znth_map. f_equal. }
         sep_apply (graph_vertex_ramif_stable _ _ Hfpc). Intros.
         freeze [1; 2; 3; 4; 5] FR. rewrite Hvv. remember (nth_sh g from) as shv.
         assert (Hws: writable_share (space_sh sp_to)) by
@@ -362,7 +362,7 @@ Proof.
               replace fp with (gen_start g' from) by
                 (subst fp g'; apply lcv_gen_start; assumption).
               replace (offset_val fn (gen_start g' from)) with (limit_address g' h' from) by
-                (unfold limit_address; subst fn gn h'; now rewrite cti_gen_size).
+                (unfold limit_address; subst fn gn h'; now rewrite cti_available_size).
               assert (Hfc': forward_condition g' h' from to). {
                 eapply forward_graph_and_heap_fc; try eassumption; red; easy. }
               assert (Hghc': graph_heap_compatible g' h'). {
