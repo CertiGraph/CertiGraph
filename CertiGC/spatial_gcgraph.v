@@ -57,8 +57,54 @@ Definition remset_ext_rep (sh: share) (g: LGraph) (ext: remset_ext) : mpred :=
   | RemSetVertex vertex v => data_at sh int_or_ptr_type (vertex_address g vertex) v
   end.
 
+Definition remset_ext_val (g: LGraph) (ext: remset_ext) : val :=
+  match ext with
+  | RemSetOutlier p _ => GC_Pointer2val p
+  | RemSetVertex vertex _ => vertex_address g vertex
+  end.
+
+Lemma remset_ext_rep_eq: forall sh g ext,
+    remset_ext_rep sh g ext = data_at sh int_or_ptr_type (remset_ext_val g ext) (extract_address ext).
+Proof. intros. destruct ext; simpl; reflexivity. Qed.
+
 Definition remset_rep (sh: share) (g: LGraph) (rmst: remset) : mpred :=
   iter_sepcon rmst (remset_ext_rep sh g).
+
+Lemma remset_rep_In_TT: forall sh g rmst rext,
+    In (extract_address rext) (map extract_address rmst) ->
+    exists repval, remset_rep sh g rmst |-- data_at sh int_or_ptr_type repval (extract_address rext) * TT.
+Proof.
+  intros. apply in_split in H. destruct H as [l1 [l2 ?]]. assert (Zlength l1 < Zlength rmst) by list_solve.
+  unfold remset_rep. rewrite <- (sublist_same 0 (Zlength rmst) rmst) by reflexivity.
+  rewrite (sublist_split 0 (Zlength l1) (Zlength rmst)) by list_solve.
+  rewrite iter_sepcon_app_comm. rewrite (sublist_split (Zlength l1) (Zlength l1 + 1) (Zlength rmst)) by list_solve.
+  rewrite (sublist_one (Zlength l1) (Zlength l1 + 1) rmst) by list_solve. rewrite !iter_sepcon_app_sepcon.
+  simpl. rewrite remset_ext_rep_eq. rewrite !sepcon_assoc. exists (remset_ext_val g (Znth (Zlength l1) rmst)).
+  assert (Heaeq: extract_address (Znth (Zlength l1) rmst) = extract_address rext). {
+    rewrite <- Znth_map by list_solve. rewrite H. list_solve. }
+  rewrite Heaeq. apply sepcon_derives; auto.
+Qed.
+
+Lemma remset_rep_cons_eq: forall sh g rmst rext,
+    remset_rep sh g (rext :: rmst) = remset_ext_rep sh g rext * remset_rep sh g rmst.
+Proof. intros. unfold remset_rep. simpl. reflexivity. Qed.
+
+Lemma remset_rep_noduo: forall sh g rmst,
+    nonidentity sh -> remset_rep sh g rmst |-- !! remset_nodup rmst.
+Proof.
+  intros sh g rmst Hnid. unfold remset_nodup. induction rmst.
+  - apply prop_right. simpl. constructor.
+  - simpl. rewrite remset_rep_cons_eq.
+    assert (remset_ext_rep sh g a * remset_rep sh g rmst |--
+                                      !! (~ In (extract_address a) (map extract_address rmst))). {
+      apply not_prop_right. intros. apply (remset_rep_In_TT sh g) in H. destruct H as [repval H].
+      rewrite remset_ext_rep_eq. sep_apply H. rewrite sepcon_comm with (Q := TT).
+      rewrite sepcon_assoc. apply derives_trans with (TT * FF).
+      - apply sepcon_derives; auto. apply data_at_conflict; auto. reflexivity.
+      - rewrite sepcon_FF. apply derives_refl. }
+    sep_apply H. Intros. sep_apply IHrmst. Intros. apply prop_right.
+    apply NoDup_cons; assumption.
+Qed.
 
 Definition space_quad (sp: space): (reptype space_type) :=
   let s := sp.(space_start) in (s, (offset_val (WORD_SIZE * sp.(used_space)) s,
