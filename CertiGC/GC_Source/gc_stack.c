@@ -519,7 +519,7 @@ void *export_heap(struct thread_info *ti, value root) {
 }
 
 /* mutable write barrier */
-void certicoq_modify(struct thread_info *ti, value *p_cell, value p_val) {
+void mutable_update(struct thread_info *ti, value *p_cell, value p_val) {
   assert (ti->alloc < ti->limit);
   *p_cell = p_val;
   if (is_ptr(p_val)) {

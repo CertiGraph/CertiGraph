@@ -70,9 +70,9 @@ Proof. intros. destruct ext; simpl; reflexivity. Qed.
 Definition remset_rep (sh: share) (g: LGraph) (rmst: remset) : mpred :=
   iter_sepcon rmst (remset_ext_rep sh g).
 
-Lemma remset_rep_In_TT: forall sh g rmst rext,
-    In (extract_address rext) (map extract_address rmst) ->
-    exists repval, remset_rep sh g rmst |-- data_at sh int_or_ptr_type repval (extract_address rext) * TT.
+Lemma remset_rep_In_TT: forall sh g rmst addr,
+    In addr (map extract_address rmst) ->
+    exists repval, remset_rep sh g rmst |-- data_at sh int_or_ptr_type repval addr * TT.
 Proof.
   intros. apply in_split in H. destruct H as [l1 [l2 ?]]. assert (Zlength l1 < Zlength rmst) by list_solve.
   unfold remset_rep. rewrite <- (sublist_same 0 (Zlength rmst) rmst) by reflexivity.
@@ -80,7 +80,7 @@ Proof.
   rewrite iter_sepcon_app_comm. rewrite (sublist_split (Zlength l1) (Zlength l1 + 1) (Zlength rmst)) by list_solve.
   rewrite (sublist_one (Zlength l1) (Zlength l1 + 1) rmst) by list_solve. rewrite !iter_sepcon_app_sepcon.
   simpl. rewrite remset_ext_rep_eq. rewrite !sepcon_assoc. exists (remset_ext_val g (Znth (Zlength l1) rmst)).
-  assert (Heaeq: extract_address (Znth (Zlength l1) rmst) = extract_address rext). {
+  assert (Heaeq: extract_address (Znth (Zlength l1) rmst) = addr). {
     rewrite <- Znth_map by list_solve. rewrite H. list_solve. }
   rewrite Heaeq. apply sepcon_derives; auto.
 Qed.

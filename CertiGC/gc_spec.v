@@ -436,6 +436,30 @@ Definition resume_spec :=
          graph_rep g;
          before_gc_thread_info_rep sh t_info ti).
 
+(*
+Definition mutable_update_spec :=
+  DECLARE _mutable_update
+    WITH sh: share, ti: val, t_info: thread_info, g: LGraph, roots : roots_t, out: outlier_t,
+         h: heap, t: N, n: N, fields: list rep_type,
+         r: rep_type (* is the same as exterior_t *), i: Z, v: rep_type
+  PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
+  PROP (writable_share sh;
+        graph_heap_compatible g h; roots_compatible g out roots;
+        graph_cRep g r (boxed t n) fields; i < n)
+    PARAMS (ti; offset_val (i * WORD_SIZE) (rep_type_val r); rep_type_val v)
+    GLOBALS ()
+    SEP (graph_rep g;
+         ti_token_rep (ti_heap t_info) (ti_heap_p t_info))
+  POST [tvoid]
+    EX g': LGraph, EX h': heap, EX t_info': thread_info,
+    PROP (ti_frames t_info = ti_frames t_info'
+          (* g' is g with i_th field of r replaced by v *))
+    RETURN ()
+    SEP (graph_rep g';
+         before_gc_thread_info_rep sh t_info' ti;
+         ti_token_rep (ti_heap t_info') (ti_heap_p t_info')).
+*)
+
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
   WITH rsh: share, sh: share, gv: globals, ti: val,

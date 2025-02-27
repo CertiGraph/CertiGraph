@@ -61,13 +61,15 @@ Proof.
     apply typed_false_of_bool in H. rewrite negb_false_iff in H. apply lt64_repr in H.
     2: apply rest_space_repable_signed. 2: apply remset_space_repable_signed.
     exfalso. unfold enough_space_enhanced in Hese. fold (rest_gen_size h to) in H.
-    fold (remset_gen_size h from) in H. pose proof unmarked_gen_size_nonneg g from. lia.
+    fold (available_size h from) in H. fold (remset_gen_size h from) in H.
+    pose proof unmarked_gen_size_nonneg g from. lia.
   - Intros. thaw FR.
     forward_loop (EX n: Z, EX g': LGraph, EX h': heap, EX rh': remset_heap, EX rmst': remset,
                   PROP ((g', h', rh', rmst') = fold_left (forward_remset_item from to)
                         (sublist 0 n (nth from rh [])) (g, h, rh, rmst))
                   LOCAL (temp _q
-                           (offset_val (WORD_SIZE * available_space (nth_space h' from))
+                           (offset_val (WORD_SIZE *
+                                          (available_space (nth_space h' from) + n))
                               (space_start (nth_space h' from)));
                          temp _from_rem_limit
                            (offset_val (WORD_SIZE * total_space (nth_space h' from))
@@ -83,6 +85,9 @@ Proof.
                        graph_rep g'; heap_remset_rep g' h' rh'; remset_rep sh g' rmst')).
     + Exists 0 g h rh rmst. simpl fold_left. entailer !.
     + Intros n g' h' rh' rmst'. forward_if.
-      * apply denote_tc_test_eq_split. unfold heap_remset_rep.
+      * change (Tpointer Tvoid {| attr_volatile := false; attr_alignas := Some 3%N |})
+          with int_or_ptr_type in *.
+          apply denote_tc_test_eq_split.
+        -- unfold heap_remset_rep.
 
 Abort.
