@@ -1954,6 +1954,8 @@ Qed.
 
 Definition available_size h n := available_space (nth_space h n).
 
+Definition total_size h n := total_space (nth_space h n).
+
 Lemma gsc_iff': forall (g: LGraph) (sp: list space),
     length (g_gen (glabel g)) <= length sp ->
     Forall (generation_space_compatible g)
@@ -3232,10 +3234,10 @@ Proof.
   - rewrite Znth_upd_Znth_diff; [reflexivity | assumption].
 Qed.
 
-Lemma cti_total_space: forall h i s n,
-    total_space (nth_space (cut_heap h i s) n) = total_space (nth_space h n).
+Lemma cti_total_size: forall h i s n,
+    total_size (cut_heap h i s) n = total_size h n.
 Proof.
-  intros. unfold cut_heap. destruct (spaces_index_dec _ _); simpl; auto.
+  intros. unfold total_size, cut_heap. destruct (spaces_index_dec _ _); simpl; auto.
   rewrite !nth_space_Znth. simpl. destruct (Z.eq_dec (Z.of_nat n) i).
   - subst i. rewrite upd_Znth_same; auto. unfold cut_space.
     destruct (has_space_dec _ _); auto.
@@ -3244,13 +3246,14 @@ Qed.
 
 Definition heap_relation (h h': heap) :=
   (forall n, available_size h n = available_size h' n) /\
-  (forall n, space_start (nth_space h n) = space_start (nth_space h' n)).
+    (forall n, space_start (nth_space h n) = space_start (nth_space h' n)) /\
+    (forall n, total_size h n = total_size h' n).
 
 Definition thread_info_relation t t':=
   ti_heap_p t = ti_heap_p t' /\ heap_relation (ti_heap t) (ti_heap t').
 
 Lemma tir_id: forall t, thread_info_relation t t.
-Proof. intros. red. split; [|split]; reflexivity. Qed.
+Proof. intros. red. split; [|split; [|split]]; reflexivity. Qed.
 
 Lemma upd_Znth_diff_strong : forall {A}{d: Inhabitant A} i j l (u : A),
     0 <= j < Zlength l -> i <> j ->
@@ -3881,17 +3884,13 @@ Qed.
 
 Lemma hr_trans: forall h1 h2 h3,
   heap_relation h1 h2 -> heap_relation h2 h3 -> heap_relation h1 h3.
-Proof.
-  intros ? ? ? [? ?] [? ?]; split; intros; congruence.
-Qed.
+Proof. intros ? ? ? [? [? ?]] [? [? ?]]. split; [|split]; intros; congruence. Qed.
 
 Lemma tir_trans: forall t1 t2 t3,
     thread_info_relation t1 t2 -> thread_info_relation t2 t3 ->
     thread_info_relation t1 t3.
 Proof.
-  intros. destruct H as [? [? ?]], H0 as [? [? ?]].
-  split; [|split]; [rewrite H; assumption | intros; rewrite H1; apply H3|
-                   intros; rewrite H2; apply H4].
+  intros. destruct H as [? ?], H0 as [? ?]. split; [congruence | eapply hr_trans; eassumption].
 Qed.
 
 Lemma forward_loop_add_tail: forall from to depth l intr g1 g2 g3,
@@ -4824,11 +4823,11 @@ Definition gen_v_num (g: LGraph) (gen: nat): nat := number_of_vertices (nth_gen 
 
 Definition nth_gen_size (n: nat) := NURSERY_SIZE * two_p (Z.of_nat n).
 
-(* TODO available_size needs to be changed to gen_size *)
+(* DONE available_size needs to be changed to total_size *)
 Definition nth_gen_size_spec (h: heap) (n: nat): Prop :=
   if Val.eq (nth_space h n).(space_start) nullval
   then True
-  else available_size h n = nth_gen_size n.
+  else total_size h n = nth_gen_size n.
 
 Definition ti_size_spec (h: heap): Prop :=
   Forall (nth_gen_size_spec h) (nat_inc_list (Z.to_nat MAX_SPACES)).
@@ -4876,15 +4875,13 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma space_start_isptr: forall (g: LGraph) (h: heap) i,
+Lemma space_start_isptr: forall (g: LGraph) (h: heap) gen,
     graph_heap_compatible g h ->
-    0 <= i < Zlength (spaces h) ->
-    graph_has_gen g (Z.to_nat i) ->
-    isptr (space_start (Znth i (spaces h))).
+    graph_has_gen g gen ->
+    isptr (space_start (nth_space h gen)).
 Proof.
-  intros. destruct (gt_gs_compatible _ _ H _ H1) as [? _].
-  rewrite nth_space_Znth in H2. rewrite Z2Nat.id in H2 by lia. rewrite <- H2.
-  apply start_isptr.
+  intros g h gen Hghc Hghg. destruct (gt_gs_compatible _ _ Hghc _ Hghg) as [? _].
+  rewrite <- H. apply start_isptr.
 Qed.
 
 Lemma space_start_isnull: forall (g: LGraph) (h: heap) i,
@@ -4911,7 +4908,9 @@ Lemma space_start_is_pointer_or_null: forall (g: LGraph) (h: heap) i,
     is_pointer_or_null (space_start (Znth i (spaces h))).
 Proof.
   intros. destruct (graph_has_gen_dec g (Z.to_nat i)).
-  - apply val_lemmas.isptr_is_pointer_or_null. eapply space_start_isptr; eauto.
+  - apply val_lemmas.isptr_is_pointer_or_null.
+    rewrite <- (Z2Nat.id i), <- nth_space_Znth by lia.
+    eapply space_start_isptr; eauto.
   - cut (space_start (Znth i (spaces h)) = nullval).
     + intros. rewrite H1. apply mapsto_memory_block.is_pointer_or_null_nullval.
     + eapply space_start_isnull; eauto.
@@ -4924,7 +4923,8 @@ Lemma space_start_isptr_iff: forall (g: LGraph) (h: heap) i,
     isptr (space_start (Znth i (spaces h))).
 Proof.
   intros. split; intros.
-  - eapply space_start_isptr; eauto.
+  - rewrite <- (Z2Nat.id i), <- nth_space_Znth by lia.
+    eapply space_start_isptr; eauto.
   - destruct (graph_has_gen_dec g (Z.to_nat i)). 1: assumption. exfalso.
     eapply space_start_isnull in n; eauto. rewrite n in H1. inversion H1.
 Qed.
@@ -4937,14 +4937,14 @@ Lemma space_start_isnull_iff: forall (g: LGraph) (h: heap) i,
 Proof.
   intros. split; intros. 1: eapply space_start_isnull; eauto.
   destruct (graph_has_gen_dec g (Z.to_nat i)). 2: assumption. exfalso.
-  eapply space_start_isptr in g0; eauto. rewrite H1 in g0. inversion g0.
+  eapply space_start_isptr in g0; eauto.
+  rewrite nth_space_Znth, Z2Nat.id in g0 by lia. rewrite H1 in g0. inversion g0.
 Qed.
 
-(* TODO Change later *)
 Lemma ti_size_gen: forall (g : LGraph) (h : heap) (gen : nat),
     graph_heap_compatible g h ->
     graph_has_gen g gen -> ti_size_spec h ->
-    available_size h gen = nth_gen_size gen.
+    total_size h gen = nth_gen_size gen.
 Proof.
   intros. red in H1. rewrite Forall_forall in H1.
   assert (0 <= (Z.of_nat gen) < Zlength (spaces h)). {
@@ -4958,10 +4958,9 @@ Proof.
   unfold graph_has_gen in e. exfalso; apply e. rewrite Nat2Z.id. assumption.
 Qed.
 
-(* TODO *)
 Lemma ti_size_gt_0: forall (g : LGraph) (h : heap) (gen : nat),
     graph_heap_compatible g h ->
-    graph_has_gen g gen -> ti_size_spec h -> 0 < available_size h gen.
+    graph_has_gen g gen -> ti_size_spec h -> 0 < total_size h gen.
 Proof.
   intros. erewrite ti_size_gen; eauto. unfold nth_gen_size. apply Z.mul_pos_pos.
   - rewrite NURSERY_SIZE_eq. vm_compute. reflexivity.
@@ -5856,14 +5855,13 @@ Proof.
   - apply ang_outlier_compatible; assumption.
 Qed.
 
-(* TODO *)
 Lemma ti_size_spec_add: forall h sp i (Hs: 0 <= i < MAX_SPACES),
-    available_space sp = nth_gen_size (Z.to_nat i) -> ti_size_spec h ->
+    total_space sp = nth_gen_size (Z.to_nat i) -> ti_size_spec h ->
     ti_size_spec (add_new_space h sp i Hs).
 Proof.
   intros. unfold ti_size_spec in *. rewrite Forall_forall in *. intros.
   specialize (H0 _ H1). unfold nth_gen_size_spec in *.
-  destruct (Nat.eq_dec x (Z.to_nat i)); unfold available_size.
+  destruct (Nat.eq_dec x (Z.to_nat i)); unfold total_size.
   - subst x. rewrite !ans_nth_new. if_tac; auto.
   - rewrite !ans_nth_old; assumption.
 Qed.
@@ -5965,7 +5963,7 @@ Proof.
 Qed.
 
 Lemma gcc_add: forall g h gi sp i (Hs: 0 <= i < MAX_SPACES),
-    number_of_vertices gi = O -> available_space sp = nth_gen_size (Z.to_nat i) ->
+    number_of_vertices gi = O -> total_space sp = nth_gen_size (Z.to_nat i) ->
     garbage_collect_condition g h ->
     garbage_collect_condition (lgraph_add_new_gen g gi)
                               (add_new_space h sp i Hs).
@@ -5985,6 +5983,8 @@ Proof.
   cut (two_p (16 + Z.of_nat i) > 0); [|apply two_p_gt_ZERO]; lia.
 Qed.
 
+(* TODO *)
+(*
 Lemma gc_cond_implies_do_gen_cons: forall g h i,
     safe_to_copy_to_except g i ->
     graph_has_gen g (S i) ->
@@ -6009,7 +6009,7 @@ Proof.
   - apply graph_unmarked_copy_compatible; assumption.
   - rewrite (ti_size_gen _ _ _ H1 H0 H5). apply ngs_0_lt.
   - rewrite graph_gen_unmarked_iff in H2. apply H2.
-Qed.
+Qed. *)
 
 Lemma do_gen_no_dangling_dst: forall g1 g2 roots1 roots2 from to,
   graph_has_gen g1 to -> copy_compatible g1 -> gen_unmarked g1 to ->
@@ -6128,8 +6128,8 @@ Lemma heap_relation_size_spec: forall h1 h2 : heap,
     ti_size_spec h1 -> ti_size_spec h2.
 Proof.
   intros. unfold ti_size_spec in *. rewrite Forall_forall in *. intros.
-  specialize (H0 _ H1). unfold nth_gen_size_spec in *. destruct H as [H2 H3].
-  rewrite <- H2, <- H3. assumption.
+  specialize (H0 _ H1). unfold nth_gen_size_spec in *. destruct H as [H2 [H3 H4]].
+  rewrite <- H3, <- H4. assumption.
 Qed.
 
 Lemma do_gen_gcc: forall g1 h1 roots1 g2 h2 roots2 i out,
@@ -6903,8 +6903,8 @@ Qed.
 
 Lemma cut_heap_relation: forall h i s, heap_relation h (cut_heap h i s).
 Proof.
-  intros. split; intros m;
-    [rewrite cti_available_size | rewrite cti_space_start]; reflexivity.
+  intros. split; [|split]; intros m;
+    [rewrite cti_available_size | rewrite cti_space_start | rewrite cti_total_size]; reflexivity.
 Qed.
 
 Lemma heaprel_forward_graph_and_heap: forall from to depth p g h,
@@ -7262,6 +7262,8 @@ Definition remset_space := list remset_space_item.
 
 Definition remset_heap := list remset_space.
 
+Definition nth_remset_space (rh: remset_heap) (n: nat) := nth n rh [].
+
 Definition remset := list remset_ext.
 
 Definition remset_nodup (rmst: remset) : Prop := NoDup (map extract_address rmst).
@@ -7301,13 +7303,18 @@ Definition remset_item_compatible (g: LGraph) (from: nat)
                                   raw_tag (vlabel g vtx) < NO_SCAN_TAG)
   end.
 
-Definition remset_space_compatible (g: LGraph) (from: nat) (rst: remset)
-  (items: remset_space) (sp: space) : Prop :=
-  Forall (remset_item_compatible g from rst) items /\ remset_space_size_compatible items sp.
+Definition remset_and_remset_space_compatible (g: LGraph) (from: nat) (rst: remset)
+  (items: remset_space) : Prop := Forall (remset_item_compatible g from rst) items.
+
+Definition remset_and_remset_heap_compatible (g: LGraph) (from: nat) (rst: remset)
+  (rh: remset_heap) : Prop := Forall (remset_and_remset_space_compatible g from rst) rh.
+
+Definition remset_heap_and_heap_compatible (rh: remset_heap) (h: heap): Prop :=
+  Forall2 remset_space_size_compatible rh (spaces h).
 
 Definition remset_heap_compatible (g: LGraph) (from: nat) (rst: remset)
   (rh: remset_heap) (h: heap) : Prop :=
-  Forall2 (remset_space_compatible g from rst) rh (spaces h).
+  remset_and_remset_heap_compatible g from rst rh /\ remset_heap_and_heap_compatible rh h.
 
 Definition remset_compatible (g: LGraph) (outlier: outlier_t) (rmst: remset) : Prop :=
   Forall (remset_ext_compatible g outlier) rmst.
@@ -7316,7 +7323,7 @@ Definition remset_compatible' (g: LGraph) (rmst: remset) : Prop :=
   Forall (remset_ext_compatible' g) rmst.
 
 Definition remset_gen_size (h: heap) (gen: nat): Z :=
-  total_space (nth_space h gen) - available_size h gen.
+  total_size h gen - available_size h gen.
 
 Definition enough_space_enhanced g h from to: Prop :=
   general_enough_space_to_copy g h from to (remset_gen_size h from).
@@ -7442,7 +7449,7 @@ Definition forward_remset_item (from to: nat) (ghrr: LGraph * heap * remset_heap
 
 Definition forward_remset_gh (from to : nat) (g: LGraph) (h: heap) (rh: remset_heap)
   (rmst: remset) : (LGraph * heap * remset_heap * remset) :=
-  fold_left (forward_remset_item from to) (nth from rh []) (g, h, rh, rmst).
+  fold_left (forward_remset_item from to) (Znth (Z.of_nat from) rh) (g, h, rh, rmst).
 
 Lemma remset_ext_compatible_weakened: forall g outlier re,
     remset_ext_compatible g outlier re -> remset_ext_compatible' g re.
@@ -7510,7 +7517,7 @@ Qed.
 
 Lemma remset_gen_size_noneg: forall h gen, 0 <= remset_gen_size h gen.
 Proof.
-  intros. unfold remset_gen_size, available_size.
+  intros. unfold remset_gen_size, available_size, total_size.
   pose proof available_leq_total (nth_space h gen). lia.
 Qed.
 
@@ -7529,7 +7536,7 @@ Proof. intros. apply lacv_gestc; auto. Qed.
 Lemma cut_heap_remset_gen_size_the_same: forall h i s gen,
     remset_gen_size (cut_heap h i s) gen = remset_gen_size h gen.
 Proof.
-  intros. unfold remset_gen_size. rewrite cti_available_size, cti_total_space. reflexivity.
+  intros. unfold remset_gen_size. rewrite cti_available_size, cti_total_size. reflexivity.
 Qed.
 
 Lemma lmc_enough_space_enhanced:
@@ -7863,28 +7870,27 @@ Lemma upd_remset_nodup: forall from to g rmst item,
     remset_nodup rmst -> remset_nodup (upd_remset from to g item rmst).
 Proof. unfold remset_nodup. intros. rewrite upd_remset_address_same. assumption. Qed.
 
-Lemma compatible_remset_gen_size: forall (g: LGraph) (h: heap) from rmst rh gen,
+Lemma compatible_remset_gen_size: forall (g: LGraph) (h: heap) rh gen,
     graph_heap_compatible g h ->
     graph_has_gen g gen ->
-    remset_heap_compatible g from rmst rh h ->
+    remset_heap_and_heap_compatible rh h ->
     remset_gen_size h gen = Zlength (Znth (Z.of_nat gen) rh).
 Proof.
-  intros g h from rmst rh gen Hghc Hghg Hrhc.
+  intros g h rh gen Hghc Hghg Hrhhc.
   assert (Hghg': graph_has_gen g (Z.to_nat (Z.of_nat gen))) by now rewrite Nat2Z.id.
   assert (Hgenr: 0 <= Z.of_nat gen < Zlength (spaces h)). {
     destruct Hghc as [_ [_ ?]]. hnf in Hghg. assert (gen < length (spaces h))%nat by lia.
     pose proof Zlength_correct (spaces h). list_solve. }
-  pose proof space_start_isptr _ _ _ Hghc Hgenr Hghg'. hnf in Hghc, Hghg, Hrhc.
-  pose proof Forall2_Zlength Hrhc as Hlenrh. destruct Hghc as [Hgsc [Heqnull Hlen]].
-  apply Forall2_Znth with (i := Z.of_nat gen) in Hrhc. 2: now rewrite Hlenrh.
-  destruct Hrhc as [_ Hrhc]. hnf in Hrhc.
-  remember (space_start (Znth (Z.of_nat gen) (spaces h))) as sps. destruct (Val.eq _ _).
-  1: destruct sps; simpl in H; try contradiction; inversion e.
-  symmetry. unfold remset_gen_size, available_size. rewrite nth_space_Znth. assumption.
+  pose proof space_start_isptr _ _ _ Hghc Hghg'. rewrite Nat2Z.id, nth_space_Znth in H.
+  hnf in Hghc, Hghg, Hrhhc. pose proof Forall2_Zlength Hrhhc as Hlenrh.
+  destruct Hghc as [Hgsc [Heqnull Hlen]]. apply Forall2_Znth with (i := Z.of_nat gen) in Hrhhc.
+  2: now rewrite Hlenrh. hnf in Hrhhc. remember (space_start (Znth (Z.of_nat gen) (spaces h))) as sps.
+  destruct (Val.eq _ _). 1: destruct sps; simpl in H; try contradiction; inversion e.
+  symmetry. unfold remset_gen_size, available_size, total_size. rewrite nth_space_Znth. assumption.
 Qed.
 
 Lemma gestc_decay: forall s1 s2 g h from to,
-    s2 < s1 -> general_enough_space_to_copy g h from to s1 ->
+    s2 <= s1 -> general_enough_space_to_copy g h from to s1 ->
     general_enough_space_to_copy g h from to s2.
 Proof. unfold general_enough_space_to_copy. intros. lia. Qed.
 
@@ -7964,16 +7970,16 @@ Lemma forward_remset_item_fold_ghc:
       graph_has_gen g from ->
       graph_has_gen g to ->
       remset_compatible' g rmst ->
-      Forall (remset_item_compatible g from rmst) r ->
+      remset_and_remset_space_compatible g from rmst r ->
       (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
       general_enough_space_to_copy g h from to (Zlength r) -> graph_heap_compatible g' h'.
 Proof.
   intros from to g h rh rmst g' h' rh' rmst' r Hfr Hrnd. revert g h rh rmst g' h' rh' rmst' Hrnd.
   Opaque forward_remset_item. induction r;
-    intros g h rh rmst g' h' rh' rmst' Hrnd Hghc Hcc Hndd Hgfrom Hgto Hrc Hrhc Hfrg Hese; simpl in Hfrg.
-  1: inversion Hfrg; assumption. Transparent forward_remset_item.
+    intros g h rh rmst g' h' rh' rmst' Hrnd Hghc Hcc Hndd Hgfrom Hgto Hrc Hrrsc Hfrg Hese; simpl in Hfrg.
+  1: inversion Hfrg; assumption. Transparent forward_remset_item. hnf in Hrrsc.
   destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-  symmetry in Hfri2. rewrite Forall_cons_iff in Hrhc. destruct Hrhc as [Hrica Hricr].
+  symmetry in Hfri2. rewrite Forall_cons_iff in Hrrsc. destruct Hrrsc as [Hrica Hricr].
   assert (Hrnd2: remset_nodup rmst2). {
     clear -Hfri2 Hrnd. simpl in Hfri2. destruct (negb _).
     - remember (forward_graph_and_heap _ _ _ _ _ _). destruct p as [newg newh]; inversion Hfri2.
@@ -7986,20 +7992,19 @@ Proof.
   - eapply forward_remset_item_ghg with (g:=g); eauto.
   - eapply forward_remset_item_ghg with (g:=g); eauto.
   - eapply (fri_remset_compatible _ _ g h rh rmst); eauto.
-  - rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
+  - hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
     eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
   - eapply forward_remset_item_gestc in Hfri2; eauto. 2: list_solve. destruct Hfri2. 1: list_solve.
     apply (gestc_decay (Zlength (a :: r))); [list_solve | assumption].
 Qed.
 
-Lemma rhc_forall_ric: forall g from rmst rh h,
-    remset_heap_compatible g from rmst rh h -> Forall (remset_item_compatible g from rmst) (nth from rh []).
+Lemma rrhc_forall_rrsc: forall g from rmst rh,
+    remset_and_remset_heap_compatible g from rmst rh ->
+    remset_and_remset_space_compatible g from rmst (Znth (Z.of_nat from) rh).
 Proof.
-  intros g from rmst rh h Hrhc. destruct (le_lt_dec (length rh) from). 1: rewrite nth_overflow; auto.
-  hnf in Hrhc. rewrite Forall2_forall_Znth in Hrhc. destruct Hrhc as [_ Hrhc].
-  assert (Hrg: 0 <= Z.of_nat from < Zlength rh) by (rewrite Zlength_correct; lia).
-  change [] with (@default _ (@Inhabitant_list remset_space_item)). rewrite nth_Znth'. specialize (Hrhc _ Hrg).
-  destruct Hrhc as [Hrhc _]. assumption.
+  intros g from rmst rh Hrrhc. destruct (Z_ge_dec (Z.of_nat from) (Zlength rh)).
+  1: hnf; rewrite Znth_overflow; auto. hnf in Hrrhc. rewrite Forall_forall_Znth in Hrrhc.
+  apply Hrrhc. lia.
 Qed.
 
 Lemma forward_remset_gh_ghc: forall from to g h rh rmst g' h' rh' rmst',
@@ -8016,15 +8021,104 @@ Lemma forward_remset_gh_ghc: forall from to g h rh rmst g' h' rh' rmst',
     (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
     graph_heap_compatible g' h'.
 Proof.
-  intros from to g h rh rmst g' h' rh' rmst' Hfr Hghc Hcc Hndd Hgfrom Hgto Hese Hrc Hrhc Hrnd Hfrg.
-  unfold forward_remset_gh in Hfrg. destruct (le_lt_dec (length rh) from).
-  1: rewrite (nth_overflow _ _ l) in Hfrg; simpl in Hfrg; inversion Hfrg; assumption.
-  unfold enough_space_enhanced in Hese. erewrite compatible_remset_gen_size in Hese; eauto.
-  hnf in Hrhc. rewrite Forall2_forall_Znth in Hrhc. destruct Hrhc as [Hlrh Hrhc].
-  change [] with (@default _ (@Inhabitant_list remset_space_item)) in Hfrg.
-  rewrite nth_Znth' in Hfrg. assert (Hrg: 0 <= Z.of_nat from < Zlength rh) by
-    (rewrite Zlength_correct; lia). specialize (Hrhc _ Hrg).
-  remember (Znth (Z.of_nat from) rh). remember (Znth (Z.of_nat from) (spaces h)) as sp.
-  clear Heqr Heqsp l Hrg. destruct Hrhc as [Hrhc Hrsize]. clear dependent sp.
+  intros from to g h rh rmst g' h' rh' rmst' Hfr Hghc Hcc Hndd Hgfrom Hgto Hese Hrc
+    [Hrrhc Hrhhc] Hrnd Hfrg. unfold enough_space_enhanced in Hese.
+  erewrite compatible_remset_gen_size in Hese; eauto. unfold forward_remset_gh in Hfrg.
+  apply rrhc_forall_rrsc in Hrrhc. remember (Znth (Z.of_nat from) rh).
   eapply forward_remset_item_fold_ghc; eassumption.
+Qed.
+
+Lemma forward_remset_item_fold_ghg: forall from to r g h rh rmst g' h' rh' rmst',
+    graph_has_gen g to ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    forall gen, graph_has_gen g gen <-> graph_has_gen g' gen.
+Proof.
+  intros from to. Opaque forward_remset_item.
+  induction r; intros g h rh rmst g' h' rh' rmst' Hto Hfold gen; simpl in Hfold.
+  1: inversion Hfold; tauto. Transparent forward_remset_item.
+  destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri.
+  symmetry in Hfri. assert (Hto2: graph_has_gen g2 to) by
+    now rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri to).
+  apply forward_remset_item_ghg with (gen := gen) in Hfri; auto. rewrite Hfri.
+  rewrite (IHr _ _ _ _ _ _ _ _ Hto2 Hfold). tauto.
+Qed.
+
+Lemma rhhc_length_eq: forall rh h, remset_heap_and_heap_compatible rh h -> length rh = length (spaces h).
+Proof. intros. hnf in H. apply Forall2_length in H. assumption. Qed.
+
+Lemma cut_heap_rhhc: forall rh h i s,
+    remset_heap_and_heap_compatible rh h -> remset_heap_and_heap_compatible rh (cut_heap h i s).
+Proof.
+  intros. unfold cut_heap. destruct (spaces_index_dec i h); auto. hnf in H |- *. simpl.
+  rewrite Forall2_forall_Znth in H |- *. destruct H as [Hlen Hf]. split.
+  - rewrite Zlength_upd_Znth. assumption.
+  - intros j Hj. destruct (Z.eq_dec j i).
+    + subst. rewrite upd_Znth_same by assumption. specialize (Hf i Hj). unfold cut_space.
+      destruct (has_space_dec _ _); auto.
+    + rewrite Znth_upd_Znth_diff by assumption. apply Hf. assumption.
+Qed.
+
+Lemma forward_graph_and_heap_O_rhhc: forall from to f g h rh g' h',
+    remset_heap_and_heap_compatible rh h ->
+    (g',h') = forward_graph_and_heap from to O f g h ->
+    remset_heap_and_heap_compatible rh h'.
+Proof.
+  intros from to f g h rh g' h' Hrhhc Hfrh. Transparent forward_graph_and_heap.
+  destruct f; simpl in Hfrh; try now inversion Hfrh.
+  - destruct (Nat.eq_dec _ _). 2: now inversion Hfrh. destruct (raw_mark _); inversion Hfrh; auto.
+    now apply cut_heap_rhhc.
+  - destruct (Nat.eq_dec _ _). 2: now inversion Hfrh. destruct (raw_mark _); inversion Hfrh; auto.
+    now apply cut_heap_rhhc. Opaque forward_graph_and_heap.
+Qed.
+
+Lemma cut_heap_spaces_len: forall n h i s,
+    n = length (spaces h) -> n = length (spaces (cut_heap h i s)).
+Proof.
+  intros. unfold cut_heap. destruct (spaces_index_dec i h); auto. simpl.
+  rewrite <- ZtoNat_Zlength in H |- *. rewrite Zlength_upd_Znth. assumption.
+Qed.
+
+Lemma fgh_O_heap_len: forall from to f g h n g' h',
+    n = length (spaces h) ->
+    (g',h') = forward_graph_and_heap from to O f g h ->
+    n = length (spaces h').
+Proof.
+  intros from to f g h n g' h' Hlen Hfrh. Transparent forward_graph_and_heap.
+  destruct f; simpl in Hfrh; try now inversion Hfrh.
+  - destruct (Nat.eq_dec _ _). 2: now inversion Hfrh. destruct (raw_mark _); inversion Hfrh; auto.
+    now apply cut_heap_spaces_len.
+  - destruct (Nat.eq_dec _ _). 2: now inversion Hfrh. destruct (raw_mark _); inversion Hfrh; auto.
+    now apply cut_heap_spaces_len. Opaque forward_graph_and_heap.
+Qed.
+
+Lemma upd_incr_remset_heap_len: forall rh h item gen,
+  length rh = length (spaces h) ->
+  length (upd_remset_heap item rh gen) = length (spaces (incr_remset_heap h (Z.of_nat gen))).
+Proof.
+  intros rh h item gen Hlen. rewrite <- invariants.Zlength_eq in Hlen |- *.
+  unfold upd_remset_heap, incr_remset_heap.
+  destruct (spaces_index_dec _ _); simpl; rewrite !Zlength_upd_Znth; assumption.
+Qed.
+
+Lemma forward_remset_item_len: forall from to g h rh rmst item g' h' rh' rmst',
+    length rh = length (spaces h) ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    length rh' = length (spaces h').
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' Hlen Hfri. simpl in Hfri.
+  destruct (negb _). 2: inversion Hfri; assumption.
+  destruct (forward_graph_and_heap _ _ _ _ _ _) as [newg newh] eqn:?H. symmetry in H.
+  eapply fgh_O_heap_len in H; eauto. inversion Hfri. apply upd_incr_remset_heap_len. assumption.
+Qed.
+
+Lemma forward_remset_item_fold_len: forall from to r g h rh rmst g' h' rh' rmst',
+    length rh = length (spaces h) ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    length rh' = length (spaces h').
+Proof.
+  intros from to r. Opaque forward_remset_item.
+  induction r; intros g h rh rmst g' h' rh' rmst' Hlen Hfold; simpl in Hfold.
+  1: inversion Hfold; assumption. Transparent forward_remset_item.
+  destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri.
+  symmetry in Hfri. apply forward_remset_item_len in Hfri; auto. eapply IHr; eassumption.
 Qed.

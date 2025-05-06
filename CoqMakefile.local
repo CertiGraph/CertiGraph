@@ -13,7 +13,7 @@ certigraph:  graph/spanning_tree.vo graph/dag.vo graph/marked_graph.vo graph/loc
 certigc: CertiGC/gc_correct.vo CertiGC/verif_conversion.vo CertiGC/verif_Is_from.vo CertiGC/gc_spec.vo CertiGC/verif_create_space.vo \
          CertiGC/verif_create_heap.vo CertiGC/verif_make_tinfo.vo CertiGC/env_graph_gc.vo CertiGC/verif_is_ptr.vo CertiGC/verif_garbage_collect.vo \
          CertiGC/verif_resume.vo CertiGC/GCGraph.vo CertiGC/verif_forward.vo CertiGC/verif_do_scan.vo CertiGC/verif_forward_roots.vo \
-         CertiGC/verif_do_generation.vo
+         CertiGC/verif_do_generation.vo CertiGC/verif_forward_remset.vo
 
 applications: binheap/verif_binary_heap.vo binheap/verif_binary_heap_pro.vo mark/verif_mark_bin.vo mark/verif_mark_bin_dag.vo \
             summatrix/verif_summatrix.vo copy/verif_copy_bin.vo dispose/verif_dispose_bin.vo \

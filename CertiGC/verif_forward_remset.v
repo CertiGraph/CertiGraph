@@ -17,7 +17,7 @@ Lemma body_forward_remset: semax_body Vprog Gprog f_forward_remset forward_remse
 Proof.
   start_function.
   rename H into Hghc. rename H0 into Hoc. rename H1 into Hfrc. rename H2 into Hrpc.
-  rename H3 into Hftneq. destruct Hfrc as [Hese [Hghgf [Hghgt [Hcc Hndd]]]].
+  rename H3 into Hrhc. rename H4 into Hftneq. destruct Hfrc as [Hese [Hghgf [Hghgt [Hcc Hndd]]]].
   assert (Hgsc: generation_space_compatible g (from, nth_gen g from, nth_space h from)) by
     (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrf [Hshf Hsizef]].
   assert (Hgsc: generation_space_compatible g (to, nth_gen g to, nth_space h to)) by
@@ -26,6 +26,12 @@ Proof.
     (rewrite <- Haddrf; apply start_isptr).
   assert (Hptrt: isptr (space_start (nth_space h to))) by
     (rewrite <- Haddrt; apply start_isptr).
+  assert (Hrcw: remset_compatible' g rmst) by
+    (eapply remset_compatible_weakened; eassumption).
+  assert_PROP (remset_nodup rmst) as Hrmnd. {
+    sep_apply remset_rep_nodup.
+    - apply readable_nonidentity, writable_readable. assumption.
+    - entailer !!. }
   freeze [0; 1; 2; 4; 5] FR.
   assert (HS: forall gen, graph_has_gen g gen -> Z.of_nat gen < MAX_SPACES). {
     intros. eapply gen_range; eassumption. }
@@ -60,13 +66,14 @@ Proof.
       !ptrofs_to_int64_repr in H; [| reflexivity | reflexivity | lia..].
     apply typed_false_of_bool in H. rewrite negb_false_iff in H. apply lt64_repr in H.
     2: apply rest_space_repable_signed. 2: apply remset_space_repable_signed.
-    exfalso. unfold enough_space_enhanced in Hese. fold (rest_gen_size h to) in H.
-    fold (available_size h from) in H. fold (remset_gen_size h from) in H.
+    exfalso. unfold enough_space_enhanced, general_enough_space_to_copy in Hese.
+    fold (rest_gen_size h to) (available_size h from) (total_size h from) (remset_gen_size h from) in H.
     pose proof unmarked_gen_size_nonneg g from. lia.
   - Intros. thaw FR.
     forward_loop (EX n: Z, EX g': LGraph, EX h': heap, EX rh': remset_heap, EX rmst': remset,
                   PROP ((g', h', rh', rmst') = fold_left (forward_remset_item from to)
-                        (sublist 0 n (nth from rh [])) (g, h, rh, rmst))
+                        (sublist 0 n (Znth (Z.of_nat from) rh)) (g, h, rh, rmst);
+                        0 <= n <= total_size h from - available_size h from)
                   LOCAL (temp _q
                            (offset_val (WORD_SIZE *
                                           (available_space (nth_space h' from) + n))
@@ -83,11 +90,39 @@ Proof.
                          temp _next (heap_next_address hp to))
                   SEP (heap_rep sh h' hp; all_string_constants rsh gv; outlier_rep outlier;
                        graph_rep g'; heap_remset_rep g' h' rh'; remset_rep sh g' rmst')).
-    + Exists 0 g h rh rmst. simpl fold_left. entailer !.
-    + Intros n g' h' rh' rmst'. forward_if.
+    + Exists 0 g h rh rmst. entailer !!. unfold total_size, available_size.
+      pose proof available_leq_total (nth_space h from). lia.
+    + Intros n g' h' rh' rmst'. rename H into Hfric. rename H0 into Hnrange.
+      assert (Hghc': graph_heap_compatible g' h'). {
+        destruct Hrhc.
+        eapply forward_remset_item_fold_ghc with (r := sublist 0 n (Znth (Z.of_nat from) rh)); eauto.
+        - apply Forall_sublist. eapply rrhc_forall_rrsc; eassumption.
+        - unfold enough_space_enhanced in Hese. erewrite compatible_remset_gen_size in Hese; eauto.
+          eapply gestc_decay; eauto. apply sublist_max_length. }
+      assert (Hghgf': graph_has_gen g' from) by
+        now rewrite <- (forward_remset_item_fold_ghg _ _ _ _ _ _ _ _ _ _ _ Hghgt Hfric).
+      assert (Hlen': length rh' = length (spaces h')). {
+        destruct Hrhc as [_ Hrhc]. apply rhhc_length_eq in Hrhc.
+        eapply forward_remset_item_fold_len; eassumption. }
+      pose proof space_start_isptr _ _ _ Hghc' Hghgf' as Hptrf'.
+      forward_if.
       * change (Tpointer Tvoid {| attr_volatile := false; attr_alignas := Some 3%N |})
-          with int_or_ptr_type in *.
-          apply denote_tc_test_eq_split.
-        -- unfold heap_remset_rep.
+          with int_or_ptr_type in *. remember (space_start (nth_space h' from)) as vs.
+        remember (offset_val _ vs) as va.
+        remember (offset_val (WORD_SIZE * total_space (nth_space h' from)) vs) as vt.
+        assert (Hva: isptr va) by now subst va; apply isptr_offset_val'.
+        assert (Hvt: isptr vt) by now subst vt; apply isptr_offset_val'.
+        Transparent denote_tc_test_eq. unfold denote_tc_test_eq. destruct va; try contradiction.
+        destruct vt; try contradiction. rewrite Heqva, Heqvt. unfold test_eq_ptrs.
+        rewrite sameblock_offset_val by assumption. unfold heap_rep. apply andp_right.
+        -- sep_apply (graph_and_heap_remset_weak_valid_ptr g' h' rh' from
+                        (WORD_SIZE * (available_space (nth_space h' from) + n))).
+           ++ admit.
+           ++ clear -Hnrange. unfold WORD_SIZE. fold (available_size h' from). admit.
+           ++ entailer !!.
+        --
 
+        generation_rep_memory_block
+        memory_block_valid_pointer
+        graph_and_heap_rest_valid_ptr
 Abort.

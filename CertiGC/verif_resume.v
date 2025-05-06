@@ -93,7 +93,7 @@ Proof.
                               (space_start (heap_head (ti_heap t_info))),
                    (offset_val (WORD_SIZE * available_space (heap_head (ti_heap t_info)))
                               (space_start (heap_head (ti_heap t_info))),
-                    offset_val (WORD_SIZE * available_space (heap_head (ti_heap t_info)))
+                    offset_val (WORD_SIZE * total_space (heap_head (ti_heap t_info)))
                               (space_start (heap_head (ti_heap t_info))))))
                    :: map space_quad hl) (ti_heap_p t_info))
          by (unfold heap_struct_rep; entailer!!).
