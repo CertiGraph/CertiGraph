@@ -3247,7 +3247,14 @@ Qed.
 Definition heap_relation (h h': heap) :=
   (forall n, available_size h n = available_size h' n) /\
     (forall n, space_start (nth_space h n) = space_start (nth_space h' n)) /\
-    (forall n, total_size h n = total_size h' n).
+    forall n, total_size h n = total_size h' n.
+
+Definition weak_heap_relation (h h': heap) :=
+  (forall n, space_start (nth_space h n) = space_start (nth_space h' n)) /\
+    forall n, total_size h n = total_size h' n.
+
+Lemma heap_relation_weakened: forall h h', heap_relation h h' -> weak_heap_relation h h'.
+Proof. intros h h' [? [? ?]]. now split. Qed.
 
 Definition thread_info_relation t t':=
   ti_heap_p t = ti_heap_p t' /\ heap_relation (ti_heap t) (ti_heap t').
@@ -3256,8 +3263,7 @@ Lemma tir_id: forall t, thread_info_relation t t.
 Proof. intros. red. split; [|split; [|split]]; reflexivity. Qed.
 
 Lemma upd_Znth_diff_strong : forall {A}{d: Inhabitant A} i j l (u : A),
-    0 <= j < Zlength l -> i <> j ->
-  Znth i (upd_Znth j l u) = Znth i l.
+    0 <= j < Zlength l -> i <> j -> Znth i (upd_Znth j l u) = Znth i l.
 Proof.
   intros.
   destruct (zlt i 0).
@@ -3877,21 +3883,34 @@ Proof.
     + eapply fr_graph_has_v; eauto.
 Qed.
 
-Lemma hr_refl: forall h, heap_relation h h.
-Proof.
-  intros; split; auto.
-Qed.
+Lemma hr_refl: forall h, heap_relation h h. Proof. intros; split; auto. Qed.
+
+Lemma whr_refl: forall h, weak_heap_relation h h. Proof. intros; split; auto. Qed.
+
+#[global] Instance hr_Reflexive: Reflexive heap_relation := hr_refl.
+
+#[global] Instance whr_Reflexive: Reflexive weak_heap_relation := whr_refl.
 
 Lemma hr_trans: forall h1 h2 h3,
   heap_relation h1 h2 -> heap_relation h2 h3 -> heap_relation h1 h3.
 Proof. intros ? ? ? [? [? ?]] [? [? ?]]. split; [|split]; intros; congruence. Qed.
 
+Lemma whr_trans: forall h1 h2 h3,
+  weak_heap_relation h1 h2 -> weak_heap_relation h2 h3 -> weak_heap_relation h1 h3.
+Proof. intros ? ? ? [? ?] [? ?]. split; intros; congruence. Qed.
+
+#[global] Instance hr_Transitive: Transitive heap_relation := hr_trans.
+
+#[global] Instance whr_Transitive: Transitive weak_heap_relation := whr_trans.
+
 Lemma tir_trans: forall t1 t2 t3,
     thread_info_relation t1 t2 -> thread_info_relation t2 t3 ->
     thread_info_relation t1 t3.
 Proof.
-  intros. destruct H as [? ?], H0 as [? ?]. split; [congruence | eapply hr_trans; eassumption].
+  intros. destruct H as [? ?], H0 as [? ?]. split; [congruence | etransitivity; eassumption].
 Qed.
+
+#[global] Instance tir_Transitive: Transitive thread_info_relation := tir_trans.
 
 Lemma forward_loop_add_tail: forall from to depth l intr g1 g2 g3,
     forward_loop from to depth l g1 g2 ->
@@ -6123,14 +6142,16 @@ Proof.
     + eapply frr_gen_unmarked; eauto.
 Qed.
 
-Lemma heap_relation_size_spec: forall h1 h2 : heap,
-    heap_relation h1 h2 ->
-    ti_size_spec h1 -> ti_size_spec h2.
+Lemma weak_heap_relation_size_spec: forall h1 h2 : heap,
+    weak_heap_relation h1 h2 -> ti_size_spec h1 -> ti_size_spec h2.
 Proof.
   intros. unfold ti_size_spec in *. rewrite Forall_forall in *. intros.
-  specialize (H0 _ H1). unfold nth_gen_size_spec in *. destruct H as [H2 [H3 H4]].
-  rewrite <- H3, <- H4. assumption.
+  specialize (H0 _ H1). unfold nth_gen_size_spec in *. destruct H as [H2 H3].
+  rewrite <- H3, <- H2. assumption.
 Qed.
+
+Lemma heap_relation_size_spec: forall h1 h2 : heap, heap_relation h1 h2 -> ti_size_spec h1 -> ti_size_spec h2.
+Proof. intros h1 h2 H. now apply weak_heap_relation_size_spec, heap_relation_weakened. Qed.
 
 Lemma do_gen_gcc: forall g1 h1 roots1 g2 h2 roots2 i out,
     graph_heap_compatible g1 h1 ->
@@ -6910,26 +6931,26 @@ Qed.
 Lemma heaprel_forward_graph_and_heap: forall from to depth p g h,
     heap_relation h (snd (forward_graph_and_heap from to depth p g h)).
 Proof.
-  intros from to depth. induction depth; intros; pose proof (hr_refl h).
-  - destruct p; simpl; [assumption..| |].
-    + destruct (Nat.eq_dec _ _); simpl; [|assumption].
-      destruct (raw_mark _) eqn:? ; simpl; [assumption | apply cut_heap_relation].
-    + destruct (Nat.eq_dec _ _); simpl; [| assumption].
-      destruct (raw_mark _) eqn:? ; simpl; [assumption | apply cut_heap_relation].
+  intros from to depth. induction depth; intros.
+  - destruct p; simpl; [reflexivity..| |].
+    + destruct (Nat.eq_dec _ _); simpl; [|reflexivity].
+      destruct (raw_mark _) eqn:? ; simpl; [reflexivity | apply cut_heap_relation].
+    + destruct (Nat.eq_dec _ _); simpl; [| reflexivity].
+      destruct (raw_mark _) eqn:? ; simpl; [reflexivity | apply cut_heap_relation].
   - assert (Hloop: forall l gh,
                heap_relation (snd gh)
                  (snd (forward_gh_loop forward_graph_and_heap from to depth l gh))). {
-      induction l; intros; simpl. apply hr_refl. destruct gh as [gg hh].
-      eapply hr_trans; [apply IHdepth | apply IHl]. }
-    destruct p; simpl; [assumption..| |].
-    + destruct (Nat.eq_dec _ _); simpl; [|assumption].
-      destruct (raw_mark _) eqn:? ; simpl; [assumption |].
+      induction l; intros; simpl. reflexivity. destruct gh as [gg hh].
+      etransitivity; [apply IHdepth | apply IHl]. }
+    destruct p; simpl; [reflexivity..| |].
+    + destruct (Nat.eq_dec _ _); simpl; [|reflexivity].
+      destruct (raw_mark _) eqn:? ; simpl; [reflexivity |].
       destruct (Z_lt_ge_dec _ _); [| apply cut_heap_relation].
-      eapply hr_trans; [| apply Hloop]. simpl. apply cut_heap_relation.
-    + destruct (Nat.eq_dec _ _); simpl; [|assumption].
-      destruct (raw_mark _) eqn:? ; simpl; [assumption |].
+      etransitivity; [| apply Hloop]. simpl. apply cut_heap_relation.
+    + destruct (Nat.eq_dec _ _); simpl; [|reflexivity].
+      destruct (raw_mark _) eqn:? ; simpl; [reflexivity |].
       destruct (Z_lt_ge_dec _ _); [| apply cut_heap_relation].
-      eapply hr_trans; [| apply Hloop]. simpl. apply cut_heap_relation.
+      etransitivity; [| apply Hloop]. simpl. apply cut_heap_relation.
 Qed.
 
 Lemma forward_gh_loop_ghc: forall from to depth v l g h,
@@ -7330,7 +7351,7 @@ Definition enough_space_enhanced g h from to: Prop :=
 
 Definition forward_remset_condition g h from to : Prop :=
   enough_space_enhanced g h from to /\ graph_has_gen g from /\ graph_has_gen g to /\
-    copy_compatible g /\ no_dangling_dst g.
+    copy_compatible g /\ no_dangling_dst g /\ ti_size_spec h.
 
 Lemma unmarked_gen_size_nonneg: forall g gen, 0 <= unmarked_gen_size g gen.
 Proof. intros. unfold unmarked_gen_size. apply vs_accum_list_le. Qed.
@@ -8121,4 +8142,72 @@ Proof.
   1: inversion Hfold; assumption. Transparent forward_remset_item.
   destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri.
   symmetry in Hfri. apply forward_remset_item_len in Hfri; auto. eapply IHr; eassumption.
+Qed.
+
+Lemma incr_remset_heap_whr: forall h gen, weak_heap_relation h (incr_remset_heap h gen).
+Proof.
+  intros. unfold incr_remset_heap. destruct (spaces_index_dec gen h). 2: reflexivity.
+  split; intros; unfold total_size; rewrite !nth_space_Znth; simpl; destruct (Z.eq_dec (Z.of_nat n) gen).
+  - subst. rewrite upd_Znth_same; auto. unfold incr_remset_space.
+    destruct (Z_lt_ge_dec _ _); simpl; reflexivity.
+  - rewrite Znth_upd_Znth_diff; easy.
+  - subst. rewrite upd_Znth_same; auto. unfold incr_remset_space.
+    destruct (Z_lt_ge_dec _ _); simpl; reflexivity.
+  - rewrite Znth_upd_Znth_diff; easy.
+Qed.
+
+Lemma forward_remset_item_whr: forall from to g h rh rmst item g' h' rh' rmst',
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    weak_heap_relation h h'.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' Hfri. simpl in Hfri.
+  destruct (negb _). 2: now inversion Hfri.
+  destruct (forward_graph_and_heap _ _ _ _ _ _) as [newg newh] eqn:Hfgh. symmetry in Hfgh.
+  assert (Hhr: heap_relation h (snd (newg, newh))) by
+    (rewrite Hfgh; apply heaprel_forward_graph_and_heap). simpl in Hhr. inversion Hfri.
+  transitivity newh; [now apply heap_relation_weakened | apply incr_remset_heap_whr].
+Qed.
+
+Lemma forward_remset_item_fold_whr: forall from to r g h rh rmst g' h' rh' rmst',
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    weak_heap_relation h h'.
+Proof.
+  intros from to r. Opaque forward_remset_item.
+  induction r; intros g h rh rmst g' h' rh' rmst' Hfold; simpl in Hfold. 1: now inversion Hfold.
+  Transparent forward_remset_item.
+  destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri.
+  symmetry in Hfri. apply forward_remset_item_whr in Hfri. transitivity h2; auto. eapply IHr; eassumption.
+Qed.
+
+Lemma remset_gen_size_irh: forall h from to,
+    from <> to ->
+    remset_gen_size (incr_remset_heap h (Z.of_nat to)) from = remset_gen_size h from.
+Proof.
+  intros h from to Hneq. unfold incr_remset_heap. destruct (spaces_index_dec _ h). 2: reflexivity.
+  unfold remset_gen_size, total_size, available_size. rewrite !nth_space_Znth. simpl.
+  rewrite Znth_upd_Znth_diff by lia. reflexivity.
+Qed.
+
+Lemma fri_remset_gen_size: forall from to g h rh rmst item g' h' rh' rmst',
+    from <> to ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    remset_gen_size h' from = remset_gen_size h from.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' Hneq Hfri. simpl in Hfri.
+  destruct (negb _). 2: now inversion Hfri.
+  destruct (forward_graph_and_heap _ _ _ _ _ _) as [newg newh] eqn:Hfgh. symmetry in Hfgh.
+  apply fgah_O_remset_gen_size in Hfgh. rewrite <- Hfgh. inversion Hfri. now apply remset_gen_size_irh.
+Qed.
+
+Lemma fold_fri_remset_gen_size: forall from to r g h rh rmst g' h' rh' rmst',
+    from <> to ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    remset_gen_size h' from = remset_gen_size h from.
+Proof.
+  intros from to r g h rh rmst g' h' rh' rmst' Hneq. revert g h rh rmst g' h' rh' rmst'.
+  Opaque forward_remset_item.
+  induction r; intros g h rh rmst g' h' rh' rmst' Hfold; simpl in Hfold. 1: now inversion Hfold.
+  Transparent forward_remset_item.
+  destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri.
+  symmetry in Hfri. apply fri_remset_gen_size in Hfri; auto. rewrite <- Hfri. eapply IHr; eassumption.
 Qed.

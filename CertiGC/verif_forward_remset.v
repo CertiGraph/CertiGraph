@@ -17,7 +17,7 @@ Lemma body_forward_remset: semax_body Vprog Gprog f_forward_remset forward_remse
 Proof.
   start_function.
   rename H into Hghc. rename H0 into Hoc. rename H1 into Hfrc. rename H2 into Hrpc.
-  rename H3 into Hrhc. rename H4 into Hftneq. destruct Hfrc as [Hese [Hghgf [Hghgt [Hcc Hndd]]]].
+  rename H3 into Hrhc. rename H4 into Hftneq. destruct Hfrc as [Hese [Hghgf [Hghgt [Hcc [Hndd Htsc]]]]].
   assert (Hgsc: generation_space_compatible g (from, nth_gen g from, nth_space h from)) by
     (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrf [Hshf Hsizef]].
   assert (Hgsc: generation_space_compatible g (to, nth_gen g to, nth_space h to)) by
@@ -105,6 +105,16 @@ Proof.
         destruct Hrhc as [_ Hrhc]. apply rhhc_length_eq in Hrhc.
         eapply forward_remset_item_fold_len; eassumption. }
       pose proof space_start_isptr _ _ _ Hghc' Hghgf' as Hptrf'.
+      assert (Htsc': ti_size_spec h'). {
+        apply (weak_heap_relation_size_spec h);
+          [eapply forward_remset_item_fold_whr; eassumption | assumption]. }
+      assert (Hrgseq: remset_gen_size h' from = remset_gen_size h from) by
+        (eapply fold_fri_remset_gen_size; eassumption).
+      assert (Hrg: 0 <= WORD_SIZE * (available_space (nth_space h' from) + n) <=
+                     WORD_SIZE * total_size h' from). {
+        clear -Hnrange Hrgseq. unfold WORD_SIZE.
+        pose proof available_space_tight_range (nth_space h' from). fold (available_size h' from) in *.
+        unfold remset_gen_size in Hrgseq. lia. }
       forward_if.
       * change (Tpointer Tvoid {| attr_volatile := false; attr_alignas := Some 3%N |})
           with int_or_ptr_type in *. remember (space_start (nth_space h' from)) as vs.
@@ -116,13 +126,9 @@ Proof.
         destruct vt; try contradiction. rewrite Heqva, Heqvt. unfold test_eq_ptrs.
         rewrite sameblock_offset_val by assumption. unfold heap_rep. apply andp_right.
         -- sep_apply (graph_and_heap_remset_weak_valid_ptr g' h' rh' from
-                        (WORD_SIZE * (available_space (nth_space h' from) + n))).
-           ++ admit.
-           ++ clear -Hnrange. unfold WORD_SIZE. fold (available_size h' from). admit.
-           ++ entailer !!.
-        --
-
-        generation_rep_memory_block
-        memory_block_valid_pointer
-        graph_and_heap_rest_valid_ptr
+                        (WORD_SIZE * (available_space (nth_space h' from) + n))). entailer !!.
+        -- sep_apply (graph_and_heap_remset_weak_valid_ptr g' h' rh' from
+                        (WORD_SIZE * (total_space (nth_space h' from)))). 2: entailer !!.
+           pose proof total_space_tight_range (nth_space h' from). unfold total_size, WORD_SIZE. lia.
+      *
 Abort.
