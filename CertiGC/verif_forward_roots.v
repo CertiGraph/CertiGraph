@@ -134,8 +134,7 @@ Proof.
     pose proof (proj1 (proj2 H)). red in H2. rewrite H2.
     rewrite update_rootpairs_frames2rootpairs by list_solve.
     rewrite update_frames_same.
-    entailer!!.
-    split. constructor. apply hr_refl.
+    entailer!!. constructor.
   - Intros.
     assert (H5' := sc_Zlength H5).
     unfold frames_rep.
@@ -302,8 +301,7 @@ Proof.
             heap_rep sh h'' hp))%assert.
   + unfold WORD_SIZE in H9; rep_lia.
   + Exists g' h' roots'.
-    entailer!!; [ split | ]; auto.
-    apply derives_refl.
+    entailer !!. apply derives_refl.
   + set (rp'' := frames2rootpairs (update_frames _ _)).
     Intros.
     assert (LENroots'': Zlength roots'' = nr k + i)

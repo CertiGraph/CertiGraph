@@ -88,7 +88,7 @@ Proof.
                outlier_rep outlier;
                graph_rep g';
                heap_rep sh h' hp)).
-  - Exists O g h. rewrite Nat.add_0_r. entailer !!. split; [apply hr_refl| constructor].
+  - Exists O g h. rewrite Nat.add_0_r. entailer !!. constructor.
   - Intros n g' h'. rename H into Hghc'. rename H0 into Hoc'. rename H1 into Hfc'.
     rename H2 into Hhr. rename H3 into Hchi'. rename H4 into Hsvwl.
     remember (to_index + n)%nat as index. unfold heap_next_address, heap_rep. Intros.
