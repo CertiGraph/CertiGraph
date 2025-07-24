@@ -439,12 +439,12 @@ Definition resume_spec :=
 (*
 Definition mutable_update_spec :=
   DECLARE _mutable_update
-    WITH sh: share, ti: val, t_info: thread_info, g: LGraph, roots : roots_t, out: outlier_t,
+    WITH sh: share, ti: val, t_info: thread_info, g: LGraph, out: outlier_t,
          h: heap, t: N, n: N, fields: list rep_type,
          r: rep_type (* is the same as exterior_t *), i: Z, v: rep_type
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
   PROP (writable_share sh;
-        graph_heap_compatible g h; roots_compatible g out roots;
+        graph_heap_compatible g h;
         graph_cRep g r (boxed t n) fields; i < n)
     PARAMS (ti; offset_val (i * WORD_SIZE) (rep_type_val r); rep_type_val v)
     GLOBALS ()

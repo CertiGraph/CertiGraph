@@ -1337,6 +1337,38 @@ Proof.
     [unfold WORD_SIZE; rep_lia | entailer!!].
 Qed.
 
+Lemma graph_and_heap_rest_v_in_range_iff_offset: forall g h gen v pos,
+    graph_heap_compatible g h ->
+    graph_has_gen g gen -> graph_has_v g v ->
+    0 <= pos < Zlength (raw_fields (vlabel g v)) ->
+    graph_rep g * heap_unused_rep h |--
+    !! (v_in_range (offset_val (pos * WORD_SIZE) (vertex_address g v)) (gen_start g gen)
+          (WORD_SIZE * available_size h gen) <-> vgeneration v = gen).
+Proof.
+  intros. unfold iff. rewrite and_comm. apply prop_and_right.
+  - intros. rewrite <- H3. apply graph_thread_v_in_range_offset; assumption.
+  - rewrite prop_impl, <- imp_andp_adjoint; Intros.
+    destruct (Nat.eq_dec (vgeneration v) gen). 1: apply prop_right; assumption.
+    sep_apply (graph_heap_rest_iter_sepcon _ _ H).
+    pose proof (graph_thread_v_in_range_offset _ _ _ _ H H1 H2). destruct H1.
+    assert (NoDup [vgeneration v; gen]) by
+        (constructor; [|constructor; [|constructor]]; intro HS; simpl in HS; destruct HS; auto).
+    assert (incl [vgeneration v; gen] (nat_inc_list (length (g_gen (glabel g))))) by
+        (apply incl_cons; [|apply incl_cons];
+         [rewrite nat_inc_list_In_iff; assumption..| apply incl_nil]).
+    sep_apply (iter_sepcon_incl_true (generation_data_at_ g h) H6 H7); simpl.
+    rewrite sepcon_emp. unfold generation_data_at_.
+    remember (nth_sh g (vgeneration v)) as sh1. remember (nth_sh g gen) as sh2.
+    sep_apply (v_in_range_data_at_ _ _ _ sh1 H4). Intros m1.
+    sep_apply (v_in_range_data_at_ _ _ _ sh2 H3). Intros m2.
+    remember (offset_val _ _) as p.
+    rewrite <- sepcon_assoc, (sepcon_comm (memory_block sh2 m2 p)), (sepcon_assoc TT).
+    sep_apply (readable_writable_memory_block_FF sh2 sh1 m2 m1 p); auto.
+    + apply writable_readable. subst. apply generation_share_writable.
+    + subst. apply generation_share_writable.
+    + entailer !.
+Qed.
+
 Lemma graph_and_heap_rest_v_in_range_iff: forall g h gen v,
     graph_heap_compatible g h ->
     graph_has_gen g gen -> graph_has_v g v ->
@@ -1344,30 +1376,10 @@ Lemma graph_and_heap_rest_v_in_range_iff: forall g h gen v,
     !! (v_in_range (vertex_address g v) (gen_start g gen)
                    (WORD_SIZE * available_size h gen) <-> vgeneration v = gen).
 Proof.
-  intros. unfold iff. rewrite and_comm. apply prop_and_right.
-  - intros. rewrite <- H2. apply graph_thread_v_in_range; assumption.
-  - rewrite prop_impl, <- imp_andp_adjoint; Intros.
-    destruct (Nat.eq_dec (vgeneration v) gen). 1: apply prop_right; assumption.
-    sep_apply (graph_heap_rest_iter_sepcon _ _ H).
-    pose proof (graph_thread_v_in_range _ _ _ H H1). destruct H1.
-    assert (NoDup [vgeneration v; gen]) by
-        (constructor; [|constructor; [|constructor]]; intro HS;
-         simpl in HS; destruct HS; auto).
-    assert (incl [vgeneration v; gen] (nat_inc_list (length (g_gen (glabel g))))) by
-        (apply incl_cons; [|apply incl_cons];
-         [rewrite nat_inc_list_In_iff; assumption..| apply incl_nil]).
-    sep_apply (iter_sepcon_incl_true (generation_data_at_ g h) H5 H6); simpl.
-    rewrite sepcon_emp. unfold generation_data_at_.
-    remember (nth_sh g (vgeneration v)) as sh1. remember (nth_sh g gen) as sh2.
-    sep_apply (v_in_range_data_at_ _ _ _ sh1 H3). Intros m1.
-    sep_apply (v_in_range_data_at_ _ _ _ sh2 H2). Intros m2.
-    remember (vertex_address g v) as p.
-    rewrite <- sepcon_assoc, (sepcon_comm (memory_block sh2 m2 p)),
-    (sepcon_assoc TT).
-    sep_apply (readable_writable_memory_block_FF sh2 sh1 m2 m1 p); auto.
-    + apply writable_readable. subst. apply generation_share_writable.
-    + subst. apply generation_share_writable.
-    + entailer!.
+  intros. assert (Hpos: 0 <= 0 < Zlength (raw_fields (vlabel g v))) by
+    (pose proof raw_fields_range (vlabel g v); lia).
+  pose proof graph_and_heap_rest_v_in_range_iff_offset _ _ _ _ _ H H0 H1 Hpos.
+  rewrite Z.mul_0_l, isptr_offset_val_zero in H2; auto. apply graph_has_v_addr_isptr. assumption.
 Qed.
 
 Lemma graph_gen_ramif_stable: forall g gen,
@@ -2058,7 +2070,7 @@ Definition ti_token_rep (h: heap) (p: val): mpred :=
 Lemma ti_rel_token_the_same: forall (h1 h2: heap) p,
     heap_relation h1 h2 -> ti_token_rep h1 p = ti_token_rep h2 p.
 Proof.
-  intros. destruct H as [? [? ?]]. unfold ti_token_rep. f_equal.
+  intros. destruct H as [? [? [? _]]]. unfold ti_token_rep. f_equal.
   apply (iter_sepcon_pointwise_eq _ _ _ _ null_space null_space).
   - rewrite <- !ZtoNat_Zlength, !spaces_size. reflexivity.
   - intros. fold (nth_space h1 i). fold (nth_space h2 i). unfold total_size in H1.
@@ -2507,7 +2519,7 @@ Proof.
       symmetry. apply irh_Znth_spaces_not_eq. list_solve.
 Qed.
 
-Lemma fgh_heap_remset_rep: forall g h rh from to depth p g' h',
+Lemma fgh_heap_remset_rep: forall g h rh from to depth p g' h' rmst,
     from <> to ->
     forward_t_compatible p g ->
     no_dangling_dst g ->
@@ -2516,18 +2528,161 @@ Lemma fgh_heap_remset_rep: forall g h rh from to depth p g' h',
     copy_compatible g ->
     graph_heap_compatible g h ->
     length rh = length (spaces h) ->
+    remset_and_remset_heap_compatible g from rmst rh ->
     (g', h') = forward_graph_and_heap from to depth p g h ->
     heap_remset_rep g h rh = heap_remset_rep g' h' rh.
 Proof.
-  intros g h rh from to depth p g' h' Hft Hftc Hndd Hghg Hestc Hcc Hghc Hlen Hfgh.
+  intros g h rh from to depth p g' h' rmst Hft Hftc Hndd Hghg Hestc Hcc Hghc Hlen Hrrhc Hfgh.
   pose proof spaces_size h as Hsh. pose proof spaces_size h' as Hsh'.
   assert (Hghc': graph_heap_compatible g' h') by (eapply forward_graph_and_heap_ghc; eassumption).
   assert (Hlen': length rh = length (spaces h')) by (rewrite <- !ZtoNat_Zlength in *; lia).
   rewrite !heap_remset_rep_iter_sepcon; [|assumption..].
   pose proof fr_forward_graph_and_heap from to depth p g h as Hfr. rewrite <- Hfgh in Hfr. simpl in Hfr.
   pose proof fr_g_gen_len_presv depth from to p g g' Hghg Hfr as Hgenlen. rewrite <- Hgenlen.
-  apply iter_sepcon_func. intros gen. Transparent space_remset_rep. simpl.
+  apply iter_sepcon_func_strong. intros gen Hgen. Transparent space_remset_rep. simpl.
+  rewrite nat_inc_list_In_iff in Hgen. fold (graph_has_gen g gen) in Hgen.
   pose proof heaprel_forward_graph_and_heap from to depth p g h as Hh. rewrite <- Hfgh in Hh. simpl in Hh.
-  destruct Hh as [Ha [Hs Ht]]. unfold available_size in Ha. unfold total_size in Ht.
-  rewrite <- Hs, <- Ha, <- Ht.
-Abort.
+  destruct Hh as [Ha [Hs [Ht Hss]]]. unfold available_size in Ha. unfold total_size in Ht.
+  rewrite <- Hs, <- Ha, <- Ht, <- Hss.
+  cut (map (remset_item_val g) (nth_remset_space rh gen) =
+         map (remset_item_val g') (nth_remset_space rh gen)).
+  - intros Hmap. rewrite <- Hmap. reflexivity.
+  - apply map_ext_in. intros item Hi. destruct item; simpl; auto. destruct i. f_equal.
+    eapply fr_vertex_address with (to := to); eauto. hnf in Hrrhc. rewrite Forall_forall in Hrrhc.
+    pose proof gen_range_heap g h gen Hghc Hgen as Hrg. rewrite nth_remset_space_Znth in Hi.
+    replace (Zlength (spaces h)) with (Zlength rh) in Hrg by (rewrite !Zlength_correct; lia).
+    apply Znth_In in Hrg. specialize (Hrrhc _ Hrg). hnf in Hrrhc. rewrite Forall_forall in Hrrhc.
+    specialize (Hrrhc _ Hi). simpl in Hrrhc. destruct Hrrhc as [Hrrhc _].
+    apply graph_has_v_in_closure. assumption.
+Qed.
+
+Lemma heap_unused_rep_incr: forall g h gen,
+    graph_heap_compatible g h ->
+    graph_has_gen g gen ->
+    used_space (nth_space h gen) < available_space (nth_space h gen) ->
+    heap_unused_rep h |-- heap_unused_rep (incr_remset_heap h (Z.of_nat gen)) *
+      data_at_ (space_sh (nth_space h gen)) int_or_ptr_type
+        (offset_val (WORD_SIZE * (available_space (nth_space h gen) - 1))
+           (space_start (nth_space h gen))).
+Proof.
+  intros g h gen Hghc Hghg Hulta. unfold heap_unused_rep. pose proof gen_range _ _ _ Hghc Hghg as Hrg.
+  pose proof spaces_size h as Hlen1. pose proof incr_remset_heap_len h (Z.of_nat gen) as Hlen2.
+  rewrite (split3_full_length_list 0 (Z.of_nat gen) MAX_SPACES (spaces h)) by lia. simpl.
+  rewrite spaces_incr_remset_heap_split by lia. rewrite Z.sub_0_r.
+  rewrite Nat2Z.id. replace (Z.to_nat (Z.of_nat gen + 1)) with (S gen) by lia.
+  rewrite !iter_sepcon_app_sepcon. cancel. Opaque skipn. simpl. cancel. Transparent skipn.
+  unfold incr_remset_space. destruct (Z_lt_ge_dec _ _). 2: rewrite <- nth_space_Znth in *; lia.
+  unfold space_unused_rep. simpl. rewrite <- nth_space_Znth.
+  pose proof space_start_isptr _ _ _ Hghc Hghg as Hp.
+  destruct (Val.eq _ _). 1: rewrite e in Hp; contradiction. clear n.
+  rewrite (data_at__tarray_value _ (available_space (nth_space h gen) - used_space (nth_space h gen))
+             (available_space (nth_space h gen) - 1 - used_space (nth_space h gen))) by lia.
+  cancel. rewrite offset_offset_val.
+  replace (available_space (nth_space h gen) - used_space (nth_space h gen) -
+             (available_space (nth_space h gen) - 1 - used_space (nth_space h gen))) with 1 by lia.
+  replace (WORD_SIZE * used_space (nth_space h gen) +
+             WORD_SIZE * (available_space (nth_space h gen) - 1 - used_space (nth_space h gen)))
+    with (WORD_SIZE * (available_space (nth_space h gen) - 1))%Z by lia.
+  rewrite data_at__singleton_array_eq. cancel.
+Qed.
+
+Lemma remset_rep_upd_ext: forall g h gen rh v,
+    graph_heap_compatible g h ->
+    graph_has_gen g gen ->
+    remset_heap_and_heap_compatible rh h ->
+    used_space (nth_space h gen) < available_space (nth_space h gen) ->
+    data_at (space_sh (nth_space h gen)) int_or_ptr_type v
+      (offset_val (WORD_SIZE * (available_space (nth_space h gen) - 1)) (space_start (nth_space h gen)))
+    * heap_remset_rep g h rh |--
+        heap_remset_rep g (incr_remset_heap h (Z.of_nat gen)) (upd_remset_heap (RemSetExterior v) rh gen).
+Proof.
+  intros g h gen rh v Hghc Hghg Hrhhc Hulta. pose proof gen_range_heap _ _ _ Hghc Hghg as Hrg.
+  hnf in Hrhhc. rewrite Forall2_forall_Znth in Hrhhc. destruct Hrhhc as [Hlen Hrssc].
+  unfold heap_remset_rep. pose proof upd_remset_heap_len rh (RemSetExterior v) gen as Hlenu.
+  pose proof split3_full_length_list 0 (Z.of_nat gen) (Zlength rh) (spaces h) ltac:(lia) ltac:(lia) as Hs.
+  pose proof split3_full_length_list 0 (Z.of_nat gen) (Zlength rh) rh ltac:(lia) ltac: (lia) as Hrh.
+  rewrite spaces_incr_remset_heap_split, upd_remset_heap_split by lia.
+  simpl in *. rewrite Z.sub_0_r in *. rewrite Hs, Hrh at 1.
+  rewrite !combine_app' by (rewrite !Zlength_firstn; lia). simpl.
+  rewrite !iter_sepcon_app_sepcon. Opaque space_remset_rep. simpl. cancel. Transparent space_remset_rep.
+  simpl. rewrite irs_space_start. specialize (Hrssc (Z.of_nat gen) ltac:(lia)).
+  rewrite <- nth_space_Znth in *. hnf in Hrssc. pose proof space_start_isptr _ _ _ Hghc Hghg as Hp.
+  destruct (Val.eq _ _). 1: rewrite e in Hp; contradiction. clear n. unfold incr_remset_space.
+  destruct (Z_lt_ge_dec _ _). 2: contradiction. simpl. clear l. rewrite Z.sub_sub_distr, <- Hrssc.
+  replace (Zlength (Znth (Z.of_nat gen) rh) + 1) with
+    (Zlength (v :: map (remset_item_val g) (Znth (Z.of_nat gen) rh))) by list_solve.
+  rewrite data_at_tarray_value_split_1 by list_solve. simpl. rewrite offset_offset_val. cancel.
+  replace (Zlength (v :: map (remset_item_val g) (Znth (Z.of_nat gen) rh)) - 1) with
+    (Zlength (Znth (Z.of_nat gen) rh)) by list_solve.
+  replace (WORD_SIZE * (available_space (nth_space h gen) - 1) + WORD_SIZE) with
+    (WORD_SIZE * available_space (nth_space h gen))%Z by lia. cancel.
+Qed.
+
+Lemma graph_rep_interiro_vptr: forall g v pos,
+    graph_has_v g v ->
+    0 <= pos < Zlength (raw_fields (vlabel g v)) ->
+    graph_rep g |-- valid_pointer (offset_val (pos * WORD_SIZE) (vertex_address g v)) * TT.
+Proof.
+  intros g v pos Hv Hrg. sep_apply (graph_rep_vertex_rep _ _ Hv). Intros sh. unfold vertex_rep, vertex_at.
+  pose proof fields_eq_length g v as Hlen. remember (make_fields_vals g v) as l.
+  pose proof Zlength_nonneg l as Hnn.
+  sep_apply (data_at_memory_block sh (tarray int_or_ptr_type (Zlength l))).
+  rewrite sizeof_tarray_int_or_ptr by assumption.
+  sep_apply (memory_block_valid_pointer sh (WORD_SIZE * Zlength l) (vertex_address g v)
+               (pos * WORD_SIZE)).
+  - unfold WORD_SIZE. lia.
+  - apply readable_nonidentity, writable_readable_share. assumption.
+  - cancel.
+Qed.
+
+Lemma fgh_O_remset_rep_int_eq: forall from to sh g h g' h' rmst item,
+    graph_has_gen g to ->
+    remset_compatible' g rmst ->
+    (g', h') = forward_graph_and_heap from to 0 item g h ->
+    remset_rep sh g rmst = remset_rep sh g' rmst.
+Proof.
+  intros from to sh g h g' h' rmst item Hghg Hrc Hfgh. unfold remset_rep.
+  apply iter_sepcon_func_strong. intros ext Hinx. hnf in Hrc. rewrite Forall_forall in Hrc.
+  pose proof Hrc _ Hinx as Hrcext. destruct ext as [gp | gn]; simpl; auto. simpl in Hrcext. f_equal.
+  apply (fr_vertex_address 0 from to item g g'); auto.
+  - pose proof fr_forward_graph_and_heap from to O item g h. rewrite <- Hfgh in H. simpl in H. assumption.
+  - apply graph_has_v_in_closure. assumption.
+Qed.
+
+Lemma remset_rep_upd_int: forall g h gen rh v pos,
+    graph_heap_compatible g h ->
+    graph_has_gen g gen ->
+    remset_heap_and_heap_compatible rh h ->
+    used_space (nth_space h gen) < available_space (nth_space h gen) ->
+    data_at (space_sh (nth_space h gen)) int_or_ptr_type
+      (offset_val (WORD_SIZE * pos) (vertex_address g v))
+      (offset_val (WORD_SIZE * (available_space (nth_space h gen) - 1)) (space_start (nth_space h gen)))
+    * heap_remset_rep g h rh |--
+        heap_remset_rep g (incr_remset_heap h (Z.of_nat gen))
+        (upd_remset_heap (RemSetInterior (InteriorVertexPos v pos)) rh gen).
+Proof.
+  intros g h gen rh v pos Hghc Hghg Hrhhc Hulta. pose proof gen_range_heap _ _ _ Hghc Hghg as Hrg.
+  hnf in Hrhhc. rewrite Forall2_forall_Znth in Hrhhc. destruct Hrhhc as [Hlen Hrssc].
+  unfold heap_remset_rep.
+  pose proof upd_remset_heap_len rh (RemSetInterior (InteriorVertexPos v pos)) gen as Hlenu.
+  pose proof split3_full_length_list 0 (Z.of_nat gen) (Zlength rh) (spaces h) ltac:(lia) ltac:(lia) as Hs.
+  pose proof split3_full_length_list 0 (Z.of_nat gen) (Zlength rh) rh ltac:(lia) ltac: (lia) as Hrh.
+  rewrite spaces_incr_remset_heap_split, upd_remset_heap_split by lia.
+  simpl in *. rewrite Z.sub_0_r in *. rewrite Hs, Hrh at 1.
+  rewrite !combine_app' by (rewrite !Zlength_firstn; lia). simpl.
+  rewrite !iter_sepcon_app_sepcon. Opaque space_remset_rep. simpl. cancel. Transparent space_remset_rep.
+  simpl. rewrite irs_space_start. specialize (Hrssc (Z.of_nat gen) ltac:(lia)).
+  rewrite <- nth_space_Znth in *. hnf in Hrssc. pose proof space_start_isptr _ _ _ Hghc Hghg as Hp.
+  destruct (Val.eq _ _). 1: rewrite e in Hp; contradiction. clear n. unfold incr_remset_space.
+  destruct (Z_lt_ge_dec _ _). 2: contradiction. simpl. clear l. rewrite Z.sub_sub_distr, <- Hrssc.
+  replace (Zlength (Znth (Z.of_nat gen) rh) + 1) with
+    (Zlength (offset_val (pos * WORD_SIZE) (vertex_address g v) ::
+                map (remset_item_val g) (Znth (Z.of_nat gen) rh))) by list_solve.
+  rewrite data_at_tarray_value_split_1 by list_solve. simpl. rewrite offset_offset_val.
+  rewrite (Z.mul_comm pos WORD_SIZE). cancel.
+  replace (Zlength (offset_val (WORD_SIZE * pos) (vertex_address g v) ::
+                      map (remset_item_val g) (Znth (Z.of_nat gen) rh)) - 1) with
+    (Zlength (Znth (Z.of_nat gen) rh)) by list_solve.
+  replace (WORD_SIZE * (available_space (nth_space h gen) - 1) + WORD_SIZE) with
+    (WORD_SIZE * available_space (nth_space h gen))%Z by lia. cancel.
+Qed.
