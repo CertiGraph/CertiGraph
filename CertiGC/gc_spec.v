@@ -436,29 +436,64 @@ Definition resume_spec :=
          graph_rep g;
          before_gc_thread_info_rep sh t_info ti).
 
-(*
-Definition mutable_update_spec :=
+(* TODO *)
+Definition decr_info_nursery (ti: thread_info) (x: val): thread_info := ti.
+Definition info_recordable (ti: thread_info): Prop := True.
+
+Definition ext_mutable_update_spec :=
   DECLARE _mutable_update
-    WITH sh: share, ti: val, t_info: thread_info, g: LGraph, out: outlier_t,
-         h: heap, t: N, n: N, fields: list rep_type,
-         r: rep_type (* is the same as exterior_t *), i: Z, v: rep_type
+    WITH ti: val, p: val, v: exterior_t, t_info: thread_info, sh: share,
+         g: LGraph, outlier: outlier_t
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
   PROP (writable_share sh;
-        graph_heap_compatible g h;
-        graph_cRep g r (boxed t n) fields; i < n)
-    PARAMS (ti; offset_val (i * WORD_SIZE) (rep_type_val r); rep_type_val v)
+        info_recordable t_info;
+        outlier_compatible g outlier;
+        exterior_compatible g outlier v)
+    PARAMS (ti; p; exterior2val g v)
     GLOBALS ()
     SEP (graph_rep g;
+         outlier_rep outlier;
+         before_gc_thread_info_rep sh t_info ti;
+         ti_token_rep (ti_heap t_info) (ti_heap_p t_info);
+         data_at_ sh int_or_ptr_type p)
+  POST [tvoid]
+    EX t_info': thread_info,
+    PROP (t_info' = decr_info_nursery t_info (exterior2val g v))
+    RETURN ()
+    SEP (graph_rep g;
+         outlier_rep outlier;
+         before_gc_thread_info_rep sh t_info' ti;
+         ti_token_rep (ti_heap t_info') (ti_heap_p t_info');
+         data_at sh int_or_ptr_type (exterior2val g v) p).
+
+(* Maybe exterior_t could be renamed into root_t *)
+
+Definition int_mutable_update_spec :=
+  DECLARE _mutable_update
+    WITH ti: val, v: exterior_t, t_info: thread_info, sh: share, g: LGraph,
+         it: interior_t, outlier: outlier_t
+  PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
+  PROP (writable_share sh;
+        info_recordable t_info;
+        outlier_compatible g outlier;
+        exterior_compatible g outlier v)
+    PARAMS (ti; interior_address it g; exterior2val g v)
+    GLOBALS ()
+    SEP (before_gc_thread_info_rep sh t_info ti;
          ti_token_rep (ti_heap t_info) (ti_heap_p t_info))
   POST [tvoid]
-    EX g': LGraph, EX h': heap, EX t_info': thread_info,
-    PROP (ti_frames t_info = ti_frames t_info'
-          (* g' is g with i_th field of r replaced by v *))
+    EX g': LGraph, EX t_info': thread_info,
+    PROP (t_info' = decr_info_nursery t_info (exterior2val g v)
+          (* relation or function about g and g' *))
     RETURN ()
     SEP (graph_rep g';
+         outlier_rep outlier;
          before_gc_thread_info_rep sh t_info' ti;
          ti_token_rep (ti_heap t_info') (ti_heap_p t_info')).
-*)
+
+(* Change before_gc_thread_info_rep *)
+(* Define a new heap_management to hide details in
+   before_gc_thread_info_rep *)
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
