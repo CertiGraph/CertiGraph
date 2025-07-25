@@ -58,7 +58,6 @@ Proof.
   forward.
   forward.
   forward.
-  forward.
   gather_SEP (data_at sh space_type _ (space_address hp from))
     (data_at sh space_type _ (space_address hp to)).
   replace_SEP 0 (space_struct_rep sh hp h from * space_struct_rep sh hp h to) by
@@ -103,7 +102,7 @@ Proof.
                          temp _next (heap_next_address hp to))
                   SEP (heap_rep sh h' hp; all_string_constants rsh gv; outlier_rep outlier;
                        graph_rep g'; heap_remset_rep g' h' rh'; remset_rep sh g' rmst')).
-    + Exists 0 g h rh rmst. entailer !!. unfold total_size, available_size.
+    + forward. Exists 0 g h rh rmst. entailer !!. unfold total_size, available_size.
       pose proof available_leq_total (nth_space h from). lia.
     + Intros n g' h' rh' rmst'. rename H into Hfric. rename H0 into Hnrange.
       destruct Hrhc as [Hrrhc Hrhhc].

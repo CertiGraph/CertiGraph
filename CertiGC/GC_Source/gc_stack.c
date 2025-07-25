@@ -218,19 +218,14 @@ void forward_remset (struct space *from,  /* descriptor of from-space */
                      struct space *to,    /* descriptor of to-space */
                      value **next)        /* next available spot in to-space */
 {
-  value *from_start = from->start, *from_limit=from->limit, *from_rem_limit=from->rem_limit;
-  value *q = from_limit;
+  value *from_start = from->start, *from_limit=from->limit, *from_rem_limit=from->rem_limit, *q;
   assert (from_rem_limit-from_limit <= to->limit-to->next);
-  while (q != from_rem_limit) {
+  for (q = from_limit; q != from_rem_limit; q++) {
     value *p = (value*)int_or_ptr_to_ptr(*q);
     if (!Is_from(from_start, from_limit, p)) {
-      /* value oldp= *p, newp; */
       forward(from_start, from_limit, next, p, DEPTH);
-      /* newp= *p; */
-      /* if (oldp!=newp) */
-          *(--to->limit) = (value)p;
+      *(--to->limit) = (value)p;
     }
-    q++;
   }
 }
 
