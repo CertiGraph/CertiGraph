@@ -7400,7 +7400,7 @@ Definition remset_heap_compatible (g: LGraph) (from: nat) (rst: remset)
 Definition remset_graph_outlier_compatible (g: LGraph) (outlier: outlier_t) (rmst: remset) : Prop :=
   Forall (remset_ext_compatible g outlier) rmst.
 
-Definition remset_graph_outlier_compatible' (g: LGraph) (rmst: remset) : Prop :=
+Definition remset_graph_compatible (g: LGraph) (rmst: remset) : Prop :=
   Forall (remset_ext_compatible' g) rmst.
 
 Definition remset_gen_size (h: heap) (gen: nat): Z :=
@@ -7576,15 +7576,15 @@ Lemma remset_ext_compatible_weakened: forall g outlier re,
 Proof. intros g outlier re Hrec. destruct re; simpl in *; auto. Qed.
 
 Lemma remset_graph_outlier_compatible_weakened: forall g outlier rmst,
-    remset_graph_outlier_compatible g outlier rmst -> remset_graph_outlier_compatible' g rmst.
+    remset_graph_outlier_compatible g outlier rmst -> remset_graph_compatible g rmst.
 Proof.
-  unfold remset_graph_outlier_compatible, remset_graph_outlier_compatible'. intros g outlier rmst Hrec.
+  unfold remset_graph_outlier_compatible, remset_graph_compatible. intros g outlier rmst Hrec.
   rewrite Forall_forall in *. intros x Hin. specialize (Hrec _ Hin).
   eapply remset_ext_compatible_weakened; eassumption.
 Qed.
 
 Lemma remset_item2forward_t_ftc: forall g item rmst from,
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_item_compatible g from rmst item ->
     forward_t_compatible (remset_item2forward_t item rmst g) g.
 Proof.
@@ -7798,7 +7798,7 @@ Lemma forward_remset_item_ghc: forall from to g h rh rmst item g' h' rh' rmst',
     no_dangling_dst g ->
     graph_has_gen g to ->
     enough_space_to_copy g h from to ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_item_compatible g from rmst item ->
     (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
     graph_heap_compatible g' h'.
@@ -7841,7 +7841,7 @@ Qed.
 
 Lemma fri_no_dangling_dst: forall from to g h rh rmst item g' h' rh' rmst',
     graph_has_gen g to -> copy_compatible g ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_item_compatible g from rmst item ->
     no_dangling_dst g ->
     (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
@@ -7879,7 +7879,7 @@ Qed.
 
 Lemma forward_remset_item_gestc: forall from to g h rh rmst item g2 h2 rh2 rmst2 size,
     0 < size -> from <> to -> graph_has_gen g to ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_item_compatible g from rmst item ->
     no_dangling_dst g ->
     general_enough_space_to_copy g h from to size ->
@@ -7958,20 +7958,20 @@ Proof.
     + apply IHPermutation2. eapply remset_nodup_perm; eassumption.
 Qed.
 
-Lemma remset_graph_outlier_compatible'_perm: forall (g: LGraph) rmst1 rmst2,
-    Permutation rmst1 rmst2 -> remset_graph_outlier_compatible' g rmst1 -> remset_graph_outlier_compatible' g rmst2.
-Proof. unfold remset_graph_outlier_compatible'. intros. eapply Forall_permutation; eassumption. Qed.
+Lemma remset_graph_compatible_perm: forall (g: LGraph) rmst1 rmst2,
+    Permutation rmst1 rmst2 -> remset_graph_compatible g rmst1 -> remset_graph_compatible g rmst2.
+Proof. unfold remset_graph_compatible. intros. eapply Forall_permutation; eassumption. Qed.
 
 Lemma remset_graph_outlier_compatible_perm: forall (g: LGraph) ol rmst1 rmst2,
     Permutation rmst1 rmst2 -> remset_graph_outlier_compatible g ol rmst1 -> remset_graph_outlier_compatible g ol rmst2.
 Proof. unfold remset_graph_outlier_compatible. intros. eapply Forall_permutation; eassumption. Qed.
 
-Lemma fr_remset_graph_outlier_compatible': forall from to depth p g g',
+Lemma fr_remset_graph_compatible: forall from to depth p g g',
     graph_has_gen g to ->
     forward_relation from to depth p g g' ->
-    forall rmst, remset_graph_outlier_compatible' g rmst -> remset_graph_outlier_compatible' g' rmst.
+    forall rmst, remset_graph_compatible g rmst -> remset_graph_compatible g' rmst.
 Proof.
-  unfold remset_graph_outlier_compatible'. intros. rewrite Forall_forall in *. intros. specialize (H1 _ H2).
+  unfold remset_graph_compatible. intros. rewrite Forall_forall in *. intros. specialize (H1 _ H2).
   destruct x; simpl in *; auto. eapply fr_graph_has_v; eassumption.
 Qed.
 
@@ -7984,9 +7984,9 @@ Proof.
   destruct x; simpl in *; auto. eapply fr_graph_has_v; eauto.
 Qed.
 
-Lemma remset_graph_outlier_compatible'_cons_iff: forall g rext rmst,
-    remset_graph_outlier_compatible' g (rext :: rmst) <-> remset_ext_compatible' g rext /\ remset_graph_outlier_compatible' g rmst.
-Proof. intros. unfold remset_graph_outlier_compatible'. rewrite Forall_cons_iff. tauto. Qed.
+Lemma remset_graph_compatible_cons_iff: forall g rext rmst,
+    remset_graph_compatible g (rext :: rmst) <-> remset_ext_compatible' g rext /\ remset_graph_compatible g rmst.
+Proof. intros. unfold remset_graph_compatible. rewrite Forall_cons_iff. tauto. Qed.
 
 Lemma remset_graph_outlier_compatible_cons_iff: forall g ol rext rmst,
     remset_graph_outlier_compatible g ol (rext :: rmst) <-> remset_ext_compatible g ol rext /\ remset_graph_outlier_compatible g ol rmst.
@@ -8027,14 +8027,14 @@ Proof.
       destruct a; simpl in *; auto. eapply fr_graph_has_v; eauto.
 Qed.
 
-Lemma fri_remset_graph_outlier_compatible': forall from to g h rh rmst item g' h' rh' rmst',
+Lemma fri_remset_graph_compatible: forall from to g h rh rmst item g' h' rh' rmst',
     graph_has_gen g to ->
     copy_compatible g ->
     remset_nodup rmst ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_item_compatible g from rmst item ->
     (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
-    remset_graph_outlier_compatible' g' rmst'.
+    remset_graph_compatible g' rmst'.
 Proof.
   intros from to g h rh rmst item g' h' rh' rmst' Hghg Hcc Hrnd Hrc Hric Hfri.
   simpl in Hfri. destruct (negb _) eqn:?H. 2: inversion Hfri; assumption.
@@ -8048,15 +8048,15 @@ Proof.
     + simpl in Heae. subst v. apply find_remset_ext_some in Hfre. destruct Hfre as [Hfre _].
       apply In_Permutation_cons in Hfre. destruct Hfre as [l Hperm].
       pose proof upd_remset_addr_perm from to g addr _ _ Hperm Hrnd as Hupdp. symmetry in Hupdp.
-      eapply (remset_graph_outlier_compatible'_perm) in Hupdp; eauto.
-      apply (remset_graph_outlier_compatible'_perm _ _ _ Hperm) in Hrc. rewrite remset_graph_outlier_compatible'_cons_iff in Hrc.
+      eapply (remset_graph_compatible_perm) in Hupdp; eauto.
+      apply (remset_graph_compatible_perm _ _ _ Hperm) in Hrc. rewrite remset_graph_compatible_cons_iff in Hrc.
       destruct Hrc as [Hrec Hrc]. simpl. destruct (Val.eq _ _).
-      2: contradiction. clear e. rewrite remset_graph_outlier_compatible'_cons_iff. split.
-      2: eapply fr_remset_graph_outlier_compatible'; eassumption. Opaque forward_graph_and_heap. simpl in *.
+      2: contradiction. clear e. rewrite remset_graph_compatible_cons_iff. split.
+      2: eapply fr_remset_graph_compatible; eassumption. Opaque forward_graph_and_heap. simpl in *.
       eapply fgh_O_graph_has_v_update_vertex; eauto.
   - clear -Hrc Hfr Hghg. revert rmst Hrc. induction rmst; intros.
     + apply Forall_nil.
-    + hnf in Hrc. unfold remset_graph_outlier_compatible' in IHrmst, Hrc |- *.
+    + hnf in Hrc. unfold remset_graph_compatible in IHrmst, Hrc |- *.
       rewrite Forall_cons_iff in Hrc |- *. destruct Hrc as [Hrec Hrc]. split; auto.
       destruct a; simpl in *; auto. eapply fr_graph_has_v; eauto.
 Qed.
@@ -8194,7 +8194,7 @@ Lemma forward_remset_item_fold_ghc:
       no_dangling_dst g ->
       graph_has_gen g from ->
       graph_has_gen g to ->
-      remset_graph_outlier_compatible' g rmst ->
+      remset_graph_compatible g rmst ->
       remset_and_remset_space_compatible g from rmst r ->
       (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
       general_enough_space_to_copy g h from to (Zlength r) -> graph_heap_compatible g' h'.
@@ -8212,7 +8212,7 @@ Proof.
   - eapply fri_no_dangling_dst; eauto.
   - eapply forward_remset_item_ghg with (g:=g); eauto.
   - eapply forward_remset_item_ghg with (g:=g); eauto.
-  - eapply (fri_remset_graph_outlier_compatible' _ _ g h rh rmst); eauto.
+  - eapply (fri_remset_graph_compatible _ _ g h rh rmst); eauto.
   - hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
     eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
   - eapply forward_remset_item_gestc in Hfri2; eauto. 2: list_solve. destruct Hfri2. 1: list_solve.
@@ -8236,7 +8236,7 @@ Lemma forward_remset_gh_ghc: forall from to g h rh rmst g' h' rh' rmst',
     graph_has_gen g from ->
     graph_has_gen g to ->
     enough_space_enhanced g h from to ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_heap_compatible g from rmst rh h ->
     remset_nodup rmst ->
     (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
@@ -8515,7 +8515,7 @@ Lemma forward_remset_item_fold_rhhc:
       no_dangling_dst g ->
       graph_has_gen g from ->
       graph_has_gen g to ->
-      remset_graph_outlier_compatible' g rmst ->
+      remset_graph_compatible g rmst ->
       remset_and_remset_space_compatible g from rmst r ->
       remset_heap_and_heap_compatible rh h ->
       (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
@@ -8536,7 +8536,7 @@ Proof.
   - eapply fri_no_dangling_dst; eauto.
   - eapply forward_remset_item_ghg with (g:=g); eauto.
   - eapply forward_remset_item_ghg with (g:=g); eauto.
-  - eapply (fri_remset_graph_outlier_compatible' _ _ g h rh rmst); eauto.
+  - eapply (fri_remset_graph_compatible _ _ g h rh rmst); eauto.
   - hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
     eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
   - eapply forward_remset_item_rhhc in Hfri2; eauto. 2: list_solve.
@@ -8681,7 +8681,7 @@ Lemma forward_remset_item_fold_rrhc:
       no_dangling_dst g ->
       graph_has_gen g from ->
       graph_has_gen g to ->
-      remset_graph_outlier_compatible' g rmst ->
+      remset_graph_compatible g rmst ->
       remset_and_remset_space_compatible g from rmst r ->
       remset_and_remset_heap_compatible g from rmst rh ->
       remset_heap_and_heap_compatible rh h ->
@@ -8703,7 +8703,7 @@ Proof.
   - eapply fri_no_dangling_dst; eauto.
   - eapply forward_remset_item_ghg with (g:=g); eauto.
   - eapply forward_remset_item_ghg with (g:=g); eauto.
-  - eapply (fri_remset_graph_outlier_compatible' _ _ g h rh rmst); eauto.
+  - eapply (fri_remset_graph_compatible _ _ g h rh rmst); eauto.
   - hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
     eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
   - eapply forward_remset_item_rrhc with (item := a) (rmst := rmst); eassumption.
@@ -8717,7 +8717,7 @@ Lemma forward_remset_item_oc: forall from to g h rh rmst item g' h' rh' rmst' ou
     graph_has_gen g to ->
     copy_compatible g ->
     no_dangling_dst g ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_item_compatible g from rmst item ->
     outlier_compatible g outlier ->
     (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
@@ -8737,7 +8737,7 @@ Lemma forward_remset_item_fold_oc: forall from to g h rh rmst r g' h' rh' rmst' 
     graph_has_gen g to ->
     copy_compatible g ->
     no_dangling_dst g ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_and_remset_space_compatible g from rmst r ->
     outlier_compatible g outlier ->
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
@@ -8754,7 +8754,7 @@ Proof.
   - eapply forward_remset_item_ghg with (g := g); eauto.
   - eapply (fri_copy_compatible from to); eauto.
   - eapply fri_no_dangling_dst; eauto.
-  - eapply (fri_remset_graph_outlier_compatible' _ _ g h rh rmst); eauto.
+  - eapply (fri_remset_graph_compatible _ _ g h rh rmst); eauto.
   - hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
     eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
   - eapply forward_remset_item_oc; eassumption.
@@ -8764,7 +8764,7 @@ Lemma forward_remset_item_fold_gestc: forall from to g h rh rmst r g' h' rh' rms
     from <> to -> graph_has_gen g to ->
     no_dangling_dst g ->
     copy_compatible g ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_nodup rmst ->
     remset_and_remset_space_compatible g from rmst r ->
     general_enough_space_to_copy g h from to size ->
@@ -8783,7 +8783,7 @@ Proof.
   - eapply forward_remset_item_ghg with (g := g); eassumption.
   - eapply fri_no_dangling_dst; eauto.
   - eapply (fri_copy_compatible from to); eauto.
-  - eapply (fri_remset_graph_outlier_compatible' _ _ g h rh rmst); eauto.
+  - eapply (fri_remset_graph_compatible _ _ g h rh rmst); eauto.
   - eapply fri_remset_nodup; eassumption.
   - hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
     eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
@@ -8813,7 +8813,7 @@ Lemma fri_no_dangling_dst_fold: forall from to g h rh rmst r g' h' rh' rmst',
     remset_nodup rmst ->
     graph_has_gen g to ->
     copy_compatible g ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_and_remset_space_compatible g from rmst r ->
     no_dangling_dst g ->
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
@@ -8829,7 +8829,7 @@ Proof.
   - eapply fri_remset_nodup; eassumption.
   - eapply forward_remset_item_ghg with (g := g); eassumption.
   - eapply (fri_copy_compatible from to); eauto.
-  - eapply (fri_remset_graph_outlier_compatible' _ _ g h rh rmst); eauto.
+  - eapply (fri_remset_graph_compatible _ _ g h rh rmst); eauto.
   - hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
     eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
   - eapply fri_no_dangling_dst; eauto.
@@ -8841,7 +8841,7 @@ Lemma fri_forward_condition_fold: forall from to g h rh rmst r g' h' rh' rmst' s
     graph_has_gen g to ->
     no_dangling_dst g ->
     copy_compatible g ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     remset_nodup rmst ->
     remset_and_remset_space_compatible g from rmst r ->
     general_enough_space_to_copy g h from to size ->

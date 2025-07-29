@@ -2468,7 +2468,7 @@ Qed.
 
 Lemma fgh_O_remset_rep_update_eq: forall from to sh g h g' h' rmst rext addr,
     graph_has_gen g to ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     In rext rmst ->
     extract_address rext = addr ->
     remset_nodup rmst ->
@@ -2637,7 +2637,7 @@ Qed.
 
 Lemma fgh_O_remset_rep_int_eq: forall from to sh g h g' h' rmst item,
     graph_has_gen g to ->
-    remset_graph_outlier_compatible' g rmst ->
+    remset_graph_compatible g rmst ->
     (g', h') = forward_graph_and_heap from to 0 item g h ->
     remset_rep sh g rmst = remset_rep sh g' rmst.
 Proof.

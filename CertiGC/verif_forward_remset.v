@@ -40,7 +40,7 @@ Proof.
     (rewrite <- Haddrf; apply start_isptr).
   assert (Hptrt: isptr (space_start (nth_space h to))) by
     (rewrite <- Haddrt; apply start_isptr).
-  assert (Hrcw: remset_graph_outlier_compatible' g rmst) by
+  assert (Hrcw: remset_graph_compatible g rmst) by
     (eapply remset_graph_outlier_compatible_weakened; eassumption).
   assert_PROP (remset_nodup rmst) as Hrmnd. {
     sep_apply remset_rep_nodup.
