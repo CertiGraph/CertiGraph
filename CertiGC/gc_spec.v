@@ -258,7 +258,7 @@ Definition forward_remset_spec :=
            graph_heap_compatible g h;
            outlier_compatible g outlier;
            forward_remset_condition g h from to;
-           remset_compatible g outlier rmst;
+           remset_graph_outlier_compatible g outlier rmst;
            remset_heap_compatible g from rmst rh h;
            from <> to)
      PARAMS (space_address hp from;
@@ -322,7 +322,8 @@ Definition do_generation_spec :=
   DECLARE _do_generation
   WITH rsh: share, sh: share, gv: globals,
        g: LGraph, h: heap, hp: val, fr: list frame,
-       roots: roots_t, outlier: outlier_t, from: nat, to: nat
+       roots: roots_t, outlier: outlier_t,
+       rh: remset_heap, rmst: remset, from: nat, to: nat
   PRE [tptr space_type,
        tptr space_type,
        tptr (Tstruct _stack_frame noattr)]

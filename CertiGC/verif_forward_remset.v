@@ -40,8 +40,8 @@ Proof.
     (rewrite <- Haddrf; apply start_isptr).
   assert (Hptrt: isptr (space_start (nth_space h to))) by
     (rewrite <- Haddrt; apply start_isptr).
-  assert (Hrcw: remset_compatible' g rmst) by
-    (eapply remset_compatible_weakened; eassumption).
+  assert (Hrcw: remset_graph_outlier_compatible' g rmst) by
+    (eapply remset_graph_outlier_compatible_weakened; eassumption).
   assert_PROP (remset_nodup rmst) as Hrmnd. {
     sep_apply remset_rep_nodup.
     - apply readable_nonidentity, writable_readable. assumption.
@@ -141,8 +141,8 @@ Proof.
         (eapply forward_remset_item_fold_oc with (g := g); eassumption).
       assert (Hfc: forward_condition g' h' from to). {
         eapply fri_forward_condition_fold with (g := g); eauto. lia. }
-      assert (Hrc': remset_compatible g' outlier rmst') by
-        (eapply fri_remset_compatible_fold with (g := g); eassumption).
+      assert (Hrc': remset_graph_outlier_compatible g' outlier rmst') by
+        (eapply fri_remset_graph_outlier_compatible_fold with (g := g); eassumption).
       assert (Hrmnd': remset_nodup rmst') by (eapply fri_remset_nodup_fold; eassumption).
       assert (Hcc': copy_compatible g') by (destruct Hfc as [_ [_ [_ [? _]]]]; assumption).
       assert (Hndd': no_dangling_dst g') by (destruct Hfc as [_ [_ [_ [_ ?]]]]; assumption).
@@ -312,7 +312,7 @@ Proof.
                  remember (get_remset_ext _ _ _) as rext. remember (FwdPntExtr _) as fpe.
                  assert (Hpc: forward_p_compatible fpe outlier g' from). {
                    subst fpe. simpl. fold (remset_ext_compatible g' outlier rext).
-                   eapply remset_compatible_In; eauto. } rewrite Heqfpe.
+                   eapply remset_graph_outlier_compatible_In; eauto. } rewrite Heqfpe.
                  forward_call (rsh, sh, gv, g', h', hp, outlier, from, to, 0,
                                 FwdPntExtr (remset_ext2exterior_t rext), Some v).
                  Intros vret. destruct vret as [g2 h2]. rename H into Hfgh.
@@ -327,7 +327,7 @@ Proof.
                  rewrite Hd. clear Hd. subst OTHERS.
                  gather_SEP (remset_ext_rep _ _ _) (_ -* _). sep_apply wand_frame_elim''.
                  erewrite fgh_O_remset_rep_update_eq; eauto.
-                 2: eapply remset_compatible_weakened; eassumption.
+                 2: eapply remset_graph_outlier_compatible_weakened; eassumption.
                  assert (Hftc: forward_t_compatible (remset_ext2forward_t rext) g'). {
                    unfold remset_ext2forward_t. eapply exterior_forward_t_compatible; eassumption. }
                  assert (Hghc2: graph_heap_compatible g2 h2). {
@@ -464,7 +464,7 @@ Proof.
               Intros vret. destruct vret as [g2 h2]. rename H into Hfgh. clear Hpam Hpc Hfpr Hfpa.
               subst fpi. simpl in Hfgh. simpl. remember (field2forward _) as ft.
               gather_SEP (all_string_constants _ _) emp. rewrite sepcon_emp.
-              erewrite fgh_O_remset_rep_int_eq; eauto. 2: eapply remset_compatible_weakened; eassumption.
+              erewrite fgh_O_remset_rep_int_eq; eauto. 2: eapply remset_graph_outlier_compatible_weakened; eassumption.
               assert (Hftc: forward_t_compatible ft g'). {
                 subst ft; apply vertex_pos_forward_t_compatible; assumption. }
               assert (Hghc2: graph_heap_compatible g2 h2). {
