@@ -98,7 +98,8 @@ Proof.
                    :: map space_quad hl) (ti_heap_p t_info))
          by (unfold heap_struct_rep; entailer!!).
       do 2 forward.
-      unfold before_gc_thread_info_rep. rewrite !heap_struct_rep_eq. rewrite <- H5.
+      unfold before_gc_thread_info_rep, heap_management_rep.
+      rewrite !heap_struct_rep_eq. rewrite <- H5.
       simpl fold_left.
       replace (WORD_SIZE * 0)%Z with 0 by lia.
       rewrite !isptr_offset_val_zero by assumption.

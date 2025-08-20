@@ -174,7 +174,7 @@ Qed.
 Definition forward_spec :=
   DECLARE _forward
   WITH rsh: share, sh: share, gv: globals,
-       g: LGraph, h: heap, hp: val, outlier: outlier_t,
+       g: LGraph, h: part_heap, hp: val, outlier: outlier_t,
        from: nat, to: nat, depth: Z, forward_p: forward_p_type,
        fwd_addr: forward_addr_type
   PRE [tptr int_or_ptr_type,
@@ -202,7 +202,7 @@ Definition forward_spec :=
          graph_rep g;
          heap_rep sh h hp)
   POST [tvoid]
-    EX g': LGraph, EX h': heap,
+    EX g': LGraph, EX h': part_heap,
     PROP ((g', h') = forward_graph_and_heap from to (Z.to_nat depth)
                            (forward_p2forward_t forward_p g) g h)
     RETURN ()
@@ -215,7 +215,7 @@ Definition forward_spec :=
 Definition forward_roots_spec :=
   DECLARE _forward_roots
   WITH rsh: share, sh: share, gv: globals,
-       g: LGraph, h: heap, hp: val, fr: list frame,
+       g: LGraph, h: part_heap, hp: val, fr: list frame,
        roots: roots_t, outlier: outlier_t, from: nat, to: nat
   PRE [tptr int_or_ptr_type,
        tptr int_or_ptr_type,
@@ -236,7 +236,7 @@ Definition forward_roots_spec :=
          frames_rep sh fr;
          heap_rep sh h hp)
   POST [tvoid]
-    EX g' : LGraph, EX h': heap, EX roots': roots_t,
+    EX g' : LGraph, EX h': part_heap, EX roots': roots_t,
     PROP (super_compatible g' h' (frames2rootpairs (update_frames fr (map (exterior2val g') roots'))) roots' outlier;
           forward_roots_relation from to roots g roots' g';
           forward_condition g' h' from to;
@@ -251,7 +251,7 @@ Definition forward_roots_spec :=
 Definition forward_remset_spec :=
   DECLARE _forward_remset
   WITH rsh: share, sh: share, gv: globals,
-       g: LGraph, h: heap, hp: val, outlier: outlier_t,
+       g: LGraph, h: part_heap, hp: val, outlier: outlier_t,
        rh: remset_heap, rmst: remset, from: nat, to: nat
   PRE [ tptr space_type, tptr space_type, tptr (tptr int_or_ptr_type) ]
      PROP (readable_share rsh; writable_share sh;
@@ -271,7 +271,7 @@ Definition forward_remset_spec :=
           heap_remset_rep g h rh;
           remset_rep sh g rmst)
   POST [ tvoid ]
-     EX g': LGraph, EX h': heap, EX rh': remset_heap, EX rmst': remset,
+     EX g': LGraph, EX h': part_heap, EX rh': remset_heap, EX rmst': remset,
      PROP ((g', h', rh', rmst') = forward_remset_gh from to g h rh rmst)
      RETURN ()
      SEP(all_string_constants rsh gv;
@@ -284,7 +284,7 @@ Definition forward_remset_spec :=
 Definition do_scan_spec :=
   DECLARE _do_scan
   WITH rsh: share, sh: share, gv: globals,
-       g: LGraph, h: heap, hp: val, outlier: outlier_t,
+       g: LGraph, h: part_heap, hp: val, outlier: outlier_t,
        from: nat, to: nat, to_index: nat
   PRE [tptr int_or_ptr_type,
        tptr int_or_ptr_type,
@@ -306,7 +306,7 @@ Definition do_scan_spec :=
          graph_rep g;
          heap_rep sh h hp)
   POST [tvoid]
-    EX g': LGraph, EX h': heap,
+    EX g': LGraph, EX h': part_heap,
     PROP (graph_heap_compatible g' h';
           outlier_compatible g' outlier;
           forward_condition g' h' from to;
@@ -321,7 +321,7 @@ Definition do_scan_spec :=
 Definition do_generation_spec :=
   DECLARE _do_generation
   WITH rsh: share, sh: share, gv: globals,
-       g: LGraph, h: heap, hp: val, fr: list frame,
+       g: LGraph, h: part_heap, hp: val, fr: list frame,
        roots: roots_t, outlier: outlier_t,
        rh: remset_heap, rmst: remset, from: nat, to: nat
   PRE [tptr space_type,
@@ -344,7 +344,7 @@ Definition do_generation_spec :=
          heap_remset_rep g h rh;
          remset_rep sh g rmst)
   POST [tvoid]
-    EX g' : LGraph, EX h': heap, EX roots': roots_t,
+    EX g' : LGraph, EX h': part_heap, EX roots': roots_t,
     PROP (super_compatible g' h' (frames2rootpairs (update_frames fr (map (exterior2val g') roots'))) roots' outlier;
           heap_relation h h';
           do_generation_relation from to roots roots' g g')
@@ -465,7 +465,6 @@ Definition ext_mutable_update_spec :=
     SEP (graph_rep g;
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info ti;
-         ti_token_rep (ti_heap t_info) (ti_heap_p t_info);
          data_at_ sh int_or_ptr_type p;
          heap_remset_rep g (ti_heap t_info) rh)
   POST [tvoid]
@@ -476,7 +475,6 @@ Definition ext_mutable_update_spec :=
     SEP (graph_rep g;
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info' ti;
-         ti_token_rep (ti_heap t_info') (ti_heap_p t_info');
          data_at sh int_or_ptr_type (exterior2val g v) p;
          heap_remset_rep g (ti_heap t_info') rh').
 

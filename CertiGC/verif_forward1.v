@@ -21,7 +21,7 @@ Lemma body_forward_extr:
     (rsh sh : share)
     (gv : globals)
     (g : LGraph)
-    (h : heap)
+    (h : part_heap)
     (hp : val)
     (outlier : outlier_t)
     (from to : nat)
@@ -44,7 +44,7 @@ Lemma body_forward_extr:
      data_at sh int_or_ptr_type (exterior2val g extr) v; graph_rep g;
      heap_rep sh h hp)) (fn_body f_forward)
     (normal_ret_assert
-       ((EX (g' : LGraph) (h' : heap),
+       ((EX (g' : LGraph) (h' : part_heap),
          PROP ((g', h') =
                forward_graph_and_heap from to (Z.to_nat depth)
                  (forward_p2forward_t (FwdPntExtr extr) g) g h)
@@ -371,7 +371,7 @@ Proof.
                 subst g'. apply lcv_outlier_compatible; assumption. }
               forward_for_simple_bound
                 n
-                  (EX i: Z, EX g3: LGraph, EX h3: heap,
+                  (EX i: Z, EX g3: LGraph, EX h3: part_heap,
                           PROP ((g3, h3) = forward_gh_loop forward_graph_and_heap
                                              from to (Z.to_nat (depth - 1))
                                              (sublist 0 i (vertex_pos_pairs g'

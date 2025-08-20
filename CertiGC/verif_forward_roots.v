@@ -110,7 +110,7 @@ Proof.
   }
   assert (H' := sc_Zlength H).
   forward_while (EX k: Z,
-                 EX g': LGraph, EX h': heap, EX roots': roots_t,
+                 EX g': LGraph, EX h': part_heap, EX roots': roots_t,
       PROP (0 <= k <= n;
             forward_roots_relation from to (sublist 0 (nr k) roots) g roots' g';
             heap_relation h h';
@@ -281,7 +281,7 @@ Proof.
     auto.
     }
     forward_for_simple_bound (Zlength s)
-       (EX i: Z,  EX g'': LGraph, EX h'': heap, EX roots'':roots_t,
+       (EX i: Z,  EX g'': LGraph, EX h'': part_heap, EX roots'':roots_t,
        PROP (
          forward_roots_relation from to (sublist 0 (nr k + i) roots) g roots'' g'';
          heap_relation h' h'';

@@ -60,7 +60,7 @@ Proof.
   rename H1 into Hfc. rename H2 into Hft. rename H3 into Hchi. rename H4 into Hgsp.
   rename H5 into Hunmk.
   forward.
-  forward_loop (EX n: nat, EX g': LGraph, EX h': heap,
+  forward_loop (EX n: nat, EX g': LGraph, EX h': part_heap,
                 PROP (graph_heap_compatible g' h';
                       outlier_compatible g' outlier;
                       forward_condition g' h' from to;
@@ -77,7 +77,7 @@ Proof.
                      outlier_rep outlier;
                      graph_rep g';
                      heap_rep sh h' hp))
-  break: (EX g' : LGraph, EX h': heap,
+  break: (EX g' : LGraph, EX h': part_heap,
           PROP (graph_heap_compatible g' h';
                 outlier_compatible g' outlier;
                 forward_condition g' h' from to;
@@ -218,7 +218,7 @@ Proof.
       gather_SEP (heap_struct_rep _ _ _ ) (heap_unused_rep _).
       replace_SEP 0 (heap_rep sh h' hp) by (unfold thread_info_rep, heap_rep; entailer !!).
       forward_if
-        (EX g'': LGraph, EX h'': heap,
+        (EX g'': LGraph, EX h'': part_heap,
          PROP (graph_heap_compatible g'' h'';
                outlier_compatible g'' outlier;
                forward_condition g'' h'' from to;
@@ -253,7 +253,7 @@ Proof.
           split; [lia|]. transitivity (two_p (WORD_SIZE * 8 - 10));
                            [lia | vm_compute; reflexivity]. }
         forward_loop
-          (EX i: Z, EX g3: LGraph, EX h3: heap,
+          (EX i: Z, EX g3: LGraph, EX h3: part_heap,
            PROP (scan_vertex_for_loop
                    from to (to, index)
                    (sublist 0 (i - 1)
@@ -275,7 +275,7 @@ Proof.
                 outlier_rep outlier;
                 graph_rep g3;
                 heap_rep sh h3 hp))
-          continue: (EX i: Z, EX g3: LGraph, EX h3: heap,
+          continue: (EX i: Z, EX g3: LGraph, EX h3: part_heap,
            PROP (scan_vertex_for_loop
                    from to (to, index)
                    (sublist 0 i

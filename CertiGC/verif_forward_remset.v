@@ -83,7 +83,7 @@ Proof.
     fold (rest_gen_size h to) (available_size h from) (total_size h from) (remset_gen_size h from) in H.
     pose proof unmarked_gen_size_nonneg g from. lia.
   - Intros. thaw FR.
-    forward_loop (EX n: Z, EX g': LGraph, EX h': heap, EX rh': remset_heap, EX rmst': remset,
+    forward_loop (EX n: Z, EX g': LGraph, EX h': part_heap, EX rh': remset_heap, EX rmst': remset,
                   PROP ((g', h', rh', rmst') = fold_left (forward_remset_item from to)
                         (sublist 0 n (Znth (Z.of_nat from) rh)) (g, h, rh, rmst);
                         0 <= n <= total_size h from - available_size h from)
@@ -282,7 +282,7 @@ Proof.
            forward_call (fsh, fp, fn, v, P). Intros vret. destruct vret as [Hvin | Hvnot].
            ++ subst. sep_apply (v_in_range_graph_remset_rep_FF sh g' h' rmst' from v).
               assert_PROP False by entailer !. contradiction.
-           ++ forward_if (EX g3: LGraph, EX h3: heap, EX rh3: remset_heap, EX rmst3: remset,
+           ++ forward_if (EX g3: LGraph, EX h3: part_heap, EX rh3: remset_heap, EX rmst3: remset,
                           PROP ((g3, h3, rh3, rmst3) = forward_remset_item from to
                                                          (g', h', rh', rmst') (RemSetExterior v))
                           LOCAL (temp _q
@@ -425,7 +425,7 @@ Proof.
              (entailer !!; assumption). Intros.
            forward_call (fsh, fp, fn, (offset_val (pos * WORD_SIZE)
                                          (vertex_address g' v)), P). Intros vret.
-           forward_if (EX g3: LGraph, EX h3: heap, EX rh3: remset_heap, EX rmst3: remset,
+           forward_if (EX g3: LGraph, EX h3: part_heap, EX rh3: remset_heap, EX rmst3: remset,
                        PROP ((g3, h3, rh3, rmst3) =
                                forward_remset_item from to
                                  (g', h', rh', rmst') (RemSetInterior (InteriorVertexPos v pos)))
