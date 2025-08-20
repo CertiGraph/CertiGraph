@@ -422,26 +422,6 @@ Qed.
 Definition heap_rep (sh: share) (h: heap) (p: val) :=
   heap_struct_rep sh (map space_quad h.(spaces)) p * heap_unused_rep h.
 
-Definition before_gc_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
-  let nursery := heap_head ti.(ti_heap) in
-  let p := nursery.(space_start) in
-  let n_lim := offset_val (WORD_SIZE * nursery.(available_space)) p in
-  let n_ttl := offset_val (WORD_SIZE * nursery.(total_space)) p in
-  data_at sh thread_info_type
-         (offset_val (WORD_SIZE * nursery.(used_space)) p,
-           (n_lim, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (Vptrofs (ti.(ti_nalloc)),nullval)))))) t *
-  frames_rep sh (ti_frames ti) *
-  heap_struct_rep
-    sh ((p, (Vundef, (n_lim, n_ttl)))
-          :: map space_quad (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
-  heap_unused_rep ti.(ti_heap).
-
-Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
-  data_at sh thread_info_type
-     (Vundef, (Vundef, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (Vptrofs (ti.(ti_nalloc)), nullval)))))) t *
-  frames_rep sh (ti_frames ti) *
-  heap_rep sh ti.(ti_heap) ti.(ti_heap_p).
-
 Definition single_outlier_rep (p: GC_Pointer) :=
   EX sh: share, !!(readable_share sh) &&
                   (data_at_ sh (tptr tvoid) (GC_Pointer2val p) * TT).
@@ -1905,24 +1885,6 @@ Proof.
   rewrite (sepcon_assoc _ B Q). cancel. apply wand_frame_intro.
 Qed.
 
-Lemma thread_info_rep_ramif_stable: forall sh tinfo ti gen1 gen2,
-    gen1 <> gen2 -> Z.of_nat gen1 < MAX_SPACES -> Z.of_nat gen2 < MAX_SPACES ->
-    thread_info_rep sh tinfo ti |--
-                         (space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen1 *
-                          space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen2) *
-    ((space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen1 * space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen2)
-       -* thread_info_rep sh tinfo ti).
-Proof.
-  intros. unfold thread_info_rep.
-  sep_apply (heap_rep_ramif_stable sh (ti_heap tinfo) (ti_heap_p tinfo) gen1 gen2).
-  cancel.
-  apply -> wand_sepcon_adjoint.
-  cancel.
-  rewrite sepcon_assoc.
-  rewrite sepcon_comm.
-  apply modus_ponens_wand.
-Qed.
-
 Lemma hsr_single_explicit: forall sh l heap_p i,
     0 <= i < MAX_SPACES -> Zlength l = MAX_SPACES ->
       heap_struct_rep sh l heap_p =
@@ -1973,21 +1935,6 @@ Proof.
     as [B ?]; try rep_lia; try assumption. rewrite H1, !Nat2Z.id. clear H1.
   subst l. rewrite <- space_struct_rep_eq; auto. cancel. rewrite sepcon_assoc.
   apply wand_frame_intro.
-Qed.
-
-Lemma thread_info_rep_ramif_stable_1: forall sh tinfo ti gen,
-    Z.of_nat gen < MAX_SPACES ->
-    thread_info_rep sh tinfo ti |--
-                    space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen *
-    (space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen -* thread_info_rep sh tinfo ti).
-Proof.
-  intros. unfold thread_info_rep.
-  sep_apply (heap_rep_ramif_stable_1 sh (ti_heap tinfo) (ti_heap_p tinfo) gen).
-  cancel.
-  apply -> wand_sepcon_adjoint.
-  cancel.
-  rewrite sepcon_comm.
-  apply modus_ponens_wand.
 Qed.
 
 Lemma vertex_rep_reset: forall g i j x sh,
@@ -2685,4 +2632,65 @@ Proof.
     (Zlength (Znth (Z.of_nat gen) rh)) by list_solve.
   replace (WORD_SIZE * (available_space (nth_space h gen) - 1) + WORD_SIZE) with
     (WORD_SIZE * available_space (nth_space h gen))%Z by lia. cancel.
+Qed.
+
+Definition heap_management_rep (sh: share) (ti: thread_info) : mpred :=
+  let nursery := heap_head ti.(ti_heap) in
+  let p := nursery.(space_start) in
+  let n_lim := offset_val (WORD_SIZE * nursery.(available_space)) p in
+  let n_ttl := offset_val (WORD_SIZE * nursery.(total_space)) p in
+  heap_struct_rep
+    sh ((p, (Vundef, (n_lim, n_ttl)))
+          :: map space_quad (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
+    heap_unused_rep ti.(ti_heap) *
+    ti_token_rep (ti_heap ti) (ti_heap_p ti).
+
+Definition before_gc_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
+  let nursery := heap_head ti.(ti_heap) in
+  let p := nursery.(space_start) in
+  let n_lim := offset_val (WORD_SIZE * nursery.(available_space)) p in
+  let n_ttl := offset_val (WORD_SIZE * nursery.(total_space)) p in
+  data_at sh thread_info_type
+         (offset_val (WORD_SIZE * nursery.(used_space)) p,
+           (n_lim, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (Vptrofs (ti.(ti_nalloc)),nullval)))))) t *
+  frames_rep sh (ti_frames ti) *
+    heap_management_rep sh ti.
+
+Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
+  data_at sh thread_info_type
+     (Vundef, (Vundef, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (Vptrofs (ti.(ti_nalloc)), nullval)))))) t *
+  frames_rep sh (ti_frames ti) *
+  heap_rep sh ti.(ti_heap) ti.(ti_heap_p).
+
+Lemma thread_info_rep_ramif_stable: forall sh tinfo ti gen1 gen2,
+    gen1 <> gen2 -> Z.of_nat gen1 < MAX_SPACES -> Z.of_nat gen2 < MAX_SPACES ->
+    thread_info_rep sh tinfo ti |--
+                         (space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen1 *
+                          space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen2) *
+    ((space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen1 * space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen2)
+       -* thread_info_rep sh tinfo ti).
+Proof.
+  intros. unfold thread_info_rep.
+  sep_apply (heap_rep_ramif_stable sh (ti_heap tinfo) (ti_heap_p tinfo) gen1 gen2).
+  cancel.
+  apply -> wand_sepcon_adjoint.
+  cancel.
+  rewrite sepcon_assoc.
+  rewrite sepcon_comm.
+  apply modus_ponens_wand.
+Qed.
+
+Lemma thread_info_rep_ramif_stable_1: forall sh tinfo ti gen,
+    Z.of_nat gen < MAX_SPACES ->
+    thread_info_rep sh tinfo ti |--
+                    space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen *
+    (space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen -* thread_info_rep sh tinfo ti).
+Proof.
+  intros. unfold thread_info_rep.
+  sep_apply (heap_rep_ramif_stable_1 sh (ti_heap tinfo) (ti_heap_p tinfo) gen).
+  cancel.
+  apply -> wand_sepcon_adjoint.
+  cancel.
+  rewrite sepcon_comm.
+  apply modus_ponens_wand.
 Qed.

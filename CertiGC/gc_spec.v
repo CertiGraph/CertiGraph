@@ -329,6 +329,7 @@ Definition do_generation_spec :=
        tptr (Tstruct _stack_frame noattr)]
     PROP (readable_share rsh; writable_share sh;
           super_compatible g h (frames2rootpairs fr) roots outlier;
+          remset_compatible g outlier from rmst rh h;
           do_generation_condition g h from to;
           from <> to)
     PARAMS (space_address hp from;
@@ -339,7 +340,9 @@ Definition do_generation_spec :=
          outlier_rep outlier;
          graph_rep g;
          frames_rep sh fr;
-         heap_rep sh h hp)
+         heap_rep sh h hp;
+         heap_remset_rep g h rh;
+         remset_rep sh g rmst)
   POST [tvoid]
     EX g' : LGraph, EX h': heap, EX roots': roots_t,
     PROP (super_compatible g' h' (frames2rootpairs (update_frames fr (map (exterior2val g') roots'))) roots' outlier;
@@ -438,13 +441,20 @@ Definition resume_spec :=
          before_gc_thread_info_rep sh t_info ti).
 
 (* TODO *)
-Definition decr_info_nursery (ti: thread_info) (x: val): thread_info := ti.
+Definition decr_info_nursery (ti: thread_info) (x: val): thread_info :=
+  if isptr_dec x then ti else
+    Build_thread_info (ti_heap_p ti) (incr_remset_heap (ti_heap ti) 0)
+      (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti).
+
+Definition mtb_upd_remset_heap (x: val) (item: remset_space_item) (rh: remset_heap) : remset_heap :=
+  if isptr_dec x then rh else upd_remset_heap item rh O.
+
 Definition info_recordable (ti: thread_info): Prop := True.
 
 Definition ext_mutable_update_spec :=
   DECLARE _mutable_update
     WITH ti: val, p: val, v: exterior_t, t_info: thread_info, sh: share,
-         g: LGraph, outlier: outlier_t
+         g: LGraph, outlier: outlier_t, rh: remset_heap
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
   PROP (writable_share sh;
         info_recordable t_info;
@@ -456,45 +466,86 @@ Definition ext_mutable_update_spec :=
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info ti;
          ti_token_rep (ti_heap t_info) (ti_heap_p t_info);
-         data_at_ sh int_or_ptr_type p)
+         data_at_ sh int_or_ptr_type p;
+         heap_remset_rep g (ti_heap t_info) rh)
   POST [tvoid]
-    EX t_info': thread_info,
-    PROP (t_info' = decr_info_nursery t_info (exterior2val g v))
+    EX t_info': thread_info, EX rh': remset_heap,
+    PROP (t_info' = decr_info_nursery t_info (exterior2val g v);
+          rh' = mtb_upd_remset_heap (exterior2val g v) (RemSetExterior p) rh)
     RETURN ()
     SEP (graph_rep g;
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info' ti;
          ti_token_rep (ti_heap t_info') (ti_heap_p t_info');
-         data_at sh int_or_ptr_type (exterior2val g v) p).
+         data_at sh int_or_ptr_type (exterior2val g v) p;
+         heap_remset_rep g (ti_heap t_info') rh').
 
 (* Maybe exterior_t could be renamed into root_t *)
+
+Lemma upd_rvb_range: forall rvb pos rf,
+    0 < Zlength (upd_Znth pos (raw_fields rvb) rf) < two_p (WORD_SIZE * 8 - 10).
+Proof.
+  intros rvb pos rf. pose proof raw_fields_range rvb. rewrite Zlength_upd_Znth. assumption.
+Qed.
+
+(*
+
+Definition upd_rvb (rvb: raw_vertex_block) (pos: Z) (rf: raw_field) : raw_vertex_block :=
+  Build_raw_vertex_block
+    (raw_mark rvb) (copied_vertex rvb) (upd_Znth pos (raw_fields rvb) rf)
+    (raw_color rvb) (raw_tag rvb) (raw_tag_range rvb)
+    (raw_color_range rvb) (upd_rvb_range rvb pos rf) (tag_no_scan rvb).
+
+Definition mtb_upd_graph (g: LGraph) (it: interior_t) (v: exterior_t) : LGraph :=
+  match it with
+  | InteriorVertexPos v pos =>
+      match Znth pos (raw_fields (vlabel g v)) with
+      | RawInternal => match v with
+                       | ExteriorUnboxed z =>
+                       | ExteriorOutlier p =>
+                       | ExteriorVertex vtx =>
+                       end
+      | RawUnboxed _
+      | RawOutlier _ => match v with
+                       | ExteriorUnboxed z =>
+                       | ExteriorOutlier p =>
+                       | ExteriorVertex vtx =>
+                       end
+  end
+
+*)
 
 Definition int_mutable_update_spec :=
   DECLARE _mutable_update
     WITH ti: val, v: exterior_t, t_info: thread_info, sh: share, g: LGraph,
-         it: interior_t, outlier: outlier_t
+         it: interior_t, outlier: outlier_t, rh: remset_heap
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
   PROP (writable_share sh;
         info_recordable t_info;
         outlier_compatible g outlier;
-        exterior_compatible g outlier v)
+        exterior_compatible g outlier v;
+        interior_compatible g O it)
     PARAMS (ti; interior_address it g; exterior2val g v)
     GLOBALS ()
-    SEP (before_gc_thread_info_rep sh t_info ti;
-         ti_token_rep (ti_heap t_info) (ti_heap_p t_info))
+    SEP (graph_rep g;
+         outlier_rep outlier;
+         before_gc_thread_info_rep sh t_info ti;
+         heap_remset_rep g (ti_heap t_info) rh)
   POST [tvoid]
-    EX g': LGraph, EX t_info': thread_info,
-    PROP (t_info' = decr_info_nursery t_info (exterior2val g v)
+    EX g': LGraph, EX t_info': thread_info, EX rh': remset_heap,
+    PROP (t_info' = decr_info_nursery t_info (exterior2val g v);
+          rh' = mtb_upd_remset_heap (exterior2val g v) (RemSetInterior it) rh
           (* relation or function about g and g' *))
     RETURN ()
     SEP (graph_rep g';
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info' ti;
-         ti_token_rep (ti_heap t_info') (ti_heap_p t_info')).
+         heap_remset_rep g' (ti_heap t_info') rh').
 
 (* Change before_gc_thread_info_rep *)
 (* Define a new heap_management to hide details in
    before_gc_thread_info_rep *)
+(* combine heap and remset_heap *)
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
@@ -512,8 +563,7 @@ Definition garbage_collect_spec :=
          all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g;
-         before_gc_thread_info_rep sh t_info ti;
-         ti_token_rep (ti_heap t_info) (ti_heap_p t_info))
+         before_gc_thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
@@ -529,8 +579,7 @@ Definition garbage_collect_spec :=
          all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
-         before_gc_thread_info_rep sh t_info' ti;
-         ti_token_rep (ti_heap t_info') (ti_heap_p t_info')).
+         before_gc_thread_info_rep sh t_info' ti).
 
 (*
 Definition reset_heap_spec :=
