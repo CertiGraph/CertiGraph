@@ -49,15 +49,15 @@ Proof.
   - forward; entailer!!.
   - remember (ti_heap_p t_info). rewrite (@data_at_isptr CompSpecs sh heap_type).
     Intros. exfalso. destruct t_info. simpl in *. subst. contradiction.
-  - Intros. destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]].
+  - Intros. destruct (heap_head_cons (ti_heap t_info).(pt_heap)) as [hs [hl [? ?]]].
     rewrite H1, <- H2, map_cons.
     destruct (gt_gs_compatible _ _ H _ (graph_has_gen_O _)) as [? [? ?]].
-    assert (isptr (space_start (heap_head (ti_heap t_info)))). {
+    assert (isptr (space_start (heap_head (ti_heap t_info).(pt_heap)))). {
       rewrite H2. unfold nth_space in H3. rewrite H1 in H3. simpl in H3.
       rewrite <- H3. apply start_isptr. } unfold space_quad at 1.
     do 2 forward; try solve [entailer!!].
     rewrite Znth_0_cons.
-    destruct (space_start (heap_head (ti_heap t_info))) eqn:? ; try contradiction.
+    destruct (space_start (heap_head (ti_heap t_info).(pt_heap))) eqn:? ; try contradiction.
     forward_if (Ptrofs.unsigned (ti_nalloc t_info) <= available_space hs).
     + unfold denote_tc_samebase. simpl. entailer!!.
     + unfold all_string_constants; Intros; forward_call; contradiction.
@@ -68,7 +68,7 @@ Proof.
       rewrite <- (Ptrofs.repr_unsigned (ti_nalloc t_info)) in H7.
       rewrite ?int64_ltu_ptrofs_to_int_64,
         ?int_ltu_ptrofs_to_int in H7 by reflexivity.
-      remember (heap_head (ti_heap t_info)) as h.
+      remember (heap_head (ti_heap t_info).(pt_heap)) as h.
       rewrite ptrofs_add_repr, ptrofs_sub_repr, Z.add_comm, Z.add_simpl_r in H7.
       unfold Ptrofs.divs in H7.
       first [rewrite (Ptrofs.signed_repr 8) in H7 by rep_lia |
@@ -88,13 +88,13 @@ Proof.
       rewrite H1 in H5. simpl in H5. rewrite <- H2 in H5.
       replace_SEP
         4 (heap_struct_rep
-             sh ((space_start (heap_head (ti_heap t_info)),
-                  (offset_val (WORD_SIZE * used_space (heap_head (ti_heap t_info)))
-                              (space_start (heap_head (ti_heap t_info))),
-                   (offset_val (WORD_SIZE * available_space (heap_head (ti_heap t_info)))
-                              (space_start (heap_head (ti_heap t_info))),
-                    offset_val (WORD_SIZE * total_space (heap_head (ti_heap t_info)))
-                              (space_start (heap_head (ti_heap t_info))))))
+             sh ((space_start (heap_head (ti_heap t_info).(pt_heap)),
+                  (offset_val (WORD_SIZE * used_space (heap_head (ti_heap t_info).(pt_heap)))
+                              (space_start (heap_head (ti_heap t_info).(pt_heap))),
+                   (offset_val (WORD_SIZE * available_space (heap_head (ti_heap t_info).(pt_heap)))
+                              (space_start (heap_head (ti_heap t_info).(pt_heap))),
+                    offset_val (WORD_SIZE * total_space (heap_head (ti_heap t_info).(pt_heap)))
+                              (space_start (heap_head (ti_heap t_info).(pt_heap))))))
                    :: map space_quad hl) (ti_heap_p t_info))
          by (unfold heap_struct_rep; entailer!!).
       do 2 forward.
@@ -107,7 +107,7 @@ Proof.
       rewrite Z.sub_0_r.
       entailer_for_return.
       assert (MAX_SPACES = Zlength (map space_quad hl) + 1). {
-        pose proof (spaces_size (ti_heap t_info)).
+        pose proof (spaces_size (ti_heap t_info).(pt_heap)).
         rewrite <- H2, H1, Zlength_cons, Zlength_map. lia. } rewrite !H2.
       rewrite !data_at_tarray_split_1 by reflexivity. cancel.
       do 2 (unfold_data_at (data_at _ _ _ _)). cancel.

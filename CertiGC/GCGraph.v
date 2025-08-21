@@ -432,16 +432,6 @@ Fixpoint frame2rootpairs' (base: val) (z: Z) (al: list val) : list rootpair :=
 Definition frame2rootpairs (f: frame) : list rootpair :=
   frame2rootpairs' f.(fr_root) 0 f.(fr_roots).
 
-Record thread_info: Type :=
-  {
-    ti_heap_p: val;
-    ti_heap: part_heap;
-    ti_args: list val;
-    arg_size: Zlength ti_args = MAX_ARGS;
-    ti_frames: list frame;
-    ti_nalloc: Ptrofs.int
-  }.
-
 Definition vertex_size (g: LGraph) (v: VType): Z :=
   Zlength (vlabel g v).(raw_fields) + 1.
 
@@ -1008,11 +998,6 @@ Qed.
 
 Definition reset_nth_heap (n: nat) (h: part_heap) : part_heap :=
   Build_part_heap (reset_nth_space n (spaces h)) (reset_nth_heap_Zlength n h).
-
-Definition reset_nth_heap_thread_info (n: nat) (ti: thread_info) : thread_info :=
-  Build_thread_info (ti_heap_p ti) (reset_nth_heap n (ti_heap ti))
-                    (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti).
-
 
 Lemma reset_heap_overflow: forall n h,
     length (spaces h) <= n -> reset_nth_heap n h = h.
@@ -2221,20 +2206,6 @@ Proof.
   rewrite isptr_offset_val. apply graph_has_gen_start_isptr, (proj1 (H _ H1 Heqb)).
 Qed.
 
-Lemma upd_tf_arg_Zlength: forall (t: thread_info) (index: Z) (v: val),
-    0 <= index < MAX_ARGS -> Zlength (upd_Znth index (ti_args t) v) = MAX_ARGS.
-Proof.
-  intros. rewrite upd_Znth_Zlength; [apply arg_size | rewrite arg_size; assumption].
-Qed.
-
-Definition update_thread_info_arg (t: thread_info) (index: Z)
-           (v: val) (H: 0 <= index < MAX_ARGS): thread_info :=
-  Build_thread_info (ti_heap_p t) (ti_heap t) (upd_Znth index (ti_args t) v)
-                    (upd_tf_arg_Zlength t index v H) (ti_frames t) (ti_nalloc t).
-
-Definition update_thread_info_frames (t: thread_info) (fr: list frame) :=
-  Build_thread_info (ti_heap_p t) (ti_heap t) (ti_args t) (arg_size t) fr (ti_nalloc t).
-
 Local Close Scope Z_scope.
 
 Lemma cvmgil_length: forall l to,
@@ -2767,12 +2738,6 @@ Proof. intros. apply lmc_outlier_compatible, lacv_outlier_compatible; assumption
 
 Local Open Scope Z_scope.
 
-Lemma utia_estc: forall g t_info from to frames,
-    enough_space_to_copy g t_info.(ti_heap) from to ->
-    enough_space_to_copy g (update_thread_info_frames t_info frames).(ti_heap) from to.
-Proof. intros. apply H.
-Qed.
-
 Lemma lacv_unmarked_gen_size: forall g v to from,
     from <> to -> graph_has_gen g to ->
     unmarked_gen_size g from = unmarked_gen_size (lgraph_add_copied_v g v to) from.
@@ -3236,10 +3201,6 @@ Proof.
   rewrite lmc_gen_start, lacv_gen_start; [reflexivity | assumption].
 Qed.
 
-Lemma utia_ti_heap: forall t_info i ad (Hm : 0 <= i < MAX_ARGS),
-    ti_heap (update_thread_info_arg t_info i ad Hm) = ti_heap t_info.
-Proof. intros. simpl. reflexivity. Qed.
-
 Lemma cti_available_size: forall h i s n,
     available_size (cut_heap h i s) n = available_size h n.
 Proof.
@@ -3292,12 +3253,6 @@ Definition weak_heap_relation (h h': part_heap) :=
 
 Lemma heap_relation_weakened: forall h h', heap_relation h h' -> weak_heap_relation h h'.
 Proof. intros h h' [? [? ?]]. now split. Qed.
-
-Definition thread_info_relation t t':=
-  ti_heap_p t = ti_heap_p t' /\ heap_relation (ti_heap t) (ti_heap t').
-
-Lemma tir_id: forall t, thread_info_relation t t.
-Proof. intros. red. split; [|split; [|split; [|split]]]; reflexivity. Qed.
 
 Lemma upd_Znth_diff_strong : forall {A}{d: Inhabitant A} i j l (u : A),
     0 <= j < Zlength l -> i <> j -> Znth i (upd_Znth j l u) = Znth i l.
@@ -3953,15 +3908,6 @@ Proof. intros ? ? ? [? ?] [? ?]. split; intros; congruence. Qed.
 
 #[global] Instance whr_Transitive: Transitive weak_heap_relation := whr_trans.
 
-Lemma tir_trans: forall t1 t2 t3,
-    thread_info_relation t1 t2 -> thread_info_relation t2 t3 ->
-    thread_info_relation t1 t3.
-Proof.
-  intros. destruct H as [? ?], H0 as [? ?]. split; [congruence | etransitivity; eassumption].
-Qed.
-
-#[global] Instance tir_Transitive: Transitive thread_info_relation := tir_trans.
-
 Lemma forward_loop_add_tail: forall from to depth l intr g1 g2 g3,
     forward_loop from to depth l g1 g2 ->
     forward_relation from to depth (interior2forward intr g2) g2 g3 ->
@@ -4288,9 +4234,6 @@ Definition space_address (heap_p: val) (gen: nat) :=
 
 Definition enough_space_to_have_g g t_info from to: Prop :=
   graph_gen_size g from <= rest_gen_size t_info to.
-
-Definition roots_frames_compatible (roots: roots_t) t_info: Prop :=
-  Zlength roots = Zlength (frames2rootpairs (ti_frames t_info)).
 
 Definition remset_gen_size (h: part_heap) (gen: nat): Z :=
   total_size h gen - available_size h gen.
@@ -5756,11 +5699,6 @@ Qed.
 Definition add_new_space (hp: part_heap) (sp: space) i (Hs: 0 <= i < MAX_SPACES): part_heap :=
   Build_part_heap (upd_Znth i (spaces hp) sp) (upd_heap_Zlength hp sp i Hs).
 
-Definition ti_add_new_space (ti: thread_info) (sp: space) i
-           (Hs: 0 <= i < MAX_SPACES): thread_info :=
-  Build_thread_info (ti_heap_p ti) (add_new_space (ti_heap ti) sp i Hs)
-                    (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti).
-
 Lemma ang_nth_old: forall g gi gen,
     graph_has_gen g gen -> nth_gen (lgraph_add_new_gen g gi) gen = nth_gen g gen.
 Proof. intros. unfold nth_gen. simpl. rewrite app_nth1; [reflexivity|assumption]. Qed.
@@ -5888,21 +5826,6 @@ Proof.
   apply map_ext_in. intros. destruct a; simpl; try reflexivity.
   apply ang_vertex_address_old. red in H0. rewrite Forall_forall in H0. apply H0.
   rewrite <- (filter_proj_In_iff exterior_proj_vertex_spec). assumption.
-Qed.
-
-Lemma super_compatible_add: forall g ti gi sp i (Hs: 0 <= i < MAX_SPACES) roots out,
-    ~ graph_has_gen g (Z.to_nat i) -> graph_has_gen g (Z.to_nat (i - 1)) ->
-    (forall (gr: LGraph), generation_space_compatible gr (Z.to_nat i, gi, sp)) ->
-    number_of_vertices gi = O ->
-    super_compatible g (ti_heap ti) (frames2rootpairs (ti_frames ti)) roots out ->
-    super_compatible (lgraph_add_new_gen g gi) (add_new_space (ti_heap ti) sp i Hs)
-                                     (frames2rootpairs (ti_frames ti)) roots out.
-Proof.
-  intros. destruct H3 as [? [? [? ?]]]. split; [|split; [|split]].
-  - apply gti_compatible_add; assumption.
-  - apply fta_compatible_add; [|destruct H5]; assumption.
-  - apply ang_roots_compatible; assumption.
-  - apply ang_outlier_compatible; assumption.
 Qed.
 
 Lemma ti_size_spec_add: forall h sp i (Hs: 0 <= i < MAX_SPACES),
@@ -9070,8 +8993,108 @@ Proof.
   - inversion H. subst. clear H. simpl app. eapply gcl_cons; eauto.
 Qed.
 
-Record complete_heap: Type := {
-    ch_heap: part_heap;
+Record heap: Type := {
+    pt_heap: part_heap;
     rs_heap: remset_heap;
-    ch_compat: remset_heap_and_heap_compatible rs_heap ch_heap;
+    heap_compat: remset_heap_and_heap_compatible rs_heap pt_heap;
   }.
+
+Record thread_info: Type :=
+  {
+    ti_heap_p: val;
+    ti_heap: heap;
+    ti_args: list val;
+    arg_size: Zlength ti_args = MAX_ARGS;
+    ti_frames: list frame;
+    ti_nalloc: Ptrofs.int
+  }.
+
+(* Definition reset_nth_heap_thread_info (n: nat) (ti: thread_info) : thread_info := *)
+(*   Build_thread_info (ti_heap_p ti) (reset_nth_heap n (ti_heap ti)) *)
+(*                     (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti). *)
+
+Lemma upd_tf_arg_Zlength: forall (t: thread_info) (index: Z) (v: val),
+    0 <= index < MAX_ARGS -> Zlength (upd_Znth index (ti_args t) v) = MAX_ARGS.
+Proof.
+  intros. rewrite upd_Znth_Zlength; [apply arg_size | rewrite arg_size; assumption].
+Qed.
+
+Definition update_thread_info_arg (t: thread_info) (index: Z)
+           (v: val) (H: 0 <= index < MAX_ARGS): thread_info :=
+  Build_thread_info (ti_heap_p t) (ti_heap t) (upd_Znth index (ti_args t) v)
+                    (upd_tf_arg_Zlength t index v H) (ti_frames t) (ti_nalloc t).
+
+Definition update_thread_info_frames (t: thread_info) (fr: list frame) :=
+  Build_thread_info (ti_heap_p t) (ti_heap t) (ti_args t) (arg_size t) fr (ti_nalloc t).
+
+(*
+Lemma utia_estc: forall g t_info from to frames,
+    enough_space_to_copy g t_info.(ti_heap) from to ->
+    enough_space_to_copy g (update_thread_info_frames t_info frames).(ti_heap) from to.
+Proof. intros. apply H. Qed.
+*)
+
+Lemma utia_ti_heap: forall t_info i ad (Hm : 0 <= i < MAX_ARGS),
+    ti_heap (update_thread_info_arg t_info i ad Hm) = ti_heap t_info.
+Proof. intros. simpl. reflexivity. Qed.
+
+(*
+Definition thread_info_relation t t':=
+  ti_heap_p t = ti_heap_p t' /\ heap_relation (ti_heap t) (ti_heap t').
+
+Lemma tir_id: forall t, thread_info_relation t t.
+Proof. intros. red. split; [|split; [|split; [|split]]]; reflexivity. Qed.
+
+Lemma tir_trans: forall t1 t2 t3,
+    thread_info_relation t1 t2 -> thread_info_relation t2 t3 ->
+    thread_info_relation t1 t3.
+Proof.
+  intros. destruct H as [? ?], H0 as [? ?]. split; [congruence | etransitivity; eassumption].
+Qed.
+
+#[global] Instance tir_Transitive: Transitive thread_info_relation := tir_trans.
+ *)
+
+Definition roots_frames_compatible (roots: roots_t) t_info: Prop :=
+  Zlength roots = Zlength (frames2rootpairs (ti_frames t_info)).
+
+Lemma add_new_space_rhhc: forall hp sp i (Hs: 0 <= i < MAX_SPACES),
+    remset_heap_and_heap_compatible (rs_heap hp) (add_new_space (pt_heap hp) sp i Hs).
+Proof.
+  intros hp sp i Hs. pose proof heap_compat hp as Hrhhc.
+  unfold remset_heap_and_heap_compatible in *. rewrite Forall2_forall_Znth in *.
+  destruct Hrhhc as [Hlen Hrssc]. unfold add_new_space. simpl.
+  pose proof spaces_size (pt_heap hp) as Hss. split.
+  -  rewrite upd_heap_Zlength; auto. lia.
+  - intros j Hj. destruct (Z.eq_dec j i).
+    + subst j. rewrite upd_Znth_same by lia. admit.
+    + rewrite upd_Znth_diff by lia. apply Hrssc. assumption.
+Abort.
+
+
+Definition add_new_space_in_heap (hp: heap) (sp: space) i (Hs: 0 <= i < MAX_SPACES): heap.
+Proof.
+  refine (Build_heap (add_new_space (pt_heap hp) sp i Hs) (rs_heap hp) _).
+Abort.
+
+(* TODO
+Definition ti_add_new_space (ti: thread_info) (sp: space) i
+           (Hs: 0 <= i < MAX_SPACES): thread_info :=
+  Build_thread_info (ti_heap_p ti) (add_new_space (pt_heap (ti_heap ti)) sp i Hs)
+                    (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti).
+
+Lemma super_compatible_add: forall g ti gi sp i (Hs: 0 <= i < MAX_SPACES) roots out,
+    ~ graph_has_gen g (Z.to_nat i) -> graph_has_gen g (Z.to_nat (i - 1)) ->
+    (forall (gr: LGraph), generation_space_compatible gr (Z.to_nat i, gi, sp)) ->
+    number_of_vertices gi = O ->
+    super_compatible g (ti_heap ti) (frames2rootpairs (ti_frames ti)) roots out ->
+    super_compatible (lgraph_add_new_gen g gi) (add_new_space (ti_heap ti) sp i Hs)
+                                     (frames2rootpairs (ti_frames ti)) roots out.
+Proof.
+  intros. destruct H3 as [? [? [? ?]]]. split; [|split; [|split]].
+  - apply gti_compatible_add; assumption.
+  - apply fta_compatible_add; [|destruct H5]; assumption.
+  - apply ang_roots_compatible; assumption.
+  - apply ang_outlier_compatible; assumption.
+Qed.
+*)

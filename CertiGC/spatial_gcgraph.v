@@ -2635,18 +2635,18 @@ Proof.
 Qed.
 
 Definition heap_management_rep (sh: share) (ti: thread_info) : mpred :=
-  let nursery := heap_head ti.(ti_heap) in
+  let nursery := heap_head ti.(ti_heap).(pt_heap) in
   let p := nursery.(space_start) in
   let n_lim := offset_val (WORD_SIZE * nursery.(available_space)) p in
   let n_ttl := offset_val (WORD_SIZE * nursery.(total_space)) p in
   heap_struct_rep
     sh ((p, (Vundef, (n_lim, n_ttl)))
-          :: map space_quad (tl ti.(ti_heap).(spaces))) ti.(ti_heap_p) *
-    heap_unused_rep ti.(ti_heap) *
-    ti_token_rep (ti_heap ti) (ti_heap_p ti).
+          :: map space_quad (tl ti.(ti_heap).(pt_heap).(spaces))) ti.(ti_heap_p) *
+    heap_unused_rep ti.(ti_heap).(pt_heap) *
+    ti_token_rep (ti_heap ti).(pt_heap) (ti_heap_p ti).
 
 Definition before_gc_thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
-  let nursery := heap_head ti.(ti_heap) in
+  let nursery := heap_head ti.(ti_heap).(pt_heap) in
   let p := nursery.(space_start) in
   let n_lim := offset_val (WORD_SIZE * nursery.(available_space)) p in
   let n_ttl := offset_val (WORD_SIZE * nursery.(total_space)) p in
@@ -2660,19 +2660,19 @@ Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   data_at sh thread_info_type
      (Vundef, (Vundef, (ti.(ti_heap_p), (ti.(ti_args), (ti_fp ti, (Vptrofs (ti.(ti_nalloc)), nullval)))))) t *
   frames_rep sh (ti_frames ti) *
-    heap_rep sh ti.(ti_heap) ti.(ti_heap_p) *
-    ti_token_rep (ti_heap ti) (ti_heap_p ti).
+    heap_rep sh ti.(ti_heap).(pt_heap) ti.(ti_heap_p) *
+    ti_token_rep (ti_heap ti).(pt_heap) (ti_heap_p ti).
 
 Lemma thread_info_rep_ramif_stable: forall sh tinfo ti gen1 gen2,
     gen1 <> gen2 -> Z.of_nat gen1 < MAX_SPACES -> Z.of_nat gen2 < MAX_SPACES ->
     thread_info_rep sh tinfo ti |--
-                         (space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen1 *
-                          space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen2) *
-    ((space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen1 * space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen2)
+                         (space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen1 *
+                          space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen2) *
+    ((space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen1 * space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen2)
        -* thread_info_rep sh tinfo ti).
 Proof.
   intros. unfold thread_info_rep.
-  sep_apply (heap_rep_ramif_stable sh (ti_heap tinfo) (ti_heap_p tinfo) gen1 gen2).
+  sep_apply (heap_rep_ramif_stable sh (ti_heap tinfo).(pt_heap) (ti_heap_p tinfo) gen1 gen2).
   cancel.
   apply -> wand_sepcon_adjoint.
   cancel.
@@ -2684,11 +2684,11 @@ Qed.
 Lemma thread_info_rep_ramif_stable_1: forall sh tinfo ti gen,
     Z.of_nat gen < MAX_SPACES ->
     thread_info_rep sh tinfo ti |--
-                    space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen *
-    (space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo) gen -* thread_info_rep sh tinfo ti).
+                    space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen *
+    (space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen -* thread_info_rep sh tinfo ti).
 Proof.
   intros. unfold thread_info_rep.
-  sep_apply (heap_rep_ramif_stable_1 sh (ti_heap tinfo) (ti_heap_p tinfo) gen).
+  sep_apply (heap_rep_ramif_stable_1 sh (ti_heap tinfo).(pt_heap) (ti_heap_p tinfo) gen).
   cancel.
   apply -> wand_sepcon_adjoint.
   cancel.

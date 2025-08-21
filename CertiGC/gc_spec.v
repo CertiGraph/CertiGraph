@@ -424,7 +424,7 @@ Definition resume_spec :=
        roots : roots_t
   PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          graph_heap_compatible g (ti_heap t_info);
+          graph_heap_compatible g (ti_heap t_info).(pt_heap);
           graph_gen_clear g O)
     PARAMS (ti)
     GLOBALS (gv)
@@ -433,8 +433,8 @@ Definition resume_spec :=
          thread_info_rep sh t_info ti)
   POST [tvoid]
     PROP (Ptrofs.unsigned (ti_nalloc t_info) <=
-           available_space (heap_head (ti_heap t_info))
-          - used_space (heap_head (ti_heap t_info)))
+           available_space (heap_head (ti_heap t_info).(pt_heap))
+          - used_space (heap_head (ti_heap t_info).(pt_heap)))
     RETURN ()
     SEP (all_string_constants rsh gv;
          graph_rep g;
@@ -442,9 +442,9 @@ Definition resume_spec :=
 
 (* TODO *)
 Definition decr_info_nursery (ti: thread_info) (x: val): thread_info :=
-  if isptr_dec x then ti else
-    Build_thread_info (ti_heap_p ti) (incr_remset_heap (ti_heap ti) 0)
-      (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti).
+  if isptr_dec x then ti else ti.
+    (* Build_thread_info (ti_heap_p ti) (incr_remset_heap (ti_heap ti).(pt_heap) 0) *)
+    (*   (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti). *)
 
 Definition mtb_upd_remset_heap (x: val) (item: remset_space_item) (rh: remset_heap) : remset_heap :=
   if isptr_dec x then rh else upd_remset_heap item rh O.
@@ -466,7 +466,7 @@ Definition ext_mutable_update_spec :=
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info ti;
          data_at_ sh int_or_ptr_type p;
-         heap_remset_rep g (ti_heap t_info) rh)
+         heap_remset_rep g (ti_heap t_info).(pt_heap) rh)
   POST [tvoid]
     EX t_info': thread_info, EX rh': remset_heap,
     PROP (t_info' = decr_info_nursery t_info (exterior2val g v);
@@ -476,7 +476,7 @@ Definition ext_mutable_update_spec :=
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info' ti;
          data_at sh int_or_ptr_type (exterior2val g v) p;
-         heap_remset_rep g (ti_heap t_info') rh').
+         heap_remset_rep g (ti_heap t_info').(pt_heap) rh').
 
 (* Maybe exterior_t could be renamed into root_t *)
 
@@ -528,7 +528,7 @@ Definition int_mutable_update_spec :=
     SEP (graph_rep g;
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info ti;
-         heap_remset_rep g (ti_heap t_info) rh)
+         heap_remset_rep g (ti_heap t_info).(pt_heap) rh)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX rh': remset_heap,
     PROP (t_info' = decr_info_nursery t_info (exterior2val g v);
@@ -538,7 +538,7 @@ Definition int_mutable_update_spec :=
     SEP (graph_rep g';
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info' ti;
-         heap_remset_rep g' (ti_heap t_info') rh').
+         heap_remset_rep g' (ti_heap t_info').(pt_heap) rh').
 
 (* Change before_gc_thread_info_rep *)
 (* Define a new heap_management to hide details in
@@ -552,8 +552,8 @@ Definition garbage_collect_spec :=
        roots : roots_t, outlier: outlier_t
   PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info) (frames2rootpairs (ti_frames t_info)) roots outlier;
-          garbage_collect_condition g (ti_heap t_info);
+          super_compatible g (ti_heap t_info).(pt_heap) (frames2rootpairs (ti_frames t_info)) roots outlier;
+          garbage_collect_condition g (ti_heap t_info).(pt_heap);
           safe_to_copy g)
     PARAMS (ti)
     GLOBALS (gv)
@@ -564,14 +564,14 @@ Definition garbage_collect_spec :=
          before_gc_thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
-    PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
+    PROP (super_compatible g' (ti_heap t_info').(pt_heap) (frames2rootpairs (ti_frames t_info')) roots' outlier;
           garbage_collect_relation roots roots' g g';
-          garbage_collect_condition g' (ti_heap t_info');
+          garbage_collect_condition g' (ti_heap t_info').(pt_heap);
           safe_to_copy g';
           frame_shells_eq (ti_frames t_info) (ti_frames t_info');
           Ptrofs.unsigned (ti_nalloc t_info) <=
-                 available_space (heap_head (ti_heap t_info'))
-                    - used_space (heap_head (ti_heap t_info')))
+                 available_space (heap_head (ti_heap t_info').(pt_heap))
+                    - used_space (heap_head (ti_heap t_info').(pt_heap)))
     RETURN ()
     SEP (mem_mgr gv;
          all_string_constants rsh gv;
