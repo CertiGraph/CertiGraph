@@ -69,16 +69,17 @@ Ltac tc_val_Znth := entailer!!; rewrite Znth_map by assumption;
 
 Lemma gather_thread_info_rep:
   forall (v1 v2: val) sh t_info ti ,
-   data_at sh thread_info_type (v1,(v2, (ti_heap_p t_info, (ti_args t_info,(ti_fp t_info, (Vptrofs(ti_nalloc t_info),nullval)))))) ti
+   data_at sh thread_info_type (v1,(v2, (ti_heap_p t_info, (ti_args t_info, (ti_fp t_info, (Vptrofs(ti_nalloc t_info),nullval)))))) ti
    * frames_rep sh (ti_frames t_info)
-   * data_at sh heap_type (@map space (val * (val * (val*val)))  space_quad (spaces (ti_heap t_info))) (ti_heap_p t_info)
-   * heap_unused_rep (ti_heap t_info)
+   * data_at sh heap_type (@map space (val * (val * (val*val)))  space_quad (spaces (pt_heap (ti_heap t_info)))) (ti_heap_p t_info)
+   * heap_unused_rep (pt_heap (ti_heap t_info))
+   * ti_token_rep (pt_heap (ti_heap t_info)) (ti_heap_p t_info)
    |-- thread_info_rep sh t_info ti.
 Proof.
-intros.
-unfold thread_info_rep, heap_rep, heap_struct_rep.
-do 2 unfold_data_at (data_at _ thread_info_type _ _).
-cancel.
+  intros.
+  unfold thread_info_rep, heap_rep, heap_struct_rep.
+  do 2 unfold_data_at (data_at _ thread_info_type _ _).
+  cancel.
 Qed.
 
 Lemma body_garbage_collect:
@@ -89,39 +90,36 @@ Proof.
              0 <= j -> offset_val (sizeof (Tstruct _space noattr) * j) (ti_heap_p tif)=
                        space_address (ti_heap_p tif) (Z.to_nat j)). {
           intros. unfold space_address. now rewrite Z2Nat.id. }
-  unfold before_gc_thread_info_rep, heap_rep, heap_struct_rep. Intros. forward. pose proof H.
+  unfold before_gc_thread_info_rep, heap_management_rep, heap_struct_rep. Intros. forward. pose proof H.
   destruct H as [? _]. pose proof (gt_gs_compatible _ _ H _ (graph_has_gen_O _)).
   destruct H3 as [? [? ?]].
-  replace (heap_head (ti_heap t_info)) with (nth_space (ti_heap t_info) 0) by
-      (destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]];
+  replace (heap_head (pt_heap (ti_heap t_info))) with (nth_space (pt_heap (ti_heap t_info)) 0) by
+      (destruct (heap_head_cons (pt_heap (ti_heap t_info))) as [hs [hl [? ?]]];
        unfold nth_space; rewrite H6, H7; simpl; reflexivity).
-  simpl fst in *. simpl snd in *.
-  assert (isptr (space_start (nth_space (ti_heap t_info) 0))) by
-      (rewrite <- H3; apply start_isptr). do 2 forward. deadvars!.
-  rewrite upd_Znth0_old.
+  assert (isptr (space_start (nth_space (pt_heap (ti_heap t_info)) 0))) by
+    (rewrite <- H3; apply start_isptr). do 2 forward. deadvars!.
+  simpl fst in *. simpl snd in *. rewrite upd_Znth0_old.
   2: { pose proof (@Zlength_nonneg (val * (val * (val*val)))
-                                   (map space_quad (tl (spaces (ti_heap t_info))))).
+                                   (map space_quad (tl (spaces (pt_heap (ti_heap t_info)))))).
        rewrite Zlength_cons. lia. }
-  rewrite sublist_1_cons, Zlength_cons, sublist_same, Znth_0_cons by lia.
-  simpl fst. simpl snd.
+  rewrite sublist_1_cons, Zlength_cons, sublist_same by lia.
   do 2 forward.
-  rewrite upd_Znth0_old.
+  simpl fst. simpl snd. rewrite upd_Znth0_old.
   2: { pose proof (@Zlength_nonneg (val * (val * (val*val)))
-                                   (map space_quad (tl (spaces (ti_heap t_info))))).
+                                   (map space_quad (tl (spaces (pt_heap (ti_heap t_info)))))).
        rewrite Zlength_cons. lia. }
-  rewrite sublist_1_cons, Zlength_cons, sublist_same, Znth_0_cons by lia.
-  simpl fst. simpl snd.
-  fold (space_quad (nth_space (ti_heap t_info) 0)). rewrite <- map_cons.
-  replace (nth_space (ti_heap t_info) 0 :: tl (spaces (ti_heap t_info))) with
-      (spaces (ti_heap t_info)) by
-      (destruct (heap_head_cons (ti_heap t_info)) as [hs [hl [? ?]]];
+  rewrite sublist_1_cons, Zlength_cons, sublist_same by lia.
+  fold (space_quad (nth_space (pt_heap (ti_heap t_info)) 0)). rewrite <- map_cons.
+  replace (nth_space (pt_heap (ti_heap t_info)) 0 :: tl (spaces (pt_heap (ti_heap t_info)))) with
+      (spaces (pt_heap (ti_heap t_info))) by
+      (destruct (heap_head_cons (pt_heap (ti_heap t_info))) as [hs [hl [? ?]]];
        unfold nth_space; rewrite H7; simpl; reflexivity).
   sep_apply gather_thread_info_rep.
   forward_for_simple_bound
-    (MAX_SPACES-1)
+    (MAX_SPACES - 1)
     (EX i: Z, EX g': LGraph, EX roots': roots_t, EX t_info': thread_info,
-     PROP (super_compatible g' (ti_heap t_info') (frames2rootpairs (ti_frames t_info')) roots' outlier;
-           garbage_collect_condition g' (ti_heap t_info');
+     PROP (super_compatible g' (ti_heap t_info').(pt_heap) (frames2rootpairs (ti_frames t_info')) roots' outlier;
+           garbage_collect_condition g' (ti_heap t_info').(pt_heap);
            safe_to_copy_to_except g' (Z.to_nat i);
            firstn_gen_clear g' (Z.to_nat i);
            garbage_collect_loop (nat_inc_list (Z.to_nat i)) roots g roots' g';
@@ -134,8 +132,7 @@ Proof.
           mem_mgr gv;
           all_string_constants rsh gv;
           outlier_rep outlier;
-          graph_rep g';
-          ti_token_rep (ti_heap t_info') (ti_heap_p t_info'))).
+          graph_rep g')).
   - Exists g roots t_info. destruct H2 as [? [? [? ?]]].
     pose proof (graph_has_gen_O g). entailer!!. split; [|split; [|split3]].
     + split3; auto.
@@ -145,12 +142,12 @@ Proof.
     + apply frame_shells_eq_refl.
   - cbv beta. Intros g' roots' t_info'. rename H14 into FSE. rename H15 into HN.
     unfold thread_info_rep, heap_rep. Intros.
-    unfold heap_struct_rep. assert (0 <= i + 1 < Zlength (spaces (ti_heap t_info'))) by
+    unfold heap_struct_rep. assert (0 <= i + 1 < Zlength (spaces (ti_heap t_info').(pt_heap))) by
         (rewrite spaces_size; rep_lia).
     pose proof (space_start_is_pointer_or_null _ _ _ (proj1 H8) H14).
     forward.
-      entailer!!.
-      1: entailer!!; rewrite Znth_map by assumption; unfold space_quad; assumption.
+    1: entailer!!.
+     1: entailer!!; rewrite Znth_map by assumption; unfold space_quad; assumption.
     rewrite Znth_map by assumption. unfold space_quad at 1.
     forward_if
       (EX g1: LGraph, EX t_info1: thread_info,
