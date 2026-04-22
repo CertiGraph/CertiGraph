@@ -4241,6 +4241,17 @@ Definition remset_gen_size (h: part_heap) (gen: nat): Z :=
 Definition enough_space_enhanced g h from to: Prop :=
   general_enough_space_to_copy g h from to (remset_gen_size h from).
 
+Definition nth_gen_size (n: nat) := NURSERY_SIZE * two_p (Z.of_nat n).
+
+(* DONE available_size needs to be changed to total_size *)
+Definition nth_gen_size_spec (h: part_heap) (n: nat): Prop :=
+  if Val.eq (nth_space h n).(space_start) nullval
+  then True
+  else total_size h n = nth_gen_size n.
+
+Definition ti_size_spec (h: part_heap): Prop :=
+  Forall (nth_gen_size_spec h) (nat_inc_list (Z.to_nat MAX_SPACES)).
+
 (* old one *)
 (*
 Definition do_generation_condition g t_info (*roots*) from to: Prop :=
@@ -4252,7 +4263,7 @@ Definition do_generation_condition g t_info (*roots*) from to: Prop :=
 Definition do_generation_condition g h from to: Prop :=
   enough_space_enhanced g h from to /\ graph_has_gen g from /\
   graph_has_gen g to /\ copy_compatible g /\ no_dangling_dst g /\
-    0 < available_size h to /\ gen_unmarked g to.
+    0 < available_size h to /\ gen_unmarked g to /\ ti_size_spec h.
 
 Lemma remset_gen_size_noneg: forall h gen, 0 <= remset_gen_size h gen.
 Proof.
@@ -4265,7 +4276,8 @@ Lemma dgc_imply_fc: forall g t_info (*roots*) from to,
     forward_condition g t_info from to /\ 0 < available_size t_info to /\
     gen_unmarked g to.
 Proof.
-  intros. destruct H. do 2 (split; [|intuition auto]). clear H0. red in H |-* .
+  intros. destruct H as [Hese [Hfrom [Hto [Hcc [Hndd [Havail [Hunmk _]]]]]]].
+  do 2 (split; [|intuition auto]). red in Hese |-* .
   unfold general_enough_space_to_copy in *. pose proof remset_gen_size_noneg t_info from. lia.
 Qed.
 
@@ -4816,17 +4828,6 @@ Proof.
 Qed.
 
 Definition gen_v_num (g: LGraph) (gen: nat): nat := number_of_vertices (nth_gen g gen).
-
-Definition nth_gen_size (n: nat) := NURSERY_SIZE * two_p (Z.of_nat n).
-
-(* DONE available_size needs to be changed to total_size *)
-Definition nth_gen_size_spec (h: part_heap) (n: nat): Prop :=
-  if Val.eq (nth_space h n).(space_start) nullval
-  then True
-  else total_size h n = nth_gen_size n.
-
-Definition ti_size_spec (h: part_heap): Prop :=
-  Forall (nth_gen_size_spec h) (nat_inc_list (Z.to_nat MAX_SPACES)).
 
 (* TODO nth_gen_size to needs to be changed to available size*)
 Definition safe_to_copy_gen g from to: Prop :=
