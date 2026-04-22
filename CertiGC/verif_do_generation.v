@@ -16,6 +16,9 @@ Local Open Scope logic.
 Lemma body_do_generation: semax_body Vprog Gprog f_do_generation do_generation_spec.
 Proof.
   start_function.
+  rename H0 into Hremset.
+  rename H1 into H0.
+  rename H2 into H1.
   pose proof H. pose proof H0. destruct H2 as [? _]. destruct H3 as [? [? [? _]]].
   assert (generation_space_compatible
             g (from, nth_gen g from, nth_space h from)) by
@@ -30,7 +33,7 @@ Proof.
     intros. eapply gen_range; eassumption. }
   assert (Z.of_nat from < MAX_SPACES) by (apply HS; assumption).
   assert (Z.of_nat to < MAX_SPACES) by (apply HS; assumption). clear HS.
-  freeze [0;1;2;3] FR.
+  freeze [0;1;2;3;5;6] FR.
   localize [space_struct_rep sh hp h from;
             space_struct_rep sh hp h to].
   unfold space_struct_rep. unfold space_quad.
