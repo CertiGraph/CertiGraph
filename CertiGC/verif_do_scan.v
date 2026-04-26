@@ -15,6 +15,24 @@ Local Opaque Int64.repr.
 
 Local Open Scope logic.
 
+Lemma weak_derives_elim: forall P Q : mpred,
+  (weak_derives P Q && emp) * P |-- Q.
+Proof.
+  intros P Q.
+  unfold weak_derives.
+  unseal_derives.
+  intros a H.
+  destruct H as [x [z [J [[Hweak Hemp] HP]]]].
+  destruct Hemp as [e [Hid Hext]].
+  destruct (predicates_sl.join_ext_commut Hext J) as [a0 [J0 Hexta]].
+  apply Hid in J0. subst a0.
+  pose proof (predicates_hered.pred_upclosed P _ _ Hexta HP) as HPa.
+  simpl in Hweak.
+  destruct (age_sepalg.join_level _ _ _ J) as [Hlx _].
+  eapply (Hweak a); [rewrite Hlx; lia | apply ageable.necR_refl |
+                      apply predicates_hered.ext_refl | exact HPa].
+Qed.
+
 Lemma typed_true_tag: forall (to : nat) (g : LGraph) (index : nat),
     typed_true tint
                (force_val
@@ -77,7 +95,8 @@ Proof.
                      graph_rep g';
                      heap_rep sh h' hp;
                      if zlt 0 (available_size h' to) then emp
-                     else weak_valid_pointer (gen_start g' to)))
+                     else weak_derives P (weak_valid_pointer (gen_start g' to) * TT) && emp;
+                     P))
   break: (EX g' : LGraph, EX h': part_heap,
           PROP (graph_heap_compatible g' h';
                 outlier_compatible g' outlier;
@@ -90,7 +109,8 @@ Proof.
                graph_rep g';
                heap_rep sh h' hp;
                if zlt 0 (available_size h' to) then emp
-               else weak_valid_pointer (gen_start g' to))).
+               else weak_derives P (weak_valid_pointer (gen_start g' to) * TT) && emp;
+               P)).
   - Exists O g h. rewrite Nat.add_0_r. entailer !!. constructor.
   - Intros n g' h'. rename H into Hghc'. rename H0 into Hoc'. rename H1 into Hfc'.
     rename H2 into Hhr. rename H3 into Hchi'. rename H4 into Hsvwl.
@@ -159,8 +179,9 @@ Proof.
                  memory_block (nth_sh g' to) (WORD_SIZE * available_size h' to)
                    (Vptr b i) * TT *
                    (FRZL FR *
-                    (if zlt 0 (available_size h' to) then emp
-                     else weak_valid_pointer (Vptr b i))) |--
+                    ((if zlt 0 (available_size h' to) then emp
+                      else weak_derives P (weak_valid_pointer (Vptr b i) * TT) && emp) *
+                     P)) |--
         weak_valid_pointer (Vptr b (Ptrofs.add i (Ptrofs.repr offset)))). {
         intros offset Hofsrg.
         destruct (Z_lt_dec 0 (WORD_SIZE * available_size h' to)) as [Hpos | Hnpos].
@@ -185,7 +206,14 @@ Proof.
             unfold WORD_SIZE in *. lia. }
           assert (offset = 0) by lia. subst offset.
           rewrite Ptrofs.add_zero. destruct (zlt 0 (available_size h' to));
-            [unfold available_size in *; unfold WORD_SIZE in *; lia | entailer!]. }
+            [unfold available_size in *; unfold WORD_SIZE in *; lia |].
+          sep_apply (weak_derives_elim P (weak_valid_pointer (Vptr b i) * TT)).
+          eapply derives_trans.
+          2: apply (extend_weak_valid_pointer (Vptr b i)
+                      (TT * (memory_block (nth_sh g' to)
+                               (WORD_SIZE * available_size h' to) (Vptr b i) *
+                             (TT * FRZL FR)))).
+          rewrite sepcon_assoc. apply derives_refl. }
       apply andp_right; apply Hoffmem.
       * subst. split.
         1: pose proof pvs_ge_zero g' to (to_index + n)%nat; unfold WORD_SIZE; lia.
@@ -213,6 +241,7 @@ Proof.
       intro; apply Hidl. now apply pvs_mono_strict.
     + clear Hchi' Hf Hforce. Intros. rename H0 into Hghi. thaw FR. freeze [1;2;3;4;5] FR.
       assert (Hhv: graph_has_v g' (to, index)) by easy.
+      freeze [0;2] FR2.
       localize [vertex_rep (nth_sh g' to) g' (to, index)].
       assert (Hrt: readable_share (nth_sh g' to)) by
           (unfold nth_sh; apply writable_readable_share, generation_share_writable).
@@ -229,6 +258,7 @@ Proof.
       replace_SEP 0 (vertex_rep (nth_sh g' to) g' (to, index)) by
           (unfold vertex_rep, vertex_at; entailer !!).
       unlocalize [graph_rep g']. 1: apply graph_vertex_ramif_stable; assumption.
+      thaw FR2.
       forward. forward. assert (Hgu: gen_unmarked g' to). {
         eapply (svwl_gen_unmarked from to _ g); eauto.
         destruct Hfc as [_ [_ [? _]]]. assumption. } specialize (Hgu Hto _ Hghi).
@@ -262,7 +292,8 @@ Proof.
               all_string_constants rsh gv;
               outlier_rep outlier;
               if zlt 0 (available_size h'' to) then emp
-              else weak_valid_pointer (gen_start g'' to))).
+              else weak_derives P (weak_valid_pointer (gen_start g'' to) * TT) && emp;
+              P)).
       * rewrite Int64.unsigned_repr in H0;
           [| pose proof raw_tag_range (vlabel g' (to, index)); rep_lia].
         pose proof typed_true_tag to g' index as Hxx.
@@ -297,7 +328,8 @@ Proof.
                 graph_rep g3;
                 heap_rep sh h3 hp;
                 if zlt 0 (available_size h3 to) then emp
-                else weak_valid_pointer (gen_start g3 to)))
+                else weak_derives P (weak_valid_pointer (gen_start g3 to) * TT) && emp;
+                P))
           continue: (EX i: Z, EX g3: LGraph, EX h3: part_heap,
            PROP (scan_vertex_for_loop
                    from to (to, index)
@@ -321,7 +353,8 @@ Proof.
                 graph_rep g3;
                 heap_rep sh h3 hp;
                 if zlt 0 (available_size h3 to) then emp
-                else weak_valid_pointer (gen_start g3 to))).
+                else weak_derives P (weak_valid_pointer (gen_start g3 to) * TT) && emp;
+                P)).
         -- forward. Exists 1 g' h'. replace (1 - 1) with 0 by lia.
            autorewrite with sublist. unfold forward_condition. entailer!!.
            try (rewrite Int64.unsigned_repr;

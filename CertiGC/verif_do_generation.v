@@ -9,6 +9,7 @@ Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.CertiGC.spatial_gcgraph.
 Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.CertiGC.gc_spec.
+Require Import CertiGraph.CertiGC.forward_lemmas.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 
 Local Open Scope logic.
@@ -504,99 +505,111 @@ Proof.
                 from to g h rh rmst (Znth (Z.of_nat from) rh)
                 g0 h0 rh0 rmst0 to); eauto.
     }
-    assert (Hunk1: gen_unmarked g1 to) by
-        (eapply (frr_gen_unmarked _ _ _ g0 _ g1); eauto).
-    sep_apply frames_rep_localize. Intros.
-    forward_call (rsh, sh, gv, g1, h1, hp, outlier,
-                   from, to, number_of_vertices (nth_gen g to)).
-    - destruct (zlt 0 (available_size h1 to)) as [Hav1|Hav1].
-      + entailer!.
-      + assert (Hzero0: available_size h0 to = 0). {
-          rewrite (proj1 H23 to).
-          pose proof available_space_range (nth_space h1 to).
-          unfold available_size in *. lia.
-        }
-        assert (Hghc0: graph_heap_compatible g0 h0) by (destruct Hsc0; assumption).
-        assert (Htoh0: graph_has_gen g0 to) by (destruct Hfc0 as [_ [_ [? _]]]; assumption).
-        assert (Hwhr0: weak_heap_relation h h0) by
-          (eapply forward_remset_item_fold_whr; eauto).
-        assert (Htsc0: ti_size_spec h0) by
-          (eapply weak_heap_relation_size_spec; eauto).
-        assert (Hrhhc0: remset_heap_and_heap_compatible rh0 h0). {
-          eapply (forward_remset_item_fold_rhhc
-                    from to g h rh rmst g0 h0 rh0 rmst0
-                    (Znth (Z.of_nat from) rh)).
-          - exact H1.
-          - exact Hrmnd.
-          - exact Hghc.
-          - exact Hcc.
-          - exact Hndd.
-          - exact Hfrom.
-          - exact Hto.
-          - exact Hrcw.
-          - exact Hrrsc.
-          - exact (proj2 Hrhc).
-          - exact Hfrg0'.
-          - unfold enough_space_enhanced in Hese.
-            rewrite (compatible_remset_gen_size g h rh from Hghc Hfrom (proj2 Hrhc)) in Hese.
-            exact Hese.
-        }
-        assert (Hgst01: gen_start g0 to = gen_start g1 to) by
-          (eapply frr_gen_start; [exact Hto0 | exact H21]).
-        rewrite <- Hgst01.
-        sep_apply (heap_remset_zero_available_weak_valid g0 h0 rh0 to
-                     Hghc0 Htoh0 Hrhhc0 Htsc0 Hzero0).
-        entailer!.
-    - destruct H20 as [? [? [? ?]]]; repeat split; try assumption.
-    Intros vret. destruct vret as [g2 h2]. simpl fst in *. simpl snd in *.
-    assert (Hsp: super_compatible g2 h2 (frames2rootpairs fr1) roots1 outlier). {
-      destruct H20 as [? [? [Hrc ?]]]. split; [|split; [|split]]; auto.
-      - destruct Hrc. eapply do_scan_rootpairs_compatible; eassumption.
-      - eapply do_scan_roots_compatible; eassumption. } clear H31 H32. rename Hsp into H31.
-    rename H33 into H32. rename H34 into H33. rename H35 into H34.
+	    assert (Hunk1: gen_unmarked g1 to) by
+	        (eapply (frr_gen_unmarked _ _ _ g0 _ g1); eauto).
+	    sep_apply frames_rep_localize. Intros.
+            assert (Hgst01: gen_start g0 to = gen_start g1 to) by
+              (eapply frr_gen_start; [exact Hto0 | exact H21]).
+            assert (HPscan: heap_remset_rep g0 h0 rh0 |--
+              (if zlt 0 (available_size h1 to) then emp
+               else weak_derives (heap_remset_rep g0 h0 rh0)
+                      (weak_valid_pointer (gen_start g1 to) * TT) && emp) *
+              heap_remset_rep g0 h0 rh0). {
+              destruct (zlt 0 (available_size h1 to)) as [Hav1|Hav1].
+              - cancel.
+              - assert (Hzero0: available_size h0 to = 0). {
+                  rewrite (proj1 H23 to).
+                  pose proof available_space_range (nth_space h1 to).
+                  unfold available_size in *. lia.
+                }
+                assert (Hghc0: graph_heap_compatible g0 h0) by (destruct Hsc0; assumption).
+                assert (Htoh0: graph_has_gen g0 to) by
+                  (destruct Hfc0 as [_ [_ [? _]]]; assumption).
+                assert (Hwhr0: weak_heap_relation h h0) by
+                  (eapply forward_remset_item_fold_whr; eauto).
+                assert (Htsc0: ti_size_spec h0) by
+                  (eapply weak_heap_relation_size_spec; eauto).
+                assert (Hrhhc0: remset_heap_and_heap_compatible rh0 h0). {
+                  eapply (forward_remset_item_fold_rhhc
+                            from to g h rh rmst g0 h0 rh0 rmst0
+                            (Znth (Z.of_nat from) rh)).
+                  - exact H1.
+                  - exact Hrmnd.
+                  - exact Hghc.
+                  - exact Hcc.
+                  - exact Hndd.
+                  - exact Hfrom.
+                  - exact Hto.
+                  - exact Hrcw.
+                  - exact Hrrsc.
+                  - exact (proj2 Hrhc).
+                  - exact Hfrg0'.
+                  - unfold enough_space_enhanced in Hese.
+                    rewrite (compatible_remset_gen_size g h rh from Hghc Hfrom (proj2 Hrhc)) in Hese.
+                    exact Hese.
+                }
+                apply weak_derives_strong.
+                rewrite <- Hgst01.
+                sep_apply (heap_remset_zero_available_weak_valid g0 h0 rh0 to
+                             Hghc0 Htoh0 Hrhhc0 Htsc0 Hzero0).
+                cancel.
+            }
+            replace_SEP 6
+              ((if zlt 0 (available_size h1 to) then emp
+                else weak_derives (heap_remset_rep g0 h0 rh0)
+                       (weak_valid_pointer (gen_start g1 to) * TT) && emp) *
+               heap_remset_rep g0 h0 rh0)
+              by (entailer!; apply HPscan).
+            Intros.
+	    forward_call (rsh, sh, gv, g1, h1, hp, outlier,
+	                   from, to, number_of_vertices (nth_gen g to),
+                           heap_remset_rep g0 h0 rh0).
+	    - destruct H20 as [Hghc1 [_ [_ Hoc1]]].
+              split; [exact Hghc1|exact Hoc1].
+	    - Intros vret. destruct vret as [g2 h2]. simpl fst in *. simpl snd in *.
+	    assert (Hsp: super_compatible g2 h2 (frames2rootpairs fr1) roots1 outlier). {
+	      destruct H20 as [? [? [Hrc ?]]]. split; [|split; [|split]]; auto.
+	      + destruct Hrc. eapply do_scan_rootpairs_compatible; eassumption.
+	      + eapply do_scan_roots_compatible; eassumption. } clear H29 H30.
+            rename H33 into H34. rename H32 into H33. rename H31 into H32. rename Hsp into H31.
     sep_apply frames_rep_unlocalize.
-    rewrite update_frames_same.
-    assert (space_start (nth_space h2 from) = gen_start g2 from). {
-      destruct H31 as [? _]. destruct H32 as [_ [? _]].
-      destruct (gt_gs_compatible _ _ H31 _ H32) as [? _]. simpl in H35.
-      rewrite <- H35.
-      unfold gen_start. rewrite if_true by assumption. reflexivity. }
-    assert (isptr (space_start (nth_space h2 from))). {
-      rewrite H35. unfold gen_start. destruct H32 as [_ [? _]].
-      rewrite if_true by assumption. apply start_isptr. }
-    freeze [0;1;2;3] FR. localize [space_struct_rep sh hp h2 from].
+	    rewrite update_frames_same.
+	    assert (Hstart2_from: space_start (nth_space h2 from) = gen_start g2 from). {
+	      destruct H31 as [Hghc2 _]. destruct H32 as [_ [Hfrom2 _]].
+	      destruct (gt_gs_compatible _ _ Hghc2 _ Hfrom2) as [Hstart2 _]. simpl in Hstart2.
+	      rewrite <- Hstart2.
+	      unfold gen_start. rewrite if_true by assumption. reflexivity. }
+	    assert (isptr (space_start (nth_space h2 from))). {
+	      rewrite Hstart2_from. unfold gen_start. destruct H32 as [_ [Hfrom2 _]].
+	      rewrite if_true by exact Hfrom2. apply start_isptr. }
+	    freeze [0;1;2;3] FR. freeze [0;2;3;4] FR2.
+            localize [space_struct_rep sh hp h2 from].
     unfold space_struct_rep, space_quad.
     forward.
     replace_SEP 0 (space_struct_rep sh hp h2 from) by
         (unfold space_struct_rep, space_quad; entailer!!).
-    unlocalize [heap_rep sh h2 hp].
-    1: apply heap_rep_ramif_stable_1; assumption. thaw FR.
+	    unlocalize [heap_rep sh h2 hp].
+	    1: apply heap_rep_ramif_stable_1; assumption. thaw FR2. thaw FR.
     unfold thread_info_rep, heap_rep. Intros.
     freeze [1;2;3;5] FR. rewrite heap_struct_rep_eq.
-    assert_PROP (space_address hp from =
-                 field_address (tarray space_type MAX_SPACES) [ArraySubsc (Z.of_nat from)]
-                               hp). {
-      entailer!. unfold space_address. unfold field_address. rewrite if_true.
-      - simpl. f_equal.
-      - unfold field_compatible in *. simpl in *. intuition auto with *. }
-    rewrite H37. clear H37.
+	    assert_PROP (space_address hp from =
+	                 field_address (tarray space_type MAX_SPACES) [ArraySubsc (Z.of_nat from)]
+	                               hp) as Hspace_addr_from. {
+	      entailer!. unfold space_address. unfold field_address. rewrite if_true.
+	      - simpl. f_equal.
+	      - unfold field_compatible in *. simpl in *. intuition auto with *. }
+	    rewrite Hspace_addr_from. clear Hspace_addr_from.
     deadvars!.
     forward.
     rewrite Znth_map by (rewrite spaces_size; rep_lia).
     rewrite <- nth_space_Znth. unfold space_quad at 2 3.
     simpl fst. simpl snd.
-    assert (FROM_MAX: 0 <= Z.of_nat from < Zlength (map space_quad (spaces h2))). {
-        rewrite Zlength_map.
-        destruct H20 as [[_ [_ ?]] _]; destruct H31 as [[_ [_ H31]] _]. simpl in H31.
-        apply frr_graph_has_gen with (gen:=from) in H21; auto.
-        rewrite H21 in H4.
-        destruct H33 as [n [? _]].
-        apply svwl_graph_has_gen with (gen:=from) in H33; auto.
-        rewrite H33 in H4.
-        clear - H31 H4.
-        red in H4. split. lia. rewrite Zlength_correct.
-        lia.
-    }
+	    assert (FROM_MAX: 0 <= Z.of_nat from < Zlength (map space_quad (spaces h2))). {
+	        rewrite Zlength_map.
+	        destruct H31 as [[_ [_ Hlen2]] _].
+	        destruct H32 as [_ [Hfrom2 _]].
+	        red in Hfrom2. split. lia. rewrite Zlength_correct. lia.
+	    }
     Opaque fst. Opaque snd.
     forward; rewrite upd_Znth_same by assumption. entailer!.
     forward; rewrite upd_Znth_same by assumption.

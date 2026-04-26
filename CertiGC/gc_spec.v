@@ -281,11 +281,20 @@ Definition forward_remset_spec :=
          heap_remset_rep g' h' rh';
          remset_rep sh g' rmst').
 
-Definition do_scan_spec :=
+Definition DO_SCAN_TYPE :=
+  ProdType (ProdType (ProdType (ProdType (ProdType
+    (ProdType (ProdType (ProdType (ProdType (ProdType
+      (ConstType share) (ConstType share))
+      (ConstType globals)) (ConstType LGraph)) (ConstType part_heap))
+      (ConstType val)) (ConstType outlier_t)) (ConstType nat))
+      (ConstType nat)) (ConstType nat)) Mpred.
+
+Program Definition do_scan_spec :=
   DECLARE _do_scan
+  TYPE DO_SCAN_TYPE
   WITH rsh: share, sh: share, gv: globals,
        g: LGraph, h: part_heap, hp: val, outlier: outlier_t,
-       from: nat, to: nat, to_index: nat
+       from: nat, to: nat, to_index: nat, P: mpred
   PRE [tptr int_or_ptr_type,
        tptr int_or_ptr_type,
        tptr int_or_ptr_type,
@@ -306,7 +315,8 @@ Definition do_scan_spec :=
          graph_rep g;
          heap_rep sh h hp;
          if zlt 0 (available_size h to) then emp
-         else weak_valid_pointer (gen_start g to))
+         else weak_derives P (weak_valid_pointer (gen_start g to) * TT) && emp;
+         P)
   POST [tvoid]
     EX g': LGraph, EX h': part_heap,
     PROP (graph_heap_compatible g' h';
@@ -320,7 +330,30 @@ Definition do_scan_spec :=
          graph_rep g';
          heap_rep sh h' hp;
          if zlt 0 (available_size h' to) then emp
-         else weak_valid_pointer (gen_start g' to)).
+         else weak_derives P (weak_valid_pointer (gen_start g' to) * TT) && emp;
+         P).
+Next Obligation.
+Proof.
+  repeat intro.
+  destruct x as ((((((((((?, ?), ?), ?), ?), ?), ?), ?), ?), ?), ?); simpl.
+  unfold PROPx, LAMBDAx, GLOBALSx, LOCALx, SEPx, argsassert2assert; simpl.
+  rewrite !approx_andp; f_equal; f_equal.
+  rewrite !sepcon_emp, ?approx_sepcon, ?approx_idem, ?approx_andp.
+  destruct (zlt 0 (available_size _ _)); [reflexivity|].
+  rewrite !approx_andp. rewrite derives_nonexpansive_l. reflexivity.
+Qed.
+Next Obligation.
+Proof.
+  repeat intro.
+  destruct x as ((((((((((?, ?), ?), ?), ?), ?), ?), ?), ?), ?), ?); simpl.
+  rewrite !approx_exp. apply f_equal; extensionality g'.
+  rewrite !approx_exp. apply f_equal; extensionality h'.
+  unfold PROPx, LOCALx, SEPx; simpl.
+  rewrite !approx_andp; f_equal; f_equal.
+  rewrite !sepcon_emp, ?approx_sepcon, ?approx_idem, ?approx_andp.
+  destruct (zlt 0 (available_size h' _)); [reflexivity|].
+  rewrite !approx_andp. rewrite derives_nonexpansive_l. reflexivity.
+Qed.
 
 Definition do_generation_spec :=
   DECLARE _do_generation
