@@ -295,7 +295,7 @@ Definition do_scan_spec :=
           outlier_compatible g outlier;
           forward_condition g h from to;
           from <> to; closure_has_index g to to_index;
-          0 < available_size h to; gen_unmarked g to)
+          gen_unmarked g to)
     PARAMS (gen_start g from;
            limit_address g h from;
            offset_val (- WORD_SIZE) (vertex_address g (to, to_index));
@@ -304,7 +304,9 @@ Definition do_scan_spec :=
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g;
-         heap_rep sh h hp)
+         heap_rep sh h hp;
+         if zlt 0 (available_size h to) then emp
+         else weak_valid_pointer (gen_start g to))
   POST [tvoid]
     EX g': LGraph, EX h': part_heap,
     PROP (graph_heap_compatible g' h';
@@ -316,7 +318,9 @@ Definition do_scan_spec :=
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
-         heap_rep sh h' hp).
+         heap_rep sh h' hp;
+         if zlt 0 (available_size h' to) then emp
+         else weak_valid_pointer (gen_start g' to)).
 
 Definition do_generation_spec :=
   DECLARE _do_generation

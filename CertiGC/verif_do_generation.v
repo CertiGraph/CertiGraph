@@ -236,6 +236,53 @@ Proof.
     + eapply (fri_rootpairs_compatible from to g h rh rmst a g2 h2 rh2 rmst2 rootpairs roots); eauto.
 Qed.
 
+Lemma heap_remset_zero_available_weak_valid: forall g h rh gen,
+    graph_heap_compatible g h ->
+    graph_has_gen g gen ->
+    remset_heap_and_heap_compatible rh h ->
+    ti_size_spec h ->
+    available_size h gen = 0 ->
+    heap_remset_rep g h rh |-- weak_valid_pointer (gen_start g gen) * TT.
+Proof.
+  intros g h rh gen Hghc Hghg Hrhhc Htsc Hav0.
+  sep_apply (heap_space_remset_rep g h rh gen Hghg Hghc Hrhhc).
+  sep_apply (space_remset_rep_data_at_ g h rh gen Hghg Hghc).
+  rewrite data_at__memory_block. Intros. rewrite sizeof_tarray_int_or_ptr.
+  - replace (offset_val (WORD_SIZE * available_size h gen) (gen_start g gen))
+      with (gen_start g gen) by
+      (rewrite Hav0, Z.mul_0_r; symmetry; apply isptr_offset_val_zero;
+       unfold gen_start; rewrite if_true by assumption; apply start_isptr).
+    sep_apply (memory_block_weak_valid_pointer
+                 (nth_sh g gen)
+                 (WORD_SIZE * (total_size h gen - available_size h gen))
+                 (gen_start g gen) 0).
+    + split; [lia|]. apply Z.mul_nonneg_nonneg; [unfold WORD_SIZE; lia|].
+      pose proof total_space_tight_range (nth_space h gen).
+      pose proof available_space_tight_range (nth_space h gen).
+      unfold total_size, available_size in *. lia.
+    + pose proof ti_size_gt_0 _ _ _ Hghc Hghg Htsc.
+      rewrite Hav0. unfold WORD_SIZE. lia.
+    + unfold nth_sh. apply readable_nonidentity, writable_readable, generation_share_writable.
+    + entailer!.
+  - unfold total_size, available_size.
+    pose proof total_space_tight_range (nth_space h gen).
+    pose proof available_leq_total (nth_space h gen).
+    pose proof available_space_tight_range (nth_space h gen).
+    rep_lia.
+Qed.
+
+Lemma frr_gen_start: forall from to roots roots' g g',
+    graph_has_gen g to ->
+    forward_roots_relation from to roots g roots' g' ->
+    forall x, gen_start g x = gen_start g' x.
+Proof.
+  intros from to roots roots' g g' Hto Hfrr.
+  induction Hfrr; intros x; auto.
+  transitivity (gen_start g2 x).
+  - eapply fr_gen_start; eauto.
+  - apply IHHfrr. erewrite <- fr_graph_has_gen; eauto.
+Qed.
+
 Lemma body_do_generation: semax_body Vprog Gprog f_do_generation do_generation_spec.
 Proof.
   start_function.
@@ -452,17 +499,55 @@ Proof.
          f_equal; unfold WORD_SIZE; lia).
     eapply frr_closure_has_v in H27g0; eauto.
     destruct H27g0 as [H27g0 H28]. simpl in H27g0, H28.
-    assert (0 < available_size h1 to) by (rewrite <- (proj1 H23); assumption).
     assert (Hunk0 : gen_unmarked g0 to). {
       eapply (forward_remset_item_fold_gen_unmarked
                 from to g h rh rmst (Znth (Z.of_nat from) rh)
                 g0 h0 rh0 rmst0 to); eauto.
     }
-    assert (gen_unmarked g1 to) by (eapply (frr_gen_unmarked _ _ _ g0 _ g1); eauto).
+    assert (Hunk1: gen_unmarked g1 to) by
+        (eapply (frr_gen_unmarked _ _ _ g0 _ g1); eauto).
     sep_apply frames_rep_localize. Intros.
     forward_call (rsh, sh, gv, g1, h1, hp, outlier,
                    from, to, number_of_vertices (nth_gen g to)).
-    1: destruct H20 as [? [? [? ?]]]; split; assumption.
+    - destruct (zlt 0 (available_size h1 to)) as [Hav1|Hav1].
+      + entailer!.
+      + assert (Hzero0: available_size h0 to = 0). {
+          rewrite (proj1 H23 to).
+          pose proof available_space_range (nth_space h1 to).
+          unfold available_size in *. lia.
+        }
+        assert (Hghc0: graph_heap_compatible g0 h0) by (destruct Hsc0; assumption).
+        assert (Htoh0: graph_has_gen g0 to) by (destruct Hfc0 as [_ [_ [? _]]]; assumption).
+        assert (Hwhr0: weak_heap_relation h h0) by
+          (eapply forward_remset_item_fold_whr; eauto).
+        assert (Htsc0: ti_size_spec h0) by
+          (eapply weak_heap_relation_size_spec; eauto).
+        assert (Hrhhc0: remset_heap_and_heap_compatible rh0 h0). {
+          eapply (forward_remset_item_fold_rhhc
+                    from to g h rh rmst g0 h0 rh0 rmst0
+                    (Znth (Z.of_nat from) rh)).
+          - exact H1.
+          - exact Hrmnd.
+          - exact Hghc.
+          - exact Hcc.
+          - exact Hndd.
+          - exact Hfrom.
+          - exact Hto.
+          - exact Hrcw.
+          - exact Hrrsc.
+          - exact (proj2 Hrhc).
+          - exact Hfrg0'.
+          - unfold enough_space_enhanced in Hese.
+            rewrite (compatible_remset_gen_size g h rh from Hghc Hfrom (proj2 Hrhc)) in Hese.
+            exact Hese.
+        }
+        assert (Hgst01: gen_start g0 to = gen_start g1 to) by
+          (eapply frr_gen_start; [exact Hto0 | exact H21]).
+        rewrite <- Hgst01.
+        sep_apply (heap_remset_zero_available_weak_valid g0 h0 rh0 to
+                     Hghc0 Htoh0 Hrhhc0 Htsc0 Hzero0).
+        entailer!.
+    - destruct H20 as [? [? [? ?]]]; repeat split; try assumption.
     Intros vret. destruct vret as [g2 h2]. simpl fst in *. simpl snd in *.
     assert (Hsp: super_compatible g2 h2 (frames2rootpairs fr1) roots1 outlier). {
       destruct H20 as [? [? [Hrc ?]]]. split; [|split; [|split]]; auto.

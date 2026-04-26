@@ -57,8 +57,7 @@ Lemma body_do_scan: semax_body Vprog Gprog f_do_scan do_scan_spec.
 Proof.
   start_function.
   rename SH into SHr. rename SH0 into SHw. rename H into Hghc. rename H0 into Hoc.
-  rename H1 into Hfc. rename H2 into Hft. rename H3 into Hchi. rename H4 into Hgsp.
-  rename H5 into Hunmk.
+  rename H1 into Hfc. rename H2 into Hft. rename H3 into Hchi. rename H4 into Hunmk.
   forward.
   forward_loop (EX n: nat, EX g': LGraph, EX h': part_heap,
                 PROP (graph_heap_compatible g' h';
@@ -76,7 +75,9 @@ Proof.
                 SEP (all_string_constants rsh gv;
                      outlier_rep outlier;
                      graph_rep g';
-                     heap_rep sh h' hp))
+                     heap_rep sh h' hp;
+                     if zlt 0 (available_size h' to) then emp
+                     else weak_valid_pointer (gen_start g' to)))
   break: (EX g' : LGraph, EX h': part_heap,
           PROP (graph_heap_compatible g' h';
                 outlier_compatible g' outlier;
@@ -87,7 +88,9 @@ Proof.
           SEP (all_string_constants rsh gv;
                outlier_rep outlier;
                graph_rep g';
-               heap_rep sh h' hp)).
+               heap_rep sh h' hp;
+               if zlt 0 (available_size h' to) then emp
+               else weak_valid_pointer (gen_start g' to))).
   - Exists O g h. rewrite Nat.add_0_r. entailer !!. constructor.
   - Intros n g' h'. rename H into Hghc'. rename H0 into Hoc'. rename H1 into Hfc'.
     rename H2 into Hhr. rename H3 into Hchi'. rename H4 into Hsvwl.
@@ -154,19 +157,35 @@ Proof.
       assert (Hoffmem: forall offset,
                  0 <= offset <= used_offset ->
                  memory_block (nth_sh g' to) (WORD_SIZE * available_size h' to)
-                   (Vptr b i) * TT * FRZL FR |--
+                   (Vptr b i) * TT *
+                   (FRZL FR *
+                    (if zlt 0 (available_size h' to) then emp
+                     else weak_valid_pointer (Vptr b i))) |--
         weak_valid_pointer (Vptr b (Ptrofs.add i (Ptrofs.repr offset)))). {
-        intros offset Hofsrg. change (Vptr b (Ptrofs.add i (Ptrofs.repr offset))) with
-            (offset_val offset (Vptr b i)).
-        sep_apply (memory_block_weak_valid_pointer
-                     (nth_sh g' to) (WORD_SIZE * available_size h' to)
-                     (Vptr b i) offset); auto.
-        3: apply extend_weak_valid_pointer.
-        - subst. unfold available_size. split. 1: apply (proj1 Hofsrg).
+        intros offset Hofsrg.
+        destruct (Z_lt_dec 0 (WORD_SIZE * available_size h' to)) as [Hpos | Hnpos].
+        - change (Vptr b (Ptrofs.add i (Ptrofs.repr offset))) with
+              (offset_val offset (Vptr b i)).
+          sep_apply (memory_block_weak_valid_pointer
+                       (nth_sh g' to) (WORD_SIZE * available_size h' to)
+                       (Vptr b i) offset); auto.
+          subst. unfold available_size. split. 1: apply (proj1 Hofsrg).
           transitivity (WORD_SIZE * used_space (nth_space h' to))%Z.
           + rewrite nth_space_Znth. apply (proj2 Hofsrg).
-          + apply Zmult_le_compat_l. apply (proj2 (used_leq_available _)). unfold WORD_SIZE. lia.
-        - clear -Hgsp Hhr. destruct Hhr as [Hgs _]. rewrite <- Hgs. unfold WORD_SIZE. lia. }
+          + apply Zmult_le_compat_l. apply (proj2 (used_leq_available _)).
+            unfold WORD_SIZE. lia.
+          + apply extend_weak_valid_pointer.
+        - assert (Hav0: (WORD_SIZE * available_size h' to = 0)%Z). {
+            pose proof available_space_range (nth_space h' to).
+            unfold available_size in *. unfold WORD_SIZE in *. lia. }
+          assert (Hused0: used_offset = 0). {
+            subst used_offset sp_to. unfold available_size in Hav0.
+            rewrite nth_space_Znth in Hav0.
+            pose proof used_leq_available (Znth (Z.of_nat to) (spaces h')).
+            unfold WORD_SIZE in *. lia. }
+          assert (offset = 0) by lia. subst offset.
+          rewrite Ptrofs.add_zero. destruct (zlt 0 (available_size h' to));
+            [unfold available_size in *; unfold WORD_SIZE in *; lia | entailer!]. }
       apply andp_right; apply Hoffmem.
       * subst. split.
         1: pose proof pvs_ge_zero g' to (to_index + n)%nat; unfold WORD_SIZE; lia.
@@ -192,7 +211,7 @@ Proof.
       unfold gen_has_index. rewrite <- Hpre in Hidl.
       rewrite <- Z.mul_lt_mono_pos_l in Hidl by (unfold WORD_SIZE; lia).
       intro; apply Hidl. now apply pvs_mono_strict.
-    + clear Hchi' Hf Hforce. Intros. rename H0 into Hghi. thaw FR. freeze [1;2;3;4] FR.
+    + clear Hchi' Hf Hforce. Intros. rename H0 into Hghi. thaw FR. freeze [1;2;3;4;5] FR.
       assert (Hhv: graph_has_v g' (to, index)) by easy.
       localize [vertex_rep (nth_sh g' to) g' (to, index)].
       assert (Hrt: readable_share (nth_sh g' to)) by
@@ -241,7 +260,9 @@ Proof.
          SEP (heap_rep sh h'' hp;
               graph_rep g'';
               all_string_constants rsh gv;
-              outlier_rep outlier)).
+              outlier_rep outlier;
+              if zlt 0 (available_size h'' to) then emp
+              else weak_valid_pointer (gen_start g'' to))).
       * rewrite Int64.unsigned_repr in H0;
           [| pose proof raw_tag_range (vlabel g' (to, index)); rep_lia].
         pose proof typed_true_tag to g' index as Hxx.
@@ -274,7 +295,9 @@ Proof.
            SEP (all_string_constants rsh gv;
                 outlier_rep outlier;
                 graph_rep g3;
-                heap_rep sh h3 hp))
+                heap_rep sh h3 hp;
+                if zlt 0 (available_size h3 to) then emp
+                else weak_valid_pointer (gen_start g3 to)))
           continue: (EX i: Z, EX g3: LGraph, EX h3: part_heap,
            PROP (scan_vertex_for_loop
                    from to (to, index)
@@ -296,7 +319,9 @@ Proof.
            SEP (all_string_constants rsh gv;
                 outlier_rep outlier;
                 graph_rep g3;
-                heap_rep sh h3 hp)).
+                heap_rep sh h3 hp;
+                if zlt 0 (available_size h3 to) then emp
+                else weak_valid_pointer (gen_start g3 to))).
         -- forward. Exists 1 g' h'. replace (1 - 1) with 0 by lia.
            autorewrite with sublist. unfold forward_condition. entailer!!.
            try (rewrite Int64.unsigned_repr;
@@ -362,6 +387,8 @@ Proof.
                  rewrite <- Hgh in Hhr4. simpl snd in Hhr4.
                  assert (Hgsf: gen_start g3 from = gen_start g4 from) by
                    (eapply fr_gen_start; eassumption).
+                 assert (Hgst: gen_start g3 to = gen_start g4 to) by
+                   (eapply fr_gen_start; eassumption).
                  assert (Hla: limit_address g3 h3 from = limit_address g4 h4 from). {
                    unfold limit_address. rewrite Hgsf. do 2 f_equal. apply (proj1 Hhr4). }
                  simpl forward_p_rep. entailer !!.
@@ -394,6 +421,7 @@ Proof.
                  --- apply hr_trans with h3; assumption.
                  --- f_equal. symmetry. eapply fr_vertex_address; eauto.
                      apply graph_has_v_in_closure; assumption.
+                 --- rewrite Hgst. rewrite <- (proj1 Hhr4 to). apply derives_refl.
         -- Intros i g3 h3. cbv [Archi.ptr64]. forward.
            ++ entailer !!. simpl in Hzr.
               first [rewrite !Int.signed_repr | rewrite Int64.signed_repr]; rep_lia.
