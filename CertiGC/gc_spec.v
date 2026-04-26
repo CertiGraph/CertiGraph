@@ -281,6 +281,12 @@ Definition forward_remset_spec :=
          heap_remset_rep g' h' rh';
          remset_rep sh g' rmst').
 
+Definition heap_remset_rep_except (g: LGraph) (h: part_heap)
+           (rh : remset_heap) (gen: nat) : mpred :=
+  iter_sepcon (firstn gen (combine (spaces h) rh) ++
+               skipn (S gen) (combine (spaces h) rh))
+              (space_remset_rep g).
+
 Definition DO_SCAN_TYPE :=
   ProdType (ProdType (ProdType (ProdType (ProdType
     (ProdType (ProdType (ProdType (ProdType (ProdType
@@ -381,16 +387,21 @@ Definition do_generation_spec :=
          heap_remset_rep g h rh;
          remset_rep sh g rmst)
   POST [tvoid]
+    EX g_rem: LGraph, EX h_rem: part_heap,
+    EX rh': remset_heap, EX rmst': remset,
     EX g' : LGraph, EX h': part_heap, EX roots': roots_t,
     PROP (super_compatible g' h' (frames2rootpairs (update_frames fr (map (exterior2val g') roots'))) roots' outlier;
-          heap_relation h h';
-          do_generation_relation from to roots roots' g g')
+          weak_heap_relation h h';
+          do_generation_relation from to roots roots' g h rh rmst
+            g_rem h_rem rh' rmst' g')
     RETURN ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
          frames_rep sh (update_frames fr (map (exterior2val g') roots'));
-         heap_rep sh h' hp).
+         heap_rep sh h' hp;
+         heap_remset_rep_except g_rem h_rem rh' from;
+         remset_rep sh g_rem rmst').
 
 Definition create_space_spec :=
   DECLARE _create_space

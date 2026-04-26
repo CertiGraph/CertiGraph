@@ -905,7 +905,7 @@ Section GENERAL_GRAPH_PROP.
 
   Lemma do_gen_P_holds: forall from to r1 r2 g1 g2,
       P g1 -> graph_has_gen g1 to ->
-      do_generation_relation from to r1 r2 g1 g2 -> P g2.
+      do_generation_graph_relation from to r1 r2 g1 g2 -> P g2.
   Proof.
     intros. destruct H1 as [g3 [g4 [? [? ?]]]]. subst g2. apply reset_P_holds.
     eapply (dsr_P_holds g3); eauto.
@@ -3166,7 +3166,7 @@ Lemma do_gen_iso: forall from to roots1 roots2 g1 g2,
     from <> to -> sound_gc_graph g1 -> graph_has_gen g1 to -> graph_unmarked g1 ->
     roots_graph_compatible roots1 g1 ->
     no_dangling_dst g1 -> no_edge2gen g1 from ->
-    do_generation_relation from to roots1 roots2 g1 g2 ->
+    do_generation_graph_relation from to roots1 roots2 g1 g2 ->
     gc_graph_iso g1 roots1 g2 roots2.
 Proof.
   pose (H3:=True).
@@ -3249,7 +3249,7 @@ Qed.
 
 Lemma do_gen_sound: forall from to r1 r2 g1 g2,
     sound_gc_graph g1 -> graph_has_gen g1 to ->
-    do_generation_relation from to r1 r2 g1 g2 -> sound_gc_graph g2.
+    do_generation_graph_relation from to r1 r2 g1 g2 -> sound_gc_graph g2.
 Proof. intros. eapply do_gen_P_holds; eauto. apply fr_O_sound. apply reset_sound. Qed.
 
 Lemma svwl_roots_graph_compatible: forall from to roots l g1 g2,
@@ -3271,7 +3271,7 @@ Qed.
 Lemma do_gen_roots_graph_compatible: forall g1 g2 roots1 roots2 from to,
     graph_has_gen g1 to -> copy_compatible g1 -> gen_unmarked g1 to ->
     from <> to -> roots_graph_compatible roots1 g1 ->
-    do_generation_relation from to roots1 roots2 g1 g2 ->
+    do_generation_graph_relation from to roots1 roots2 g1 g2 ->
     roots_graph_compatible roots2 g2.
 Proof.
   pose (H3 := True).

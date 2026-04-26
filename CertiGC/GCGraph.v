@@ -3892,6 +3892,24 @@ Lemma hr_refl: forall h, heap_relation h h. Proof. intros; split; auto. Qed.
 
 Lemma whr_refl: forall h, weak_heap_relation h h. Proof. intros; split; auto. Qed.
 
+Lemma weak_heap_relation_reset: forall h gen,
+    weak_heap_relation h (reset_nth_heap gen h).
+Proof.
+  intros h gen. split; intros n.
+  - unfold nth_space, reset_nth_heap; simpl.
+    destruct (le_lt_dec (length (spaces h)) gen).
+    + rewrite reset_nth_space_overflow by assumption. reflexivity.
+    + destruct (Nat.eq_dec n gen).
+      * subst. rewrite reset_nth_space_same by assumption. reflexivity.
+      * rewrite reset_nth_space_diff by assumption. reflexivity.
+  - unfold total_size, nth_space, reset_nth_heap; simpl.
+    destruct (le_lt_dec (length (spaces h)) gen).
+    + rewrite reset_nth_space_overflow by assumption. reflexivity.
+    + destruct (Nat.eq_dec n gen).
+      * subst. rewrite reset_nth_space_same by assumption. reflexivity.
+      * rewrite reset_nth_space_diff by assumption. reflexivity.
+Qed.
+
 #[global] Instance hr_Reflexive: Reflexive heap_relation := hr_refl.
 
 #[global] Instance whr_Reflexive: Reflexive weak_heap_relation := whr_refl.
@@ -6202,7 +6220,7 @@ Proof.
 Qed.
 
 Lemma ptrofs_divs_repr
-	 : forall i j : Z,
+     : forall i j : Z,
        Ptrofs.min_signed <= i <= Ptrofs.max_signed ->
        Ptrofs.min_signed <= j <= Ptrofs.max_signed ->
        Ptrofs.divs (Ptrofs.repr i) (Ptrofs.repr j) =
@@ -8832,27 +8850,29 @@ Proof.
     eapply IHr; eauto. eapply fri_rh_Zlength_same in H. lia.
 Qed.
 
-(* Old Definition *)
 Definition do_generation_relation (from to: nat)
+           (roots roots': roots_t) (g: LGraph) (h: part_heap)
+           (rh: remset_heap) (rmst: remset)
+           (rg: LGraph) (rhh: part_heap) (rh': remset_heap)
+           (rmst': remset) (g': LGraph): Prop :=
+  exists g1 g2,
+    (rg, rhh, rh', rmst') = forward_remset_gh from to g h rh rmst /\
+    forward_roots_relation from to roots rg roots' g1 /\
+    do_scan_relation from to (number_of_vertices (nth_gen g to)) g1 g2 /\
+    g' = reset_graph from g2.
+
+(* Transitional graph-only relation used by the old mathematical
+   correctness lemmas.  It intentionally reflects the pre-remset proof
+   structure until those lemmas are refactored. *)
+Definition do_generation_graph_relation (from to: nat)
            (roots roots': roots_t) (g g': LGraph): Prop := exists g1 g2,
     forward_roots_relation from to roots g roots' g1 /\
     do_scan_relation from to (number_of_vertices (nth_gen g to)) g1 g2 /\
     g' = reset_graph from g2.
 
-(* New Definition *)
-(*
-Definition do_generation_relation (from to: nat)
-  (roots roots': roots_t) (g g': LGraph) (h: heap) (rh rh': remset_heap) (rmst rmst': remset) : Prop :=
-  exists g1 g2 g3 h',
-    (g1, h', rh', rmst') = forward_remset_gh from to g h rh rmst /\
-    forward_roots_relation from to roots g1 roots' g2 /\
-    do_scan_relation from to (number_of_vertices (nth_gen g to)) g2 g3 /\
-    g' = reset_graph from g2.
-*)
-
 Lemma do_gen_graph_has_gen: forall from to roots roots' g g',
     graph_has_gen g to ->
-    do_generation_relation from to roots roots' g g' ->
+    do_generation_graph_relation from to roots roots' g g' ->
     forall gen, graph_has_gen g gen <-> graph_has_gen g' gen.
 Proof.
   intros. destruct H0 as [g1 [g2 [? [? ?]]]]. transitivity (graph_has_gen g1 gen).
@@ -8865,7 +8885,7 @@ Qed.
 
 Lemma do_gen_graph_unmarked: forall from to roots roots' g g',
     graph_has_gen g to ->
-    do_generation_relation from to roots roots' g g' ->
+    do_generation_graph_relation from to roots roots' g g' ->
     graph_unmarked g -> graph_unmarked g'.
 Proof.
   intros. destruct H0 as [g1 [g2 [? [? ?]]]]. rewrite graph_gen_unmarked_iff in H1.
@@ -8885,7 +8905,7 @@ Inductive garbage_collect_loop
 | gcl_cons: forall (g1 g2 g3 g4: LGraph) (i: nat) (il: list nat)
                    (roots1 roots2 roots3: roots_t),
     new_gen_relation (S i) g1 g2 ->
-    do_generation_relation i (S i) roots1 roots2 g2 g3 ->
+    do_generation_graph_relation i (S i) roots1 roots2 g2 g3 ->
     garbage_collect_loop il roots2 g3 roots3 g4 ->
     garbage_collect_loop (i :: il) roots1 g1 roots3 g4.
 
@@ -8899,8 +8919,8 @@ Lemma do_gen_no_dangling_dst: forall g1 g2 roots1 roots2 from to,
   from <> to ->
   roots_graph_compatible roots1 g1 -> firstn_gen_clear g1 from ->
   no_backward_edge g1 ->
-  do_generation_relation from to roots1 roots2 g1 g2 ->
-  no_dangling_dst g1 -> no_dangling_dst g2.
+    do_generation_graph_relation from to roots1 roots2 g1 g2 ->
+    no_dangling_dst g1 -> no_dangling_dst g2.
 Proof.
   intros until 3. pose proof I; intros. destruct H7 as [g3 [g4 [? [? ?]]]].
   assert (no_dangling_dst g3) by (eapply (frr_no_dangling_dst from); eauto).
@@ -8914,7 +8934,7 @@ Proof.
 Qed.
 
 Lemma do_gen_firstn_gen_clear: forall g1 g2 roots1 roots2 i,
-    do_generation_relation i (S i) roots1 roots2 g1 g2 ->
+    do_generation_graph_relation i (S i) roots1 roots2 g1 g2 ->
     graph_has_gen g1 (S i) -> firstn_gen_clear g1 i -> firstn_gen_clear g2 (S i).
 Proof.
   intros. destruct H as [g3 [g4 [? [? ?]]]].
@@ -8924,7 +8944,7 @@ Proof.
 Qed.
 
 Lemma do_gen_no_backward_edge: forall g1 g2 roots1 roots2 i,
-    do_generation_relation i (S i) roots1 roots2 g1 g2 ->
+    do_generation_graph_relation i (S i) roots1 roots2 g1 g2 ->
     no_dangling_dst g2 -> graph_has_gen g1 (S i) -> gen_unmarked g1 (S i) ->
     firstn_gen_clear g1 i -> no_backward_edge g1 -> no_backward_edge g2.
 Proof.
@@ -8947,7 +8967,7 @@ Lemma do_gen_gcc: forall g1 h1 roots1 g2 h2 roots2 i out,
     firstn_gen_clear g1 i -> graph_has_gen g1 (S i) ->
     heap_relation h1 h2 ->
     garbage_collect_condition g1 h1 ->
-    do_generation_relation i (S i) roots1 roots2 g1 g2 ->
+    do_generation_graph_relation i (S i) roots1 roots2 g1 g2 ->
     garbage_collect_condition g2 h2.
 Proof.
   intros. destruct H5 as [? [? [? ?]]].
@@ -8965,7 +8985,7 @@ Qed.
 
 Lemma do_gen_stcte: forall g1 roots1 g2 roots2 i,
     safe_to_copy_to_except g1 i -> graph_has_gen g1 (S i) ->
-    do_generation_relation i (S i) roots1 roots2 g1 g2 ->
+    do_generation_graph_relation i (S i) roots1 roots2 g1 g2 ->
     safe_to_copy_to_except g2 (S i).
 Proof.
   intros. unfold safe_to_copy_to_except in *. intros.
@@ -8986,7 +9006,7 @@ Qed.
 Lemma gcl_add_tail: forall l g1 roots1 g2 roots2 g3 roots3 g4 i,
     garbage_collect_loop l roots1 g1 roots2 g2 ->
     new_gen_relation (S i) g2 g3 ->
-    do_generation_relation i (S i) roots2 roots3 g3 g4 ->
+    do_generation_graph_relation i (S i) roots2 roots3 g3 g4 ->
     garbage_collect_loop (l +:: i) roots1 g1 roots3 g4.
 Proof.
   induction l; intros.

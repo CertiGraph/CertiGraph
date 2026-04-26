@@ -272,12 +272,6 @@ Proof.
     rep_lia.
 Qed.
 
-Definition heap_remset_rep_except (g: LGraph) (h: part_heap)
-           (rh : remset_heap) (gen: nat) : mpred :=
-  iter_sepcon (firstn gen (combine (spaces h) rh) ++
-               skipn (S gen) (combine (spaces h) rh))
-              (space_remset_rep g).
-
 Lemma heap_remset_rep_split: forall g h rh gen,
     length rh = length (spaces h) ->
     (gen < length (spaces h))%nat ->
@@ -780,22 +774,33 @@ Proof.
         }
         remember (reset_nth_heap from h2) as h3.
         remember (reset_graph from g2) as g3.
-        assert (do_generation_relation from to roots roots1 g g3) by
-            (exists g1, g2; split; [|split]; assumption).
-        assert (heap_relation h h3). {
-          apply hr_trans with h2.
-          - apply hr_trans with h1; try assumption.
-          - subst h3. apply heaprel_reset. }
-        Exists g3 h3 roots1.
+        assert (do_generation_relation from to roots roots1 g h rh rmst
+                  g0 h0 rh0 rmst0 g3). {
+          exists g1, g2.
+          split; [exact Hfrg0'|].
+          split; [exact H21|].
+          split; [exact H33|].
+          exact Heqg3.
+        }
+        assert (weak_heap_relation h h3). {
+          apply whr_trans with h0.
+          - eapply forward_remset_item_fold_whr; eauto.
+          - apply whr_trans with h1.
+            + apply heap_relation_weakened. exact H23.
+            + apply whr_trans with h2.
+              * apply heap_relation_weakened. exact H34.
+              * subst h3. apply weak_heap_relation_reset.
+        }
+        Exists g0 h0 rh0 rmst0 g3 h3 roots1.
         destruct H32 as [? [? [? ?]]].
         replace (update_frames fr (map _ _)) with fr1.
         entailer!!.
+        destruct (zlt 0 (available_size h2 to)); entailer!!.
+        apply andp_left2. apply derives_refl.
         unfold fr1 in *.
-        destruct Hsc2 as [_ [? _]]. red in H31.
-        destruct H20 as [_ [? _]]. red in H20.
-        f_equal.
-        rewrite H31.
-        rewrite frames2rootpairs_update_frames; auto.
-        apply sc_Zlength in H.
-        apply frr_Zlength_roots in H21; list_solve.
+        destruct Hsc2 as [_ [Hrpc3 _]].
+        destruct H20 as [_ [Hrpc1 _]].
+        red in Hrpc3. red in Hrpc1.
+        rewrite Hrpc1, Hrpc3.
+        reflexivity.
 Qed.
