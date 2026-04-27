@@ -603,7 +603,6 @@ Definition garbage_collect_spec :=
     PROP (readable_share rsh; writable_share sh;
           super_compatible g (ti_heap t_info).(pt_heap) (frames2rootpairs (ti_frames t_info)) roots outlier;
           garbage_collect_condition g (ti_heap t_info).(pt_heap);
-          safe_to_copy g;
           safe_to_copy_heap g (ti_heap t_info).(pt_heap);
           remset_compatible g outlier O rmst rh (ti_heap t_info).(pt_heap))
     PARAMS (ti)
@@ -621,7 +620,6 @@ Definition garbage_collect_spec :=
     PROP (super_compatible g' (ti_heap t_info').(pt_heap) (frames2rootpairs (ti_frames t_info')) roots' outlier;
           garbage_collect_relation roots roots' g g';
           garbage_collect_condition g' (ti_heap t_info').(pt_heap);
-          safe_to_copy g';
           safe_to_copy_heap g' (ti_heap t_info').(pt_heap);
           frame_shells_eq (ti_frames t_info) (ti_frames t_info');
           Ptrofs.unsigned (ti_nalloc t_info) <=

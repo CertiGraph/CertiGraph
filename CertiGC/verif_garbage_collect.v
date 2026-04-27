@@ -280,7 +280,10 @@ Proof.
                        space_address (ti_heap_p tif) (Z.to_nat j)). {
           intros. unfold space_address. now rewrite Z2Nat.id. }
   unfold before_gc_thread_info_rep, heap_management_rep, heap_struct_rep. Intros.
-  rename H2 into Hsafeh. rename H3 into Hremc. pose proof H0 as Hgcc_init.
+  rename H1 into Hsafeh. rename H2 into Hremc. pose proof H0 as Hgcc_init.
+  assert (Hsafe_graph: safe_to_copy g) by
+      (eapply safe_to_copy_heap_implies_safe_to_copy;
+       [apply (proj1 H) | destruct H0 as [_ [_ [_ Hsize]]]; exact Hsize | exact Hsafeh]).
   forward.
   pose proof H as Hsc_init.
   destruct Hsc_init as [Hghc_init _].
@@ -339,11 +342,17 @@ Proof.
     + red. intros. lia.
     + unfold nat_inc_list. simpl. constructor.
     + apply frame_shells_eq_refl.
-  - cbv beta. Intros g' roots' t_info' rh' rmst'. rename H14 into FSE. rename H15 into HN.
+  - cbv beta. Intros g' roots' t_info' rh' rmst'.
+    rename H5 into Hsc_loop. rename H6 into Hgcc_loop.
+    rename H7 into Hstcte_loop. rename H8 into Hstcteh_loop.
+    rename H9 into Hfirst_loop. rename H10 into Hgcl_loop.
+    rename H11 into Hhas_i_loop. rename H12 into FSE.
+    rename H13 into HN. rename H14 into Hremc_loop.
     unfold thread_info_rep, heap_rep. Intros.
-    unfold heap_struct_rep. assert (0 <= i + 1 < Zlength (spaces (ti_heap t_info').(pt_heap))) by
+    unfold heap_struct_rep.
+    assert (Hi1_range: 0 <= i + 1 < Zlength (spaces (ti_heap t_info').(pt_heap))) by
         (rewrite spaces_size; rep_lia).
-    pose proof (space_start_is_pointer_or_null _ _ _ (proj1 H6) H14).
+    pose proof (space_start_is_pointer_or_null _ _ _ (proj1 Hsc_loop) Hi1_range).
     forward.
     1: entailer!!.
      1: entailer!!; rewrite Znth_map by assumption; unfold space_quad; assumption.
@@ -376,19 +385,20 @@ Proof.
         pull_left (heap_unused_rep (pt_heap (ti_heap t_info'))).
         pull_left (heap_remset_rep g' (pt_heap (ti_heap t_info')) rh').
         pull_left (graph_rep g').
-        destruct H6 as [Hghc' _]. rewrite <- (space_start_isptr_iff g') in H24 by assumption.
-        pose proof HN as Hremc'.
+        pose proof (proj1 Hsc_loop) as Hghc'.
+        rewrite <- (space_start_isptr_iff g') in H14 by assumption.
+        pose proof Hremc_loop as Hremc'.
         destruct Hremc' as [_ [_ Hrhhc']].
         pose proof (Forall2_length Hrhhc') as Hrh_len'.
-        destruct H7 as [_ [_ [_ Hsize']]].
+        destruct Hgcc_loop as [_ [_ [_ Hsize']]].
         sep_apply (graph_and_heap_remset_valid_ptr
-                     g' (pt_heap (ti_heap t_info')) rh' _ H24 Hghc' Hrh_len' Hsize').
+                     g' (pt_heap (ti_heap t_info')) rh' _ H14 Hghc' Hrh_len' Hsize').
         rewrite nth_space_Znth, Z2Nat.id by lia.
         sep_apply (valid_pointer_weak
                      (space_start (Znth (i + 1) (spaces (pt_heap (ti_heap t_info')))))).
         apply extend_weak_valid_pointer. Opaque denote_tc_test_eq.
     + assert (0 <= i < Zlength (spaces (pt_heap (ti_heap t_info')))) by lia.
-      pose proof (space_start_isptr _ _ _ (proj1 H6) H12) as Hstart_i.
+      pose proof (space_start_isptr _ _ _ (proj1 Hsc_loop) Hhas_i_loop) as Hstart_i.
       rewrite nth_space_Znth, Z2Nat.id in Hstart_i by lia. forward.
       entailer!!.
       1: entailer!!; rewrite Znth_map by assumption; unfold space_quad;
@@ -406,9 +416,9 @@ Proof.
         with int_or_ptr_type. remember (Znth i (spaces (pt_heap (ti_heap t_info')))).
       subst s.
       rewrite sem_sub_pp_total_space by exact Hstart_i.
-      pose proof H7 as Hgcc'.
+      pose proof Hgcc_loop as Hgcc'.
       destruct Hgcc' as [_ [_ [_ Hsize_spec']]].
-      pose proof (ti_size_gen _ _ _ (proj1 H6) H12 Hsize_spec') as Htotal_i.
+      pose proof (ti_size_gen _ _ _ (proj1 Hsc_loop) Hhas_i_loop Hsize_spec') as Htotal_i.
       unfold total_size in Htotal_i.
       rewrite nth_space_Znth, Z2Nat.id in Htotal_i by lia.
       simpl in Htotal_i. rewrite Htotal_i. clear Hsize_spec' Htotal_i.
@@ -422,7 +432,7 @@ Proof.
                    sh space_type
                    (Znth (i + 1) (map space_quad (spaces (pt_heap (ti_heap t_info')))))
                    (space_address (ti_heap_p t_info') (Z.to_nat (i + 1)))).
-      pose proof (t_info_space_address _ _ (proj1 H14) Hheap_ptr) as Hspace_addr_i1.
+      pose proof (t_info_space_address _ _ (proj1 Hi1_range) Hheap_ptr) as Hspace_addr_i1.
       simpl in Hspace_addr_i1.
       assert (0 <= 2 * nth_gen_size (Z.to_nat i) <= MAX_SPACE_SIZE) by
           (rewrite ngs_S by lia; apply ngs_range; rep_lia).
@@ -433,14 +443,14 @@ Proof.
         rewrite ngs_S by lia. apply ngs_int_signed_range. rep_lia.
       * simpl. entailer!!. f_equal. now rewrite Tf.
       * Intros p.
-        pose proof (ngs_S i (proj1 H5)) as Hngs_i.
+        pose proof (ngs_S i (proj1 H4)) as Hngs_i.
         rewrite Hngs_i in *.
         assert (Hso: 0 <= 0 <= (nth_gen_size (Z.to_nat (i + 1)))) by lia.
         rewrite data_at__isptr. Intros.
         remember (Build_space p 0
                               (nth_gen_size (Z.to_nat (i + 1)))
                               (nth_gen_size (Z.to_nat (i + 1)))
-                              Ews Hso (Z.le_refl _) (proj2 H18))
+                              Ews Hso (Z.le_refl _) (proj2 H8))
           as sp. remember (Build_generation_info p O Ews Pp writable_Ews) as gi.
         assert (forall (gr: LGraph) (gen: nat),
                    generation_space_compatible gr (gen, gi, sp)) by
@@ -449,9 +459,10 @@ Proof.
         assert (Hfresh_sp: available_space sp = total_space sp) by
           (subst sp; simpl; reflexivity).
         remember (ti_add_new_space t_info' sp _ Hi1_max Hfresh_sp) as t_info1.
-        pose proof H16.
-        rewrite <- (space_start_isnull_iff g') in H16; auto. 2: apply (proj1 H6).
-        assert (number_of_vertices gi = O) by (subst gi; simpl; reflexivity).
+        pose proof H6 as Hnext_null.
+        rewrite <- (space_start_isnull_iff g') in Hnext_null; auto.
+        2: apply (proj1 Hsc_loop).
+        assert (Hgi_empty: number_of_vertices gi = O) by (subst gi; simpl; reflexivity).
         assert (super_compatible g1 (pt_heap (ti_heap t_info1)) (frames2rootpairs (ti_frames t_info1)) roots' outlier). {
           subst g1 t_info1. simpl ti_heap. simpl pt_heap. simpl ti_frames. apply super_compatible_add; auto.
           replace (i + 1 - 1) with i by lia. assumption. }
@@ -536,35 +547,35 @@ Proof.
         replace_SEP 0 (thread_info_rep sh t_info1 ti) by
             (unfold thread_info_rep, heap_rep; entailer!!).
         rewrite (graph_rep_add g' gi).
-        2: exact H21.
-        2: { destruct H7 as [Hunmarked _].
+        2: exact Hgi_empty.
+        2: { destruct Hgcc_loop as [Hunmarked _].
              apply graph_unmarked_copy_compatible; assumption. }
-        2: { destruct H7 as [_ [_ [Hndd _]]]. exact Hndd. }
+        2: { destruct Hgcc_loop as [_ [_ [Hndd _]]]. exact Hndd. }
         rewrite <- Heqg1.
         assert (Hi1_nat: Z.to_nat (i + 1) = S (Z.to_nat i)) by
             (rewrite Z2Nat.inj_add by lia; simpl; lia).
         assert (graph_has_gen g1 (Z.to_nat (i + 1))). {
           subst g1. rewrite ang_graph_has_gen. right.
-          rewrite Hi1_nat in H16 |- *.
-          unfold graph_has_gen in H12, H16. lia. }
+          rewrite Hi1_nat in Hnext_null |- *.
+          unfold graph_has_gen in Hhas_i_loop, Hnext_null. lia. }
         assert (safe_to_copy_to_except g1 (Z.to_nat i)) by
             (subst g1; apply stcte_add; auto; subst gi; simpl; reflexivity).
         assert (safe_to_copy_to_except_heap g1 (pt_heap (ti_heap t_info1)) (Z.to_nat i)). {
           subst g1 t_info1.
           eapply stcteh_add with (new := i + 1) (Hs := Hi1_max).
           - exact Hi1_nat.
-          - apply (proj1 H6).
-          - exact H12.
-          - intro Hnext. apply H16. rewrite Hi1_nat. exact Hnext.
-          - destruct H7 as [_ [_ [_ Hsize']]]. exact Hsize'.
+          - apply (proj1 Hsc_loop).
+          - exact Hhas_i_loop.
+          - intro Hnext. apply Hnext_null. rewrite Hi1_nat. exact Hnext.
+          - destruct Hgcc_loop as [_ [_ [_ Hsize']]]. exact Hsize'.
           - subst sp; simpl. rewrite Hi1_nat. reflexivity.
           - exact Hfresh_sp.
           - subst sp; simpl; reflexivity.
-          - exact H9.
+          - exact Hstcteh_loop.
         }
         assert (garbage_collect_condition g1 (pt_heap (ti_heap t_info1))) by
             (subst g1 t_info1; apply gcc_add; assumption).
-        pose proof HN as Hremc_parts.
+        pose proof Hremc_loop as Hremc_parts.
         destruct Hremc_parts as [Hrgo [Hrgh Hrhh]].
         assert (remset_compatible g1 outlier (Z.to_nat i) rmst' rh'
                   (pt_heap (ti_heap t_info1))). {
@@ -574,32 +585,38 @@ Proof.
         assert (Hsp_ptr: isptr (space_start sp)) by (subst sp; simpl; exact Pp).
         sep_apply (heap_remset_rep_add_empty_space
                      g' (pt_heap (ti_heap t_info')) rh' sp (i + 1)
-                     Hi1_max Hrhh H20 Hfresh_sp Hsp_ptr).
+                     Hi1_max Hrhh H6 Hfresh_sp Hsp_ptr).
         rewrite (heap_remset_rep_add_new_gen
                    g' (add_new_space (pt_heap (ti_heap t_info')) sp (i + 1) Hi1_max)
                    rh' gi (Z.to_nat i) rmst' Hrgh).
         rewrite (remset_rep_add_new_gen sh g' gi outlier rmst' Hrgo).
         Local Opaque super_compatible. Exists g1 t_info1 rh' rmst'. entailer!!.
     + forward. remember (space_start (Znth (i + 1) (spaces (pt_heap (ti_heap t_info'))))).
-      assert (isptr v). {
-        destruct v; try contradiction. simpl in H15. subst i0. contradiction.
-        simpl. exact I. } subst v. rewrite <- (space_start_isptr_iff g') in H17; auto.
-      2: apply (proj1 H6). assert (new_gen_relation (Z.to_nat (i + 1)) g' g') by
+      assert (Hisptr_next: isptr v). {
+        destruct v; try contradiction.
+        hnf in H5; subst i0. contradiction H6; reflexivity.
+        apply I.
+      } subst v. rewrite <- (space_start_isptr_iff g') in Hisptr_next; auto.
+      2: apply (proj1 Hsc_loop). assert (new_gen_relation (Z.to_nat (i + 1)) g' g') by
           (unfold new_gen_relation; rewrite if_true; auto).
       Exists g' t_info' rh' rmst'. entailer!!. unfold thread_info_rep, heap_rep, heap_struct_rep.
       entailer!!.
     + Intros g1 t_info1 rh1 rmst1.
-      clear FSE HN. rename H22 into Hgen1_next. rename H23 into FSE.
-      rename H24 into HN. rename H25 into Hremc1.
-      assert_PROP (isptr (ti_heap_p t_info1))
+      clear FSE HN.
+      rename H6 into Hsc1. rename H7 into Hgcc1.
+      rename H8 into Hstcte1. rename H9 into Hstcteh1.
+      rename H10 into Hfirst1. rename H11 into Hnewgen1.
+      rename H12 into Hgen1_next. rename H13 into FSE.
+      rename H14 into HN. rename H15 into Hremc1.
+      assert_PROP (isptr (ti_heap_p t_info1)) as Hheap_p1
         by (unfold thread_info_rep, heap_rep, heap_struct_rep; entailer!).
-      assert (Z.to_nat (i + 1) = S (Z.to_nat i)) by
+      assert (Hi1_nat2: Z.to_nat (i + 1) = S (Z.to_nat i)) by
           (rewrite Z2Nat.inj_add by lia; simpl; lia).
       assert (do_generation_condition
                 g1 (pt_heap (ti_heap t_info1)) (Z.to_nat i) (Z.to_nat (i + 1))) by
-          (rewrite H23 in *; eapply gc_cond_implies_do_gen_cons; eauto;
-           apply (proj1 H16)). pose proof (t_info_space_address _ _ (proj1 H5) H22).
-      pose proof (t_info_space_address _ _ (proj1 H14) H22).
+          (rewrite Hi1_nat2 in *; eapply gc_cond_implies_do_gen_cons; eauto;
+           apply (proj1 Hsc1)). pose proof (t_info_space_address _ _ (proj1 H4) Hheap_p1).
+      pose proof (t_info_space_address _ _ (proj1 Hi1_range) Hheap_p1).
       unfold thread_info_rep. Intros.
       forward.
       freeze FR1 := (data_at _ _ _ _) (mem_mgr gv) (ti_token_rep _ _).
@@ -628,60 +645,67 @@ Proof.
         by (erewrite ti_rel_token_the_same_weak; eauto; entailer!!; apply derives_refl).
       sep_apply gather_thread_info_rep.
       unfold thread_info_rep, heap_rep, heap_struct_rep.
-      Intros. assert (graph_has_gen g2 (Z.to_nat (i + 1))) by
+      Intros. assert (Hhas_i1_g2: graph_has_gen g2 (Z.to_nat (i + 1))) by
           (erewrite <- do_generation_relation_graph_has_gen; eauto).
-      assert (graph_has_gen g2 (Z.to_nat i)) by (red in H30 |-* ; lia).
+      assert (Hhas_i_g2: graph_has_gen g2 (Z.to_nat i)) by
+          (red in Hhas_i1_g2 |-*; lia).
       assert (isptr (space_start (Znth i (spaces (pt_heap (ti_heap t_info2)))))). {
           rewrite <- (Z2Nat.id i), <- nth_space_Znth by lia.
-          pose proof (proj1 (gt_gs_compatible _ _ (proj1 H27) _ H31)).
-          change (pt_heap (ti_heap t_info2)) with h2. rewrite <- H32.
+          pose proof (proj1 (gt_gs_compatible _ _ (proj1 H9) _ Hhas_i_g2))
+            as Hstart_i_g2.
+          change (pt_heap (ti_heap t_info2)) with h2. rewrite <- Hstart_i_g2.
         apply start_isptr. }
       assert (0 <= i < Zlength (spaces (pt_heap (ti_heap t_info2)))) by
           (rewrite spaces_size; rep_lia). forward.
-      1:{ apply prop_right. clear - H5. rewrite MAX_SPACES_eq in H5. lia. }
+      1:{ apply prop_right. clear - H4. rewrite MAX_SPACES_eq in H4. lia. }
       1: tc_val_Znth; rewrite isptr_offset_val; assumption. forward.
-      1:{ apply prop_right. clear - H5. rewrite MAX_SPACES_eq in H5. lia. }
+      1:{ apply prop_right. clear - H4. rewrite MAX_SPACES_eq in H4. lia. }
       1: tc_val_Znth.
       rewrite Znth_map by assumption. unfold space_quad at 1 2.
       assert (0 <= i + 1 < Zlength (spaces (pt_heap (ti_heap t_info2)))) by
           (rewrite spaces_size; rep_lia).
       assert (isptr (space_start (Znth (i + 1) (spaces (pt_heap (ti_heap t_info2)))))). {
         rewrite <- (Z2Nat.id (i + 1)), <- nth_space_Znth by lia.
-        pose proof (proj1 (gt_gs_compatible _ _ (proj1 H27) _ H30)).
-        simpl in H35. change (pt_heap (ti_heap t_info2)) with h2. rewrite <- H35.
+        pose proof (proj1 (gt_gs_compatible _ _ (proj1 H9) _ Hhas_i1_g2))
+          as Hstart_i1_g2.
+        simpl in Hstart_i1_g2.
+        change (pt_heap (ti_heap t_info2)) with h2. rewrite <- Hstart_i1_g2.
         apply start_isptr. }
       forward.
-        1:{ apply prop_right. clear - H5. rewrite MAX_SPACES_eq in H5. lia. }
+        1:{ apply prop_right. clear - H4. rewrite MAX_SPACES_eq in H4. lia. }
       1: tc_val_Znth; rewrite isptr_offset_val; assumption.
       forward.
-      1:{ apply prop_right. clear - H5. rewrite MAX_SPACES_eq in H5. lia. }
+      1:{ apply prop_right. clear - H4. rewrite MAX_SPACES_eq in H4. lia. }
       1: tc_val_Znth; rewrite isptr_offset_val; assumption.
-      rewrite Znth_map by assumption. unfold space_quad at 1 2. rewrite H23 in *.
+      rewrite Znth_map by assumption. unfold space_quad at 1 2. rewrite Hi1_nat2 in *.
 
-      assert (garbage_collect_condition g2 (pt_heap (ti_heap t_info2))). {
-         destruct H16 as [? [? [? ?]]], H28;
+      assert (Hgcc2: garbage_collect_condition g2 (pt_heap (ti_heap t_info2))). {
+         pose proof H11 as Hdgr.
+         destruct H6 as [? [? [? ?]]], Hdgr;
             eapply (do_gen_gcc g1 (pt_heap (ti_heap t_info1)) roots'); try eassumption.
             split; auto.
       }
-      assert (firstn_gen_clear g2 (Z.to_nat (i + 1))) by
-          (rewrite H23; eapply do_gen_firstn_gen_clear; eauto).
-      assert (safe_to_copy_to_except g2 (Z.to_nat (i + 1))) by
-          (rewrite H23; eapply do_gen_stcte; eauto).
+      assert (Hfirst2: firstn_gen_clear g2 (Z.to_nat (i + 1))) by
+          (rewrite Hi1_nat2; eapply do_gen_firstn_gen_clear; eauto).
+      assert (Hstcte2: safe_to_copy_to_except g2 (Z.to_nat (i + 1))) by
+          (rewrite Hi1_nat2; eapply do_gen_stcte; eauto).
      sep_apply gather_thread_info_rep.
-      assert (garbage_collect_loop (nat_inc_list (Z.to_nat (i + 1))) roots g roots2 g2) by
-          (rewrite H23, nat_inc_list_S; eapply gcl_add_tail; eauto).
+      assert (Hgcl2: garbage_collect_loop (nat_inc_list (Z.to_nat (i + 1))) roots g roots2 g2) by
+          (rewrite Hi1_nat2, nat_inc_list_S; eapply gcl_add_tail; eauto).
       replace_SEP 5 (ti_token_rep (pt_heap (ti_heap t_info2)) (ti_heap_p t_info2))
          by (erewrite ti_rel_token_the_same; eauto; entailer!!; apply derives_refl).
       simpl spaces in *.
       assert (FSE': frame_shells_eq (ti_frames t_info)
                (update_frames (ti_frames t_info1) (map (exterior2val g2) roots2))). {
             eapply frame_shells_eq_trans. eassumption.
-            apply sc_Zlength in H8, H16.
-            destruct H29 as [? [? [FRR _]]].
+            pose proof (sc_Zlength Hsc1) as Hroots1_len.
+            pose proof (sc_Zlength H9) as Hroots2_len.
+            pose proof H11 as Hrel_for_len.
+            destruct Hrel_for_len as [? [? [? [FRR _]]]].
             apply frr_Zlength_roots in FRR.
-            clear - FRR H8 H16.
+            clear - FRR Hroots1_len Hroots2_len.
             forget (Zlength roots') as n; subst n.
-            rewrite H16 in FRR; clear H16.
+            rewrite Hroots2_len in FRR; clear Hroots2_len.
             set (frs := ti_frames t_info1) in *; clearbody frs.
             rewrite <- (Zlength_map _ _ (exterior2val g2) roots2) in FRR.
             set (al := map _ roots2) in *. clearbody al.
@@ -710,18 +734,19 @@ Proof.
         end.
         2: apply rest_space_repable_signed. 2: apply available_space_repable_signed.
         assert (safe_to_copy_gen g2 (Z.to_nat i) (S (Z.to_nat i))). {
-          red. destruct H27 as [? _]. destruct H36 as [_ [_ [_ ?]]].
-          do 2 (erewrite <- ti_size_gen; eauto). rewrite <- H23 in *.
-          unfold available_size, graph_gen_size. destruct (gt_gs_compatible _ _ H27 _ H30)
-            as [_ [_ ?]]. simpl in H41|-*; rewrite H41, !nth_space_Znth, !Z2Nat.id; lia. }
-        assert (graph_heap_compatible g2 (ti_heap t_info2)) by (apply (proj1 H27)).
-        assert (graph_gen_clear g2 O) by (apply H37; rewrite H23; lia).
+          red. destruct H9 as [? _]. destruct Hgcc2 as [_ [_ [_ ?]]].
+          do 2 (erewrite <- ti_size_gen; eauto). rewrite <- Hi1_nat2 in *.
+          unfold available_size, graph_gen_size.
+          destruct (gt_gs_compatible _ _ H9 _ Hhas_i1_g2) as [_ [_ Hused_i1]].
+          simpl in Hused_i1 |- *; rewrite Hused_i1, !nth_space_Znth, !Z2Nat.id; lia. }
+        assert (graph_heap_compatible g2 (ti_heap t_info2)) by (apply (proj1 H9)).
+        assert (graph_gen_clear g2 O) by (apply Hfirst2; rewrite Hi1_nat2; lia).
         forward_call (rsh, sh, gv, ti, g2, t_info2, roots2). forward.
         Exists g2 t_info2 roots2. entailer!!. split3.
-        -- exists (Z.to_nat i). rewrite <- H23 at 1. split; assumption.
-        -- rewrite H23 in H38. eapply safe_to_copy_complete; eauto.
+        -- exists (Z.to_nat i). rewrite <- Hi1_nat2 at 1. split; assumption.
+        -- rewrite Hi1_nat2 in Hstcte2. eapply safe_to_copy_complete; eauto.
         -- rewrite HN. auto.
-      * forward. Intros. Exists g2 roots2 t_info2. rewrite <- H23 in *. entailer!!.
+      * forward. Intros. Exists g2 roots2 t_info2. rewrite <- Hi1_nat2 in *. entailer!!.
   - Intros g2 roots2 t_info2. unfold all_string_constants. Intros.
      forward_call; contradiction.
 Qed.

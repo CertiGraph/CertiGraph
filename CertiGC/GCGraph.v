@@ -5683,6 +5683,27 @@ Definition safe_to_copy_to_except_heap (g: LGraph) (h: part_heap) (gen: nat): Pr
 Definition safe_to_copy_heap (g: LGraph) (h: part_heap): Prop :=
   forall n, graph_has_gen g (S n) -> safe_to_copy_gen_heap h n (S n).
 
+Lemma safe_to_copy_heap_implies_safe_to_copy: forall g h,
+    graph_heap_compatible g h ->
+    ti_size_spec h ->
+    safe_to_copy_heap g h ->
+    safe_to_copy g.
+Proof.
+  intros g h Hghc Hsize Hsafe.
+  unfold safe_to_copy, safe_to_copy_heap in *. intros n Hhas.
+  specialize (Hsafe n Hhas).
+  unfold safe_to_copy_gen, safe_to_copy_gen_heap in *.
+  assert (Hhas_prev: graph_has_gen g n) by (unfold graph_has_gen in *; lia).
+  rewrite <- (ti_size_gen _ _ _ Hghc Hhas_prev Hsize).
+  rewrite <- (ti_size_gen _ _ _ Hghc Hhas Hsize).
+  unfold rest_gen_size in Hsafe.
+  destruct (gt_gs_compatible _ _ Hghc _ Hhas) as [_ [_ Hused]].
+  fold (graph_gen_size g (S n)) in Hused.
+  pose proof (available_leq_total (nth_space h (S n))).
+  unfold total_size in Hsafe |- *.
+  lia.
+Qed.
+
 Lemma stc_stcte_O_iff: forall g, safe_to_copy g <-> safe_to_copy_to_except g O.
 Proof.
   intros. unfold safe_to_copy, safe_to_copy_to_except. split; intros.
