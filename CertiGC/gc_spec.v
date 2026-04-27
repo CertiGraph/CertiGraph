@@ -374,7 +374,6 @@ Definition do_generation_spec :=
           super_compatible g h (frames2rootpairs fr) roots outlier;
           remset_compatible g outlier from rmst rh h;
           do_generation_condition g h from to;
-          safe_to_copy_to_except_heap g h from;
           from <> to)
     PARAMS (space_address hp from;
            space_address hp to;

@@ -305,8 +305,7 @@ Proof.
   start_function.
   rename H0 into Hremset.
   rename H1 into H0.
-  rename H2 into Hstcteh.
-  rename H3 into H1.
+  rename H2 into H1.
   pose proof H. pose proof H0. destruct H2 as [? _]. destruct H3 as [? [? [? _]]].
   assert (generation_space_compatible
             g (from, nth_gen g from, nth_space h from)) by
