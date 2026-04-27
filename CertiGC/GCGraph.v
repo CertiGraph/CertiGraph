@@ -4249,6 +4249,21 @@ Proof.
   now rewrite <- Z.add_sub_assoc, Z.sub_diag, Z.add_0_r.
 Qed.
 
+Lemma svfl_closure_has_v: forall from to v l g g',
+    graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
+    forall x, closure_has_v g x -> closure_has_v g' x.
+Proof.
+  do 4 intro. revert from to v.
+  induction l; intros; inversion H0; subst.
+  - assumption.
+  - assert (graph_has_gen g2 to) by
+        (rewrite <- (fr_graph_has_gen _ _ _ _ _ _ H H4); assumption).
+    apply (IHl from to v g2 g' H2 H7 x).
+    eapply (fr_closure_has_v 0 from to
+              (interior2forward (InteriorVertexPos v (Z.of_nat a)) g) g g2);
+      eauto.
+Qed.
+
 Lemma svfl_vertex_address: forall from to v l g g',
     graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
     forall x, closure_has_v g x -> vertex_address g x = vertex_address g' x.
@@ -5362,6 +5377,51 @@ Proof.
     + eapply svfl_raw_projection; eauto.
     + rewrite <- svfl_graph_has_gen; eauto.
     + eapply svfl_graph_has_v; eauto.
+Qed.
+
+Lemma svwl_closure_has_v: forall from to l g g',
+    graph_has_gen g to -> scan_vertex_while_loop from to l g g' ->
+    forall x, closure_has_v g x -> closure_has_v g' x.
+Proof.
+  do 3 intro. induction l; intros; inversion H0; subst.
+  - assumption.
+  - eapply IHl; eauto.
+  - assert (graph_has_gen g2 to) by
+        (rewrite <- (svfl_graph_has_gen _ _ _ _ _ _ H H6); assumption).
+    apply (IHl g2 g' H2 H9 x).
+    eapply (svfl_closure_has_v from to (to, a)
+              (nat_inc_list
+                 (Datatypes.length (raw_fields (graph_model.vlabel g (to, a)))))
+              g g2); eauto.
+Qed.
+
+Lemma svwl_vertex_address: forall from to l g g',
+    graph_has_gen g to -> scan_vertex_while_loop from to l g g' ->
+    forall x, closure_has_v g x -> vertex_address g x = vertex_address g' x.
+Proof.
+  do 3 intro. induction l; intros; inversion H0; subst.
+  - reflexivity.
+  - eapply IHl; eauto.
+  - assert (graph_has_gen g2 to) by
+        (rewrite <- (svfl_graph_has_gen _ _ _ _ _ _ H H6); assumption).
+    assert (closure_has_v g2 x) by
+        (eapply (svfl_closure_has_v from to (to, a)
+                   (nat_inc_list
+                      (Datatypes.length (raw_fields (graph_model.vlabel g (to, a)))))
+                   g g2); eauto).
+    specialize (IHl g2 g' H2 H9 x H3). rewrite <- IHl.
+    eapply (svfl_vertex_address from to (to, a)
+              (nat_inc_list
+                 (Datatypes.length (raw_fields (graph_model.vlabel g (to, a)))))
+              g g2); eauto.
+Qed.
+
+Lemma do_scan_relation_vertex_address: forall from to idx g g',
+    graph_has_gen g to -> do_scan_relation from to idx g g' ->
+    forall x, closure_has_v g x -> vertex_address g x = vertex_address g' x.
+Proof.
+  intros from to idx g g' Hto [n [Hscan _]] x Hx.
+  eapply svwl_vertex_address; eauto.
 Qed.
 
 Lemma svwl_gen2gen_no_edge: forall from to l g1 g2,
@@ -9487,6 +9547,26 @@ Proof.
   - apply (svwl_raw_projection A proj from to
              (seq (number_of_vertices (nth_gen g to)) n) g1 g2
              Hto1 Hscan v Hv1 Hnotfrom).
+Qed.
+
+Lemma do_generation_relation_vertex_address:
+  forall from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h' x,
+    graph_has_gen g_rem to ->
+    do_generation_relation from to roots roots' g h rh rmst
+      g_rem h_rem rh' rmst' g' h' ->
+    closure_has_v g_rem x ->
+    vertex_address g_rem x = vertex_address g' x.
+Proof.
+  intros from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h' x
+         Hto Hrel Hx.
+  destruct Hrel as [[g1 [g2 [Hfrg [Hroots [Hscan Hreset]]]]] _].
+  subst g'. rewrite vertex_address_reset.
+  transitivity (vertex_address g1 x).
+  - eapply frr_vertex_address; eauto.
+  - eapply do_scan_relation_vertex_address.
+    + erewrite <- frr_graph_has_gen; eauto.
+    + exact Hscan.
+    + eapply frr_closure_has_v; eauto.
 Qed.
 
 Lemma do_generation_relation_remset_graph_outlier_compatible:
