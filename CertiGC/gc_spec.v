@@ -597,25 +597,32 @@ Definition garbage_collect_spec :=
   DECLARE _garbage_collect
   WITH rsh: share, sh: share, gv: globals, ti: val,
        g: LGraph, t_info: thread_info,
-       roots : roots_t, outlier: outlier_t
+       roots : roots_t, outlier: outlier_t,
+       rh: remset_heap, rmst: remset
   PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
           super_compatible g (ti_heap t_info).(pt_heap) (frames2rootpairs (ti_frames t_info)) roots outlier;
           garbage_collect_condition g (ti_heap t_info).(pt_heap);
-          safe_to_copy g)
+          safe_to_copy g;
+          safe_to_copy_heap g (ti_heap t_info).(pt_heap);
+          remset_compatible g outlier O rmst rh (ti_heap t_info).(pt_heap))
     PARAMS (ti)
     GLOBALS (gv)
     SEP (mem_mgr gv;
          all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g;
+         heap_remset_rep g (ti_heap t_info).(pt_heap) rh;
+         remset_rep sh g rmst;
          before_gc_thread_info_rep sh t_info ti)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
+    EX rh': remset_heap, EX rmst': remset,
     PROP (super_compatible g' (ti_heap t_info').(pt_heap) (frames2rootpairs (ti_frames t_info')) roots' outlier;
           garbage_collect_relation roots roots' g g';
           garbage_collect_condition g' (ti_heap t_info').(pt_heap);
           safe_to_copy g';
+          safe_to_copy_heap g' (ti_heap t_info').(pt_heap);
           frame_shells_eq (ti_frames t_info) (ti_frames t_info');
           Ptrofs.unsigned (ti_nalloc t_info) <=
                  available_space (heap_head (ti_heap t_info').(pt_heap))
@@ -625,6 +632,8 @@ Definition garbage_collect_spec :=
          all_string_constants rsh gv;
          outlier_rep outlier;
          graph_rep g';
+         heap_remset_rep g' (ti_heap t_info').(pt_heap) rh';
+         remset_rep sh g' rmst';
          before_gc_thread_info_rep sh t_info' ti).
 
 (*

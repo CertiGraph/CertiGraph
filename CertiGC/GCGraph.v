@@ -4851,6 +4851,9 @@ Definition gen_v_num (g: LGraph) (gen: nat): nat := number_of_vertices (nth_gen 
 Definition safe_to_copy_gen g from to: Prop :=
   nth_gen_size from <= nth_gen_size to - graph_gen_size g to.
 
+Definition safe_to_copy_gen_heap h from to: Prop :=
+  total_size h from <= rest_gen_size h to.
+
 Lemma ngs_range: forall i,
     0 <= i < MAX_SPACES -> 0 <= nth_gen_size (Z.to_nat i) <= MAX_SPACE_SIZE.
 Proof.
@@ -5673,9 +5676,24 @@ Definition safe_to_copy_to_except (g: LGraph) (gen: nat): Prop :=
 Definition safe_to_copy (g: LGraph): Prop :=
   forall n, graph_has_gen g (S n) -> safe_to_copy_gen g n (S n).
 
+Definition safe_to_copy_to_except_heap (g: LGraph) (h: part_heap) (gen: nat): Prop :=
+  forall n, n <> O -> n <> gen -> graph_has_gen g n ->
+            safe_to_copy_gen_heap h (pred n) n.
+
+Definition safe_to_copy_heap (g: LGraph) (h: part_heap): Prop :=
+  forall n, graph_has_gen g (S n) -> safe_to_copy_gen_heap h n (S n).
+
 Lemma stc_stcte_O_iff: forall g, safe_to_copy g <-> safe_to_copy_to_except g O.
 Proof.
   intros. unfold safe_to_copy, safe_to_copy_to_except. split; intros.
+  - destruct n. 1: contradiction. simpl. apply H; assumption.
+  - specialize (H (S n)). simpl in H. apply H; auto.
+Qed.
+
+Lemma stch_stcteh_O_iff: forall g h,
+    safe_to_copy_heap g h <-> safe_to_copy_to_except_heap g h O.
+Proof.
+  intros. unfold safe_to_copy_heap, safe_to_copy_to_except_heap. split; intros.
   - destruct n. 1: contradiction. simpl. apply H; assumption.
   - specialize (H (S n)). simpl in H. apply H; auto.
 Qed.
@@ -5924,6 +5942,40 @@ Proof.
     apply nth_gen_size_le_S.
 Qed.
 
+Lemma stcteh_add: forall g h gi sp from new (Hs: 0 <= new < MAX_SPACES),
+    Z.to_nat new = S from ->
+    graph_heap_compatible g h ->
+    graph_has_gen g from ->
+    ~ graph_has_gen g (S from) ->
+    ti_size_spec h ->
+    total_space sp = nth_gen_size (S from) ->
+    available_space sp = total_space sp ->
+    used_space sp = 0 ->
+    safe_to_copy_to_except_heap g h from ->
+    safe_to_copy_to_except_heap (lgraph_add_new_gen g gi)
+                                (add_new_space h sp new Hs) from.
+Proof.
+  intros g h gi sp from new Hs Hnew_nat Hghc Hfrom Hnot_new Hsize
+         Hsp_total Hsp_available Hsp_used Hsafe.
+  unfold safe_to_copy_to_except_heap in *. intros n Hn0 Hnfrom Hhas.
+  rewrite ang_graph_has_gen in Hhas. destruct Hhas as [Hhas_old | Hhas_new].
+  - assert (Hn_lt: (n < S from)%nat) by (unfold graph_has_gen in *; lia).
+    specialize (Hsafe n Hn0 Hnfrom Hhas_old).
+    unfold safe_to_copy_gen_heap in *.
+    unfold total_size, rest_gen_size, available_size in *.
+    rewrite !ans_nth_old; try exact Hsafe; rewrite Hnew_nat; lia.
+  - assert (Hlen: length (g_gen (glabel g)) = S from)
+      by (unfold graph_has_gen in *; lia).
+    subst n. rewrite Hlen. simpl.
+    unfold safe_to_copy_gen_heap, total_size, rest_gen_size, available_size.
+    rewrite ans_nth_old by (rewrite Hnew_nat; lia).
+    rewrite <- Hnew_nat. rewrite ans_nth_new.
+    fold (total_size h from).
+    rewrite (ti_size_gen _ _ _ Hghc Hfrom Hsize).
+    rewrite Hsp_available, Hsp_total, Hsp_used.
+    apply nth_gen_size_le_S.
+Qed.
+
 Lemma graph_unmarked_add: forall g gi,
     number_of_vertices gi = O -> graph_unmarked g ->
     graph_unmarked (lgraph_add_new_gen g gi).
@@ -5975,33 +6027,46 @@ Proof.
   cut (two_p (16 + Z.of_nat i) > 0); [|apply two_p_gt_ZERO]; lia.
 Qed.
 
-(* TODO *)
-(*
 Lemma gc_cond_implies_do_gen_cons: forall g h i,
-    safe_to_copy_to_except g i ->
+    safe_to_copy_to_except_heap g h i ->
     graph_has_gen g (S i) ->
     graph_heap_compatible g h ->
     garbage_collect_condition g h ->
     do_generation_condition g h i (S i).
 Proof.
-  intros. destruct H2 as [? [? [? ?]]].
-  assert (graph_has_gen g i) by (unfold graph_has_gen in H0 |-*; lia).
-  split; [|split; [|split; [|split; [|split; [|split(*; [ | split]*)]]]]]; auto.
-  - unfold safe_to_copy_to_except, safe_to_copy_gen in H. red.
-    unfold rest_gen_size. specialize (H (S i)). simpl in H.
-    destruct (gt_gs_compatible _ _ H1 _ H0) as [_ [_ ?]].
-    destruct (gt_gs_compatible _ _ H1 _ H6) as [_ [_ ?]].
-    fold (graph_gen_size g (S i)) in H7. fold (graph_gen_size g i) in H8.
-    rewrite <- H7. fold (available_size h (S i)).
-    destruct (used_leq_available (nth_space h i)) as [_ ?].
-    fold (available_size h i) in H9. rewrite <- H8 in H9.
-    transitivity (available_size h i). 1: assumption.
-    rewrite (ti_size_gen _ _ _ H1 H6 H5), (ti_size_gen _ _ _ H1 H0 H5).
-    apply H; [lia.. | assumption].
-  - apply graph_unmarked_copy_compatible; assumption.
-  - rewrite (ti_size_gen _ _ _ H1 H0 H5). apply ngs_0_lt.
-  - rewrite graph_gen_unmarked_iff in H2. apply H2.
-Qed. *)
+  intros g h i Hstch HghS Hghc Hgcc.
+  destruct Hgcc as [Hunmarked [Hnbe [Hndd Hsize]]].
+  assert (Hghi: graph_has_gen g i) by (unfold graph_has_gen in *; lia).
+  assert (Hheap: safe_to_copy_gen_heap h i (S i)). {
+    unfold safe_to_copy_to_except_heap in Hstch.
+    specialize (Hstch (S i)). simpl in Hstch.
+    apply Hstch; auto; lia.
+  }
+  unfold do_generation_condition.
+  split.
+  - unfold enough_space_enhanced, general_enough_space_to_copy.
+    unfold safe_to_copy_gen_heap in Hheap.
+    transitivity (total_size h i); [|exact Hheap].
+    unfold remset_gen_size.
+    destruct (gt_gs_compatible _ _ Hghc _ Hghi) as [_ [_ Hused_from]].
+    fold (graph_gen_size g i) in Hused_from.
+    pose proof (unmarked_gen_size_le g i) as Hunmarked_le.
+    pose proof (used_leq_available (nth_space h i)) as [_ Hused_available].
+    fold (available_size h i) in Hused_available.
+    rewrite <- Hused_from in Hused_available.
+    lia.
+  - split; [exact Hghi|].
+    split; [exact HghS|].
+    split; [apply graph_unmarked_copy_compatible; assumption|].
+    split; [exact Hndd|].
+    split.
+    + unfold safe_to_copy_gen_heap in Hheap. unfold rest_gen_size in Hheap.
+      pose proof (ti_size_gt_0 _ _ _ Hghc Hghi Hsize) as Hfrom_pos.
+      pose proof (used_leq_available (nth_space h (S i))) as [Hused_nonneg _].
+      unfold available_size. lia.
+    + split; [|exact Hsize].
+      rewrite graph_gen_unmarked_iff in Hunmarked. apply Hunmarked.
+Qed.
 
 Lemma fr_O_nth_gen_unchanged: forall from to p g1 g2,
     graph_has_gen g1 to -> forward_relation from to O p g1 g2 ->
@@ -8861,6 +8926,39 @@ Definition do_generation_relation (from to: nat)
     do_scan_relation from to (number_of_vertices (nth_gen g to)) g1 g2 /\
     g' = reset_graph from g2.
 
+Lemma forward_remset_gh_graph_has_gen:
+  forall from to g h rh rmst g' h' rh' rmst',
+    graph_has_gen g to ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    forall gen, graph_has_gen g gen <-> graph_has_gen g' gen.
+Proof.
+  intros from to g h rh rmst g' h' rh' rmst' Hto Hfrg.
+  unfold forward_remset_gh in Hfrg.
+  eapply forward_remset_item_fold_ghg; eassumption.
+Qed.
+
+Lemma do_generation_relation_graph_has_gen:
+  forall from to roots roots' g h rh rmst rg rhh rh' rmst' g',
+    graph_has_gen g to ->
+    do_generation_relation from to roots roots' g h rh rmst
+      rg rhh rh' rmst' g' ->
+    forall gen, graph_has_gen g gen <-> graph_has_gen g' gen.
+Proof.
+  intros from to roots roots' g h rh rmst rg rhh rh' rmst' g' Hto Hrel gen.
+  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  assert (Hrg_to: graph_has_gen rg to) by
+      (rewrite <- (forward_remset_gh_graph_has_gen from to g h rh rmst
+                     rg rhh rh' rmst' Hto Hfrg); exact Hto).
+  transitivity (graph_has_gen rg gen).
+  - eapply forward_remset_gh_graph_has_gen; eauto.
+  - transitivity (graph_has_gen g1 gen).
+    + eapply frr_graph_has_gen; eauto.
+    + transitivity (graph_has_gen g2 gen).
+      * destruct Hscan as [n [? ?]]. eapply svwl_graph_has_gen; eauto.
+        rewrite <- frr_graph_has_gen; eauto.
+      * subst g'. rewrite graph_has_gen_reset. reflexivity.
+Qed.
+
 (* Transitional graph-only relation used by the old mathematical
    correctness lemmas.  It intentionally reflects the pre-remset proof
    structure until those lemmas are refactored. *)
@@ -9020,6 +9118,31 @@ Record heap: Type := {
     heap_compat: remset_heap_and_heap_compatible rs_heap pt_heap;
   }.
 
+Definition compatible_remset_space (sp: space): remset_space :=
+  if Val.eq (space_start sp) nullval
+  then []
+  else repeat (RemSetExterior Vundef) (Z.to_nat (total_space sp - available_space sp)).
+
+Definition compatible_remset_heap (h: part_heap): remset_heap :=
+  map compatible_remset_space (spaces h).
+
+Lemma compatible_remset_heap_compatible: forall h,
+    remset_heap_and_heap_compatible (compatible_remset_heap h) h.
+Proof.
+  intros h. unfold remset_heap_and_heap_compatible, compatible_remset_heap.
+  rewrite Forall2_forall_Znth. split.
+  - rewrite Zlength_map. reflexivity.
+  - intros i Hi. rewrite Zlength_map in Hi. rewrite Znth_map by assumption.
+    unfold compatible_remset_space, remset_space_size_compatible.
+    destruct (Val.eq (space_start (Znth i (spaces h))) nullval); auto.
+    rewrite Zlength_repeat.
+    + reflexivity.
+    + pose proof (available_leq_total (Znth i (spaces h))). lia.
+Qed.
+
+Definition build_compatible_heap (h: part_heap): heap :=
+  Build_heap h (compatible_remset_heap h) (compatible_remset_heap_compatible h).
+
 Record thread_info: Type :=
   {
     ti_heap_p: val;
@@ -9080,42 +9203,63 @@ Definition roots_frames_compatible (roots: roots_t) t_info: Prop :=
   Zlength roots = Zlength (frames2rootpairs (ti_frames t_info)).
 
 Lemma add_new_space_rhhc: forall hp sp i (Hs: 0 <= i < MAX_SPACES),
-    remset_heap_and_heap_compatible (rs_heap hp) (add_new_space (pt_heap hp) sp i Hs).
+    available_space sp = total_space sp ->
+    remset_heap_and_heap_compatible
+      (upd_Znth i (rs_heap hp) []) (add_new_space (pt_heap hp) sp i Hs).
 Proof.
-  intros hp sp i Hs. pose proof heap_compat hp as Hrhhc.
+  intros hp sp i Hs Hfresh. pose proof heap_compat hp as Hrhhc.
   unfold remset_heap_and_heap_compatible in *. rewrite Forall2_forall_Znth in *.
   destruct Hrhhc as [Hlen Hrssc]. unfold add_new_space. simpl.
   pose proof spaces_size (pt_heap hp) as Hss. split.
-  -  rewrite upd_heap_Zlength; auto. lia.
+  - rewrite upd_Znth_Zlength by (rewrite Hlen, spaces_size; lia).
+    rewrite upd_heap_Zlength by exact Hs.
+    rewrite Hlen, spaces_size. reflexivity.
   - intros j Hj. destruct (Z.eq_dec j i).
-    + subst j. rewrite upd_Znth_same by lia. admit.
-    + rewrite upd_Znth_diff by lia. apply Hrssc. assumption.
-Abort.
+    + subst j. rewrite !upd_Znth_same by lia.
+      unfold remset_space_size_compatible. destruct (Val.eq (space_start sp) nullval);
+        rewrite Zlength_nil; lia.
+    + assert (Hj_rh: 0 <= j < Zlength (rs_heap hp)). {
+        rewrite upd_Znth_Zlength in Hj by (rewrite Hlen, Hss; lia).
+        exact Hj.
+      }
+      assert (Hj_sp: 0 <= j < Zlength (spaces (pt_heap hp))) by
+        (rewrite <- Hlen; exact Hj_rh).
+      rewrite (upd_Znth_diff j i (rs_heap hp) []) by
+        (try exact Hj_rh; try (rewrite Hlen, Hss; lia); lia).
+      rewrite (upd_Znth_diff j i (spaces (pt_heap hp)) sp) by
+        (try exact Hj_sp; try (rewrite Hss; lia); lia).
+      apply Hrssc. exact Hj_rh.
+Qed.
 
 
-Definition add_new_space_in_heap (hp: heap) (sp: space) i (Hs: 0 <= i < MAX_SPACES): heap.
-Proof.
-  refine (Build_heap (add_new_space (pt_heap hp) sp i Hs) (rs_heap hp) _).
-Abort.
+Definition add_new_space_in_heap (hp: heap) (sp: space) i
+           (Hs: 0 <= i < MAX_SPACES)
+           (Hfresh: available_space sp = total_space sp): heap :=
+  Build_heap (add_new_space (pt_heap hp) sp i Hs)
+             (upd_Znth i (rs_heap hp) [])
+             (add_new_space_rhhc hp sp i Hs Hfresh).
 
-(* TODO
 Definition ti_add_new_space (ti: thread_info) (sp: space) i
-           (Hs: 0 <= i < MAX_SPACES): thread_info :=
-  Build_thread_info (ti_heap_p ti) (add_new_space (pt_heap (ti_heap ti)) sp i Hs)
+           (Hs: 0 <= i < MAX_SPACES)
+           (Hfresh: available_space sp = total_space sp): thread_info :=
+  Build_thread_info (ti_heap_p ti)
+                    (Build_heap (add_new_space (pt_heap (ti_heap ti)) sp i Hs)
+                                (upd_Znth i (rs_heap (ti_heap ti)) [])
+                                (add_new_space_rhhc (ti_heap ti) sp i Hs Hfresh))
                     (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti).
 
-Lemma super_compatible_add: forall g ti gi sp i (Hs: 0 <= i < MAX_SPACES) roots out,
+Lemma super_compatible_add: forall g h gi sp i (Hs: 0 <= i < MAX_SPACES) rootpairs roots out,
     ~ graph_has_gen g (Z.to_nat i) -> graph_has_gen g (Z.to_nat (i - 1)) ->
     (forall (gr: LGraph), generation_space_compatible gr (Z.to_nat i, gi, sp)) ->
     number_of_vertices gi = O ->
-    super_compatible g (ti_heap ti) (frames2rootpairs (ti_frames ti)) roots out ->
-    super_compatible (lgraph_add_new_gen g gi) (add_new_space (ti_heap ti) sp i Hs)
-                                     (frames2rootpairs (ti_frames ti)) roots out.
+    super_compatible g h rootpairs roots out ->
+    super_compatible (lgraph_add_new_gen g gi) (add_new_space h sp i Hs)
+                                     rootpairs roots out.
 Proof.
-  intros. destruct H3 as [? [? [? ?]]]. split; [|split; [|split]].
+  intros g h gi sp i Hs rootpairs roots out Hng Hprev Hcomp Hnv Hsc.
+  destruct Hsc as [Hghc [Hrpc [Hrc Hoc]]]. split; [|split; [|split]].
   - apply gti_compatible_add; assumption.
-  - apply fta_compatible_add; [|destruct H5]; assumption.
+  - apply fta_compatible_add; [exact Hrpc | destruct Hrc; assumption].
   - apply ang_roots_compatible; assumption.
   - apply ang_outlier_compatible; assumption.
 Qed.
-*)
