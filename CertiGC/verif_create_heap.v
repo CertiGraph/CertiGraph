@@ -34,38 +34,6 @@ Proof.
   intros. pose proof (data_at_singleton_array_eq sh space_type). apply H. reflexivity.
 Qed.
 
-Lemma repeat_cons {t: Type}: forall i (v: t),
-    1 <= i -> repeat v (Z.to_nat i) = v :: repeat v (Z.to_nat (i - 1)).
-Proof.
-  intros. replace (Z.to_nat i) with (S (Z.to_nat (i - 1))).
-  - simpl. auto.
-  - rewrite <- Z2Nat.inj_succ by lia. f_equal. lia.
-Qed.
-
-Lemma Znth_repeat_app {X: Type} {IX: Inhabitant X}: forall i (vh v0 vn: X) l,
-    1 <= i -> Znth i (vh :: repeat v0 (Z.to_nat (i - 1)) ++ vn :: l) = vn.
-Proof.
-  intros. rewrite Znth_pos_cons by lia.
-  rewrite app_Znth2 by (rewrite Zlength_repeat; lia).
-  rewrite Zlength_repeat by lia.
-  replace (i - 1 - (i - 1)) with 0 by lia. rewrite Znth_0_cons. reflexivity.
-Qed.
-
-Lemma upd_Znth_repeat_app {X: Type} {IX: Inhabitant X}:
-  forall i (vh v0 v1 v2: X) l,
-    1 <= i -> upd_Znth i (vh :: repeat v0 (Z.to_nat (i - 1)) ++ v1 :: l) v2 =
-              vh :: repeat v0 (Z.to_nat (i - 1)) ++ v2 :: l.
-Proof.
-  intros. rewrite app_comm_cons, upd_Znth_app2.
-  - rewrite app_comm_cons. f_equal.
-    rewrite Zlength_cons, Zlength_repeat by lia.
-    replace (i - Z.succ (i - 1)) with 0 by lia.
-    rewrite upd_Znth0. f_equal.
-  - rewrite Zlength_cons, !Zlength_repeat by lia.
-    replace (Z.succ (i - 1)) with i by lia.
-    pose proof (Zlength_nonneg (v1 :: l)). lia.
-Qed.
-
 Lemma body_create_heap: semax_body Vprog Gprog f_create_heap create_heap_spec.
 Proof.
   start_function.
@@ -119,19 +87,20 @@ Proof.
       * entailer!!.
       * Opaque Znth.
         forward; [apply prop_right; rep_lia | ].
-        rewrite (repeat_cons (MAX_SPACES - i)) at 2 by rep_lia.
-        rewrite Znth_repeat_app by apply (proj1 H2). rewrite Heqvn at 2.
-        rewrite (repeat_cons (MAX_SPACES - i)) by lia.
-        rewrite upd_Znth_repeat_app by apply (proj1 H2).
+        rewrite (List_ext.repeat_cons (MAX_SPACES - i)) at 2 by rep_lia.
+        rewrite List_ext.Znth_repeat_app by apply (proj1 H2).
+        rewrite Heqvn at 2.
+        rewrite (List_ext.repeat_cons (MAX_SPACES - i)) by lia.
+        rewrite List_ext.upd_Znth_repeat_app by apply (proj1 H2).
         forward; [apply prop_right; rep_lia | ].
-        rewrite Znth_repeat_app by apply (proj1 H2).
-        rewrite upd_Znth_repeat_app by apply (proj1 H2).
+        rewrite List_ext.Znth_repeat_app by apply (proj1 H2).
+        rewrite List_ext.upd_Znth_repeat_app by apply (proj1 H2).
         forward; [apply prop_right; rep_lia | ].
-        rewrite Znth_repeat_app by apply (proj1 H2).
-        rewrite upd_Znth_repeat_app by apply (proj1 H2).
+        rewrite List_ext.Znth_repeat_app by apply (proj1 H2).
+        rewrite List_ext.upd_Znth_repeat_app by apply (proj1 H2).
         forward; [apply prop_right; rep_lia | ].
-        rewrite Znth_repeat_app by apply (proj1 H2).
-        rewrite upd_Znth_repeat_app by apply (proj1 H2).
+        rewrite List_ext.Znth_repeat_app by apply (proj1 H2).
+        rewrite List_ext.upd_Znth_repeat_app by apply (proj1 H2).
         simpl fst; simpl snd.
         replace (i + 1 - 1) with i by lia. rewrite !Int.signed_repr by rep_lia.
         change (Vlong _, _) with v0. replace (MAX_SPACES - i - 1) with (MAX_SPACES - (i + 1)) by lia.
