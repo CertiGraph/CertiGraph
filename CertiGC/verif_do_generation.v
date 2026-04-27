@@ -14,25 +14,6 @@ Require Import CertiGraph.msl_ext.ramification_lemmas.
 
 Local Open Scope logic.
 
-Lemma fri_roots_graph_compatible:
-  forall from to g h rh rmst item g' h' rh' rmst' roots,
-    graph_has_gen g to ->
-    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
-    roots_graph_compatible roots g ->
-    roots_graph_compatible roots g'.
-Proof.
-  intros from to g h rh rmst item g' h' rh' rmst' roots Hto Hfri Hrgc.
-  unfold forward_remset_item in Hfri.
-  destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hgen.
-  - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
-      as [newg newh] eqn:Hfgh.
-    simpl in Hfri. inversion Hfri; subst; clear Hfri.
-    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
-    eapply fr_roots_graph_compatible; eauto.
-  - now inversion Hfri.
-Qed.
-
 Lemma fri_rootpairs_compatible:
   forall from to g h rh rmst item g' h' rh' rmst' rootpairs roots,
     graph_has_gen g to ->
@@ -95,56 +76,6 @@ Proof.
   - now inversion Hfri.
 Qed.
 
-Lemma fri_gen_unmarked:
-  forall from to g h rh rmst item g' h' rh' rmst' gen,
-    graph_has_gen g to ->
-    from <> gen ->
-    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
-    gen_unmarked g gen ->
-    gen_unmarked g' gen.
-Proof.
-  intros from to g h rh rmst item g' h' rh' rmst' gen Hto Hneq Hfri Hunmk.
-  unfold forward_remset_item in Hfri.
-  destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hgen.
-  - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
-      as [newg newh] eqn:Hfgh.
-    simpl in Hfri. inversion Hfri; subst; clear Hfri.
-    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
-    eapply fr_gen_unmarked; eauto.
-  - now inversion Hfri.
-Qed.
-
-Lemma forward_remset_item_fold_roots_graph_compatible:
-  forall from to g h rh rmst r g' h' rh' rmst' roots,
-    from <> to ->
-    graph_has_gen g to ->
-    copy_compatible g ->
-    remset_nodup rmst ->
-    remset_graph_compatible g rmst ->
-    remset_and_remset_space_compatible g from rmst r ->
-    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
-    roots_graph_compatible roots g ->
-    roots_graph_compatible roots g'.
-Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' roots Hneq Hto Hcc Hrnd Hrc Hrrsc Hfri Hrgc;
-    simpl in Hfri.
-  - now inversion Hfri.
-  - hnf in Hrrsc. rewrite Forall_cons_iff in Hrrsc. destruct Hrrsc as [Hrica Hricr].
-    destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfri. symmetry in Hfri2.
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' roots); eauto.
-    + eapply forward_remset_item_ghg with (g := g); eassumption.
-    + eapply fri_copy_compatible; eauto.
-    + eapply fri_remset_nodup; eassumption.
-    + eapply fri_remset_graph_compatible; eauto.
-    + hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
-    + eapply (fri_roots_graph_compatible from to g h rh rmst a g2 h2 rh2 rmst2 roots); eauto.
-Qed.
-
 Lemma forward_remset_item_fold_closure_has_v:
   forall from to g h rh rmst r g' h' rh' rmst' x,
     graph_has_gen g to ->
@@ -185,26 +116,6 @@ Proof.
     eapply (fri_vertex_address from to g h rh rmst a g2 h2 rh2 rmst2 x); eauto.
 Qed.
 
-Lemma forward_remset_item_fold_gen_unmarked:
-  forall from to g h rh rmst r g' h' rh' rmst' gen,
-    graph_has_gen g to ->
-    from <> gen ->
-    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
-    gen_unmarked g gen ->
-    gen_unmarked g' gen.
-Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' gen Hto Hneq Hfold Hunmk; simpl in Hfold.
-  - now inversion Hfold.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfold. symmetry in Hfri2.
-    assert (Hto2: graph_has_gen g2 to).
-    { rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to). exact Hto. }
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen Hto2 Hneq Hfold).
-    eapply (fri_gen_unmarked from to g h rh rmst a g2 h2 rh2 rmst2 gen); eauto.
-Qed.
-
 Lemma forward_remset_item_fold_rootpairs_compatible:
   forall from to g h rh rmst r g' h' rh' rmst' rootpairs roots,
     from <> to ->
@@ -233,7 +144,8 @@ Proof.
     + eapply fri_remset_graph_compatible; eauto.
     + hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
       eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
-    + eapply (fri_roots_graph_compatible from to g h rh rmst a g2 h2 rh2 rmst2 roots); eauto.
+    + eapply (forward_remset_item_roots_graph_compatible_pres
+                from to g h rh rmst a g2 h2 rh2 rmst2 roots); eauto.
     + eapply (fri_rootpairs_compatible from to g h rh rmst a g2 h2 rh2 rmst2 rootpairs roots); eauto.
 Qed.
 
@@ -497,7 +409,7 @@ Proof.
         * exact Hfrg0'.
       + split.
         * split; [exact Hrooc|].
-          eapply (forward_remset_item_fold_roots_graph_compatible
+          eapply (forward_remset_item_fold_roots_graph_compatible_pres
                     from to g h rh rmst (Znth (Z.of_nat from) rh)
                     g0 h0 rh0 rmst0 roots).
           -- exact H1.
@@ -606,7 +518,7 @@ Proof.
     eapply frr_closure_has_v in H27g0; eauto.
     destruct H27g0 as [H27g0 H28]. simpl in H27g0, H28.
     assert (Hunk0 : gen_unmarked g0 to). {
-      eapply (forward_remset_item_fold_gen_unmarked
+      eapply (forward_remset_item_fold_gen_unmarked_pres
                 from to g h rh rmst (Znth (Z.of_nat from) rh)
                 g0 h0 rh0 rmst0 to); eauto.
     }
