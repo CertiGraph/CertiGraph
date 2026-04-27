@@ -3821,6 +3821,25 @@ Proof.
   1: reflexivity. apply graph_has_v_not_eq; assumption.
 Qed.
 
+Lemma lmc_raw_projection: forall (A: Type) (proj: raw_vertex_block -> A)
+                                 g old new x,
+    x <> old -> proj (vlabel g x) =
+                proj (vlabel (lgraph_mark_copied g old new) x).
+Proof.
+  intros. rewrite lmc_vlabel_not_eq by assumption. reflexivity.
+Qed.
+
+Lemma lcv_raw_projection: forall (A: Type) (proj: raw_vertex_block -> A)
+                                 g v to x,
+    x <> v -> graph_has_gen g to -> graph_has_v g x ->
+    proj (vlabel g x) = proj (vlabel (lgraph_copy_v g v to) x).
+Proof.
+  intros. unfold lgraph_copy_v.
+  rewrite <- lmc_raw_projection by assumption.
+  rewrite lacv_vlabel_old. 1: reflexivity.
+  apply graph_has_v_not_eq; assumption.
+Qed.
+
 Lemma lcv_mfv_Zlen_eq: forall g v v' to,
     graph_has_gen g to ->
     graph_has_v g v ->
@@ -3859,37 +3878,28 @@ Proof.
     + eapply fr_graph_has_v; eauto.
 Qed.
 
-Lemma lmc_raw_mark: forall g old new x,
-    x <> old -> raw_mark (vlabel g x) =
-                raw_mark (vlabel (lgraph_mark_copied g old new) x).
-Proof.
-  intros. destruct (V_EqDec x old).
-  - unfold equiv in e. contradiction.
-  - rewrite lmc_vlabel_not_eq; [reflexivity | assumption].
-Qed.
-
 Lemma lcv_raw_mark: forall g v to x,
     x <> v -> graph_has_gen g to -> graph_has_v g x ->
     raw_mark (vlabel g x) = raw_mark (vlabel (lgraph_copy_v g v to) x).
 Proof.
-  intros. unfold lgraph_copy_v. rewrite <- lmc_raw_mark by assumption.
-  rewrite lacv_vlabel_old. 1: reflexivity. apply graph_has_v_not_eq; assumption.
+  intros. apply lcv_raw_projection; assumption.
 Qed.
 
-Lemma fr_raw_mark: forall depth from to p g g',
+Lemma fr_raw_projection: forall (A: Type) (proj: raw_vertex_block -> A)
+                                depth from to p g g',
     graph_has_gen g to -> forward_relation from to depth p g g' ->
     forall v, graph_has_v g v -> vgeneration v <> from ->
-              raw_mark (vlabel g v) = raw_mark (vlabel g' v).
+              proj (vlabel g v) = proj (vlabel g' v).
 Proof.
   intros. remember (fun (g: LGraph) (v: VType) (x: nat) =>
                       graph_has_v g v /\ vgeneration v <> x) as Q.
   remember (fun (g1 g2: LGraph) v =>
-              raw_mark (vlabel g1 v) = raw_mark (vlabel g2 v)) as P.
+              proj (vlabel g1 v) = proj (vlabel g2 v)) as P.
   remember (fun (x1 x2: nat) => True) as R.
   pose proof (fr_general_prop depth from to p g g' _ Q P R). subst Q P R.
   apply H3; clear H3; intros; try assumption; try reflexivity.
   - rewrite H3. apply H4.
-  - destruct H4. rewrite <- lcv_raw_mark; [reflexivity | try assumption..].
+  - destruct H4. rewrite <- lcv_raw_projection; [reflexivity | try assumption..].
     destruct x, v0. simpl in *. intro. inversion H9. subst. contradiction.
   - destruct H5. split. 2: assumption.
     apply (fr_graph_has_v _ _ _ _ _ _ H3 H4 _ H5).
@@ -3897,22 +3907,19 @@ Proof.
   - split; assumption.
 Qed.
 
-
-Lemma lmc_raw_tag: forall g old new x,
-    x <> old -> raw_tag (vlabel g x) =
-                raw_tag (vlabel (lgraph_mark_copied g old new) x).
+Lemma fr_raw_mark: forall depth from to p g g',
+    graph_has_gen g to -> forward_relation from to depth p g g' ->
+    forall v, graph_has_v g v -> vgeneration v <> from ->
+              raw_mark (vlabel g v) = raw_mark (vlabel g' v).
 Proof.
-  intros. destruct (V_EqDec x old).
-  - unfold equiv in e. contradiction.
-  - rewrite lmc_vlabel_not_eq; [reflexivity | assumption].
+  intros. eapply (fr_raw_projection bool raw_mark); eauto.
 Qed.
 
 Lemma lcv_raw_tag: forall g v to x,
     x <> v -> graph_has_gen g to -> graph_has_v g x ->
     raw_tag (vlabel g x) = raw_tag (vlabel (lgraph_copy_v g v to) x).
 Proof.
-  intros. unfold lgraph_copy_v. rewrite <- lmc_raw_tag by assumption.
-  rewrite lacv_vlabel_old. 1: reflexivity. apply graph_has_v_not_eq; assumption.
+  intros. apply lcv_raw_projection; assumption.
 Qed.
 
 
@@ -3921,20 +3928,7 @@ Lemma fr_raw_tag: forall depth from to p g g',
     forall v, graph_has_v g v -> vgeneration v <> from ->
               raw_tag (vlabel g v) = raw_tag (vlabel g' v).
 Proof.
-  intros. remember (fun (g: LGraph) (v: VType) (x: nat) =>
-                      graph_has_v g v /\ vgeneration v <> x) as Q.
-  remember (fun (g1 g2: LGraph) v =>
-              raw_tag (vlabel g1 v) = raw_tag (vlabel g2 v)) as P.
-  remember (fun (x1 x2: nat) => True) as R.
-  pose proof (fr_general_prop depth from to p g g' _ Q P R). subst Q P R.
-  apply H3; clear H3; intros; try assumption; try reflexivity.
-  - rewrite H3. apply H4.
-  - destruct H4. rewrite <- lcv_raw_tag; [reflexivity | try assumption..].
-    destruct x, v0. simpl in *. intro. inversion H9. subst. contradiction.
-  - destruct H5. split. 2: assumption.
-    apply (fr_graph_has_v _ _ _ _ _ _ H3 H4 _ H5).
-  - destruct H4. split. 2: assumption. apply lcv_graph_has_v_old; assumption.
-  - split; assumption.
+  intros. eapply (fr_raw_projection Z raw_tag); eauto.
 Qed.
 
 Lemma fl_raw_mark: forall depth from to l g g',
@@ -4290,17 +4284,27 @@ Proof.
   eapply fr_raw_fields; eauto.
 Qed.
 
+Lemma svfl_raw_projection: forall (A: Type) (proj: raw_vertex_block -> A)
+                                  from to v l g g',
+    graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
+    forall x, graph_has_v g x -> vgeneration x <> from ->
+              proj (vlabel g x) = proj (vlabel g' x).
+Proof.
+  intros A proj from to v l. revert from to v.
+  induction l; intros; simpl; inversion H0; subst.
+  1: reflexivity. assert (graph_has_gen g2 to) by
+      (eapply fr_graph_has_gen in H5; [rewrite <- H5 |]; assumption).
+  assert (graph_has_v g2 x) by (eapply fr_graph_has_v in H5; eauto).
+  eapply (IHl from to _ g2) in H8; eauto. rewrite <- H8.
+  eapply fr_raw_projection; eauto.
+Qed.
+
 Lemma svfl_raw_mark: forall from to v l g g',
     graph_has_gen g to -> scan_vertex_for_loop from to v l g g' ->
     forall x, graph_has_v g x -> vgeneration x <> from ->
               raw_mark (vlabel g x) = raw_mark (vlabel g' x).
 Proof.
-  do 4 intro. revert from to v. induction l; intros; simpl; inversion H0; subst.
-  1: reflexivity. assert (graph_has_gen g2 to) by
-      (eapply fr_graph_has_gen in H5; [rewrite <- H5 |]; assumption).
-  assert (graph_has_v g2 x) by (eapply fr_graph_has_v in H5; eauto).
-  eapply (IHl from to _ g2) in H8; eauto. rewrite <- H8.
-  eapply fr_raw_mark; eauto.
+  intros. eapply (svfl_raw_projection bool raw_mark); eauto.
 Qed.
 
 Lemma svfl_raw_tag: forall from to v l g g',
@@ -4308,12 +4312,7 @@ Lemma svfl_raw_tag: forall from to v l g g',
     forall x, graph_has_v g x -> vgeneration x <> from ->
               raw_tag (vlabel g x) = raw_tag (vlabel g' x).
 Proof.
-  do 4 intro. revert from to v. induction l; intros; simpl; inversion H0; subst.
-  1: reflexivity. assert (graph_has_gen g2 to) by
-      (eapply fr_graph_has_gen in H5; [rewrite <- H5 |]; assumption).
-  assert (graph_has_v g2 x) by (eapply fr_graph_has_v in H5; eauto).
-  eapply (IHl from to _ g2) in H8; eauto. rewrite <- H8.
-  eapply fr_raw_tag; eauto.
+  intros. eapply (svfl_raw_projection Z raw_tag); eauto.
 Qed.
 
 Lemma svfl_add_tail: forall from to v l i g1 g2 g3,
@@ -4653,7 +4652,8 @@ Proof.
     assert (roots_graph_compatible roots' new_g) by
       (subst; subst new_g; apply lcv_roots_graph_compatible; assumption).
     assert (raw_mark (vlabel new_g (new_copied_v g to)) = false). {
-      subst new_g. unfold lgraph_copy_v. rewrite <- lmc_raw_mark.
+      subst new_g. unfold lgraph_copy_v.
+      rewrite <- (lmc_raw_projection bool raw_mark).
       - rewrite lacv_vlabel_new. assumption.
       - unfold new_copied_v. destruct v. simpl in Hft. intro HS. inversion HS. lia. }
     assert (graph_has_v new_g (new_copied_v g to)) by
@@ -5182,24 +5182,14 @@ Proof.
   - eapply fr_graph_has_v; eauto.
 Qed.
 
-Lemma frr_raw_mark: forall from to roots1 g1 roots2 g2,
+Lemma frr_raw_projection: forall (A: Type) (proj: raw_vertex_block -> A)
+                                 from to roots1 g1 roots2 g2,
     graph_has_gen g1 to -> forward_roots_relation from to roots1 g1 roots2 g2 ->
     forall v, graph_has_v g1 v -> vgeneration v <> from ->
-              raw_mark (vlabel g1 v) = raw_mark (vlabel g2 v).
+              proj (vlabel g1 v) = proj (vlabel g2 v).
 Proof.
   intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_relation.
-  - eapply fr_raw_mark; eauto.
-  - rewrite <- fr_graph_has_gen; eauto.
-  - eapply fr_graph_has_v; eauto.
-Qed.
-
-Lemma frr_raw_tag: forall from to roots1 g1 roots2 g2,
-    graph_has_gen g1 to -> forward_roots_relation from to roots1 g1 roots2 g2 ->
-    forall v, graph_has_v g1 v -> vgeneration v <> from ->
-              raw_tag (vlabel g1 v) = raw_tag (vlabel g2 v).
-Proof.
-  intros. induction H0. 1: reflexivity. rewrite <- IHforward_roots_relation.
-  - eapply fr_raw_tag; eauto.
+  - eapply fr_raw_projection; eauto.
   - rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_graph_has_v; eauto.
 Qed.
@@ -5360,28 +5350,16 @@ Proof.
   - eapply svfl_graph_has_v; eauto.
 Qed.
 
-Lemma svwl_raw_mark: forall from to l g g',
+Lemma svwl_raw_projection: forall (A: Type) (proj: raw_vertex_block -> A)
+                                  from to l g g',
     graph_has_gen g to -> scan_vertex_while_loop from to l g g' ->
     forall v, graph_has_v g v -> vgeneration v <> from ->
-              raw_mark (vlabel g v) = raw_mark (vlabel g' v).
+              proj (vlabel g v) = proj (vlabel g' v).
 Proof.
-  do 3 intro. induction l; intros; inversion H0; subst. 1: reflexivity.
+  intros A proj from to l. induction l; intros; inversion H0; subst. 1: reflexivity.
   - eapply IHl; eauto.
   - erewrite <- (IHl g2 g'); eauto.
-    + eapply svfl_raw_mark; eauto.
-    + rewrite <- svfl_graph_has_gen; eauto.
-    + eapply svfl_graph_has_v; eauto.
-Qed.
-
-Lemma svwl_raw_tag: forall from to l g g',
-    graph_has_gen g to -> scan_vertex_while_loop from to l g g' ->
-    forall v, graph_has_v g v -> vgeneration v <> from ->
-              raw_tag (vlabel g v) = raw_tag (vlabel g' v).
-Proof.
-  do 3 intro. induction l; intros; inversion H0; subst. 1: reflexivity.
-  - eapply IHl; eauto.
-  - erewrite <- (IHl g2 g'); eauto.
-    + eapply svfl_raw_tag; eauto.
+    + eapply svfl_raw_projection; eauto.
     + rewrite <- svfl_graph_has_gen; eauto.
     + eapply svfl_graph_has_v; eauto.
 Qed.
@@ -9483,16 +9461,17 @@ Proof.
              Hto1 Hscan v Hv1).
 Qed.
 
-Lemma do_generation_relation_raw_mark:
-  forall from to roots roots' g h rh rmst rg rhh rh' rmst' g' h' v,
+Lemma do_generation_relation_raw_projection:
+  forall (A: Type) (proj: raw_vertex_block -> A)
+         from to roots roots' g h rh rmst rg rhh rh' rmst' g' h' v,
     graph_has_gen rg to ->
     do_generation_relation from to roots roots' g h rh rmst
       rg rhh rh' rmst' g' h' ->
     graph_has_v rg v ->
     vgeneration v <> from ->
-    raw_mark (vlabel rg v) = raw_mark (vlabel g' v).
+    proj (vlabel rg v) = proj (vlabel g' v).
 Proof.
-  intros from to roots roots' g h rh rmst rg rhh rh' rmst' g' h' v
+  intros A proj from to roots roots' g h rh rmst rg rhh rh' rmst' g' h' v
          Hto Hrel Hv Hnotfrom.
   destruct Hrel as [[g1 [g2 [_ [Hfrr [Hscan Hreset]]]]] _].
   subst g'. rewrite vlabel_reset.
@@ -9502,35 +9481,10 @@ Proof.
   assert (Hv1: graph_has_v g1 v) by
       (apply (frr_graph_has_v from to roots rg roots' g1 Hto Hfrr v Hv)).
   destruct Hscan as [n [Hscan _]].
-  transitivity (raw_mark (vlabel g1 v)).
-  - apply (frr_raw_mark from to roots rg roots' g1 Hto Hfrr v Hv Hnotfrom).
-  - apply (svwl_raw_mark from to
-             (seq (number_of_vertices (nth_gen g to)) n) g1 g2
-             Hto1 Hscan v Hv1 Hnotfrom).
-Qed.
-
-Lemma do_generation_relation_raw_tag:
-  forall from to roots roots' g h rh rmst rg rhh rh' rmst' g' h' v,
-    graph_has_gen rg to ->
-    do_generation_relation from to roots roots' g h rh rmst
-      rg rhh rh' rmst' g' h' ->
-    graph_has_v rg v ->
-    vgeneration v <> from ->
-    raw_tag (vlabel rg v) = raw_tag (vlabel g' v).
-Proof.
-  intros from to roots roots' g h rh rmst rg rhh rh' rmst' g' h' v
-         Hto Hrel Hv Hnotfrom.
-  destruct Hrel as [[g1 [g2 [_ [Hfrr [Hscan Hreset]]]]] _].
-  subst g'. rewrite vlabel_reset.
-  assert (Hto1: graph_has_gen g1 to) by
-      (rewrite <- (frr_graph_has_gen from to roots rg roots' g1 Hto Hfrr to);
-       exact Hto).
-  assert (Hv1: graph_has_v g1 v) by
-      (apply (frr_graph_has_v from to roots rg roots' g1 Hto Hfrr v Hv)).
-  destruct Hscan as [n [Hscan _]].
-  transitivity (raw_tag (vlabel g1 v)).
-  - apply (frr_raw_tag from to roots rg roots' g1 Hto Hfrr v Hv Hnotfrom).
-  - apply (svwl_raw_tag from to
+  transitivity (proj (vlabel g1 v)).
+  - apply (frr_raw_projection A proj from to roots rg roots' g1
+                             Hto Hfrr v Hv Hnotfrom).
+  - apply (svwl_raw_projection A proj from to
              (seq (number_of_vertices (nth_gen g to)) n) g1 g2
              Hto1 Hscan v Hv1 Hnotfrom).
 Qed.
@@ -9607,8 +9561,8 @@ Proof.
   - erewrite <- do_generation_relation_raw_fields; eauto.
   - intros Hnotto. specialize (Hmark Hnotfrom). destruct Hmark as [Hmark Htag].
     split.
-    + erewrite <- do_generation_relation_raw_mark; eauto.
-    + erewrite <- do_generation_relation_raw_tag; eauto.
+    + erewrite <- (do_generation_relation_raw_projection bool raw_mark); eauto.
+    + erewrite <- (do_generation_relation_raw_projection Z raw_tag); eauto.
 Qed.
 
 Lemma do_generation_relation_reset_remset_compatible:
