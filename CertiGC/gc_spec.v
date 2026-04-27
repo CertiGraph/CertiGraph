@@ -495,7 +495,7 @@ Definition decr_info_nursery (ti: thread_info) (x: val): thread_info :=
     (*   (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti). *)
 
 Definition mtb_upd_remset_heap (x: val) (item: remset_space_item) (rh: remset_heap) : remset_heap :=
-  if isptr_dec x then rh else upd_remset_heap item rh O.
+  if isptr_dec x then upd_remset_heap item rh O else rh.
 
 Definition info_recordable (ti: thread_info): Prop := True.
 
