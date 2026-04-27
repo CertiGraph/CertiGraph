@@ -2145,6 +2145,60 @@ Qed.
 Definition rest_gen_size (h: part_heap) (gen: nat): Z :=
   available_space (nth_space h gen) - used_space (nth_space h gen).
 
+Lemma reset_nth_heap_total_size: forall h from gen,
+    total_size (reset_nth_heap from h) gen = total_size h gen.
+Proof.
+  intros h from gen.
+  unfold total_size, nth_space, reset_nth_heap; simpl.
+  destruct (le_lt_dec (length (spaces h)) from).
+  - rewrite reset_nth_space_overflow by assumption. reflexivity.
+  - destruct (Nat.eq_dec gen from).
+    + subst. rewrite reset_nth_space_same by assumption. reflexivity.
+    + rewrite reset_nth_space_diff by assumption. reflexivity.
+Qed.
+
+Lemma reset_nth_heap_available_size_diff: forall h from gen,
+    gen <> from ->
+    available_size (reset_nth_heap from h) gen = available_size h gen.
+Proof.
+  intros h from gen Hneq.
+  unfold available_size, nth_space, reset_nth_heap; simpl.
+  destruct (le_lt_dec (length (spaces h)) from).
+  - rewrite reset_nth_space_overflow by assumption. reflexivity.
+  - rewrite reset_nth_space_diff by assumption. reflexivity.
+Qed.
+
+Lemma reset_nth_heap_rest_gen_size_diff: forall h from gen,
+    gen <> from ->
+    rest_gen_size (reset_nth_heap from h) gen = rest_gen_size h gen.
+Proof.
+  intros h from gen Hneq.
+  unfold rest_gen_size, nth_space, reset_nth_heap; simpl.
+  destruct (le_lt_dec (length (spaces h)) from).
+  - rewrite reset_nth_space_overflow by assumption. reflexivity.
+  - rewrite reset_nth_space_diff by assumption. reflexivity.
+Qed.
+
+Lemma reset_nth_heap_rest_gen_size_same_total: forall h from,
+    (from < length (spaces h))%nat ->
+    rest_gen_size (reset_nth_heap from h) from =
+    total_size (reset_nth_heap from h) from.
+Proof.
+  intros h from Hrange.
+  unfold rest_gen_size, total_size, nth_space, reset_nth_heap; simpl.
+  rewrite reset_nth_space_same by assumption. simpl. lia.
+Qed.
+
+Lemma reset_nth_heap_available_size_same_total: forall h from,
+    (from < length (spaces h))%nat ->
+    available_size (reset_nth_heap from h) from =
+    total_size (reset_nth_heap from h) from.
+Proof.
+  intros h from Hrange.
+  unfold available_size, total_size, nth_space, reset_nth_heap; simpl.
+  rewrite reset_nth_space_same by assumption. simpl. reflexivity.
+Qed.
+
 Definition general_enough_space_to_copy g h from to size: Prop :=
   unmarked_gen_size g from + size <= rest_gen_size h to.
 
@@ -5719,6 +5773,20 @@ Proof.
   - specialize (H (S n)). simpl in H. apply H; auto.
 Qed.
 
+Lemma safe_to_copy_heap_complete: forall g h i,
+    safe_to_copy_to_except_heap g h (S i) ->
+    safe_to_copy_gen_heap h i (S i) ->
+    safe_to_copy_heap g h.
+Proof.
+  intros g h i Hexcept Hsafe.
+  unfold safe_to_copy_heap. intros n Hhas.
+  destruct (Nat.eq_dec n i).
+  - subst. assumption.
+  - unfold safe_to_copy_to_except_heap in Hexcept.
+    specialize (Hexcept (S n)). simpl in Hexcept.
+    apply Hexcept; auto.
+Qed.
+
 Lemma fgc_nbe_no_edge2gen: forall g n,
     firstn_gen_clear g n -> no_backward_edge g -> no_edge2gen g n.
 Proof.
@@ -6234,6 +6302,65 @@ Proof.
   - erewrite <- (svfl_graph_has_gen from to); eauto.
   - erewrite <- (svfl_graph_has_gen from to); eauto.
   - eapply (svfl_stcg from to); eauto.
+Qed.
+
+Lemma frr_graph_gen_size_unchanged: forall from to roots1 g1 roots2 g2,
+    graph_has_gen g1 to ->
+    forward_roots_relation from to roots1 g1 roots2 g2 ->
+    forall gen, graph_has_gen g1 gen -> gen <> to ->
+                graph_gen_size g1 gen = graph_gen_size g2 gen.
+Proof.
+  intros from to roots1 g1 roots2 g2 Hto Hfrr.
+  induction Hfrr; intros gen Hgen Hneq.
+  - reflexivity.
+  - transitivity (graph_gen_size g2 gen).
+    + eapply (fr_O_graph_gen_size_unchanged from to); eauto.
+    + apply IHHfrr.
+      * apply (proj1 (fr_graph_has_gen 0 from to
+                        (exterior2forward r) g1 g2 Hto H to));
+        assumption.
+      * apply (proj1 (fr_graph_has_gen 0 from to
+                        (exterior2forward r) g1 g2 Hto H gen));
+        assumption.
+      * assumption.
+Qed.
+
+Lemma svfl_graph_gen_size_unchanged: forall from to v l g1 g2,
+    graph_has_gen g1 to ->
+    scan_vertex_for_loop from to v l g1 g2 ->
+    forall gen, graph_has_gen g1 gen -> gen <> to ->
+                graph_gen_size g1 gen = graph_gen_size g2 gen.
+Proof.
+  intros from to v l g1 g2 Hto Hloop.
+  induction Hloop; intros gen Hgen Hneq; subst; try reflexivity.
+  transitivity (graph_gen_size g2 gen).
+  - eapply (fr_O_graph_gen_size_unchanged from to); eauto.
+  - apply IHHloop.
+    + apply (proj1 (fr_graph_has_gen 0 from to _ g1 g2 Hto H to));
+      assumption.
+    + apply (proj1 (fr_graph_has_gen 0 from to _ g1 g2 Hto H gen));
+      assumption.
+    + assumption.
+Qed.
+
+Lemma svwl_graph_gen_size_unchanged: forall from to l g1 g2,
+    graph_has_gen g1 to ->
+    scan_vertex_while_loop from to l g1 g2 ->
+    forall gen, graph_has_gen g1 gen -> gen <> to ->
+                graph_gen_size g1 gen = graph_gen_size g2 gen.
+Proof.
+  intros from to l. induction l; intros g1 g2 Hto Hloop gen Hgen Hneq;
+    inversion Hloop; subst; try reflexivity.
+  - apply (IHl g1 g2 Hto H5 gen Hgen Hneq).
+  - transitivity (graph_gen_size g3 gen).
+    + eapply (svfl_graph_gen_size_unchanged from to); eauto.
+    + apply (IHl g3 g2).
+      * apply (proj1 (svfl_graph_has_gen from to _ _ g1 g3 Hto H3 to));
+        assumption.
+      * exact H6.
+      * apply (proj1 (svfl_graph_has_gen from to _ _ g1 g3 Hto H3 gen));
+        assumption.
+      * exact Hneq.
 Qed.
 
 Lemma reset_graph_gen_size_eq: forall g i j,
@@ -7240,6 +7367,63 @@ Definition remset_heap := list remset_space.
 
 Definition nth_remset_space (rh: remset_heap) (n: nat) := nth n rh [].
 
+Fixpoint reset_nth_remset_heap (n: nat) (rh: remset_heap) : remset_heap :=
+  match n with
+  | O => match rh with
+         | nil => nil
+         | _ :: rest => [] :: rest
+         end
+  | S n' => match rh with
+            | nil => nil
+            | rs :: rest => rs :: reset_nth_remset_heap n' rest
+            end
+  end.
+
+Lemma reset_nth_remset_heap_length: forall n rh,
+    length (reset_nth_remset_heap n rh) = length rh.
+Proof.
+  induction n; intros [|rs rest]; simpl; auto.
+Qed.
+
+Lemma reset_nth_remset_heap_same: forall n rh,
+    (n < length rh)%nat ->
+    nth_remset_space (reset_nth_remset_heap n rh) n = [].
+Proof.
+  induction n; intros [|rs rest] Hlen; simpl in *; try lia; auto.
+  apply IHn. lia.
+Qed.
+
+Lemma reset_nth_remset_heap_same_any: forall n rh,
+    nth_remset_space (reset_nth_remset_heap n rh) n = [].
+Proof.
+  induction n; intros [|rs rest]; simpl; auto.
+  apply IHn.
+Qed.
+
+Lemma reset_nth_remset_heap_diff: forall n m rh,
+    n <> m ->
+    nth_remset_space (reset_nth_remset_heap n rh) m =
+    nth_remset_space rh m.
+Proof.
+  unfold nth_remset_space.
+  induction n; intros m [|rs rest] Hneq; simpl; auto.
+  - destruct m; simpl; [contradiction | reflexivity].
+  - destruct m as [|m']; simpl; [reflexivity |].
+    apply IHn. lia.
+Qed.
+
+Lemma reset_nth_remset_heap_In_inv: forall n m rh item,
+    In item (nth_remset_space (reset_nth_remset_heap n rh) m) ->
+    n <> m /\ In item (nth_remset_space rh m).
+Proof.
+  intros n m rh item Hin.
+  destruct (Nat.eq_dec n m).
+  - subst m. rewrite reset_nth_remset_heap_same_any in Hin. contradiction.
+  - split; auto.
+    rewrite <- (reset_nth_remset_heap_diff n m rh) by auto.
+    exact Hin.
+Qed.
+
 Definition remset := list remset_ext.
 
 Definition remset_nodup (rmst: remset) : Prop := NoDup (map extract_address rmst).
@@ -7304,6 +7488,25 @@ Definition remset_graph_compatible (g: LGraph) (rmst: remset) : Prop :=
 Definition remset_compatible (g: LGraph) (outlier: outlier_t) (from: nat) (rmst: remset)
   (rh: remset_heap) (h: part_heap) : Prop :=
   remset_graph_outlier_compatible g outlier rmst /\ remset_heap_compatible g from rmst rh h.
+
+Definition remset_ext_space_compatible (rmst: remset) (rh: remset_heap) : Prop :=
+  forall v addr,
+    In (RemSetVertex v addr) rmst ->
+    In (RemSetExterior addr) (nth_remset_space rh (vgeneration v)).
+
+Definition remset_interior_generation_order (rh: remset_heap) : Prop :=
+  forall gen v pos,
+    In (RemSetInterior (InteriorVertexPos v pos)) (nth_remset_space rh gen) ->
+    (gen <= vgeneration v)%nat.
+
+Definition remset_lower_generations_empty (from: nat) (rh: remset_heap) : Prop :=
+  forall gen, (gen < from)%nat -> nth_remset_space rh gen = [].
+
+Definition remset_generation_compatible
+           (from: nat) (rmst: remset) (rh: remset_heap) : Prop :=
+  remset_ext_space_compatible rmst rh /\
+  remset_interior_generation_order rh /\
+  remset_lower_generations_empty from rh.
 
 Definition forward_remset_condition g h from to : Prop :=
   enough_space_enhanced g h from to /\ graph_has_gen g from /\ graph_has_gen g to /\
@@ -8321,6 +8524,116 @@ Proof.
   apply fgah_O_available_size in Hfgh. rewrite <- Hfgh. inversion Hfri. now apply available_size_irh.
 Qed.
 
+Lemma fri_available_size_not_to: forall from to g h rh rmst item g' h' rh' rmst' gen,
+    gen <> to ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    available_size h' gen = available_size h gen.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' gen Hgen Hfri.
+  simpl in Hfri.
+  destruct (negb _). 2: now inversion Hfri.
+  destruct (forward_graph_and_heap _ _ _ _ _ _) as [newg newh] eqn:Hfgh.
+  inversion Hfri; subst; clear Hfri.
+  rewrite available_size_irh by exact Hgen.
+  pose proof (heaprel_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
+    as Hhr.
+  rewrite Hfgh in Hhr. destruct Hhr as [Hav _].
+  symmetry. apply Hav.
+Qed.
+
+Lemma forward_remset_item_fold_available_size_not_to:
+  forall from to r g h rh rmst g' h' rh' rmst' gen,
+    gen <> to ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    available_size h' gen = available_size h gen.
+Proof.
+  intros from to r. induction r; intros g h rh rmst g' h' rh' rmst' gen Hgen Hfold.
+  - simpl in Hfold. inversion Hfold. reflexivity.
+  - simpl in Hfold.
+    destruct (forward_remset_item from to (g, h, rh, rmst) a)
+      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
+    fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
+    rewrite Hfri in Hfold.
+    assert (Hav_step: available_size h2 gen = available_size h gen). {
+      symmetry in Hfri.
+      eapply fri_available_size_not_to; eassumption.
+    }
+    pose proof (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen Hgen Hfold) as Hav_tail.
+    rewrite Hav_tail. exact Hav_step.
+Qed.
+
+Lemma forward_remset_gh_available_size_not_to:
+  forall from to g h rh rmst g' h' rh' rmst' gen,
+    gen <> to ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    available_size h' gen = available_size h gen.
+Proof.
+  intros from to g h rh rmst g' h' rh' rmst' gen Hgen Hfrg.
+  unfold forward_remset_gh in Hfrg.
+  eapply forward_remset_item_fold_available_size_not_to; eassumption.
+Qed.
+
+Lemma forward_remset_item_graph_gen_size_unchanged:
+  forall from to g h rh rmst item g' h' rh' rmst' gen,
+    graph_has_gen g to -> graph_has_gen g gen -> gen <> to ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    graph_gen_size g gen = graph_gen_size g' gen.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' gen Hto Hgen Hneq Hfri.
+  simpl in Hfri.
+  destruct (negb _) eqn:?H.
+  - destruct (forward_graph_and_heap _ _ _ _ _ _) as [newg newh] eqn:Hfgh.
+    pose proof fr_forward_graph_and_heap
+      from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
+    rewrite Hfgh in Hfr. simpl in Hfr. inversion Hfri; subst.
+    eapply (fr_O_graph_gen_size_unchanged from to); eauto.
+  - inversion Hfri; reflexivity.
+Qed.
+
+Lemma forward_remset_item_fold_graph_gen_size_unchanged:
+  forall from to r g h rh rmst g' h' rh' rmst' gen,
+    graph_has_gen g to -> graph_has_gen g gen -> gen <> to ->
+    (g', h', rh', rmst') =
+    fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    graph_gen_size g gen = graph_gen_size g' gen.
+Proof.
+  intros from to r. induction r;
+    intros g h rh rmst g' h' rh' rmst' gen Hto Hgen Hneq Hfold.
+  - simpl in Hfold. inversion Hfold. reflexivity.
+  - simpl in Hfold.
+    destruct (forward_remset_item from to (g, h, rh, rmst) a)
+      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
+    fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
+    rewrite Hfri in Hfold.
+    assert (Hfri_sym:
+              (g2, h2, rh2, rmst2) =
+              forward_remset_item from to (g, h, rh, rmst) a)
+      by (symmetry; exact Hfri).
+    transitivity (graph_gen_size g2 gen).
+    + eapply (forward_remset_item_graph_gen_size_unchanged from to); eauto.
+    + apply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen).
+      * rewrite <- (forward_remset_item_ghg
+                      from to g h rh rmst a g2 h2 rh2 rmst2
+                      Hto Hfri_sym to); exact Hto.
+      * rewrite <- (forward_remset_item_ghg
+                      from to g h rh rmst a g2 h2 rh2 rmst2
+                      Hto Hfri_sym gen); exact Hgen.
+      * exact Hneq.
+      * exact Hfold.
+Qed.
+
+Lemma forward_remset_gh_graph_gen_size_unchanged:
+  forall from to g h rh rmst g' h' rh' rmst' gen,
+    graph_has_gen g to -> graph_has_gen g gen -> gen <> to ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    graph_gen_size g gen = graph_gen_size g' gen.
+Proof.
+  intros from to g h rh rmst g' h' rh' rmst' gen Hto Hgen Hneq Hfrg.
+  unfold forward_remset_gh in Hfrg.
+  eapply (forward_remset_item_fold_graph_gen_size_unchanged
+            from to (Znth (Z.of_nat from) rh)); eauto.
+Qed.
+
 Lemma fri_remset_gen_size: forall from to g h rh rmst item g' h' rh' rmst',
     from <> to ->
     (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
@@ -8947,6 +9260,11 @@ Definition do_generation_relation (from to: nat)
     do_scan_relation from to (number_of_vertices (nth_gen g to)) g1 g2 /\
     g' = reset_graph from g2.
 
+Definition do_generation_heap_relation (from to: nat)
+           (h h_rem h': part_heap): Prop :=
+  (forall gen, gen <> to -> available_size h_rem gen = available_size h gen) /\
+  exists h_scan, heap_relation h_rem h_scan /\ h' = reset_nth_heap from h_scan.
+
 Lemma forward_remset_gh_graph_has_gen:
   forall from to g h rh rmst g' h' rh' rmst',
     graph_has_gen g to ->
@@ -8978,6 +9296,1213 @@ Proof.
       * destruct Hscan as [n [? ?]]. eapply svwl_graph_has_gen; eauto.
         rewrite <- frr_graph_has_gen; eauto.
       * subst g'. rewrite graph_has_gen_reset. reflexivity.
+Qed.
+
+Lemma do_generation_relation_graph_gen_size_unchanged:
+  forall from to roots roots' g h rh rmst rg rhh rh' rmst' g' gen,
+    graph_has_gen g to -> graph_has_gen g gen ->
+    gen <> from -> gen <> to ->
+    do_generation_relation from to roots roots' g h rh rmst
+      rg rhh rh' rmst' g' ->
+    graph_gen_size g gen = graph_gen_size g' gen.
+Proof.
+  intros from to roots roots' g h rh rmst rg rhh rh' rmst' g' gen
+         Hto Hgen Hneq_from Hneq_to Hrel.
+  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  assert (Hto_rg: graph_has_gen rg to) by
+      (rewrite <- (forward_remset_gh_graph_has_gen from to g h rh rmst
+                     rg rhh rh' rmst' Hto Hfrg to); exact Hto).
+  assert (Hgen_rg: graph_has_gen rg gen) by
+      (rewrite <- (forward_remset_gh_graph_has_gen from to g h rh rmst
+                     rg rhh rh' rmst' Hto Hfrg gen); exact Hgen).
+  assert (Hto_g1: graph_has_gen g1 to) by
+      (rewrite <- (frr_graph_has_gen from to roots rg roots' g1
+                     Hto_rg Hfrr to); exact Hto_rg).
+  assert (Hgen_g1: graph_has_gen g1 gen) by
+      (rewrite <- (frr_graph_has_gen from to roots rg roots' g1
+                     Hto_rg Hfrr gen); exact Hgen_rg).
+  transitivity (graph_gen_size rg gen).
+  - eapply (forward_remset_gh_graph_gen_size_unchanged from to); eauto.
+  - transitivity (graph_gen_size g1 gen).
+    + eapply (frr_graph_gen_size_unchanged from to); eauto.
+    + transitivity (graph_gen_size g2 gen).
+      * destruct Hscan as [n [Hscan _]].
+        eapply (svwl_graph_gen_size_unchanged from to); eauto.
+      * subst g'. symmetry. apply reset_graph_gen_size_eq. lia.
+Qed.
+
+Lemma forward_remset_item_roots_graph_compatible_pres:
+  forall from to g h rh rmst item g' h' rh' rmst' roots,
+    graph_has_gen g to ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    roots_graph_compatible roots g ->
+    roots_graph_compatible roots g'.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' roots Hto Hfri Hrgc.
+  unfold forward_remset_item in Hfri.
+  destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hgen.
+  - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
+      as [newg newh] eqn:Hfgh.
+    simpl in Hfri. inversion Hfri; subst; clear Hfri.
+    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
+    rewrite Hfgh in Hfr. simpl in Hfr.
+    eapply fr_roots_graph_compatible; eauto.
+  - now inversion Hfri.
+Qed.
+
+Lemma forward_remset_item_fold_roots_graph_compatible_pres:
+  forall from to g h rh rmst r g' h' rh' rmst' roots,
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    remset_nodup rmst ->
+    remset_graph_compatible g rmst ->
+    remset_and_remset_space_compatible g from rmst r ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    roots_graph_compatible roots g ->
+    roots_graph_compatible roots g'.
+Proof.
+  intros from to g h rh rmst r. revert g h rh rmst.
+  induction r; intros g h rh rmst g' h' rh' rmst' roots Hneq Hto Hcc Hrnd Hrc Hrrsc Hfri Hrgc;
+    simpl in Hfri.
+  - now inversion Hfri.
+  - hnf in Hrrsc. rewrite Forall_cons_iff in Hrrsc. destruct Hrrsc as [Hrica Hricr].
+    destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
+    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
+    rewrite Hfri2' in Hfri. symmetry in Hfri2.
+    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' roots); eauto.
+    + eapply forward_remset_item_ghg with (g := g); eassumption.
+    + eapply fri_copy_compatible; eauto.
+    + eapply fri_remset_nodup; eassumption.
+    + eapply fri_remset_graph_compatible; eauto.
+    + hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
+      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
+    + eapply (forward_remset_item_roots_graph_compatible_pres
+                from to g h rh rmst a g2 h2 rh2 rmst2 roots); eauto.
+Qed.
+
+Lemma forward_remset_gh_roots_graph_compatible:
+  forall from to g h rh rmst g' h' rh' rmst' roots outlier,
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    remset_nodup rmst ->
+    remset_compatible g outlier from rmst rh h ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    roots_graph_compatible roots g ->
+    roots_graph_compatible roots g'.
+Proof.
+  intros from to g h rh rmst g' h' rh' rmst' roots outlier Hneq Hto Hcc Hrnd Hremc Hfrg Hrgc.
+  destruct Hremc as [Hrgoc [Hrrhc _]].
+  assert (Hrc: remset_graph_compatible g rmst) by
+      (eapply remset_graph_outlier_compatible_weakened; eassumption).
+  unfold forward_remset_gh in Hfrg.
+  eapply forward_remset_item_fold_roots_graph_compatible_pres; eauto.
+  eapply rrhc_forall_rrsc; exact Hrrhc.
+Qed.
+
+Lemma forward_remset_item_gen_unmarked_pres:
+  forall from to g h rh rmst item g' h' rh' rmst' gen,
+    graph_has_gen g to ->
+    from <> gen ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    gen_unmarked g gen ->
+    gen_unmarked g' gen.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' gen Hto Hneq Hfri Hunmk.
+  unfold forward_remset_item in Hfri.
+  destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hgen.
+  - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
+      as [newg newh] eqn:Hfgh.
+    simpl in Hfri. inversion Hfri; subst; clear Hfri.
+    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
+    rewrite Hfgh in Hfr. simpl in Hfr.
+    eapply fr_gen_unmarked; eauto.
+  - now inversion Hfri.
+Qed.
+
+Lemma forward_remset_item_fold_gen_unmarked_pres:
+  forall from to g h rh rmst r g' h' rh' rmst' gen,
+    graph_has_gen g to ->
+    from <> gen ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    gen_unmarked g gen ->
+    gen_unmarked g' gen.
+Proof.
+  intros from to g h rh rmst r. revert g h rh rmst.
+  induction r; intros g h rh rmst g' h' rh' rmst' gen Hto Hneq Hfold Hunmk; simpl in Hfold.
+  - now inversion Hfold.
+  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
+    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
+    rewrite Hfri2' in Hfold. symmetry in Hfri2.
+    assert (Hto2: graph_has_gen g2 to) by
+        (rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to); exact Hto).
+    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen Hto2 Hneq Hfold).
+    eapply (forward_remset_item_gen_unmarked_pres from to g h rh rmst a g2 h2 rh2 rmst2 gen); eauto.
+Qed.
+
+Lemma forward_remset_gh_gen_unmarked:
+  forall from to g h rh rmst g' h' rh' rmst' gen,
+    graph_has_gen g to ->
+    from <> gen ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    gen_unmarked g gen ->
+    gen_unmarked g' gen.
+Proof.
+  intros. unfold forward_remset_gh in H1.
+  eapply forward_remset_item_fold_gen_unmarked_pres; eassumption.
+Qed.
+
+Lemma forward_remset_item_firstn_gen_clear_pres:
+  forall from to g h rh rmst item g' h' rh' rmst' gen,
+    graph_has_gen g to ->
+    (gen <= to)%nat ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    firstn_gen_clear g gen ->
+    firstn_gen_clear g' gen.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' gen Hto Hle Hfri Hclear.
+  unfold forward_remset_item in Hfri.
+  destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hgen.
+  - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
+      as [newg newh] eqn:Hfgh.
+    simpl in Hfri. inversion Hfri; subst; clear Hfri.
+    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
+    rewrite Hfgh in Hfr. simpl in Hfr.
+    unfold firstn_gen_clear, graph_gen_clear in *. intros i Hi.
+    erewrite <- (fr_O_nth_gen_unchanged from to _ g newg); eauto; lia.
+  - inversion Hfri; subst; assumption.
+Qed.
+
+Lemma forward_remset_item_fold_firstn_gen_clear_pres:
+  forall from to g h rh rmst r g' h' rh' rmst' gen,
+    graph_has_gen g to ->
+    (gen <= to)%nat ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    firstn_gen_clear g gen ->
+    firstn_gen_clear g' gen.
+Proof.
+  intros from to g h rh rmst r. revert g h rh rmst.
+  induction r; intros g h rh rmst g' h' rh' rmst' gen Hto Hle Hfold Hclear; simpl in Hfold.
+  - now inversion Hfold.
+  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
+    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
+    rewrite Hfri2' in Hfold. symmetry in Hfri2.
+    assert (Hto2: graph_has_gen g2 to) by
+        (rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to); exact Hto).
+    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen Hto2 Hle Hfold).
+    eapply (forward_remset_item_firstn_gen_clear_pres from to g h rh rmst a g2 h2 rh2 rmst2 gen);
+      eauto.
+Qed.
+
+Lemma forward_remset_gh_firstn_gen_clear:
+  forall from to g h rh rmst g' h' rh' rmst' gen,
+    graph_has_gen g to ->
+    (gen <= to)%nat ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    firstn_gen_clear g gen ->
+    firstn_gen_clear g' gen.
+Proof.
+  intros. unfold forward_remset_gh in H1.
+  eapply forward_remset_item_fold_firstn_gen_clear_pres; eassumption.
+Qed.
+
+Lemma forward_remset_item_stcg_pres:
+  forall from to g h rh rmst item g' h' rh' rmst' gen1 gen2,
+    graph_has_gen g to ->
+    graph_has_gen g gen2 ->
+    gen2 <> to ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    safe_to_copy_gen g gen1 gen2 ->
+    safe_to_copy_gen g' gen1 gen2.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' gen1 gen2 Hto Hgen Hneq Hfri Hsafe.
+  unfold forward_remset_item in Hfri.
+  destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hitem.
+  - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
+      as [newg newh] eqn:Hfgh.
+    simpl in Hfri. inversion Hfri; subst; clear Hfri.
+    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
+    rewrite Hfgh in Hfr. simpl in Hfr.
+    eapply (fr_O_stcg from to); eauto.
+  - inversion Hfri; subst; assumption.
+Qed.
+
+Lemma forward_remset_item_fold_stcg_pres:
+  forall from to g h rh rmst r g' h' rh' rmst' gen1 gen2,
+    graph_has_gen g to ->
+    graph_has_gen g gen2 ->
+    gen2 <> to ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    safe_to_copy_gen g gen1 gen2 ->
+    safe_to_copy_gen g' gen1 gen2.
+Proof.
+  intros from to g h rh rmst r. revert g h rh rmst.
+  induction r; intros g h rh rmst g' h' rh' rmst' gen1 gen2 Hto Hgen Hneq Hfold Hsafe;
+    simpl in Hfold.
+  - now inversion Hfold.
+  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
+    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
+    rewrite Hfri2' in Hfold. symmetry in Hfri2.
+    assert (Hto2: graph_has_gen g2 to) by
+        (rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to); exact Hto).
+    assert (Hgen2: graph_has_gen g2 gen2) by
+        (rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 gen2); exact Hgen).
+    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen1 gen2 Hto2 Hgen2 Hneq Hfold).
+    eapply (forward_remset_item_stcg_pres from to g h rh rmst a g2 h2 rh2 rmst2 gen1 gen2);
+      eauto.
+Qed.
+
+Lemma forward_remset_gh_stcg:
+  forall from to g h rh rmst g' h' rh' rmst' gen1 gen2,
+    graph_has_gen g to ->
+    graph_has_gen g gen2 ->
+    gen2 <> to ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    safe_to_copy_gen g gen1 gen2 ->
+    safe_to_copy_gen g' gen1 gen2.
+Proof.
+  intros. unfold forward_remset_gh in H2.
+  eapply (forward_remset_item_fold_stcg_pres
+            from to g h rh rmst (Znth (Z.of_nat from) rh)
+            g' h' rh' rmst'); eassumption.
+Qed.
+
+Lemma forward_remset_gh_copy_compatible:
+  forall from to g h rh rmst g' h' rh' rmst',
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    copy_compatible g'.
+Proof.
+  intros. unfold forward_remset_gh in H2.
+  eapply fri_copy_compatible_fold; eassumption.
+Qed.
+
+Lemma forward_remset_gh_no_dangling_dst:
+  forall from to g h rh rmst g' h' rh' rmst' outlier,
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    remset_nodup rmst ->
+    remset_compatible g outlier from rmst rh h ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    no_dangling_dst g'.
+Proof.
+  intros from to g h rh rmst g' h' rh' rmst' outlier Hneq Hto Hcc Hndd Hrnd Hremc Hfrg.
+  destruct Hremc as [Hrgoc [Hrrhc _]].
+  assert (Hrc: remset_graph_compatible g rmst) by
+      (eapply remset_graph_outlier_compatible_weakened; eassumption).
+  unfold forward_remset_gh in Hfrg.
+  eapply fri_no_dangling_dst_fold; eauto.
+  eapply rrhc_forall_rrsc; exact Hrrhc.
+Qed.
+
+Lemma fr_O_prefix_no_edge2gen_old_to:
+  forall from to p g g' bound,
+    graph_has_gen g to -> from <> to -> copy_compatible g -> no_dangling_dst g ->
+    forward_t_compatible p g ->
+    forward_relation from to O p g g' ->
+    (bound <= gen_v_num g to)%nat ->
+    (forall (vidx eidx: nat),
+        (vidx < bound)%nat ->
+        graph_has_e g (to, vidx, eidx) ->
+        vgeneration (dst g (to, vidx, eidx)) <> from) ->
+    forall (vidx eidx: nat),
+      (vidx < bound)%nat ->
+      graph_has_e g' (to, vidx, eidx) ->
+      vgeneration (dst g' (to, vidx, eidx)) <> from.
+Proof.
+  intros from to p g g' bound Hto Hneq Hcc Hndd Hftc Hfr
+         Hbound Hprefix vidx eidx Hvidx He.
+  destruct p as [z | out | v | e]; inversion Hfr; subst; simpl in *.
+  all: try solve [eapply Hprefix; eauto].
+  1: (assert (Hsrc: graph_has_v g (to, vidx)) by
+        (destruct He as [Hsrc_new _];
+         apply lcv_graph_has_v_inv in Hsrc_new;
+         [destruct Hsrc_new as [Hsrc_old | Hnew]; [exact Hsrc_old |]
+         | exact Hto];
+         unfold new_copied_v in Hnew; inversion Hnew; subst vidx;
+         unfold gen_v_num in Hbound; lia);
+      rewrite pcv_dst_old;
+      [ eapply Hprefix; [exact Hvidx |];
+        destruct He as [_ He]; split; simpl; [exact Hsrc |];
+        unfold get_edges, make_fields in He |- *;
+        rewrite (lcv_raw_fields g v to (to, vidx) Hto Hsrc); exact He
+      | unfold new_copied_v; intro Hbad; inversion Hbad; subst vidx;
+        unfold gen_v_num in Hbound; lia ]).
+  1: (destruct (E_EqDec e (to, vidx, eidx)) as [Heq | Hne];
+      [ hnf in Heq; subst e; unfold updateEdgeFunc; rewrite if_true by reflexivity;
+        destruct Hftc as [Hsrc_e Hin_e];
+        pose proof (Hndd _ Hsrc_e _ Hin_e) as Hdst;
+        specialize (Hcc _ Hdst H2) as [_ Hgen];
+        intro Hbad; apply Hgen; symmetry; exact Hbad
+      | unfold updateEdgeFunc; rewrite if_false by (intro Hbad; apply Hne; hnf; exact Hbad);
+        eapply Hprefix; [exact Hvidx |];
+        destruct He as [Hsrc_new Hin_new]; split; simpl;
+        [exact Hsrc_new | exact Hin_new] ]).
+  1: (destruct (E_EqDec e (to, vidx, eidx)) as [Heq | Hne];
+      [ hnf in Heq; subst e; unfold updateEdgeFunc; rewrite if_true by reflexivity;
+        unfold new_copied_v; simpl; intro Hbad; apply Hneq; symmetry; exact Hbad
+      | unfold updateEdgeFunc; rewrite if_false by (intro Hbad; apply Hne; hnf; exact Hbad);
+        rewrite pcv_dst_old;
+        [ eapply Hprefix; [exact Hvidx |];
+          destruct He as [Hsrc_new Hin_new];
+          change (graph_has_v (lgraph_copy_v g (dst g e) to) (to, vidx)) in Hsrc_new;
+          pose proof (lcv_graph_has_v_inv g (dst g e) to (to, vidx) Hto Hsrc_new)
+            as Hsrc_inv;
+          destruct Hsrc_inv as [Hsrc_old | Hnew];
+          [ split; simpl; [exact Hsrc_old |];
+            unfold get_edges, make_fields in Hin_new |- *;
+            change (In (to, vidx, eidx)
+                       (filter_proj field_proj_edge
+                          (make_fields (lgraph_copy_v g (dst g e) to) (to, vidx))))
+              in Hin_new;
+            rewrite (lcv_raw_fields g (dst g e) to (to, vidx) Hto Hsrc_old);
+            exact Hin_new
+          | unfold new_copied_v in Hnew; inversion Hnew; subst vidx;
+            unfold gen_v_num in Hbound; lia ]
+        | unfold new_copied_v; intro Hbad; inversion Hbad; subst vidx;
+          unfold gen_v_num in Hbound; lia ] ]).
+Qed.
+
+Lemma forward_remset_item_gen_v_num_to:
+  forall from to g h rh rmst item g' h' rh' rmst',
+    graph_has_gen g to ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    (gen_v_num g to <= gen_v_num g' to)%nat.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' Hto Hfri.
+  unfold forward_remset_item in Hfri.
+  destruct (negb (remset_item_in_gen item rmst g from)).
+  - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
+      as [newg newh] eqn:Hfgh.
+    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h
+      as Hfr.
+    rewrite Hfgh in Hfr. simpl in Hfr. inversion Hfri; subst.
+    eapply fr_O_gen_v_num_to; eassumption.
+  - inversion Hfri; subst. lia.
+Qed.
+
+Lemma forward_remset_item_fold_gen_v_num_to:
+  forall from to g h rh rmst r g' h' rh' rmst',
+    graph_has_gen g to ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    (gen_v_num g to <= gen_v_num g' to)%nat.
+Proof.
+  intros from to g h rh rmst r. revert g h rh rmst.
+  induction r; intros g h rh rmst g' h' rh' rmst' Hto Hfold.
+  - simpl in Hfold. inversion Hfold; subst. lia.
+  - simpl in Hfold.
+    destruct (forward_remset_item from to (g, h, rh, rmst) a)
+      as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
+    symmetry in Hfri2.
+    fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
+    rewrite <- Hfri2 in Hfold.
+    assert (Hto2: graph_has_gen g2 to) by
+        (rewrite <- (forward_remset_item_ghg from to g h rh rmst a g2 h2 rh2 rmst2
+                       Hto Hfri2 to); exact Hto).
+    pose proof (forward_remset_item_gen_v_num_to from to g h rh rmst a g2 h2 rh2 rmst2
+                  Hto Hfri2).
+    pose proof (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' Hto2 Hfold).
+    lia.
+Qed.
+
+Lemma forward_remset_gh_gen_v_num_to:
+  forall from to g h rh rmst g' h' rh' rmst',
+    graph_has_gen g to ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    (gen_v_num g to <= gen_v_num g' to)%nat.
+Proof.
+  intros. unfold forward_remset_gh in H0.
+  eapply forward_remset_item_fold_gen_v_num_to; eassumption.
+Qed.
+
+Lemma forward_remset_item_prefix_no_edge2gen_old_to:
+  forall from to g h rh rmst item g' h' rh' rmst' bound,
+    graph_has_gen g to -> from <> to -> copy_compatible g -> no_dangling_dst g ->
+    remset_graph_compatible g rmst ->
+    remset_item_compatible g from rmst item ->
+    (bound <= gen_v_num g to)%nat ->
+    (forall (vidx eidx: nat),
+        (vidx < bound)%nat ->
+        graph_has_e g (to, vidx, eidx) ->
+        vgeneration (dst g (to, vidx, eidx)) <> from) ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    forall (vidx eidx: nat),
+      (vidx < bound)%nat ->
+      graph_has_e g' (to, vidx, eidx) ->
+      vgeneration (dst g' (to, vidx, eidx)) <> from.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' bound
+         Hto Hneq Hcc Hndd Hrc Hric Hbound Hprefix Hfri.
+  unfold forward_remset_item in Hfri.
+  destruct (negb (remset_item_in_gen item rmst g from)).
+  - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
+      as [newg newh] eqn:Hfgh.
+    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h
+      as Hfr.
+    rewrite Hfgh in Hfr. simpl in Hfr. inversion Hfri; subst.
+    eapply fr_O_prefix_no_edge2gen_old_to; eauto.
+    eapply remset_item2forward_t_ftc; eassumption.
+  - inversion Hfri; subst. exact Hprefix.
+Qed.
+
+Lemma forward_remset_item_fold_prefix_no_edge2gen_old_to:
+  forall from to g h rh rmst r g' h' rh' rmst' bound,
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    remset_nodup rmst ->
+    remset_graph_compatible g rmst ->
+    remset_and_remset_space_compatible g from rmst r ->
+    (bound <= gen_v_num g to)%nat ->
+    (forall (vidx eidx: nat),
+        (vidx < bound)%nat ->
+        graph_has_e g (to, vidx, eidx) ->
+        vgeneration (dst g (to, vidx, eidx)) <> from) ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    forall (vidx eidx: nat),
+      (vidx < bound)%nat ->
+      graph_has_e g' (to, vidx, eidx) ->
+      vgeneration (dst g' (to, vidx, eidx)) <> from.
+Proof.
+  intros from to g h rh rmst r. revert g h rh rmst.
+  induction r; intros g h rh rmst g' h' rh' rmst' bound
+                       Hneq Hto Hcc Hndd Hrnd Hrc Hrrsc Hbound Hprefix Hfold.
+  - simpl in Hfold. inversion Hfold; subst. exact Hprefix.
+  - simpl in Hfold. hnf in Hrrsc. rewrite Forall_cons_iff in Hrrsc.
+    destruct Hrrsc as [Hrica Hricr].
+    destruct (forward_remset_item from to (g, h, rh, rmst) a)
+      as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
+    symmetry in Hfri2.
+    fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
+    rewrite <- Hfri2 in Hfold.
+    assert (Hcc2: copy_compatible g2) by
+        exact (fri_copy_compatible from to g h rh rmst a g2 h2 rh2 rmst2
+                 Hneq Hto Hcc Hfri2).
+    assert (Hndd2: no_dangling_dst g2) by
+        exact (fri_no_dangling_dst from to g h rh rmst a g2 h2 rh2 rmst2
+                 Hto Hcc Hrc Hrica Hndd Hfri2).
+    assert (Hrnd2: remset_nodup rmst2) by
+        exact (fri_remset_nodup from to g h rh rmst a g2 h2 rh2 rmst2 Hrnd Hfri2).
+    assert (Hrc2: remset_graph_compatible g2 rmst2) by
+        exact (fri_remset_graph_compatible from to g h rh rmst a g2 h2 rh2 rmst2
+                 Hto Hcc Hrnd Hrc Hrica Hfri2).
+    assert (Hricr2: remset_and_remset_space_compatible g2 from rmst2 r). {
+      hnf. rewrite Forall_forall in Hricr |- *. intros x Hin.
+      specialize (Hricr _ Hin).
+      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
+    }
+    assert (Hprefix2: forall vidx eidx : nat,
+               (vidx < bound)%nat ->
+               graph_has_e g2 (to, vidx, eidx) ->
+               vgeneration (dst g2 (to, vidx, eidx)) <> from) by
+        (eapply forward_remset_item_prefix_no_edge2gen_old_to; eauto).
+    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' bound); eauto.
+    rewrite <- (forward_remset_item_ghg from to g h rh rmst a g2 h2 rh2 rmst2
+                   Hto Hfri2 to); exact Hto.
+    pose proof (forward_remset_item_gen_v_num_to from to g h rh rmst a g2 h2 rh2 rmst2
+                  Hto Hfri2).
+    lia.
+Qed.
+
+Lemma forward_remset_gh_prefix_no_edge2gen_old_to:
+  forall from to g h rh rmst g' h' rh' rmst' outlier bound,
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    remset_nodup rmst ->
+    remset_compatible g outlier from rmst rh h ->
+    (bound <= gen_v_num g to)%nat ->
+    (forall (vidx eidx: nat),
+        (vidx < bound)%nat ->
+        graph_has_e g (to, vidx, eidx) ->
+        vgeneration (dst g (to, vidx, eidx)) <> from) ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    forall (vidx eidx: nat),
+      (vidx < bound)%nat ->
+      graph_has_e g' (to, vidx, eidx) ->
+      vgeneration (dst g' (to, vidx, eidx)) <> from.
+Proof.
+  intros from to g h rh rmst g' h' rh' rmst' outlier bound
+         Hneq Hto Hcc Hndd Hrnd Hremc Hbound Hprefix Hfrg.
+  destruct Hremc as [Hrgoc [Hrrhc _]].
+  assert (Hrc: remset_graph_compatible g rmst) by
+      (eapply remset_graph_outlier_compatible_weakened; eassumption).
+  unfold forward_remset_gh in Hfrg.
+  eapply forward_remset_item_fold_prefix_no_edge2gen_old_to; eauto.
+  eapply rrhc_forall_rrsc; exact Hrrhc.
+Qed.
+
+Lemma frr_prefix_no_edge2gen_old_to:
+  forall from to roots roots' g g' bound,
+    graph_has_gen g to ->
+    forward_roots_relation from to roots g roots' g' ->
+    (bound <= gen_v_num g to)%nat ->
+    (forall (vidx eidx: nat),
+        (vidx < bound)%nat ->
+        graph_has_e g (to, vidx, eidx) ->
+        vgeneration (dst g (to, vidx, eidx)) <> from) ->
+    forall (vidx eidx: nat),
+      (vidx < bound)%nat ->
+      graph_has_e g' (to, vidx, eidx) ->
+      vgeneration (dst g' (to, vidx, eidx)) <> from.
+Proof.
+  intros from to roots roots' g g' bound Hto Hfrr Hbound Hprefix vidx eidx Hvidx He.
+  assert (Hsrc: graph_has_v g (to, vidx)). {
+    destruct He as [Hsrc_new _].
+    eapply frr_graph_has_v_inv in Hsrc_new; eauto.
+    destruct Hsrc_new as [Hsrc_old | [Hgen [Hlo _]]].
+    - exact Hsrc_old.
+    - exfalso. simpl in Hgen, Hlo. lia.
+  }
+  erewrite <- (frr_dst_unchanged from to roots g roots' g'); eauto.
+  eapply Hprefix; [exact Hvidx |].
+  destruct He as [_ Hin]. split; simpl; [exact Hsrc |].
+  unfold get_edges, make_fields in Hin |- *.
+  rewrite (frr_raw_fields from to roots g roots' g' Hto Hfrr (to, vidx) Hsrc).
+  exact Hin.
+Qed.
+
+Lemma do_scan_prefix_no_edge2gen:
+  forall from to start g1 g2,
+    graph_has_gen g1 to ->
+    from <> to ->
+    gen_unmarked g1 to ->
+    copy_compatible g1 ->
+    no_dangling_dst g1 ->
+    do_scan_relation from to start g1 g2 ->
+    (start <= gen_v_num g1 to)%nat ->
+    (forall (vidx eidx: nat),
+        (vidx < start)%nat ->
+        graph_has_e g1 (to, vidx, eidx) ->
+        vgeneration (dst g1 (to, vidx, eidx)) <> from) ->
+    (forall another, another <> from -> another <> to -> gen2gen_no_edge g1 another from) ->
+    no_edge2gen g2 from.
+Proof.
+  intros from to start g1 g2 Hto Hneq Hun Hcc Hndd Hscan Hstart Hprefix Hother.
+  destruct Hscan as [n [Hscan Hnot]].
+  assert (Hto2: graph_has_gen g2 to) by
+      (rewrite <- (svwl_graph_has_gen from to (seq start n) g1 g2 Hto Hscan to); exact Hto).
+  unfold no_edge2gen. intros another Hanother.
+  destruct (Nat.eq_dec another to) as [Heq_to | Hneq_to].
+  - subst another. unfold gen2gen_no_edge. intros vidx eidx He.
+    destruct (lt_dec vidx start) as [Hlt | Hge].
+    + assert (Hsrc: graph_has_v g1 (to, vidx)). {
+        destruct He as [Hsrc2 _]. simpl in Hsrc2.
+        pose proof (svwl_graph_has_v_inv from to (seq start n) g1 g2 Hto Hscan
+                      (to, vidx) Hsrc2) as Hsrc_inv.
+        destruct Hsrc_inv as [Hsrc1 | [Hgen [Hlo _]]].
+        - exact Hsrc1.
+        - exfalso. simpl in Hgen, Hlo. lia.
+      }
+      rewrite <- (svwl_dst_unchanged from to (seq start n) g1 g2 Hto Hscan Hneq Hun
+                    (to, vidx, eidx) Hsrc).
+      * eapply Hprefix; [exact Hlt |].
+        destruct He as [_ Hin]. split; simpl; [exact Hsrc |].
+        unfold get_edges, make_fields in Hin |- *.
+        rewrite (svwl_raw_fields from to (seq start n) g1 g2 Hto Hscan (to, vidx) Hsrc).
+        exact Hin.
+      * intros _. rewrite in_seq. simpl. lia.
+    + pose proof (svwl_no_edge2from from to (seq start n) g1 g2
+                    Hto Hscan Hun Hcc Hndd Hneq (seq_NoDup n start)) as Hno_from.
+      apply (Hno_from (to, vidx, eidx) vidx).
+      * rewrite in_seq. split; [lia |].
+        destruct He as [Hsrc2 _]. simpl in Hsrc2.
+        destruct Hsrc2 as [_ Hidx].
+        unfold gen_has_index in Hnot, Hidx. simpl in Hidx. unfold gen_v_num in Hidx.
+        lia.
+      * destruct He as [_ Hin]. exact Hin.
+  - pose proof (svwl_gen2gen_no_edge from to (seq start n) g1 g2
+                  Hto Hneq Hun Hscan another from Hneq_to
+                  (Hother another Hanother Hneq_to)) as Hpres.
+    exact Hpres.
+Qed.
+
+Lemma fr_O_gen2gen_no_edge2from_not_to:
+  forall from to p g g' gen1,
+    graph_has_gen g to -> from <> to -> copy_compatible g -> no_dangling_dst g ->
+    forward_t_compatible p g ->
+    forward_relation from to O p g g' ->
+    gen1 <> to ->
+    gen2gen_no_edge g gen1 from ->
+    gen2gen_no_edge g' gen1 from.
+Proof.
+  intros from to p g g' gen1 Hto Hneq Hcc Hndd Hftc Hfr Hgen1 Hno.
+  unfold gen2gen_no_edge in *. intros vidx eidx He.
+  destruct p as [z | out | v | e]; inversion Hfr; subst; simpl in *;
+    try solve [apply Hno; exact He].
+  1: (assert (Hsrc: graph_has_v g (gen1, vidx)) by
+        (destruct He as [Hsrc_new _];
+         apply lcv_graph_has_v_inv in Hsrc_new;
+         [destruct Hsrc_new as [Hsrc_old | Hnew]; [exact Hsrc_old |]
+         | exact Hto];
+         unfold new_copied_v in Hnew; inversion Hnew; contradiction);
+      rewrite pcv_dst_old;
+      [ apply Hno; destruct He as [_ Hin]; split; simpl; [exact Hsrc |];
+        unfold get_edges, make_fields in Hin |- *;
+        rewrite (lcv_raw_fields g v to (gen1, vidx) Hto Hsrc); exact Hin
+      | unfold new_copied_v; intro Hbad; inversion Hbad; contradiction ]).
+  1: (destruct (E_EqDec e (gen1, vidx, eidx)) as [Heq | Hne];
+      [ hnf in Heq; subst e; unfold updateEdgeFunc; rewrite if_true by reflexivity;
+        destruct Hftc as [Hsrc_e Hin_e];
+        pose proof (Hndd _ Hsrc_e _ Hin_e) as Hdst;
+        specialize (Hcc _ Hdst H2) as [_ Hgen];
+        intro Hbad; apply Hgen; symmetry; exact Hbad
+      | unfold updateEdgeFunc; rewrite if_false by (intro Hbad; apply Hne; hnf; exact Hbad);
+        apply Hno; destruct He as [Hsrc_new Hin_new]; split; simpl;
+        [exact Hsrc_new | exact Hin_new] ]).
+  1: (destruct (E_EqDec e (gen1, vidx, eidx)) as [Heq | Hne];
+      [ hnf in Heq; subst e; unfold updateEdgeFunc; rewrite if_true by reflexivity;
+        unfold new_copied_v; simpl; intro Hbad; apply Hneq; symmetry; exact Hbad
+      | unfold updateEdgeFunc; rewrite if_false by (intro Hbad; apply Hne; hnf; exact Hbad);
+        rewrite pcv_dst_old;
+        [ apply Hno; destruct He as [Hsrc_new Hin_new];
+          change (graph_has_v (lgraph_copy_v g (dst g e) to) (gen1, vidx)) in Hsrc_new;
+          pose proof (lcv_graph_has_v_inv g (dst g e) to (gen1, vidx) Hto Hsrc_new)
+            as Hsrc_inv;
+          destruct Hsrc_inv as [Hsrc_old | Hnew];
+          [ split; simpl; [exact Hsrc_old |];
+            unfold get_edges, make_fields in Hin_new |- *;
+            change (In (gen1, vidx, eidx)
+                       (filter_proj field_proj_edge
+                          (make_fields (lgraph_copy_v g (dst g e) to) (gen1, vidx))))
+              in Hin_new;
+            rewrite (lcv_raw_fields g (dst g e) to (gen1, vidx) Hto Hsrc_old);
+            exact Hin_new
+          | unfold new_copied_v in Hnew; inversion Hnew; contradiction ]
+        | unfold new_copied_v; intro Hbad; inversion Hbad; contradiction ] ]).
+Qed.
+
+Lemma forward_remset_item_gen2gen_no_edge2from_not_to:
+  forall from to g h rh rmst item g' h' rh' rmst' gen1,
+    graph_has_gen g to -> from <> to -> copy_compatible g -> no_dangling_dst g ->
+    remset_graph_compatible g rmst ->
+    remset_item_compatible g from rmst item ->
+    gen1 <> to ->
+    gen2gen_no_edge g gen1 from ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    gen2gen_no_edge g' gen1 from.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' gen1
+         Hto Hneq Hcc Hndd Hrc Hric Hgen1 Hno Hfri.
+  unfold forward_remset_item in Hfri.
+  destruct (negb (remset_item_in_gen item rmst g from)).
+  - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
+      as [newg newh] eqn:Hfgh.
+    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h
+      as Hfr.
+    rewrite Hfgh in Hfr. simpl in Hfr. inversion Hfri; subst.
+    eapply fr_O_gen2gen_no_edge2from_not_to; eauto.
+    eapply remset_item2forward_t_ftc; eassumption.
+  - inversion Hfri; subst. exact Hno.
+Qed.
+
+Lemma forward_remset_item_fold_gen2gen_no_edge2from_not_to:
+  forall from to g h rh rmst r g' h' rh' rmst' gen1,
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    remset_nodup rmst ->
+    remset_graph_compatible g rmst ->
+    remset_and_remset_space_compatible g from rmst r ->
+    gen1 <> to ->
+    gen2gen_no_edge g gen1 from ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    gen2gen_no_edge g' gen1 from.
+Proof.
+  intros from to g h rh rmst r. revert g h rh rmst.
+  induction r; intros g h rh rmst g' h' rh' rmst' gen1
+                       Hneq Hto Hcc Hndd Hrnd Hrc Hrrsc Hgen1 Hno Hfold.
+  - simpl in Hfold. inversion Hfold; subst. exact Hno.
+  - simpl in Hfold. hnf in Hrrsc. rewrite Forall_cons_iff in Hrrsc.
+    destruct Hrrsc as [Hrica Hricr].
+    destruct (forward_remset_item from to (g, h, rh, rmst) a)
+      as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
+    symmetry in Hfri2.
+    fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
+    rewrite <- Hfri2 in Hfold.
+    assert (Hcc2: copy_compatible g2) by
+        exact (fri_copy_compatible from to g h rh rmst a g2 h2 rh2 rmst2
+                 Hneq Hto Hcc Hfri2).
+    assert (Hndd2: no_dangling_dst g2) by
+        exact (fri_no_dangling_dst from to g h rh rmst a g2 h2 rh2 rmst2
+                 Hto Hcc Hrc Hrica Hndd Hfri2).
+    assert (Hrnd2: remset_nodup rmst2) by
+        exact (fri_remset_nodup from to g h rh rmst a g2 h2 rh2 rmst2 Hrnd Hfri2).
+    assert (Hrc2: remset_graph_compatible g2 rmst2) by
+        exact (fri_remset_graph_compatible from to g h rh rmst a g2 h2 rh2 rmst2
+                 Hto Hcc Hrnd Hrc Hrica Hfri2).
+    assert (Hricr2: remset_and_remset_space_compatible g2 from rmst2 r). {
+      hnf. rewrite Forall_forall in Hricr |- *. intros x Hin.
+      specialize (Hricr _ Hin).
+      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
+    }
+    assert (Hno2: gen2gen_no_edge g2 gen1 from) by
+        (eapply forward_remset_item_gen2gen_no_edge2from_not_to; eauto).
+    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen1); eauto.
+    rewrite <- (forward_remset_item_ghg from to g h rh rmst a g2 h2 rh2 rmst2
+                   Hto Hfri2 to); exact Hto.
+Qed.
+
+Lemma forward_remset_gh_gen2gen_no_edge2from_not_to:
+  forall from to g h rh rmst g' h' rh' rmst' outlier gen1,
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    remset_nodup rmst ->
+    remset_compatible g outlier from rmst rh h ->
+    gen1 <> to ->
+    gen2gen_no_edge g gen1 from ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    gen2gen_no_edge g' gen1 from.
+Proof.
+  intros from to g h rh rmst g' h' rh' rmst' outlier gen1
+         Hneq Hto Hcc Hndd Hrnd Hremc Hgen1 Hno Hfrg.
+  destruct Hremc as [Hrgoc [Hrrhc _]].
+  assert (Hrc: remset_graph_compatible g rmst) by
+      (eapply remset_graph_outlier_compatible_weakened; eassumption).
+  unfold forward_remset_gh in Hfrg.
+  eapply forward_remset_item_fold_gen2gen_no_edge2from_not_to; eauto.
+  eapply rrhc_forall_rrsc; exact Hrrhc.
+Qed.
+
+Lemma do_generation_relation_no_dangling_dst:
+  forall g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i outlier,
+    graph_has_gen g (S i) ->
+    graph_unmarked g ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    no_backward_edge g ->
+    firstn_gen_clear g i ->
+    roots_graph_compatible roots g ->
+    remset_nodup rmst ->
+    remset_compatible g outlier i rmst rh h ->
+    do_generation_relation i (S i) roots roots' g h rh rmst
+      g_rem h_rem rh' rmst' g' ->
+    no_dangling_dst g'.
+Proof.
+  intros g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i outlier
+         Hto Hungraph Hcc Hndd Hnbe Hfirst Hrgc Hrnd Hremc Hrel.
+  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  assert (Hneq: i <> S i) by lia.
+  assert (Hneq': S i <> i) by lia.
+  assert (Hun_to: gen_unmarked g (S i)) by
+      (rewrite graph_gen_unmarked_iff in Hungraph; apply Hungraph).
+  assert (Hnoedge_g: no_edge2gen g i) by (eapply fgc_nbe_no_edge2gen; eauto).
+  assert (Hprefix_g: forall vidx eidx : nat,
+             (vidx < gen_v_num g (S i))%nat ->
+             graph_has_e g (S i, vidx, eidx) ->
+             vgeneration (dst g (S i, vidx, eidx)) <> i). {
+    intros vidx eidx _ He.
+    unfold no_edge2gen in Hnoedge_g. specialize (Hnoedge_g (S i) Hneq').
+    unfold gen2gen_no_edge in Hnoedge_g. apply Hnoedge_g. exact He.
+  }
+  assert (Hto_rem: graph_has_gen g_rem (S i)) by
+      (rewrite <- (forward_remset_gh_graph_has_gen i (S i) g h rh rmst
+                     g_rem h_rem rh' rmst' Hto Hfrg (S i)); exact Hto).
+  assert (Hcc_rem: copy_compatible g_rem) by
+      exact (forward_remset_gh_copy_compatible i (S i) g h rh rmst g_rem h_rem rh' rmst'
+               Hneq Hto Hcc Hfrg).
+  assert (Hndd_rem: no_dangling_dst g_rem) by
+      exact (forward_remset_gh_no_dangling_dst i (S i) g h rh rmst g_rem h_rem rh' rmst'
+               outlier Hneq Hto Hcc Hndd Hrnd Hremc Hfrg).
+  assert (Hrgc_rem: roots_graph_compatible roots g_rem) by
+      exact (forward_remset_gh_roots_graph_compatible i (S i) g h rh rmst g_rem h_rem rh'
+               rmst' roots outlier Hneq Hto Hcc Hrnd Hremc Hfrg Hrgc).
+  assert (Hun_rem: gen_unmarked g_rem (S i)) by
+      exact (forward_remset_gh_gen_unmarked i (S i) g h rh rmst
+               g_rem h_rem rh' rmst' (S i) Hto Hneq Hfrg Hun_to).
+  assert (Hbound_rem: (gen_v_num g (S i) <= gen_v_num g_rem (S i))%nat) by
+      (eapply forward_remset_gh_gen_v_num_to; eauto).
+  assert (Hprefix_rem: forall vidx eidx : nat,
+             (vidx < gen_v_num g (S i))%nat ->
+             graph_has_e g_rem (S i, vidx, eidx) ->
+             vgeneration (dst g_rem (S i, vidx, eidx)) <> i) by
+      exact (forward_remset_gh_prefix_no_edge2gen_old_to
+               i (S i) g h rh rmst g_rem h_rem rh' rmst' outlier
+               (gen_v_num g (S i)) Hneq Hto Hcc Hndd Hrnd Hremc
+               (le_n _) Hprefix_g Hfrg).
+  assert (Hother_rem: forall another : nat,
+             another <> i -> another <> S i -> gen2gen_no_edge g_rem another i). {
+    intros another Hanother Hnot_to.
+    exact (forward_remset_gh_gen2gen_no_edge2from_not_to
+             i (S i) g h rh rmst g_rem h_rem rh' rmst' outlier another
+             Hneq Hto Hcc Hndd Hrnd Hremc Hnot_to (Hnoedge_g another Hanother) Hfrg).
+  }
+  assert (Hto1: graph_has_gen g1 (S i)) by
+      (rewrite <- (frr_graph_has_gen i (S i) roots g_rem roots' g1 Hto_rem Hfrr (S i));
+       exact Hto_rem).
+  assert (Hcc1: copy_compatible g1) by
+      exact (frr_copy_compatible i (S i) roots g_rem roots' g1
+               Hneq Hto_rem Hfrr Hcc_rem).
+  assert (Hndd1: no_dangling_dst g1) by
+      exact (frr_no_dangling_dst i (S i) roots g_rem roots' g1
+               Hto_rem Hcc_rem Hneq Hrgc_rem Hfrr Hndd_rem).
+  assert (Hun1: gen_unmarked g1 (S i)) by
+      exact (frr_gen_unmarked i (S i) roots g_rem roots' g1
+               Hto_rem Hfrr (S i) Hneq' Hun_rem).
+  assert (Hbound1: (gen_v_num g (S i) <= gen_v_num g1 (S i))%nat). {
+    pose proof (frr_gen_v_num_to i (S i) roots g_rem roots' g1 Hto_rem Hfrr).
+    lia.
+  }
+  assert (Hprefix1: forall vidx eidx : nat,
+             (vidx < gen_v_num g (S i))%nat ->
+             graph_has_e g1 (S i, vidx, eidx) ->
+             vgeneration (dst g1 (S i, vidx, eidx)) <> i) by
+      exact (frr_prefix_no_edge2gen_old_to
+               i (S i) roots roots' g_rem g1 (gen_v_num g (S i))
+               Hto_rem Hfrr Hbound_rem Hprefix_rem).
+  assert (Hother1: forall another : nat,
+             another <> i -> another <> S i -> gen2gen_no_edge g1 another i). {
+    intros another Hanother Hnot_to.
+    exact (frr_gen2gen_no_edge i (S i) roots g_rem roots' g1
+             Hto_rem Hfrr another i Hnot_to
+             (Hother_rem another Hanother Hnot_to)).
+  }
+  assert (Hnoedge2: no_edge2gen g2 i) by
+      (eapply do_scan_prefix_no_edge2gen; eauto).
+  assert (Hndd2: no_dangling_dst g2). {
+    destruct Hscan as [n [Hscan _]].
+    eapply (svwl_no_dangling_dst i (S i) (seq (gen_v_num g (S i)) n) g1 g2); eauto.
+  }
+  subst g'. apply no_dangling_dst_reset; assumption.
+Qed.
+
+Lemma do_generation_relation_firstn_gen_clear:
+  forall g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i,
+    do_generation_relation i (S i) roots roots' g h rh rmst
+      g_rem h_rem rh' rmst' g' ->
+    graph_has_gen g (S i) ->
+    firstn_gen_clear g i ->
+    firstn_gen_clear g' (S i).
+Proof.
+  intros g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i Hrel Hto Hfirst.
+  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  assert (Hto_rem: graph_has_gen g_rem (S i)) by
+      (rewrite <- (forward_remset_gh_graph_has_gen i (S i) g h rh rmst
+                     g_rem h_rem rh' rmst' Hto Hfrg (S i)); exact Hto).
+  assert (Hto1: graph_has_gen g1 (S i)) by
+      (rewrite <- (frr_graph_has_gen i (S i) roots g_rem roots' g1 Hto_rem Hfrr (S i));
+       exact Hto_rem).
+  assert (Hfirst1: firstn_gen_clear g_rem i). {
+    eapply (forward_remset_gh_firstn_gen_clear
+              i (S i) g h rh rmst g_rem h_rem rh' rmst' i); eauto.
+  }
+  assert (Hfirst_frr: firstn_gen_clear g1 i) by
+      (eapply (frr_firstn_gen_clear i (S i) roots g_rem roots' g1); eauto; lia).
+  destruct Hscan as [n [Hscan Hbound]].
+  assert (Hfirst_scan: firstn_gen_clear g2 i). {
+    eapply (svwl_firstn_gen_clear i (S i) (seq (number_of_vertices (nth_gen g (S i))) n) g1 g2);
+      eauto; try lia.
+  }
+  subst g'. apply firstn_gen_clear_reset. assumption.
+Qed.
+
+Lemma do_generation_relation_graph_unmarked:
+  forall from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g',
+    graph_has_gen g to ->
+    do_generation_relation from to roots roots' g h rh rmst
+      g_rem h_rem rh' rmst' g' ->
+    graph_unmarked g ->
+    graph_unmarked g'.
+Proof.
+  intros from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' Hto Hrel Hunmarked.
+  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  rewrite graph_gen_unmarked_iff in Hunmarked.
+  assert (Hto_rem: graph_has_gen g_rem to) by
+      (rewrite <- (forward_remset_gh_graph_has_gen from to g h rh rmst
+                     g_rem h_rem rh' rmst' Hto Hfrg to); exact Hto).
+  assert (Hto1: graph_has_gen g1 to) by
+      (rewrite <- (frr_graph_has_gen from to roots g_rem roots' g1 Hto_rem Hfrr to);
+       exact Hto_rem).
+  assert (Hunmarked_rem: forall gen, from <> gen -> gen_unmarked g_rem gen). {
+    intros gen Hneq.
+    eapply (forward_remset_gh_gen_unmarked
+              from to g h rh rmst g_rem h_rem rh' rmst' gen); eauto.
+  }
+  assert (Hunmarked1: forall gen, from <> gen -> gen_unmarked g1 gen). {
+    intros gen Hneq.
+    eapply (frr_gen_unmarked from to roots g_rem roots' g1); eauto.
+  }
+  assert (Hunmarked2: forall gen, from <> gen -> gen_unmarked g2 gen). {
+    intros gen Hneq. destruct Hscan as [n [Hscan _]].
+    eapply (svwl_gen_unmarked from to _ g1 g2); eauto.
+  }
+  subst g'. rewrite graph_gen_unmarked_iff. intros gen.
+  destruct (Nat.eq_dec from gen).
+  - subst. apply gen_unmarked_reset_same.
+  - apply gen_unmarked_reset_diff. apply Hunmarked2. assumption.
+Qed.
+
+Lemma fr_O_gen2gen_no_edge_gt_to_source:
+  forall from to p g g' gen1 gen2,
+    graph_has_gen g to -> from <> to -> copy_compatible g -> no_dangling_dst g ->
+    forward_t_compatible p g -> forward_relation from to O p g g' ->
+    (forall dst_gen, (dst_gen < gen1)%nat -> gen2gen_no_edge g gen1 dst_gen) ->
+    gen2gen_no_edge g gen1 from ->
+    (to < gen1)%nat -> (gen2 < gen1)%nat ->
+    gen2gen_no_edge g' gen1 gen2.
+Proof.
+  intros from to p g g' gen1 gen2 Hto Hneq Hcc Hndd Hftc Hfr Hnbe_src Hnofrom
+         Hgtto Hgt.
+  unfold gen2gen_no_edge in *. intros vidx eidx He.
+  destruct p as [z | out | v | e]; inversion Hfr; subst; simpl in *;
+    try solve [eapply Hnbe_src; eauto].
+  1: (assert (Hsrc: graph_has_v g (gen1, vidx)) by
+        (destruct He as [Hsrc_new _];
+         apply lcv_graph_has_v_inv in Hsrc_new;
+         [destruct Hsrc_new as [Hsrc_old | Hnew]; [exact Hsrc_old |]
+         | exact Hto];
+         unfold new_copied_v in Hnew; inversion Hnew; lia);
+      rewrite pcv_dst_old;
+      [ eapply Hnbe_src; [exact Hgt |]; destruct He as [_ Hin]; split; simpl; [exact Hsrc |];
+        unfold get_edges, make_fields in Hin |- *;
+        rewrite (lcv_raw_fields g v to (gen1, vidx) Hto Hsrc); exact Hin
+      | unfold new_copied_v; intro Hbad; inversion Hbad; lia ]).
+  1: (destruct (E_EqDec e (gen1, vidx, eidx)) as [Heq | Hne];
+      [ hnf in Heq; subst e; unfold updateEdgeFunc; rewrite if_true by reflexivity;
+        exfalso; apply Hnofrom with (vidx := vidx) (eidx := eidx);
+        [exact Hftc | reflexivity]
+      | unfold updateEdgeFunc; rewrite if_false by (intro Hbad; apply Hne; hnf; exact Hbad);
+        eapply Hnbe_src; [exact Hgt |]; destruct He as [Hsrc_new Hin_new]; split; simpl;
+        [exact Hsrc_new | exact Hin_new] ]).
+  1: (destruct (E_EqDec e (gen1, vidx, eidx)) as [Heq | Hne];
+      [ hnf in Heq; subst e; unfold updateEdgeFunc; rewrite if_true by reflexivity;
+        exfalso; apply Hnofrom with (vidx := vidx) (eidx := eidx);
+        [exact Hftc | reflexivity]
+      | unfold updateEdgeFunc; rewrite if_false by (intro Hbad; apply Hne; hnf; exact Hbad);
+        rewrite pcv_dst_old;
+        [ eapply Hnbe_src; [exact Hgt |]; destruct He as [Hsrc_new Hin_new];
+          change (graph_has_v (lgraph_copy_v g (dst g e) to) (gen1, vidx)) in Hsrc_new;
+          pose proof (lcv_graph_has_v_inv g (dst g e) to (gen1, vidx) Hto Hsrc_new)
+            as Hsrc_inv;
+          destruct Hsrc_inv as [Hsrc_old | Hnew];
+          [ split; simpl; [exact Hsrc_old |];
+            unfold get_edges, make_fields in Hin_new |- *;
+            change (In (gen1, vidx, eidx)
+                       (filter_proj field_proj_edge
+                          (make_fields (lgraph_copy_v g (dst g e) to) (gen1, vidx))))
+              in Hin_new;
+            rewrite (lcv_raw_fields g (dst g e) to (gen1, vidx) Hto Hsrc_old);
+            exact Hin_new
+          | unfold new_copied_v in Hnew; inversion Hnew; lia ]
+        | unfold new_copied_v; intro Hbad; inversion Hbad; lia ] ]).
+Qed.
+
+Lemma forward_remset_item_gen2gen_no_edge_gt_to_source:
+  forall from to g h rh rmst item g' h' rh' rmst' gen1 gen2,
+    graph_has_gen g to -> from <> to -> copy_compatible g -> no_dangling_dst g ->
+    remset_graph_compatible g rmst ->
+    remset_item_compatible g from rmst item ->
+    (forall dst_gen, (dst_gen < gen1)%nat -> gen2gen_no_edge g gen1 dst_gen) ->
+    gen2gen_no_edge g gen1 from ->
+    (to < gen1)%nat -> (gen2 < gen1)%nat ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    gen2gen_no_edge g' gen1 gen2.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' gen1 gen2
+         Hto Hneq Hcc Hndd Hrc Hric Hnbe_src Hnofrom Hgtto Hgt Hfri.
+  unfold forward_remset_item in Hfri.
+  destruct (negb (remset_item_in_gen item rmst g from)).
+  - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
+      as [newg newh] eqn:Hfgh.
+    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h
+      as Hfr.
+    rewrite Hfgh in Hfr. simpl in Hfr. inversion Hfri; subst.
+    eapply fr_O_gen2gen_no_edge_gt_to_source; eauto.
+    eapply remset_item2forward_t_ftc; eassumption.
+  - inversion Hfri; subst.
+    exact (Hnbe_src gen2 Hgt).
+Qed.
+
+Lemma forward_remset_item_fold_gen2gen_no_edge_gt_to_source:
+  forall from to g h rh rmst r g' h' rh' rmst' gen1 gen2,
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    remset_nodup rmst ->
+    remset_graph_compatible g rmst ->
+    remset_and_remset_space_compatible g from rmst r ->
+    (forall dst_gen, (dst_gen < gen1)%nat -> gen2gen_no_edge g gen1 dst_gen) ->
+    gen2gen_no_edge g gen1 from ->
+    (to < gen1)%nat -> (gen2 < gen1)%nat ->
+    (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    gen2gen_no_edge g' gen1 gen2.
+Proof.
+  intros from to g h rh rmst r. revert g h rh rmst.
+  induction r; intros g h rh rmst g' h' rh' rmst' gen1 gen2
+                       Hneq Hto Hcc Hndd Hrnd Hrc Hrrsc Hnbe_src Hnofrom Hgtto Hgt Hfold.
+  - simpl in Hfold. inversion Hfold; subst. exact (Hnbe_src gen2 Hgt).
+  - simpl in Hfold. hnf in Hrrsc. rewrite Forall_cons_iff in Hrrsc.
+    destruct Hrrsc as [Hrica Hricr].
+    destruct (forward_remset_item from to (g, h, rh, rmst) a)
+      as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
+    symmetry in Hfri2.
+    fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
+    rewrite <- Hfri2 in Hfold.
+    assert (Hcc2: copy_compatible g2) by
+        exact (fri_copy_compatible from to g h rh rmst a g2 h2 rh2 rmst2
+                 Hneq Hto Hcc Hfri2).
+    assert (Hndd2: no_dangling_dst g2) by
+        exact (fri_no_dangling_dst from to g h rh rmst a g2 h2 rh2 rmst2
+                 Hto Hcc Hrc Hrica Hndd Hfri2).
+    assert (Hrnd2: remset_nodup rmst2) by
+        exact (fri_remset_nodup from to g h rh rmst a g2 h2 rh2 rmst2 Hrnd Hfri2).
+    assert (Hrc2: remset_graph_compatible g2 rmst2) by
+        exact (fri_remset_graph_compatible from to g h rh rmst a g2 h2 rh2 rmst2
+                 Hto Hcc Hrnd Hrc Hrica Hfri2).
+    assert (Hricr2: remset_and_remset_space_compatible g2 from rmst2 r). {
+      hnf. rewrite Forall_forall in Hricr |- *. intros x Hin.
+      specialize (Hricr _ Hin).
+      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
+    }
+    assert (Hto2: graph_has_gen g2 to) by
+        (rewrite <- (forward_remset_item_ghg from to g h rh rmst a g2 h2 rh2 rmst2
+                       Hto Hfri2 to); exact Hto).
+    assert (Hnbe_src2: forall dst_gen : nat,
+               (dst_gen < gen1)%nat -> gen2gen_no_edge g2 gen1 dst_gen). {
+      intros dst_gen Hdst.
+      exact (forward_remset_item_gen2gen_no_edge_gt_to_source
+               from to g h rh rmst a g2 h2 rh2 rmst2 gen1 dst_gen
+               Hto Hneq Hcc Hndd Hrc Hrica Hnbe_src Hnofrom Hgtto Hdst Hfri2).
+    }
+    assert (Hnofrom2: gen2gen_no_edge g2 gen1 from) by
+        exact (forward_remset_item_gen2gen_no_edge2from_not_to
+                 from to g h rh rmst a g2 h2 rh2 rmst2 gen1
+                 Hto Hneq Hcc Hndd Hrc Hrica ltac:(lia) Hnofrom Hfri2).
+    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen1 gen2); eauto.
+Qed.
+
+Lemma forward_remset_gh_gen2gen_no_edge_gt_to_source:
+  forall from to g h rh rmst g' h' rh' rmst' outlier gen1 gen2,
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    remset_nodup rmst ->
+    remset_compatible g outlier from rmst rh h ->
+    (forall dst_gen, (dst_gen < gen1)%nat -> gen2gen_no_edge g gen1 dst_gen) ->
+    gen2gen_no_edge g gen1 from ->
+    (to < gen1)%nat -> (gen2 < gen1)%nat ->
+    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
+    gen2gen_no_edge g' gen1 gen2.
+Proof.
+  intros from to g h rh rmst g' h' rh' rmst' outlier gen1 gen2
+         Hneq Hto Hcc Hndd Hrnd Hremc Hnbe_src Hnofrom Hgtto Hgt Hfrg.
+  destruct Hremc as [Hrgoc [Hrrhc _]].
+  assert (Hrc: remset_graph_compatible g rmst) by
+      (eapply remset_graph_outlier_compatible_weakened; eassumption).
+  unfold forward_remset_gh in Hfrg.
+  eapply forward_remset_item_fold_gen2gen_no_edge_gt_to_source; eauto.
+  eapply rrhc_forall_rrsc; exact Hrrhc.
+Qed.
+
+Lemma do_generation_relation_no_backward_edge:
+  forall g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i outlier,
+    graph_has_gen g (S i) ->
+    graph_unmarked g ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    no_backward_edge g ->
+    firstn_gen_clear g i ->
+    roots_graph_compatible roots g ->
+    remset_nodup rmst ->
+    remset_compatible g outlier i rmst rh h ->
+    do_generation_relation i (S i) roots roots' g h rh rmst
+      g_rem h_rem rh' rmst' g' ->
+    no_backward_edge g'.
+Proof.
+  intros g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i outlier
+         Hto Hungraph Hcc Hndd Hnbe Hfirst Hrgc Hrnd Hremc Hrel.
+  assert (Hndd_final: no_dangling_dst g') by
+      (eapply do_generation_relation_no_dangling_dst; eauto).
+  assert (Hfirst_final: firstn_gen_clear g' (S i)) by
+      (eapply do_generation_relation_firstn_gen_clear; eauto).
+  unfold no_backward_edge. intros gen1 gen2 Hgt.
+  destruct (le_lt_dec gen1 (S i)) as [Hle | Hgtto].
+  - unfold gen2gen_no_edge. intros vidx eidx He Hbad.
+    destruct He as [Hsrc Hin].
+    pose proof (Hndd_final _ Hsrc _ Hin) as Hdst.
+    destruct (dst g' (gen1, vidx, eidx)) as [dgen didx] eqn:Hdstv.
+    simpl in Hbad. subst dgen. simpl in Hdst.
+    assert (Hgen2_lt: (gen2 < S i)%nat) by lia.
+    unfold firstn_gen_clear in Hfirst_final.
+    specialize (Hfirst_final _ Hgen2_lt).
+    unfold graph_gen_clear in Hfirst_final.
+    destruct Hdst as [_ Hidx].
+    unfold gen_has_index in Hidx. simpl in Hidx.
+    rewrite Hfirst_final in Hidx. lia.
+  - destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+    subst g'. apply gen2gen_no_edge_reset.
+    assert (Hneq: i <> S i) by lia.
+    assert (Hneq': S i <> i) by lia.
+    assert (Hun_to: gen_unmarked g (S i)) by
+        (rewrite graph_gen_unmarked_iff in Hungraph; apply Hungraph).
+    assert (Hto_rem: graph_has_gen g_rem (S i)) by
+        (rewrite <- (forward_remset_gh_graph_has_gen i (S i) g h rh rmst
+                       g_rem h_rem rh' rmst' Hto Hfrg (S i)); exact Hto).
+    assert (Hun_rem: gen_unmarked g_rem (S i)) by
+        exact (forward_remset_gh_gen_unmarked i (S i) g h rh rmst
+                 g_rem h_rem rh' rmst' (S i) Hto Hneq Hfrg Hun_to).
+    assert (Hto1: graph_has_gen g1 (S i)) by
+        (rewrite <- (frr_graph_has_gen i (S i) roots g_rem roots' g1 Hto_rem Hfrr (S i));
+         exact Hto_rem).
+    assert (Hun1: gen_unmarked g1 (S i)) by
+        exact (frr_gen_unmarked i (S i) roots g_rem roots' g1
+                 Hto_rem Hfrr (S i) Hneq' Hun_rem).
+    assert (Hrem_src: forall dst_gen : nat,
+               (dst_gen < gen1)%nat -> gen2gen_no_edge g_rem gen1 dst_gen). {
+      intros dst_gen Hdst.
+      exact (forward_remset_gh_gen2gen_no_edge_gt_to_source
+               i (S i) g h rh rmst g_rem h_rem rh' rmst' outlier gen1 dst_gen
+               Hneq Hto Hcc Hndd Hrnd Hremc
+               (fun dst_gen0 Hdst0 => Hnbe gen1 dst_gen0 Hdst0)
+               (Hnbe gen1 i ltac:(lia)) Hgtto Hdst Hfrg).
+    }
+    assert (Hfrr_src: forall dst_gen : nat,
+               (dst_gen < gen1)%nat -> gen2gen_no_edge g1 gen1 dst_gen). {
+      intros dst_gen Hdst.
+      exact (frr_gen2gen_no_edge i (S i) roots g_rem roots' g1
+               Hto_rem Hfrr gen1 dst_gen ltac:(lia) (Hrem_src dst_gen Hdst)).
+    }
+    destruct Hscan as [n [Hscan _]].
+    eapply (svwl_gen2gen_no_edge i (S i) (seq (number_of_vertices (nth_gen g (S i))) n) g1 g2);
+      eauto; try lia.
+Qed.
+
+Lemma do_generation_relation_gcc:
+  forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier,
+    graph_has_gen g (S i) ->
+    graph_unmarked g ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    no_backward_edge g ->
+    firstn_gen_clear g i ->
+    roots_graph_compatible roots g ->
+    remset_nodup rmst ->
+    remset_compatible g outlier i rmst rh h ->
+    weak_heap_relation h h' ->
+    ti_size_spec h ->
+    do_generation_relation i (S i) roots roots' g h rh rmst
+      g_rem h_rem rh' rmst' g' ->
+    garbage_collect_condition g' h'.
+Proof.
+  intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier
+         Hto Hun Hcc Hndd Hnbe Hfirst Hrgc Hrnd Hremc Hwhr Hsize Hrel.
+  split; [|split; [|split]].
+  - eapply do_generation_relation_graph_unmarked; eauto.
+  - eapply do_generation_relation_no_backward_edge; eauto.
+  - eapply do_generation_relation_no_dangling_dst; eauto.
+  - eapply weak_heap_relation_size_spec; eauto.
 Qed.
 
 (* Transitional graph-only relation used by the old mathematical
@@ -9018,19 +10543,60 @@ Proof.
   - apply gen_unmarked_reset_diff. apply H5. assumption.
 Qed.
 
-Inductive garbage_collect_loop
+Definition new_gen_heap_relation
+           (gen: nat) (g: LGraph) (h: part_heap) (g': LGraph) (h': part_heap): Prop :=
+  if graph_has_gen_dec g gen
+  then g' = g /\ h' = h
+  else exists (gi: generation_info) (sp: space) (i: Z) (Hs: 0 <= i < MAX_SPACES),
+      Z.to_nat i = gen /\
+      number_of_vertices gi = O /\
+      total_space sp = nth_gen_size gen /\
+      available_space sp = total_space sp /\
+      used_space sp = 0 /\
+      g' = lgraph_add_new_gen g gi /\
+      h' = add_new_space h sp i Hs.
+
+Inductive garbage_collect_graph_loop
   : list nat -> roots_t -> LGraph -> roots_t -> LGraph -> Prop :=
-  gcl_nil: forall g roots, garbage_collect_loop nil roots g roots g
-| gcl_cons: forall (g1 g2 g3 g4: LGraph) (i: nat) (il: list nat)
+  gcgl_nil: forall g roots, garbage_collect_graph_loop nil roots g roots g
+| gcgl_cons: forall (g1 g2 g3 g4: LGraph) (i: nat) (il: list nat)
                    (roots1 roots2 roots3: roots_t),
     new_gen_relation (S i) g1 g2 ->
     do_generation_graph_relation i (S i) roots1 roots2 g2 g3 ->
-    garbage_collect_loop il roots2 g3 roots3 g4 ->
-    garbage_collect_loop (i :: il) roots1 g1 roots3 g4.
+    garbage_collect_graph_loop il roots2 g3 roots3 g4 ->
+    garbage_collect_graph_loop (i :: il) roots1 g1 roots3 g4.
+
+Definition garbage_collect_graph_relation
+           (roots1 roots2: roots_t) (g1 g2: LGraph): Prop :=
+  exists n, garbage_collect_graph_loop (nat_inc_list (S n)) roots1 g1 roots2 g2 /\
+            safe_to_copy_gen g2 n (S n).
+
+Inductive garbage_collect_loop
+  : list nat -> roots_t -> LGraph -> part_heap -> remset_heap -> remset ->
+    roots_t -> LGraph -> part_heap -> remset_heap -> remset -> Prop :=
+  gcl_nil: forall g h rh rmst roots,
+    garbage_collect_loop nil roots g h rh rmst roots g h rh rmst
+| gcl_cons: forall (g1 g2 g3 g4: LGraph) (h1 h2 h3 h4: part_heap)
+                    (rh1 rh2 rh3 rh4: remset_heap)
+                    (rmst1 rmst2 rmst4: remset)
+                    (g_rem: LGraph) (h_rem: part_heap)
+                    (i: nat) (il: list nat)
+                    (roots1 roots2 roots3: roots_t),
+    new_gen_heap_relation (S i) g1 h1 g2 h2 ->
+    do_generation_relation i (S i) roots1 roots2 g2 h2 rh1 rmst1
+      g_rem h_rem rh2 rmst2 g3 ->
+    weak_heap_relation h2 h3 ->
+    rh3 = reset_nth_remset_heap i rh2 ->
+    garbage_collect_loop il roots2 g3 h3 rh3 rmst2 roots3 g4 h4 rh4 rmst4 ->
+    garbage_collect_loop (i :: il) roots1 g1 h1 rh1 rmst1
+      roots3 g4 h4 rh4 rmst4.
 
 Definition garbage_collect_relation
-           (roots1 roots2: roots_t) (g1 g2: LGraph): Prop :=
-  exists n, garbage_collect_loop (nat_inc_list (S n)) roots1 g1 roots2 g2 /\
+           (roots1 roots2: roots_t)
+           (g1: LGraph) (h1: part_heap) (rh1: remset_heap) (rmst1: remset)
+           (g2: LGraph) (h2: part_heap) (rh2: remset_heap) (rmst2: remset): Prop :=
+  exists n, garbage_collect_loop (nat_inc_list (S n))
+              roots1 g1 h1 rh1 rmst1 roots2 g2 h2 rh2 rmst2 /\
             safe_to_copy_gen g2 n (S n).
 
 Lemma do_gen_no_dangling_dst: forall g1 g2 roots1 roots2 from to,
@@ -9122,11 +10688,145 @@ Proof.
     eapply (frr_stcg i (S i) _ g1); eauto.
 Qed.
 
-Lemma gcl_add_tail: forall l g1 roots1 g2 roots2 g3 roots3 g4 i,
-    garbage_collect_loop l roots1 g1 roots2 g2 ->
+Lemma do_generation_relation_stcte:
+  forall g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i,
+    safe_to_copy_to_except g i ->
+    graph_has_gen g (S i) ->
+    do_generation_relation i (S i) roots roots' g h rh rmst
+      g_rem h_rem rh' rmst' g' ->
+    safe_to_copy_to_except g' (S i).
+Proof.
+  intros g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i Hstcte Hto Hrel.
+  unfold safe_to_copy_to_except in *. intros n Hn0 Hnto Hhas.
+  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  destruct (Nat.eq_dec n i).
+  - subst. red. unfold graph_gen_size, nth_gen. simpl.
+    rewrite reset_nth_gen_info_same. simpl. unfold previous_vertices_size.
+    simpl. destruct i. 1: contradiction. simpl. rewrite Z.sub_0_r.
+    apply nth_gen_size_le_S.
+  - subst g'. apply reset_stct; auto.
+    rewrite graph_has_gen_reset in Hhas.
+    destruct Hscan as [m [Hscan Hbound]].
+    assert (Hto_rem: graph_has_gen g_rem (S i)) by
+        (rewrite <- (forward_remset_gh_graph_has_gen i (S i) g h rh rmst
+                       g_rem h_rem rh' rmst' Hto Hfrg (S i)); exact Hto).
+    assert (Hto1: graph_has_gen g1 (S i)) by
+        (rewrite <- (frr_graph_has_gen i (S i) roots g_rem roots' g1 Hto_rem Hfrr (S i));
+         exact Hto_rem).
+    assert (Hhas1: graph_has_gen g1 n) by
+        (rewrite (svwl_graph_has_gen i (S i)
+                    (seq (number_of_vertices (nth_gen g (S i))) m)
+                    g1 g2 Hto1 Hscan n); exact Hhas).
+    assert (Hhas_rem: graph_has_gen g_rem n) by
+        (rewrite (frr_graph_has_gen i (S i) roots g_rem roots' g1 Hto_rem Hfrr n);
+         exact Hhas1).
+    assert (Hhas_g: graph_has_gen g n) by
+        (rewrite (forward_remset_gh_graph_has_gen i (S i) g h rh rmst
+                    g_rem h_rem rh' rmst' Hto Hfrg n); exact Hhas_rem).
+    assert (Hsafe_rem: safe_to_copy_gen g_rem (Init.Nat.pred n) n). {
+      eapply (forward_remset_gh_stcg
+                i (S i) g h rh rmst g_rem h_rem rh' rmst'
+                (Init.Nat.pred n) n); eauto.
+    }
+    assert (Hsafe_frr: safe_to_copy_gen g1 (Init.Nat.pred n) n) by
+        (eapply (frr_stcg i (S i) _ g_rem); eauto).
+    eapply (svwl_stcg i (S i) _ g1); eauto.
+Qed.
+
+Lemma do_generation_relation_stcteh:
+  forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i,
+    safe_to_copy_to_except_heap g h i ->
+    graph_has_gen g (S i) ->
+    graph_heap_compatible g h ->
+    graph_heap_compatible g' h' ->
+    ti_size_spec h ->
+    weak_heap_relation h h' ->
+    do_generation_relation i (S i) roots roots' g h rh rmst
+      g_rem h_rem rh' rmst' g' ->
+    do_generation_heap_relation i (S i) h h_rem h' ->
+    safe_to_copy_to_except_heap g' h' (S i).
+Proof.
+  intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i
+         Hsafe Hto Hghc Hghc' Hsize Hwhr Hrel Hhrel.
+  unfold safe_to_copy_to_except_heap in *. intros n Hn0 Hnto Hhas'.
+  assert (Hhas: graph_has_gen g n) by
+      (apply (proj2 (do_generation_relation_graph_has_gen
+                       i (S i) roots roots' g h rh rmst
+                       g_rem h_rem rh' rmst' g' Hto Hrel n));
+       exact Hhas').
+  destruct (Nat.eq_dec n i) as [Heq | Hni].
+  - subst n. destruct i as [|i]. 1: contradiction.
+    unfold safe_to_copy_gen_heap.
+    destruct Hhrel as [_ [h_scan [_ Hreset]]]. subst h'.
+    assert (Hrange: (S i < length (spaces h_scan))%nat). {
+      destruct Hghc' as [_ [_ Hlen]].
+      unfold graph_has_gen in Hhas'. simpl in Hlen.
+      change (length match spaces h_scan with
+                      | [] => []
+                      | sp :: l => sp :: reset_nth_space i l
+                      end)%nat with
+        (length (reset_nth_space (S i) (spaces h_scan))) in Hlen.
+      rewrite reset_nth_space_length in Hlen. lia.
+    }
+    rewrite reset_nth_heap_rest_gen_size_same_total by exact Hrange.
+    destruct Hwhr as [_ Htot].
+    rewrite <- Htot. rewrite <- Htot.
+    assert (Hhas_pred: graph_has_gen g i) by (unfold graph_has_gen in *; lia).
+    simpl.
+    rewrite (ti_size_gen _ _ _ Hghc Hhas_pred Hsize).
+    rewrite (ti_size_gen _ _ _ Hghc Hhas Hsize).
+    apply nth_gen_size_le_S.
+  - specialize (Hsafe n Hn0 Hni Hhas).
+    unfold safe_to_copy_gen_heap in *.
+    destruct Hhrel as [Hav_rem [h_scan [Hhr Hreset]]].
+    destruct Hhr as [Hav_hr [_ [_ _]]]. subst h'.
+    destruct Hwhr as [_ Htot].
+    rewrite <- Htot.
+    assert (Hrest: rest_gen_size (reset_nth_heap i h_scan) n = rest_gen_size h n). {
+      unfold rest_gen_size.
+      assert (Hav: available_size (reset_nth_heap i h_scan) n = available_size h n). {
+        rewrite reset_nth_heap_available_size_diff by exact Hni.
+        rewrite <- Hav_hr. apply Hav_rem. exact Hnto.
+      }
+      assert (Hused:
+                used_space (nth_space (reset_nth_heap i h_scan) n) =
+                used_space (nth_space h n)). {
+        destruct (gt_gs_compatible _ _ Hghc _ Hhas) as [_ [_ Hused_h]].
+        destruct (gt_gs_compatible _ _ Hghc' _ Hhas') as [_ [_ Hused_h']].
+        fold (graph_gen_size g n) in Hused_h.
+        fold (graph_gen_size g' n) in Hused_h'.
+        rewrite <- Hused_h'. rewrite <- Hused_h.
+        symmetry.
+        eapply (do_generation_relation_graph_gen_size_unchanged
+                  i (S i) roots roots' g h rh rmst
+                  g_rem h_rem rh' rmst' g' n); eauto.
+      }
+      unfold available_size in Hav. rewrite Hav. rewrite Hused. reflexivity.
+    }
+    rewrite Hrest. exact Hsafe.
+Qed.
+
+Lemma gcgl_add_tail: forall l g1 roots1 g2 roots2 g3 roots3 g4 i,
+    garbage_collect_graph_loop l roots1 g1 roots2 g2 ->
     new_gen_relation (S i) g2 g3 ->
     do_generation_graph_relation i (S i) roots2 roots3 g3 g4 ->
-    garbage_collect_loop (l +:: i) roots1 g1 roots3 g4.
+    garbage_collect_graph_loop (l +:: i) roots1 g1 roots3 g4.
+Proof.
+  induction l; intros.
+  - simpl. inversion H. subst. eapply gcgl_cons; eauto. constructor.
+  - inversion H. subst. clear H. simpl app. eapply gcgl_cons; eauto.
+Qed.
+
+Lemma gcl_add_tail: forall l g1 h1 rh1 rmst1 roots1
+    g2 h2 rh2 rmst2 roots2 g3 h3 roots3 g4 h4 rh3 rmst3
+    g_rem h_rem i,
+    garbage_collect_loop l roots1 g1 h1 rh1 rmst1 roots2 g2 h2 rh2 rmst2 ->
+    new_gen_heap_relation (S i) g2 h2 g3 h3 ->
+    do_generation_relation i (S i) roots2 roots3 g3 h3 rh2 rmst2
+      g_rem h_rem rh3 rmst3 g4 ->
+    weak_heap_relation h3 h4 ->
+    garbage_collect_loop (l +:: i) roots1 g1 h1 rh1 rmst1
+      roots3 g4 h4 (reset_nth_remset_heap i rh3) rmst3.
 Proof.
   induction l; intros.
   - simpl. inversion H. subst. eapply gcl_cons; eauto. constructor.

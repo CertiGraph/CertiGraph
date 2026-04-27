@@ -393,7 +393,8 @@ Proof.
   start_function.
   rename H0 into Hremset.
   rename H1 into H0.
-  rename H2 into H1.
+  rename H2 into Hstcteh.
+  rename H3 into H1.
   pose proof H. pose proof H0. destruct H2 as [? _]. destruct H3 as [? [? [? _]]].
   assert (generation_space_compatible
             g (from, nth_gen g from, nth_space h from)) by
@@ -790,6 +791,12 @@ Proof.
             + apply whr_trans with h2.
               * apply heap_relation_weakened. exact H34.
               * subst h3. apply weak_heap_relation_reset.
+        }
+        assert (Hdg_heap: do_generation_heap_relation from to h h0 h3). {
+          split.
+          - intros gen Hgen.
+            eapply forward_remset_gh_available_size_not_to; eauto.
+          - exists h2. split; [exact Hhr02 | exact Heqh3].
         }
         Exists g0 h0 rh0 rmst0 g3 h3 roots1.
         destruct H32 as [? [? [? ?]]].

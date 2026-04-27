@@ -374,6 +374,7 @@ Definition do_generation_spec :=
           super_compatible g h (frames2rootpairs fr) roots outlier;
           remset_compatible g outlier from rmst rh h;
           do_generation_condition g h from to;
+          safe_to_copy_to_except_heap g h from;
           from <> to)
     PARAMS (space_address hp from;
            space_address hp to;
@@ -393,7 +394,8 @@ Definition do_generation_spec :=
     PROP (super_compatible g' h' (frames2rootpairs (update_frames fr (map (exterior2val g') roots'))) roots' outlier;
           weak_heap_relation h h';
           do_generation_relation from to roots roots' g h rh rmst
-            g_rem h_rem rh' rmst' g')
+            g_rem h_rem rh' rmst' g';
+          do_generation_heap_relation from to h h_rem h')
     RETURN ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;
@@ -604,7 +606,8 @@ Definition garbage_collect_spec :=
           super_compatible g (ti_heap t_info).(pt_heap) (frames2rootpairs (ti_frames t_info)) roots outlier;
           garbage_collect_condition g (ti_heap t_info).(pt_heap);
           safe_to_copy_heap g (ti_heap t_info).(pt_heap);
-          remset_compatible g outlier O rmst rh (ti_heap t_info).(pt_heap))
+          remset_compatible g outlier O rmst rh (ti_heap t_info).(pt_heap);
+          remset_generation_compatible O rmst rh)
     PARAMS (ti)
     GLOBALS (gv)
     SEP (mem_mgr gv;
@@ -618,7 +621,9 @@ Definition garbage_collect_spec :=
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     EX rh': remset_heap, EX rmst': remset,
     PROP (super_compatible g' (ti_heap t_info').(pt_heap) (frames2rootpairs (ti_frames t_info')) roots' outlier;
-          garbage_collect_relation roots roots' g g';
+          garbage_collect_relation roots roots'
+            g (ti_heap t_info).(pt_heap) rh rmst
+            g' (ti_heap t_info').(pt_heap) rh' rmst';
           garbage_collect_condition g' (ti_heap t_info').(pt_heap);
           safe_to_copy_heap g' (ti_heap t_info').(pt_heap);
           frame_shells_eq (ti_frames t_info) (ti_frames t_info');
