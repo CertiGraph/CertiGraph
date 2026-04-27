@@ -687,12 +687,17 @@ Proof.
         remember (reset_nth_heap from h2) as h3.
         remember (reset_graph from g2) as g3.
         assert (do_generation_relation from to roots roots1 g h rh rmst
-                  g0 h0 rh0 rmst0 g3). {
-          exists g1, g2.
-          split; [exact Hfrg0'|].
-          split; [exact H21|].
-          split; [exact H33|].
-          exact Heqg3.
+                  g0 h0 rh0 rmst0 g3 h3). {
+          split.
+          - exists g1, g2.
+            split; [exact Hfrg0'|].
+            split; [exact H21|].
+            split; [exact H33|].
+            exact Heqg3.
+          - split.
+            + intros gen Hgen.
+              eapply forward_remset_gh_available_size_not_to; eauto.
+            + exists h2. split; [exact Hhr02 | exact Heqh3].
         }
         assert (weak_heap_relation h h3). {
           apply whr_trans with h0.
@@ -702,12 +707,6 @@ Proof.
             + apply whr_trans with h2.
               * apply heap_relation_weakened. exact H34.
               * subst h3. apply weak_heap_relation_reset.
-        }
-        assert (Hdg_heap: do_generation_heap_relation from to h h0 h3). {
-          split.
-          - intros gen Hgen.
-            eapply forward_remset_gh_available_size_not_to; eauto.
-          - exists h2. split; [exact Hhr02 | exact Heqh3].
         }
         Exists g0 h0 rh0 rmst0 g3 h3 roots1.
         destruct H32 as [? [? [? ?]]].

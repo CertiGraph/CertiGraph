@@ -393,8 +393,7 @@ Definition do_generation_spec :=
     PROP (super_compatible g' h' (frames2rootpairs (update_frames fr (map (exterior2val g') roots'))) roots' outlier;
           weak_heap_relation h h';
           do_generation_relation from to roots roots' g h rh rmst
-            g_rem h_rem rh' rmst' g';
-          do_generation_heap_relation from to h h_rem h')
+            g_rem h_rem rh' rmst' g' h')
     RETURN ()
     SEP (all_string_constants rsh gv;
          outlier_rep outlier;

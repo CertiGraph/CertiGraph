@@ -9249,21 +9249,22 @@ Proof.
     eapply IHr; eauto. eapply fri_rh_Zlength_same in H. lia.
 Qed.
 
-Definition do_generation_relation (from to: nat)
-           (roots roots': roots_t) (g: LGraph) (h: part_heap)
-           (rh: remset_heap) (rmst: remset)
-           (rg: LGraph) (rhh: part_heap) (rh': remset_heap)
-           (rmst': remset) (g': LGraph): Prop :=
-  exists g1 g2,
-    (rg, rhh, rh', rmst') = forward_remset_gh from to g h rh rmst /\
-    forward_roots_relation from to roots rg roots' g1 /\
-    do_scan_relation from to (number_of_vertices (nth_gen g to)) g1 g2 /\
-    g' = reset_graph from g2.
-
 Definition do_generation_heap_relation (from to: nat)
            (h h_rem h': part_heap): Prop :=
   (forall gen, gen <> to -> available_size h_rem gen = available_size h gen) /\
   exists h_scan, heap_relation h_rem h_scan /\ h' = reset_nth_heap from h_scan.
+
+Definition do_generation_relation (from to: nat)
+           (roots roots': roots_t) (g: LGraph) (h: part_heap)
+           (rh: remset_heap) (rmst: remset)
+           (rg: LGraph) (rhh: part_heap) (rh': remset_heap)
+           (rmst': remset) (g': LGraph) (h': part_heap): Prop :=
+  (exists g1 g2,
+      (rg, rhh, rh', rmst') = forward_remset_gh from to g h rh rmst /\
+      forward_roots_relation from to roots rg roots' g1 /\
+      do_scan_relation from to (number_of_vertices (nth_gen g to)) g1 g2 /\
+      g' = reset_graph from g2) /\
+  do_generation_heap_relation from to h rhh h'.
 
 Lemma forward_remset_gh_graph_has_gen:
   forall from to g h rh rmst g' h' rh' rmst',
@@ -9277,14 +9278,14 @@ Proof.
 Qed.
 
 Lemma do_generation_relation_graph_has_gen:
-  forall from to roots roots' g h rh rmst rg rhh rh' rmst' g',
+  forall from to roots roots' g h rh rmst rg rhh rh' rmst' g' h',
     graph_has_gen g to ->
     do_generation_relation from to roots roots' g h rh rmst
-      rg rhh rh' rmst' g' ->
+      rg rhh rh' rmst' g' h' ->
     forall gen, graph_has_gen g gen <-> graph_has_gen g' gen.
 Proof.
-  intros from to roots roots' g h rh rmst rg rhh rh' rmst' g' Hto Hrel gen.
-  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  intros from to roots roots' g h rh rmst rg rhh rh' rmst' g' h' Hto Hrel gen.
+  destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
   assert (Hrg_to: graph_has_gen rg to) by
       (rewrite <- (forward_remset_gh_graph_has_gen from to g h rh rmst
                      rg rhh rh' rmst' Hto Hfrg); exact Hto).
@@ -9299,16 +9300,16 @@ Proof.
 Qed.
 
 Lemma do_generation_relation_graph_gen_size_unchanged:
-  forall from to roots roots' g h rh rmst rg rhh rh' rmst' g' gen,
+  forall from to roots roots' g h rh rmst rg rhh rh' rmst' g' h' gen,
     graph_has_gen g to -> graph_has_gen g gen ->
     gen <> from -> gen <> to ->
     do_generation_relation from to roots roots' g h rh rmst
-      rg rhh rh' rmst' g' ->
+      rg rhh rh' rmst' g' h' ->
     graph_gen_size g gen = graph_gen_size g' gen.
 Proof.
-  intros from to roots roots' g h rh rmst rg rhh rh' rmst' g' gen
+  intros from to roots roots' g h rh rmst rg rhh rh' rmst' g' h' gen
          Hto Hgen Hneq_from Hneq_to Hrel.
-  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
   assert (Hto_rg: graph_has_gen rg to) by
       (rewrite <- (forward_remset_gh_graph_has_gen from to g h rh rmst
                      rg rhh rh' rmst' Hto Hfrg to); exact Hto).
@@ -10075,7 +10076,7 @@ Proof.
 Qed.
 
 Lemma do_generation_relation_no_dangling_dst:
-  forall g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i outlier,
+  forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier,
     graph_has_gen g (S i) ->
     graph_unmarked g ->
     copy_compatible g ->
@@ -10086,12 +10087,12 @@ Lemma do_generation_relation_no_dangling_dst:
     remset_nodup rmst ->
     remset_compatible g outlier i rmst rh h ->
     do_generation_relation i (S i) roots roots' g h rh rmst
-      g_rem h_rem rh' rmst' g' ->
+      g_rem h_rem rh' rmst' g' h' ->
     no_dangling_dst g'.
 Proof.
-  intros g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i outlier
+  intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier
          Hto Hungraph Hcc Hndd Hnbe Hfirst Hrgc Hrnd Hremc Hrel.
-  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
   assert (Hneq: i <> S i) by lia.
   assert (Hneq': S i <> i) by lia.
   assert (Hun_to: gen_unmarked g (S i)) by
@@ -10177,15 +10178,15 @@ Proof.
 Qed.
 
 Lemma do_generation_relation_firstn_gen_clear:
-  forall g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i,
+  forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i,
     do_generation_relation i (S i) roots roots' g h rh rmst
-      g_rem h_rem rh' rmst' g' ->
+      g_rem h_rem rh' rmst' g' h' ->
     graph_has_gen g (S i) ->
     firstn_gen_clear g i ->
     firstn_gen_clear g' (S i).
 Proof.
-  intros g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i Hrel Hto Hfirst.
-  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i Hrel Hto Hfirst.
+  destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
   assert (Hto_rem: graph_has_gen g_rem (S i)) by
       (rewrite <- (forward_remset_gh_graph_has_gen i (S i) g h rh rmst
                      g_rem h_rem rh' rmst' Hto Hfrg (S i)); exact Hto).
@@ -10207,15 +10208,15 @@ Proof.
 Qed.
 
 Lemma do_generation_relation_graph_unmarked:
-  forall from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g',
+  forall from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h',
     graph_has_gen g to ->
     do_generation_relation from to roots roots' g h rh rmst
-      g_rem h_rem rh' rmst' g' ->
+      g_rem h_rem rh' rmst' g' h' ->
     graph_unmarked g ->
     graph_unmarked g'.
 Proof.
-  intros from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' Hto Hrel Hunmarked.
-  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  intros from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h' Hto Hrel Hunmarked.
+  destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
   rewrite graph_gen_unmarked_iff in Hunmarked.
   assert (Hto_rem: graph_has_gen g_rem to) by
       (rewrite <- (forward_remset_gh_graph_has_gen from to g h rh rmst
@@ -10407,7 +10408,7 @@ Proof.
 Qed.
 
 Lemma do_generation_relation_no_backward_edge:
-  forall g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i outlier,
+  forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier,
     graph_has_gen g (S i) ->
     graph_unmarked g ->
     copy_compatible g ->
@@ -10418,10 +10419,10 @@ Lemma do_generation_relation_no_backward_edge:
     remset_nodup rmst ->
     remset_compatible g outlier i rmst rh h ->
     do_generation_relation i (S i) roots roots' g h rh rmst
-      g_rem h_rem rh' rmst' g' ->
+      g_rem h_rem rh' rmst' g' h' ->
     no_backward_edge g'.
 Proof.
-  intros g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i outlier
+  intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier
          Hto Hungraph Hcc Hndd Hnbe Hfirst Hrgc Hrnd Hremc Hrel.
   assert (Hndd_final: no_dangling_dst g') by
       (eapply do_generation_relation_no_dangling_dst; eauto).
@@ -10441,7 +10442,7 @@ Proof.
     destruct Hdst as [_ Hidx].
     unfold gen_has_index in Hidx. simpl in Hidx.
     rewrite Hfirst_final in Hidx. lia.
-  - destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  - destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
     subst g'. apply gen2gen_no_edge_reset.
     assert (Hneq: i <> S i) by lia.
     assert (Hneq': S i <> i) by lia.
@@ -10493,7 +10494,7 @@ Lemma do_generation_relation_gcc:
     weak_heap_relation h h' ->
     ti_size_spec h ->
     do_generation_relation i (S i) roots roots' g h rh rmst
-      g_rem h_rem rh' rmst' g' ->
+      g_rem h_rem rh' rmst' g' h' ->
     garbage_collect_condition g' h'.
 Proof.
   intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier
@@ -10584,7 +10585,7 @@ Inductive garbage_collect_loop
                     (roots1 roots2 roots3: roots_t),
     new_gen_heap_relation (S i) g1 h1 g2 h2 ->
     do_generation_relation i (S i) roots1 roots2 g2 h2 rh1 rmst1
-      g_rem h_rem rh2 rmst2 g3 ->
+      g_rem h_rem rh2 rmst2 g3 h3 ->
     weak_heap_relation h2 h3 ->
     rh3 = reset_nth_remset_heap i rh2 ->
     garbage_collect_loop il roots2 g3 h3 rh3 rmst2 roots3 g4 h4 rh4 rmst4 ->
@@ -10689,16 +10690,16 @@ Proof.
 Qed.
 
 Lemma do_generation_relation_stcte:
-  forall g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i,
+  forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i,
     safe_to_copy_to_except g i ->
     graph_has_gen g (S i) ->
     do_generation_relation i (S i) roots roots' g h rh rmst
-      g_rem h_rem rh' rmst' g' ->
+      g_rem h_rem rh' rmst' g' h' ->
     safe_to_copy_to_except g' (S i).
 Proof.
-  intros g h rh rmst g_rem h_rem rh' rmst' g' roots roots' i Hstcte Hto Hrel.
+  intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i Hstcte Hto Hrel.
   unfold safe_to_copy_to_except in *. intros n Hn0 Hnto Hhas.
-  destruct Hrel as [g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]].
+  destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
   destruct (Nat.eq_dec n i).
   - subst. red. unfold graph_gen_size, nth_gen. simpl.
     rewrite reset_nth_gen_info_same. simpl. unfold previous_vertices_size.
@@ -10742,17 +10743,18 @@ Lemma do_generation_relation_stcteh:
     ti_size_spec h ->
     weak_heap_relation h h' ->
     do_generation_relation i (S i) roots roots' g h rh rmst
-      g_rem h_rem rh' rmst' g' ->
-    do_generation_heap_relation i (S i) h h_rem h' ->
+      g_rem h_rem rh' rmst' g' h' ->
     safe_to_copy_to_except_heap g' h' (S i).
 Proof.
   intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i
-         Hsafe Hto Hghc Hghc' Hsize Hwhr Hrel Hhrel.
+         Hsafe Hto Hghc Hghc' Hsize Hwhr Hrel.
+  pose proof Hrel as Hrel_full.
+  destruct Hrel as [_ Hhrel].
   unfold safe_to_copy_to_except_heap in *. intros n Hn0 Hnto Hhas'.
   assert (Hhas: graph_has_gen g n) by
       (apply (proj2 (do_generation_relation_graph_has_gen
                        i (S i) roots roots' g h rh rmst
-                       g_rem h_rem rh' rmst' g' Hto Hrel n));
+                       g_rem h_rem rh' rmst' g' h' Hto Hrel_full n));
        exact Hhas').
   destruct (Nat.eq_dec n i) as [Heq | Hni].
   - subst n. destruct i as [|i]. 1: contradiction.
@@ -10799,7 +10801,8 @@ Proof.
         symmetry.
         eapply (do_generation_relation_graph_gen_size_unchanged
                   i (S i) roots roots' g h rh rmst
-                  g_rem h_rem rh' rmst' g' n); eauto.
+                  g_rem h_rem rh' rmst' g'
+                  (reset_nth_heap i h_scan) n); eauto.
       }
       unfold available_size in Hav. rewrite Hav. rewrite Hused. reflexivity.
     }
@@ -10823,7 +10826,7 @@ Lemma gcl_add_tail: forall l g1 h1 rh1 rmst1 roots1
     garbage_collect_loop l roots1 g1 h1 rh1 rmst1 roots2 g2 h2 rh2 rmst2 ->
     new_gen_heap_relation (S i) g2 h2 g3 h3 ->
     do_generation_relation i (S i) roots2 roots3 g3 h3 rh2 rmst2
-      g_rem h_rem rh3 rmst3 g4 ->
+      g_rem h_rem rh3 rmst3 g4 h4 ->
     weak_heap_relation h3 h4 ->
     garbage_collect_loop (l +:: i) roots1 g1 h1 rh1 rmst1
       roots3 g4 h4 (reset_nth_remset_heap i rh3) rmst3.

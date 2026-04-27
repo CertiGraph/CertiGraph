@@ -332,16 +332,16 @@ Proof.
 Qed.
 
 Lemma do_generation_relation_vertex_address:
-  forall from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' x,
+  forall from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h' x,
     graph_has_gen g_rem to ->
     do_generation_relation from to roots roots' g h rh rmst
-      g_rem h_rem rh' rmst' g' ->
+      g_rem h_rem rh' rmst' g' h' ->
     closure_has_v g_rem x ->
     vertex_address g_rem x = vertex_address g' x.
 Proof.
-  intros from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' x
+  intros from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h' x
          Hto Hrel Hx.
-  destruct Hrel as [g1 [g2 [Hfrg [Hroots [Hscan Hreset]]]]].
+  destruct Hrel as [[g1 [g2 [Hfrg [Hroots [Hscan Hreset]]]]] _].
   subst g'. rewrite vertex_address_reset.
   transitivity (vertex_address g1 x).
   - eapply frr_vertex_address; eauto.
@@ -352,14 +352,14 @@ Proof.
 Qed.
 
 Lemma remset_rep_do_generation_eq:
-  forall sh from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g',
+  forall sh from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h',
     graph_has_gen g_rem to ->
     remset_graph_compatible g_rem rmst' ->
     do_generation_relation from to roots roots' g h rh rmst
-      g_rem h_rem rh' rmst' g' ->
+      g_rem h_rem rh' rmst' g' h' ->
     remset_rep sh g_rem rmst' = remset_rep sh g' rmst'.
 Proof.
-  intros sh from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g'
+  intros sh from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h'
          Hto Hrgc Hrel.
   unfold remset_rep. apply iter_sepcon_func_strong.
   intros rext Hin. destruct rext as [out addr | v addr]; simpl; auto.
@@ -370,14 +370,14 @@ Proof.
 Qed.
 
 Lemma space_remset_rep_do_generation_eq:
-  forall from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' sp rs,
+  forall from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h' sp rs,
     graph_has_gen g_rem to ->
     remset_and_remset_space_compatible g_rem from rmst' rs ->
     do_generation_relation from to roots roots' g h rh rmst
-      g_rem h_rem rh' rmst' g' ->
+      g_rem h_rem rh' rmst' g' h' ->
     space_remset_rep g_rem (sp, rs) = space_remset_rep g' (sp, rs).
 Proof.
-  intros from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' sp rs
+  intros from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h' sp rs
          Hto Hrrsc Hrel.
   unfold space_remset_rep. destruct (Val.eq (space_start sp) nullval); auto.
   f_equal. apply map_ext_in. intros item Hin. destruct item as [addr | [v pos]]; simpl; auto.
@@ -955,7 +955,12 @@ Proof.
       Intros vret. destruct vret as [[gpack h2] roots2].
       destruct gpack as [[[[g_rem h_rem] rh2] rmst2] g2].
       simpl fst in *. simpl snd in *.
-      rename H12 into Hdg_heap.
+      destruct H11 as [H11 Hdg_heap].
+      assert (Hrel_full:
+                do_generation_relation (Z.to_nat i) (Z.to_nat (i + 1))
+                  roots' roots2 g1 (pt_heap (ti_heap t_info1)) rh1 rmst1
+                  g_rem h_rem rh2 rmst2 g2 h2) by
+          (split; [exact H11 | exact Hdg_heap]).
       set (fr2 := update_frames _ _) in *.
       thaw FR1.
       pose (t_info2 := {| ti_heap_p := ti_heap_p t_info1;
@@ -1035,8 +1040,10 @@ Proof.
       assert (Hrel_loop:
                 do_generation_relation (Z.to_nat i) (S (Z.to_nat i))
                   roots' roots2 g1 (pt_heap (ti_heap t_info1)) rh' rmst'
-                  g_rem h_rem rh2 rmst2 g2). {
-        rewrite <- Hrh1_eq, <- Hrmst1_eq. exact H11.
+                  g_rem h_rem rh2 rmst2 g2
+                  (pt_heap (ti_heap t_info2))). {
+        change (pt_heap (ti_heap t_info2)) with h2.
+        rewrite <- Hrh1_eq, <- Hrmst1_eq. exact Hrel_full.
       }
       assert (Hgcl2: garbage_collect_loop (nat_inc_list (Z.to_nat (i + 1)))
                        roots g (pt_heap (ti_heap t_info)) rh rmst
@@ -1207,7 +1214,7 @@ Proof.
            rewrite <- (remset_rep_do_generation_eq
                          sh (Z.to_nat i) (S (Z.to_nat i)) roots' roots2
                          g1 (pt_heap (ti_heap t_info1)) rh' rmst'
-                         g_rem h_rem rh2 rmst2 g2 Hto_rem Hrgc_rem H11).
+                         g_rem h_rem rh2 rmst2 g2 h2 Hto_rem Hrgc_rem Hrel_loop).
            assert (Hexcept_eq:
                      heap_remset_rep_except g_rem h_rem rh2 (Z.to_nat i) =
                      heap_remset_rep_except g2 h2 rh2 (Z.to_nat i)). {
