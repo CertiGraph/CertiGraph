@@ -40,12 +40,6 @@ Proof.
     cancel.
 Qed.
 
-Lemma frr_Zlength: forall from to roots g roots' g',
-  forward_roots_relation from to roots g roots' g' -> Zlength roots = Zlength roots'.
-Proof.
-   induction 1; simpl; autorewrite with sublist; auto; lia.
-Qed.
-
 Lemma Zlength_update_frames:
  forall frs roots,
    Zlength roots = Zlength (frames2rootpairs frs) ->
@@ -139,7 +133,7 @@ Proof.
     assert (H5' := sc_Zlength H5).
     unfold frames_rep.
     assert (LEN: Zlength (roots' ++ oldroots k 0) = Zlength (frames2rootpairs frs)). {
-    apply frr_Zlength in H3.
+    apply frr_Zlength_roots in H3.
     pose proof (Zlength_frames2rootpairs_sublist _ _ H2).
     rewrite Zlength_app, <- H3.
     unfold oldroots. unfold nr.
@@ -179,7 +173,7 @@ Proof.
     sep_apply (frames_shell_rep_isolate sh frs' k). {
      clear - H5' H3 H2 H'.
      subst frs' n.
-     apply frr_Zlength in H3.
+     apply frr_Zlength_roots in H3.
      rewrite Zlength_update_frames. lia.
      rewrite Zlength_map.
      subst oldroots. simpl. autorewrite with sublist.
@@ -196,7 +190,7 @@ Proof.
     unfold frame_shell_rep.
     Intros.
     assert (Hfrs': Zlength (map (exterior2val g') (roots'++oldroots k 0)) = Zlength roots). {
-      apply frr_Zlength in H3.
+      apply frr_Zlength_roots in H3.
       autorewrite with sublist. rewrite <- H3.
       unfold oldroots. rewrite Z.add_0_r.
       assert (0 <= nr k <= Zlength roots); [ | list_solve].
@@ -305,7 +299,7 @@ Proof.
   + set (rp'' := frames2rootpairs (update_frames _ _)).
     Intros.
     assert (LENroots'': Zlength roots'' = nr k + i)
-      by (apply frr_Zlength in H11; list_solve).
+      by (apply frr_Zlength_roots in H11; list_solve).
     assert (Hrof: Zlength (roots'' ++ oldroots k i) = Zlength (frames2rootpairs frs)). {
       subst oldroots. simpl.
       rewrite Zlength_app, LENroots'', H', Zlength_sublist; list_solve. }
@@ -319,7 +313,7 @@ Proof.
                    from, to, 0, FwdPntExtr (Znth (nr k+i) (roots''++oldroots k i)),
                    Some (rp_adr (Znth (nr k+i) rp''))).
     * entailer !!. simpl. do 4 f_equal. subst rp''.
-      apply frr_Zlength in H11. clear - H11 H7 H2 H5 H3 H10 H' Hnr Hi Hfrs' LENfrs'.
+      apply frr_Zlength_roots in H11. clear - H11 H7 H2 H5 H3 H10 H' Hnr Hi Hfrs' LENfrs'.
       unfold oldroots.
       replace r with (fr_root (Znth k frs')) by (rewrite H7; reflexivity).
       set (r3 := map (exterior2val g'') (roots'' ++ sublist (nr k + i) (Zlength roots) roots)).
@@ -607,14 +601,14 @@ Proof.
       replace (Zlength (frames2rootpairs (sublist 0 (k + 1) frs)))
        with (Zlength (frames2rootpairs (sublist 0 k frs)) + Zlength s); auto.
       rewrite (sublist_split 0 k (k+1)) by list_solve.
-      eapply frr_Zlength in H3.
+      eapply frr_Zlength_roots in H3.
       pose proof Zlength_frames2rootpairs_sublist k frs ltac:(list_solve).
       rewrite Zlength_sublist in H3 by list_solve. rewrite Z.sub_0_r in H3.
       rewrite H3 in *.
      rewrite frames2rootpairs_app.
      rewrite Zlength_app. f_equal; auto.
      apply sc_Zlength in H12.
-     apply frr_Zlength in H10.
+     apply frr_Zlength_roots in H10.
      autorewrite with sublist in Hfrs'.
      apply sc_Zlength in H5.
      clear - H15 H14 H12 H10 Hfrs' H7 H5 H3 H2 H'.
@@ -673,7 +667,7 @@ Proof.
       set (r3 := map _ _).
       assert (Zlength r3 = Zlength (map rp_val (frames2rootpairs frs))). {
         unfold r3. autorewrite with sublist. rewrite <- H'.
-        apply frr_Zlength in H10. rewrite H14, <- H10.
+        apply frr_Zlength_roots in H10. rewrite H14, <- H10.
         unfold oldroots.
         assert (0 <= nr k + Zlength s <= Zlength roots); [ | list_solve].
         destruct Hnr; split; rep_lia.
@@ -697,7 +691,7 @@ Proof.
       replace (frames_shell_rep sh frs) with (frames_shell_rep sh frs').
       2:{ symmetry; unfold frs'; apply frames_shell_rep_update.
            apply sc_Zlength in H.
-           apply frr_Zlength in H3. autorewrite with sublist. rewrite <- H3.
+           apply frr_Zlength_roots in H3. autorewrite with sublist. rewrite <- H3.
            unfold oldroots. list_solve.
        }
        assert (data_at sh (Tstruct _stack_frame noattr)
@@ -734,6 +728,6 @@ Proof.
   rewrite sublist_same in H3 by auto.
   Exists g' h' roots'.
   rewrite <- update_rootpairs_frames2rootpairs
-     by (apply frr_Zlength in H3; list_solve).
+     by (apply frr_Zlength_roots in H3; list_solve).
   entailer!!.
 Qed.
