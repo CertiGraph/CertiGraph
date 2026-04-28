@@ -418,6 +418,34 @@ Definition gc_graph_quasi_iso (g1: LGraph) (roots1: roots_t)
     from_gen_quasi_spec g1 roots1 from_l from /\ to_gen_spec g1 g2 to_l to /\
     forall v, vvalid g1 v -> ~ In v from_l -> vlabel g1 v = vlabel g2 v.
 
+Definition old_nonfrom_edges_mapped
+           (g1 g2: LGraph) (l: list (VType * VType)) (from: nat): Prop :=
+  forall e,
+    evalid g1 e ->
+    vgeneration (fst e) <> from ->
+    evalid g2 e /\
+    src g2 e = src g1 e /\
+    dst g2 e = list_bi_map l (dst g1 e).
+
+Definition old_nonfrom_vertices_valid (g1 g2: LGraph) (from: nat): Prop :=
+  forall v, vvalid g1 v -> vgeneration v <> from -> vvalid g2 v.
+
+Definition gc_graph_remset_quasi_iso (g1: LGraph) (roots1: roots_t)
+           (g2: LGraph) (roots2: roots_t) (from to: nat): Prop :=
+  exists (l: list (VType * VType)),
+    roots2 = roots_map l roots1 /\
+    (forall v1 v2,
+        In (v1, v2) l ->
+        vlabel g1 v1 = vlabel g2 v2 /\
+        forall idx, In idx (map snd (get_edges g1 v1)) ->
+                    (dst g2 (v2, idx) = dst g1 (v1, idx) \/
+                     dst g2 (v2, idx) = list_bi_map l (dst g1 (v1, idx)))) /\
+    let (from_l, to_l) := split l in
+    from_gen_quasi_spec g1 roots1 from_l from /\ to_gen_spec g1 g2 to_l to /\
+    (forall v, vvalid g1 v -> ~ In v from_l -> vlabel g1 v = vlabel g2 v) /\
+    old_nonfrom_vertices_valid g1 g2 from /\
+    old_nonfrom_edges_mapped g1 g2 l from.
+
 Definition gen_has_index_dec (g: LGraph) (gen idx: nat):
   {gen_has_index g gen idx} + {~ gen_has_index g gen idx}.
 Proof.
@@ -436,6 +464,547 @@ Defined.
 
 Lemma vvalid_lcm: forall g v, vertex_valid g -> vvalid g v \/ ~ vvalid g v.
 Proof. intros. red in H. rewrite H. destruct (graph_has_v_dec g v); auto. Qed.
+
+Lemma gc_graph_quasi_iso_remset_quasi_iso:
+  forall g1 roots1 g2 roots2 from to,
+    sound_gc_graph g1 ->
+    no_dangling_dst g1 ->
+    no_edge2gen g1 from ->
+    gc_graph_quasi_iso g1 roots1 g2 roots2 from to ->
+    gc_graph_remset_quasi_iso g1 roots1 g2 roots2 from to.
+Proof.
+  intros g1 roots1 g2 roots2 from to Hsound Hndd Hnedge Hqiso.
+  destruct Hqiso as [Hpartial [l [Hroots [Hcopied Hspec]]]].
+  exists l. split; [exact Hroots |]. split; [exact Hcopied |].
+  destruct (split l) as [from_l to_l] eqn:Hsplit.
+  destruct Hspec as [Hfrom [Hto Hlabel]].
+  split; [exact Hfrom |]. split; [exact Hto |]. split; [exact Hlabel |].
+  split.
+  - unfold old_nonfrom_vertices_valid.
+    intros v Hv _. destruct Hpartial as [Hvertex _].
+    apply Hvertex. exact Hv.
+  - unfold old_nonfrom_edges_mapped.
+    intros e Hevalid Hsrcgen.
+    destruct Hsound as [Hvv [Hev [Hsrc_edge _]]].
+    destruct Hpartial as [_ [Hedge [Hsrc Hdst]]].
+    assert (Hge: graph_has_e g1 e) by (apply (proj1 (Hev e)); exact Hevalid).
+    destruct Hge as [Hsrc_has Hfield].
+    assert (Hsrc_valid: vvalid g1 (fst e)) by (apply (proj2 (Hvv _)); exact Hsrc_has).
+    assert (Hdst_has: graph_has_v g1 (dst g1 e)) by
+        (apply (Hndd (fst e)); assumption).
+    assert (Hdst_valid: vvalid g1 (dst g1 e)) by
+        (apply (proj2 (Hvv _)); exact Hdst_has).
+    assert (Hsrc_valid': vvalid g1 (src g1 e)) by
+        (rewrite Hsrc_edge; exact Hsrc_valid).
+    assert (Hdst_same: dst g1 e = dst g2 e) by
+        (apply Hdst; assumption).
+    split; [apply Hedge; exact Hevalid |]. split.
+    + symmetry. apply Hsrc; assumption.
+    + rewrite <- Hdst_same.
+      symmetry. apply list_bi_map_not_In.
+      intro Hin.
+      unfold InEither in Hin. rewrite Hsplit, in_app_iff in Hin.
+      destruct Hfrom as [_ Hfrom].
+      destruct Hto as [_ [Hto_valid _]].
+      destruct Hin as [Hin | Hin].
+      * rewrite <- Hfrom in Hin.
+        destruct Hin as [_ Hdst_gen].
+        unfold no_edge2gen, gen2gen_no_edge in Hnedge.
+        destruct e as [[gen vidx] eidx]. simpl in *.
+        specialize (Hnedge gen Hsrcgen vidx eidx).
+        specialize (Hnedge (conj Hsrc_has Hfield)).
+        contradiction.
+      * rewrite Hto_valid in Hin.
+        destruct Hin as [_ Hnot_valid].
+        contradiction.
+Qed.
+
+Lemma remset_quasi_iso_reset_iso: forall g1 roots1 g2 roots2 from to,
+    from <> to -> gc_graph_remset_quasi_iso g1 roots1 g2 roots2 from to ->
+    sound_gc_graph g2 -> sound_gc_graph g1 ->
+    no_edge2gen g2 from -> no_dangling_dst g1 ->
+    gc_graph_iso g1 roots1 (reset_graph from g2) roots2.
+Proof.
+  intros g1 roots1 g2 roots2 from to Hfr Hq Hsound2 Hsound1 Hnedge2 Hndd1.
+  red in Hq. red.
+  destruct Hq as [vpl [Hroots [Hcopy Hspec]]]. unfold roots_map in Hroots.
+  destruct (split vpl) as [from_l to_l] eqn:Heqp.
+  destruct Hspec as [[Hfrom_nd Hfrom] [[Hto_nd [Hto_valid Hto_gen]]
+                       [Hlabel [Hvertex_map Hedge_map]]]].
+  assert (Hdnd: DoubleNoDup vpl). {
+    apply (PairGenNoDup_DoubleNoDup _ from to); [lia|]. red. rewrite Heqp.
+    split.
+    + split.
+      * exact Hfrom_nd.
+      * intros v Hv. rewrite <- Hfrom in Hv. destruct Hv as [_ Hgen]. exact Hgen.
+    + split.
+      * exact Hto_nd.
+      * exact Hto_gen.
+  }
+  assert (Hednd: DoubleNoDup (gen_edge_pair_list g1 vpl)) by
+      (apply gepl_DoubleNoDup; auto).
+  pose proof (split_combine vpl) as Hsplit_combine.
+  rewrite Heqp in Hsplit_combine.
+  assert (Hleft_map: forall x, vvalid g1 x -> InEither x vpl ->
+                    exists k v, In (k, v) vpl /\ x = k /\ list_bi_map vpl x = v). {
+    intros x Hxvalid Hxin. apply (list_bi_map_In vpl x) in Hxin.
+    destruct Hxin as [k [v [Hin Hcase]]].
+    exists k, v. destruct Hcase as [Hcase | Hcase]; auto.
+    destruct Hcase as [Hx Hxv]. subst x.
+    erewrite <- Hsplit_combine in Hin; eauto. apply in_combine_r in Hin.
+    rewrite Hto_valid in Hin. destruct Hin as [_ Hnot]. contradiction.
+  }
+  remember (list_bi_map vpl) as vmap.
+  remember (list_bi_map (gen_edge_pair_list g1 vpl)) as emap.
+  destruct (reset_sound _ from Hsound2) as [Hvv_reset [Hev_reset [Hsrc_reset Hels_reset]]].
+  destruct Hsound2 as [Hvv2 [Hev2 [Hsrc2 Hels2]]].
+  destruct Hsound1 as [Hvv1 [Hev1 [Hsrc1 Hels1]]].
+  unfold vertex_valid, edge_valid, src_edge, edge_label_same in *.
+  simpl in Hev_reset, Hsrc_reset, Hels_reset.
+  assert (Hs: forall e, evalid g1 e -> vmap (src g1 e) = src g2 (emap e)). {
+    intros e He.
+    assert (Hge: graph_has_e g1 e) by (apply (proj1 (Hev1 e)); exact He).
+    destruct Hge as [Hsrc_has Hfield].
+    subst vmap emap. destruct (InEither_dec (fst e) vpl) as [Hin | Hnin].
+    - destruct (Hleft_map (fst e)) as [k [v [Hkv [Hfst Hmap]]]].
+      + apply (proj2 (Hvv1 _)); exact Hsrc_has.
+      + exact Hin.
+      + subst k. rewrite Hsrc1. rewrite Hmap.
+        pose proof (gepl_key _ _ _ _ Hfield Hkv) as Hedge_in.
+        destruct (DoubleNoDup_list_bi_map _ _ _ Hednd Hedge_in) as [Hemap _].
+        rewrite Hemap. rewrite Hsrc2. reflexivity.
+    - rewrite Hsrc1. rewrite !list_bi_map_not_In.
+      + rewrite Hsrc2. reflexivity.
+      + intro Hedge_in. apply Hnin. apply gepl_InEither in Hedge_in. exact Hedge_in.
+      + exact Hnin.
+  }
+  assert (Hd: forall e,
+             evalid (reachable_sub_labeledgraph g1 (filter_proj exterior_proj_vertex roots1)) e
+             -> vmap (dst g1 e) = dst g2 (emap e)). {
+    intros e Hesub. simpl in Hesub. destruct Hesub as [Hevalid [Hsrc_reach Hdst_reach]].
+    assert (Hge: graph_has_e g1 e) by (apply (proj1 (Hev1 e)); exact Hevalid).
+    destruct Hge as [Hsrc_has Hfield].
+    assert (Hsrc_valid: vvalid g1 (fst e)) by (apply (proj2 (Hvv1 _)); exact Hsrc_has).
+    assert (Hdst_not_to: ~ In (dst g1 e) to_l). {
+      intro Hin. rewrite Hto_valid in Hin. destruct Hin as [_ Hnot_valid].
+      apply reachable_through_set_foot_valid in Hdst_reach. contradiction.
+    }
+    destruct (InEither_dec (fst e) vpl) as [Hin | Hnin].
+    - subst vmap emap.
+      destruct (Hleft_map (fst e) Hsrc_valid Hin) as [k [v [Hkv [Hfst Hmap]]]].
+      subst k.
+      pose proof (gepl_key _ _ _ _ Hfield Hkv) as Hedge_in.
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hednd Hedge_in) as [Hemap _].
+      rewrite Hemap.
+      destruct (Hcopy _ _ Hkv) as [Hvlab Hdst_copy].
+      rewrite get_edges_inv in Hfield. destruct Hfield as [idx [Heq Hidx]].
+      rewrite Heq in *. simpl in *.
+      specialize (Hdst_copy _ Hidx). destruct Hdst_copy as [Hdst_copy | Hdst_copy].
+      + rewrite Hdst_copy. rewrite list_bi_map_not_In; auto.
+        intro Hdst_in. unfold InEither in Hdst_in. rewrite Heqp, in_app_iff in Hdst_in.
+        destruct Hdst_in as [Hdst_from | Hdst_to]; [| contradiction].
+        rewrite <- Hfrom in Hdst_from. destruct Hdst_from as [_ Hdst_gen].
+        assert (Hedge2: graph_has_e g2 (v, idx)). {
+          split; simpl.
+          - erewrite <- Hsplit_combine in Hkv; eauto. apply in_combine_r in Hkv.
+            rewrite Hto_valid in Hkv. destruct Hkv as [Hvvalid _].
+            apply (proj1 (Hvv2 _)); exact Hvvalid.
+          - apply In_snd_get_edges. apply vlabel_get_edges_snd in Hvlab.
+            rewrite <- Hvlab. assumption.
+        }
+        assert (vgeneration v = to) as Hvgen_to. {
+          erewrite <- Hsplit_combine in Hkv; eauto. apply in_combine_r in Hkv.
+          apply Hto_gen. exact Hkv.
+        }
+        destruct v as [vgen vidx]. simpl in Hvgen_to. subst vgen.
+        assert (to <> from) by lia.
+        specialize (Hnedge2 _ H vidx idx). simpl in Hnedge2.
+        specialize (Hnedge2 Hedge2). simpl in Hnedge2.
+        apply Hnedge2. replace (dst g2 (to, vidx, idx)) with (dst g1 (fst e, idx)); auto.
+      + rewrite Hdst_copy. reflexivity.
+    - rewrite Heqemap. rewrite list_bi_map_not_In.
+      + assert (Hsrc_not_from: vgeneration (fst e) <> from). {
+          intro Hsrc_from. apply Hnin. unfold InEither. rewrite Heqp, in_app_iff. left.
+          rewrite <- Hfrom. split.
+          - rewrite <- Hsrc1. exact Hsrc_reach.
+          - exact Hsrc_from.
+        }
+        destruct (Hedge_map e Hevalid Hsrc_not_from) as [_ [_ Hdst_map]].
+        rewrite Heqvmap. symmetry. exact Hdst_map.
+      + intro Hedge_in. apply Hnin. apply gepl_InEither in Hedge_in. exact Hedge_in.
+  }
+  assert (He: forall e,
+             evalid (reachable_sub_labeledgraph g1 (filter_proj exterior_proj_vertex roots1)) e
+             -> evalid (remove_nth_gen_ve g2 from) (emap e)). {
+    intros e Hesub. rewrite Heqemap. simpl in Hesub.
+    destruct Hesub as [Hevalid [Hsrc_reach Hdst_reach]].
+    rewrite Hev_reset, graph_has_e_reset.
+    assert (Hge: graph_has_e g1 e) by (apply (proj1 (Hev1 e)); exact Hevalid).
+    destruct Hge as [Hsrc_has Hfield].
+    assert (Hsrc_valid: vvalid g1 (fst e)) by (apply (proj2 (Hvv1 _)); exact Hsrc_has).
+    destruct (InEither_dec (fst e) vpl) as [Hin | Hnin].
+    - destruct (Hleft_map (fst e) Hsrc_valid Hin) as [k [v [Hkv [Hfst Hmap]]]].
+      subst k.
+      pose proof (gepl_key _ _ _ _ Hfield Hkv) as Hedge_in.
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hednd Hedge_in) as [Hemap _].
+      rewrite Hemap.
+      unfold graph_has_e, egeneration. simpl.
+      pose proof Hkv as Hkv0.
+      erewrite <- Hsplit_combine in Hkv; eauto. apply in_combine_r in Hkv.
+      pose proof Hkv as Hvto. apply Hto_gen in Hvto.
+      rewrite Hto_valid in Hkv. destruct Hkv as [Hvvalid _].
+      split; [split | lia].
+      + apply (proj1 (Hvv2 _)); exact Hvvalid.
+      + rewrite get_edges_inv in Hfield. destruct Hfield as [idx [Heq Hidx]].
+        rewrite Heq in *. simpl in *.
+        destruct (Hcopy _ _ Hkv0) as [Hvlab _].
+        apply In_snd_get_edges. apply vlabel_get_edges_snd in Hvlab.
+        rewrite <- Hvlab. assumption.
+    - rewrite list_bi_map_not_In.
+      + assert (Hsrc_not_from: vgeneration (fst e) <> from). {
+          intro Hsrc_from. apply Hnin. unfold InEither. rewrite Heqp, in_app_iff. left.
+          rewrite <- Hfrom. split.
+          - rewrite <- Hsrc1. exact Hsrc_reach.
+          - exact Hsrc_from.
+        }
+        destruct (Hedge_map e Hevalid Hsrc_not_from) as [He2 _].
+        split.
+        * apply (proj1 (Hev2 _)); exact He2.
+        * unfold egeneration. lia.
+      + intro Hedge_in. apply Hnin. apply gepl_InEither in Hedge_in. exact Hedge_in.
+  }
+  assert (Hv: forall x,
+             vvalid (reachable_sub_labeledgraph g1 (filter_proj exterior_proj_vertex roots1)) x
+             -> vvalid (remove_nth_gen_ve g2 from) (vmap x)). {
+    intros x Hx. simpl in Hx. destruct Hx as [Hxvalid Hxreach].
+    rewrite Hvv_reset. rewrite graph_has_v_reset.
+    destruct (InEither_dec x vpl) as [Hxin | Hxnotin].
+    - destruct (Hleft_map x Hxvalid Hxin) as [k [v [Hkv [Hxk Hmap]]]].
+      subst x. rewrite Hmap.
+      erewrite <- Hsplit_combine in Hkv; eauto. apply in_combine_r in Hkv.
+      pose proof Hkv as Hvto. apply Hto_gen in Hvto.
+      rewrite Hto_valid in Hkv. destruct Hkv as [Hvvalid _].
+      apply (proj1 (Hvv2 _)) in Hvvalid. split; auto. lia.
+    - rewrite Heqvmap. rewrite list_bi_map_not_In; auto.
+      assert (Hgen_ne: vgeneration x <> from). {
+        intro Hxfrom. apply Hxnotin. unfold InEither. rewrite Heqp, in_app_iff. left.
+        rewrite <- Hfrom. split; assumption.
+      }
+      assert (Hv2: vvalid g2 x) by (apply Hvertex_map; assumption).
+      split.
+      + apply (proj1 (Hvv2 _)); exact Hv2.
+      + lia.
+  }
+  assert (Hp: forall v,
+             vvalid (reachable_sub_labeledgraph g1 (filter_proj exterior_proj_vertex roots1)) v
+             -> reachable_through_set (remove_nth_gen_ve g2 from)
+                 (filter_proj exterior_proj_vertex roots2) (vmap v)). {
+    intros v Hvsub. simpl in Hvsub. destruct Hvsub as [Hvvalid Hvreach].
+    unfold reachable_through_set in Hvreach |-* . destruct Hvreach as [s [Hsroot Hreach]].
+    assert (Hthrough: forall x, reachable g1 s x ->
+                      reachable_through_set g1 (filter_proj exterior_proj_vertex roots1) x) by
+        (intros; exists s; split; assumption).
+    rewrite <- (filter_proj_In_iff exterior_proj_vertex_spec) in Hsroot.
+    apply (in_map (exterior_map vmap)) in Hsroot. rewrite <- Hroots in Hsroot.
+    simpl in Hsroot. apply (filter_proj_In_iff exterior_proj_vertex_spec) in Hsroot.
+    exists (vmap s). split; auto.
+    unfold reachable, reachable_by in Hreach. destruct Hreach as [p Hpvalid].
+    assert (Hpath_edge: forall e, In e (snd p) ->
+      evalid (reachable_sub_labeledgraph g1 (filter_proj exterior_proj_vertex roots1)) e). {
+      intros e Hin. simpl. split.
+      - destruct Hpvalid as [? [? ?]]. destruct p. eapply valid_path_evalid; eauto.
+      - destruct (reachable_path_edge_in _ _ _ _ Hpvalid _ Hin).
+        apply Hthrough in H. apply Hthrough in H0. split; assumption.
+    }
+    destruct Hpvalid as [[Hphead Hptail] [Hpprop Hplast]]. unfold reachable, reachable_by.
+    destruct p as [phead pedges]. simpl in Hphead. subst phead. simpl snd in *.
+    assert (Hedge_map_path: forall e, In e pedges ->
+        vmap (src g1 e) = src g2 (emap e) /\
+        vmap (dst g1 e) = dst g2 (emap e)). {
+      intros e Hin. split; [apply Hs | apply Hd]; auto.
+      apply Hpath_edge in Hin. simpl in Hin. destruct Hin. assumption.
+    }
+    clear Hpath_edge. exists (vmap s, map emap pedges).
+    assert (Hvp: valid_path (remove_nth_gen_ve g2 from) (vmap s, map emap pedges)). {
+      clear Hsroot Hplast Hvvalid Hptail. revert s Hthrough Hpprop.
+      induction pedges; intros.
+      - simpl in *. apply Hv. split; auto. apply Hthrough, reachable_refl; auto.
+      - simpl map. rewrite valid_path_cons_iff in *. destruct Hpprop as [Ha_head [Ha_strong Htail]].
+        rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged.
+        assert (Hin_a: In a (a :: pedges)) by (left; reflexivity).
+        apply Hedge_map_path in Hin_a. destruct Hin_a as [Ha_src_map Ha_dst_map].
+        rewrite Ha_head, Ha_src_map, <- Ha_dst_map. split; auto. split.
+        + red. rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged,
+                   <- Ha_dst_map, <- Ha_src_map.
+          destruct Ha_strong as [Ha_evalid [Ha_svalid Ha_dvalid]]. subst s.
+          assert (Hreach_src: reachable g1 (src g1 a) (src g1 a)) by
+              (apply reachable_refl; auto).
+          assert (Hreach_dst: reachable g1 (src g1 a) (dst g1 a)). {
+            apply step_reachable with (dst g1 a); [exists a | apply reachable_refl |]; auto.
+          }
+          split; [|split; apply Hv]; [apply He | | ]; simpl; split; auto.
+        + apply IHpedges; auto.
+          * intros e Hin. apply Hedge_map_path. right; assumption.
+          * intros x Hrx. apply Hthrough.
+            apply step_reachable with (dst g1 a); auto.
+            -- exists a.
+               ++ destruct Ha_strong as [Ha_evalid _]. exact Ha_evalid.
+               ++ rewrite Ha_head. reflexivity.
+               ++ reflexivity.
+            -- destruct Ha_strong as [_ [Ha_svalid _]].
+               rewrite Ha_head. exact Ha_svalid.
+    }
+    split; split; auto.
+    - destruct pedges.
+      + simpl in Hptail |-* . rewrite Hptail. reflexivity.
+      + assert (e :: pedges <> nil) by (intro HS; inversion HS).
+        apply exists_last in H. destruct H as [l' [a Hlast]]. rewrite Hlast in *.
+        rewrite map_app. simpl map. rewrite pfoot_last in Hptail |-* .
+        rewrite remove_ve_dst_unchanged.
+        assert (Hin_a: In a (l' +:: a)) by (rewrite in_app_iff; right; left; reflexivity).
+        apply Hedge_map_path in Hin_a. destruct Hin_a as [_ Hdst_a].
+        rewrite <- Hptail, Hdst_a. reflexivity.
+    - rewrite path_prop_equiv; auto.
+  }
+  assert (Nv: forall x, from <> vgeneration x -> InEither x vpl ->
+                        exists k v, In (k, v) vpl /\ x = v /\ list_bi_map vpl x = k). {
+    intros x Hxgen Hxin. apply (list_bi_map_In vpl x) in Hxin.
+    destruct Hxin as [k [v [Hin Hcase]]]. exists k, v.
+    destruct Hcase as [Hcase | Hcase]; auto.
+    destruct Hcase as [Hx Hxv]. subst x.
+    erewrite <- Hsplit_combine in Hin; eauto. apply in_combine_l in Hin.
+    rewrite <- Hfrom in Hin. destruct Hin as [_ Hgen]. exfalso. apply Hxgen. auto.
+  }
+  assert (Hv': forall v, vvalid (remove_nth_gen_ve g2 from) v -> vvalid g1 (vmap v)). {
+    intros v Hvreset. rewrite Hvv_reset in Hvreset. rewrite graph_has_v_reset in Hvreset.
+    destruct Hvreset as [Hvhas2 Hvgen].
+    assert (Hv2: vvalid g2 v) by (apply (proj2 (Hvv2 _)); exact Hvhas2).
+    destruct (InEither_dec v vpl) as [Hin | Hnin].
+    - specialize (Nv _ Hvgen Hin) as [v1 [v2 [Hpair [Hv_eq Hmap]]]]. subst v.
+      rewrite Heqvmap, Hmap. erewrite <- Hsplit_combine in Hpair; eauto.
+      apply in_combine_l in Hpair. rewrite <- Hfrom in Hpair.
+      destruct Hpair as [Hreach _]. apply reachable_through_set_foot_valid in Hreach. exact Hreach.
+    - rewrite Heqvmap, list_bi_map_not_In; auto.
+      destruct (vvalid_lcm _ v Hvv1) as [Hv1 | Hnot1]; auto.
+      exfalso. apply Hnin. unfold InEither. rewrite Heqp, in_app_iff. right.
+      rewrite Hto_valid. split; assumption.
+  }
+  assert (He': forall e, evalid (remove_nth_gen_ve g2 from) e -> evalid g1 (emap e)). {
+    intros e Hereset. rewrite Hev_reset, graph_has_e_reset in Hereset.
+    destruct Hereset as [[Hsrc_has2 Hfield2] Hegen].
+    rewrite Heqemap. destruct (InEither_dec (fst e) vpl) as [Hin | Hnin].
+    - unfold egeneration in Hegen. specialize (Nv _ Hegen Hin) as [k [v [Hpair [Hv_eq Hmap]]]].
+      subst v. pose proof Hpair as Hpair_v.
+      destruct (Hcopy _ _ Hpair) as [Hvlab _].
+      eapply gepl_value in Hpair; eauto.
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hednd Hpair) as [_ Hemap].
+      rewrite Hemap. rewrite Hev1. split; simpl.
+      + erewrite <- Hsplit_combine in Hpair_v; eauto. apply in_combine_l in Hpair_v.
+        rewrite <- Hfrom in Hpair_v. destruct Hpair_v as [Hreach _].
+        apply reachable_through_set_foot_valid in Hreach.
+        apply (proj1 (Hvv1 _)); exact Hreach.
+      + rewrite get_edges_In. rewrite get_edges_inv in Hfield2.
+        destruct Hfield2 as [idx [Heq Hidx]]. rewrite Heq in *. simpl in *.
+        apply vlabel_get_edges_snd in Hvlab. rewrite Hvlab. assumption.
+    - rewrite list_bi_map_not_In.
+      + assert (Hvsrc1: vvalid g1 (fst e)). {
+          destruct (vvalid_lcm _ (fst e) Hvv1) as [Hv1 | Hnot1]; auto.
+          exfalso. apply Hnin. unfold InEither. rewrite Heqp, in_app_iff. right.
+          rewrite Hto_valid. split.
+          - apply (proj2 (Hvv2 _)); exact Hsrc_has2.
+          - exact Hnot1.
+        }
+        assert (Hnot_from_l: ~ In (fst e) from_l). {
+          intro Hin_from. apply Hnin. unfold InEither. rewrite Heqp, in_app_iff. left. exact Hin_from.
+        }
+        rewrite Hev1. split; simpl.
+        * apply (proj1 (Hvv1 _)); exact Hvsrc1.
+        * rewrite get_edges_inv in Hfield2 |-* . destruct Hfield2 as [idx [Heq Hidx]].
+          exists idx. split; auto.
+          rewrite (vlabel_get_edges_snd _ (fst e) _ g2);
+            [exact Hidx | apply Hlabel; auto].
+      + intro Hedge_in. apply Hnin. apply gepl_InEither in Hedge_in. exact Hedge_in.
+  }
+  assert (Hs': forall e, evalid (remove_nth_gen_ve g2 from) e ->
+                         vmap (src g2 e) = src g1 (emap e)). {
+    intros e Hereset. rewrite Hev_reset, graph_has_e_reset in Hereset.
+    destruct Hereset as [[Hsrc_has2 Hfield2] Hegen].
+    rewrite Hsrc2. subst vmap emap. unfold egeneration in Hegen.
+    destruct (InEither_dec (fst e) vpl) as [Hin | Hnin].
+    - specialize (Nv _ Hegen Hin) as [k [v [Hpair [Hv_eq Hmap]]]]. rewrite <- Hv_eq in *.
+      destruct (Hcopy _ _ Hpair) as [Hvlab _]. eapply gepl_value in Hpair; eauto.
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hednd Hpair) as [_ Hemap].
+      rewrite Hmap, Hemap. rewrite Hsrc1. reflexivity.
+    - rewrite !list_bi_map_not_In; auto. intro Hedge_in. apply gepl_InEither in Hedge_in. auto.
+  }
+  assert (Hvb: bijective vmap vmap) by (subst; apply bijective_list_bi_map; auto).
+  assert (Hd': forall e,
+             evalid (reachable_sub_labeledgraph
+                       (reset_graph from g2) (filter_proj exterior_proj_vertex roots2)) e ->
+             vmap (dst g2 e) = dst g1 (emap e)). {
+    intros e Hesub. simpl in Hesub. destruct Hesub as [Hereset [Hsrc_reach Hdst_reach]].
+    pose proof Hereset as Hereset_orig.
+    rewrite Hev_reset, graph_has_e_reset in Hereset.
+    destruct Hereset as [[Hsrc_has2 Hfield2] Hegen].
+    apply reachable_through_set_foot_valid in Hdst_reach.
+    rewrite Hvv_reset, graph_has_v_reset in Hdst_reach.
+    destruct Hdst_reach as [Hdst_has2 Hdst_gen].
+    assert (Hdst_not_from_l: ~ In (dst g2 e) from_l). {
+      intro Hin. rewrite <- Hfrom in Hin. destruct Hin as [_ Hgen].
+      rewrite remove_ve_dst_unchanged in Hdst_gen. apply Hdst_gen. symmetry. exact Hgen.
+    }
+    destruct (InEither_dec (fst e) vpl) as [Hin | Hnin].
+    - subst vmap emap. unfold egeneration in Hegen.
+      specialize (Nv _ Hegen Hin) as [k [v [Hpair [Hv_eq Hmap]]]]. rewrite <- Hv_eq in *.
+      destruct (Hcopy _ _ Hpair) as [Hvlab Hdst_copy].
+      pose proof Hpair as Hpair_edge. eapply gepl_value in Hpair_edge; eauto.
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hednd Hpair_edge) as [_ Hemap]. rewrite Hemap.
+      destruct e as [esrc idx]. simpl in Hv_eq. subst esrc. simpl in *.
+      rewrite get_edges_In in Hfield2. apply vlabel_get_edges_snd in Hvlab.
+      rewrite <- Hvlab in Hfield2. specialize (Hdst_copy _ Hfield2).
+      destruct Hdst_copy as [Hdst_copy | Hdst_copy].
+      + rewrite Hdst_copy. rewrite list_bi_map_not_In; auto.
+        intro Hdst_in. unfold InEither in Hdst_in. rewrite Heqp, in_app_iff in Hdst_in.
+        destruct Hdst_in as [Hdst_from | Hdst_to].
+        * rewrite <- Hdst_copy in Hdst_from. contradiction.
+        * rewrite Hto_valid in Hdst_to. destruct Hdst_to as [_ Hnot_g1].
+          assert (Hsrc_g1: graph_has_v g1 k). {
+            erewrite <- Hsplit_combine in Hpair; eauto. apply in_combine_l in Hpair.
+            rewrite <- Hfrom in Hpair. destruct Hpair as [Hreach _].
+            apply reachable_through_set_foot_valid in Hreach.
+            apply (proj1 (Hvv1 _)); exact Hreach.
+          }
+          rewrite <- get_edges_In in Hfield2. specialize (Hndd1 _ Hsrc_g1 _ Hfield2).
+          rewrite <- Hvv1 in Hndd1. contradiction.
+      + rewrite Hdst_copy. apply (surjective _ _ Hvb).
+    - assert (Hedge_not: ~ InEither e (gen_edge_pair_list g1 vpl)) by
+          (intro Hedge_in; apply Hnin; apply gepl_InEither in Hedge_in; exact Hedge_in).
+      pose proof (He' _ Hereset_orig) as He_g1.
+      rewrite Heqemap in He_g1. rewrite list_bi_map_not_In in He_g1; auto.
+      rewrite Heqemap. rewrite list_bi_map_not_In; auto.
+      assert (Hsrc_not_from: vgeneration (fst e) <> from). {
+        intro Hsrc_from. unfold egeneration in Hegen. simpl in Hegen. lia.
+      }
+      destruct (Hedge_map e He_g1 Hsrc_not_from) as [_ [_ Hdst_map]].
+      rewrite Hdst_map. rewrite <- Heqvmap. apply (surjective _ _ Hvb).
+  }
+  assert (Hp': forall v,
+             vvalid (reachable_sub_labeledgraph (reset_graph from g2)
+                       (filter_proj exterior_proj_vertex roots2)) v ->
+             reachable_through_set g1 (filter_proj exterior_proj_vertex roots1) (vmap v)). {
+    intros v Hvsub. simpl in Hvsub. destruct Hvsub as [Hvreset Hvreach].
+    unfold reachable_through_set in Hvreach |-* . destruct Hvreach as [s [Hsroot Hreach]].
+    assert (Hthrough: forall x, reachable (remove_nth_gen_ve g2 from) s x ->
+                      reachable_through_set (remove_nth_gen_ve g2 from)
+                        (filter_proj exterior_proj_vertex roots2) x) by
+        (intros; exists s; split; assumption).
+    rewrite <- (filter_proj_In_iff exterior_proj_vertex_spec) in Hsroot. rewrite Hroots in Hsroot.
+    apply (in_map (exterior_map vmap)) in Hsroot.
+    rewrite (surjective _ _ (bijective_map _ _ (bijective_exterior_map _ _ Hvb))) in Hsroot.
+    simpl in Hsroot. apply (filter_proj_In_iff exterior_proj_vertex_spec) in Hsroot.
+    exists (vmap s). split; auto.
+    unfold reachable, reachable_by in Hreach. destruct Hreach as [p Hpvalid].
+    assert (Hpath_edge: forall e,
+               In e (snd p) ->
+               evalid (reachable_sub_labeledgraph
+                         (remove_nth_gen_ve g2 from)
+                         (filter_proj exterior_proj_vertex roots2)) e). {
+      intros e Hin. simpl. split.
+      - destruct Hpvalid as [? [? ?]]. destruct p. eapply valid_path_evalid; eauto.
+      - destruct (reachable_path_edge_in _ _ _ _ Hpvalid _ Hin).
+        apply Hthrough in H. apply Hthrough in H0. split; assumption.
+    }
+    destruct Hpvalid as [[Hphead Hptail] [Hpprop Hplast]]. unfold reachable, reachable_by.
+    destruct p as [phead pedges]. simpl in Hphead. subst phead. simpl snd in *.
+    assert (Hedge_map_path: forall e, In e pedges ->
+        vmap (src g2 e) = src g1 (emap e) /\
+        vmap (dst g2 e) = dst g1 (emap e)). {
+      intros e Hin. split; [apply Hs' | apply Hd']; auto.
+      apply Hpath_edge in Hin. simpl in Hin. destruct Hin. assumption.
+    }
+    clear Hpath_edge. exists (vmap s, map emap pedges).
+    assert (Hvp: valid_path g1 (vmap s, map emap pedges)). {
+      clear Hsroot Hplast Hvreset Hptail. revert s Hthrough Hpprop.
+      induction pedges; intros.
+      - simpl in *. apply Hv'; auto.
+      - simpl map. rewrite valid_path_cons_iff in *. destruct Hpprop as [Ha_head [Ha_strong Htail]].
+        rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged in *.
+        assert (Hin_a: In a (a :: pedges)) by (left; reflexivity).
+        apply Hedge_map_path in Hin_a. destruct Hin_a as [Ha_src_map Ha_dst_map].
+        rewrite Ha_head, Ha_src_map, <- Ha_dst_map. split; auto. split.
+        + red. rewrite <- Ha_dst_map, <- Ha_src_map.
+          destruct Ha_strong as [Ha_evalid [Ha_svalid Ha_dvalid]]. subst s.
+          rewrite remove_ve_src_unchanged in Ha_svalid.
+          rewrite remove_ve_dst_unchanged in Ha_dvalid.
+          assert (Hreach_src: reachable (remove_nth_gen_ve g2 from) (src g2 a) (src g2 a)) by
+              (apply reachable_refl; auto).
+          assert (Hreach_dst: reachable (remove_nth_gen_ve g2 from) (src g2 a) (dst g2 a)). {
+            apply step_reachable with (dst g2 a); [| apply reachable_refl |]; auto.
+            exists a.
+            - exact Ha_evalid.
+            - rewrite remove_ve_src_unchanged. reflexivity.
+            - rewrite remove_ve_dst_unchanged. reflexivity.
+          }
+          split; [|split; apply Hv']; [apply He' | | ]; auto.
+        + apply IHpedges; auto.
+          * intros e Hin. apply Hedge_map_path. right; assumption.
+          * intros x Hrx. apply Hthrough.
+            apply step_reachable with (dst g2 a); auto.
+            -- exists a; auto; [destruct Ha_strong | rewrite remove_ve_src_unchanged |
+                                rewrite remove_ve_dst_unchanged]; auto.
+            -- destruct Ha_strong as [_ [? _]]. subst s.
+               rewrite remove_ve_src_unchanged in H. assumption.
+    }
+    split; split; auto.
+    - destruct pedges.
+      + simpl in Hptail |-* . rewrite Hptail. reflexivity.
+      + assert (e :: pedges <> nil) by (intro HS; inversion HS).
+        apply exists_last in H. destruct H as [l' [a Hlast]]. rewrite Hlast in *.
+        rewrite map_app. simpl map. rewrite pfoot_last in Hptail |-* .
+        rewrite remove_ve_dst_unchanged in Hptail.
+        assert (Hin_a: In a (l' +:: a)) by (rewrite in_app_iff; right; left; reflexivity).
+        apply Hedge_map_path in Hin_a. destruct Hin_a as [_ Hdst_a].
+        rewrite <- Hptail, Hdst_a. reflexivity.
+    - rewrite path_prop_equiv; auto.
+  }
+  exists vmap, vmap, emap, emap. split; auto. constructor; intros.
+  - constructor; intros; auto.
+    + subst. apply bijective_list_bi_map; assumption.
+    + simpl. split; [apply Hv | apply Hp]; assumption.
+    + simpl. split; [apply Hv' | apply Hp']; auto. destruct H; assumption.
+    + simpl. split. 1: apply He; assumption.
+      rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged, <- Hd, <- Hs; auto.
+      2: destruct H; auto. destruct H as [? [? ?]].
+      split; apply Hp; simpl; split; auto;
+        eapply reachable_through_set_foot_valid; eauto.
+    + simpl. split; [apply He' | rewrite <- Hs', <- Hd']; auto;
+               destruct H as [? [? ?]]; auto. simpl src in H0. simpl dst in H1.
+      rewrite remove_ve_src_unchanged in H0. rewrite remove_ve_dst_unchanged in H1.
+      split; apply Hp'; simpl; split; auto;
+        eapply reachable_through_set_foot_valid; eauto.
+    + simpl. rewrite remove_ve_src_unchanged. destruct H as [? _]. apply Hs. auto.
+    + simpl. rewrite remove_ve_dst_unchanged. apply Hd; auto.
+  - simpl in H. destruct H as [Hvvalid _]. simpl. rewrite remove_ve_vlabel_unchanged.
+    destruct (InEither_dec v vpl) as [Hin | Hnin].
+    + destruct (Hleft_map _ Hvvalid Hin) as [v1 [v2 [Hpair [Hv_eq Hmap]]]].
+      subst v1. rewrite Hmap.
+      destruct (Hcopy _ _ Hpair) as [Hvlab _]. exact Hvlab.
+    + rewrite Heqvmap, list_bi_map_not_In; auto.
+      apply Hlabel; auto. intro Hin_from. apply Hnin. unfold InEither.
+      rewrite Heqp, in_app_iff. left; assumption.
+  - simpl in H |- * . rewrite remove_ve_elabel_unchanged. rewrite Heqemap.
+    destruct (InEither_dec (fst e) vpl) as [Hin | Hnin].
+    + destruct H as [Hevalid _].
+      assert (Hge: graph_has_e g1 e) by (apply (proj1 (Hev1 e)); exact Hevalid).
+      destruct Hge as [Hsrc_has Hfield].
+      assert (Hsrc_valid: vvalid g1 (fst e)) by (apply (proj2 (Hvv1 _)); exact Hsrc_has).
+      destruct (Hleft_map (fst e) Hsrc_valid Hin) as [k [v0 [Hpair [Hfst Hmap]]]]. subst k.
+      pose proof (gepl_key _ _ _ _ Hfield Hpair) as Hedge_in.
+      destruct (DoubleNoDup_list_bi_map _ _ _ Hednd Hedge_in) as [Hemap _].
+      rewrite Hemap. rewrite Hels1, Hels2. reflexivity.
+    + rewrite list_bi_map_not_In; auto. 1: rewrite Hels2, Hels1; reflexivity.
+      intro Hedge_in. apply Hnin. apply gepl_InEither in Hedge_in. assumption.
+Qed.
 
 Lemma quasi_iso_reset_iso: forall g1 roots1 g2 roots2 from to,
     from <> to -> gc_graph_quasi_iso g1 roots1 g2 roots2 from to ->
@@ -3306,6 +3875,100 @@ Proof.
   intros g rmst item.
   destruct item as [addr | intr]; simpl; auto.
   destruct (find_remset_ext addr rmst); reflexivity.
+Qed.
+
+Lemma remset_exterior_item_special_edge_cond:
+  forall g rmst addr,
+    special_edge_cond g (remset_item2forward_p (RemSetExterior addr) rmst).
+Proof.
+  intros g rmst addr. simpl.
+  destruct (find_remset_ext addr rmst) as [rext |]; [destruct rext |]; simpl; auto.
+Qed.
+
+Lemma remset_interior_item_special_edge_cond:
+  forall g rmst v pos,
+    special_edge_cond g
+      (remset_item2forward_p (RemSetInterior (InteriorVertexPos v pos)) rmst) <->
+    ~ vvalid g v.
+Proof.
+  intros. simpl. reflexivity.
+Qed.
+
+Lemma remset_item2forward_p_compatible':
+  forall g rmst item from,
+    remset_graph_compatible g rmst ->
+    remset_item_compatible g from rmst item ->
+    remset_item_in_gen item rmst g from = false ->
+    forward_p_compatible' (remset_item2forward_p item rmst) g from.
+Proof.
+  intros g rmst item from Hrgc Hric Hnotin.
+  destruct item as [addr | [v pos]]; simpl in Hric, Hnotin |- *.
+  - destruct (find_remset_ext addr rmst) as [rext |] eqn:Hfind.
+    + destruct rext as [vtx addr' | p addr']; simpl; auto.
+      apply find_remset_ext_some in Hfind.
+      destruct Hfind as [Hin _].
+      unfold remset_graph_compatible in Hrgc.
+      rewrite Forall_forall in Hrgc.
+      specialize (Hrgc _ Hin). simpl in Hrgc. assumption.
+    + exfalso.
+      apply in_addr_find_ext_not_none in Hric.
+      contradiction.
+  - destruct Hric as [Hv [Hpos Hfield]].
+    apply Nat.eqb_neq in Hnotin.
+    specialize (Hfield Hnotin).
+    destruct Hfield as [Hmark Htag].
+    split; [|split; [|split; [|split]]]; auto.
+Qed.
+
+Lemma forward_remset_item_forward_p_relation:
+  forall from to g h rh rmst item g' h' rh' rmst',
+    remset_item_in_gen item rmst g from = false ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    forward_relation from to O
+      (forward_p2forward_t (remset_item2forward_p item rmst) g) g g'.
+Proof.
+  intros from to g h rh rmst item g' h' rh' rmst' Hnotin Hfri.
+  unfold forward_remset_item in Hfri.
+  rewrite Hnotin in Hfri. cbn [negb] in Hfri.
+  destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
+    as [new_g new_h] eqn:Hfgh.
+  inversion Hfri; subst; clear Hfri.
+  rewrite remset_item2forward_p_eq.
+  pose proof fr_forward_graph_and_heap
+       from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
+  rewrite Hfgh in Hfr. simpl in Hfr. exact Hfr.
+Qed.
+
+Lemma forward_remset_item_semi_iso:
+  forall from to base g h rh rmst item g' h' rh' rmst' l,
+    from <> to ->
+    sound_gc_graph base ->
+    sound_gc_graph g ->
+    graph_has_gen g to ->
+    gc_graph_semi_iso base g from to l ->
+    remset_graph_compatible g rmst ->
+    remset_item_compatible g from rmst item ->
+    remset_item_in_gen item rmst g from = false ->
+    no_dangling_dst base ->
+    no_dangling_dst g ->
+    special_edge_cond base (remset_item2forward_p item rmst) ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    exists l2,
+      gc_graph_semi_iso base g' from to (l2 ++ l) /\
+      upd_fwd from to g (remset_item2forward_p item rmst) =
+        semi_map (l2 ++ l) (remset_item2forward_p item rmst) /\
+      rf_list_relation (l2 ++ l) (remset_item2forward_p item rmst) from /\
+      (forall roots,
+          roots_graph_compatible roots g ->
+          roots_have_no_gen roots from ->
+          roots = roots_map l2 roots).
+Proof.
+  intros from to base g h rh rmst item g' h' rh' rmst' l
+         Hneq Hsound_base Hsound Hto Hsemi Hrgc Hric Hnotin
+         Hndd_base Hndd Hspecial Hfri.
+  eapply fr_O_semi_iso; eauto.
+  - eapply remset_item2forward_p_compatible'; eauto.
+  - eapply forward_remset_item_forward_p_relation; eauto.
 Qed.
 
 Fixpoint effective_remset_roots_from_space
