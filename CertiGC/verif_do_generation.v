@@ -667,7 +667,9 @@ Proof.
                    Hghc0 Hfrom_g0 Hrhhc0 Hstart02 Hsh02 Hav02 Htot02).
       rewrite <- heap_struct_rep_eq.
       simpl fst. simpl snd.
-      gather_SEP 0 4.
+      gather_SEP
+        (heap_unused_rep _ * heap_remset_rep_except _ _ _ _)
+        (heap_struct_rep _ _ _).
       replace_SEP 0 (heap_rep sh (reset_nth_heap from h2) hp *
                      heap_remset_rep_except g0 h0 rh0 from).
       + unfold heap_rep. entailer!!.
