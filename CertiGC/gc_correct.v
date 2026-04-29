@@ -1451,6 +1451,45 @@ Proof.
   intros. eapply fr_O_sound; eauto.
 Qed.
 
+Lemma forward_remset_item_step_state_with_tail:
+  forall from to g h rh rmst item rest g' h' rh' rmst',
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    remset_nodup rmst ->
+    remset_graph_compatible g rmst ->
+    remset_item_compatible g from rmst item ->
+    remset_and_remset_space_compatible g from rmst rest ->
+    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
+    graph_has_gen g' to /\
+    copy_compatible g' /\
+    remset_nodup rmst' /\
+    remset_graph_compatible g' rmst' /\
+    remset_and_remset_space_compatible g' from rmst' rest.
+Proof.
+  intros from to g h rh rmst item rest g' h' rh' rmst'
+         Hneq Hto Hcc Hrnd Hrgc Hric Hrest Hfri.
+  split.
+  - rewrite <- (forward_remset_item_ghg from to g h rh rmst item
+                  g' h' rh' rmst' Hto Hfri to).
+    exact Hto.
+  - split.
+    + exact (fri_copy_compatible from to g h rh rmst item g' h' rh' rmst'
+               Hneq Hto Hcc Hfri).
+    + split.
+      * exact (fri_remset_nodup from to g h rh rmst item g' h' rh' rmst'
+                 Hrnd Hfri).
+      * split.
+        -- exact (fri_remset_graph_compatible from to g h rh rmst item
+                    g' h' rh' rmst' Hto Hcc Hrnd Hrgc Hric Hfri).
+        -- unfold remset_and_remset_space_compatible in Hrest |- *.
+           rewrite Forall_forall in Hrest |- *.
+           intros tail_item Hin_tail.
+           specialize (Hrest _ Hin_tail).
+           eapply fri_remset_item_compatible with (rmst := rmst) (item := item);
+             eassumption.
+Qed.
+
 (** Semi-Isomorphism **)
 
 Definition from_gen_semi_spec (g1 g2: LGraph) (l: list VType) (gen: nat): Prop :=
@@ -1921,6 +1960,21 @@ Proof.
   - right. exact Hmapped.
 Qed.
 
+Lemma remset_partial_graph_pending_lift_edges:
+  forall g1 g2 l from pending1 pending2,
+    (old_nonfrom_edges_mapped_pending g1 g2 l from pending1 ->
+     old_nonfrom_edges_mapped_pending g1 g2 l from pending2) ->
+    remset_partial_graph_pending g1 g2 l from pending1 ->
+    remset_partial_graph_pending g1 g2 l from pending2.
+Proof.
+  unfold remset_partial_graph_pending.
+  intros g1 g2 l from pending1 pending2 Hlift
+         [Hold [Hvertices [Hedges Hunmarked]]].
+  split; [exact Hold |]. split; [exact Hvertices |].
+  split; [|exact Hunmarked].
+  now apply Hlift.
+Qed.
+
 Lemma remset_partial_graph_pending_nil:
   forall g1 g2 l from,
     remset_partial_graph_pending g1 g2 l from nil ->
@@ -1951,12 +2005,9 @@ Lemma remset_partial_graph_pending_cons_drop:
     remset_partial_graph_pending g1 g2 l from (item :: pending) ->
     remset_partial_graph_pending g1 g2 l from pending.
 Proof.
-  unfold remset_partial_graph_pending.
-  intros g1 g2 l from item pending Hnone
-         [Hold [Hvertices [Hedges Hunmarked]]].
-  split; [exact Hold |]. split; [exact Hvertices |].
-  split; [|exact Hunmarked].
-  eapply old_nonfrom_edges_mapped_pending_cons_drop; eauto.
+  intros g1 g2 l from item pending Hnone Hpartial.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges. eapply old_nonfrom_edges_mapped_pending_cons_drop; eauto.
 Qed.
 
 Lemma remset_partial_graph_pending_cons_drop_old_nonfrom:
@@ -1965,12 +2016,9 @@ Lemma remset_partial_graph_pending_cons_drop_old_nonfrom:
     remset_partial_graph_pending g1 g2 l from (item :: pending) ->
     remset_partial_graph_pending g1 g2 l from pending.
 Proof.
-  unfold remset_partial_graph_pending.
-  intros g1 g2 l from item pending Hnone
-         [Hold [Hvertices [Hedges Hunmarked]]].
-  split; [exact Hold |]. split; [exact Hvertices |].
-  split; [|exact Hunmarked].
-  eapply old_nonfrom_edges_mapped_pending_cons_drop_old_nonfrom; eauto.
+  intros g1 g2 l from item pending Hnone Hpartial.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges. eapply old_nonfrom_edges_mapped_pending_cons_drop_old_nonfrom; eauto.
 Qed.
 
 Lemma remset_partial_graph_pending_consume_item_not_to:
@@ -1981,12 +2029,9 @@ Lemma remset_partial_graph_pending_consume_item_not_to:
     remset_partial_graph_pending g1 g2 l from (item :: pending) ->
     remset_partial_graph_pending g1 g2 l from pending.
 Proof.
-  unfold remset_partial_graph_pending.
-  intros g1 g2 l from item pending e Hitem Hdst_not
-         [Hold [Hvertices [Hedges Hunmarked]]].
-  split; [exact Hold |]. split; [exact Hvertices |].
-  split; [|exact Hunmarked].
-  eapply old_nonfrom_edges_mapped_pending_consume_item_not_to; eauto.
+  intros g1 g2 l from item pending e Hitem Hdst_not Hpartial.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges. eapply old_nonfrom_edges_mapped_pending_consume_item_not_to; eauto.
 Qed.
 
 Lemma remset_partial_graph_pending_consume_item_no_current_edge:
@@ -1996,11 +2041,9 @@ Lemma remset_partial_graph_pending_consume_item_no_current_edge:
     remset_partial_graph_pending g1 g2 l from (item :: pending) ->
     remset_partial_graph_pending g1 g2 l from pending.
 Proof.
-  unfold remset_partial_graph_pending.
-  intros g1 g2 l from item pending Hno_current
-         [Hold [Hvertices [Hedges Hunmarked]]].
-  split; [exact Hold |]. split; [exact Hvertices |].
-  split; [|exact Hunmarked].
+  intros g1 g2 l from item pending Hno_current Hpartial.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges.
   eapply old_nonfrom_edges_mapped_pending_consume_item_no_current_edge; eauto.
 Qed.
 
@@ -2032,19 +2075,31 @@ Proof.
   now apply remset_partial_graph_pending_intro.
 Qed.
 
+Lemma pending_remset_semi_iso_lift_partial:
+  forall g1 g2 from to pending1 pending2 l,
+    (remset_partial_graph_pending g1 g2 l from pending1 ->
+     remset_partial_graph_pending g1 g2 l from pending2) ->
+    gc_graph_pending_remset_semi_iso g1 g2 from to pending1 l ->
+    gc_graph_pending_remset_semi_iso g1 g2 from to pending2 l.
+Proof.
+  intros g1 g2 from to pending1 pending2 l Hlift [Hcopy Hspec].
+  split; [exact Hcopy |].
+  destruct (split l) as [from_l to_l] eqn:Hsplit.
+  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
+  split; [exact Hfrom |]. split; [exact Hto |].
+  split; [exact Hlabel |].
+  now apply Hlift.
+Qed.
+
 Lemma pending_remset_semi_iso_cons_drop:
   forall g1 g2 from to item pending l,
     (forall e, ~ remset_item_records_edge item e) ->
     gc_graph_pending_remset_semi_iso g1 g2 from to (item :: pending) l ->
     gc_graph_pending_remset_semi_iso g1 g2 from to pending l.
 Proof.
-  intros g1 g2 from to item pending l Hnone [Hcopy Hspec].
-  split; [exact Hcopy |].
-  destruct (split l) as [from_l to_l] eqn:Hsplit.
-  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
-  split; [exact Hfrom |]. split; [exact Hto |].
-  split; [exact Hlabel |].
-  now eapply remset_partial_graph_pending_cons_drop; eauto.
+  intros g1 g2 from to item pending l Hnone Hiso.
+  eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
+  intros Hpartial. eapply remset_partial_graph_pending_cons_drop; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_cons_drop_old_nonfrom:
@@ -2053,13 +2108,10 @@ Lemma pending_remset_semi_iso_cons_drop_old_nonfrom:
     gc_graph_pending_remset_semi_iso g1 g2 from to (item :: pending) l ->
     gc_graph_pending_remset_semi_iso g1 g2 from to pending l.
 Proof.
-  intros g1 g2 from to item pending l Hnone [Hcopy Hspec].
-  split; [exact Hcopy |].
-  destruct (split l) as [from_l to_l] eqn:Hsplit.
-  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
-  split; [exact Hfrom |]. split; [exact Hto |].
-  split; [exact Hlabel |].
-  now eapply remset_partial_graph_pending_cons_drop_old_nonfrom; eauto.
+  intros g1 g2 from to item pending l Hnone Hiso.
+  eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
+  intros Hpartial.
+  eapply remset_partial_graph_pending_cons_drop_old_nonfrom; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_consume_item_not_to:
@@ -2070,13 +2122,10 @@ Lemma pending_remset_semi_iso_consume_item_not_to:
     gc_graph_pending_remset_semi_iso g1 g2 from to (item :: pending) l ->
     gc_graph_pending_remset_semi_iso g1 g2 from to pending l.
 Proof.
-  intros g1 g2 from to item pending l e Hitem Hdst_not [Hcopy Hspec].
-  split; [exact Hcopy |].
-  destruct (split l) as [from_l to_l] eqn:Hsplit.
-  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
-  split; [exact Hfrom |]. split; [exact Hto |].
-  split; [exact Hlabel |].
-  now eapply remset_partial_graph_pending_consume_item_not_to; eauto.
+  intros g1 g2 from to item pending l e Hitem Hdst_not Hiso.
+  eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
+  intros Hpartial.
+  eapply remset_partial_graph_pending_consume_item_not_to; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_consume_item_no_current_edge:
@@ -2086,13 +2135,10 @@ Lemma pending_remset_semi_iso_consume_item_no_current_edge:
     gc_graph_pending_remset_semi_iso g1 g2 from to (item :: pending) l ->
     gc_graph_pending_remset_semi_iso g1 g2 from to pending l.
 Proof.
-  intros g1 g2 from to item pending l Hno_current [Hcopy Hspec].
-  split; [exact Hcopy |].
-  destruct (split l) as [from_l to_l] eqn:Hsplit.
-  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
-  split; [exact Hfrom |]. split; [exact Hto |].
-  split; [exact Hlabel |].
-  now eapply remset_partial_graph_pending_consume_item_no_current_edge; eauto.
+  intros g1 g2 from to item pending l Hno_current Hiso.
+  eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
+  intros Hpartial.
+  eapply remset_partial_graph_pending_consume_item_no_current_edge; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_refl:
@@ -5406,35 +5452,15 @@ Proof.
         -- destruct (forward_remset_item from to (g, h, rh, rmst) (RemSetExterior item_addr))
              as [[[g2 h2] rh2] rmst2] eqn:Hfri.
            symmetry in Hfri.
-           assert (Hto2: graph_has_gen g2 to) by
-               (rewrite <- (forward_remset_item_ghg
-                              from to g h rh rmst (RemSetExterior item_addr)
-                              g2 h2 rh2 rmst2 Hto Hfri to);
-                exact Hto).
+           destruct (forward_remset_item_step_state_with_tail
+                       from to g h rh rmst (RemSetExterior item_addr) rest
+                       g2 h2 rh2 rmst2 Hneq Hto Hcc Hrnd Hrgc Hric_item
+                       Hrrsc_tail Hfri)
+             as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
            assert (Hv2: graph_has_v g2 v) by
                (exact (forward_remset_item_graph_has_v_pres
                          from to g h rh rmst (RemSetExterior item_addr)
                          g2 h2 rh2 rmst2 v Hto Hv Hfri)).
-           assert (Hcc2: copy_compatible g2) by
-               (exact (fri_copy_compatible
-                         from to g h rh rmst (RemSetExterior item_addr)
-                         g2 h2 rh2 rmst2 Hneq Hto Hcc Hfri)).
-           assert (Hrnd2: remset_nodup rmst2) by
-               (exact (fri_remset_nodup
-                         from to g h rh rmst (RemSetExterior item_addr)
-                         g2 h2 rh2 rmst2 Hrnd Hfri)).
-           assert (Hrgc2: remset_graph_compatible g2 rmst2) by
-               (exact (fri_remset_graph_compatible
-                         from to g h rh rmst (RemSetExterior item_addr)
-                         g2 h2 rh2 rmst2 Hto Hcc Hrnd Hrgc Hric_item Hfri)).
-           assert (Hrrsc2: remset_and_remset_space_compatible g2 from rmst2 rest). {
-             hnf. rewrite Forall_forall in Hrrsc_tail |- *.
-             intros x Hinx.
-             specialize (Hrrsc_tail _ Hinx).
-             eapply fri_remset_item_compatible
-               with (rmst := rmst) (item := RemSetExterior item_addr);
-               eassumption.
-           }
            assert (Hvertex2: In (RemSetVertex v addr) rmst2) by
                (eapply (forward_remset_item_preserves_other_remset_vertex
                            from to g h rh rmst (RemSetExterior item_addr)
@@ -5446,35 +5472,15 @@ Proof.
       * destruct (forward_remset_item from to (g, h, rh, rmst) (RemSetInterior intr))
           as [[[g2 h2] rh2] rmst2] eqn:Hfri.
         symmetry in Hfri.
-        assert (Hto2: graph_has_gen g2 to) by
-            (rewrite <- (forward_remset_item_ghg
-                           from to g h rh rmst (RemSetInterior intr)
-                           g2 h2 rh2 rmst2 Hto Hfri to);
-             exact Hto).
+        destruct (forward_remset_item_step_state_with_tail
+                    from to g h rh rmst (RemSetInterior intr) rest
+                    g2 h2 rh2 rmst2 Hneq Hto Hcc Hrnd Hrgc Hric_item
+                    Hrrsc_tail Hfri)
+          as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
         assert (Hv2: graph_has_v g2 v) by
             (exact (forward_remset_item_graph_has_v_pres
                       from to g h rh rmst (RemSetInterior intr)
                       g2 h2 rh2 rmst2 v Hto Hv Hfri)).
-        assert (Hcc2: copy_compatible g2) by
-            (exact (fri_copy_compatible
-                      from to g h rh rmst (RemSetInterior intr)
-                      g2 h2 rh2 rmst2 Hneq Hto Hcc Hfri)).
-        assert (Hrnd2: remset_nodup rmst2) by
-            (exact (fri_remset_nodup
-                      from to g h rh rmst (RemSetInterior intr)
-                      g2 h2 rh2 rmst2 Hrnd Hfri)).
-        assert (Hrgc2: remset_graph_compatible g2 rmst2) by
-            (exact (fri_remset_graph_compatible
-                      from to g h rh rmst (RemSetInterior intr)
-                      g2 h2 rh2 rmst2 Hto Hcc Hrnd Hrgc Hric_item Hfri)).
-        assert (Hrrsc2: remset_and_remset_space_compatible g2 from rmst2 rest). {
-          hnf. rewrite Forall_forall in Hrrsc_tail |- *.
-          intros x Hinx.
-          specialize (Hrrsc_tail _ Hinx).
-          eapply fri_remset_item_compatible
-            with (rmst := rmst) (item := RemSetInterior intr);
-            eassumption.
-        }
         assert (Hvertex2: In (RemSetVertex v addr) rmst2) by
             (eapply (forward_remset_item_preserves_other_remset_vertex
                         from to g h rh rmst (RemSetInterior intr)
@@ -6315,26 +6321,10 @@ Proof.
     assert (Hsound2: sound_gc_graph g2) by
         (eapply forward_remset_item_P_holds; eauto;
          intros; eapply fr_O_sound; eauto).
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg from to g h rh rmst item
-                       g2 h2 rh2 rmst2 Hto Hfri to);
-         exact Hto).
-    assert (Hcc2: copy_compatible g2) by
-        (exact (fri_copy_compatible from to g h rh rmst item
-                  g2 h2 rh2 rmst2 Hneq Hto Hcc Hfri)).
-    assert (Hrnd2: remset_nodup rmst2) by
-        (exact (fri_remset_nodup from to g h rh rmst item
-                  g2 h2 rh2 rmst2 Hrnd Hfri)).
-    assert (Hrgc2: remset_graph_compatible g2 rmst2) by
-        (exact (fri_remset_graph_compatible from to g h rh rmst item
-                  g2 h2 rh2 rmst2 Hto Hcc Hrnd Hrgc Hric_item Hfri)).
-    assert (Hrrsc2: remset_and_remset_space_compatible g2 from rmst2 r). {
-      hnf. rewrite Forall_forall in Hrrsc_tail |- *.
-      intros item_tail Hin_tail.
-      specialize (Hrrsc_tail _ Hin_tail).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := item);
-        eassumption.
-    }
+    destruct (forward_remset_item_step_state_with_tail
+                from to g h rh rmst item r g2 h2 rh2 rmst2
+                Hneq Hto Hcc Hrnd Hrgc Hric_item Hrrsc_tail Hfri)
+      as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
     assert (Hpending2:
               unmarked_old_nonfrom_edges_to_are_pending base g2 from r) by
         (exact (forward_remset_item_unmarked_old_nonfrom_edges_pending
@@ -7764,9 +7754,6 @@ Proof.
     destruct (forward_remset_item from to (g, h, rh, rmst) item)
       as [[[g2 h2] rh2] rmst2] eqn:Hfri.
     symmetry in Hfri.
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg from to g h rh rmst item
-                       g2 h2 rh2 rmst2 Hto Hfri to); exact Hto).
     assert (Hgv2: graph_has_v g2 v) by
         (exact (forward_remset_item_graph_has_v_pres
                   from to g h rh rmst item g2 h2 rh2 rmst2 v Hto Hgv Hfri)).
@@ -7777,25 +7764,13 @@ Proof.
         as [Hnotin Heff].
       eapply remset_item_effective_root_in_effective_roots_from_space_cons;
         eauto.
-    + assert (Hcc2: copy_compatible g2) by
-          (exact (fri_copy_compatible from to g h rh rmst item
-                    g2 h2 rh2 rmst2 Hneq Hto Hcc Hfri)).
+    + destruct (forward_remset_item_step_state_with_tail
+                  from to g h rh rmst item rest g2 h2 rh2 rmst2
+                  Hneq Hto Hcc Hrnd Hrgc Hric_item Hrrsc_tail Hfri)
+        as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
       assert (Hndd2: no_dangling_dst g2) by
           (exact (fri_no_dangling_dst from to g h rh rmst item
                     g2 h2 rh2 rmst2 Hto Hcc Hrgc Hric_item Hndd Hfri)).
-      assert (Hrnd2: remset_nodup rmst2) by
-          (exact (fri_remset_nodup from to g h rh rmst item
-                    g2 h2 rh2 rmst2 Hrnd Hfri)).
-      assert (Hrgc2: remset_graph_compatible g2 rmst2) by
-          (exact (fri_remset_graph_compatible from to g h rh rmst item
-                    g2 h2 rh2 rmst2 Hto Hcc Hrnd Hrgc Hric_item Hfri)).
-      assert (Hrrsc2: remset_and_remset_space_compatible g2 from rmst2 rest). {
-        hnf. rewrite Forall_forall in Hrrsc_tail |- *.
-        intros tail_item Hin_tail.
-        specialize (Hrrsc_tail _ Hin_tail).
-        eapply fri_remset_item_compatible with (rmst := rmst) (item := item);
-          eassumption.
-      }
       assert (Hct2: copied_to_compatible from to g2) by
           (exact (forward_remset_item_copied_to_compatible
                     from to g h rh rmst item g2 h2 rh2 rmst2
@@ -9041,27 +9016,13 @@ Proof.
     assert (Hrange2: 0 <= Z.of_nat to < Zlength rh2) by
         (pose proof (fri_rh_Zlength_same from to g h rh rmst item
                        g2 h2 rh2 rmst2 Hfri); lia).
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg from to g h rh rmst item
-                       g2 h2 rh2 rmst2 Hto Hfri to); exact Hto).
-    assert (Hcc2: copy_compatible g2) by
-        exact (fri_copy_compatible from to g h rh rmst item
-                 g2 h2 rh2 rmst2 Hneq Hto Hcc Hfri).
-    assert (Hrnd2: remset_nodup rmst2) by
-        exact (fri_remset_nodup from to g h rh rmst item
-                 g2 h2 rh2 rmst2 Hrnd Hfri).
-    assert (Hrgc2: remset_graph_compatible g2 rmst2) by
-        exact (fri_remset_graph_compatible from to g h rh rmst item
-                 g2 h2 rh2 rmst2 Hto Hcc Hrnd Hrgc Hitem Hfri).
+    destruct (forward_remset_item_step_state_with_tail
+                from to g h rh rmst item rest g2 h2 rh2 rmst2
+                Hneq Hto Hcc Hrnd Hrgc Hitem Hrrsc_tail Hfri)
+      as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
     assert (Hrrhc2: remset_and_remset_heap_compatible g2 from rmst2 rh2) by
         exact (forward_remset_item_rrhc_range from to g h rh rmst item
                  g2 h2 rh2 rmst2 Hrange Hto Hrnd Hitem Hrrhc Hfri).
-    assert (Hrrsc2: remset_and_remset_space_compatible g2 from rmst2 rest). {
-      hnf. rewrite Forall_forall in Hrrsc_tail |- *.
-      intros x Hin. specialize (Hrrsc_tail _ Hin).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := item);
-        eassumption.
-    }
     eapply (IH g2 h2 rh2 rmst2 g' h' rh' rmst'); eauto.
 Qed.
 
@@ -9109,24 +9070,10 @@ Proof.
     symmetry in Hfri.
     hnf in Hrrsc. rewrite Forall_cons_iff in Hrrsc.
     destruct Hrrsc as [Hitem Hrrsc_tail].
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg from to g h rh rmst item
-                       g2 h2 rh2 rmst2 Hto Hfri to); exact Hto).
-    assert (Hcc2: copy_compatible g2) by
-        exact (fri_copy_compatible from to g h rh rmst item
-                 g2 h2 rh2 rmst2 Hneq Hto Hcc Hfri).
-    assert (Hrnd2: remset_nodup rmst2) by
-        exact (fri_remset_nodup from to g h rh rmst item
-                 g2 h2 rh2 rmst2 Hrnd Hfri).
-    assert (Hrgc2: remset_graph_compatible g2 rmst2) by
-        exact (fri_remset_graph_compatible from to g h rh rmst item
-                 g2 h2 rh2 rmst2 Hto Hcc Hrnd Hrgc Hitem Hfri).
-    assert (Hrrsc2: remset_and_remset_space_compatible g2 from rmst2 rest). {
-      hnf. rewrite Forall_forall in Hrrsc_tail |- *.
-      intros x Hin. specialize (Hrrsc_tail _ Hin).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := item);
-        eassumption.
-    }
+    destruct (forward_remset_item_step_state_with_tail
+                from to g h rh rmst item rest g2 h2 rh2 rmst2
+                Hneq Hto Hcc Hrnd Hrgc Hitem Hrrsc_tail Hfri)
+      as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
     eapply (IH g2 h2 rh2 rmst2 g' h' rh' rmst'); eauto.
 Qed.
 
@@ -9335,29 +9282,13 @@ Proof.
     assert (Hsound2: sound_gc_graph g2) by
         (eapply forward_remset_item_P_holds;
          [intros; eapply fr_O_sound; eauto | exact Hsound | exact Hto | exact Hfri]).
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg from to g h rh rmst item
-                       g2 h2 rh2 rmst2 Hto Hfri to);
-         exact Hto).
-    assert (Hcc2: copy_compatible g2) by
-        exact (fri_copy_compatible from to g h rh rmst item g2 h2 rh2 rmst2
-                 Hneq Hto Hcc Hfri).
+    destruct (forward_remset_item_step_state_with_tail
+                from to g h rh rmst item rest g2 h2 rh2 rmst2
+                Hneq Hto Hcc Hrnd Hrgc Hric Hrrsc_tail Hfri)
+      as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
     assert (Hndd2: no_dangling_dst g2) by
         exact (fri_no_dangling_dst from to g h rh rmst item g2 h2 rh2 rmst2
                  Hto Hcc Hrgc Hric Hndd Hfri).
-    assert (Hrnd2: remset_nodup rmst2) by
-        exact (fri_remset_nodup from to g h rh rmst item g2 h2 rh2 rmst2
-                 Hrnd Hfri).
-    assert (Hrgc2: remset_graph_compatible g2 rmst2) by
-        exact (fri_remset_graph_compatible from to g h rh rmst item
-                 g2 h2 rh2 rmst2 Hto Hcc Hrnd Hrgc Hric Hfri).
-    assert (Hrrsc2: remset_and_remset_space_compatible g2 from rmst2 rest). {
-      hnf. rewrite Forall_forall in Hrrsc_tail |- *.
-      intros x Hin.
-      specialize (Hrrsc_tail _ Hin).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := item);
-        eassumption.
-    }
     assert (Hcvp2: copied_vertex_prop g2 from to) by
         exact (forward_remset_item_copied_vertex_prop
                  from to g h rh rmst item g2 h2 rh2 rmst2
