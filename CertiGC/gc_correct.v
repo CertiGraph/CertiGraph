@@ -515,6 +515,80 @@ Defined.
 Lemma vvalid_lcm: forall g v, vertex_valid g -> vvalid g v \/ ~ vvalid g v.
 Proof. intros. red in H. rewrite H. destruct (graph_has_v_dec g v); auto. Qed.
 
+Lemma reachable_map_reachable_sub_edges:
+  forall (g_src: LGraph) (g_dst: PreGraph VType EType)
+         roots_src (vmap: VType -> VType) (emap: EType -> EType) s v p,
+    (forall x, reachable g_src s x -> reachable_through_set g_src roots_src x) ->
+    g_src |= (s, p) is s ~o~> v satisfying (fun _ => True) ->
+    vvalid g_dst (vmap s) ->
+    (forall e, evalid (reachable_sub_labeledgraph g_src roots_src) e ->
+       vmap (src g_src e) = src g_dst (emap e)) ->
+    (forall e, evalid (reachable_sub_labeledgraph g_src roots_src) e ->
+       vmap (dst g_src e) = dst g_dst (emap e)) ->
+    (forall e, evalid (reachable_sub_labeledgraph g_src roots_src) e ->
+       evalid g_dst (emap e)) ->
+    (forall x, vvalid (reachable_sub_labeledgraph g_src roots_src) x ->
+       vvalid g_dst (vmap x)) ->
+    reachable g_dst (vmap s) (vmap v).
+Proof.
+  intros g_src g_dst roots_src vmap emap s v p Hthrough Hpath Hsvalid
+         Hsrc_map Hdst_map He_map Hv_map.
+  pose proof Hpath as Hpath_full.
+  destruct Hpath as [[_ Hfoot] [Hvalid _]].
+  assert (Hmap: forall e, In e p ->
+        vmap (src g_src e) = src g_dst (emap e) /\
+        vmap (dst g_src e) = dst g_dst (emap e) /\
+        strong_evalid g_dst (emap e)). {
+    intros e Hin.
+    assert (Hsub: evalid (reachable_sub_labeledgraph g_src roots_src) e). {
+      simpl. split.
+      - eapply valid_path_evalid; eauto.
+      - destruct (reachable_path_edge_in _ _ _ _ Hpath_full _ Hin).
+        split; apply Hthrough; assumption.
+    }
+    pose proof (Hsrc_map e Hsub) as Hsrc_eq.
+    pose proof (Hdst_map e Hsub) as Hdst_eq.
+    split; [exact Hsrc_eq | split; [exact Hdst_eq |]].
+    red. rewrite <- Hsrc_eq, <- Hdst_eq. split; [apply He_map; exact Hsub |].
+    pose proof (valid_path_strong_evalid _ _ _ _ Hvalid Hin) as
+        [_ [Hsrc_valid Hdst_valid]].
+    simpl in Hsub. destruct Hsub as [_ [Hsrc_reach Hdst_reach]].
+    split; apply Hv_map; simpl; split; assumption.
+  }
+  assert (Hmapped_valid: valid_path g_dst (vmap s, map emap p)). {
+    clear Hfoot Hthrough Hpath_full Hsrc_map Hdst_map He_map Hv_map.
+    revert s Hvalid Hsvalid Hmap.
+    induction p as [| a p IHp]; intros s Hvalid Hsvalid Hmap.
+    - simpl. exact Hsvalid.
+    - simpl map. rewrite valid_path_cons_iff in Hvalid |-*.
+      destruct Hvalid as [Hhead [Ha_strong Htail]].
+      destruct (Hmap a (or_introl eq_refl)) as
+          [Ha_src [Ha_dst Ha_mapped_strong]].
+      split; [rewrite Hhead; exact Ha_src | split; [exact Ha_mapped_strong |]].
+      rewrite <- Ha_dst. apply IHp.
+      + exact Htail.
+      + destruct Ha_mapped_strong as [_ [_ Ha_dst_valid]].
+        rewrite Ha_dst. exact Ha_dst_valid.
+      + intros e Hin. apply Hmap. right; exact Hin.
+  }
+  exists (vmap s, map emap p).
+  split.
+  - split; [simpl; auto |].
+    destruct p as [| e p].
+    + simpl in Hfoot |-* . rewrite Hfoot. reflexivity.
+    + assert (e :: p <> nil) by (intro HS; inversion HS).
+      apply exists_last in H. destruct H as [l' [a Hlast]]. rewrite Hlast in *.
+      rewrite map_app. simpl map.
+      change (pfoot g_dst (vmap s, map emap l' +:: emap a) = vmap v).
+      rewrite pfoot_last in Hfoot |-* .
+      assert (Hin_a: In a (l' +:: a)) by
+          (rewrite in_app_iff; right; left; reflexivity).
+      destruct (Hmap a Hin_a) as [_ [Hdst_eq _]].
+      rewrite <- Hdst_eq, Hfoot. reflexivity.
+  - split; [exact Hmapped_valid |].
+    rewrite path_prop_equiv; auto.
+Qed.
+
 Lemma remset_quasi_iso_reset_iso: forall g1 roots1 g2 roots2 from to,
     from <> to -> gc_graph_remset_quasi_iso g1 roots1 g2 roots2 from to ->
     sound_gc_graph g2 -> sound_gc_graph g1 ->
@@ -705,62 +779,23 @@ Proof.
     simpl in Hsroot. apply (filter_proj_In_iff exterior_proj_vertex_spec) in Hsroot.
     exists (vmap s). split; auto.
     unfold reachable, reachable_by in Hreach. destruct Hreach as [p Hpvalid].
-    assert (Hpath_edge: forall e, In e (snd p) ->
-      evalid (reachable_sub_labeledgraph g1 (filter_proj exterior_proj_vertex roots1)) e). {
-      intros e Hin. simpl. split.
-      - destruct Hpvalid as [? [? ?]]. destruct p. eapply valid_path_evalid; eauto.
-      - destruct (reachable_path_edge_in _ _ _ _ Hpvalid _ Hin).
-        apply Hthrough in H. apply Hthrough in H0. split; assumption.
-    }
     destruct Hpvalid as [[Hphead Hptail] [Hpprop Hplast]]. unfold reachable, reachable_by.
     destruct p as [phead pedges]. simpl in Hphead. subst phead. simpl snd in *.
-    assert (Hedge_map_path: forall e, In e pedges ->
-        vmap (src g1 e) = src g2 (emap e) /\
-        vmap (dst g1 e) = dst g2 (emap e)). {
-      intros e Hin. split; [apply Hs | apply Hd]; auto.
-      apply Hpath_edge in Hin. simpl in Hin. destruct Hin. assumption.
-    }
-    clear Hpath_edge. exists (vmap s, map emap pedges).
-    assert (Hvp: valid_path (remove_nth_gen_ve g2 from) (vmap s, map emap pedges)). {
-      clear Hsroot Hplast Hvvalid Hptail. revert s Hthrough Hpprop.
-      induction pedges; intros.
-      - simpl in *. apply Hv. split; auto. apply Hthrough, reachable_refl; auto.
-      - simpl map. rewrite valid_path_cons_iff in *. destruct Hpprop as [Ha_head [Ha_strong Htail]].
-        rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged.
-        assert (Hin_a: In a (a :: pedges)) by (left; reflexivity).
-        apply Hedge_map_path in Hin_a. destruct Hin_a as [Ha_src_map Ha_dst_map].
-        rewrite Ha_head, Ha_src_map, <- Ha_dst_map. split; auto. split.
-        + red. rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged,
-                   <- Ha_dst_map, <- Ha_src_map.
-          destruct Ha_strong as [Ha_evalid [Ha_svalid Ha_dvalid]]. subst s.
-          assert (Hreach_src: reachable g1 (src g1 a) (src g1 a)) by
-              (apply reachable_refl; auto).
-          assert (Hreach_dst: reachable g1 (src g1 a) (dst g1 a)). {
-            apply step_reachable with (dst g1 a); [exists a | apply reachable_refl |]; auto.
-          }
-          split; [|split; apply Hv]; [apply He | | ]; simpl; split; auto.
-        + apply IHpedges; auto.
-          * intros e Hin. apply Hedge_map_path. right; assumption.
-          * intros x Hrx. apply Hthrough.
-            apply step_reachable with (dst g1 a); auto.
-            -- exists a.
-               ++ destruct Ha_strong as [Ha_evalid _]. exact Ha_evalid.
-               ++ rewrite Ha_head. reflexivity.
-               ++ reflexivity.
-            -- destruct Ha_strong as [_ [Ha_svalid _]].
-               rewrite Ha_head. exact Ha_svalid.
-    }
-    split; split; auto.
-    - destruct pedges.
-      + simpl in Hptail |-* . rewrite Hptail. reflexivity.
-      + assert (e :: pedges <> nil) by (intro HS; inversion HS).
-        apply exists_last in H. destruct H as [l' [a Hlast]]. rewrite Hlast in *.
-        rewrite map_app. simpl map. rewrite pfoot_last in Hptail |-* .
-        rewrite remove_ve_dst_unchanged.
-        assert (Hin_a: In a (l' +:: a)) by (rewrite in_app_iff; right; left; reflexivity).
-        apply Hedge_map_path in Hin_a. destruct Hin_a as [_ Hdst_a].
-        rewrite <- Hptail, Hdst_a. reflexivity.
-    - rewrite path_prop_equiv; auto.
+    apply reachable_map_reachable_sub_edges
+      with (g_src := g1) (g_dst := remove_nth_gen_ve g2 from)
+           (roots_src := filter_proj exterior_proj_vertex roots1)
+           (vmap := vmap) (emap := emap) (p := pedges).
+    - exact Hthrough.
+    - split; [split | split]; simpl; auto.
+    - assert (Hsvalid_g1: vvalid g1 s) by
+          (eapply valid_path_valid; [exact Hpprop | left; reflexivity]).
+      apply Hv. simpl. split; auto.
+      apply Hthrough. apply reachable_refl. exact Hsvalid_g1.
+    - intros e Hesub. rewrite remove_ve_src_unchanged.
+      apply Hs. simpl in Hesub. destruct Hesub as [Hevalid _]. exact Hevalid.
+    - intros e Hesub. rewrite remove_ve_dst_unchanged. apply Hd. exact Hesub.
+    - intros e Hesub. apply He. exact Hesub.
+    - intros x Hx. apply Hv. exact Hx.
   }
   assert (Nv: forall x, from <> vgeneration x -> InEither x vpl ->
                         exists k v, In (k, v) vpl /\ x = v /\ list_bi_map vpl x = k). {
@@ -900,68 +935,26 @@ Proof.
     simpl in Hsroot. apply (filter_proj_In_iff exterior_proj_vertex_spec) in Hsroot.
     exists (vmap s). split; auto.
     unfold reachable, reachable_by in Hreach. destruct Hreach as [p Hpvalid].
-    assert (Hpath_edge: forall e,
-               In e (snd p) ->
-               evalid (reachable_sub_labeledgraph
-                         (remove_nth_gen_ve g2 from)
-                         (filter_proj exterior_proj_vertex roots2)) e). {
-      intros e Hin. simpl. split.
-      - destruct Hpvalid as [? [? ?]]. destruct p. eapply valid_path_evalid; eauto.
-      - destruct (reachable_path_edge_in _ _ _ _ Hpvalid _ Hin).
-        apply Hthrough in H. apply Hthrough in H0. split; assumption.
-    }
     destruct Hpvalid as [[Hphead Hptail] [Hpprop Hplast]]. unfold reachable, reachable_by.
     destruct p as [phead pedges]. simpl in Hphead. subst phead. simpl snd in *.
-    assert (Hedge_map_path: forall e, In e pedges ->
-        vmap (src g2 e) = src g1 (emap e) /\
-        vmap (dst g2 e) = dst g1 (emap e)). {
-      intros e Hin. split; [apply Hs' | apply Hd']; auto.
-      apply Hpath_edge in Hin. simpl in Hin. destruct Hin. assumption.
-    }
-    clear Hpath_edge. exists (vmap s, map emap pedges).
-    assert (Hvp: valid_path g1 (vmap s, map emap pedges)). {
-      clear Hsroot Hplast Hvreset Hptail. revert s Hthrough Hpprop.
-      induction pedges; intros.
-      - simpl in *. apply Hv'; auto.
-      - simpl map. rewrite valid_path_cons_iff in *. destruct Hpprop as [Ha_head [Ha_strong Htail]].
-        rewrite remove_ve_src_unchanged, remove_ve_dst_unchanged in *.
-        assert (Hin_a: In a (a :: pedges)) by (left; reflexivity).
-        apply Hedge_map_path in Hin_a. destruct Hin_a as [Ha_src_map Ha_dst_map].
-        rewrite Ha_head, Ha_src_map, <- Ha_dst_map. split; auto. split.
-        + red. rewrite <- Ha_dst_map, <- Ha_src_map.
-          destruct Ha_strong as [Ha_evalid [Ha_svalid Ha_dvalid]]. subst s.
-          rewrite remove_ve_src_unchanged in Ha_svalid.
-          rewrite remove_ve_dst_unchanged in Ha_dvalid.
-          assert (Hreach_src: reachable (remove_nth_gen_ve g2 from) (src g2 a) (src g2 a)) by
-              (apply reachable_refl; auto).
-          assert (Hreach_dst: reachable (remove_nth_gen_ve g2 from) (src g2 a) (dst g2 a)). {
-            apply step_reachable with (dst g2 a); [| apply reachable_refl |]; auto.
-            exists a.
-            - exact Ha_evalid.
-            - rewrite remove_ve_src_unchanged. reflexivity.
-            - rewrite remove_ve_dst_unchanged. reflexivity.
-          }
-          split; [|split; apply Hv']; [apply He' | | ]; auto.
-        + apply IHpedges; auto.
-          * intros e Hin. apply Hedge_map_path. right; assumption.
-          * intros x Hrx. apply Hthrough.
-            apply step_reachable with (dst g2 a); auto.
-            -- exists a; auto; [destruct Ha_strong | rewrite remove_ve_src_unchanged |
-                                rewrite remove_ve_dst_unchanged]; auto.
-            -- destruct Ha_strong as [_ [? _]]. subst s.
-               rewrite remove_ve_src_unchanged in H. assumption.
-    }
-    split; split; auto.
-    - destruct pedges.
-      + simpl in Hptail |-* . rewrite Hptail. reflexivity.
-      + assert (e :: pedges <> nil) by (intro HS; inversion HS).
-        apply exists_last in H. destruct H as [l' [a Hlast]]. rewrite Hlast in *.
-        rewrite map_app. simpl map. rewrite pfoot_last in Hptail |-* .
-        rewrite remove_ve_dst_unchanged in Hptail.
-        assert (Hin_a: In a (l' +:: a)) by (rewrite in_app_iff; right; left; reflexivity).
-        apply Hedge_map_path in Hin_a. destruct Hin_a as [_ Hdst_a].
-        rewrite <- Hptail, Hdst_a. reflexivity.
-    - rewrite path_prop_equiv; auto.
+    apply reachable_map_reachable_sub_edges
+      with (g_src := reset_graph from g2) (g_dst := g1)
+           (roots_src := filter_proj exterior_proj_vertex roots2)
+           (vmap := vmap) (emap := emap) (p := pedges).
+    - exact Hthrough.
+    - split; [split | split]; simpl; auto.
+    - assert (Hsvalid_reset: vvalid (remove_nth_gen_ve g2 from) s) by
+          (eapply valid_path_valid; [exact Hpprop | left; reflexivity]).
+      apply Hv'. exact Hsvalid_reset.
+    - intros e Hesub.
+      change (vmap (src (remove_nth_gen_ve g2 from) e) = src g1 (emap e)).
+      rewrite remove_ve_src_unchanged.
+      simpl in Hesub. destruct Hesub as [Hereset _]. apply Hs'. exact Hereset.
+    - intros e Hesub.
+      change (vmap (dst (remove_nth_gen_ve g2 from) e) = dst g1 (emap e)).
+      rewrite remove_ve_dst_unchanged. apply Hd'. exact Hesub.
+    - intros e Hesub. simpl in Hesub. destruct Hesub as [Hereset _]. apply He'. exact Hereset.
+    - intros x Hx. apply Hv'. destruct Hx as [Hx _]. exact Hx.
   }
   exists vmap, vmap, emap, emap. split; auto. constructor; intros.
   - constructor; intros; auto.
@@ -2318,26 +2311,22 @@ Lemma forward_remset_item_fold_raw_mark_true_pres:
                                      (g, h, rh, rmst) ->
     raw_mark (vlabel g' v) = true.
 Proof.
-  intros from to r. Opaque forward_remset_item.
-  induction r;
-    intros g h rh rmst g' h' rh' rmst' v Hto Hv Hmark Hfold.
-  - simpl in Hfold. inversion Hfold; subst. exact Hmark.
-  - simpl in Hfold.
-    destruct (forward_remset_item from to (g, h, rh, rmst) a)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    symmetry in Hfri2.
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg
-                       from to g h rh rmst a g2 h2 rh2 rmst2 Hto Hfri2 to);
-         exact Hto).
-    assert (Hv2: graph_has_v g2 v) by
-        (exact (forward_remset_item_graph_has_v_pres
-                  from to g h rh rmst a g2 h2 rh2 rmst2 v Hto Hv Hfri2)).
-    assert (Hmark2: raw_mark (vlabel g2 v) = true) by
-        (exact (forward_remset_item_raw_mark_true_pres
-                  from to g h rh rmst a g2 h2 rh2 rmst2 v Hto Hv Hmark Hfri2)).
-    Transparent forward_remset_item.
-    eapply IHr; eauto.
+  intros from to r g h rh rmst g' h' rh' rmst' v Hto Hv Hmark Hfold.
+  assert (Hpres: forall g1 g2 p,
+             graph_has_v g1 v /\ raw_mark (vlabel g1 v) = true ->
+             graph_has_gen g1 to ->
+             forward_relation from to O p g1 g2 ->
+             graph_has_v g2 v /\ raw_mark (vlabel g2 v) = true). {
+    intros g1 g2 p [Hv1 Hmark1] Hto1 Hfr.
+    split.
+    - eapply fr_graph_has_v; eauto.
+    - eapply fr_O_raw_mark_true_pres; eauto.
+  }
+  destruct (forward_remset_item_fold_P_holds
+              (fun g => graph_has_v g v /\ raw_mark (vlabel g v) = true)
+              from to r g h rh rmst g' h' rh' rmst'
+              Hpres (conj Hv Hmark) Hto Hfold) as [_ Hmark'].
+  exact Hmark'.
 Qed.
 
 Lemma no_unmarked_old_nonfrom_dst_lcv:
@@ -5650,6 +5639,37 @@ Proof.
       exact Hin.
 Qed.
 
+Lemma forward_remset_item_fold_space_property:
+  forall (Q: remset_space -> remset_heap -> Prop)
+         from to r g h rh rmst g' h' rh' rmst',
+    0 <= Z.of_nat to < Zlength rh ->
+    Q r rh ->
+    (forall item rest g h rh rmst g2 h2 rh2 rmst2,
+        0 <= Z.of_nat to < Zlength rh ->
+        Q (item :: rest) rh ->
+        (g2, h2, rh2, rmst2) =
+          forward_remset_item from to (g, h, rh, rmst) item ->
+        Q rest rh2) ->
+    (g', h', rh', rmst') =
+      fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    Q nil rh'.
+Proof.
+  intros Q from to r.
+  induction r as [|item rest IH];
+    intros g h rh rmst g' h' rh' rmst' Hrange HQ HQstep Hfold.
+  - simpl in Hfold. inversion Hfold; subst. exact HQ.
+  - Opaque forward_remset_item.
+    simpl in Hfold.
+    Transparent forward_remset_item.
+    destruct (forward_remset_item from to (g, h, rh, rmst) item)
+      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
+    symmetry in Hfri.
+    assert (Hrange2: 0 <= Z.of_nat to < Zlength rh2) by
+        (pose proof (fri_rh_Zlength_same from to g h rh rmst item
+                       g2 h2 rh2 rmst2 Hfri); lia).
+    eapply (IH g2 h2 rh2 rmst2 g' h' rh' rmst'); eauto.
+Qed.
+
 Lemma forward_remset_item_fold_pending_or_recorded:
   forall from to base r g h rh rmst g' h' rh' rmst',
     0 <= Z.of_nat to < Zlength rh ->
@@ -5661,30 +5681,13 @@ Lemma forward_remset_item_fold_pending_or_recorded:
       old_nonfrom_edges_to_are_pending_or_recorded
         base v from nil (nth_remset_space rh' to).
 Proof.
-  intros from to base r.
-  induction r as [|item rest IH];
-    intros g h rh rmst g' h' rh' rmst' Hrange Hfold v Hpending.
-  - simpl in Hfold.
-    inversion Hfold; subst.
-    exact Hpending.
-  - Opaque forward_remset_item.
-    simpl in Hfold.
-    Transparent forward_remset_item.
-    destruct (forward_remset_item from to (g, h, rh, rmst) item)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    symmetry in Hfri.
-    assert (Hrange2: 0 <= Z.of_nat to < Zlength rh2). {
-      pose proof (fri_rh_Zlength_same from to g h rh rmst item
-                    g2 h2 rh2 rmst2 Hfri).
-      lia.
-    }
-    assert (Hpending2:
-              old_nonfrom_edges_to_are_pending_or_recorded
-                base v from rest (nth_remset_space rh2 to)) by
-        (eapply (forward_remset_item_pending_or_recorded
-                   from to base g h rh rmst item g2 h2 rh2 rmst2
-                   rest v); eauto).
-    eapply (IH g2 h2 rh2 rmst2 g' h' rh' rmst'); eauto.
+  intros from to base r g h rh rmst g' h' rh' rmst' Hrange Hfold v Hpending.
+  eapply (forward_remset_item_fold_space_property
+            (fun r rh =>
+               old_nonfrom_edges_to_are_pending_or_recorded
+                 base v from r (nth_remset_space rh to))); eauto.
+  intros item rest g0 h0 rh0 rmst0 g2 h2 rh2 rmst2 Hrange0 Hpending0 Hfri.
+  eapply forward_remset_item_pending_or_recorded; eauto.
 Qed.
 
 Lemma forward_remset_item_preserves_remset_entry:
@@ -5718,28 +5721,11 @@ Lemma forward_remset_item_fold_preserves_remset_entry:
       fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     In old (nth_remset_space rh' gen).
 Proof.
-  intros from to r.
-  induction r as [|item rest IH];
-    intros g h rh rmst g' h' rh' rmst' gen old Hrange Hin Hfold.
-  - simpl in Hfold.
-    inversion Hfold; subst.
-    exact Hin.
-  - Opaque forward_remset_item.
-    simpl in Hfold.
-    Transparent forward_remset_item.
-    destruct (forward_remset_item from to (g, h, rh, rmst) item)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    symmetry in Hfri.
-    assert (Hrange2: 0 <= Z.of_nat to < Zlength rh2). {
-      pose proof (fri_rh_Zlength_same from to g h rh rmst item
-                    g2 h2 rh2 rmst2 Hfri).
-      lia.
-    }
-    assert (Hin2: In old (nth_remset_space rh2 gen)) by
-        (eapply (forward_remset_item_preserves_remset_entry
-                   from to g h rh rmst item g2 h2 rh2 rmst2 gen old);
-         eauto).
-    eapply (IH g2 h2 rh2 rmst2 g' h' rh' rmst'); eauto.
+  intros from to r g h rh rmst g' h' rh' rmst' gen old Hrange Hin Hfold.
+  eapply (forward_remset_item_fold_space_property
+            (fun _ rh => In old (nth_remset_space rh gen))); eauto.
+  intros item rest g0 h0 rh0 rmst0 g2 h2 rh2 rmst2 Hrange0 Hin0 Hfri.
+  eapply forward_remset_item_preserves_remset_entry; eauto.
 Qed.
 
 Lemma forward_remset_gh_preserves_remset_entry:
