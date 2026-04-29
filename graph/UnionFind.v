@@ -217,7 +217,7 @@ Section UNION_FIND_SINGLE.
                                           length r = b + length l \/ forall y, reachable g x y -> In_path g y (edge_list_head (rev l) x, r).
   Proof.
     induction b; intros; simpl in H2.
-    - assert (r = rev l) by (destruct (projT2 is_null (dst g (out_edge x))); auto). clear H2. subst r. simpl. left. apply rev_length.
+    - assert (r = rev l) by (destruct (projT2 is_null (dst g (out_edge x))); auto). clear H2. subst r. simpl. left. apply length_rev.
     - destruct ((projT2 is_null (dst g (out_edge x)))).
       + right. intros. rewrite <- H2 in *. clear l H2.
         assert (pfoot g (edge_list_head r x, r) = x) by (destruct r; [simpl in * | rewrite pfoot_head_irrel with (v2 := x); unfold pfoot]; auto). apply pfoot_in in H2.
@@ -259,7 +259,7 @@ Section UNION_FIND_SINGLE.
         pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H10 H9). unfold path_glue in H11. simpl in H11. auto. } destruct H2.
       + destruct X as [li [? ?]]. simpl in Heql, H2. unfold In in i. pose proof (lst_path_NoDup _ _ _ _ _ _ H11). simpl in H12. assert (incl (l +:: e) li) by
             (repeat intro; apply i; rewrite in_app_iff in H13; destruct H13 as [? | [? | ?]]; [apply (valid_path_evalid g x) in H13 | subst a | exfalso]; auto).
-        pose proof (NoDup_incl_length H12 H13). rewrite app_length in H14. simpl in H14. intuition auto with *.
+        pose proof (NoDup_incl_length H12 H13). rewrite length_app in H14. simpl in H14. intuition auto with *.
       + assert (In_path g z (x, l)) by (apply H2; exists (x, l +:: e); auto). pose proof (reachable_path_in' _ _ _ _ H10 _ H12). destruct H13 as [[v li] ?].
         assert (g |= (v, li +:: e) is z ~o~> z satisfying (fun _ => True)). {
           pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H13 H9). unfold path_glue in H14. simpl in H14; auto.

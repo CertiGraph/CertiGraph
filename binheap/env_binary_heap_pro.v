@@ -889,8 +889,8 @@ Proof.
   remember (nth_error (map heap_item_key (heap_items h)) i). destruct o.
   2: { symmetry in Heqo. apply nth_error_Some in Heqo. contradiction. lia. }
   assert (j < length (map heap_item_key (heap_items h)))%nat. { apply nth_error_Some. intro. rewrite H7 in H5. discriminate. }
-  assert (0 <= Z.of_nat i < Zlength (heap_items h)). { rewrite map_length in H4. rewrite Zlength_correct. lia. } clear H4.
-  assert (0 <= Z.of_nat j < Zlength (heap_items h)). { rewrite map_length in H7. rewrite Zlength_correct. lia. } clear H7.
+  assert (0 <= Z.of_nat i < Zlength (heap_items h)). { rewrite length_map in H4. rewrite Zlength_correct. lia. } clear H4.
+  assert (0 <= Z.of_nat j < Zlength (heap_items h)). { rewrite length_map in H7. rewrite Zlength_correct. lia. } clear H7.
   destruct (H6 (Z.of_nat i)). 2: destruct (H6 (Z.of_nat j)). 1,2: rewrite Zlength_app; rep_lia.
   rewrite Znth_app1 in H7, H9, H10, H11. 2-5: lia.
   rewrite Heqo in H5.

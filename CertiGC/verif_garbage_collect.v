@@ -399,22 +399,22 @@ Proof.
   apply iter_sepcon_pointwise_eq with
       (x := (null_space, [] : remset_space))
       (y := (null_space, [] : remset_space)).
-  - rewrite !length_app, !firstn_length, !skipn_length, Hl1, Hl2.
+  - rewrite !length_app, !length_firstn, !length_skipn, Hl1, Hl2.
     rewrite !Nat.min_l by lia. lia.
   - intros k Hk.
-    rewrite !length_app, !firstn_length, !skipn_length, Hl1 in Hk.
+    rewrite !length_app, !length_firstn, !length_skipn, Hl1 in Hk.
     rewrite Nat.min_l in Hk by lia.
     destruct (lt_dec k gen) as [Hkgen | Hkgen].
     + rewrite !app_nth1.
-      2,3: rewrite firstn_length; rewrite ?Hl1, ?Hl2; rewrite Nat.min_l by lia; lia.
+      2,3: rewrite length_firstn; rewrite ?Hl1, ?Hl2; rewrite Nat.min_l by lia; lia.
       rewrite !nth_firstn by
           (rewrite ?Hl1, ?Hl2; lia).
       subst l1 l2. rewrite !combine_nth by lia.
       apply Hspace; lia.
     + rewrite !app_nth2.
-      2,3: rewrite firstn_length; rewrite ?Hl1, ?Hl2; rewrite Nat.min_l by lia; lia.
+      2,3: rewrite length_firstn; rewrite ?Hl1, ?Hl2; rewrite Nat.min_l by lia; lia.
       rewrite !nth_skipn.
-      rewrite !firstn_length, Hl1, Hl2.
+      rewrite !length_firstn, Hl1, Hl2.
       rewrite !Nat.min_l by lia.
       replace (S gen + (k - gen))%nat with (S k) by lia.
       subst l1 l2. rewrite !combine_nth by lia.
@@ -442,14 +442,14 @@ Proof.
   apply iter_sepcon_pointwise_eq with
       (x := (null_space, [] : remset_space))
       (y := (null_space, [] : remset_space)).
-  - rewrite !length_app, !firstn_length, !skipn_length, Hl1, Hl2.
+  - rewrite !length_app, !length_firstn, !length_skipn, Hl1, Hl2.
     rewrite !Nat.min_l by lia. lia.
   - intros k Hk.
-    rewrite !length_app, !firstn_length, !skipn_length, Hl1 in Hk.
+    rewrite !length_app, !length_firstn, !length_skipn, Hl1 in Hk.
     rewrite Nat.min_l in Hk by lia.
     destruct (lt_dec k gen) as [Hkgen | Hkgen].
     + rewrite !app_nth1.
-      2,3: rewrite firstn_length; rewrite ?Hl1, ?Hl2; rewrite Nat.min_l by lia; lia.
+      2,3: rewrite length_firstn; rewrite ?Hl1, ?Hl2; rewrite Nat.min_l by lia; lia.
       rewrite !nth_firstn by
           (rewrite ?Hl1, ?Hl2; lia).
       subst l1 l2 rh'. rewrite !combine_nth by lia.
@@ -458,9 +458,9 @@ Proof.
       change (nth k rh []) with (nth_remset_space rh k).
       rewrite reset_nth_remset_heap_diff by lia. reflexivity.
     + rewrite !app_nth2.
-      2,3: rewrite firstn_length; rewrite ?Hl1, ?Hl2; rewrite Nat.min_l by lia; lia.
+      2,3: rewrite length_firstn; rewrite ?Hl1, ?Hl2; rewrite Nat.min_l by lia; lia.
       rewrite !nth_skipn.
-      rewrite !firstn_length, Hl1, Hl2.
+      rewrite !length_firstn, Hl1, Hl2.
       rewrite !Nat.min_l by lia.
       subst l1 l2 rh'. rewrite !combine_nth by lia.
       replace (k - gen + S gen)%nat with (S k) by lia.

@@ -254,7 +254,7 @@ Corollary Zseq_Zlength:
   forall z, 0 <= z -> Zlength (Zseq z) = z.
 Proof.
 intros. unfold Zseq. rewrite (Zlength_map nat Z Z.of_nat (seq 0 (Z.to_nat z))).
-rewrite Zlength_correct. rewrite seq_length.
+rewrite Zlength_correct. rewrite length_seq.
 apply Z2Nat.id. lia.
 Qed.
 

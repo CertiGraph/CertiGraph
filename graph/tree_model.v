@@ -164,7 +164,7 @@ Section TREE_DEF.
         remember (graph_to_tree lim v). destruct p as [current tr]. destruct (eq_nat_dec current 0). 1: intuition auto with *. assert (lim - current <= up) by intuition auto with *.
         destruct (IHup _ H3) as [_ ?]. specialize (H4 l (n + current + 1) (tr :: trL)).
         assert (n + current + 1 = 2 * sum_of_leaves (tr :: trL)). {
-          unfold sum_of_leaves in *. simpl flat_map. rewrite app_length.
+          unfold sum_of_leaves in *. simpl flat_map. rewrite length_app.
           clear -H0 H2 n0. intuition auto with *.
         } specialize (H4 H5). remember (to_tree_list (lim - current) l (n + current + 1, tr :: trL)). destruct p as [n' trL']. intuition.
     Qed.
@@ -453,7 +453,7 @@ Section TREE_DEF.
         assert (v' = v) by (apply (is_tree_step_eq root v' v x); auto; [destruct (H2 v'); auto; right | destruct (H2 v); auto; left]; auto).
         subst. apply NoDup_cons_2 in H1. auto.
       } assert (Permutation s (leaves tr ++ s')) by (apply NoDup_Permutation; auto).
-      apply Permutation_length in H14. rewrite app_length in H14.
+      apply Permutation_length in H14. rewrite length_app in H14.
       pose proof (graph_to_tree_lower_bound lim v). destruct (graph_to_tree lim v) as [current' tr']. inversion H8. subst current' tr'. rewrite H14 in H7.
       clear -H7 H17 H9. intuition auto with *.
     Qed.

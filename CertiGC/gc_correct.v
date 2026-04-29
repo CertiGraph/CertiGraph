@@ -254,11 +254,11 @@ Proof.
   - apply IHl. 1: apply NoDup_cons_1 in H0; assumption. intros. apply H1.
     simpl. now right.
   - intro. inversion H2. contradiction.
-  - unfold InEither. rewrite combine_split by (rewrite map_length; reflexivity).
+  - unfold InEither. rewrite combine_split by (rewrite length_map; reflexivity).
     intro. rewrite in_app_iff in H2. destruct H2.
     + apply NoDup_cons_2 in H0. contradiction.
     + rewrite in_map_iff in H2. destruct H2 as [x [? ?]]. inversion H2. auto.
-  - unfold InEither. rewrite combine_split by (rewrite map_length; reflexivity).
+  - unfold InEither. rewrite combine_split by (rewrite length_map; reflexivity).
     intro. rewrite in_app_iff in H2. destruct H2.
     + specialize (H1 (v2, idx)). simpl in H1. apply H; now rewrite H1; [|right].
     + rewrite in_map_iff in H2. destruct H2 as [[? ?] [? ?]]. simpl in *.
@@ -1254,9 +1254,9 @@ Lemma pcv_evalid_iff: forall g v new e,
 Proof.
   intros. unfold pregraph_copy_v. rewrite cvae_evalid_iff. rewrite map_fst_combine.
   - replace (length (get_edges g v)) with (length (map snd (get_edges g v))) by
-        (rewrite map_length; reflexivity). rewrite combine_repeat_eq_map, map_map.
+        (rewrite length_map; reflexivity). rewrite combine_repeat_eq_map, map_map.
     reflexivity.
-  - unfold EType at 1. rewrite combine_length, repeat_length, !map_length.
+  - unfold EType at 1. rewrite length_combine, repeat_length, !length_map.
     apply Nat.min_id.
 Qed.
 
@@ -1320,7 +1320,7 @@ Proof.
   intros. unfold pregraph_copy_v. rewrite flcvae_src_old. 1: now simpl.
   intro. apply H. rewrite map_fst_combine in H0.
   - destruct e. simpl in *. apply in_combine_l, repeat_spec in H0. assumption.
-  - unfold EType. now rewrite combine_length, repeat_length, !map_length, Nat.min_id.
+  - unfold EType. now rewrite length_combine, repeat_length, !length_map, Nat.min_id.
 Qed.
 
 Lemma pcv_src_new: forall (g : LGraph) (old new : VType) (n : nat),
@@ -1330,11 +1330,11 @@ Proof.
   intros. unfold pregraph_copy_v. rewrite flcvae_src_new; auto.
   rewrite map_fst_combine.
   - replace (length (get_edges g old)) with (length (map snd (get_edges g old))) by
-        now rewrite map_length. rewrite combine_repeat_eq_map, map_map.
+        now rewrite length_map. rewrite combine_repeat_eq_map, map_map.
     apply list_in_map_inv in H. destruct H as [[v idx] [? ?]]. simpl in H. subst idx.
     change (new, n) with ((fun x : VType * nat => (new, snd x)) (v, n)).
     now apply in_map.
-  - unfold EType. now rewrite combine_length, repeat_length, !map_length, Nat.min_id.
+  - unfold EType. now rewrite length_combine, repeat_length, !length_map, Nat.min_id.
 Qed.
 
 Lemma pcv_src_edge: forall (g: LGraph) v new,
@@ -1342,7 +1342,7 @@ Lemma pcv_src_edge: forall (g: LGraph) v new,
 Proof.
   intros. unfold src_edge in *. intros. unfold pregraph_copy_v.
   replace (length (get_edges g v)) with (length (map snd (get_edges g v))) by
-      (rewrite map_length; reflexivity). remember (get_edges g v) as el.
+      (rewrite length_map; reflexivity). remember (get_edges g v) as el.
   remember (combine (combine (repeat new (Datatypes.length (map snd el))) (map snd el))
                     (map (dst g) el)) as l. destruct (in_dec equiv_dec e (map fst l)).
   - rewrite flcvae_src_new; auto.
@@ -4321,7 +4321,7 @@ Proof.
     2: left; exists (r, p); rewrite no_edge_gen_dst_equiv; auto.
     change p with (snd (r, p)) in i. eapply reachable_path_unique_edge in i; eauto.
     destruct i as [p1 [p2 [? [? [? ?]]]]]. apply reachable_by_path_app_cons in H5.
-    destruct H5. rewrite app_length in H8. simpl in H8.
+    destruct H5. rewrite length_app in H8. simpl in H8.
     eapply copied_vertex_reachable_by_path in H9; eauto. destruct H9.
     1: right; auto. destruct H9 as [p' [? ?]]. assert (length p' <= n)%nat by lia.
     specialize (IHn _ _ H11 H9). destruct IHn. 2: now right. left.

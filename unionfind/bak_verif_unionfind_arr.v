@@ -110,7 +110,7 @@ Qed.
 
 Lemma progressive_list_length: forall i n, length (progressive_list i n) = n.
 Proof.
-  intros. unfold progressive_list. rewrite rev_length. induction n; simpl; auto.
+  intros. unfold progressive_list. rewrite length_rev. induction n; simpl; auto.
   destruct (le_dec i n); simpl; rewrite IHn; auto.
 Qed.
 
@@ -201,7 +201,7 @@ Proof.
       * unfold whole_graph, full_graph_at. simpl. Exists (Z.to_nat V). apply andp_right; intros; [apply andp_right; apply prop_right|].
         -- intros. rewrite makeSet_vvalid. intuition.
         -- rewrite Z2Nat.id; lia.
-        -- simpl. unfold vcell_array_at, SAG_VST. rewrite map_length, nat_inc_list_length. rewrite Z2Nat.id. 2: intuition.
+        -- simpl. unfold vcell_array_at, SAG_VST. rewrite length_map, nat_inc_list_length. rewrite Z2Nat.id. 2: intuition.
            assert (map (fun x : Z => vgamma (makeSet_discrete_LabeledGraph (Z.to_nat V)) x) (nat_inc_list (Z.to_nat V)) =
                    map (fun x => (0%nat, x)) (nat_inc_list (Z.to_nat V))). {
              apply list_map_exten. intros. unfold vgamma, UnionFindGraph.vgamma. simpl. rewrite makeSet_dst. simpl. auto.
@@ -212,7 +212,7 @@ Lemma whole_graph_fold: forall n sh g p,
     (forall v : Z, 0 <= v < Z.of_nat n <-> vvalid (lg_gg g) v) -> Z.of_nat n <= Int.max_signed / 8 ->
     data_at sh (tarray vertex_type (Z.of_nat n)) (map (fun x : Z => vgamma2cdata (vgamma (lg_gg g) x)) (nat_inc_list n)) (pointer_val_val p) = whole_graph sh g p.
 Proof.
-  intros. apply pred_ext; unfold whole_graph, full_graph_at, vcell_array_at, SAG_VST; [apply (exp_right n)|Intros n']; rewrite map_length, nat_inc_list_length, list_map_compose.
+  intros. apply pred_ext; unfold whole_graph, full_graph_at, vcell_array_at, SAG_VST; [apply (exp_right n)|Intros n']; rewrite length_map, nat_inc_list_length, list_map_compose.
   - apply andp_right; auto. apply andp_right; apply prop_right; auto.
   - destruct (lt_eq_lt_dec n n') as [[? | ?] | ?]; [exfalso | subst n' | exfalso]; auto.
     + assert (vvalid (lg_gg g) (Z.of_nat n)) by (rewrite <- H1; intuition). rewrite <- H in H3. intuition.
@@ -226,7 +226,7 @@ Lemma whole_graph_unfold: forall sh g p,
 Proof.
   intros. unfold whole_graph, full_graph_at, vcell_array_at, SAG_VST.
   apply pred_ext; Intros n; apply (exp_right n); apply andp_right; [apply andp_right; apply prop_right| |apply andp_right; apply prop_right|];
-    auto; rewrite map_length, nat_inc_list_length, list_map_compose; auto.
+    auto; rewrite length_map, nat_inc_list_length, list_map_compose; auto.
 Qed.
 
 Lemma Znth_nat_inc_list: forall {A: Type} {d: Inhabitant A} n (f: Z -> A) i, 0 <= i < Z.of_nat n -> Znth i (map f (nat_inc_list n)) = f i.

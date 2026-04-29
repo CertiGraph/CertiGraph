@@ -83,7 +83,7 @@ Section Spatial_Edge_Labeled_Graph_Model_1.
     repeat rewrite <- nth_Znth.
     all:
       rewrite Zlength_correct in *;
-      try rewrite combine_length;
+      try rewrite length_combine;
       try rewrite <- H;
       try rewrite Nat.min_id; trivial.
     apply combine_nth; trivial.
@@ -116,15 +116,15 @@ Section Spatial_Edge_Labeled_Graph_Model_1.
     rewrite nat_inc_list_i, Znth_map, H1; trivial.
 
     rewrite <- Zlength_correct; trivial.
-    rewrite map_length, nat_inc_list_length; trivial.
+    rewrite length_map, nat_inc_list_length; trivial.
     rewrite Zlength_map; trivial.
     2: rewrite Zlength_map.
 
     1,2: rewrite Zlength_correct in *;
-      rewrite (combine_length
+      rewrite (length_combine
                  (map (fun x : V => (src, x)) _ )
                  (nat_inc_list _)),
-      map_length, nat_inc_list_length, Nat.min_id; trivial.
+      length_map, nat_inc_list_length, Nat.min_id; trivial.
     2: rewrite nat_inc_list_Zlength.
     1,2: rewrite Z2Nat.id; trivial.
   Qed.

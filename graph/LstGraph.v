@@ -35,13 +35,13 @@ Section LstGraph.
     - exists p2. simpl. auto.
     - pose proof H1. apply valid_path_app in H3. destruct H3 as [? _]. apply H in H3.
       + destruct H3 as [p4 ?]. destruct p4.
-        * rewrite app_nil_r in H3. subst p2. rewrite app_length in H2. simpl in H2. exfalso; intuition auto with *.
+        * rewrite app_nil_r in H3. subst p2. rewrite length_app in H2. simpl in H2. exfalso; intuition auto with *.
         * exists p4. subst p2. rewrite <- app_assoc. simpl. f_equal. f_equal. clear H H2. pose proof H1. pose proof H0. apply pfoot_split in H. apply pfoot_split in H2.
           assert (strong_evalid g x) by (apply (valid_path_strong_evalid _ _ _ _ H1); rewrite in_app_iff; right; intuition auto with *). destruct H3 as [? _].
           assert (strong_evalid g e) by (apply (valid_path_strong_evalid _ _ _ _ H0); rewrite in_app_iff; right; intuition auto with *). destruct H4 as [? [? _]]. rewrite <- H2 in H5.
           assert (x = out_edge (pfoot g (v, l))) by (apply only_one_edge; auto). assert (e = out_edge (pfoot g (v, l))) by (apply only_one_edge; auto).
           rewrite <- H6 in H7. auto.
-      + rewrite app_length in H2. simpl in H2. intuition auto with *.
+      + rewrite length_app in H2. simpl in H2. intuition auto with *.
   Qed.
 
   Lemma lst_reachable_unique: forall v1 p1 v2 p2 x r1 r2 P,

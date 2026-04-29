@@ -120,7 +120,7 @@ Section LIST_DEF.
       + apply IHl.
         * rewrite NoDup_cons_iff in H0. destruct H0; auto.
         * intros. apply H2. simpl; right; auto.
-    - clear -H H1 Heql. pose proof (map_length (src g) (listEdges' r)). rewrite <- Heql in *. rewrite listEdges'_length in H0. rewrite H0. intuition auto with *.
+    - clear -H H1 Heql. pose proof (length_map (src g) (listEdges' r)). rewrite <- Heql in *. rewrite listEdges'_length in H0. rewrite H0. intuition auto with *.
   Qed.
 
   Definition listEdges (l: GList) := listEdges' (snd l).
@@ -179,11 +179,11 @@ Section IS_LIST.
     pose proof (valid_path_reachable _ _ _ _ H H14 H19). clear H11 H13 H16 H18 H14 H19. pose proof (H15 _ H10). pose proof (H17 _ H12). destruct H20.
     + destruct H14 as [[vx px] ?]. assert (vx = dst g e1) by (destruct H14 as [[? _] _]; simpl in H14; auto). subst vx.
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H10 H14). unfold path_glue, fst, snd in H16. apply H17 in H16. rewrite H13 in H16. inversion H16.
-      pose proof (f_equal (@length Edge) H19). rewrite !app_length in H18. simpl in H18. assert (length px = 0) by intuition auto with *. destruct px. 2: inversion H20.
+      pose proof (f_equal (@length Edge) H19). rewrite !length_app in H18. simpl in H18. assert (length px = 0) by intuition auto with *. destruct px. 2: inversion H20.
       clear H18 H20. rewrite app_nil_r in H19. apply app_inj_tail in H19. destruct H19. auto.
     + destruct H14 as [[vx px] ?]. assert (vx = dst g e2) by (destruct H14 as [[? _] _]; simpl in H14; auto). subst vx.
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H12 H14). unfold path_glue, fst, snd in H16. apply H15 in H16. rewrite H11 in H16. inversion H16.
-      pose proof (f_equal (@length Edge) H19). rewrite !app_length in H18. simpl in H18. assert (length px = 0) by intuition auto with *. destruct px. 2: inversion H20.
+      pose proof (f_equal (@length Edge) H19). rewrite !length_app in H18. simpl in H18. assert (length px = 0) by intuition auto with *. destruct px. 2: inversion H20.
       clear H18 H20. rewrite app_nil_r in H19. apply app_inj_tail in H19. destruct H19. auto.
   Qed.
 

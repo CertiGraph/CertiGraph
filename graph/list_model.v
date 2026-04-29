@@ -73,11 +73,11 @@ Section LIST_MODEL.
   Definition list_composed_by_edges (l: list Vertex) : Prop := forall l1 l2 s d, l = l1 ++ s :: d :: l2 -> G |= s ~> d.
 
   Lemma list_composed_by_edges_nil: list_composed_by_edges nil.
-  Proof. repeat intro. assert (@length Vertex nil = length (l1 ++ s :: d :: l2)) by (rewrite H; tauto). rewrite app_length in H0; simpl in H0. intuition auto with *. Qed.
+  Proof. repeat intro. assert (@length Vertex nil = length (l1 ++ s :: d :: l2)) by (rewrite H; tauto). rewrite length_app in H0; simpl in H0. intuition auto with *. Qed.
 
   Lemma list_composed_by_edges_single: forall v, list_composed_by_edges (v :: nil).
   Proof.
-    repeat intro. exfalso. assert (length (v :: nil) = length (l1 ++ s :: d :: l2)) by (rewrite H; tauto). rewrite app_length in H0. simpl in H0. intuition auto with *.
+    repeat intro. exfalso. assert (length (v :: nil) = length (l1 ++ s :: d :: l2)) by (rewrite H; tauto). rewrite length_app in H0. simpl in H0. intuition auto with *.
   Qed.
 
   Lemma lcbe_rev_cons: forall v l, list_composed_by_edges (rev (v :: l)) -> list_composed_by_edges (rev l).
@@ -139,7 +139,7 @@ Section LIST_MODEL.
       + hnf. rewrite Forall_forall; intros; auto.
     } destruct H0 as [pf [? ?]]. apply H8 in H1. clear H8. destruct H1 as [ps [[? ?] ?]]. destruct ps as [v ps].
     assert (v = root) by (destruct H1 as [[? _] _]; simpl in H1; auto). subst v. pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H1 H7). unfold path_glue, fst, snd in H10.
-    apply H8 in H10. inversion H10. pose proof (f_equal (@length Edge) H12). rewrite app_length in H11. simpl in H11. intuition auto with *.
+    apply H8 in H10. inversion H10. pose proof (f_equal (@length Edge) H12). rewrite length_app in H11. simpl in H11. intuition auto with *.
   Qed.
 
   Lemma is_list_edge_dst_the_same: forall root s d v, vvalid G root -> is_list root -> reachable G root s -> G |= s ~> d -> G |= s ~> v -> d = v.
@@ -164,11 +164,11 @@ Section LIST_MODEL.
     pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H1 H19). unfold path_glue, fst, snd in H21. clear H4 H5. pose proof (H7 _ H20). pose proof (H9 _ H21). destruct H13.
     + destruct H13 as [[v' pv'] ?]. assert (v' = v) by (destruct H13 as [[? _] _]; simpl in H13; auto). subst v'. 
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H21 H13). unfold path_glue, fst, snd in H22. apply H7 in H22. rewrite H4 in H22. inversion H22.
-      pose proof (f_equal (@length Edge) H24). rewrite !app_length in H23. simpl in H23. assert (length pv' = 0) by intuition auto with *. destruct pv'. 2: inversion H25.
+      pose proof (f_equal (@length Edge) H24). rewrite !length_app in H23. simpl in H23. assert (length pv' = 0) by intuition auto with *. destruct pv'. 2: inversion H25.
       clear H23 H25. rewrite app_nil_r in H24. apply app_inj_tail in H24. destruct H24. subst ed. rewrite H12 in H17. auto.
     + destruct H13 as [[d' pd'] ?]. assert (d' = d) by (destruct H13 as [[? _] _]; simpl in H13; auto). subst d'. 
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H20 H13). unfold path_glue, fst, snd in H22. apply H9 in H22. rewrite H5 in H22. inversion H22.
-      pose proof (f_equal (@length Edge) H24). rewrite !app_length in H23. simpl in H23. assert (length pd' = 0) by intuition auto with *. destruct pd'. 2: inversion H25.
+      pose proof (f_equal (@length Edge) H24). rewrite !length_app in H23. simpl in H23. assert (length pd' = 0) by intuition auto with *. destruct pd'. 2: inversion H25.
       clear H23 H25. rewrite app_nil_r in H24. apply app_inj_tail in H24. destruct H24. subst ed. rewrite H12 in H17. auto.
   Qed.
 

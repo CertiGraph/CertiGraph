@@ -873,7 +873,7 @@ Proof.
   induction l; auto.
   simpl.
   f_equal.
-  rewrite map_length.
+  rewrite length_map.
   auto.
 Qed.
 
@@ -1425,14 +1425,14 @@ Proof. intros. induction l; simpl; auto. rewrite IHl. reflexivity. Qed.
 
 Lemma map_fst_split: forall {A B} (l: list (A * B)), map fst l = fst (split l).
 Proof.
-  intros. pose proof (split_length_l l). pose proof (split_length_r l).
+  intros. pose proof (length_fst_split l). pose proof (length_snd_split l).
   pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
   erewrite <- H1; eauto. now rewrite map_fst_combine.
 Qed.
 
 Lemma map_snd_split: forall {A B} (l: list (A * B)), map snd l = snd (split l).
 Proof.
-  intros. pose proof (split_length_l l). pose proof (split_length_r l).
+  intros. pose proof (length_fst_split l). pose proof (length_snd_split l).
   pose proof (split_combine l). destruct (split l). simpl in *. rewrite <- H0 in H.
   erewrite <- H1; eauto. now rewrite map_snd_combine.
 Qed.
@@ -2069,7 +2069,7 @@ Proof.
   destruct o.
   2: apply foot_none_nil in Heqo; subst l; apply H.
   apply foot_explicit in Heqo. destruct Heqo as [l' ?]. subst l.
-  apply H0. apply IHn. rewrite app_length in H1. simpl in H1. lia.
+  apply H0. apply IHn. rewrite length_app in H1. simpl in H1. lia.
 Qed.
 
 (***** NAT_INC_LIST ******)
@@ -2093,7 +2093,7 @@ Proof.
   - intros. rewrite nat_inc_list_in_iff in H. simpl. lia.
 Qed.
 
-Lemma nat_inc_list_length: forall n, length (nat_inc_list n) = n. Proof. induction n; simpl; auto. rewrite app_length. simpl. rewrite IHn. lia. Qed.
+Lemma nat_inc_list_length: forall n, length (nat_inc_list n) = n. Proof. induction n; simpl; auto. rewrite length_app. simpl. rewrite IHn. lia. Qed.
 
 Lemma nat_inc_list_Zlength:
   forall n, Zlength (nat_inc_list n) = Z.of_nat n.

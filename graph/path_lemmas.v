@@ -346,8 +346,8 @@ Proof.
   destruct (epath_to_vpath_split _ _ _ _ _ H4 H6) as [p3 [p4 [? [? [? [? ?]]]]]]. exists (p1 +++ p4).
   split; [|split; [|split]];
   [destruct p as [v p]; destruct p1 as [v1 p1]; destruct p2 as [v2 p2]; destruct p3 as [v3 p3]; destruct p4 as [v4 p4]; unfold path_glue, fst, snd in * ..|].
-  + clear - H2 H7 H10. inversion H2. subst p. rewrite !app_length, <- Nat.add_lt_mono_l.
-    inversion H7. rewrite app_length.
+  + clear - H2 H7 H10. inversion H2. subst p. rewrite !length_app, <- Nat.add_lt_mono_l.
+    inversion H7. rewrite length_app.
     destruct p3. 1: simpl in H10 |-* ; inversion H10; destruct L2; inversion H5. simpl; intuition auto with *.
   + clear - H2 H7. inversion H2. subst p. inversion H7. split. 2: left; simpl; auto. simpl. apply incl_app.
     * apply incl_appl, incl_refl.
@@ -1452,7 +1452,7 @@ Proof.
     destruct (in_dec equiv_dec e l1).
     + apply in_split in i. destruct i as [l1' [l3 ?]]. subst l1. rename l1' into l1.
       assert (length (l1 ++ e :: l2) <= n) by
-          (rewrite !app_length in *; simpl length in *; lia).
+          (rewrite !length_app in *; simpl length in *; lia).
       assert (path_ends g (s, l1 ++ e :: l2) s t). {
         split; [simpl; auto|]. destruct H0. now rewrite (pfoot_app_cons _ _ s) in *. }
       assert (valid_path g (s, l1 ++ e :: l2)). {
@@ -1465,12 +1465,12 @@ Proof.
       * apply Subpath_trans with (s, l1 ++ e :: l2); auto.
         red. unfold In_path. simpl. split; [|now left]. apply incl_app.
         2: now apply incl_appr. now do 2 apply incl_appl.
-      * transitivity (length (l1 ++ e :: l2)); auto. rewrite !app_length. simpl. lia.
+      * transitivity (length (l1 ++ e :: l2)); auto. rewrite !length_app. simpl. lia.
     + destruct (in_dec equiv_dec e l2); [clear n0|].
       2: exists l1, l2; split; [apply Subpath_refl | auto]. apply in_split in i.
       destruct i as [l3 [l2' ?]]. subst l2. rename l2' into l2.
       assert (length (l1 ++ e :: l2) <= n). {
-        rewrite app_length in *; simpl length in *. rewrite app_length in H.
+        rewrite length_app in *; simpl length in *. rewrite length_app in H.
         simpl length in H. lia. }
       assert (path_ends g (s, l1 ++ e :: l2) s t). {
         split; [simpl; auto|]. destruct H0. rewrite app_comm_cons, app_assoc in H3.
@@ -1487,7 +1487,7 @@ Proof.
         red. unfold In_path. simpl. split; [|now left]. apply incl_app.
         1: now apply incl_appl. rewrite app_comm_cons, app_assoc. now apply incl_appr.
       * transitivity (length (l1 ++ e :: l2)); auto.
-        do 2 (rewrite !app_length; simpl). lia.
+        do 2 (rewrite !length_app; simpl). lia.
 Qed.
 
 Lemma good_path_unique_edge: forall (g: Gph) P p s t e,
@@ -1519,7 +1519,7 @@ Proof.
   intros. destruct (in_dec equiv_dec e (snd p)). 2: (exists p; now split).
   eapply reachable_path_unique_edge in i; eauto. destruct i as [p1 [p2 [? [? [? ?]]]]].
   apply reachable_by_path_app_cons in H0. destruct H0. exists (s, p1).
-  split; [|split]; auto. simpl. rewrite app_length in H3. lia.
+  split; [|split]; auto. simpl. rewrite length_app in H3. lia.
 Qed.
 
 End PATH_LEM.

@@ -230,17 +230,17 @@ Proof.
   + subst i. 
     rewrite nth_error_exchange; simpl. 2: lia.
     rewrite nth_error_app2. simpl. rewrite Nat.sub_diag. trivial. trivial.
-    rewrite app_length. simpl. lia.
+    rewrite length_app. simpl. lia.
   + case (eq_nat_dec i (length (head :: body))); intro.
     - subst i.
       rewrite nth_error_exchange'; simpl. 2: lia.
       rewrite nth_error_app2. rewrite Nat.sub_diag. trivial. trivial.
-      rewrite app_length. simpl. lia.
+      rewrite length_app. simpl. lia.
     - rewrite nth_error_exchange''; auto.
       destruct i. contradiction. simpl. simpl in n0.
-      assert (i < (length body) \/ i >= length (body ++ (foot :: nil))). { rewrite app_length. simpl. lia. }
+      assert (i < (length body) \/ i >= length (body ++ (foot :: nil))). { rewrite length_app. simpl. lia. }
       destruct H. repeat rewrite nth_error_app1; auto.
-      assert (i >= length (body ++ (head :: nil))). { rewrite app_length in *. simpl in *. trivial. }
+      assert (i >= length (body ++ (head :: nil))). { rewrite length_app in *. simpl in *. trivial. }
       apply nth_error_None in H. apply nth_error_None in H0. congruence.
 Qed.
 
@@ -306,7 +306,7 @@ Lemma foot_split_length: forall A (L : list A),
   end.
 Proof. 
   intros. generalize (foot_split_spec _ L). destruct (foot_split L).
-  destruct o; intros; subst; auto. rewrite app_length. simpl. lia. destruct H. congruence. 
+  destruct o; intros; subst; auto. rewrite length_app. simpl. lia. destruct H. congruence.
 Qed.
 
 Lemma sorted_glue {A : Type}: forall (A_rel : A -> A -> Prop) (L1 L2 : list A) (a1 a2 : A),
@@ -668,7 +668,7 @@ Proof.
   intros L x. rewrite hOhO2. split.
 * split; repeat intro.
   + assert (i < length (L ++ (x :: nil))) by (apply nth_error_Some; congruence).
-    rewrite app_length in H3. simpl in H3.
+    rewrite length_app in H3. simpl in H3.
     assert (i < length L) by lia.
     generalize (parent_le i); intro.
     rewrite nth_error_app1 in H1; try lia.
@@ -676,7 +676,7 @@ Proof.
     eapply H; eauto.
   + (* grands *)
     assert (gs < length (L ++ x :: nil)) by (apply nth_error_Some; congruence).
-    rewrite app_length in H5. simpl in H5.
+    rewrite length_app in H5. simpl in H5.
     destruct gs. destruct L. simpl in *. inversion H3. inversion H4. subst. reflexivity. discriminate.
     assert (parent (S gs) < S gs). apply parent_dec. unfold root_idx. lia.
     lia.

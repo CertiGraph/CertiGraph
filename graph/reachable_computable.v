@@ -406,7 +406,7 @@ Section REACHABLE_COMPUTABLE.
         rewrite nodup_In in H7.
         apply H2; auto.
       }
-      rewrite app_length in H1.
+      rewrite length_app in H1.
       assert (length (nodup equiv_dec (rch2 i0)) = 0) by lia.
       clear - H7. remember (rch2 i0). clear Heql. induction l; auto.
       simpl in H7. destruct (in_dec equiv_dec a l).
