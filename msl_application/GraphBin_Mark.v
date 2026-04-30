@@ -1,5 +1,5 @@
 Require Import CertiGraph.lib.Ensembles_ext.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import VST.msl.Coqlib2.
@@ -19,7 +19,7 @@ Require Import CertiGraph.graph.weak_mark_lemmas.
 Require Import CertiGraph.msl_application.Graph.
 Require Import CertiGraph.msl_application.Graph_Mark.
 Require Import CertiGraph.msl_application.GraphBin.
-Require Import Coq.Logic.Classical.
+Require Import Stdlib.Logic.Classical.
 
 Open Scope logic.
 

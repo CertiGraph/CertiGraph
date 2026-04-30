@@ -1,5 +1,5 @@
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.Classes.EquivDec.
+Require Import Stdlib.ZArith.BinInt.
+Require Import Stdlib.Classes.EquivDec.
 
 Require Import compcert.lib.Integers.
 
@@ -11,11 +11,11 @@ Require Import CertiGraph.graph.path_lemmas.
 Section Mathematical_AdjMat_Model.
 
   Coercion pg_lg: LabeledGraph >-> PreGraph.
-  Coercion lg_gg: GeneralGraph >-> LabeledGraph. 
+  Coercion lg_gg: GeneralGraph >-> LabeledGraph.
 
   Local Open Scope Z_scope.
 
-  (* Most of the types are constrained because 
+  (* Most of the types are constrained because
      we want easy AdjMat representation. *)
   Definition V : Type := Z.
   Definition E : Type := V * V.
@@ -27,16 +27,16 @@ Section Mathematical_AdjMat_Model.
   #[export] Instance E_EqDec: EqDec E eq.
   Proof. apply (prod_eqdec V_EqDec V_EqDec). Defined.
 
-  Context {size : Z}. 
+  Context {size : Z}.
   Context {inf : Z}.
   (* The instantiator will have to supply a max number of vertices
-     and a special "infinity" value to indicate unreachability 
+     and a special "infinity" value to indicate unreachability
    *)
-  
+
   (* This is the basic LabeledGraph for all our AdjMat representations. *)
   Definition AdjMatLG := (@LabeledGraph V E _ _ DV DE DG).
-  (* We need some further restrictions, which we will place 
-     in the GeneralGraph's soundness condition.  
+  (* We need some further restrictions, which we will place
+     in the GeneralGraph's soundness condition.
    *)
 
   (* Each field of the class is a "plugin"
@@ -47,11 +47,11 @@ Section Mathematical_AdjMat_Model.
     sr: (* size_representable *)
       0 < size <= Int.max_signed;
     ir: (* inf_representable *)
-      0 < inf <= Int.max_signed; 
+      0 < inf <= Int.max_signed;
     vm: (* vvalid_meaning *)
       forall v, vvalid g v <-> 0 <= v < size;
     em: (* evalid_meaning *)
-      forall e, evalid g e <-> 
+      forall e, evalid g e <->
                 Int.min_signed <= elabel g e <= Int.max_signed /\
                 elabel g e <> inf;
     ese: (* evalid_strong_evalid *)
@@ -65,19 +65,19 @@ Section Mathematical_AdjMat_Model.
     fin:
       FiniteGraph g
     }.
-  
+
   (* Academic example of how to instantiate the above *)
   Definition AdjMatGG := (GeneralGraph V E DV DE DG (fun g => SoundAdjMat g)).
   (* In reality, clients may want to:
-     1. create a new soundness condition where one of the 
+     1. create a new soundness condition where one of the
         plugins is "SoundAdjMat" above
-     2. add further program-specific restrictions in 
+     2. add further program-specific restrictions in
         other plugins
-     3. use this new accreted soundness condition to 
+     3. use this new accreted soundness condition to
         build their GeneralGraph, as shown above.
    *)
 
-  
+
   (* Getters for the plugins *)
 
   Definition size_representable (g: AdjMatGG) :=
@@ -111,7 +111,7 @@ Section Mathematical_AdjMat_Model.
   Coercion finGraph: AdjMatGG >-> FiniteGraph.
 
   (* Some lemmas from the above soundness plugins *)
-  
+
   Lemma valid_path_app_cons:
     forall (g: AdjMatGG) src links2u u i,
       valid_path g (src, links2u) ->
@@ -126,7 +126,7 @@ Section Mathematical_AdjMat_Model.
     destruct H1.
     rewrite (edge_src_fst g); simpl; assumption.
   Qed.
-  
+
   Lemma path_ends_app_cons:
     forall (g: AdjMatGG) a b c a' a2b,
       a = a' ->
@@ -137,7 +137,7 @@ Section Mathematical_AdjMat_Model.
     rewrite pfoot_last.
     rewrite (edge_dst_snd g); trivial.
   Qed.
-  
+
   Lemma step_in_range:
     forall (g: AdjMatGG) x x0,
       valid_path g x ->
@@ -150,7 +150,7 @@ Section Mathematical_AdjMat_Model.
     destruct H1 as [? [? _]].
     rewrite <- (edge_src_fst g); trivial.
   Qed.
-  
+
   Lemma step_in_range2:
     forall (g: AdjMatGG) x x0,
       valid_path g x ->
@@ -175,7 +175,7 @@ Section Mathematical_AdjMat_Model.
   Lemma epath_to_vpath_path_glue_one_step:
     forall (g: AdjMatGG) (a b c : V) p,
       valid_path g p ->
-      path_ends g p a b -> 
+      path_ends g p a b ->
       Permutation (epath_to_vpath g (path_glue p (b, (b, c)::nil)))
                   (c :: epath_to_vpath g p).
   Proof.
@@ -185,7 +185,7 @@ Section Mathematical_AdjMat_Model.
     replace (fst p) with a in *.
     2: destruct H0 as [? _]; simpl in H0; Lia.lia.
     clear Heqa2b.
-    
+
     generalize dependent H.
     generalize dependent H0.
     generalize dependent b.
@@ -253,7 +253,7 @@ Section Mathematical_AdjMat_Model.
                                                                rewrite (edge_src_fst g) in H. auto. }
                                                              apply pfoot_ptail in H1. simpl ptail in H1.
     rewrite pfoot_spec in H1. destruct H1.
-    * rewrite (edge_dst_snd g) in H1. inversion H1. subst. 
+    * rewrite (edge_dst_snd g) in H1. inversion H1. subst.
       red in H0. simpl in H0. rewrite (edge_src_fst g), (edge_dst_snd g) in H0.
       rewrite H4 in H0. inversion H0. apply H5. left. trivial.
     * destruct H1 as [v' [l' [e' [? ?]]]]. subst src. inversion H1. subst v' l.
@@ -288,5 +288,5 @@ Section Mathematical_AdjMat_Model.
     exists step. split; trivial.
     left. rewrite (edge_src_fst g); trivial.
   Qed.
-  
+
 End Mathematical_AdjMat_Model.

@@ -1,8 +1,8 @@
-Require Coq.Setoids.Setoid.
-Require Import Coq.Classes.Morphisms.
-Require Export Coq.Classes.Equivalence.
-Require Export Coq.Sets.Ensembles.
-Require Import Coq.Sets.Constructive_sets.
+Require Stdlib.Setoids.Setoid.
+Require Import Stdlib.Classes.Morphisms.
+Require Export Stdlib.Classes.Equivalence.
+Require Export Stdlib.Sets.Ensembles.
+Require Import Stdlib.Sets.Constructive_sets.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
 
@@ -800,7 +800,7 @@ Proof.
       rewrite Empty_set_iff; simpl; tauto.
     - destruct IHFinite as [l [? ?]].
       exists (x :: l).
-      split; [constructor; auto; rewrite H2; auto |]. 
+      split; [constructor; auto; rewrite H2; auto |].
       intros x0; specialize (H2 x0).
       simpl.
       unfold Add.

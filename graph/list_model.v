@@ -1,4 +1,4 @@
-Require Import Coq.Arith.Arith.
+Require Import Stdlib.Arith.Arith.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EnumEnsembles.
 Require Import CertiGraph.lib.EquivDec_ext.
@@ -9,10 +9,10 @@ Require Import CertiGraph.graph.subgraph2.
 Require Import CertiGraph.graph.MathGraph.
 Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.reachable_computable.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 
 Section LIST_MODEL.
-  
+
   Context {Vertex: Type}.
   Context {Edge: Type}.
   Context {EV: EqDec Vertex eq}.
@@ -53,7 +53,7 @@ Section LIST_MODEL.
         split; split; intros; auto. 2: hnf; rewrite Forall_forall; intros; auto. simpl. unfold strong_evalid. rewrite H12.
         assert (In y1 l') by (rewrite H1; rewrite in_app_iff; right; apply in_eq). rewrite i in H20. destruct H20. rewrite H21.
         apply reachable_by_path_is_reachable in H14. apply reachable_foot_valid in H14. split; auto.
-      } pose proof (H16 _ H20). 
+      } pose proof (H16 _ H20).
       assert (G |= (root, y2 :: nil) is root ~o~> v0 satisfying (fun _ => True)). {
         split; split; intros; auto. 2: hnf; rewrite Forall_forall; intros; auto. simpl. unfold strong_evalid. rewrite H13.
         assert (In y2 l') by (rewrite H1; rewrite in_app_iff; right; right; rewrite in_app_iff; right; apply in_eq). rewrite i in H22. destruct H22. rewrite H23.
@@ -162,11 +162,11 @@ Section LIST_MODEL.
     } destruct ps as [vs ps]. assert (vs = root) by (destruct H1 as [[? _] _]; simpl in H1; auto). subst vs.
     pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H1 H18). unfold path_glue, fst, snd in H20.
     pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H1 H19). unfold path_glue, fst, snd in H21. clear H4 H5. pose proof (H7 _ H20). pose proof (H9 _ H21). destruct H13.
-    + destruct H13 as [[v' pv'] ?]. assert (v' = v) by (destruct H13 as [[? _] _]; simpl in H13; auto). subst v'. 
+    + destruct H13 as [[v' pv'] ?]. assert (v' = v) by (destruct H13 as [[? _] _]; simpl in H13; auto). subst v'.
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H21 H13). unfold path_glue, fst, snd in H22. apply H7 in H22. rewrite H4 in H22. inversion H22.
       pose proof (f_equal (@length Edge) H24). rewrite !length_app in H23. simpl in H23. assert (length pv' = 0) by intuition auto with *. destruct pv'. 2: inversion H25.
       clear H23 H25. rewrite app_nil_r in H24. apply app_inj_tail in H24. destruct H24. subst ed. rewrite H12 in H17. auto.
-    + destruct H13 as [[d' pd'] ?]. assert (d' = d) by (destruct H13 as [[? _] _]; simpl in H13; auto). subst d'. 
+    + destruct H13 as [[d' pd'] ?]. assert (d' = d) by (destruct H13 as [[? _] _]; simpl in H13; auto). subst d'.
       pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H20 H13). unfold path_glue, fst, snd in H22. apply H9 in H22. rewrite H5 in H22. inversion H22.
       pose proof (f_equal (@length Edge) H24). rewrite !length_app in H23. simpl in H23. assert (length pd' = 0) by intuition auto with *. destruct pd'. 2: inversion H25.
       clear H23 H25. rewrite app_nil_r in H24. apply app_inj_tail in H24. destruct H24. subst ed. rewrite H12 in H17. auto.
@@ -180,7 +180,7 @@ Section LIST_MODEL.
     }
     assert (G |= (v, ev :: nil) is v ~o~> d satisfying (fun _ => True)). {
       split; split; simpl; auto; [unfold strong_evalid; rewrite H11, H12; split; auto | hnf; rewrite Forall_forall; intros; auto].
-    } destruct H1 as [[vs ps] ?]. destruct H2 as [[vv pv] ?]. 
+    } destruct H1 as [[vs ps] ?]. destruct H2 as [[vv pv] ?].
     pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H1 H13). unfold path_glue, fst, snd in H15.
     pose proof (reachable_by_path_merge _ _ _ _ _ _ _ H2 H14). unfold path_glue, fst, snd in H16. destruct H0 as [pf [? ?]].
     pose proof (reachable_by_path_is_reachable _ _ _ _ _ H16). apply H17 in H18. destruct H18 as [pp [[? ?] ?]]. apply H19 in H15. apply H19 in H16. rewrite H15 in H16.
@@ -240,5 +240,5 @@ Section LIST_MODEL.
   Qed.
 
   (* Print Assumptions is_list_is_list. *)
-  
+
 End LIST_MODEL.

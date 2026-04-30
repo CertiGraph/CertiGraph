@@ -1,6 +1,6 @@
-Require Import Coq.Classes.Morphisms.
-Require Import Coq.micromega.Lia.
-Require Import Coq.Logic.FunctionalExtensionality.
+Require Import Stdlib.Classes.Morphisms.
+Require Import Stdlib.micromega.Lia.
+Require Import Stdlib.Logic.FunctionalExtensionality.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.EnumEnsembles.
@@ -57,7 +57,7 @@ Section LstGraph.
       + rewrite H6 in H4. rewrite pfoot_app_cons with (v2 := r1) in H4. auto.
     - subst p2. apply good_path_app in H5. destruct H5 as [_ ?]. rewrite H2 in H. auto.
   Qed.
-  
+
   Lemma lst_reachable_unique':
     forall p1 p2 x r1 r2 P, g |= p1 is x ~o~> r1 satisfying P -> g |= p2 is x ~o~> r2 satisfying P -> length (snd p1) <= length (snd p2) -> g |= r1 ~o~> r2 satisfying P.
   Proof.

@@ -1,5 +1,5 @@
-Require Import Coq.Classes.Morphisms.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Classes.Morphisms.
+Require Import Stdlib.Lists.List.
 Require Export CertiGraph.lib.Relation_ext.
 
 #[export] Instance list_Reflexive {A R} {EqA: @Equivalence A R}: Reflexive (Forall2 (@equiv A _ _)).
@@ -60,8 +60,8 @@ Lemma resp_Transitive {A B} (f: A -> B) (R: relation B) {TR: Transitive R}: Tran
 Proof.
   intros.
   hnf; intros.
-  unfold respectful_relation.  
-  transitivity (f y); auto. 
+  unfold respectful_relation.
+  transitivity (f y); auto.
 Qed.
 
 Lemma resp_Equivalence {A B} (f: A -> B) (R: relation B) {ER: Equivalence R}: Equivalence (respectful_relation f R).

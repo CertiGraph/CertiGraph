@@ -1,7 +1,7 @@
-Require Import Coq.Classes.Morphisms.
+Require Import Stdlib.Classes.Morphisms.
 Require Import CertiGraph.lib.Relation_ext.
 Require Import CertiGraph.lib.Equivalence_ext.
-Require Export Coq.Lists.List.
+Require Export Stdlib.Lists.List.
 
 Local Open Scope equiv_scope.
 
@@ -93,5 +93,5 @@ Proof.
   rewrite H in H2.
   auto.
 Qed.
-  
+
 End ListFun1.

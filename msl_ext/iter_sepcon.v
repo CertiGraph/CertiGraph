@@ -5,10 +5,10 @@ Require Import VST.msl.Extensionality.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require Import Coq.Lists.List.
-Require Import Coq.Sorting.Permutation.
-Require Import Coq.Arith.PeanoNat.
-Require Export Coq.Classes.Morphisms.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Sorting.Permutation.
+Require Import Stdlib.Arith.PeanoNat.
+Require Export Stdlib.Classes.Morphisms.
 Require Import CertiGraph.msl_ext.seplog.
 Require Import CertiGraph.msl_ext.log_normalize.
 

@@ -1,8 +1,8 @@
-Require Import Coq.Logic.Classical.
-Require Import Coq.Lists.List.
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.ZArith.ZArith.
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.Logic.Classical.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Sets.Ensembles.
+Require Import Stdlib.ZArith.ZArith.
+Require Import Stdlib.micromega.Lia.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import VST.zlist.sublist.
@@ -23,7 +23,7 @@ Require Export CertiGraph.graph.FiniteGraph.
 Require Export CertiGraph.graph.MathGraph.
 Require Export CertiGraph.graph.LstGraph.
 Require Export CertiGraph.msl_application.UnionFindGraph.
- 
+
 Local Open Scope logic.
 Local Open Scope Z_scope.
 

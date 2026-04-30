@@ -1,5 +1,5 @@
-Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.Classes.Morphisms.
+Require Import Stdlib.Logic.ProofIrrelevance.
+Require Import Stdlib.Classes.Morphisms.
 Require Import VST.msl.Coqlib2.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
@@ -22,7 +22,7 @@ Definition DFS_acc {V E} {EV: EqDec V eq} {EE: EqDec E eq} (g: PreGraph V E) (P:
   exists z, reachable_by g x P z /\ edge g z y.
 
 Lemma DFS_acc_self: forall {V E} {EV: EqDec V eq} {EE: EqDec E eq} (g: PreGraph V E) (P: V -> Prop) x,
-  vvalid g x -> 
+  vvalid g x ->
   DFS_acc g P x x.
 Proof.
   intros.
@@ -315,7 +315,7 @@ Proof.
   rewrite reachable_by_through_app_strong', reachable_by_through_singleton'.
   + rewrite !reachable_by_eq_partialgraph_reachable'.
     rewrite partial_partialgraph.
-    rewrite Intersection_comm. 
+    rewrite Intersection_comm.
     reflexivity.
   + rewrite Same_set_spec in PRE_unm |- *.
     intro v; specialize (PRE_unm v).
@@ -442,7 +442,7 @@ Proof.
     destruct H2 as [g3 [? ?]].
     apply (triple_nothing _ g2 g3 root _ _ _ H H0 H1 H3) in PRE; [| auto].
     apply (triple_nothing _ g4 g5 root l (l_done ++ x :: nil) l_later H H0 H1); [rewrite <- app_assoc; exact H3 | | auto].
-    
+
     split.
     - eapply triple1_mark; eauto.
     - eapply triple2_mark; eauto.

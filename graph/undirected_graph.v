@@ -1,4 +1,4 @@
-Require Import Coq.Logic.Classical.
+Require Import Stdlib.Logic.Classical.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.graph.graph_model.

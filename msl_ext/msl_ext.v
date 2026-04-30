@@ -1,6 +1,6 @@
 Require Import VST.msl.msl_standard.
 Require Import CertiGraph.msl_ext.ramify_tactics.
-Require Import Coq.Sorting.Permutation.
+Require Import Stdlib.Sorting.Permutation.
 
 Lemma overlapping_eq {A} {JA : Join A} {PA : Perm_alg A} {SA: Sep_alg A}
        {CrA : Cross_alg A} {DA : Disj_alg A}:

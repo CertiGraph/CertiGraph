@@ -9,7 +9,7 @@ Require Import CertiGraph.graph.UnionFind.
 Require Import CertiGraph.msl_application.ArrayGraph.
 Require Import CertiGraph.floyd_ext.share.
 Require Import CertiGraph.unionfind.spatial_array_graph.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Require Import CertiGraph.unionfind.uf_arr_specs.
 Require Import VST.floyd.library.
 
@@ -281,7 +281,7 @@ Lemma bounded_vertex: forall v n, 0 <= v < n -> n <= Int.max_signed / 8 -> Int.m
 Proof.
   intros. destruct H. split.
   - apply Z.le_trans with 0; auto. rewrite Z.lt_eq_cases. left. apply Int.min_signed_neg.
-  - apply Z.le_trans with n. 1: rewrite Z.lt_eq_cases; left; auto. apply Z.le_trans with (Int.max_signed / 8); auto. rewrite Z.lt_eq_cases; left. 
+  - apply Z.le_trans with n. 1: rewrite Z.lt_eq_cases; left; auto. apply Z.le_trans with (Int.max_signed / 8); auto. rewrite Z.lt_eq_cases; left.
     apply Z_div_lt; rep_lia.
 Qed.
 

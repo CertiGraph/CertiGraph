@@ -7,7 +7,7 @@ Require Import VST.floyd.library.
 Require Import RelationClasses.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
-Require Import Sorting.
+From Stdlib Require Import Sorting.
 
 (* Kruskal's imports (already made minimal *)
 Require Import CertiGraph.kruskal.WeightedEdgeListGraph.
@@ -105,7 +105,7 @@ Definition sink_spec :=
   DECLARE _sink WITH sh : share, i : Z, arr: val, arr_contents: list heap_item, first_available : Z, b : Z
   PRE [tuint, tptr t_struct_edge, tuint]
     PROP (readable_share sh; writable_share sh;
-          0 <= i <= Zlength arr_contents; 
+          0 <= i <= Zlength arr_contents;
           first_available = Zlength arr_contents;
           (i = Zlength arr_contents -> (2 * i) <= Int.max_unsigned);
           (i < Zlength arr_contents -> (2 * (first_available - 1) <= Int.max_unsigned)); (* i = fa - 1 -> (2 * i + 1) = 2 * fa - 1, must be representable *)
@@ -157,8 +157,8 @@ Definition heapsort_spec :=
 (* This should be compatible with the existing Kruskal proof. *)
 Definition heapsort_spec :=
   DECLARE _heapsort WITH sh : share, arr : val, arr_contents : list (reptype t_struct_edge)
-  PRE [tptr t_struct_edge, tint] 
-    PROP (readable_share sh; writable_share sh; 
+  PRE [tptr t_struct_edge, tint]
+    PROP (readable_share sh; writable_share sh;
       	 0 <= Zlength arr_contents <= Int.max_signed;
       	 Forall def_wedgerep arr_contents)
     PARAMS (arr; Vint (Int.repr (Zlength arr_contents)))
@@ -299,7 +299,7 @@ Definition Gprog : funspecs :=
   ltac:(with_library prog
       [ makeSet_spec; find_spec; union_spec; freeSet_spec;
         mallocK_spec; fill_edge_spec;
-        exch_spec; greater_spec; sink_spec; build_heap_spec; heapsort_spec; 
+        exch_spec; greater_spec; sink_spec; build_heap_spec; heapsort_spec;
         init_empty_graph_spec; kruskal_spec
   ]).
 

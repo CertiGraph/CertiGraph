@@ -17,7 +17,7 @@ Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.dag.
 Require Import CertiGraph.graph.weak_mark_lemmas.
 Require Import CertiGraph.msl_application.Graph.
-Require Import Coq.Logic.Classical.
+Require Import Stdlib.Logic.Classical.
 
 Local Open Scope logic.
 
@@ -184,9 +184,9 @@ Proof.
   1: {
     hnf; unfold Ensembles.In; intros.
     apply step_reachable with y; auto.
-  }  
+  }
   apply vertices_at_ramif_xQ. eexists. split; [|split].
-  + apply Ensemble_join_Intersection_Complement; auto. 
+  + apply Ensemble_join_Intersection_Complement; auto.
   + intros. destruct H5 as [_ ?].
     rewrite <- H5; clear H5.
     apply Ensemble_join_Intersection_Complement; auto.
@@ -222,7 +222,7 @@ Lemma mark_list_mark_ramify: forall {A} (g1 g2: Graph) (g3: A -> Graph) x l y l'
         (reachable_vertices_at y (g3 a) -*
          reachable_vertices_at x (g3 a)))).
 Proof.
-  intros. 
+  intros.
   destruct_relation_list g1' in H2.
   destruct H5 as [? _].
   apply (mark_list_eq x) in H2.

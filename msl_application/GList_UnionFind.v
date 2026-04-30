@@ -1,6 +1,6 @@
-Require Import Coq.Logic.Classical.
-Require Import Coq.Lists.List.
-Require Import Coq.Sets.Ensembles.
+Require Import Stdlib.Logic.Classical.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Sets.Ensembles.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import CertiGraph.lib.Coqlib.
@@ -28,13 +28,13 @@ Section GList_UnionFind.
 
   Definition LGraph := (@LGraph addr (addr * unit) _ _ nat unit unit).
   Definition UFGraph := (@UFGraph addr (addr * unit) _ _ is_null_SGBA (fun x => (x, tt)) nat unit unit).
-  
+
   Definition UFGraph_LGraph (G: UFGraph): LGraph := lg_gg G.
   Definition LGraph_SGraph (G: LGraph): SGraph := Graph_PointwiseGraph G.
 
   Local Coercion UFGraph_LGraph: UFGraph >-> LGraph.
   Local Coercion LGraph_SGraph: LGraph >-> SGraph.
-  
+
   Local Identity Coercion ULGraph_LGraph: LGraph >-> UnionFindGraph.LGraph.
   Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
@@ -52,8 +52,8 @@ Section GList_UnionFind.
     Graph_gen_redirect_parent g x pa H Hv Hn.
 
   Lemma graph_gen_redirect_parent_ramify: forall (g: UFGraph) x r pa root (H: weak_valid g root) (Hv: vvalid g x) (Hn: ~ reachable g root x),
-      vgamma g x = (r, pa) -> root <> null -> 
-      (vertices_at (vvalid g) g: pred) 
+      vgamma g x = (r, pa) -> root <> null ->
+      (vertices_at (vvalid g) g: pred)
         |-- vertex_at x (r, pa) * (vertex_at x (r, root) -* vertices_at (vvalid g) (Graph_gen_redirect_parent g x root H Hv Hn)).
   Proof.
     intros. assert (vgamma (Graph_gen_redirect_parent g x root H Hv Hn) x = (r, root)). {
@@ -77,10 +77,10 @@ Section GList_UnionFind.
 
   Lemma graph_gen_redirect_parent_ramify_rel: forall (g: UFGraph) x r pa root g',
       ggrp_rel g x root g' ->
-      vgamma g x = (r, pa) -> root <> null -> 
-      (vertices_at (vvalid g) g: pred) 
+      vgamma g x = (r, pa) -> root <> null ->
+      (vertices_at (vvalid g) g: pred)
         |-- vertex_at x (r, pa) * (vertex_at x (r, root) -* vertices_at (vvalid g) g').
-  Proof. intros g x r pa root g' [Ha [Hb [Hc Heq]]] ? ?. subst g'. apply graph_gen_redirect_parent_ramify; auto. Qed. 
+  Proof. intros g x r pa root g' [Ha [Hb [Hc Heq]]] ? ?. subst g'. apply graph_gen_redirect_parent_ramify; auto. Qed.
 
   Definition Graph_vgen (G: UFGraph) (x: addr) (d: nat) : UFGraph := Graph_vgen G x d.
 

@@ -11,7 +11,7 @@ Require Import CertiGraph.heap_model_direct.SeparationAlgebra.
 Require Import CertiGraph.heap_model_direct.mapsto.
 Require Import VST.msl.msl_direct.
 Require Import VST.msl.predicates_sa.
-Require Import Peano_dec.
+From Stdlib Require Import Peano_dec.
 
 Instance Ndirect : NatDed (pred world). exact (algNatDed world). Defined.
 Instance Sdirect : SepLog (pred world). exact (algSepLog world). Defined.

@@ -1,7 +1,7 @@
-Require Import Coq.Logic.ProofIrrelevance.
+Require Import Stdlib.Logic.ProofIrrelevance.
 Require Import CertiGraph.lib.Ensembles_ext.
-Require Import Coq.Lists.List.
-Require Import Coq.Classes.Morphisms.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Classes.Morphisms.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.EquivDec_ext.

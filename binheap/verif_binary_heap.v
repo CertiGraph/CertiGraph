@@ -1,5 +1,5 @@
 Require Import RelationClasses.
-Require Import Sorting.
+From Stdlib Require Import Sorting.
 Require Import VST.floyd.proofauto.
 Require Import CertiGraph.binheap.binary_heap_model.
 Require Import CertiGraph.binheap.binary_heap_Zmodel.
@@ -373,7 +373,7 @@ Proof.
         * rewrite <- (Nat2Z.id (left_child _)) in H0. change (Z.of_nat _) with (Zleft_child i') in H0.
           rewrite Znth_nth_error in H0. 2: rewrite Zright_child_unfold, Zleft_child_unfold in *; lia.
           inversion H0. subst b0. clear H0.
-          destruct bo; subst j'; auto.          
+          destruct bo; subst j'; auto.
           transitivity (Znth (Zright_child i') arr_contents'); tauto.
         * assert (0 <= Zright_child i' < Zlength arr_contents'). {
             split. unfold Zright_child. lia.
@@ -389,7 +389,7 @@ Proof.
           transitivity (Znth (Zleft_child i') arr_contents'). trivial.
           destruct (cmp_linear (Znth (Zleft_child i') arr_contents') (Znth (Zright_child i') arr_contents')); auto.
           contradiction. }
-      { forward.  entailer!!. 
+      { forward.  entailer!!.
         (* next line needed only for backward compatibility before Coq 8.18 and VST 2.13 *)
         all: unfold cmp_rel, j' in H0; congruence.
       }

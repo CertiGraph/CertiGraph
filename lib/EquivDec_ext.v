@@ -1,4 +1,4 @@
-Require Export Coq.Classes.EquivDec.
+Require Export Stdlib.Classes.EquivDec.
 
 Ltac destruct_eq_dec a b :=
   let H := fresh "H" in

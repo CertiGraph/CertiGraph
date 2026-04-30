@@ -1,14 +1,14 @@
-Require Import Coq.Sets.Finite_sets.
-Require Import Coq.Arith.Arith.
-Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Sorting.Permutation.
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.Sets.Finite_sets.
+Require Import Stdlib.Arith.Arith.
+Require Import Stdlib.Logic.ProofIrrelevance.
+Require Import Stdlib.Logic.FunctionalExtensionality.
+Require Import Stdlib.Sorting.Permutation.
+Require Import Stdlib.micromega.Lia.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.EnumEnsembles.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Require Import VST.msl.Coqlib2.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
@@ -41,10 +41,10 @@ Section REACHABLE_COMPUTABLE.
   Proof. red; intro; eapply inputOrder_wf'; eauto. Defined.
 
   (******************************************
-   
+
   Definition and lemmas of remove_list. The
   core step in BFS.
-   
+
   ******************************************)
 
   Section UniquePreGraph.
@@ -53,7 +53,7 @@ Section REACHABLE_COMPUTABLE.
   Context {is_null: DecidablePred V}.
   Context {MA: MathGraph G is_null}.
   Context {LF: LocalFiniteGraph G}.
-  
+
   Lemma weak_In_dec: forall l x, {In x l \/ is_null x} + {~ (In x l \/ is_null x)}.
   Proof.
     intros.
@@ -153,7 +153,7 @@ Section REACHABLE_COMPUTABLE.
 
   Definition rch1_is_bound i: Prop := rch1 i <= length (rch3 i) -> rch2 i = nil.
 
-  Lemma sound_by_invariance': forall (P: reach_input -> Prop) (Q: list V -> Prop) i, 
+  Lemma sound_by_invariance': forall (P: reach_input -> Prop) (Q: list V -> Prop) i,
     P i ->
     (forall i, P i -> rch1_is_bound i) ->
     invariant P ->
@@ -165,7 +165,7 @@ Section REACHABLE_COMPUTABLE.
     intros ? ? ? ? ? ?.
     specialize (H0 _ H4 H3).
     inversion H0.
-  Qed.    
+  Qed.
 
   Lemma invariant_and: forall P1 P2, invariant P1 -> invariant P2 -> invariant (fun i => P1 i /\ P2 i).
   Proof.
@@ -304,7 +304,7 @@ Section REACHABLE_COMPUTABLE.
         apply reachable_foot_valid in H3.
         simpl; tauto.
   Qed.
-            
+
   Lemma sound1_inv3: forall x, sound1 (reachable_covered x) (res_reachable_covered x).
   Proof.
     intros.
@@ -441,7 +441,7 @@ Section REACHABLE_COMPUTABLE.
 
   Corollary finite_reachable_enumcovered_enumerable: forall x, vvalid G x -> EnumCovered V (reachable G x) -> Enumerable V (reachable G x).
   Proof. intros. destruct (finite_reachable_computable _ H X) as [l [? ?]]. exists l. split; auto. Qed.
-  
+
   Lemma compute_reachable: forall x L,
                              reachable_list G x L -> forall y, reachable G x y ->
                                                           {L' : list V | reachable_list G y L' /\ NoDup L'}.
@@ -456,14 +456,14 @@ Section REACHABLE_COMPUTABLE.
   Qed.
 
   Lemma compute_neighbor: forall x l,
-                            vvalid G x -> reachable_list G x l -> forall y, step G x y -> 
+                            vvalid G x -> reachable_list G x l -> forall y, step G x y ->
                                                               {l' | reachable_list G y l' /\ NoDup l'}.
   Proof.
     intros.
     pose proof valid_step _ _ _ H1.
     destruct (@null_or_valid _ _ _ _ _ G _ _ (proj2 H2)).
     + subst. exists nil. split.
-      - intro. split; intro; [inversion H3 |]. apply reachable_head_valid in H3. 
+      - intro. split; intro; [inversion H3 |]. apply reachable_head_valid in H3.
         apply (@valid_not_null _ _ _ _ G is_null) in H3; auto.
       - apply NoDup_nil.
     + apply (compute_reachable x l).

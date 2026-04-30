@@ -1,15 +1,15 @@
-Require Import Psatz.
-Require Import List.
+From Stdlib Require Import Psatz.
+From Stdlib Require Import List.
 (*Require Import Arith.Div2. *)
 (* Require Import Even. *)
-Require Import Relations.
+From Stdlib Require Import Relations.
 Require Import RelationClasses.
-Require Import PeanoNat.
-Require Import Peano_dec.
-Require Import Recdef.
-Require Import Sorting.
-Require Import Permutation.
-Require Import Multiset.
+From Stdlib Require Import PeanoNat.
+From Stdlib Require Import Peano_dec.
+From Stdlib Require Import Recdef.
+From Stdlib Require Import Sorting.
+From Stdlib Require Import Permutation.
+From Stdlib Require Import Multiset.
 
 (* List-related items... *)
 
@@ -186,9 +186,9 @@ Qed.
 Lemma nth_error_exchange_oob: forall A (L : list A) i j k,
   k >= length L ->
   nth_error (exchange L i j) k = None.
-Proof. 
+Proof.
   intros.
-  apply nth_error_None. 
+  apply nth_error_None.
   rewrite exchange_length. lia.
 Qed.
 
@@ -227,7 +227,7 @@ Lemma exchange_head_foot: forall A (head : A) body foot,
 Proof.
   intros.
   apply nth_error_eq. intro i. case (eq_nat_dec i 0); intro.
-  + subst i. 
+  + subst i.
     rewrite nth_error_exchange; simpl. 2: lia.
     rewrite nth_error_app2. simpl. rewrite Nat.sub_diag. trivial. trivial.
     rewrite length_app. simpl. lia.
@@ -280,7 +280,7 @@ Proof.
 Qed.
 
 Fixpoint foot_split {A} (L : list A) : (list A) * (option A) :=
-  match L with 
+  match L with
    | nil => (nil, None)
    | h :: nil => (nil, Some h)
    | h :: L' => match foot_split L' with (L'', o) => (h :: L'', o) end
@@ -304,7 +304,7 @@ Lemma foot_split_length: forall A (L : list A),
    | (L', None) => length L' = length L
    | (L', Some _) => 1 + length L' = length L
   end.
-Proof. 
+Proof.
   intros. generalize (foot_split_spec _ L). destruct (foot_split L).
   destruct o; intros; subst; auto. rewrite length_app. simpl. lia. destruct H. congruence.
 Qed.
@@ -350,11 +350,11 @@ Notation "A <<=? B" := (Aleq_dec A B) (at level 50) : heap_scope.
 Local Open Scope heap_scope.
 
 (* Unlike in [Segwick], we use the root at zero and adjust the left/right/parent
-   calculations.  This has the advantage of simpler theorem statements, but 
-   somewhat messier arithmetic.  In the end our indicies will be 1 less than his, 
+   calculations.  This has the advantage of simpler theorem statements, but
+   somewhat messier arithmetic.  In the end our indicies will be 1 less than his,
    but other than that, no divergence. *)
 Definition root_idx : nat := 0.
-Definition left_child (idx : nat) : nat := 1 + idx + idx. (* 2 * (idx + 1) - 1 *) 
+Definition left_child (idx : nat) : nat := 1 + idx + idx. (* 2 * (idx + 1) - 1 *)
 Definition right_child (idx : nat) : nat := (left_child idx) + 1. (* 2 + idx + idx. *) (* 2 * (idx + 1) + 1 - 1 *)
 Definition parent (idx : nat) : nat := Nat.div2 (idx - 1). (* ((idx + 1) / 2) - 1 *)
 
@@ -399,7 +399,7 @@ Proof. unfold parent, right_child, left_child. intro. replace (1 + i + i + 1 - 1
 Lemma left_child_parent_odd: forall i,
   Nat.Odd i ->
   left_child (parent i) = i.
-Proof. 
+Proof.
   unfold left_child, parent. intros.
   inversion H. subst i.
   replace (2*x+1-1) with (2*x) by lia.
@@ -409,7 +409,7 @@ Qed.
 Lemma right_child_parent_even: forall i,
   i > root_idx -> Nat.Even i ->
   right_child (parent i) = i.
-Proof. 
+Proof.
   unfold right_child, left_child, parent, root_idx. intros.
   inversion H0. subst i.
   replace (2*x-1) with (S (2*(x-1))) by lia.
@@ -481,7 +481,7 @@ Definition heapOrdered (L : list A) : Prop :=
     (forall b, nth_error L (left_child i) = Some b -> a <<= b) /\
     (forall c, nth_error L (right_child i) = Some c -> a <<= c).
 
-Lemma heapOrdered_empty: 
+Lemma heapOrdered_empty:
   heapOrdered nil.
 Proof.
   repeat intro. destruct i; discriminate.
@@ -491,7 +491,7 @@ Lemma heapOrdered_cutfoot: forall L a,
   heapOrdered (L ++ (a :: nil)) ->
   heapOrdered L.
 Proof.
-  repeat intro. specialize (H i a0). 
+  repeat intro. specialize (H i a0).
   rewrite nth_error_app1 in H.
   specialize (H H0). destruct H.
   split; intros. apply H.
@@ -524,8 +524,8 @@ Proof.
     rewrite parent_right_child. trivial.
 Qed.
 
-Lemma root_minimal: 
-  forall L, heapOrdered L -> 
+Lemma root_minimal:
+  forall L, heapOrdered L ->
     forall r, nth_error L root_idx = Some r ->
       Forall (fun x => r <<= x) L.
 Proof.
@@ -577,7 +577,7 @@ Qed.
 (* insertion, via swimming upwards *)
 
 Definition swim1 (L : list A) (j : nat) : (list A) * (option nat) :=
-  if j <=? root_idx then (L, None) else 
+  if j <=? root_idx then (L, None) else
   match nth_error L j, nth_error L (parent j) with
    | None, _ | _, None => (L, None)
    | Some child, Some root => if child <<=? root then (exchange L j (parent j), Some (parent j)) else (L, None)
@@ -683,7 +683,7 @@ Proof.
 * repeat intro.
   assert (i < length L) by (apply nth_error_Some; congruence).
   destruct H. apply H with i; auto.
-  lia. 
+  lia.
   rewrite nth_error_app1; trivial.
   rewrite nth_error_app1; trivial.
   apply nth_error_Some; congruence.
@@ -701,7 +701,7 @@ Qed.
 
 Lemma heapOrdered_lower_priority_weak_heapOrdered2: forall H,
   heapOrdered H ->
-  forall t old, 
+  forall t old,
   nth_error H t = Some old ->
   forall new, new <<= old ->
   weak_heapOrdered2 (update H t new) t.
@@ -734,9 +734,9 @@ Proof.
   rename H0 into Hx.
   case_eq (nth_error L j); case_eq (nth_error L (parent j)); intros.
   + case (a0 <<=? a).
-    - split; repeat intro. 
+    - split; repeat intro.
       * rename j into child. remember (parent child) as root. rename a into rootval. rename a0 into childval.
-        case (eq_nat_dec i child); intro. 
+        case (eq_nat_dec i child); intro.
         ++ subst i. rewrite nth_error_exchange in H3; try (apply nth_error_Some; congruence).
            rewrite H0 in H3.  inversion H3. subst b. clear H3.
            rewrite <- Heqroot in H4. rewrite nth_error_exchange' in H4; try (apply nth_error_Some; congruence).
@@ -759,7 +759,7 @@ Proof.
               rewrite Heqroot in H0.
               rewrite grandsOk_root in H4.
               eapply H4; eauto.
-              apply Nat.leb_nle in Hx. lia. 
+              apply Nat.leb_nle in Hx. lia.
       * (* establish grands *)
         apply Nat.leb_nle in Hx. assert (j > root_idx) by lia.
         assert (parent j < j) by (apply parent_dec; lia).
@@ -847,8 +847,8 @@ Definition sink1 (L : list A) (j : nat) : (list A) * (option nat) :=
   match nth_error L j, nth_error L (left_child j), nth_error L (right_child j) with
    | None, _, _ | Some _, None, _ => (L, None)
    | Some root, Some Left, None => if root <<=? Left then (L, None) else (exchange L j (left_child j), Some (left_child j)) (* corner case *)
-   | Some root, Some Left, Some Right => 
-     if Right <<=? Left then if root <<=? Right then (L, None) else (exchange L j (right_child j), Some (right_child j)) 
+   | Some root, Some Left, Some Right =>
+     if Right <<=? Left then if root <<=? Right then (L, None) else (exchange L j (right_child j), Some (right_child j))
      else if root <<=? Left then (L, None) else (exchange L j (left_child j), Some (left_child j))
   end.
 
@@ -879,17 +879,17 @@ Proof.
   case (a1 <<=? a0). discriminate.
   inversion 3. rewrite exchange_length.
   split. apply left_child_inc. apply nth_error_Some; congruence.
-  do 5 intro. case (a0 <<=? a). discriminate. 
+  do 5 intro. case (a0 <<=? a). discriminate.
   inversion 2.
   rewrite exchange_length.
   split. apply left_child_inc. apply nth_error_Some. congruence.
 Qed.
 
-Definition sink_measure (Lj : (list A) * nat) : nat := 
+Definition sink_measure (Lj : (list A) * nat) : nat :=
   match Lj with (L, j) => length L - j end.
 
 Function sink (Lj : (list A) * nat) {measure sink_measure Lj} : list A :=
-  match Lj with (L, j) => 
+  match Lj with (L, j) =>
   match sink1 L j with
    | (L, None) => L
    | (L', Some j') => sink (L', j')
@@ -918,7 +918,7 @@ Qed.
 
 Lemma sink_done: forall L i a,
   nth_error L i = Some a ->
-  (forall b, nth_error L (left_child i)  = Some b -> a <<= b) -> 
+  (forall b, nth_error L (left_child i)  = Some b -> a <<= b) ->
   (forall b, nth_error L (right_child i) = Some b -> a <<= b) ->
   sink (L, i) = L.
 Proof.
@@ -935,10 +935,10 @@ Qed.
 Lemma sink_step: forall L i p lc,
   nth_error L i = Some p ->
   nth_error L (left_child i) = Some lc ->
-  forall j, (match nth_error L (right_child i) with 
-              | None => j = left_child i /\ ~(p <<= lc) 
-              | Some rc => (j = left_child i /\ ~(rc <<= lc) /\ ~(p <<= lc)) \/ 
-                           (j = right_child i /\ rc <<= lc /\ (~p <<= rc)) 
+  forall j, (match nth_error L (right_child i) with
+              | None => j = left_child i /\ ~(p <<= lc)
+              | Some rc => (j = left_child i /\ ~(rc <<= lc) /\ ~(p <<= lc)) \/
+                           (j = right_child i /\ rc <<= lc /\ (~p <<= rc))
              end) ->
   sink (exchange L i j, j) = sink (L, i).
 Proof.
@@ -957,7 +957,7 @@ Qed.
 (* removal preserves heap order *)
 
 Definition weak_heapOrdered (L : list A) (j : nat) : Prop :=
-  (forall i a, i <> j -> 
+  (forall i a, i <> j ->
     nth_error L i = Some a ->
     (forall b, nth_error L (left_child i) = Some b -> a <<= b) /\
     (forall c, nth_error L (right_child i) = Some c -> a <<= c)) /\
@@ -971,7 +971,7 @@ Definition heapOrdered_bounded (L : list A) (k : nat) : Prop :=
     (forall c, nth_error L (right_child i) = Some c -> a <<= c).
 
 Definition weak_heapOrdered_bounded (L : list A) (k : nat) (j : nat) : Prop :=
-  (forall i a, i >= k -> i <> j -> 
+  (forall i a, i >= k -> i <> j ->
     nth_error L i = Some a ->
     (forall b, nth_error L (left_child i) = Some b -> a <<= b) /\
     (forall c, nth_error L (right_child i) = Some c -> a <<= c)) /\
@@ -1013,7 +1013,7 @@ Lemma weak_heapOrdered_bounded_oob: forall i L b,
   weak_heapOrdered_bounded L b i ->
   heapOrdered_bounded L b.
 Proof.
-  repeat intro. destruct H0. apply H0; auto. 
+  repeat intro. destruct H0. apply H0; auto.
   intro. subst i0. assert (i < length L) by (apply nth_error_Some; congruence). lia.
 Qed.
 
@@ -1166,7 +1166,7 @@ Proof.
               -- repeat intro.
                  rewrite parent_right_child in H8. rewrite nth_error_exchange in H8; try lia.
                  rewrite H2 in H8. inversion H8. subst a3. clear H8.
-                 assert (parent gs < gs). { apply parent_dec. unfold root_idx. assert (gs = 0 \/ gs > 0) by lia. 
+                 assert (parent gs < gs). { apply parent_dec. unfold root_idx. assert (gs = 0 \/ gs > 0) by lia.
                    destruct H8; trivial. subst gs. change 0 with root_idx in H6. rewrite parent_root in H6.
                    generalize (right_child_root j). lia. }
                  rewrite nth_error_exchange'' in H7; try lia.
@@ -1222,7 +1222,7 @@ Proof.
               -- repeat intro.
                  rewrite parent_left_child in H9. rewrite nth_error_exchange in H9; try lia.
                  rewrite H0 in H9. inversion H9. subst a2. clear H9.
-                 assert (parent gs < gs). { apply parent_dec. unfold root_idx. assert (gs = 0 \/ gs > 0) by lia. 
+                 assert (parent gs < gs). { apply parent_dec. unfold root_idx. assert (gs = 0 \/ gs > 0) by lia.
                    destruct H9; trivial. subst gs. change 0 with root_idx in H7. rewrite parent_root in H7.
                    generalize (left_child_root j). lia. }
                  rewrite nth_error_exchange'' in H8; try lia.
@@ -1264,7 +1264,7 @@ Proof.
               -- case (eq_nat_dec j (right_child i)); intro.
                  *** subst j. rewrite nth_error_exchange; try lia. rewrite H0. inversion 1. subst c. clear H9.
                      assert (right_child i <> root_idx) by (generalize (right_child_root i); lia).
-                     assert (parent (right_child i) >= k) by (rewrite parent_right_child; auto). 
+                     assert (parent (right_child i) >= k) by (rewrite parent_right_child; auto).
                      eapply (H8 H9 H10 (left_child (right_child i))).
                      rewrite parent_left_child. trivial. trivial. rewrite parent_right_child. trivial.
                  *** rewrite nth_error_exchange''; auto. destruct H. apply H9.
@@ -1344,7 +1344,7 @@ Qed.
 (* Bottom-up heapify *)
 Fixpoint build_heap_helper (L : list A) (n : nat) :=
   let L' := sink (L, n) in
-  match n with 
+  match n with
   | 0 => L'
   | S n' => build_heap_helper L' n'
   end.
@@ -1540,13 +1540,13 @@ Qed.
 End Heap.
 
 (* Just to test it out... *)
-(* Compute (heapsort nat le Coq.Arith.Compare_dec.le_dec (3::1::4::1::5::9::2::6::5::3::nil)). *)
+(* Compute (heapsort nat le Stdlib.Arith.Compare_dec.le_dec (3::1::4::1::5::9::2::6::5::3::nil)). *)
 
 (*
 (* multiset, currently under experimentation... *)
 
 (* Need a few more things... *)
-Require Coq.Logic.FunctionalExtensionality.
+Require Stdlib.Logic.FunctionalExtensionality.
 Variable As : Antisymmetric A eq Aleq. (* a <<= b -> b <<= a -> a = b *)
 Instance A_As : Antisymmetric A eq Aleq := As.
 

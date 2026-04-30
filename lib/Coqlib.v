@@ -1,6 +1,6 @@
-Require Import Coq.Relations.Relation_Definitions.
-Require Import Coq.Lists.List.
-Require Import Coq.Program.Basics.
+Require Import Stdlib.Relations.Relation_Definitions.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Program.Basics.
 
 Lemma ex_iff: forall {A: Type} P Q, (forall x: A, P x <-> Q x) -> (ex P <-> ex Q).
 Proof.

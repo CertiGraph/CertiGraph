@@ -1,5 +1,5 @@
-Require Import Coq.Relations.Relation_Definitions.
-Require Export Coq.Classes.Morphisms.
+Require Import Stdlib.Relations.Relation_Definitions.
+Require Export Stdlib.Classes.Morphisms.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.Ensembles_ext.
 Require Import CertiGraph.lib.Relation_ext.
@@ -17,7 +17,7 @@ Definition is_rev_fun {A B: Type} (P: A -> Prop) (f: A -> B) (g: B -> option A) 
   | Some a0 => P a0 /\ forall a, P a -> (f a = b <-> a = a0)
   | None => forall a, P a -> f a <> b
   end.
-  
+
 Definition is_guarded_inj {A B: Type} (P: A -> Prop) (f: A -> B) :=
   exists g: B -> option A, is_rev_fun P f g.
 (* forall a1 a2: A, P a1 -> P a2 -> f a1 = f a2 -> a1 = a2. *)

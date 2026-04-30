@@ -1,13 +1,13 @@
-Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.Logic.ProofIrrelevance.
+Require Import Stdlib.micromega.Lia.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EnumEnsembles.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.graph.graph_model.
-Require Import Coq.Lists.List.
-Require Import Coq.Lists.ListDec.
-Require Import Coq.Arith.PeanoNat.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Lists.ListDec.
+Require Import Stdlib.Arith.PeanoNat.
 
 Section PATH_LEM.
 

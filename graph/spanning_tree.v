@@ -1,4 +1,4 @@
-Require Import Coq.Classes.Morphisms.
+Require Import Stdlib.Classes.Morphisms.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.EnumEnsembles.
@@ -10,7 +10,7 @@ Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.graph.graph_relation.
 Require Import CertiGraph.graph.subgraph2.
 Require Import CertiGraph.graph.reachable_ind.
-Require Import Coq.Logic.Classical.
+Require Import Stdlib.Logic.Classical.
 Require CertiGraph.graph.weak_mark_lemmas.
 Import CertiGraph.graph.weak_mark_lemmas.WeakMarkGraph.
 
@@ -369,7 +369,7 @@ Module SIMPLE_SPANNING_TREE.
         (~ (P (dst g1 e) /\ dst g1 e <> root)) ->
         forall n, (g1 |= root ~o~> n satisfying P <-> g2 |= root ~o~> n satisfying P).
     Proof.
-      intros. split; intros; destruct H. 
+      intros. split; intros; destruct H.
       + rewrite reachable_acyclic in H2. destruct H2 as [p [? ?]]. exists p. apply (gremove_reachable_by_derive g1 e); auto.
         intros. destruct p as [v p]. simpl in H5. intro. subst. apply H1. clear H1. destruct H4 as [[? ?] [? ?]]. split.
         - rewrite (path_prop_equiv _ _ _ H4) in H6. apply H6. right. exists e. simpl. split; auto.
@@ -894,7 +894,7 @@ Module SIMPLE_SPANNING_TREE.
             destruct H17 as [? _]. destruct H9 as [p ?]. exists p.
             eapply (ppg_reachable_by_path_to g1 g2); eauto.
             intros. simpl. destruct H9 as [_ [? ?]].
-            rewrite path_prop_equiv in H19; auto. 
+            rewrite path_prop_equiv in H19; auto.
             specialize (H19 _ H18). destruct H19; auto.
           }
           1: {
@@ -1085,7 +1085,7 @@ Module SIMPLE_SPANNING_TREE.
                                  satisfying (fun x : V => P x /\ x <> root)). {
               intros. destruct (X v); auto. destruct H17 as [? [? ?]].
               pose proof (not_sat_edge _ _ _ _ (reachable_by g1 (dst g3 e1) (fun x : V => P x /\ x <> root)) H26 H25 H24 n).
-              destruct H28 as [e3 [? [? ?]]]. specialize (H23 _ _ H29 H30). 
+              destruct H28 as [e3 [? [? ?]]]. specialize (H23 _ _ H29 H30).
               assert (strong_evalid g3 e3) by (apply (valid_path_strong_evalid _ (dst g3 e1) ms); auto).
               assert (g3 |= src g3 e3 ~> (dst g3 e3)) by (destruct H31 as [? [? ?]]; hnf; do 2 (split; auto); rewrite step_spec; exists e3; split; auto).
               apply (EST_not_edge_derive _ _ _ _ _ _ H6) in H32. 2: intro; apply reachable_by_foot_prop in H33; destruct H33; auto.
@@ -1157,7 +1157,7 @@ Module SIMPLE_SPANNING_TREE.
                                                                    ~ g1 |= dst g1 e1 ~o~> x satisfying (fun x0 : V => P x0 /\ x0 <> root))) H26 H24 H23 H25).
               destruct H28 as [e3 [? [? ?]]]. specialize (H22 _ _ H29 H30).
               assert (strong_evalid g3 e3) by (apply (valid_path_strong_evalid _ (dst g3 e2) ms); auto).
-              assert (g3 |= src g3 e3 ~> (dst g3 e3)) by (destruct H31 as [? [? ?]]; hnf; do 2 (split; auto); rewrite step_spec; exists e3; split; auto).              
+              assert (g3 |= src g3 e3 ~> (dst g3 e3)) by (destruct H31 as [? [? ?]]; hnf; do 2 (split; auto); rewrite step_spec; exists e3; split; auto).
               clear -H32 H22. exfalso. apply H22. apply edge_reachable_by with (dst g3 e3); auto.
               apply reachable_by_refl; auto. destruct H32 as [? [? ?]]. auto.
             }
@@ -1194,7 +1194,7 @@ Module SIMPLE_SPANNING_TREE.
                          ~ g1 |= dst g1 e1 ~o~> x
                            satisfying (fun x0 : V => P x0 /\ x0 <> root))). {
               intro. apply reachable_by_foot_prop in H32. destruct H32.
-              rewrite <- H16 in *. auto. 
+              rewrite <- H16 in *. auto.
             }
             assert (g2 |= dst g3 e2 ~o~> dst g3 e2
                       satisfying
@@ -1561,7 +1561,7 @@ Section SPANNING.
   | spanning_list_nil: forall (g1 g2 : Graph), g1 = g2 -> spanning_list g1 nil g2
   | spanning_list_cons:
       forall g1 g2 g3 e rest, edge_spanning_tree g1 e g2 -> spanning_list g2 rest g3 -> spanning_list g1 (e :: rest) g3.
-  
+
   Lemma spanning_list_inj: forall (g1 g2 : Graph) (es : list E) (root: V),
       marked g1 root ->
       NoDup es ->
@@ -1638,9 +1638,9 @@ Section SPANNING.
           destruct H7 as [? | [? | ?]]; [| |exfalso; auto]; subst n';
           rewrite step_spec.
           - assert (out_edges g root e1) by (rewrite <- H0; apply in_eq).
-            exists e1. destruct H7. auto. 
+            exists e1. destruct H7. auto.
           - assert (out_edges g root e2) by (rewrite <- H0; apply in_cons, in_eq).
-            exists e2. destruct H7. auto. 
+            exists e2. destruct H7. auto.
         + rewrite step_spec in H7. destruct H7 as [e [? [? ?]]].
           assert (out_edges g root e) by (split; auto).
           rewrite <- H0 in H10. simpl in H10.

@@ -1,4 +1,4 @@
-Require Import Coq.Logic.Classical.
+Require Import Stdlib.Logic.Classical.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import VST.msl.ramification_lemmas.
@@ -164,7 +164,7 @@ Proof.
   rewrite guarded_pointwise_relation_spec; intros.
   tauto.
 Qed.
- 
+
 Lemma vertices_identical2_spec: forall PV1 PV2 g1 g2,
   vertices_identical2 PV1 PV2 g1 g2 <->
   Same_set PV1 PV2 /\
@@ -176,7 +176,7 @@ Proof.
   assert (Same_set PV1 PV2 -> (forall x, PV1 x -> PV2 x)) by (rewrite Same_set_spec; intros; firstorder).
   firstorder.
 Qed.
- 
+
 #[global] Instance vertices_identical_Equivalence (PV: Ensemble V): Equivalence (vertices_identical PV).
   apply resp_Equivalence.
   apply guarded_pointwise_equivalence.
@@ -588,7 +588,7 @@ Section SPATIAL_FACTS_STRONG_ASSU.
 Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
 Lemma precise_graph_cell: forall g v, precise (graph_vcell g v).
-Proof. intros. unfold graph_vcell. apply (@mapsto_precise _ _ _ _ _ _ _ _ VP_MSL). Qed.  
+Proof. intros. unfold graph_vcell. apply (@mapsto_precise _ _ _ _ _ _ _ _ VP_MSL). Qed.
 
 Lemma sepcon_unique_graph_cell: forall g, sepcon_unique1 (graph_vcell g).
 Proof.
@@ -603,7 +603,7 @@ Proof.
   intros. unfold joinable; intros. unfold graph_vcell. apply (@disj_mapsto _ _ (AAV SGP) _ _ _ _ _ _ VP_MSL _ VP_sMSL).
   simpl.
   destruct_eq_dec x y; congruence.
-Qed.  
+Qed.
 
 End SPATIAL_FACTS_STRONG_ASSU.
 
@@ -1153,7 +1153,7 @@ Proof.
   + destruct (construct_reachable_list g x H) as [l [? ?]].
     left; exists l. intuition.
   + apply precise_graph_cell.
-  + intros. apply NoDup_Permutation; auto. 
+  + intros. apply NoDup_Permutation; auto.
     destruct H0, H1. split; intros; specialize (H0 x0); specialize (H1 x0); intuition.
 Qed.
 
@@ -1175,13 +1175,13 @@ Lemma subgraph_update:
      (reachable_through_set
         (predicate_partialgraph g
            (Intersection V (vvalid g)
-              (Complement V (reachable_through_set g S1)))) S2) 
+              (Complement V (reachable_through_set g S1)))) S2)
      (vguard g) ->
     Included
      (reachable_through_set
         (predicate_partialgraph g'
            (Intersection V (vvalid g')
-              (Complement V (reachable_through_set g' S1')))) S2) 
+              (Complement V (reachable_through_set g' S1')))) S2)
      (vguard g') ->
     graphs S1 g ⊗ graphs S2 g |-- graphs S1 g * (graphs S1' g' -* graphs S1' g' ⊗ graphs S2 g').
 Proof.

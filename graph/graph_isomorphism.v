@@ -1,5 +1,5 @@
-Require Import Coq.Lists.List.
-Require Import Coq.Program.Basics.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Program.Basics.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.lib.EquivDec_ext.

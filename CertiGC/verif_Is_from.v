@@ -11,7 +11,7 @@
 Require Import compcert.common.Events compcert.common.Memory.
 Require Import compcert.common.Values compcert.common.AST.
 Require Import compcert.lib.Integers.
-Require Import Coq.ZArith.BinInt Coq.Lists.List Coq.micromega.Lia.
+Require Import Stdlib.ZArith.BinInt Stdlib.Lists.List Stdlib.micromega.Lia.
 Import ListNotations.
 Local Open Scope Z_scope. Local Open Scope list_scope.
 
@@ -46,7 +46,7 @@ Definition Is_from_sem : extcall_sem :=
     end.
 
 Definition Is_from_sig : signature :=
-  mksignature (AST.Tint :: AST.Tint :: AST.Tint :: nil) (Tret AST.Tint) cc_default.
+  mksignature (AST.Xptr :: AST.Xptr :: AST.Xptr :: nil) AST.Xint cc_default.
 
 Ltac split3 := split; [|split ].
 
@@ -296,7 +296,7 @@ Definition test_iop_sem : extcall_sem :=
     end.
 
 Definition test_iop_sig : signature :=
-  mksignature (AST.Tint :: nil) (Tret AST.Tint) cc_default.
+  mksignature (AST.Xptr :: nil) AST.Xint cc_default.
 
 Lemma test_iop__extcall: extcall_properties test_iop_sem test_iop_sig.
 Proof.

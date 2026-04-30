@@ -1,5 +1,5 @@
 Require Import CertiGraph.lib.Ensembles_ext.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import VST.msl.Coqlib2.
@@ -20,7 +20,7 @@ Require Import CertiGraph.msl_application.Graph.
 Require Import CertiGraph.msl_application.Graph_Mark.
 Require Import CertiGraph.msl_application.GraphBin.
 Require Export CertiGraph.msl_application.GraphBin_Mark.
-Require Import Coq.Logic.Classical.
+Require Import Stdlib.Logic.Classical.
 
 Open Scope logic.
 
@@ -50,7 +50,7 @@ Lemma root_update_unfold: forall (g: Graph) x d l r v,
   reachable_dag_vertices_at x (Graph_vgen g x v) = vertex_at x (v, l, r) * reachable_through_dag_vertices_at (l :: r :: nil) g.
 Proof. intros. eapply va_reachable_dag_update_unfold; eauto. Qed.
 
-(* TODO: More modularized way to prove these two RamificationPremise? 
+(* TODO: More modularized way to prove these two RamificationPremise?
  For example, handling pure facts? *)
 Lemma dag_ramify_left: forall (g g1: Graph) x l r,
   vvalid g x ->

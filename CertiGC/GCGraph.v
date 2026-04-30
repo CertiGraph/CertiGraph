@@ -1,6 +1,6 @@
-Require Import Coq.ZArith.ZArith.
-Require Export Coq.Program.Basics.
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.ZArith.ZArith.
+Require Export Stdlib.Program.Basics.
+Require Import Stdlib.micromega.Lia.
 Require Import compcert.lib.Integers.
 Require Import compcert.common.Values.
 Require Import VST.veric.base.
@@ -9,6 +9,7 @@ Require Import VST.veric.val_lemmas.
 Require Import VST.veric.shares.
 Require Import VST.msl.seplog.
 Require Import VST.msl.shares.
+Require Import VST.msl.log_normalize.
 Require Import VST.zlist.sublist.
 Require Import VST.floyd.coqlib3.
 Require Import VST.floyd.functional_base.

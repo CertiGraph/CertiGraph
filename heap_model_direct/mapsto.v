@@ -3,7 +3,7 @@ Require Import FunctionalExtensionality.
 Require Import CertiGraph.msl_ext.ramify_tactics.
 Require Import CertiGraph.msl_ext.overlapping_direct.
 Require Import CertiGraph.heap_model_direct.SeparationAlgebra.
-Require Import Peano_dec.
+From Stdlib Require Import Peano_dec.
 
 
 Definition mapsto (x y: adr) : pred world :=

@@ -1,7 +1,7 @@
-Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Sets.Finite_sets.
-Require Import Coq.Classes.Morphisms.
+Require Import Stdlib.Logic.ProofIrrelevance.
+Require Import Stdlib.Sets.Ensembles.
+Require Import Stdlib.Sets.Finite_sets.
+Require Import Stdlib.Classes.Morphisms.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.Ensembles_ext.
 Require Import CertiGraph.lib.relation_list.
@@ -9,7 +9,7 @@ Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.Equivalence_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import VST.msl.Coqlib2.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
 Require Import CertiGraph.graph.reachable_ind.

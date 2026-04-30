@@ -1,5 +1,5 @@
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Sets.Ensembles.
+Require Import Stdlib.Lists.List.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.Ensembles_ext.
@@ -22,14 +22,14 @@ Section UnionFindGraph.
   Context {out_edge: V -> E}.
 
   (* Context {ufg: UnionFindGraph}. *)
-  
+
   Class LiMaFin (g: PreGraph V E) :=
     {
       li: LstGraph g out_edge;
       ma: MathGraph g isNullDec;
       fin: FiniteGraph g
     }.
-  
+
   Context {DV DE DG: Type}.
 
   Definition LGraph := LabeledGraph V E DV DE DG.
@@ -129,10 +129,10 @@ Section UnionFindGraph.
 
   Lemma vgamma_not_reachable: forall (g: UFGraph) x r pa, vvalid g x -> vgamma g x = (r, pa) -> pa <> x -> ~ reachable g pa x.
   Proof. intros. assert (vvalid g pa) by (apply valid_parent in H0; auto). apply (vgamma_not_reachable' g x r pa pa); auto. apply reachable_refl; auto. Qed.
-  
+
   Lemma uf_root_not_eq_root_vgamma: forall (g: UFGraph) x r pa root, vgamma g x = (r, pa) -> uf_root g x root -> x <> root -> x <> pa.
   Proof.
-    intros. unfold vgamma in H. destruct (projT2 isNullDec (dst g (out_edge x))). 
+    intros. unfold vgamma in H. destruct (projT2 isNullDec (dst g (out_edge x))).
     - destruct H0. apply reachable_ind.reachable_ind in H0. destruct H0. 1: exfalso; auto. destruct H0 as [z [[? [? ?]] [? ?]]]. rewrite step_spec in H4.
       destruct H4 as [ed [? [? ?]]]. pose proof (conj H7 H4). rewrite (@only_one_edge _ _ _ _ g _ (liGraph g)) in H9; auto. subst ed. rewrite H8 in p.
       exfalso. apply (@valid_not_null _ _ _ _ g _ (maGraph g)) in H3; auto.
@@ -146,11 +146,11 @@ Section UnionFindGraph.
 
   Lemma vgamma_uf_root: forall (g: UFGraph) x r pa root, vvalid g x -> vgamma g x = (r, pa) -> uf_root g x root -> x <> root -> uf_root g pa root.
   Proof.
-    intros. pose proof (uf_root_not_eq_root_vgamma g _ _ _ _ H0 H1 H2). destruct H1. split; auto. pose proof (valid_parent g _ _ _ H H0).  
+    intros. pose proof (uf_root_not_eq_root_vgamma g _ _ _ _ H0 H1 H2). destruct H1. split; auto. pose proof (valid_parent g _ _ _ H H0).
     assert (Decidable (reachable g pa root)) by (apply Graph_reachable_dec; left; auto). apply decidable_prop_decidable in H6. destruct H6; auto. exfalso.
     pose proof (lst_out_edge_only_one g (liGraph g) x pa root). simpl in H7. apply H2. apply H7; auto. apply (vgamma_not_dst _ _ r); auto.
   Qed.
-  
+
   #[global] Instance fml : FML_General V E DV DE DG LiMaFin out_edge isNullDec. Proof. constructor; intros; destruct X; auto. Defined.
 
   Lemma findS_preserves_vgamma: forall (g1 g2: UFGraph) x r pa, vvalid g1 x -> vgamma g1 x = (r, pa) -> pa <> x -> findS g1 pa g2 -> vgamma g2 x = (r, pa).

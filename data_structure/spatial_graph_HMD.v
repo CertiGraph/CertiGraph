@@ -14,8 +14,8 @@ Require Import CertiGraph.heap_model_direct.mapsto.
 Require Import CertiGraph.heap_model_direct.SeparationLogic.
 Require Import VST.msl.msl_direct.
 Require Import VST.msl.predicates_sa.
-Require Import Coq.Numbers.Natural.Peano.NPeano.
-Require Import Coq.ZArith.Znumtheory.
+Require Import Stdlib.Numbers.Natural.Peano.NPeano.
+Require Import Stdlib.ZArith.Znumtheory.
 
 Local Open Scope nat.
 Local Open Scope pred.
@@ -186,7 +186,7 @@ Proof.
     1: apply mapsto__precise.
     1: apply (exp_right (if d1 then 1 else 0)); auto.
     1: apply (exp_right (if d2 then 1 else 0)); auto.
-    
+
     eapply derives_trans; [apply sepcon_derives |].
     1: apply mapsto_inj.
 
@@ -195,18 +195,18 @@ Proof.
     1: apply mapsto__precise.
     1: apply (exp_right l1); auto.
     1: apply (exp_right l2); auto.
-        
+
     eapply derives_trans; [apply sepcon_derives |].
     1: apply mapsto_inj.
     1: apply mapsto_inj.
     1: apply derives_refl.
-    
+
     pose proof sepcon_prop_prop.
     simpl in H; rewrite !H; clear H.
 
     intro; simpl in *; intros.
     unfold prop in *.
-    
+
     destruct d1, d2; destruct H as [? [? ?]]; congruence.
 Qed.
 

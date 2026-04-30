@@ -1,4 +1,4 @@
-Require Import Coq.Arith.Arith.
+Require Import Stdlib.Arith.Arith.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EnumEnsembles.
 Require Import CertiGraph.lib.EquivDec_ext.
@@ -9,7 +9,7 @@ Require Import CertiGraph.graph.subgraph2.
 Require Import CertiGraph.graph.MathGraph.
 Require Import CertiGraph.graph.FiniteGraph.
 Require Import CertiGraph.graph.reachable_computable.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 
 Section TREE_DEF.
 

@@ -9,7 +9,7 @@ Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.CertiGC.GCGraph.
 Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.msl_ext.iter_sepcon.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 
 Local Open Scope logic.
 
@@ -784,7 +784,7 @@ Proof.
   first [rewrite Int.unsigned_repr_eq | rewrite Int64.unsigned_repr_eq].
   simpl.
   rewrite Zodd_mod.
-  apply Zeq_is_eq_bool.
+  apply Z.eqb_eq.
   replace (i+i) with (2 * i)%Z by lia.
   rewrite <- Zmod_div_mod; try lia.
   - rewrite Z.mul_comm, Z.add_comm, Z_mod_plus_full. reflexivity.
@@ -798,7 +798,7 @@ Proof.
   intros. rewrite Zodd_mod. destruct (Zaux.Zeven_ex n) as [p ?].
   rewrite H, Z.add_0_r in H1. inversion H0. subst.
   replace (x * (2 * p))%Z with (x * p * 2)%Z by lia.
-  rewrite Z_mod_mult; unfold Zeq_bool; reflexivity.
+  rewrite Z_mod_mult; reflexivity.
 Qed.
 
 Lemma four_divided_tenth_pl_false: forall n i,
@@ -807,7 +807,7 @@ Proof.
   intros. unfold Ptrofs.testbit. inversion H. inversion H0. rewrite H2. subst.
   replace (x0 * (x * 4))%Z with (2 * (x * x0 * 2))%Z by lia.
   rewrite Z.double_bits. simpl. rewrite Zodd_mod, Z_mod_mult.
-  unfold Zeq_bool; reflexivity.
+  reflexivity.
 Qed.
 
 Lemma vertex_rep_valid_int_or_ptr: forall sh g v,

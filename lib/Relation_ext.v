@@ -1,7 +1,7 @@
-Require Export Coq.Relations.Relation_Definitions.
-Require Import Coq.Classes.Morphisms.
-Require Export Coq.Classes.Equivalence.
-Require Coq.Setoids.Setoid.
+Require Export Stdlib.Relations.Relation_Definitions.
+Require Import Stdlib.Classes.Morphisms.
+Require Export Stdlib.Classes.Equivalence.
+Require Stdlib.Setoids.Setoid.
 
 Definition full_relation {A} : relation A := fun _ _ => True.
 

@@ -1,8 +1,8 @@
-Require Import Coq.Arith.Arith.
-Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Classes.Morphisms.
-Require Import Coq.Classes.Equivalence.
+Require Import Stdlib.Arith.Arith.
+Require Import Stdlib.Logic.ProofIrrelevance.
+Require Import Stdlib.Logic.FunctionalExtensionality.
+Require Import Stdlib.Classes.Morphisms.
+Require Import Stdlib.Classes.Equivalence.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.Ensembles_ext.
 Require Import CertiGraph.lib.relation_list.

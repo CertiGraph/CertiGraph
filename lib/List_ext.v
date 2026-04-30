@@ -1,9 +1,9 @@
-Require Export Coq.Lists.List.
-Require Import Coq.micromega.Lia.
-Require Export Coq.Sorting.Permutation.
-Require Import Coq.ZArith.ZArith_base.
-Require Import Coq.ZArith.Zcomplements.
-Require Import Coq.Logic.FunctionalExtensionality.
+Require Export Stdlib.Lists.List.
+Require Import Stdlib.micromega.Lia.
+Require Export Stdlib.Sorting.Permutation.
+From Stdlib Require Import ZArith.
+Require Import Stdlib.ZArith.Zcomplements.
+Require Import Stdlib.Logic.FunctionalExtensionality.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import VST.zlist.sublist.

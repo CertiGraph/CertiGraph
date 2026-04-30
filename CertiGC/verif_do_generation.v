@@ -1,7 +1,7 @@
 Require Import VST.veric.rmaps.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
-Require Import Coq.Program.Basics.
+Require Import Stdlib.Program.Basics.
 Require Import CertiGraph.graph.graph_gen.
 Require Import CertiGraph.CertiGC.GCGraph.
 Require Import VST.msl.wand_frame.

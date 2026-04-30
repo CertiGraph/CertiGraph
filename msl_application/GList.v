@@ -1,6 +1,6 @@
-Require Import Coq.Logic.Classical.
-Require Import Coq.Lists.List.
-Require Import Coq.Sets.Ensembles.
+Require Import Stdlib.Logic.Classical.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Sets.Ensembles.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.Ensembles_ext.
 Require Import CertiGraph.lib.EquivDec_ext.

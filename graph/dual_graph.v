@@ -1,5 +1,5 @@
-Require Import Coq.Classes.Equivalence.
-Require Import Coq.Classes.EquivDec.
+Require Import Stdlib.Classes.Equivalence.
+Require Import Stdlib.Classes.EquivDec.
 Require Import VST.msl.Coqlib2.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.

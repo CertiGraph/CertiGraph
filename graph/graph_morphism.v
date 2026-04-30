@@ -364,10 +364,10 @@ Context {EE: EqDec E eq}.
 Context {EV': EqDec V' eq}.
 Context {EE': EqDec E' eq}.
 
-Definition boundary_src_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
+Definition boundary_src_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') :=
   forall e, PE1 e -> PV2 (src G e) -> evalid G e -> vmap (src G e) = src G' (emap e).
 
-Definition boundary_dst_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
+Definition boundary_dst_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') :=
   forall e, PE1 e -> PV2 (dst G e) -> evalid G e -> vmap (dst G e) = dst G' (emap e).
 
 #[global] Instance boundary_src_consistent_proper: Proper (Same_set ==> Same_set ==> eq ==> eq ==> eq ==> eq ==> iff) boundary_src_consistent.
@@ -407,11 +407,11 @@ Proof.
   + rewrite <- (evalid_preserved H0); auto.
 Qed.
 
-Definition boundary_edge_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
+Definition boundary_edge_consistent (PE1: E -> Prop) (PV2: V -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') :=
   boundary_src_consistent PE1 PV2 vmap emap G G' /\
   boundary_dst_consistent PE1 PV2 vmap emap G G'.
 
-Definition boundary_consistent (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') := 
+Definition boundary_consistent (PV1 PV2: V -> Prop) (PE1 PE2: E -> Prop) vmap emap (G: PreGraph V E) (G': PreGraph V' E') :=
   boundary_edge_consistent PE1 PV2 vmap emap G G' /\
   boundary_edge_consistent PE2 PV1 vmap emap G G'.
 
@@ -490,14 +490,14 @@ Proof.
     destruct H5; [apply (evalid_preserved H) | apply (evalid_preserved H0)];
     auto.
   + rewrite Union_spec in H5, H6.
-    destruct H5, H6; 
+    destruct H5, H6;
     [ apply (src_preserved H)
     | apply H1
     | apply H3
     | apply (src_preserved H0)];
     auto.
   + rewrite Union_spec in H5, H6.
-    destruct H5, H6; 
+    destruct H5, H6;
     [ apply (dst_preserved H)
     | apply H2
     | apply H4
@@ -507,7 +507,7 @@ Qed.
 
 Lemma guarded_bij_disjointed_union: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
   disjointed_guard
-    (image_set PV1 vmap) (image_set PV2 vmap) 
+    (image_set PV1 vmap) (image_set PV2 vmap)
     (image_set PE1 emap) (image_set PE2 emap) ->
   guarded_bij PV1 PE1 vmap emap G G' ->
   guarded_bij PV2 PE2 vmap emap G G' ->
@@ -544,7 +544,7 @@ Lemma guarded_bij_disjointed_weak_edge_prop_union: forall PV1 PV2 vmap emap (G: 
   let PE1 := Intersection _ (weak_edge_prop PV1 G) (evalid G) in
   let PE2 := Intersection _ (weak_edge_prop PV2 G) (evalid G) in
   disjointed_guard
-    (image_set PV1 vmap) (image_set PV2 vmap) 
+    (image_set PV1 vmap) (image_set PV2 vmap)
     (image_set PE1 emap) (image_set PE2 emap) ->
   guarded_bij PV1 PE1 vmap emap G G' ->
   guarded_bij PV2 PE2 vmap emap G G' ->
@@ -567,7 +567,7 @@ Qed.
 
 Lemma guarded_bij_disjointed_union_strong: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G1' G2': PreGraph V' E'),
   disjointed_guard
-    (image_set PV1 vmap) (image_set PV2 vmap) 
+    (image_set PV1 vmap) (image_set PV2 vmap)
     (image_set PE1 emap) (image_set PE2 emap) ->
   guarded_bij PV1 PE1 vmap emap G G1' ->
   guarded_bij PV2 PE2 vmap emap G G2' ->
@@ -699,7 +699,7 @@ Qed.
 
 Lemma guarded_bij_pregraph_join: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G1' G2': PreGraph V' E'),
   disjointed_guard
-    (image_set PV1 vmap) (image_set PV2 vmap) 
+    (image_set PV1 vmap) (image_set PV2 vmap)
     (image_set PE1 emap) (image_set PE2 emap) ->
   guarded_bij PV1 PE1 vmap emap G G1' ->
   guarded_bij PV2 PE2 vmap emap G G2' ->
@@ -895,7 +895,7 @@ Proof.
       rewrite (is_guarded_inj_rev_aux' PE1 PE2 emap eg1) by (destruct H; auto).
       auto.
 Qed.
-  
+
 Lemma guarded_morphism_weaken: forall PV1 PE1 PV2 PE2 vmap emap (G: PreGraph V E) (G': PreGraph V' E'),
   Included PV2 PV1 ->
   Included PE2 PE1 ->
@@ -919,7 +919,7 @@ Lemma guarded_bij_weak_edge_prop: forall PV PE PV0 PE0 vmap emap (G: PreGraph V 
   Included PE0 PE ->
   Included PE0 (Intersection _ (weak_edge_prop PV0 G) (evalid G)) ->
   guarded_morphism PV PE vmap emap G G' ->
-  forall e', 
+  forall e',
     (image_set PE0 emap) e' ->
     (Intersection _ (weak_edge_prop (image_set PV0 vmap) G') (evalid G')) e'.
 Proof.
@@ -946,7 +946,7 @@ End GraphMorphism2.
 End GraphMorphism.
 
 (*
-Require Import Coq.Classes.Morphisms.
+Require Import Stdlib.Classes.Morphisms.
 Definition respectful {A B : Type}
   (R : relation A) (R' : relation B) : relation (A -> B) :=
   Eval compute in @respectful_hetero A A (fun _ => B) (fun _ => B) R (fun _ _ => R').

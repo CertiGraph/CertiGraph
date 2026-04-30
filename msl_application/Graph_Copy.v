@@ -21,7 +21,7 @@ Require Import CertiGraph.graph.weak_mark_lemmas.
 Require Import CertiGraph.graph.graph_morphism.
 Require Import CertiGraph.graph.local_graph_copy.
 Require Import CertiGraph.msl_application.Graph.
-Require Import Coq.Logic.Classical.
+Require Import Stdlib.Logic.Classical.
 
 Local Open Scope logic.
 
@@ -513,9 +513,9 @@ Lemma vcopy1_edge_copy_list_copy_extended_copy': forall root es es_done e0 es_la
   extended_copy (dst g1 e0) (g3, g3') (g4, g4') /\
   (Included (vvalid g4'') (vguard g4'') -> Included (vvalid g4'') (vguard g4') -> vertices_identical (vvalid g4'') (Graph_PointwiseGraph g4'') (Graph_PointwiseGraph g4')) /\
   (Included
-     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) 
+     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1))
      (vguard g3') -> Included
-     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) 
+     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1))
      (vguard g4') -> vertices_identical
      (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) (Graph_PointwiseGraph g3') (Graph_PointwiseGraph g4')).
 Proof.
@@ -686,9 +686,9 @@ Lemma vcopy1_edge_copy_list_weak_copy_extended_copy': forall {P: Graph -> Type} 
                     (fun e' => ~ In e' (map (LocalGraphCopy.emap g4) es_done)) g4'), True) /\
   (Included (vvalid g4'') (vguard g4'') -> Included (vvalid g4'') (vguard g4') -> vertices_identical (vvalid g4'') (Graph_PointwiseGraph g4'') (Graph_PointwiseGraph g4')) /\
   (Included
-     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) 
+     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1))
      (vguard g3') -> Included
-     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) 
+     (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1))
      (vguard g4') -> vertices_identical
      (Intersection _ (vvalid g3') (fun x1 => LocalGraphCopy.vmap g2 root <> x1)) (Graph_PointwiseGraph g3') (Graph_PointwiseGraph g4')).
 Proof.

@@ -2,7 +2,7 @@ Require Import VST.msl.Extensionality.
 Require Import VST.msl.simple_CCC.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Require Import CertiGraph.msl_ext.seplog.
 Require Import CertiGraph.msl_ext.abs_addr.
 

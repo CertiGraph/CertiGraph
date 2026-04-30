@@ -1,6 +1,6 @@
-Require Import Coq.Classes.Morphisms.
-Require Import Coq.micromega.Lia.
-Require Import Coq.Logic.FunctionalExtensionality.
+Require Import Stdlib.Classes.Morphisms.
+Require Import Stdlib.micromega.Lia.
+Require Import Stdlib.Logic.FunctionalExtensionality.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.EnumEnsembles.

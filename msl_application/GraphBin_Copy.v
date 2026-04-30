@@ -1,5 +1,5 @@
 Require Import CertiGraph.lib.Ensembles_ext.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Require Import VST.msl.seplog.
 Require Import VST.msl.log_normalize.
 Require Import VST.msl.ramification_lemmas.
@@ -24,7 +24,7 @@ Require Import CertiGraph.graph.local_graph_copy.
 Require Import CertiGraph.msl_application.Graph.
 Require Import CertiGraph.msl_application.GraphBin.
 Require Import CertiGraph.msl_application.Graph_Copy.
-Require Import Coq.Logic.Classical.
+Require Import Stdlib.Logic.Classical.
 
 Open Scope logic.
 
@@ -53,7 +53,7 @@ Defined.
 
 Definition empty_Graph': Graph' := empty_Graph' null (null, L) tt.
 
-Definition initial_copied_Graph (x x0: addr) (g: Graph): LGraph 
+Definition initial_copied_Graph (x x0: addr) (g: Graph): LGraph
   := single_vertex_labeledgraph (LocalGraphCopy.vmap (Graph_vgen g x x0) x) null (null, L) tt.
 
 Opaque empty_Graph initial_copied_Graph.
@@ -165,7 +165,7 @@ Transparent initial_copied_Graph. simpl. Opaque initial_copied_Graph.
   rewrite H2, emp_sepcon.
   apply va_reachable_root_update_ramify; auto.
 Qed.
-        
+
 Lemma not_null_copy1: forall (G: Graph) (x x0: addr) l r,
   vgamma G x = (null, l, r) ->
   vvalid G x ->
@@ -430,9 +430,9 @@ Lemma extend_copy_left: forall (g g1 g2: Graph) (g1': LGraph) (g2'': Graph') (x 
   l = null /\ l0 = null \/ l0 = LocalGraphCopy.vmap g2 l ->
   is_guarded_BinMaFin' (fun v => x0 <> v) (fun e => ~ In e nil) g1' ->
   @derives pred _
-  (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g1') (fun x => x0 <> x)) g1' * reachable_vertices_at l0 g2'') 
+  (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g1') (fun x => x0 <> x)) g1' * reachable_vertices_at l0 g2'')
   (EX g2': LGraph,
-    !! (extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') /\ is_guarded_BinMaFin' (fun v => x0 <> v) (fun e => ~ In e nil) g2') && 
+    !! (extended_copy l (g1: LGraph, g1') (g2: LGraph, g2') /\ is_guarded_BinMaFin' (fun v => x0 <> v) (fun e => ~ In e nil) g2') &&
     (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g2') (fun x => x0 <> x)) g2')).
 Proof.
   intros.
@@ -481,7 +481,7 @@ Proof.
   apply derives_extract_prop.
   intro.
   clear H14. assert (x0 <> null) by congruence; clear H15.
-  
+
   apply andp_right; [apply prop_right; split; auto | rewrite sepcon_assoc; apply sepcon_derives; auto].
   assert (Prop_join (vvalid g1') (vvalid g2'') (vvalid g2')) as HPJ.
   1: {
@@ -660,9 +660,9 @@ Lemma extend_copy_right: forall (g g1 g2 g3 g4: Graph) (g1' g2' g3': LGraph) (g4
   r = null /\ r0 = null \/ r0 = LocalGraphCopy.vmap g4 r ->
   is_guarded_BinMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g3' ->
   @derives pred _
-  (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g3') (fun x => x0 <> x)) g3' * reachable_vertices_at r0 g4'') 
+  (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g3') (fun x => x0 <> x)) g3' * reachable_vertices_at r0 g4'')
   (EX g4': LGraph,
-    !! (extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') /\ is_guarded_BinMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') && 
+    !! (extended_copy r (g3: LGraph, g3') (g4: LGraph, g4') /\ is_guarded_BinMaFin' (fun v => x0 <> v) (fun e => ~ In e ((x0, L) :: nil)) g4') &&
    (vertex_at x0 d0 * vertices_at (Intersection _ (vvalid g4') (fun x => x0 <> x)) g4')).
 Proof.
   intros.
@@ -934,10 +934,10 @@ Lemma copy_final: forall (g g1 g2 g3 g4 g5: Graph) (g1' g2' g3' g4' g5': LGraph)
   vgamma g x = (null, l, r) ->
   x0 = LocalGraphCopy.vmap g1 x ->
   l = null /\ l0 = null \/ l0 = LocalGraphCopy.vmap g2 l ->
-  forall (H999: dst g3' (x0, L) = l0), 
+  forall (H999: dst g3' (x0, L) = l0),
   (x0, L) = LocalGraphCopy.emap g3 (x, L) ->
   r = null /\ r0 = null \/ r0 = LocalGraphCopy.vmap g4 r ->
-  forall (H998: dst g5' (x0, R) = r0), 
+  forall (H998: dst g5' (x0, R) = r0),
   (x0, R) = LocalGraphCopy.emap g5 (x, R) ->
   is_guarded_BinMaFin'
     (fun v => x0 <> v)
@@ -1195,7 +1195,7 @@ Proof.
     - apply Prop_join_comm.
       rewrite <- copy_vvalid_weak_eq; [apply Ensemble_join_Intersection_Complement | .. | exact H12].
       * unfold Included, Ensembles.In; intros; subst; tauto.
-      * intros; tauto. 
+      * intros; tauto.
       * right; symmetry; tauto.
     - change (vgamma (Graph_PointwiseGraph (labeledgraph_vgen g5' x0 null)) x0)
         with (vgamma (LGraph_SGraph (labeledgraph_vgen g5' x0 null)) x0).

@@ -1,4 +1,4 @@
-From Coq Require Import String List ZArith.
+From Stdlib Require Import String List ZArith.
 From compcert Require Import Coqlib Integers Floats AST Ctypes Cop Clight Clightdefs.
 Import Clightdefs.ClightNotations.
 Local Open Scope Z_scope.
@@ -918,7 +918,7 @@ Definition f_dijkstra := {|
                                                       (Etempvar _i tint)
                                                       (tptr tint)) tint))
                                                 (Scall None
-                                                  (Evar _pq_edit_priority 
+                                                  (Evar _pq_edit_priority
                                                   (Tfunction
                                                     (Tcons
                                                       (tptr (Tstruct _structPQ noattr))
@@ -1404,7 +1404,7 @@ Definition public_idents : list ident :=
  ___compcert_va_composite :: ___compcert_va_float64 ::
  ___compcert_va_int64 :: ___compcert_va_int32 :: nil).
 
-Definition prog : Clight.program := 
+Definition prog : Clight.program :=
   mkprogram composites global_definitions public_idents _main Logic.I.
 
 

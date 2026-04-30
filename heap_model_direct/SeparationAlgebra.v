@@ -1,6 +1,6 @@
 Require Import VST.msl.msl_direct.
 Require Import CertiGraph.msl_ext.abs_addr.
-Require Import Peano_dec.
+From Stdlib Require Import Peano_dec.
 
 Instance Join_discrete (A : Type): Join A := fun a1 a2 a3 : A => False.
 

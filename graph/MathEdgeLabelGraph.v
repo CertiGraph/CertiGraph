@@ -1,6 +1,6 @@
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.Classes.EquivDec.
-Require Import Coq.ZArith.Zcomplements.
+Require Import Stdlib.ZArith.BinInt.
+Require Import Stdlib.Classes.EquivDec.
+Require Import Stdlib.ZArith.Zcomplements.
 
 Require Import compcert.lib.Integers.
 Require Import VST.zlist.sublist.

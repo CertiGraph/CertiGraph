@@ -1,5 +1,5 @@
 Require Import VST.floyd.proofauto.
-Require Import Coq.Classes.EquivDec.
+Require Import Stdlib.Classes.EquivDec.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
@@ -11,10 +11,10 @@ Section PathCost.
   Context {V DV DG : Type}.
 
   Definition E : Type := prod V V.
-    
-  Context {V_EqDec : EqDec V eq}. 
+
+  Context {V_EqDec : EqDec V eq}.
   Context {E_EqDec : EqDec E eq}.
-  
+
   Definition path_cost (g: LabeledGraph V E DV Z DG) (path: @path V E) : Z :=
     fold_left Z.add (map (elabel g) (snd path)) 0.
 
@@ -52,7 +52,7 @@ Section PathCost.
     intros.
     generalize dependent s.
     induction l.
-    - intros; simpl. trivial. 
+    - intros; simpl. trivial.
     - intros; simpl.
       rewrite <- Z.add_assoc.
       rewrite IHl. lia.
@@ -69,7 +69,7 @@ Section PathCost.
     rewrite fold_left_app.
     assert ((fold_left Z.add (map (elabel g) (snd p1)) 0) = (path_cost g p1))
       by now unfold path_cost.
-    rewrite H. 
+    rewrite H.
     unfold path_cost at 3.
     remember (map (elabel g) (snd p2)) as l2.
     remember (path_cost g p1) as c1.
@@ -89,7 +89,7 @@ Section PathCost.
     rewrite one_step_path_Znth; trivial.
     unfold path_glue. simpl. trivial.
   Qed.
-  
+
   Lemma path_cost_glue_one_step:
     forall (g: LabeledGraph V E DV Z DG) p2m u i,
       path_cost g (path_glue p2m (u, [(u, i)])) = path_cost g p2m + elabel g (u, i).

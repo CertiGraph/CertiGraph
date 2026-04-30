@@ -1,7 +1,7 @@
-Require Import Coq.Logic.ProofIrrelevance.
+Require Import Stdlib.Logic.ProofIrrelevance.
 Require Import CertiGraph.lib.Ensembles_ext.
-Require Import Coq.Lists.List.
-Require Import Coq.Classes.Morphisms.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Classes.Morphisms.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.graph.graph_model.
@@ -30,7 +30,7 @@ Proof.
   + auto.
   + apply reachable_cons with y; auto.
 Qed.
-    
+
 End ind.
 End ind.
 
@@ -246,7 +246,7 @@ Qed.
 
 Lemma edge_preserved_rev_foot: forall (P: V -> Prop),
   (forall x y, reachable G x y -> P x -> P y) ->
-  forall x y, 
+  forall x y,
   reachable G x y ->
   ~ P y ->
   reachable_by G x (Complement _ P) y.
@@ -264,7 +264,7 @@ Qed.
 
 Lemma edge_preserved_rev_foot0: forall (P: V -> Prop),
   (forall x y, reachable G x y -> P x -> P y) ->
-  forall l y, 
+  forall l y,
   reachable_through_set G l y ->
   ~ P y ->
   reachable_by_through_set G l (Complement _ P) y.

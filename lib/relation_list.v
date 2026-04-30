@@ -1,5 +1,5 @@
-Require Import Coq.Classes.Morphisms.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Classes.Morphisms.
+Require Import Stdlib.Lists.List.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.lib.List_Func_ext.
@@ -12,7 +12,7 @@ Inductive same_relation_list {A: Type}: list (relation A) -> list (relation A) -
   | same_relation_list_cons :
       forall x xs y ys,
       same_relation A x y ->
-      same_relation_list xs ys -> 
+      same_relation_list xs ys ->
       same_relation_list (x :: xs) (y :: ys).
 
 Lemma same_relation_list_refl: forall {A} (rs: list (relation A)), same_relation_list rs rs.
@@ -59,7 +59,7 @@ Proof.
 Defined.
 
 Definition relation_list {A: Type} (R: list (relation A)) : relation A := fold_left compond_relation R eq.
-    
+
 Lemma relation_list_app: forall {A: Type} (R R': list (relation A)),
   same_relation _ (relation_list (R ++ R')) (compond_relation (relation_list R) (relation_list R')).
 Proof.
@@ -260,7 +260,7 @@ Ltac split_relation_list L :=
          end
   end.
 
-Ltac destruct_relation_list_aux cont H x z L := 
+Ltac destruct_relation_list_aux cont H x z L :=
   match L with
   | ?A :: ?L0 =>
      match L0 with

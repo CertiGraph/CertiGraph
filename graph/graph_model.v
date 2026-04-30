@@ -1,4 +1,4 @@
-Require Import Coq.Logic.ProofIrrelevance.
+Require Import Stdlib.Logic.ProofIrrelevance.
 Require Import CertiGraph.lib.Ensembles_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.List_ext.
@@ -128,7 +128,7 @@ Proof.
     rewrite H.
     split; auto.
 Qed.
-  
+
 Definition negateP (p : NodePred Vertex) : NodePred Vertex.
 Proof.
   exists (Complement Vertex (projT1 p)).
@@ -144,7 +144,7 @@ Proof. intros. rewrite Same_set_spec; intros ?. apply negateP_spec. Qed.
 
 Lemma negateP_spec_d: forall (p: NodePred Vertex) (x : Vertex), ~ Ensembles.In Vertex (negateP p) x <-> p x.
 Proof.
-  intros. unfold negateP. simpl. unfold Complement. 
+  intros. unfold negateP. simpl. unfold Complement.
   destruct p; simpl. split; intros; destruct (s x); try tauto.
   intro. hnf in H0. tauto.
 Qed.

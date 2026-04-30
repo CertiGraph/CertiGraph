@@ -1,9 +1,9 @@
-Require Import Coq.Sorting.Permutation.
-Require Import Coq.Classes.EquivDec.
+Require Import Stdlib.Sorting.Permutation.
+Require Import Stdlib.Classes.EquivDec.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.List_ext.
 Require Export CertiGraph.lib.Ensembles_ext.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 
 Definition Enumerable U (A: Ensemble U) := {l: list U | NoDup l /\ forall x, In x l <-> A x}.
 
@@ -35,7 +35,7 @@ Qed.
 Lemma EnumStrengthen: forall U (P Q: Ensemble U),
   (forall x, P x -> Decidable (Q x)) ->
   Included Q P ->
-  Enumerable U P -> 
+  Enumerable U P ->
   Enumerable U Q.
 Proof.
   intros.
@@ -76,7 +76,7 @@ Qed.
 Lemma EnumSplit: forall U (P Q R: Ensemble U),
   (forall x, P x -> {Q x} + {R x}) ->
   Prop_join Q R P ->
-  Enumerable U P -> 
+  Enumerable U P ->
   Enumerable U Q * Enumerable U R.
 Proof.
   intros U P Q R ? [? ?] ?.

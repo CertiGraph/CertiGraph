@@ -1,7 +1,7 @@
-Require Import Coq.ZArith.BinInt.
-Require Import Coq.ZArith.Zcomplements.
-Require Import Coq.micromega.Lia.
-Require Import Coq.ZArith.Znat.
+Require Import Stdlib.ZArith.BinInt.
+Require Import Stdlib.ZArith.Zcomplements.
+Require Import Stdlib.micromega.Lia.
+Require Import Stdlib.ZArith.Znat.
 (*
 Require Import compcert.lib.Integers.
 Require Import compcert.common.Values.

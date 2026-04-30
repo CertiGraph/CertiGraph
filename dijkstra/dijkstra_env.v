@@ -1,8 +1,8 @@
 Require Export VST.floyd.proofauto.
-Require Export Coq.Classes.EquivDec.
-Require Export Coq.Lists.List.
-Require Export Coq.micromega.Lia.
-Require Export Coq.ZArith.ZArith.
+Require Export Stdlib.Classes.EquivDec.
+Require Export Stdlib.Lists.List.
+Require Export Stdlib.micromega.Lia.
+Require Export Stdlib.ZArith.ZArith.
 Require Export compcert.lib.Integers.
 Require Export VST.zlist.sublist.
 Require Export VST.msl.seplog.

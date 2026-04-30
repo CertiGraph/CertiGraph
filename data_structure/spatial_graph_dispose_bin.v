@@ -3,7 +3,7 @@ Require Import VST.msl.log_normalize.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.Ensembles_ext.
 Require Import CertiGraph.lib.EquivDec_ext.
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 Require Import CertiGraph.graph.graph_model.
 Require Import CertiGraph.graph.path_lemmas.
@@ -49,13 +49,13 @@ Section SPATIAL_GRAPH_DISPOSE_BIN.
 
   Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
   Proof. intros. simpl in H. simpl. destruct (vlabel g x) eqn:? . auto. inversion H. Qed.
-  
+
   Lemma vgamma_is_false: forall (g : Graph) (x l r : addr), vgamma g x = (false, l, r) -> unmarked g x.
   Proof.
     intros. simpl in H. hnf. unfold Ensembles.In. simpl. intro.
     destruct (vlabel g x) eqn:? . inversion H. simpl in H0. inversion H0.
   Qed.
-  
+
   Lemma edge_spanning_tree_left_null:
     forall (g: Graph) x d l r, vvalid g x -> vgamma g x = (d, l, r) -> (marked g) l ->
                                edge_spanning_tree g (x, L) (Graph_gen_left_null g x).

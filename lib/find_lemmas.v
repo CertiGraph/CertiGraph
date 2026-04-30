@@ -1,5 +1,5 @@
 Require Import VST.floyd.proofauto.
-Require Import Coq.Classes.Equivalence.
+Require Import Stdlib.Classes.Equivalence.
 Require Import CertiGraph.lib.List_ext.
 
 #[export] Instance Z_EqDec : EquivDec.EqDec Z eq := Z.eq_dec.
@@ -79,9 +79,9 @@ Proof.
   1: intros; simpl; now rewrite Zlength_nil.
   intros. apply in_inv in H. destruct H.
   - subst a. unfold find.
-    destruct (Z_EqDec target target). 
+    destruct (Z_EqDec target target).
     rewrite Zlength_cons. split; rep_lia.
-    exfalso. apply c. reflexivity. 
+    exfalso. apply c. reflexivity.
   - unfold find. destruct (Z_EqDec a target).
     1: rewrite Zlength_cons; split; rep_lia.
     assert (0 <= 1 + ans) by lia.
