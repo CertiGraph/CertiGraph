@@ -1,6 +1,10 @@
 # CertiGraph
 
 [![build](https://github.com/CertiGraph/CertiGraph/actions/workflows/build.yml/badge.svg?branch=live)](https://github.com/CertiGraph/CertiGraph/actions/workflows/build.yml)
+![Rocq/Coq](https://img.shields.io/badge/Rocq%2FCoq-9.1-blue)
+![VST](https://img.shields.io/badge/VST-2.16-blue)
+![CompCert](https://img.shields.io/badge/CompCert-3.17-blue)
+[![license](https://img.shields.io/github/license/CertiGraph/CertiGraph)](LICENSE)
 
 A library for verifying graph-manipulating programs.
 
