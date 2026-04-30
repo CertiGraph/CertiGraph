@@ -4309,6 +4309,63 @@ Proof.
     + apply IHl. 2: assumption. rewrite <- svfl_graph_has_gen; eauto.
 Qed.
 
+Section FORWARD_SCAN_GRAPH_PROP.
+
+  Hypothesis P: LGraph -> Prop.
+
+  Hypothesis fr_O_P_holds: forall g1 g2 from to p,
+      P g1 -> graph_has_gen g1 to -> forward_relation from to O p g1 g2 -> P g2.
+
+  Lemma frr_P_holds: forall from to r1 r2 g1 g2,
+      P g1 -> graph_has_gen g1 to ->
+      forward_roots_relation from to r1 g1 r2 g2 -> P g2.
+  Proof.
+    intros. revert H H0; induction H1; simpl; intros; auto.
+    apply IHforward_roots_relation; auto.
+    eapply fr_O_P_holds; eauto.
+    rewrite <- fr_graph_has_gen; eauto.
+  Qed.
+
+  Lemma svfl_P_holds: forall from to v l g1 g2,
+      P g1 -> graph_has_gen g1 to ->
+      scan_vertex_for_loop from to v l g1 g2 -> P g2.
+  Proof.
+    do 4 intro. induction l; intros; inversion H1; subst; auto.
+    apply (IHl g3); auto.
+    - eapply fr_O_P_holds; eauto.
+    - erewrite <- fr_graph_has_gen; eauto.
+  Qed.
+
+  Lemma svwl_P_holds: forall from to l g1 g2,
+      P g1 -> graph_has_gen g1 to ->
+      scan_vertex_while_loop from to l g1 g2 -> P g2.
+  Proof.
+    do 3 intro. induction l; intros; inversion H1; subst; auto. 1: eapply IHl; eauto.
+    apply (IHl g3); eauto.
+    - eapply svfl_P_holds; eauto.
+    - erewrite <- svfl_graph_has_gen; eauto.
+  Qed.
+
+  Lemma dsr_P_holds: forall g1 g2 from to to_index,
+      P g1 -> graph_has_gen g1 to ->
+      do_scan_relation from to to_index g1 g2 -> P g2.
+  Proof.
+    intros. destruct H1 as [n [? ?]]. eapply svwl_P_holds; eauto.
+  Qed.
+
+End FORWARD_SCAN_GRAPH_PROP.
+
+Lemma svwl_roots_graph_compatible: forall from to roots l g1 g2,
+    graph_has_gen g1 to ->
+    roots_graph_compatible roots g1 ->
+    scan_vertex_while_loop from to l g1 g2 ->
+    roots_graph_compatible roots g2.
+Proof.
+  intros from to roots l g1 g2 Hto Hroots Hloop.
+  eapply (svwl_P_holds (fun g => roots_graph_compatible roots g)); eauto.
+  intros. eapply fr_roots_graph_compatible; eauto.
+Qed.
+
 Definition graph_unmarked (g: LGraph): Prop := forall v,
     graph_has_v g v -> raw_mark (vlabel g v) = false.
 
@@ -6679,12 +6736,8 @@ Lemma do_scan_roots_compatible: forall from to idx g1 g2 outlier roots,
     roots_compatible g2 outlier roots.
 Proof.
   intros from to idx g1 g2 outlier roots Hghg [Hroc Hrgc] Hdsr. split; auto.
-  clear dependent outlier. destruct Hdsr as [n [Hsvwl Hno]]. remember (seq _ _).
-  clear Heql Hno n. revert g1 g2 Hghg Hrgc Hsvwl.
-  induction l; intros;  inversion Hsvwl; subst; clear Hsvwl; auto. 1: eapply IHl; eauto.
-  eapply IHl with (g1 := g3); eauto.
-  - rewrite <- svfl_graph_has_gen; eassumption.
-  - eapply svfl_roots_graph_compatible; eassumption.
+  destruct Hdsr as [n [Hsvwl _]].
+  eapply svwl_roots_graph_compatible; eauto.
 Qed.
 
 Inductive remset_ext :=
@@ -10566,6 +10619,102 @@ Definition garbage_collect_relation
   exists n, garbage_collect_loop (nat_inc_list (S n))
               roots1 g1 h1 rh1 rmst1 roots2 g2 h2 rh2 rmst2 /\
             safe_to_copy_gen g2 n (S n).
+
+Lemma new_gen_heap_graph_has_gen: forall g1 h1 g2 h2 gen,
+    graph_has_gen g1 gen ->
+    new_gen_heap_relation (S gen) g1 h1 g2 h2 -> graph_has_gen g2 (S gen).
+Proof.
+  intros g1 h1 g2 h2 gen Hhas Hrel.
+  unfold new_gen_heap_relation in Hrel.
+  destruct (graph_has_gen_dec g1 (S gen)).
+  - destruct Hrel as [? ?]. subst. assumption.
+  - destruct Hrel as [gi [sp [i [Hs [? [_ [_ [_ [_ [? _]]]]]]]]]].
+    subst g2. rewrite ang_graph_has_gen. right.
+    unfold graph_has_gen in *. lia.
+Qed.
+
+Section GENERAL_GRAPH_PROP.
+
+  Hypothesis P: LGraph -> Prop.
+
+  Hypothesis fr_O_P_holds: forall g1 g2 from to p,
+      P g1 -> graph_has_gen g1 to -> forward_relation from to O p g1 g2 -> P g2.
+
+  Hypothesis reset_P_holds: forall g gen, P g -> P (reset_graph gen g).
+
+  Hypothesis forward_remset_P_holds:
+    forall from to g h rh rmst g' h' rh' rmst',
+      P g -> graph_has_gen g to ->
+      (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst -> P g'.
+
+  Lemma do_generation_relation_P_holds:
+    forall from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h',
+      P g -> graph_has_gen g to ->
+      do_generation_relation from to roots roots' g h rh rmst
+        g_rem h_rem rh' rmst' g' h' ->
+      P g'.
+  Proof.
+    intros from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h' HP Hto Hrel.
+    destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
+    subst g'. apply reset_P_holds.
+    assert (Hto_rem: graph_has_gen g_rem to) by
+        (rewrite <- (forward_remset_gh_graph_has_gen from to g h rh rmst
+                       g_rem h_rem rh' rmst' Hto Hfrg to); exact Hto).
+    assert (Hto_frr: graph_has_gen g1 to) by
+        (apply (proj1 (frr_graph_has_gen from to roots g_rem roots' g1
+                         Hto_rem Hfrr to)); exact Hto_rem).
+    eapply (dsr_P_holds P fr_O_P_holds g1 g2 from to
+              (number_of_vertices (nth_gen g to))).
+    - eapply (frr_P_holds P fr_O_P_holds from to roots roots' g_rem g1).
+      + eapply forward_remset_P_holds; eauto.
+      + exact Hto_rem.
+      + exact Hfrr.
+    - exact Hto_frr.
+    - exact Hscan.
+  Qed.
+
+  Hypothesis new_gen_heap_P_holds:
+    forall g1 h1 g2 h2 gen, P g1 -> new_gen_heap_relation gen g1 h1 g2 h2 -> P g2.
+
+  Lemma gcl_P_holds:
+    forall s n roots1 roots2 g1 h1 rh1 rmst1 g2 h2 rh2 rmst2,
+      P g1 -> graph_has_gen g1 s ->
+      garbage_collect_loop (seq s n)
+        roots1 g1 h1 rh1 rmst1 roots2 g2 h2 rh2 rmst2 ->
+      P g2.
+  Proof.
+    do 2 intro. revert s. induction n; intros; simpl in H1; inversion H1; subst; auto.
+    clear H1.
+    assert (Hhas3: graph_has_gen g3 (S s)) by
+        (eapply new_gen_heap_graph_has_gen; eauto).
+    assert (Hhas4: graph_has_gen g4 (S s)) by
+        (apply (proj1 (do_generation_relation_graph_has_gen
+                         s (S s) roots1 roots3 g3 h3 rh1 rmst1 g_rem h_rem
+                         rh3 rmst3 g4 h4 Hhas3 H5 (S s)));
+         exact Hhas3).
+    eapply (IHn (S s) roots3 roots2 g4 h4 (reset_nth_remset_heap s rh3)
+             rmst3 g2 h2 rh2 rmst2).
+    - eapply (do_generation_relation_P_holds
+                s (S s) roots1 roots3 g3 h3 rh1 rmst1
+                g_rem h_rem rh3 rmst3 g4 h4).
+      + eapply new_gen_heap_P_holds; eauto.
+      + exact Hhas3.
+      + exact H5.
+    - exact Hhas4.
+    - exact H18.
+  Qed.
+
+  Lemma gc_P_holds:
+    forall roots1 roots2 g1 h1 rh1 rmst1 g2 h2 rh2 rmst2,
+      P g1 ->
+      garbage_collect_relation roots1 roots2 g1 h1 rh1 rmst1 g2 h2 rh2 rmst2 ->
+      P g2.
+  Proof.
+    intros. red in H0. destruct H0 as [n [? ?]]. unfold nat_inc_list in H0.
+    apply gcl_P_holds in H0; auto. apply graph_has_gen_O.
+  Qed.
+
+End GENERAL_GRAPH_PROP.
 
 Lemma do_generation_relation_stcte:
   forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i,
