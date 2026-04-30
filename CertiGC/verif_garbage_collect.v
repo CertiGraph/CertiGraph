@@ -442,7 +442,7 @@ Lemma heap_remset_rep_reset_nth_remset:
 Proof.
   intros g h rh gen Hlen Hgen Hptr Hav.
   rewrite (heap_remset_rep_split g h (reset_nth_remset_heap gen rh) gen).
-  - rewrite reset_nth_remset_heap_same by lia.
+  - rewrite reset_nth_remset_heap_same_any.
     unfold space_remset_rep.
     destruct (Val.eq (space_start (nth_space h gen)) nullval).
     + destruct (space_start (nth_space h gen)); try contradiction; inversion e.

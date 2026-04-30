@@ -6730,19 +6730,29 @@ Proof.
   induction n; intros [|rs rest]; simpl; auto.
 Qed.
 
-Lemma reset_nth_remset_heap_same: forall n rh,
-    (n < length rh)%nat ->
-    nth_remset_space (reset_nth_remset_heap n rh) n = [].
+Lemma reset_nth_remset_heap_nth: forall n m rh,
+    nth_remset_space (reset_nth_remset_heap n rh) m =
+    if Nat.eq_dec n m then [] else nth_remset_space rh m.
 Proof.
-  induction n; intros [|rs rest] Hlen; simpl in *; try lia; auto.
-  apply IHn. lia.
+  unfold nth_remset_space.
+  induction n as [|n IH]; intros [|m] [|rs rest]; simpl.
+  - destruct (Nat.eq_dec 0 0); [reflexivity | contradiction].
+  - destruct (Nat.eq_dec 0 0); [reflexivity | contradiction].
+  - destruct (Nat.eq_dec 0 (S m)); [lia | reflexivity].
+  - destruct (Nat.eq_dec 0 (S m)); [lia | reflexivity].
+  - destruct (Nat.eq_dec (S n) 0); [lia | reflexivity].
+  - destruct (Nat.eq_dec (S n) 0); [lia | reflexivity].
+  - destruct (Nat.eq_dec (S n) (S m)); destruct (Nat.eq_dec n m);
+      try lia; reflexivity.
+  - rewrite IH. destruct (Nat.eq_dec (S n) (S m)); destruct (Nat.eq_dec n m);
+      try lia; reflexivity.
 Qed.
 
 Lemma reset_nth_remset_heap_same_any: forall n rh,
     nth_remset_space (reset_nth_remset_heap n rh) n = [].
 Proof.
-  induction n; intros [|rs rest]; simpl; auto.
-  apply IHn.
+  intros n rh. rewrite reset_nth_remset_heap_nth.
+  destruct (Nat.eq_dec n n); [reflexivity | contradiction].
 Qed.
 
 Lemma reset_nth_remset_heap_diff: forall n m rh,
@@ -6750,11 +6760,8 @@ Lemma reset_nth_remset_heap_diff: forall n m rh,
     nth_remset_space (reset_nth_remset_heap n rh) m =
     nth_remset_space rh m.
 Proof.
-  unfold nth_remset_space.
-  induction n; intros m [|rs rest] Hneq; simpl; auto.
-  - destruct m; simpl; [contradiction | reflexivity].
-  - destruct m as [|m']; simpl; [reflexivity |].
-    apply IHn. lia.
+  intros n m rh Hneq. rewrite reset_nth_remset_heap_nth.
+  destruct (Nat.eq_dec n m); [contradiction | reflexivity].
 Qed.
 
 Lemma reset_nth_remset_heap_In_inv: forall n m rh item,
@@ -6762,11 +6769,9 @@ Lemma reset_nth_remset_heap_In_inv: forall n m rh item,
     n <> m /\ In item (nth_remset_space rh m).
 Proof.
   intros n m rh item Hin.
-  destruct (Nat.eq_dec n m).
-  - subst m. rewrite reset_nth_remset_heap_same_any in Hin. contradiction.
-  - split; auto.
-    rewrite <- (reset_nth_remset_heap_diff n m rh) by auto.
-    exact Hin.
+  rewrite reset_nth_remset_heap_nth in Hin.
+  destruct (Nat.eq_dec n m); [contradiction |].
+  split; assumption.
 Qed.
 
 Definition remset := list remset_ext.
@@ -7927,6 +7932,21 @@ Qed.
 Lemma nth_remset_space_Znth: forall rh n, nth_remset_space rh n = Znth (Z.of_nat n) rh.
 Proof. intros. unfold nth_remset_space. rewrite <- nth_Znth'. reflexivity. Qed.
 
+Lemma nth_remset_space_upd_remset_heap:
+  forall rh item to gen,
+    0 <= Z.of_nat to < Zlength rh ->
+    nth_remset_space (upd_remset_heap item rh to) gen =
+    if Nat.eq_dec gen to
+    then item :: nth_remset_space rh to
+    else nth_remset_space rh gen.
+Proof.
+  intros rh item to gen Hrange.
+  rewrite !nth_remset_space_Znth. unfold upd_remset_heap.
+  destruct (Nat.eq_dec gen to) as [Heq | Hneq].
+  - subst. rewrite Znth_upd_Znth_same by lia. reflexivity.
+  - rewrite upd_Znth_diff_strong by lia. reflexivity.
+Qed.
+
 Lemma upd_incr_remset_heap_rhhc: forall g rh h item gen,
   graph_heap_compatible g h ->
   graph_has_gen g gen ->
@@ -8468,17 +8488,8 @@ Proof.
   intros from to g h rh rmst item g' h' rh' rmst' gen Hneq Hrange Hfri. simpl in Hfri.
   destruct (negb _). 2: inversion Hfri; reflexivity.
   destruct (forward_graph_and_heap _ _ _ _ _ _) as [g2 h2] eqn: Hfgh. inversion Hfri.
-  rewrite !nth_remset_space_Znth. pose proof upd_remset_heap_len rh item to as Hlen.
-  destruct (range_le_lt_dec 0 (Z.of_nat gen) (Zlength rh)) as [Hrg | Hrg].
-  - rewrite upd_remset_heap_split; auto.
-    destruct (not_Zeq_inf (Z.of_nat gen) (Z.of_nat to) ltac:(lia)).
-    + rewrite app_Znth1 by (rewrite Zlength_firstn; lia). rewrite Znth_firstn by assumption. reflexivity.
-    + rewrite app_Znth2 by (rewrite Zlength_firstn; lia). rewrite Zlength_firstn.
-      replace (Z.min _ _) with (Z.of_nat to) by lia. rewrite Znth_pos_cons by lia.
-      rewrite Znth_skipn by lia. f_equal. lia.
-  - assert (Z.of_nat gen < 0 \/ Z.of_nat gen >= Zlength rh) by lia. destruct H.
-    + rewrite !Znth_underflow; [reflexivity | lia..].
-    + rewrite !Znth_overflow; [reflexivity | lia..].
+  rewrite nth_remset_space_upd_remset_heap by exact Hrange.
+  destruct (Nat.eq_dec gen to); [contradiction | reflexivity].
 Qed.
 
 Lemma fri_rh_Zlength_same: forall from to g h rh rmst item g' h' rh' rmst',
@@ -9081,14 +9092,8 @@ Lemma nth_remset_space_upd_remset_heap_old:
     In old (nth_remset_space (upd_remset_heap item rh to) gen).
 Proof.
   intros rh item to gen old Hrange Hin.
-  rewrite nth_remset_space_Znth in Hin.
-  destruct (Nat.eq_dec gen to) as [Heq | Hneq].
-  - subst gen. rewrite nth_remset_space_Znth.
-    unfold upd_remset_heap. rewrite Znth_upd_Znth_same by lia.
-    simpl. right. exact Hin.
-  - rewrite nth_remset_space_Znth.
-    unfold upd_remset_heap. rewrite Znth_upd_Znth_diff by lia.
-    exact Hin.
+  rewrite nth_remset_space_upd_remset_heap by exact Hrange.
+  destruct (Nat.eq_dec gen to); subst; simpl; tauto.
 Qed.
 
 Lemma nth_remset_space_upd_remset_heap_new:
@@ -9097,9 +9102,8 @@ Lemma nth_remset_space_upd_remset_heap_new:
     In item (nth_remset_space (upd_remset_heap item rh to) to).
 Proof.
   intros rh item to Hrange.
-  rewrite nth_remset_space_Znth.
-  unfold upd_remset_heap. rewrite Znth_upd_Znth_same by lia.
-  simpl. left. reflexivity.
+  rewrite nth_remset_space_upd_remset_heap by exact Hrange.
+  destruct (Nat.eq_dec to to); simpl; tauto.
 Qed.
 
 Lemma upd_remset_addr_ext_space_compatible:
@@ -9411,15 +9415,13 @@ Lemma upd_remset_heap_interior_generation_order:
     remset_interior_generation_order (upd_remset_heap item rh to).
 Proof.
   unfold remset_interior_generation_order. intros rh item to Hrange Horder Hitem gen v pos Hin.
+  rewrite nth_remset_space_upd_remset_heap in Hin by exact Hrange.
   destruct (Nat.eq_dec gen to) as [Heq | Hneq].
-  - subst gen. rewrite nth_remset_space_Znth in Hin.
-    unfold upd_remset_heap in Hin. rewrite Znth_upd_Znth_same in Hin by lia.
+  - subst gen.
     simpl in Hin. destruct Hin as [Hhead | Htail].
     + exact (Hitem v pos Hhead).
-    + eapply Horder. rewrite nth_remset_space_Znth. exact Htail.
-  - rewrite nth_remset_space_Znth in Hin.
-    unfold upd_remset_heap in Hin. rewrite Znth_upd_Znth_diff in Hin by lia.
-    eapply Horder. rewrite nth_remset_space_Znth. exact Hin.
+    + eapply Horder. exact Htail.
+  - eapply Horder. exact Hin.
 Qed.
 
 Lemma forward_remset_item_interior_generation_order:
@@ -9540,10 +9542,9 @@ Lemma remset_lower_generations_empty_reset_next:
     remset_lower_generations_empty (S from) (reset_nth_remset_heap from rh).
 Proof.
   unfold remset_lower_generations_empty. intros from rh Hlower gen Hlt.
-  destruct (Nat.eq_dec gen from) as [Heq | Hneq].
-  - subst gen. apply reset_nth_remset_heap_same_any.
-  - rewrite reset_nth_remset_heap_diff by lia.
-    apply Hlower. lia.
+  rewrite reset_nth_remset_heap_nth.
+  destruct (Nat.eq_dec from gen); [reflexivity |].
+  apply Hlower. lia.
 Qed.
 
 Lemma forward_remset_gh_reset_remset_generation_compatible:
