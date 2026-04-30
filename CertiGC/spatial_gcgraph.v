@@ -51,6 +51,52 @@ Definition heap_unused_rep (hp: part_heap): mpred := iter_sepcon hp.(spaces) spa
 Definition heap_remset_rep (g: LGraph) (h: part_heap) (rh : remset_heap) : mpred :=
   iter_sepcon (combine (spaces h) rh) (space_remset_rep g).
 
+Definition heap_remset_rep_except (g: LGraph) (h: part_heap)
+           (rh : remset_heap) (gen: nat) : mpred :=
+  iter_sepcon (firstn gen (combine (spaces h) rh) ++
+               skipn (S gen) (combine (spaces h) rh))
+              (space_remset_rep g).
+
+Lemma heap_remset_rep_split: forall g h rh gen,
+    length rh = length (spaces h) ->
+    (gen < length (spaces h))%nat ->
+    heap_remset_rep g h rh =
+    space_remset_rep g (nth_space h gen, nth_remset_space rh gen) *
+    heap_remset_rep_except g h rh gen.
+Proof.
+  intros g h rh gen Hlen Hgen.
+  unfold heap_remset_rep, heap_remset_rep_except.
+  set (l := combine (spaces h) rh).
+  set (d := (null_space, [] : remset_space)).
+  assert (Hsplit: l = firstn gen l ++ nth gen l d :: skipn (S gen) l). {
+    rewrite <- (firstn_skipn gen l) at 1.
+    destruct (skipn gen l) as [|a l0] eqn:Hskip.
+    - exfalso. apply f_equal with (f := @length _) in Hskip.
+      rewrite length_skipn in Hskip. subst l. rewrite length_combine in Hskip.
+      rewrite Hlen in Hskip. rewrite Nat.min_id in Hskip. simpl in Hskip. lia.
+    - f_equal.
+      assert (Hhead: a = nth gen l d). {
+        assert (a = nth 0 (skipn gen l) d) by (rewrite Hskip; reflexivity).
+        rewrite nth_skipn in H. simpl in H.
+        replace (gen + 0)%nat with gen in H by lia. exact H.
+      }
+      assert (Htail: l0 = skipn (S gen) l). {
+        assert (l0 = skipn 1 (skipn gen l)) by (rewrite Hskip; reflexivity).
+        rewrite skipn_skipn in H.
+        replace (gen + 1)%nat with (S gen) in H by lia. exact H.
+      }
+      rewrite Hhead, Htail. reflexivity.
+  }
+  rewrite Hsplit at 1.
+  rewrite (iter_sepcon_permutation _
+             (Permutation_sym (Permutation_middle _ _ _))).
+  simpl.
+  replace (nth gen l d) with (nth_space h gen, nth_remset_space rh gen).
+  - reflexivity.
+  - subst l d. rewrite combine_nth by lia.
+    unfold nth_space, nth_remset_space. reflexivity.
+Qed.
+
 Definition remset_ext_rep (sh: share) (g: LGraph) (ext: remset_ext) : mpred :=
   match ext with
   | RemSetOutlier p v => data_at sh int_or_ptr_type (GC_Pointer2val p) v
@@ -162,15 +208,6 @@ Definition roots_rep (sh: share) (roots: list rootpair) : mpred :=
   iter_sepcon roots (fun av => data_at sh int_or_ptr_type (rp_val av) (rp_adr av)).
 
 Definition frames_rep (sh: share) (frs: list frame) := frames_shell_rep sh frs * roots_rep sh (frames2rootpairs frs).
-
-Lemma frame2rootpairs'_app:  forall r i al bl,
-frame2rootpairs' r i (al++bl) = frame2rootpairs' r i al ++ frame2rootpairs' r (i+Zlength al) bl.
- Proof.
-   intros.
-   revert i bl; induction al; simpl; intros.
-   normalize.
-  f_equal. rewrite IHal. f_equal. f_equal. rewrite Zlength_cons; lia.
-  Qed.
 
  Lemma data_at_tarray_field_compatible0:
  forall sh t s r,
@@ -836,22 +873,6 @@ Qed.
 (* weak derives for use in funspecs *)
 Program Definition weak_derives (P Q: mpred): mpred := (! (P >=> Q))%pred.
 
-Lemma derives_nonexpansive: forall P Q n,
-    approx n (weak_derives P Q) = approx n (weak_derives (approx n P) (approx n Q)).
-Proof.
-  apply nonexpansive2_super_non_expansive; intros.
-  - split; simpl; intros;
-      (assert (a >= level a''0)%nat; [ | eapply H; eauto]);
-       apply ext_level in H6, H2;
-       apply necR_level in H1, H5;
-       lia.
-  - split; simpl; intros;
-      (assert (a >= level a''0)%nat; [ | eapply H in H7 ; eauto]);
-       apply ext_level in H6, H2;
-       apply necR_level in H1, H5;
-       lia.
-Qed.
-
 Lemma derives_nonexpansive_l: forall P Q n,
     approx n (weak_derives P Q) = approx n (weak_derives (approx n P) Q).
 Proof.
@@ -859,25 +880,6 @@ Proof.
   apply (nonexpansive_super_non_expansive (fun P => weak_derives P Q)); repeat intro.
   split; simpl; intros;
    eapply H3; try eassumption.
--
-   eapply H; auto.
-   apply ext_level in H6, H2;
-   apply necR_level in H1, H5.
-   lia.
--
-   eapply H in H7; auto.
-   apply ext_level in H6, H2;
-   apply necR_level in H1, H5.
-   lia.
-Qed.
-
-Lemma derives_nonexpansive_r: forall P Q n,
-    approx n (weak_derives P Q) = approx n (weak_derives P (approx n Q)).
-Proof.
-  repeat intro.
-  apply (nonexpansive_super_non_expansive (fun Q => weak_derives P Q)); repeat intro.
-  split; simpl; intros;
-   eapply H3 in H7; try eassumption.
 -
    eapply H; auto.
    apply ext_level in H6, H2;
@@ -937,18 +939,6 @@ Proof.
     + destruct ls. 1: simpl in H2; exfalso; lia.
       simpl firstn at 1. simpl nth. Opaque firstn. simpl. Transparent firstn.
       rewrite IHm by (simpl in H2; lia). simpl. destruct ls; reflexivity.
-Qed.
-
-Lemma heap_unused_rep_data_at_: forall (g: LGraph) (h: part_heap) gen,
-    graph_has_gen g gen ->
-    graph_heap_compatible g h ->
-    heap_unused_rep h |-- heap_rest_gen_data_at_ g h gen * TT.
-Proof.
-  intros. rewrite (heap_unused_rep_iter_sepcon g) by assumption.
-  sep_apply (iter_sepcon_in_true (heap_rest_gen_data_at_ g h)
-                                 (nat_inc_list (length (g_gen (glabel g)))) gen).
-  - rewrite nat_inc_list_In_iff. assumption.
-  - apply derives_refl.
 Qed.
 
 (* TODO maybe change the name of generation_data_at_? *)
@@ -1206,12 +1196,6 @@ Proof.
   apply andp_left1. cancel.
 Qed.
 
-Lemma roots_outlier_rep_single_rep: forall (roots: roots_t) outlier p,
-    In (ExteriorOutlier p) roots ->
-    incl (filter_proj exterior_proj_outlier roots) outlier ->
-    outlier_rep outlier |-- single_outlier_rep p * TT.
-Proof. intros. apply outlier_rep_single_rep. eapply root_in_outlier; eauto. Qed.
-
 Lemma single_outlier_rep_valid_pointer: forall p,
     single_outlier_rep p |-- valid_pointer (GC_Pointer2val p) * TT.
 Proof.
@@ -1228,12 +1212,6 @@ Proof.
   intros. sep_apply (outlier_rep_single_rep _ _ H).
   sep_apply (single_outlier_rep_valid_pointer p). cancel.
 Qed.
-
-Lemma roots_outlier_rep_valid_pointer: forall (roots: roots_t) outlier p,
-    In (ExteriorOutlier p) roots ->
-    incl (filter_proj exterior_proj_outlier roots) outlier ->
-    outlier_rep outlier |-- valid_pointer (GC_Pointer2val p) * TT.
-Proof. intros. apply outlier_rep_valid_pointer. eapply root_in_outlier; eauto. Qed.
 
 Lemma single_outlier_rep_valid_int_or_ptr: forall p,
     single_outlier_rep p |-- !! (valid_int_or_ptr (GC_Pointer2val p)).
@@ -2014,16 +1992,6 @@ Definition space_token_rep (sp: space): mpred :=
 Definition ti_token_rep (h: part_heap) (p: val): mpred :=
   malloc_token Ews heap_type p * iter_sepcon (spaces h) space_token_rep.
 
-Lemma ti_rel_token_the_same: forall (h1 h2: part_heap) p,
-    heap_relation h1 h2 -> ti_token_rep h1 p = ti_token_rep h2 p.
-Proof.
-  intros. destruct H as [? [? [? _]]]. unfold ti_token_rep. f_equal.
-  apply (iter_sepcon_pointwise_eq _ _ _ _ null_space null_space).
-  - rewrite <- !ZtoNat_Zlength, !spaces_size. reflexivity.
-  - intros. fold (nth_space h1 i). fold (nth_space h2 i). unfold total_size in H1.
-    unfold space_token_rep. rewrite H0, H1. reflexivity.
-Qed.
-
 Lemma ti_token_rep_add: forall h p sp i (Hs: 0 <= i < MAX_SPACES),
     space_start (Znth i (spaces h)) = nullval ->
     space_start sp <> nullval ->
@@ -2107,107 +2075,6 @@ Proof.
   split; subst; simpl; assumption.
 Qed.
 
-Lemma isolate_frame:
-    forall sh frames z,
-    0 <= z < Zlength (map rp_val (frames2rootpairs frames)) ->
-    frames_rep sh frames |--
-    data_at sh int_or_ptr_type (Znth z (map rp_val (frames2rootpairs frames))) (frame_root_address frames z) *
-    ALL v:val, data_at sh int_or_ptr_type v (frame_root_address frames z) -*
-           frames_rep sh (update_frames frames (upd_Znth z (map rp_val (frames2rootpairs frames)) v)).
-Proof.
-intros.
-unfold frames_rep.
-revert z H.
-unfold frames2rootpairs.
-induction frames as [ | [a r s] rest ]; simpl; intros.
-- list_solve.
-- autorewrite with sublist in H. simpl in H.
-if_tac.
-+ clear IHrest.
- Intros.
- unfold roots_rep, frames2rootpairs.
- simpl iter_sepcon.
- rewrite iter_sepcon_app_sepcon.
- change (iter_sepcon (concat _) _) with (roots_rep sh (frames2rootpairs rest)).
- unfold frame2rootpairs.
- rewrite iter_sepcon_frame2rootpairs' by auto with field_compatible.
- simpl fr_roots. simpl fr_root.
- rewrite !Znth_map by list_solve.
- rewrite Znth_app1 by list_solve.
- erewrite (data_at_tarray_split _ _ z) by (try reflexivity; list_solve).
- erewrite (data_at_tarray_split _ (Zlength s - z) 1).
- 3: instantiate (1 := (sublist z (Zlength s) s)).
- all: try reflexivity. all: try list_solve.
- rewrite !sublist_sublist by lia.
- rewrite (sublist_one (0+z) (1+z)) by list_solve.
- erewrite data_at_singleton_array_eq by reflexivity.
- rewrite !Z.sub_add.
- rewrite Z.add_0_l.
-(*) rewrite Znth_app1 by lia.*)
- change (sizeof int_or_ptr_type) with WORD_SIZE.
- rewrite <- (Z.mul_comm WORD_SIZE).
- autorewrite with sublist.
- cancel.
- apply allp_right; intro v.
- rewrite !map_app.
- rewrite !upd_Znth_app1 by list_solve.
- autorewrite with sublist.
- rewrite prop_true_andp by auto.
- rewrite (sublist_same 0 (Zlength (concat _))) by list_solve.
- change (concat (map _ rest)) with(frames2rootpairs rest).
- rewrite update_frames_same.
- apply -> wand_sepcon_adjoint.
- rewrite iter_sepcon_app_sepcon.
- rewrite iter_sepcon_frame2rootpairs' by list_simplify.
- autorewrite with sublist.
- change (iter_sepcon _ _) with (roots_rep sh (frames2rootpairs rest)).
- cancel.
- erewrite (data_at_tarray_split _ (Zlength s) z).
- 4: reflexivity.
- all: try reflexivity.
- all: try list_solve.
- rewrite sublist_upd_Znth_l by list_solve.
- cancel.
- erewrite (data_at_tarray_split _ (Zlength s - z) 1).
- 4: instantiate (1 := sublist z (Zlength s) (upd_Znth z s v)).
- all: try reflexivity.
- all: try list_solve.
- autorewrite with sublist.
- rewrite (sublist_one (0+z) (1+z)) by list_solve.
- erewrite data_at_singleton_array_eq by reflexivity.
- rewrite Z.add_0_l.
- rewrite upd_Znth_same by lia.
- rewrite sublist_upd_Znth_r by lia.
- cancel.
- +
-  Intros.
-  unfold roots_rep, frames2rootpairs.
-  simpl iter_sepcon.
-  rewrite iter_sepcon_app_sepcon.
-  change (iter_sepcon (concat _) _) with (roots_rep sh (frames2rootpairs rest)).
-  unfold frame2rootpairs.
-  rewrite iter_sepcon_frame2rootpairs' by auto with field_compatible.
-  simpl fr_roots. simpl fr_root.
-  rewrite !map_app. rewrite Znth_app2 by list_solve.
-  change (concat (map _ rest)) with (frames2rootpairs rest) in *.
-  sep_apply (IHrest (z-Zlength s)); clear IHrest; try list_solve.
-  autorewrite with sublist.
-  cancel.
-  do 2 sep_apply allp_sepcon1.
-  apply allp_right; intro v.
-  apply allp_left with (x:=v).
-  repeat sep_apply log_normalize.sepcon_wand_wand_sepcon.
-  apply wand_derives; auto.
- rewrite !upd_Znth_app2 by list_solve.
- autorewrite with sublist.
- rewrite prop_true_andp by auto.
- rewrite frames_p_update_frames.
- rewrite iter_sepcon_app_sepcon.
- rewrite iter_sepcon_frame2rootpairs' by auto.
- cancel.
- apply derives_refl.
-Qed.
-
 Lemma sepcon_isolate_nth: forall {A} `{INH: Inhabitant A} (P: A -> mpred) (al: list A) (i: Z),
    0 <= i < Zlength al ->
    iter_sepcon al P = P (Znth i al) * iter_sepcon (sublist 0 i al ++ sublist (Z.succ i) (Zlength al) al) P.
@@ -2247,11 +2114,6 @@ Qed.
 
 Definition limit_address g t_info from :=
   offset_val (WORD_SIZE * available_size t_info from) (gen_start g from).
-
-Definition next_address t_info to :=
-  field_address heap_type
-    [StructField _next;
-     ArraySubsc (Z.of_nat to); StructField _spaces] (ti_heap_p t_info).
 
 Definition heap_next_address (hp: val) (to: nat) :=
   field_address heap_type
@@ -2662,36 +2524,3 @@ Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   frames_rep sh (ti_frames ti) *
     heap_rep sh ti.(ti_heap).(pt_heap) ti.(ti_heap_p) *
     ti_token_rep (ti_heap ti).(pt_heap) (ti_heap_p ti).
-
-Lemma thread_info_rep_ramif_stable: forall sh tinfo ti gen1 gen2,
-    gen1 <> gen2 -> Z.of_nat gen1 < MAX_SPACES -> Z.of_nat gen2 < MAX_SPACES ->
-    thread_info_rep sh tinfo ti |--
-                         (space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen1 *
-                          space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen2) *
-    ((space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen1 * space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen2)
-       -* thread_info_rep sh tinfo ti).
-Proof.
-  intros. unfold thread_info_rep.
-  sep_apply (heap_rep_ramif_stable sh (ti_heap tinfo).(pt_heap) (ti_heap_p tinfo) gen1 gen2).
-  cancel.
-  apply -> wand_sepcon_adjoint.
-  cancel.
-  rewrite sepcon_assoc.
-  rewrite sepcon_comm.
-  apply modus_ponens_wand.
-Qed.
-
-Lemma thread_info_rep_ramif_stable_1: forall sh tinfo ti gen,
-    Z.of_nat gen < MAX_SPACES ->
-    thread_info_rep sh tinfo ti |--
-                    space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen *
-    (space_struct_rep sh (ti_heap_p tinfo) (ti_heap tinfo).(pt_heap) gen -* thread_info_rep sh tinfo ti).
-Proof.
-  intros. unfold thread_info_rep.
-  sep_apply (heap_rep_ramif_stable_1 sh (ti_heap tinfo).(pt_heap) (ti_heap_p tinfo) gen).
-  cancel.
-  apply -> wand_sepcon_adjoint.
-  cancel.
-  rewrite sepcon_comm.
-  apply modus_ponens_wand.
-Qed.

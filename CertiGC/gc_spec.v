@@ -281,12 +281,6 @@ Definition forward_remset_spec :=
          heap_remset_rep g' h' rh';
          remset_rep sh g' rmst').
 
-Definition heap_remset_rep_except (g: LGraph) (h: part_heap)
-           (rh : remset_heap) (gen: nat) : mpred :=
-  iter_sepcon (firstn gen (combine (spaces h) rh) ++
-               skipn (S gen) (combine (spaces h) rh))
-              (space_remset_rep g).
-
 Definition DO_SCAN_TYPE :=
   ProdType (ProdType (ProdType (ProdType (ProdType
     (ProdType (ProdType (ProdType (ProdType (ProdType

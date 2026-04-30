@@ -335,45 +335,6 @@ Proof.
   rewrite Hsh, Hav, Htotal. reflexivity.
 Qed.
 
-Lemma heap_remset_rep_split_gc: forall g h rh gen,
-    length rh = length (spaces h) ->
-    (gen < length (spaces h))%nat ->
-    heap_remset_rep g h rh =
-    space_remset_rep g (nth_space h gen, nth_remset_space rh gen) *
-    heap_remset_rep_except g h rh gen.
-Proof.
-  intros g h rh gen Hlen Hgen.
-  unfold heap_remset_rep, heap_remset_rep_except.
-  set (l := combine (spaces h) rh).
-  set (d := (null_space, [] : remset_space)).
-  assert (Hsplit: l = firstn gen l ++ nth gen l d :: skipn (S gen) l). {
-    rewrite <- (firstn_skipn gen l) at 1.
-    destruct (skipn gen l) as [|a l0] eqn:Hskip.
-    - exfalso. apply f_equal with (f := @length _) in Hskip.
-      rewrite length_skipn in Hskip. subst l. rewrite length_combine in Hskip.
-      rewrite Hlen in Hskip. rewrite Nat.min_id in Hskip. simpl in Hskip. lia.
-    - f_equal.
-      assert (Hhead: a = nth gen l d). {
-        assert (a = nth 0 (skipn gen l) d) by (rewrite Hskip; reflexivity).
-        rewrite nth_skipn in H. simpl in H. exact H.
-      }
-      assert (Htail: l0 = skipn (S gen) l). {
-        assert (l0 = skipn 1 (skipn gen l)) by (rewrite Hskip; reflexivity).
-        rewrite skipn_skipn in H.
-        replace (gen + 1)%nat with (S gen) in H by lia. exact H.
-      }
-      rewrite Hhead, Htail. reflexivity.
-  }
-  rewrite Hsplit at 1.
-  rewrite (iter_sepcon_permutation _
-             (Permutation_sym (Permutation_middle _ _ _))).
-  simpl.
-  replace (nth gen l d) with (nth_space h gen, nth_remset_space rh gen).
-  - reflexivity.
-  - subst l d. rewrite combine_nth by lia.
-    unfold nth_space, nth_remset_space. reflexivity.
-Qed.
-
 Lemma heap_remset_rep_except_eq:
   forall g1 g2 h1 h2 rh gen,
     length rh = length (spaces h1) ->
@@ -480,7 +441,7 @@ Lemma heap_remset_rep_reset_nth_remset:
     heap_remset_rep_except g h rh gen.
 Proof.
   intros g h rh gen Hlen Hgen Hptr Hav.
-  rewrite (heap_remset_rep_split_gc g h (reset_nth_remset_heap gen rh) gen).
+  rewrite (heap_remset_rep_split g h (reset_nth_remset_heap gen rh) gen).
   - rewrite reset_nth_remset_heap_same by lia.
     unfold space_remset_rep.
     destruct (Val.eq (space_start (nth_space h gen)) nullval).
