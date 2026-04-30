@@ -7495,6 +7495,38 @@ Proof.
   - inversion Hfri; assumption.
 Qed.
 
+Lemma forward_remset_item_step_facts:
+  forall from to g h rh rmst item r g2 h2 rh2 rmst2,
+    from <> to ->
+    graph_has_gen g to ->
+    copy_compatible g ->
+    remset_nodup rmst ->
+    remset_graph_compatible g rmst ->
+    remset_item_compatible g from rmst item ->
+    remset_and_remset_space_compatible g from rmst r ->
+    (g2, h2, rh2, rmst2) = forward_remset_item from to (g, h, rh, rmst) item ->
+    graph_has_gen g2 to /\
+    copy_compatible g2 /\
+    remset_nodup rmst2 /\
+    remset_graph_compatible g2 rmst2 /\
+    remset_and_remset_space_compatible g2 from rmst2 r.
+Proof.
+  intros from to g h rh rmst item r g2 h2 rh2 rmst2
+         Hneq Hto Hcc Hrnd Hrgc Hric Hrrsc Hfri.
+  refine (conj _ (conj _ (conj _ (conj _ _)))).
+  - rewrite <- (forward_remset_item_ghg from to g h rh rmst item g2 h2 rh2 rmst2
+                   Hto Hfri to). exact Hto.
+  - exact (fri_copy_compatible from to g h rh rmst item g2 h2 rh2 rmst2
+             Hneq Hto Hcc Hfri).
+  - exact (fri_remset_nodup from to g h rh rmst item g2 h2 rh2 rmst2 Hrnd Hfri).
+  - exact (fri_remset_graph_compatible from to g h rh rmst item g2 h2 rh2 rmst2
+             Hto Hcc Hrnd Hrgc Hric Hfri).
+  - hnf in Hrrsc |- *. rewrite Forall_forall in Hrrsc |- *. intros x Hin.
+    specialize (Hrrsc _ Hin).
+    eapply fri_remset_item_compatible with (rmst := rmst) (item := item);
+      eassumption.
+Qed.
+
 Lemma forward_remset_item_fold_ghc:
   forall (from to : nat) (g : LGraph) (h : part_heap) (rh : remset_heap) (rmst : remset)
     (g' : LGraph) (h' : part_heap) (rh' : remset_heap) (rmst' : remset) (r : remset_space),
@@ -9160,25 +9192,13 @@ Proof.
     rewrite <- Hfri in Hfold.
     assert (Hext2: remset_ext_space_compatible rmst2 rh2) by
         (eapply forward_remset_item_ext_space_compatible; eauto).
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg from to g h rh rmst a g2 h2 rh2 rmst2
-                       Hto Hfri to); exact Hto).
-    assert (Hcc2: copy_compatible g2) by
-        (exact (fri_copy_compatible from to g h rh rmst a g2 h2 rh2 rmst2
-                  Hneq Hto Hcc Hfri)).
-    assert (Hrnd2: remset_nodup rmst2) by
-        (exact (fri_remset_nodup from to g h rh rmst a g2 h2 rh2 rmst2 Hrnd Hfri)).
-    assert (Hrgc2: remset_graph_compatible g2 rmst2) by
-        (exact (fri_remset_graph_compatible from to g h rh rmst a g2 h2 rh2 rmst2
-                  Hto Hcc Hrnd Hrgc Hrica Hfri)).
+    destruct (forward_remset_item_step_facts
+                from to g h rh rmst a r g2 h2 rh2 rmst2
+                Hneq Hto Hcc Hrnd Hrgc Hrica Hricr Hfri)
+      as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
     assert (Hct2: copied_to_compatible from to g2) by
         (exact (forward_remset_item_copied_to_compatible
                   from to g h rh rmst a g2 h2 rh2 rmst2 Hneq Hto Hct Hfri)).
-    assert (Hrrsc2: remset_and_remset_space_compatible g2 from rmst2 r). {
-      hnf. rewrite Forall_forall in Hricr |- *. intros x Hin.
-      specialize (Hricr _ Hin).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
-    }
     assert (Hrange2: 0 <= Z.of_nat to < Zlength rh2). {
       pose proof (fri_rh_Zlength_same from to g h rh rmst a g2 h2 rh2 rmst2 Hfri).
       lia.
@@ -9335,25 +9355,13 @@ Proof.
     rewrite <- Hfri in Hfold.
     assert (Hinv2: remset_from_vertices_in_space from rmst2 r) by
         (eapply forward_remset_item_from_vertices_in_tail; eauto).
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg from to g h rh rmst a g2 h2 rh2 rmst2
-                       Hto Hfri to); exact Hto).
-    assert (Hcc2: copy_compatible g2) by
-        (exact (fri_copy_compatible from to g h rh rmst a g2 h2 rh2 rmst2
-                  Hneq Hto Hcc Hfri)).
-    assert (Hrnd2: remset_nodup rmst2) by
-        (exact (fri_remset_nodup from to g h rh rmst a g2 h2 rh2 rmst2 Hrnd Hfri)).
-    assert (Hrgc2: remset_graph_compatible g2 rmst2) by
-        (exact (fri_remset_graph_compatible from to g h rh rmst a g2 h2 rh2 rmst2
-                  Hto Hcc Hrnd Hrgc Hrica Hfri)).
+    destruct (forward_remset_item_step_facts
+                from to g h rh rmst a r g2 h2 rh2 rmst2
+                Hneq Hto Hcc Hrnd Hrgc Hrica Hricr Hfri)
+      as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
     assert (Hct2: copied_to_compatible from to g2) by
         (exact (forward_remset_item_copied_to_compatible
                   from to g h rh rmst a g2 h2 rh2 rmst2 Hneq Hto Hct Hfri)).
-    assert (Hrrsc2: remset_and_remset_space_compatible g2 from rmst2 r). {
-      hnf. rewrite Forall_forall in Hricr |- *. intros x Hinx.
-      specialize (Hricr _ Hinx).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
-    }
     eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst'); eauto.
 Qed.
 
@@ -9821,33 +9829,26 @@ Proof.
     symmetry in Hfri2.
     fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
     rewrite <- Hfri2 in Hfold.
-    assert (Hcc2: copy_compatible g2) by
-        exact (fri_copy_compatible from to g h rh rmst a g2 h2 rh2 rmst2
-                 Hneq Hto Hcc Hfri2).
+    destruct (forward_remset_item_step_facts
+                from to g h rh rmst a r g2 h2 rh2 rmst2
+                Hneq Hto Hcc Hrnd Hrc Hrica Hricr Hfri2)
+      as [Hto2 [Hcc2 [Hrnd2 [Hrc2 Hricr2]]]].
     assert (Hndd2: no_dangling_dst g2) by
         exact (fri_no_dangling_dst from to g h rh rmst a g2 h2 rh2 rmst2
                  Hto Hcc Hrc Hrica Hndd Hfri2).
-    assert (Hrnd2: remset_nodup rmst2) by
-        exact (fri_remset_nodup from to g h rh rmst a g2 h2 rh2 rmst2 Hrnd Hfri2).
-    assert (Hrc2: remset_graph_compatible g2 rmst2) by
-        exact (fri_remset_graph_compatible from to g h rh rmst a g2 h2 rh2 rmst2
-                 Hto Hcc Hrnd Hrc Hrica Hfri2).
-    assert (Hricr2: remset_and_remset_space_compatible g2 from rmst2 r). {
-      hnf. rewrite Forall_forall in Hricr |- *. intros x Hin.
-      specialize (Hricr _ Hin).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
-    }
     assert (Hprefix2: forall vidx eidx : nat,
                (vidx < bound)%nat ->
                graph_has_e g2 (to, vidx, eidx) ->
                vgeneration (dst g2 (to, vidx, eidx)) <> from) by
-        (eapply forward_remset_item_prefix_no_edge2gen_old_to; eauto).
+        exact (forward_remset_item_prefix_no_edge2gen_old_to
+                 from to g h rh rmst a g2 h2 rh2 rmst2 bound
+                 Hto Hneq Hcc Hndd Hrc Hrica Hbound Hprefix Hfri2).
+    assert (Hbound2: (bound <= gen_v_num g2 to)%nat). {
+      pose proof (forward_remset_item_gen_v_num_to from to g h rh rmst a g2 h2 rh2 rmst2
+                    Hto Hfri2).
+      lia.
+    }
     eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' bound); eauto.
-    rewrite <- (forward_remset_item_ghg from to g h rh rmst a g2 h2 rh2 rmst2
-                   Hto Hfri2 to); exact Hto.
-    pose proof (forward_remset_item_gen_v_num_to from to g h rh rmst a g2 h2 rh2 rmst2
-                  Hto Hfri2).
-    lia.
 Qed.
 
 Lemma forward_remset_gh_prefix_no_edge2gen_old_to:
@@ -10068,27 +10069,18 @@ Proof.
     symmetry in Hfri2.
     fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
     rewrite <- Hfri2 in Hfold.
-    assert (Hcc2: copy_compatible g2) by
-        exact (fri_copy_compatible from to g h rh rmst a g2 h2 rh2 rmst2
-                 Hneq Hto Hcc Hfri2).
+    destruct (forward_remset_item_step_facts
+                from to g h rh rmst a r g2 h2 rh2 rmst2
+                Hneq Hto Hcc Hrnd Hrc Hrica Hricr Hfri2)
+      as [Hto2 [Hcc2 [Hrnd2 [Hrc2 Hricr2]]]].
     assert (Hndd2: no_dangling_dst g2) by
         exact (fri_no_dangling_dst from to g h rh rmst a g2 h2 rh2 rmst2
                  Hto Hcc Hrc Hrica Hndd Hfri2).
-    assert (Hrnd2: remset_nodup rmst2) by
-        exact (fri_remset_nodup from to g h rh rmst a g2 h2 rh2 rmst2 Hrnd Hfri2).
-    assert (Hrc2: remset_graph_compatible g2 rmst2) by
-        exact (fri_remset_graph_compatible from to g h rh rmst a g2 h2 rh2 rmst2
-                 Hto Hcc Hrnd Hrc Hrica Hfri2).
-    assert (Hricr2: remset_and_remset_space_compatible g2 from rmst2 r). {
-      hnf. rewrite Forall_forall in Hricr |- *. intros x Hin.
-      specialize (Hricr _ Hin).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
-    }
     assert (Hno2: gen2gen_no_edge g2 gen1 from) by
-        (eapply forward_remset_item_gen2gen_no_edge2from_not_to; eauto).
+        exact (forward_remset_item_gen2gen_no_edge2from_not_to
+                 from to g h rh rmst a g2 h2 rh2 rmst2 gen1
+                 Hto Hneq Hcc Hndd Hrc Hrica Hgen1 Hno Hfri2).
     eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen1); eauto.
-    rewrite <- (forward_remset_item_ghg from to g h rh rmst a g2 h2 rh2 rmst2
-                   Hto Hfri2 to); exact Hto.
 Qed.
 
 Lemma forward_remset_gh_gen2gen_no_edge2from_not_to:
@@ -10389,25 +10381,13 @@ Proof.
     symmetry in Hfri2.
     fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
     rewrite <- Hfri2 in Hfold.
-    assert (Hcc2: copy_compatible g2) by
-        exact (fri_copy_compatible from to g h rh rmst a g2 h2 rh2 rmst2
-                 Hneq Hto Hcc Hfri2).
+    destruct (forward_remset_item_step_facts
+                from to g h rh rmst a r g2 h2 rh2 rmst2
+                Hneq Hto Hcc Hrnd Hrc Hrica Hricr Hfri2)
+      as [Hto2 [Hcc2 [Hrnd2 [Hrc2 Hricr2]]]].
     assert (Hndd2: no_dangling_dst g2) by
         exact (fri_no_dangling_dst from to g h rh rmst a g2 h2 rh2 rmst2
                  Hto Hcc Hrc Hrica Hndd Hfri2).
-    assert (Hrnd2: remset_nodup rmst2) by
-        exact (fri_remset_nodup from to g h rh rmst a g2 h2 rh2 rmst2 Hrnd Hfri2).
-    assert (Hrc2: remset_graph_compatible g2 rmst2) by
-        exact (fri_remset_graph_compatible from to g h rh rmst a g2 h2 rh2 rmst2
-                 Hto Hcc Hrnd Hrc Hrica Hfri2).
-    assert (Hricr2: remset_and_remset_space_compatible g2 from rmst2 r). {
-      hnf. rewrite Forall_forall in Hricr |- *. intros x Hin.
-      specialize (Hricr _ Hin).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
-    }
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg from to g h rh rmst a g2 h2 rh2 rmst2
-                       Hto Hfri2 to); exact Hto).
     assert (Hnbe_src2: forall dst_gen : nat,
                (dst_gen < gen1)%nat -> gen2gen_no_edge g2 gen1 dst_gen). {
       intros dst_gen Hdst.
