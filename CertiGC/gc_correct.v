@@ -5358,27 +5358,14 @@ Proof.
   intros g rh from v Hsound Hfirst Hunrec Hgenv e Hevalid Hsrcgen Hdst.
   destruct Hsound as [Hvv [Hev _]].
   assert (Hge: graph_has_e g e) by (apply (proj1 (Hev e)); exact Hevalid).
-  destruct Hge as [Hsrc_has Hfield].
-  assert (Hsrc_gt: (from < vgeneration (fst e))%nat). {
-    destruct (lt_eq_lt_dec (vgeneration (fst e)) from) as [[Hlt | Heq] | Hgt].
-    - unfold firstn_gen_clear, graph_gen_clear in Hfirst.
-      specialize (Hfirst (vgeneration (fst e)) Hlt).
-      destruct (fst e) as [gen idx]. simpl in *.
-      destruct Hsrc_has as [_ Hidx].
-      unfold gen_has_index in Hidx. simpl in Hidx.
-      rewrite Hfirst in Hidx. lia.
-    - contradiction.
-    - exact Hgt.
-  }
-  specialize (Hunrec e (conj Hsrc_has Hfield)).
-  assert (Hback: (egeneration e > vgeneration (dst g e))%nat). {
-    rewrite Hdst, Hgenv.
-    unfold egeneration. exact Hsrc_gt.
-  }
-  specialize (Hunrec Hback).
-  rewrite Hdst, Hgenv in Hunrec.
+  assert (Hin:
+            In (RemSetInterior (InteriorVertexPos (fst e) (Z.of_nat (snd e))))
+               (nth_remset_space rh from)) by
+      (eapply no_unrecorded_backward_edge_current_remset;
+       [exact Hfirst | exact Hunrec | exact Hge |
+        unfold egeneration in *; exact Hsrcgen | now rewrite Hdst]).
   exists (RemSetInterior (InteriorVertexPos (fst e) (Z.of_nat (snd e)))).
-  split; [exact Hunrec |].
+  split; [exact Hin |].
   simpl. split; reflexivity.
 Qed.
 
@@ -9598,7 +9585,6 @@ Qed.
 
 Lemma do_generation_relation_no_unrecorded_backward_edge_reset_state:
   forall from roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h',
-    sound_gc_graph g ->
     graph_has_gen g (S from) ->
     graph_unmarked g ->
     roots_graph_compatible roots g ->
@@ -9614,194 +9600,11 @@ Lemma do_generation_relation_no_unrecorded_backward_edge_reset_state:
     no_unrecorded_backward_edge g' (reset_nth_remset_heap from rh').
 Proof.
   intros from roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h'
-         Hsound Hto Hun Hroots Hndd Hfirst Hunrec Hstate Hcover Hfirst' Hndd' Hrel.
-  destruct Hrel as [[g1 [g_scan [Hfrg [Hfrr [Hscan Hreset]]]]] Hheap].
-  subst g'.
-  unfold no_unrecorded_backward_edge.
-  intros e He Hback.
-  rewrite graph_has_e_reset in He.
-  destruct He as [He_scan Hsrc_ne].
-  simpl in Hback |- *.
-  rewrite remove_ve_dst_unchanged in Hback |- *.
-  destruct (lt_dec (vgeneration (dst g_scan e)) (S from)) as [Hdst_lt | Hdst_ge].
-  - exfalso.
-    assert (Hdst_has:
-              graph_has_v (reset_graph from g_scan)
-                (dst (reset_graph from g_scan) e)). {
-      destruct e as [src idx].
-      destruct He_scan as [Hsrc Hfield].
-      eapply Hndd'.
-      - rewrite graph_has_v_reset.
-        split; [exact Hsrc |].
-        intro Hbad.
-        apply Hsrc_ne.
-        unfold egeneration.
-        now rewrite Hbad.
-      - rewrite get_edges_reset.
-        exact Hfield.
-    }
-    unfold firstn_gen_clear, graph_gen_clear in Hfirst'.
-    simpl in Hdst_has.
-    rewrite remove_ve_dst_unchanged in Hdst_has.
-    destruct (dst g_scan e) as [dgen didx].
-    simpl in *.
-    destruct Hdst_has as [_ Hdst_idx].
-    unfold gen_has_index in Hdst_idx.
-    simpl in Hdst_idx.
-    specialize (Hfirst' dgen Hdst_lt).
-    rewrite Hfirst' in Hdst_idx.
-    lia.
-  - rewrite reset_nth_remset_heap_diff by lia.
-    pose proof Hstate as Hstate0.
-    destruct Hstate as [[Hrnd [Hrgc Hrrhc]] Hremgen].
-    assert (Hrange_to: 0 <= Z.of_nat (S from) < Zlength rh) by
-        (eapply remset_heap_covers_graph_range; eauto).
-    assert (Hcc: copy_compatible g) by
-        (apply graph_unmarked_copy_compatible; exact Hun).
-    assert (Hun_from: gen_unmarked g from) by
-        (rewrite graph_gen_unmarked_iff in Hun; apply Hun).
-    assert (Hun_to: gen_unmarked g (S from)) by
-        (rewrite graph_gen_unmarked_iff in Hun; apply Hun).
-    destruct (forward_remset_gh_remset_semi_iso_closed
-                from (S from) g h rh rmst g_rem h_rem rh' rmst'
-                ltac:(lia) Hsound Hto Hcc Hrnd Hrgc Hrrhc Hndd Hun_from
-                Hfirst Hunrec Hfrg) as [l [Hsemi Hclosed]].
-    destruct (forward_remset_gh_basic_facts
-                from (S from) roots g h rh rmst g_rem h_rem rh' rmst'
-                ltac:(lia) Hsound Hto Hcc Hun_to Hroots Hndd Hstate0 Hfrg)
-      as [Hsound_rem [Hto_rem [Hcc_rem [Hndd_rem [Hroots_rem Hun_to_rem]]]]].
-    destruct (frr_basic_facts
-                from (S from) roots roots' g_rem g1
-                ltac:(lia) Hto_rem Hcc_rem Hndd_rem Hroots_rem Hun_to_rem Hfrr)
-      as [Hto1 [Hcc1 [Hndd1 [Hroots1 Hun_to1]]]].
-    destruct Hscan as [n [Hsvwl Hn]].
-    assert (Hsrc_gt_to: (S from < egeneration e)%nat) by lia.
-    assert (Hsrc_scan: graph_has_v g_scan (fst e)) by exact (proj1 He_scan).
-    assert (Hsrc_g1: graph_has_v g1 (fst e)). {
-      pose proof (svwl_graph_has_v_inv
-                    from (S from)
-                    (seq (number_of_vertices (nth_gen g (S from))) n)
-                    g1 g_scan Hto1 Hsvwl (fst e) Hsrc_scan) as Hinv.
-      destruct Hinv as [Hold | [Hgen_new _]]; [exact Hold |].
-      unfold egeneration in Hsrc_gt_to.
-      rewrite Hgen_new in Hsrc_gt_to.
-      lia.
-    }
-    assert (Hdst_g1_scan: dst g1 e = dst g_scan e). {
-      eapply svwl_dst_unchanged; eauto.
-      intros Hsrc_to _.
-      unfold egeneration in Hsrc_gt_to.
-      rewrite Hsrc_to in Hsrc_gt_to.
-      lia.
-    }
-    assert (He_g1: graph_has_e g1 e). {
-      destruct He_scan as [_ Hfield_scan].
-      split; [exact Hsrc_g1 |].
-      unfold get_edges, make_fields in Hfield_scan |- *.
-      erewrite svwl_raw_fields; eauto.
-    }
-    assert (Hsrc_rem: graph_has_v g_rem (fst e)). {
-      pose proof (frr_graph_has_v_inv from (S from) roots g_rem roots' g1
-                    Hto_rem Hfrr (fst e) Hsrc_g1) as Hinv.
-      destruct Hinv as [Hold | [Hgen_new _]]; [exact Hold |].
-      unfold egeneration in Hsrc_gt_to.
-      rewrite Hgen_new in Hsrc_gt_to.
-      lia.
-    }
-    assert (Hdst_rem_g1: dst g_rem e = dst g1 e) by
-        (eapply frr_dst_unchanged; eauto).
-    assert (He_rem: graph_has_e g_rem e). {
-      destruct He_g1 as [_ Hfield_g1].
-      split; [exact Hsrc_rem |].
-      unfold get_edges, make_fields in Hfield_g1 |- *.
-      erewrite frr_raw_fields; eauto.
-    }
-    assert (Hsrc_valid_rem: vvalid g_rem (fst e)) by
-        (destruct Hsound_rem as [Hvv _]; apply (proj2 (Hvv _)); exact Hsrc_rem).
-    assert (Hsrc_valid_g: vvalid g (fst e)). {
-      eapply remset_semi_iso_current_non_to_valid_base; eauto.
-      unfold egeneration in Hsrc_gt_to.
-      lia.
-    }
-    assert (He_g: graph_has_e g e). {
-      destruct Hsemi as [_ Hspec].
-      destruct (split l) as [from_l to_l] eqn:Hsplit.
-      destruct Hspec as [[_ Hfrom] [_ [Hlabel _]]].
-      assert (Hnot_in: ~ In (fst e) from_l). {
-        intro Hin.
-        rewrite <- Hfrom in Hin.
-        destruct Hin as [_ [_ Hgen_from]].
-        unfold egeneration in Hsrc_gt_to.
-        rewrite Hgen_from in Hsrc_gt_to.
-        lia.
-      }
-      assert (Hlabel_src: vlabel g (fst e) = vlabel g_rem (fst e)) by
-          (apply Hlabel; assumption).
-      destruct He_rem as [_ Hfield_rem].
-      split.
-      - destruct Hsound as [Hvv _].
-        apply (proj1 (Hvv _)); exact Hsrc_valid_g.
-      - unfold get_edges, make_fields in Hfield_rem |- *.
-        rewrite Hlabel_src.
-        exact Hfield_rem.
-    }
-    assert (Hdst_rem_scan: dst g_rem e = dst g_scan e) by congruence.
-    assert (Hsrc_not_from: vgeneration (fst e) <> from) by
-        (unfold egeneration in Hsrc_gt_to; lia).
-    pose proof Hsemi as Hsemi0.
-    destruct Hsemi0 as [_ Hspec0].
-    destruct (split l) as [from_l to_l] eqn:Hsplit0.
-    destruct Hspec0 as [[_ Hfrom] [[_ [Hto_valid Hto_gen]] [_ [_ Hedge_map]]]].
-    assert (Hevalid_g: evalid g e) by
-        (destruct Hsound as [_ [Hev _]]; apply (proj2 (Hev _)); exact He_g).
-    assert (Hdst_valid_g: vvalid g (dst g e)). {
-      destruct Hsound as [Hvv _].
-      apply (proj2 (Hvv _)).
-      destruct He_g as [Hsrc_g Hfield_g].
-      eapply Hndd; eauto.
-    }
-    assert (Hdst_map: dst g_rem e = list_bi_map l (dst g e)) by
-        (apply Hedge_map; assumption).
-    destruct (in_dec equiv_dec (dst g e) from_l) as [Hdst_in_from | Hdst_not_from].
-    + assert (Hdst_g_from: vgeneration (dst g e) = from). {
-        rewrite <- Hfrom in Hdst_in_from.
-        tauto.
-      }
-      assert (Hdst_scan_to: vgeneration (dst g_scan e) = S from). {
-        assert (Hin_fst: In (dst g e) (map fst l)) by
-            (rewrite map_fst_split, Hsplit0; exact Hdst_in_from).
-        rewrite In_map_fst_iff in Hin_fst.
-        destruct Hin_fst as [dst_to Hpair].
-        pose proof (remset_semi_iso_DoubleNoDup
-                      g g_rem from (S from) l ltac:(lia) Hsemi) as Hdd.
-        destruct (DoubleNoDup_list_bi_map _ _ _ Hdd Hpair) as [Hmap _].
-        rewrite <- Hdst_rem_scan, Hdst_map, Hmap.
-        assert (Hin_to: In dst_to to_l). {
-          apply In_map_snd in Hpair.
-          now rewrite map_snd_split, Hsplit0 in Hpair.
-        }
-        exact (Hto_gen _ Hin_to).
-      }
-      rewrite Hdst_scan_to.
-      eapply (forward_remset_gh_old_edges_to_from_recorded
-                from (S from) g g h rh rmst
-                g_rem h_rem rh' rmst'); eauto.
-    + assert (Hdst_not_to: ~ In (dst g e) to_l). {
-        intro Hin_to.
-        rewrite Hto_valid in Hin_to.
-        tauto.
-      }
-      assert (Hnot_either: ~ InEither (dst g e) l). {
-        unfold InEither.
-        rewrite Hsplit0, in_app_iff.
-        tauto.
-      }
-      rewrite list_bi_map_not_In in Hdst_map by exact Hnot_either.
-      assert (Hdst_g_scan: dst g e = dst g_scan e) by congruence.
-      rewrite <- Hdst_g_scan.
-      eapply forward_remset_gh_preserves_remset_entry; eauto.
-      apply Hunrec; [exact He_g |].
-      now rewrite Hdst_g_scan.
+         Hto Hun Hroots Hndd Hfirst Hunrec Hstate Hcover Hfirst' Hndd' Hrel.
+  destruct Hstate as [[Hrnd [Hrgc Hrrhc]] _].
+  eapply do_generation_relation_no_unrecorded_backward_edge_reset_core; eauto.
+  - apply graph_unmarked_copy_compatible. exact Hun.
+  - eapply remset_heap_covers_graph_range; eauto.
 Qed.
 
 Lemma vvalid_reachable_sub_cons:

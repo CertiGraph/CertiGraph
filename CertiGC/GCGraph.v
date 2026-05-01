@@ -11147,8 +11147,8 @@ Proof.
   subst g'. apply firstn_gen_clear_reset. assumption.
 Qed.
 
-Lemma do_generation_relation_no_unrecorded_backward_edge_reset:
-  forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier,
+Lemma do_generation_relation_no_unrecorded_backward_edge_reset_core:
+  forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i,
     graph_has_gen g (S i) ->
     graph_unmarked g ->
     copy_compatible g ->
@@ -11157,7 +11157,8 @@ Lemma do_generation_relation_no_unrecorded_backward_edge_reset:
     firstn_gen_clear g i ->
     roots_graph_compatible roots g ->
     remset_nodup rmst ->
-    remset_compatible g outlier i rmst rh h ->
+    remset_graph_compatible g rmst ->
+    remset_and_remset_heap_compatible g i rmst rh ->
     firstn_gen_clear g' (S i) ->
     no_dangling_dst g' ->
     0 <= Z.of_nat (S i) < Zlength rh ->
@@ -11165,9 +11166,9 @@ Lemma do_generation_relation_no_unrecorded_backward_edge_reset:
       g_rem h_rem rh' rmst' g' h' ->
     no_unrecorded_backward_edge g' (reset_nth_remset_heap i rh').
 Proof.
-  intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier
-         Hto Hun Hcc Hndd Hunrec Hfirst Hroots Hrnd Hremc Hfirst' Hndd'
-         Hrange_to Hrel.
+  intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i
+         Hto Hun Hcc Hndd Hunrec Hfirst Hroots Hrnd Hrgc Hrrhc
+         Hfirst' Hndd' Hrange_to Hrel.
   destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
   subst g'.
   unfold no_unrecorded_backward_edge.
@@ -11216,13 +11217,20 @@ Proof.
     assert (Hcc_rem: copy_compatible g_rem) by
         exact (forward_remset_gh_copy_compatible i (S i) g h rh rmst
                  g_rem h_rem rh' rmst' Hneq Hto Hcc Hfrg).
-    assert (Hndd_rem: no_dangling_dst g_rem) by
-        exact (forward_remset_gh_no_dangling_dst i (S i) g h rh rmst
-                 g_rem h_rem rh' rmst' outlier Hneq Hto Hcc Hndd Hrnd Hremc Hfrg).
-    assert (Hroots_rem: roots_graph_compatible roots g_rem) by
-        exact (forward_remset_gh_roots_graph_compatible
-                 i (S i) g h rh rmst g_rem h_rem rh' rmst' roots outlier
-                 Hneq Hto Hcc Hrnd Hremc Hfrg Hroots).
+    assert (Hndd_rem: no_dangling_dst g_rem). {
+      unfold forward_remset_gh in Hfrg.
+      eapply (fri_no_dangling_dst_fold
+                i (S i) g h rh rmst (Znth (Z.of_nat i) rh)
+                g_rem h_rem rh' rmst'); eauto.
+      eapply rrhc_forall_rrsc. exact Hrrhc.
+    }
+    assert (Hroots_rem: roots_graph_compatible roots g_rem). {
+      unfold forward_remset_gh in Hfrg.
+      eapply (forward_remset_item_fold_roots_graph_compatible_pres
+                i (S i) g h rh rmst (Znth (Z.of_nat i) rh)
+                g_rem h_rem rh' rmst' roots); eauto.
+      eapply rrhc_forall_rrsc. exact Hrrhc.
+    }
     assert (Hun_rem: gen_unmarked g_rem (S i)) by
         exact (forward_remset_gh_gen_unmarked i (S i) g h rh rmst
                  g_rem h_rem rh' rmst' (S i) Hto Hneq Hfrg Hun_to).
@@ -11309,25 +11317,29 @@ Proof.
             (replace (fst e, snd e) with e by (destruct e; reflexivity);
              exact Hdst_from).
         assert (Hdst_rem_to_pair:
-                  vgeneration (dst g_rem (fst e, snd e)) = S i) by
-            (eapply (forward_remset_gh_recorded_old_edge_dst_to
-                       i (S i) (gen_v_num g (S i)) g h rh rmst
-                       g_rem h_rem rh' rmst' outlier (fst e) (snd e));
-             [exact Hneq
-             | exact Hto
-             | exact Hcc
-             | exact Hndd
-             | exact Hrnd
-             | exact Hremc
-             | exact Hct
-             | exact He_g_pair
-             | unfold egeneration in Hsrc_gt_to; lia
-             | left; unfold egeneration in Hsrc_gt_to; lia
-             | lia
-             | exact Hdst_from_pair
-             | exact Hin_old
-             | exact Hfrg
-             | exact He_rem_pair]).
+                  vgeneration (dst g_rem (fst e, snd e)) = S i). {
+          unfold forward_remset_gh in Hfrg.
+          rewrite nth_remset_space_Znth in Hin_old.
+          eapply (forward_remset_item_fold_recorded_old_edge_dst_to
+                    i (S i) (gen_v_num g (S i)) (Znth (Z.of_nat i) rh)
+                    g h rh rmst g_rem h_rem rh' rmst' (fst e) (snd e));
+            [exact Hneq
+            | exact Hto
+            | exact Hcc
+            | exact Hndd
+            | exact Hrnd
+            | exact Hrgc
+            | eapply rrhc_forall_rrsc; exact Hrrhc
+            | exact Hct
+            | exact He_g_pair
+            | unfold egeneration in Hsrc_gt_to; lia
+            | left; unfold egeneration in Hsrc_gt_to; lia
+            | lia
+            | exact Hdst_from_pair
+            | exact Hin_old
+            | exact Hfrg
+            | exact He_rem_pair].
+        }
         replace (fst e, snd e) with e in Hdst_rem_to_pair by
             (destruct e; reflexivity).
         exact Hdst_rem_to_pair.
@@ -11370,6 +11382,32 @@ Proof.
       rewrite <- Hdst_rem_scan.
       rewrite Hdst_rem_g.
       eapply forward_remset_gh_preserves_remset_entry; eauto.
+Qed.
+
+Lemma do_generation_relation_no_unrecorded_backward_edge_reset:
+  forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier,
+    graph_has_gen g (S i) ->
+    graph_unmarked g ->
+    copy_compatible g ->
+    no_dangling_dst g ->
+    no_unrecorded_backward_edge g rh ->
+    firstn_gen_clear g i ->
+    roots_graph_compatible roots g ->
+    remset_nodup rmst ->
+    remset_compatible g outlier i rmst rh h ->
+    firstn_gen_clear g' (S i) ->
+    no_dangling_dst g' ->
+    0 <= Z.of_nat (S i) < Zlength rh ->
+    do_generation_relation i (S i) roots roots' g h rh rmst
+      g_rem h_rem rh' rmst' g' h' ->
+    no_unrecorded_backward_edge g' (reset_nth_remset_heap i rh').
+Proof.
+  intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier
+         Hto Hun Hcc Hndd Hunrec Hfirst Hroots Hrnd Hremc Hfirst' Hndd'
+         Hrange_to Hrel.
+  destruct Hremc as [Hrgoc [Hrrhc _]].
+  eapply do_generation_relation_no_unrecorded_backward_edge_reset_core; eauto.
+  eapply remset_graph_outlier_compatible_weakened; exact Hrgoc.
 Qed.
 
 Lemma do_generation_relation_graph_unmarked:
