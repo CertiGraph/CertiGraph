@@ -5023,13 +5023,6 @@ Lemma dsr_sound: forall (g1 g2 : LGraph) from to to_index,
     do_scan_relation from to to_index g1 g2 -> sound_gc_graph g2.
 Proof. intros. eapply dsr_P_holds; eauto. apply fr_O_sound. Qed.
 
-Definition no_unrecorded_backward_edge (g: LGraph) (rh: remset_heap): Prop :=
-  forall e,
-    graph_has_e g e ->
-    (egeneration e > vgeneration (dst g e))%nat ->
-    In (RemSetInterior (InteriorVertexPos (fst e) (Z.of_nat (snd e))))
-       (nth_remset_space rh (vgeneration (dst g e))).
-
 Definition remset_ext_effective_root (rext: remset_ext): option VType :=
   match rext with
   | RemSetVertex v _ => Some v

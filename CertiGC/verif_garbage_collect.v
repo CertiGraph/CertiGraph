@@ -467,11 +467,12 @@ Proof.
                        space_address (ti_heap_p tif) (Z.to_nat j)). {
           intros. unfold space_address. now rewrite Z2Nat.id. }
   unfold before_gc_thread_info_rep, heap_management_rep, heap_struct_rep. Intros.
-  rename H1 into Hsafeh. rename H2 into Hremc. rename H3 into Hremgen.
+  rename H1 into Hunrec_init. rename H2 into Hsafeh.
+  rename H3 into Hremc. rename H4 into Hremgen.
   pose proof H0 as Hgcc_init.
   assert (Hsafe_graph: safe_to_copy g) by
       (eapply safe_to_copy_heap_implies_safe_to_copy;
-       [apply (proj1 H) | destruct H0 as [_ [_ [_ Hsize]]]; exact Hsize | exact Hsafeh]).
+       [apply (proj1 H) | destruct H0 as [_ [_ Hsize]]; exact Hsize | exact Hsafeh]).
   forward.
   pose proof H as Hsc_init.
   destruct Hsc_init as [Hghc_init _].
@@ -505,6 +506,7 @@ Proof.
      EX rh': remset_heap, EX rmst': remset,
      PROP (super_compatible g' (ti_heap t_info').(pt_heap) (frames2rootpairs (ti_frames t_info')) roots' outlier;
            garbage_collect_condition g' (ti_heap t_info').(pt_heap);
+           no_unrecorded_backward_edge g' rh';
            safe_to_copy_to_except g' (Z.to_nat i);
            safe_to_copy_to_except_heap g' (ti_heap t_info').(pt_heap) (Z.to_nat i);
            firstn_gen_clear g' (Z.to_nat i);
@@ -525,7 +527,7 @@ Proof.
           all_string_constants rsh gv;
           outlier_rep outlier;
           graph_rep g')).
-  - Exists g roots t_info rh rmst. destruct Hgcc_init as [? [? [? ?]]].
+  - Exists g roots t_info rh rmst. destruct Hgcc_init as [? [? ?]].
     pose proof (graph_has_gen_O g). entailer!!.
     repeat split.
     + apply stc_stcte_O_iff; assumption.
@@ -535,11 +537,11 @@ Proof.
     + apply frame_shells_eq_refl.
   - cbv beta. Intros g' roots' t_info' rh' rmst'.
     rename H5 into Hsc_loop. rename H6 into Hgcc_loop.
-    rename H7 into Hstcte_loop. rename H8 into Hstcteh_loop.
-    rename H9 into Hfirst_loop. rename H10 into Hgcl_loop.
-    rename H11 into Hhas_i_loop. rename H12 into FSE.
-    rename H13 into HN. rename H14 into Hremc_loop.
-    rename H15 into Hremgen_loop.
+    rename H7 into Hunrec_loop. rename H8 into Hstcte_loop.
+    rename H9 into Hstcteh_loop. rename H10 into Hfirst_loop.
+    rename H11 into Hgcl_loop. rename H12 into Hhas_i_loop.
+    rename H13 into FSE. rename H14 into HN.
+    rename H15 into Hremc_loop. rename H16 into Hremgen_loop.
     unfold thread_info_rep, heap_rep. Intros.
     unfold heap_struct_rep.
     assert (Hi1_range: 0 <= i + 1 < Zlength (spaces (ti_heap t_info').(pt_heap))) by
@@ -554,6 +556,7 @@ Proof.
        EX rh1: remset_heap, EX rmst1: remset,
        PROP (super_compatible g1 (pt_heap (ti_heap t_info1)) (frames2rootpairs (ti_frames t_info1)) roots' outlier;
              garbage_collect_condition g1 (pt_heap (ti_heap t_info1));
+             no_unrecorded_backward_edge g1 rh1;
              safe_to_copy_to_except g1 (Z.to_nat i);
              safe_to_copy_to_except_heap g1 (pt_heap (ti_heap t_info1)) (Z.to_nat i);
              firstn_gen_clear g1 (Z.to_nat i);
@@ -586,7 +589,7 @@ Proof.
         pose proof Hremc_loop as Hremc'.
         destruct Hremc' as [_ [_ Hrhhc']].
         pose proof (Forall2_length Hrhhc') as Hrh_len'.
-        destruct Hgcc_loop as [_ [_ [_ Hsize']]].
+        destruct Hgcc_loop as [_ [_ Hsize']].
         sep_apply (graph_and_heap_remset_valid_ptr
                      g' (pt_heap (ti_heap t_info')) rh' _ H14 Hghc' Hrh_len' Hsize').
         rewrite nth_space_Znth, Z2Nat.id by lia.
@@ -613,7 +616,7 @@ Proof.
       subst s.
       rewrite sem_sub_pp_total_space by exact Hstart_i.
       pose proof Hgcc_loop as Hgcc'.
-      destruct Hgcc' as [_ [_ [_ Hsize_spec']]].
+      destruct Hgcc' as [_ [_ Hsize_spec']].
       pose proof (ti_size_gen _ _ _ (proj1 Hsc_loop) Hhas_i_loop Hsize_spec') as Htotal_i.
       unfold total_size in Htotal_i.
       rewrite nth_space_Znth, Z2Nat.id in Htotal_i by lia.
@@ -750,7 +753,7 @@ Proof.
         2: exact Hgi_empty.
         2: { destruct Hgcc_loop as [Hunmarked _].
              apply graph_unmarked_copy_compatible; assumption. }
-        2: { destruct Hgcc_loop as [_ [_ [Hndd _]]]. exact Hndd. }
+        2: { destruct Hgcc_loop as [_ [Hndd _]]. exact Hndd. }
         rewrite <- Heqg1.
         assert (Hi1_nat: Z.to_nat (i + 1) = S (Z.to_nat i)) by
             (rewrite Z2Nat.inj_add by lia; simpl; lia).
@@ -767,7 +770,7 @@ Proof.
           - apply (proj1 Hsc_loop).
           - exact Hhas_i_loop.
           - intro Hnext. apply Hnext_null. rewrite Hi1_nat. exact Hnext.
-          - destruct Hgcc_loop as [_ [_ [_ Hsize']]]. exact Hsize'.
+          - destruct Hgcc_loop as [_ [_ Hsize']]. exact Hsize'.
           - subst sp; simpl. rewrite Hi1_nat. reflexivity.
           - exact Hfresh_sp.
           - subst sp; simpl; reflexivity.
@@ -775,6 +778,8 @@ Proof.
         }
         assert (garbage_collect_condition g1 (pt_heap (ti_heap t_info1))) by
             (subst g1 t_info1; apply gcc_add; assumption).
+        assert (no_unrecorded_backward_edge g1 rh') by
+            (subst g1 t_info1; eapply new_gen_heap_no_unrecorded_backward_edge_pres; eauto).
         pose proof Hremc_loop as Hremc_parts.
         destruct Hremc_parts as [Hrgo [Hrgh Hrhh]].
         assert (remset_compatible g1 outlier (Z.to_nat i) rmst' rh'
@@ -806,12 +811,12 @@ Proof.
     + Intros g1 t_info1 rh1 rmst1.
       clear FSE HN.
       rename H6 into Hsc1. rename H7 into Hgcc1.
-      rename H8 into Hstcte1. rename H9 into Hstcteh1.
-      rename H10 into Hfirst1. rename H11 into Hnewgen1.
-      rename H12 into Hgen1_next. rename H13 into FSE.
-      rename H14 into HN. rename H15 into Hrh1_eq.
-      rename H16 into Hrmst1_eq. rename H17 into Hremc1.
-      rename H18 into Hremgen1.
+      rename H8 into Hunrec1. rename H9 into Hstcte1.
+      rename H10 into Hstcteh1. rename H11 into Hfirst1.
+      rename H12 into Hnewgen1. rename H13 into Hgen1_next.
+      rename H14 into FSE. rename H15 into HN.
+      rename H16 into Hrh1_eq. rename H17 into Hrmst1_eq.
+      rename H18 into Hremc1. rename H19 into Hremgen1.
       assert_PROP (isptr (ti_heap_p t_info1)) as Hheap_p1
         by (unfold thread_info_rep, heap_rep, heap_struct_rep; entailer!).
       assert_PROP (remset_nodup rmst1) as Hrmnd1. {
@@ -895,7 +900,7 @@ Proof.
       rewrite Znth_map by assumption. unfold space_quad at 1 2. rewrite Hi1_nat2 in *.
 
       assert (Hgcc2: garbage_collect_condition g2 (pt_heap (ti_heap t_info2))). {
-        destruct Hgcc1 as [Hun1 [Hnbe1 [Hndd1 Hsize1]]].
+        destruct Hgcc1 as [Hun1 [Hndd1 Hsize1]].
         eapply (do_generation_relation_gcc
                   g1 (pt_heap (ti_heap t_info1)) rh1 rmst1
                   g_rem h_rem rh2 rmst2 g2
@@ -915,7 +920,7 @@ Proof.
         eapply do_generation_relation_stcteh; eauto.
         - apply (proj1 Hsc1).
         - apply (proj1 H9).
-        - destruct Hgcc1 as [_ [_ [_ Hsize1]]]. exact Hsize1.
+        - destruct Hgcc1 as [_ [_ Hsize1]]. exact Hsize1.
       }
       sep_apply gather_thread_info_rep.
       assert (Hrel_loop:
@@ -972,7 +977,7 @@ Proof.
         end.
         2: apply rest_space_repable_signed. 2: apply total_space_repable_signed.
         assert (safe_to_copy_gen g2 (Z.to_nat i) (S (Z.to_nat i))). {
-          red. destruct H9 as [Hghc2 _]. destruct Hgcc2 as [_ [_ [_ Hsize2]]].
+          red. destruct H9 as [Hghc2 _]. destruct Hgcc2 as [_ [_ Hsize2]].
           pose proof (ti_size_gen g2 h2 (Z.to_nat i) Hghc2 Hhas_i_g2 Hsize2)
             as Htotal_from.
           pose proof (ti_size_gen g2 h2 (S (Z.to_nat i)) Hghc2 Hhas_i1_g2 Hsize2)
@@ -1226,10 +1231,36 @@ Proof.
                      (pt_heap (ti_heap t_info2)) outlier
                      Hto1 Hrel_loop Hnofrom Hrgoc_rem Hrrhc_rem
                      Hrhhc_rem Hremgen_next).
+        assert (Hunrec1':
+                  no_unrecorded_backward_edge g1 rh') by
+            (rewrite <- Hrh1_eq; exact Hunrec1).
+        assert (Hremc1':
+                  remset_compatible g1 outlier (Z.to_nat i) rmst'
+                    rh' (pt_heap (ti_heap t_info1))) by
+            (rewrite <- Hrmst1_eq, <- Hrh1_eq; exact Hremc1).
+        assert (Hroots1: roots_graph_compatible roots' g1) by
+            (destruct Hsc1 as [_ [_ [[_ Hroots1] _]]]; exact Hroots1).
+        assert (Hgun1: graph_unmarked g1) by
+            (destruct Hgcc1 as [Hgun1 _]; exact Hgun1).
+        assert (Hfirst2': firstn_gen_clear g2 (S (Z.to_nat i))) by
+            (rewrite <- Hi1_nat2; exact Hfirst2).
+        assert (Hndd2': no_dangling_dst g2) by
+            (destruct Hgcc2 as [_ [Hndd2' _]]; exact Hndd2').
+        assert (Hunrec_next:
+                  no_unrecorded_backward_edge g2
+                    (reset_nth_remset_heap (Z.to_nat i) rh2)). {
+          exact (do_generation_relation_no_unrecorded_backward_edge_reset
+                   g1 (pt_heap (ti_heap t_info1)) rh' rmst'
+                   g_rem h_rem rh2 rmst2 g2
+                   (pt_heap (ti_heap t_info2)) roots' roots2
+                   (Z.to_nat i) outlier Hto1 Hgun1 Hcc1 Hndd1
+                   Hunrec1' Hfirst1 Hroots1 Hrmnd1' Hremc1'
+                   Hfirst2' Hndd2' Hrange_to_rh1 Hrel_loop).
+        }
         assert (Hrgc_rem: remset_graph_compatible g_rem rmst2) by
             (eapply remset_graph_outlier_compatible_weakened; exact Hrgoc_rem).
         rewrite <- Hi1_nat2 in *. entailer!!; try exact Hremc_next;
-          try exact Hremgen_next.
+          try exact Hremgen_next; try exact Hunrec_next.
         assert (Hlen_rem: length rh2 = length (spaces h_rem)) by
             (apply rhhc_length_eq; exact Hrhhc_rem).
         assert (Hfrom_h2: (Z.to_nat i < length (spaces h2))%nat). {
