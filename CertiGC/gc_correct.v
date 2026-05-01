@@ -8575,27 +8575,6 @@ Proof.
     apply firstn_gen_clear_add; auto.
 Qed.
 
-Lemma ngr_no_unrecorded_backward_edge: forall g1 g2 rh gen,
-    no_unrecorded_backward_edge g1 rh ->
-    new_gen_relation gen g1 g2 ->
-    no_unrecorded_backward_edge g2 rh.
-Proof.
-  intros g1 g2 rh gen Hnur Hngr.
-  unfold new_gen_relation in Hngr.
-  destruct (graph_has_gen_dec g1 gen).
-  - subst g2. assumption.
-  - destruct Hngr as [gen_i [Hempty Hg2]].
-    subst g2.
-    unfold no_unrecorded_backward_edge in *.
-    intros e He Hback.
-    apply Hnur; auto.
-    destruct e as [v idx].
-    destruct He as [Hv Hin].
-    split.
-    + eapply ang_graph_has_v_inv; eauto.
-    + exact Hin.
-Qed.
-
 Lemma new_gen_heap_graph_unmarked: forall g1 h1 g2 h2 gen,
     graph_unmarked g1 -> new_gen_heap_relation gen g1 h1 g2 h2 ->
     graph_unmarked g2.
@@ -8618,15 +8597,6 @@ Lemma new_gen_heap_no_dangling_dst: forall g1 h1 g2 h2 gen,
     no_dangling_dst g2.
 Proof.
   intros. eapply ngr_no_dangling_dst; eauto.
-  eapply new_gen_heap_new_gen_relation; eauto.
-Qed.
-
-Lemma new_gen_heap_no_unrecorded_backward_edge: forall g1 h1 g2 h2 rh gen,
-    no_unrecorded_backward_edge g1 rh ->
-    new_gen_heap_relation gen g1 h1 g2 h2 ->
-    no_unrecorded_backward_edge g2 rh.
-Proof.
-  intros. eapply ngr_no_unrecorded_backward_edge; eauto.
   eapply new_gen_heap_new_gen_relation; eauto.
 Qed.
 
@@ -10185,7 +10155,7 @@ Proof.
     assert (Hun3: graph_unmarked g3) by
         (eapply new_gen_heap_graph_unmarked; eauto).
     assert (Hunrec3: no_unrecorded_backward_edge g3 rh1) by
-        (eapply new_gen_heap_no_unrecorded_backward_edge; eauto).
+        (eapply new_gen_heap_no_unrecorded_backward_edge_pres; eauto).
     assert (Hrgc3: roots_graph_compatible roots1 g3) by
         (eapply new_gen_heap_roots_graph_compatible; eauto).
     assert (Hndd3: no_dangling_dst g3) by
@@ -10346,4 +10316,63 @@ Proof.
               [lia | exact Hto3 | apply graph_unmarked_copy_compatible; exact Hun3
                | exact Hrgc3 | exact H2]
             | exact H15 ].
+Qed.
+
+Lemma remset_graph_state_from_spec_pre:
+  forall g outlier from rmst rh h,
+    remset_nodup rmst ->
+    remset_compatible g outlier from rmst rh h ->
+    remset_generation_compatible from rmst rh ->
+    remset_graph_state g from rmst rh.
+Proof.
+  intros g outlier from rmst rh h Hrnd Hremc Hremgen.
+  split; [|exact Hremgen].
+  unfold remset_forward_compatible.
+  split; [exact Hrnd | split].
+  - destruct Hremc as [Hrgoc _].
+    now apply remset_graph_outlier_compatible_weakened with (outlier := outlier).
+  - destruct Hremc as [_ [Hrrhc _]]. exact Hrrhc.
+Qed.
+
+Lemma remset_compatible_remset_heap_covers_graph:
+  forall g h rootpairs roots outlier from rmst rh,
+    super_compatible g h rootpairs roots outlier ->
+    remset_compatible g outlier from rmst rh h ->
+    remset_heap_covers_graph g rh.
+Proof.
+  intros g h rootpairs roots outlier from rmst rh Hsc Hremc.
+  split.
+  - destruct Hremc as [_ [_ Hrhhc]].
+    apply Forall2_length in Hrhhc.
+    rewrite Zlength_correct, Hrhhc.
+    rewrite <- Zlength_correct.
+    apply spaces_size.
+  - intros gen Hgen.
+    destruct Hsc as [Hghc _].
+    eapply gen_range; eauto.
+Qed.
+
+Theorem garbage_collect_spec_preconditions_imply_isomorphism:
+  forall rootpairs roots roots' g h rh rmst g' h' rh' rmst' outlier,
+    super_compatible g h rootpairs roots outlier ->
+    garbage_collect_condition g h ->
+    no_unrecorded_backward_edge g rh ->
+    remset_compatible g outlier O rmst rh h ->
+    remset_generation_compatible O rmst rh ->
+    remset_nodup rmst ->
+    sound_gc_graph g ->
+    garbage_collect_relation roots roots' g h rh rmst g' h' rh' rmst' ->
+    gc_graph_iso g roots g' roots'.
+Proof.
+  intros rootpairs roots roots' g h rh rmst g' h' rh' rmst' outlier
+         Hsc Hgcc Hunrec Hremc Hremgen Hrnd Hsound Hrel.
+  eapply garbage_collect_isomorphism.
+  - destruct Hgcc as [Hun _]. exact Hun.
+  - exact Hunrec.
+  - destruct Hgcc as [_ [Hndd _]]. exact Hndd.
+  - destruct Hsc as [_ [_ [[_ Hroots] _]]]. exact Hroots.
+  - exact Hsound.
+  - eapply remset_graph_state_from_spec_pre; eauto.
+  - eapply remset_compatible_remset_heap_covers_graph; eauto.
+  - exact Hrel.
 Qed.
