@@ -406,9 +406,6 @@ Definition old_nonfrom_edges_mapped
     src g2 e = src g1 e /\
     dst g2 e = list_bi_map l (dst g1 e).
 
-Definition old_nonfrom_vertices_valid (g1 g2: LGraph) (from: nat): Prop :=
-  forall v, vvalid g1 v -> vgeneration v <> from -> vvalid g2 v.
-
 Definition old_vertices_valid (g1 g2: LGraph): Prop :=
   forall v, vvalid g1 v -> vvalid g2 v.
 
@@ -425,7 +422,6 @@ Definition unmarked_from_edges_unchanged
 Definition remset_partial_graph
            (g1 g2: LGraph) (l: list (VType * VType)) (from: nat): Prop :=
   old_vertices_valid g1 g2 /\
-  old_nonfrom_vertices_valid g1 g2 from /\
   old_nonfrom_edges_mapped g1 g2 l from /\
   unmarked_from_edges_unchanged g1 g2 from.
 
@@ -477,7 +473,6 @@ Definition remset_partial_graph_pending
            (g1 g2: LGraph) (l: list (VType * VType))
            (from: nat) (pending: remset_space): Prop :=
   old_vertices_valid g1 g2 /\
-  old_nonfrom_vertices_valid g1 g2 from /\
   old_nonfrom_edges_mapped_pending g1 g2 l from pending /\
   unmarked_from_edges_unchanged g1 g2 from.
 
@@ -494,7 +489,7 @@ Definition gc_graph_remset_quasi_iso (g1: LGraph) (roots1: roots_t)
     let (from_l, to_l) := split l in
     from_gen_quasi_spec g1 roots1 from_l from /\ to_gen_spec g1 g2 to_l to /\
     (forall v, vvalid g1 v -> ~ In v from_l -> vlabel g1 v = vlabel g2 v) /\
-    old_nonfrom_vertices_valid g1 g2 from /\
+    old_vertices_valid g1 g2 /\
     old_nonfrom_edges_mapped g1 g2 l from.
 
 Definition gen_has_index_dec (g: LGraph) (gen idx: nat):
@@ -1447,7 +1442,7 @@ Proof.
   destruct (split l) as [from_l to_l] eqn:Hsplit.
   destruct Hspec as [[_ Hfrom] [[_ [_ Hto_gen]] [_ Hpartial]]].
   unfold remset_partial_graph_pending in Hpartial.
-  destruct Hpartial as [_ [_ [Hedges _]]].
+  destruct Hpartial as [_ [Hedges _]].
   specialize (Hedges e Hevalid Hsrcgen).
   destruct Hedges as [Hpending | Hmapped].
   - destruct Hpending as [_ [_ [_ [Hdst_eq _]]]].
@@ -1494,7 +1489,7 @@ Lemma old_nonfrom_edge_mapped_lcv:
     sound_gc_graph g ->
     no_dangling_dst base ->
     graph_has_gen g to ->
-    old_nonfrom_vertices_valid base g from ->
+    old_vertices_valid base g ->
     evalid base e ->
     vgeneration (fst e) <> from ->
     evalid g e ->
@@ -1508,7 +1503,7 @@ Lemma old_nonfrom_edge_mapped_lcv:
       list_bi_map ((v, new_copied_v g to) :: l) (dst base e).
 Proof.
   intros base g from to l v e Hneq Hsound_base Hsound_g Hndd Hto
-         Hvertices Hevalid Hsrcgen He_g Hsrc_g Hdst_g Hdst_not_v Hgenv.
+         Holdvalid Hevalid Hsrcgen He_g Hsrc_g Hdst_g Hdst_not_v Hgenv.
   destruct Hsound_base as [Hvv_base [Hev_base [_ _]]].
   destruct Hsound_g as [Hvv_g [_ [_ _]]].
   assert (Hge: graph_has_e base e) by
@@ -1526,14 +1521,14 @@ Proof.
   }
   assert (Hsrc_not_new: fst e <> new_copied_v g to). {
     intro Hbad. apply Hnew_not_valid. rewrite <- Hbad.
-    apply Hvertices; assumption.
+    apply Holdvalid; assumption.
   }
   assert (Hdst_not_new: dst base e <> new_copied_v g to). {
     intro Hbad.
     destruct (Nat.eq_dec (vgeneration (dst base e)) from) as [Hdst_from | Hdst_not_from].
     - rewrite Hbad in Hdst_from. simpl in Hdst_from. lia.
     - apply Hnew_not_valid. rewrite <- Hbad.
-      apply Hvertices; assumption.
+      apply Holdvalid; assumption.
   }
   split.
   - simpl. rewrite pcv_evalid_iff. now left.
@@ -1551,7 +1546,7 @@ Lemma old_nonfrom_edges_mapped_lcv:
     sound_gc_graph g ->
     no_dangling_dst base ->
     graph_has_gen g to ->
-    old_nonfrom_vertices_valid base g from ->
+    old_vertices_valid base g ->
     old_nonfrom_edges_mapped base g l from ->
     no_unmarked_old_nonfrom_dst base g from ->
     raw_mark (vlabel g v) = false ->
@@ -1560,7 +1555,7 @@ Lemma old_nonfrom_edges_mapped_lcv:
       ((v, new_copied_v g to) :: l) from.
 Proof.
   intros base g from to l v Hneq Hsound_base Hsound_g Hndd Hto
-         Hvertices Hedges Hclosed Hmark Hgenv.
+         Holdvalid Hedges Hclosed Hmark Hgenv.
   unfold old_nonfrom_edges_mapped in *.
   intros e Hevalid Hsrcgen.
   specialize (Hedges e Hevalid Hsrcgen).
@@ -1579,7 +1574,7 @@ Lemma old_nonfrom_edges_mapped_pending_lcv:
     sound_gc_graph g ->
     no_dangling_dst base ->
     graph_has_gen g to ->
-    old_nonfrom_vertices_valid base g from ->
+    old_vertices_valid base g ->
     old_nonfrom_edges_mapped_pending base g l from pending ->
     old_nonfrom_edges_to_are_pending base v from pending ->
     vgeneration v = from ->
@@ -1588,7 +1583,7 @@ Lemma old_nonfrom_edges_mapped_pending_lcv:
       ((v, new_copied_v g to) :: l) from pending.
 Proof.
   intros base g from to l pending v Hneq Hsound_base Hsound_g Hndd Hto
-         Hvertices Hedges Hpending Hgenv Hmap_v.
+         Holdvalid Hedges Hpending Hgenv Hmap_v.
   unfold old_nonfrom_edges_mapped_pending in *.
   intros e Hevalid Hsrcgen.
   specialize (Hedges e Hevalid Hsrcgen).
@@ -1610,7 +1605,7 @@ Proof.
     }
     assert (Hsrc_not_new: fst e <> new_copied_v g to). {
       intro Hbad. apply Hnew_not_valid. rewrite <- Hbad.
-      apply Hvertices; assumption.
+      apply Holdvalid; assumption.
     }
     split.
     + simpl. rewrite pcv_evalid_iff. now left.
@@ -1637,7 +1632,7 @@ Proof.
       }
       assert (Hsrc_not_new: fst e <> new_copied_v g to). {
         intro Hbad. apply Hnew_not_valid. rewrite <- Hbad.
-        apply Hvertices; assumption.
+        apply Holdvalid; assumption.
       }
       split.
       * simpl. rewrite pcv_evalid_iff. now left.
@@ -1649,17 +1644,6 @@ Proof.
            ++ rewrite Hdst_v. exact Hgenv.
     + right.
       eapply old_nonfrom_edge_mapped_lcv; eauto.
-Qed.
-
-Lemma old_nonfrom_vertices_valid_lcv:
-  forall base g from to v,
-    old_nonfrom_vertices_valid base g from ->
-    old_nonfrom_vertices_valid base (lgraph_copy_v g v to) from.
-Proof.
-  unfold old_nonfrom_vertices_valid.
-  intros base g from to v Hvertices x Hvalid Hgen.
-  simpl. rewrite pcv_vvalid_iff. left.
-  apply Hvertices; assumption.
 Qed.
 
 Lemma old_vertices_valid_lcv:
@@ -1698,12 +1682,10 @@ Proof.
            split.
            ++ unfold old_vertices_valid. auto.
            ++ split.
-              ** unfold old_nonfrom_vertices_valid. auto.
-              ** split.
-                 --- unfold old_nonfrom_edges_mapped. simpl.
-                     intros e Hevalid _. split; [exact Hevalid | split; reflexivity].
-                 --- unfold unmarked_from_edges_unchanged.
-                     intros e Hevalid _ _. split; [exact Hevalid | split; reflexivity].
+              ** unfold old_nonfrom_edges_mapped. simpl.
+                 intros e Hevalid _. split; [exact Hevalid | split; reflexivity].
+              ** unfold unmarked_from_edges_unchanged.
+                 intros e Hevalid _ _. split; [exact Hevalid | split; reflexivity].
 Qed.
 
 Lemma old_nonfrom_edges_mapped_pending_nil:
@@ -1830,8 +1812,8 @@ Lemma remset_partial_graph_pending_lift_edges:
 Proof.
   unfold remset_partial_graph_pending.
   intros g1 g2 l from pending1 pending2 Hlift
-         [Hold [Hvertices [Hedges Hunmarked]]].
-  split; [exact Hold |]. split; [exact Hvertices |].
+         [Hold [Hedges Hunmarked]].
+  split; [exact Hold |].
   split; [|exact Hunmarked].
   now apply Hlift.
 Qed.
@@ -1842,8 +1824,8 @@ Lemma remset_partial_graph_pending_nil:
     remset_partial_graph g1 g2 l from.
 Proof.
   unfold remset_partial_graph_pending, remset_partial_graph.
-  intros g1 g2 l from [Hold [Hvertices [Hedges Hunmarked]]].
-  split; [exact Hold |]. split; [exact Hvertices |].
+  intros g1 g2 l from [Hold [Hedges Hunmarked]].
+  split; [exact Hold |].
   split; [|exact Hunmarked].
   now apply old_nonfrom_edges_mapped_pending_nil.
 Qed.
@@ -1854,8 +1836,8 @@ Lemma remset_partial_graph_pending_intro:
     remset_partial_graph_pending g1 g2 l from pending.
 Proof.
   unfold remset_partial_graph_pending, remset_partial_graph.
-  intros g1 g2 l from pending [Hold [Hvertices [Hedges Hunmarked]]].
-  split; [exact Hold |]. split; [exact Hvertices |].
+  intros g1 g2 l from pending [Hold [Hedges Hunmarked]].
+  split; [exact Hold |].
   split; [|exact Hunmarked].
   now apply old_nonfrom_edges_mapped_pending_intro.
 Qed.
@@ -2283,14 +2265,12 @@ Proof.
   intros base g from to l v Hneq Hsound_base Hsound_g Hndd Hto
          Hpartial Hclosed Hmark Hgen.
   unfold remset_partial_graph in *.
-  destruct Hpartial as [Holdvalid [Hvertices [Hedges Hunmarked]]].
+  destruct Hpartial as [Holdvalid [Hedges Hunmarked]].
   split.
   - now apply old_vertices_valid_lcv.
   - split.
-    + now apply old_nonfrom_vertices_valid_lcv.
-    + split.
-      * eapply old_nonfrom_edges_mapped_lcv; eauto.
-      * eapply unmarked_from_edges_unchanged_lcv; eauto.
+    + eapply old_nonfrom_edges_mapped_lcv; eauto.
+    + eapply unmarked_from_edges_unchanged_lcv; eauto.
 Qed.
 
 Lemma old_vertices_valid_lgd:
@@ -2301,16 +2281,6 @@ Proof.
   unfold old_vertices_valid.
   intros base g e v Hold x Hx.
   apply Hold. exact Hx.
-Qed.
-
-Lemma old_nonfrom_vertices_valid_lgd:
-  forall base g from e v,
-    old_nonfrom_vertices_valid base g from ->
-    old_nonfrom_vertices_valid base (labeledgraph_gen_dst g e v) from.
-Proof.
-  unfold old_nonfrom_vertices_valid.
-  intros base g from e v Hold x Hx Hgen.
-  apply Hold; assumption.
 Qed.
 
 Lemma old_nonfrom_edges_mapped_lgd:
@@ -2423,14 +2393,12 @@ Lemma remset_partial_graph_lgd:
 Proof.
   intros base g l from e v Hsound Hnot_base Hpartial.
   unfold remset_partial_graph in *.
-  destruct Hpartial as [Holdvalid [Hvertices [Hedges Hunmarked]]].
+  destruct Hpartial as [Holdvalid [Hedges Hunmarked]].
   split.
   - now apply old_vertices_valid_lgd.
   - split.
-    + now apply old_nonfrom_vertices_valid_lgd.
-    + split.
-      * eapply old_nonfrom_edges_mapped_lgd; eauto.
-      * eapply unmarked_from_edges_unchanged_lgd; eauto.
+    + eapply old_nonfrom_edges_mapped_lgd; eauto.
+    + eapply unmarked_from_edges_unchanged_lgd; eauto.
 Qed.
 
 Lemma remset_partial_graph_pending_lgd_mapped:
@@ -2448,14 +2416,12 @@ Proof.
   intros base g l from item pending e v Hevalid_base Hevalid_g Hsrc_g Hsrcgen
          Hitem Hv Hpartial.
   unfold remset_partial_graph_pending in *.
-  destruct Hpartial as [Holdvalid [Hvertices [Hedges Hunmarked]]].
+  destruct Hpartial as [Holdvalid [Hedges Hunmarked]].
   split.
   - now apply old_vertices_valid_lgd.
   - split.
-    + now apply old_nonfrom_vertices_valid_lgd.
-    + split.
-      * eapply old_nonfrom_edges_mapped_pending_lgd_mapped; eauto.
-      * eapply unmarked_from_edges_unchanged_lgd_nonfrom; eauto.
+    + eapply old_nonfrom_edges_mapped_pending_lgd_mapped; eauto.
+    + eapply unmarked_from_edges_unchanged_lgd_nonfrom; eauto.
 Qed.
 
 Lemma lcv_remset_semi_iso_parts:
@@ -2664,7 +2630,7 @@ Proof.
             ((v, new_copied_v g to) :: l)).
   eapply lcv_remset_semi_iso_parts; eauto.
   - intros base0 g0 l0 Hpartial. exact (proj1 Hpartial).
-  - intros base0 g0 l0 Hpartial. exact (proj2 (proj2 (proj2 Hpartial))).
+  - intros base0 g0 l0 Hpartial. exact (proj2 (proj2 Hpartial)).
 Qed.
 
 Lemma remset_partial_graph_pending_lcv:
@@ -2684,14 +2650,12 @@ Proof.
   intros base g from to l pending v Hneq Hsound_base Hsound_g Hndd Hto
          Hpartial Hpending Hgen Hmap_v.
   unfold remset_partial_graph_pending in *.
-  destruct Hpartial as [Holdvalid [Hnonfrom_vertices [Hedges Hunmarked]]].
+  destruct Hpartial as [Holdvalid [Hedges Hunmarked]].
   split.
   - now apply old_vertices_valid_lcv.
   - split.
-    + now apply old_nonfrom_vertices_valid_lcv.
-    + split.
-      * eapply old_nonfrom_edges_mapped_pending_lcv; eauto.
-      * eapply unmarked_from_edges_unchanged_lcv; eauto.
+    + eapply old_nonfrom_edges_mapped_pending_lcv; eauto.
+    + eapply unmarked_from_edges_unchanged_lcv; eauto.
 Qed.
 
 Lemma lcv_pending_remset_semi_iso:
@@ -2748,7 +2712,7 @@ Proof.
             ((v, new_copied_v g to) :: l)).
   eapply lcv_remset_semi_iso_parts; eauto.
   - intros base0 g0 l0 Hpartial. exact (proj1 Hpartial).
-  - intros base0 g0 l0 Hpartial. exact (proj2 (proj2 (proj2 Hpartial))).
+  - intros base0 g0 l0 Hpartial. exact (proj2 (proj2 Hpartial)).
 Qed.
 
 Lemma lgd_remset_semi_iso:
@@ -2773,7 +2737,7 @@ Proof.
   destruct Hfrom as [Hfrom_nd Hfrom].
   destruct Hto_spec as [Hto_nd [Hto_valid Hto_gen]].
   unfold remset_partial_graph in Hpartial.
-  destruct Hpartial as [Holdvalid [Hnonfrom_vertices [Hnonfrom_edges Hunmarked]]].
+  destruct Hpartial as [Holdvalid [Hnonfrom_edges Hunmarked]].
   destruct Hsound_base as [Hvv_base [Hev_base [Hsrc_base _]]].
   destruct Hsound_g as [Hvv_g [Hev_g [Hsrc_g _]]].
   assert (Hf: from_l = map fst l) by
@@ -2852,7 +2816,6 @@ Proof.
            apply make_fields_Znth_edge in Hfield; auto.
            subst e. exact Hnot_base.
            unfold remset_partial_graph. split; [exact Holdvalid |].
-           split; [exact Hnonfrom_vertices |].
            split; [exact Hnonfrom_edges | exact Hunmarked].
 Qed.
 
@@ -3190,7 +3153,7 @@ Proof.
   destruct (split l) as [from_l to_l] eqn:Hsplit.
   destruct Hspec as [[_ Hfrom] [[_ [Hto_valid Hto_gen]] [_ Hpartial]]].
   unfold remset_partial_graph_pending in Hpartial.
-  destruct Hpartial as [_ [_ [Hedges _]]].
+  destruct Hpartial as [_ [Hedges _]].
   specialize (Hedges e Hevalid Hsrcgen).
   assert (Hge: graph_has_e base e) by
       (apply (proj1 (Hev_base _)); exact Hevalid).
@@ -3351,7 +3314,7 @@ Proof.
   destruct (split l) as [from_l to_l] eqn:Hsplit.
   destruct Hspec as [[_ Hfrom] [[_ [Hto_valid Hto_gen]] [_ Hpartial]]].
   unfold remset_partial_graph in Hpartial.
-  destruct Hpartial as [_ [_ [Hedges _]]].
+  destruct Hpartial as [_ [Hedges _]].
   specialize (Hedges e Hevalid Hsrcgen).
   destruct Hedges as [_ [_ Hdst_map]].
   assert (Hge: graph_has_e base e) by
@@ -3842,7 +3805,7 @@ Proof.
   - destruct (split l) as [from_l to_l].
     destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
     unfold remset_partial_graph in Hpartial.
-    destruct Hpartial as [_ [Hvertices [Hedges _]]].
+    destruct Hpartial as [Holdvalid [Hedges _]].
     split.
     + destruct Hfrom as [Hnodup Hfrom].
       split; [exact Hnodup |].
@@ -3850,7 +3813,7 @@ Proof.
       unfold roots_reachable_in_gen, marked_in_gen in Hr.
       now rewrite Hr, Hfrom.
     + split; [exact Hto |]. split; [exact Hlabel |].
-      split; assumption.
+      split; [exact Holdvalid | exact Hedges].
 Qed.
 
 Lemma reachable_from_roots: forall (g: LGraph) (roots: roots_t) v,
@@ -5634,7 +5597,7 @@ Proof.
       (eapply gc_graph_remset_semi_iso_parts_partial; exact Hsemi).
   assert (Hcurrent: evalid g e /\ src g e = src base e). {
     eapply old_nonfrom_edges_mapped_pending_current_edge; eauto.
-    exact (proj1 (proj2 (proj2 Hpartial))).
+    exact (proj1 (proj2 Hpartial)).
   }
   destruct Hcurrent as [Hevalid_g Hsrc_g].
   assert (Hmarked_or_current:
@@ -5984,7 +5947,7 @@ Proof.
       (eapply gc_graph_remset_semi_iso_parts_partial; exact Hsemi).
   assert (Hcurrent: evalid g e /\ src g e = src base e). {
     eapply old_nonfrom_edges_mapped_pending_current_edge; eauto.
-    exact (proj1 (proj2 (proj2 Hpartial))).
+    exact (proj1 (proj2 Hpartial)).
   }
   destruct Hcurrent as [Hevalid_g Hsrc_g].
   inversion Hfr; subst; clear Hfr; try contradiction.
@@ -7620,66 +7583,40 @@ Lemma forward_remset_gh_remset_semi_iso_closed_effective_roots:
 Proof.
   intros from to g h rh rmst g' h' rh' rmst'
          Hneq Hsound Hto Hcc Hct Hrnd Hrgc Hrrhc Hndd Hunmarked Hfirst Hunrec Hfrg.
+  destruct (forward_remset_gh_remset_semi_iso_closed
+              from to g h rh rmst g' h' rh' rmst'
+              Hneq Hsound Hto Hcc Hrnd Hrgc Hrrhc Hndd Hunmarked
+              Hfirst Hunrec Hfrg)
+    as [l [Hsemi Hclosed]].
+  exists l. split; [exact Hsemi |].
+  split; [exact Hclosed |].
   assert (Hrrsc:
             remset_and_remset_space_compatible
               g from rmst (nth_remset_space rh from)). {
     rewrite nth_remset_space_Znth.
     eapply rrhc_forall_rrsc; exact Hrrhc.
   }
-  assert (Hbase_src:
-            Forall
-              (fun item =>
-                 match item with
-                 | RemSetExterior _ => True
-                 | RemSetInterior (InteriorVertexPos v _) =>
-                     vgeneration v <> from -> vvalid g v
-                 end) (nth_remset_space rh from)) by
-      (eapply remset_space_base_sources_valid; eauto).
-  assert (Hsemi0:
-            gc_graph_pending_remset_semi_iso
-              g g from to (nth_remset_space rh from) nil) by
-      (eapply pending_remset_semi_iso_refl; eauto).
-  assert (Hpending:
-            unmarked_old_nonfrom_edges_to_are_pending
-              g g from (nth_remset_space rh from)) by
-      (eapply no_unrecorded_backward_edge_unmarked_old_nonfrom_edges_pending;
-       eauto).
   unfold forward_remset_gh in Hfrg.
   rewrite <- nth_remset_space_Znth in Hfrg.
-  destruct (forward_remset_item_fold_pending_remset_semi_iso
-              from to g (nth_remset_space rh from) g h rh rmst
-              g' h' rh' rmst' nil Hneq Hsound Hsound Hto Hcc Hrnd Hrgc
-              Hrrsc Hndd Hbase_src Hsemi0 Hpending Hfrg)
-    as [l [Hpending_nil Hpending_empty]].
-  exists l.
-  assert (Hsemi: gc_graph_remset_semi_iso g g' from to l). {
-    simpl in Hpending_nil.
-    rewrite app_nil_r in Hpending_nil.
-    now apply pending_remset_semi_iso_nil.
+  intros v Hin_fst.
+  pose proof Hsemi as Hsemi_copy.
+  destruct Hsemi_copy as [_ Hspec].
+  destruct (split l) as [from_l to_l] eqn:Hsplit.
+  destruct Hspec as [[_ Hfrom] _].
+  rewrite map_fst_split, Hsplit in Hin_fst.
+  simpl in Hin_fst.
+  apply (proj2 (Hfrom v)) in Hin_fst.
+  destruct Hin_fst as [Hmark [Hvvalid Hgen]].
+  assert (Hgv: graph_has_v g v) by
+      (destruct Hsound as [Hvv _]; apply (proj1 (Hvv _)); exact Hvvalid).
+  assert (Hmark0: raw_mark (vlabel g v) = false). {
+    destruct v as [vgen vidx]. simpl in Hgen. subst vgen.
+    destruct Hgv as [Hgen_has Hidx].
+    exact (Hunmarked Hgen_has vidx Hidx).
   }
-  split; [exact Hsemi |].
-  split.
-  - eapply unmarked_old_nonfrom_edges_pending_nil_no_unmarked.
-    exact Hpending_empty.
-  - intros v Hin_fst.
-    pose proof Hsemi as Hsemi_copy.
-    destruct Hsemi_copy as [_ Hspec].
-    destruct (split l) as [from_l to_l] eqn:Hsplit.
-    destruct Hspec as [[_ Hfrom] _].
-    rewrite map_fst_split, Hsplit in Hin_fst.
-    simpl in Hin_fst.
-    apply (proj2 (Hfrom v)) in Hin_fst.
-    destruct Hin_fst as [Hmark [Hvvalid Hgen]].
-    assert (Hgv: graph_has_v g v) by
-        (destruct Hsound as [Hvv _]; apply (proj1 (Hvv _)); exact Hvvalid).
-    assert (Hmark0: raw_mark (vlabel g v) = false). {
-      destruct v as [vgen vidx]. simpl in Hgen. subst vgen.
-      destruct Hgv as [Hgen_has Hidx].
-      exact (Hunmarked Hgen_has vidx Hidx).
-    }
-    unfold effective_remset_roots.
-    eapply forward_remset_item_fold_marked_from_unmarked_effective_root;
-      eauto.
+  unfold effective_remset_roots.
+  eapply forward_remset_item_fold_marked_from_unmarked_effective_root;
+    eauto.
 Qed.
 
 Lemma forward_remset_gh_backward_edge_prop_mapped_roots_effective:
@@ -8188,7 +8125,7 @@ Proof.
     destruct (split l) as [from_l to_l] eqn:Hsplit.
     destruct Hspec as [_ [_ [_ Hpartial]]].
     unfold remset_partial_graph in Hpartial.
-    destruct Hpartial as [_ [_ [_ Hunmarked_edges]]].
+    destruct Hpartial as [_ [_ Hunmarked_edges]].
     destruct (Hunmarked_edges e Hevalid Hsrc_gen Hsrc_mark)
       as [He_current [Hsrc_eq Hdst_eq]].
     assert (Hstep: current |= (fst e) ~> (dst base e)). {
@@ -9316,7 +9253,7 @@ Qed.
 
 Definition remset_ready_marked_state
     (from to: nat) (roots: roots_t) (g: LGraph)
-    (rh: remset_heap) (rmst: remset) (g_rem g_scan: LGraph)
+    (rh: remset_heap) (rmst: remset) (g_rem: LGraph)
     (l: list (VType * VType)) (marked: VType -> Prop): Prop :=
   gc_graph_remset_semi_iso g g_rem from to l /\
   no_unmarked_old_nonfrom_dst g g_rem from /\
@@ -9334,14 +9271,14 @@ Definition remset_ready_marked_bridge
     (from to: nat) (roots: roots_t) (g: LGraph)
     (rh: remset_heap) (rmst: remset) (g_rem g_scan: LGraph): Prop :=
   exists l,
-    remset_ready_marked_state from to roots g rh rmst g_rem g_scan l
+    remset_ready_marked_state from to roots g rh rmst g_rem l
       (fun v => marked_in_gen g_rem g_scan from v).
 
 Definition remset_ready_marked_base_bridge
     (from to: nat) (roots: roots_t) (g: LGraph)
     (rh: remset_heap) (rmst: remset) (g_rem g_scan: LGraph): Prop :=
   exists l,
-    remset_ready_marked_state from to roots g rh rmst g_rem g_scan l
+    remset_ready_marked_state from to roots g rh rmst g_rem l
       (fun v => marked_in_gen g g_scan from v).
 
 Lemma remset_ready_marked_bridge_base:
