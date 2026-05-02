@@ -5427,37 +5427,6 @@ Proof.
       exact Hin.
 Qed.
 
-Lemma forward_remset_item_fold_space_property:
-  forall (Q: remset_space -> remset_heap -> Prop)
-         from to r g h rh rmst g' h' rh' rmst',
-    0 <= Z.of_nat to < Zlength rh ->
-    Q r rh ->
-    (forall item rest g h rh rmst g2 h2 rh2 rmst2,
-        0 <= Z.of_nat to < Zlength rh ->
-        Q (item :: rest) rh ->
-        (g2, h2, rh2, rmst2) =
-          forward_remset_item from to (g, h, rh, rmst) item ->
-        Q rest rh2) ->
-    (g', h', rh', rmst') =
-      fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
-    Q nil rh'.
-Proof.
-  intros Q from to r.
-  induction r as [|item rest IH];
-    intros g h rh rmst g' h' rh' rmst' Hrange HQ HQstep Hfold.
-  - simpl in Hfold. inversion Hfold; subst. exact HQ.
-  - Opaque forward_remset_item.
-    simpl in Hfold.
-    Transparent forward_remset_item.
-    destruct (forward_remset_item from to (g, h, rh, rmst) item)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    symmetry in Hfri.
-    assert (Hrange2: 0 <= Z.of_nat to < Zlength rh2) by
-        (pose proof (fri_rh_Zlength_same from to g h rh rmst item
-                       g2 h2 rh2 rmst2 Hfri); lia).
-    eapply (IH g2 h2 rh2 rmst2 g' h' rh' rmst'); eauto.
-Qed.
-
 Lemma forward_remset_item_fold_pending_or_recorded:
   forall from to base r g h rh rmst g' h' rh' rmst',
     0 <= Z.of_nat to < Zlength rh ->
@@ -5476,57 +5445,6 @@ Proof.
                  base v from r (nth_remset_space rh to))); eauto.
   intros item rest g0 h0 rh0 rmst0 g2 h2 rh2 rmst2 Hrange0 Hpending0 Hfri.
   eapply forward_remset_item_pending_or_recorded; eauto.
-Qed.
-
-Lemma forward_remset_item_preserves_remset_entry:
-  forall from to g h rh rmst item g' h' rh' rmst' gen old,
-    0 <= Z.of_nat to < Zlength rh ->
-    In old (nth_remset_space rh gen) ->
-    (g', h', rh', rmst') =
-      forward_remset_item from to (g, h, rh, rmst) item ->
-    In old (nth_remset_space rh' gen).
-Proof.
-  intros from to g h rh rmst item g' h' rh' rmst' gen old
-         Hrange Hin Hfri.
-  Opaque forward_graph_and_heap.
-  unfold forward_remset_item in Hfri.
-  Transparent forward_graph_and_heap.
-  destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hdo.
-  - destruct (forward_graph_and_heap
-                from to 0 (remset_item2forward_t item rmst g) g h)
-      as [new_g new_h] eqn:Hfgh.
-    inversion Hfri; subst; clear Hfri.
-    apply nth_remset_space_upd_remset_heap_old; assumption.
-  - inversion Hfri; subst; clear Hfri.
-    exact Hin.
-Qed.
-
-Lemma forward_remset_item_fold_preserves_remset_entry:
-  forall from to r g h rh rmst g' h' rh' rmst' gen old,
-    0 <= Z.of_nat to < Zlength rh ->
-    In old (nth_remset_space rh gen) ->
-    (g', h', rh', rmst') =
-      fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
-    In old (nth_remset_space rh' gen).
-Proof.
-  intros from to r g h rh rmst g' h' rh' rmst' gen old Hrange Hin Hfold.
-  eapply (forward_remset_item_fold_space_property
-            (fun _ rh => In old (nth_remset_space rh gen))); eauto.
-  intros item rest g0 h0 rh0 rmst0 g2 h2 rh2 rmst2 Hrange0 Hin0 Hfri.
-  eapply forward_remset_item_preserves_remset_entry; eauto.
-Qed.
-
-Lemma forward_remset_gh_preserves_remset_entry:
-  forall from to g h rh rmst g' h' rh' rmst' gen old,
-    0 <= Z.of_nat to < Zlength rh ->
-    In old (nth_remset_space rh gen) ->
-    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
-    In old (nth_remset_space rh' gen).
-Proof.
-  intros from to g h rh rmst g' h' rh' rmst' gen old Hrange Hin Hfrg.
-  unfold forward_remset_gh in Hfrg.
-  rewrite <- nth_remset_space_Znth in Hfrg.
-  eapply forward_remset_item_fold_preserves_remset_entry; eauto.
 Qed.
 
 Lemma forward_remset_gh_old_edges_to_from_recorded:
@@ -6359,7 +6277,7 @@ Proof.
        eapply (forward_remset_item_fold_roots_graph_compatible_pres
                  from to g h rh rmst (Znth (Z.of_nat from) rh)
                  g_rem h_rem rh' rmst' roots);
-       eauto; eapply rrhc_forall_rrsc; exact Hrrhc).
+       eauto).
   assert (Hndd_rem: no_dangling_dst g_rem) by
       (unfold forward_remset_gh in Hfrg;
        eapply (fri_no_dangling_dst_fold
@@ -6440,7 +6358,7 @@ Proof.
        eapply (forward_remset_item_fold_roots_graph_compatible_pres
                  from to g h rh rmst (Znth (Z.of_nat from) rh)
                  g_rem h_rem rh' rmst' roots);
-       eauto; eapply rrhc_forall_rrsc; exact Hrrhc).
+       eauto).
   assert (Hndd_rem: no_dangling_dst g_rem) by
       (unfold forward_remset_gh in Hfrg;
        eapply (fri_no_dangling_dst_fold
@@ -8920,19 +8838,6 @@ Proof.
   - intros. eapply forward_remset_gh_sound; eauto.
 Qed.
 
-Lemma forward_remset_gh_roots_graph_compatible_simple:
-  forall from to g h rh rmst g' h' rh' rmst' roots,
-    graph_has_gen g to ->
-    roots_graph_compatible roots g ->
-    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
-    roots_graph_compatible roots g'.
-Proof.
-  intros from to g h rh rmst g' h' rh' rmst' roots Hto Hrgc Hfrg.
-  eapply (forward_remset_gh_P_holds (fun g0 => roots_graph_compatible roots g0)); eauto.
-  intros g1 g2 p Hroots Hto1 Hfr.
-  eapply fr_roots_graph_compatible; eauto.
-Qed.
-
 Lemma forward_remset_item_copied_vertex_prop:
   forall from to g h rh rmst item g' h' rh' rmst',
     from <> to ->
@@ -9062,9 +8967,9 @@ Proof.
                      g_rem h_rem rh' rmst'); eauto.
            eapply rrhc_forall_rrsc; exact Hrrhc.
         -- split.
-           ++ exact (forward_remset_gh_roots_graph_compatible_simple
+           ++ exact (forward_remset_gh_roots_graph_compatible
                        from to g h rh rmst g_rem h_rem rh' rmst' roots
-                       Hto Hroots Hfrg).
+                       Hto Hfrg Hroots).
            ++ exact (forward_remset_gh_gen_unmarked
                        from to g h rh rmst g_rem h_rem rh' rmst' to
                        Hto Hneq Hfrg Hun_to).
@@ -9225,9 +9130,9 @@ Proof.
   destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
   subst g'.
   assert (Hrgc_rem: roots_graph_compatible roots g_rem) by
-      exact (forward_remset_gh_roots_graph_compatible_simple
+      exact (forward_remset_gh_roots_graph_compatible
                from to g h rh rmst g_rem h_rem rh' rmst' roots
-               Hto Hrgc Hfrg).
+               Hto Hfrg Hrgc).
   assert (Hto_rem: graph_has_gen g_rem to) by
       (rewrite <- (forward_remset_gh_graph_has_gen
                      from to g h rh rmst g_rem h_rem rh' rmst' Hto Hfrg to);

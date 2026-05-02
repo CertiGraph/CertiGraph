@@ -372,12 +372,7 @@ Proof.
           eapply (forward_remset_item_fold_roots_graph_compatible_pres
                     from to g h rh rmst (Znth (Z.of_nat from) rh)
                     g0 h0 rh0 rmst0 roots).
-          -- exact H1.
           -- exact Hto.
-          -- exact Hcc.
-          -- exact Hrmnd.
-          -- exact Hrcw.
-          -- exact Hrrsc.
           -- exact Hfrg0'.
           -- exact Hrgc.
         * eapply (forward_remset_item_fold_oc
