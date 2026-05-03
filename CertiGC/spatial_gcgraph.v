@@ -898,6 +898,13 @@ Proof.
   now apply derives_unfash_fash.
 Qed.
 
+Lemma weak_derives_strong: forall (P Q: mpred), P |-- Q -> P |-- (weak_derives P Q && emp) * P.
+Proof.
+  intros. cancel; apply andp_right; [|cancel].
+  assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS.
+  now apply derives_weak.
+Qed.
+
 Definition heap_rest_gen_data_at_ (g: LGraph) (h: part_heap) (gen: nat) :=
   data_at_ (nth_sh g gen)
            (tarray int_or_ptr_type

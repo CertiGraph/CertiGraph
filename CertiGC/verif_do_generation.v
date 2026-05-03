@@ -9,7 +9,6 @@ Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.CertiGC.spatial_gcgraph.
 Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.CertiGC.gc_spec.
-Require Import CertiGraph.CertiGC.forward_lemmas.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 
 Local Open Scope logic.

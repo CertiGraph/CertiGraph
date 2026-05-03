@@ -3,6 +3,25 @@ Require Import CertiGraph.msl_ext.iter_sepcon.
 
 Local Open Scope logic.
 
+Lemma sem_sub_pp_word_offsets: forall base hi lo, isptr base ->
+    Ptrofs.min_signed <= WORD_SIZE * (hi - lo) <= Ptrofs.max_signed ->
+    force_val (sem_sub_pp int_or_ptr_type (offset_val (WORD_SIZE * hi) base)
+                            (offset_val (WORD_SIZE * lo) base)) =
+    if Archi.ptr64 then Vlong (Int64.repr (hi - lo)) else
+      Vint (Int.repr (hi - lo)).
+Proof.
+  intros base hi lo Hptr Hrange; destruct base; try contradiction; simpl.
+  destruct (eq_block b b); [|contradiction n; reflexivity].
+  inv_int i; unfold sem_sub_pp; destruct eq_block; [|easy].
+  rewrite !ptrofs_add_repr, ptrofs_sub_repr.
+  replace (ofs + WORD_SIZE * hi - (ofs + WORD_SIZE * lo))
+    with (WORD_SIZE * (hi - lo))%Z by (rewrite Z.mul_sub_distr_l; lia).
+  simpl; rewrite Vptrofs_unfold_true by reflexivity.
+  unfold Ptrofs.divs; rewrite !Ptrofs.signed_repr by rep_lia.
+  rewrite ptrofs_to_int64_repr by reflexivity.
+  do 2 f_equal; unfold WORD_SIZE; rewrite Z.mul_comm, Z.quot_mul by lia; auto.
+Qed.
+
 Lemma sem_sub_pp_available_space: forall s,
     isptr (space_start s) ->
     force_val
@@ -12,17 +31,10 @@ Lemma sem_sub_pp_available_space: forall s,
     if Archi.ptr64 then Vlong (Int64.repr (available_space s)) else
       Vint (Int.repr (available_space s)).
 Proof.
-  intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
-  2: exfalso; apply n; reflexivity.
-  unfold sem_sub_pp; destruct eq_block; [|easy].
-  inv_int i. rewrite ptrofs_add_repr, ptrofs_sub_repr.
-  replace (ofs + WORD_SIZE * available_space s - ofs) with
-      (WORD_SIZE * available_space s)%Z by lia. simpl.
-  pose proof (available_space_signed_range s). unfold Ptrofs.divs.
-  rewrite !Ptrofs.signed_repr by rep_lia.
-  rewrite Vptrofs_unfold_true, ptrofs_to_int64_repr by reflexivity.
-  do 2 f_equal.
-  unfold WORD_SIZE. rewrite Z.mul_comm, Z.quot_mul by lia. auto.
+  intros s Hptr; rewrite <- (isptr_offset_val_zero (space_start s)) at 2 by exact Hptr.
+  replace (offset_val 0 (space_start s)) with (offset_val (WORD_SIZE * 0) (space_start s))
+    by (f_equal; lia); rewrite (sem_sub_pp_word_offsets (space_start s) (available_space s) 0)
+    by (try exact Hptr; pose proof (available_space_signed_range s); lia); now rewrite Z.sub_0_r.
 Qed.
 
 Lemma sem_sub_pp_total_space: forall s,
@@ -34,17 +46,10 @@ Lemma sem_sub_pp_total_space: forall s,
     if Archi.ptr64 then Vlong (Int64.repr (total_space s)) else
       Vint (Int.repr (total_space s)).
 Proof.
-  intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
-  2: exfalso; apply n; reflexivity.
-  unfold sem_sub_pp; destruct eq_block; [|easy].
-  inv_int i. rewrite ptrofs_add_repr, ptrofs_sub_repr.
-  replace (ofs + WORD_SIZE * total_space s - ofs) with
-      (WORD_SIZE * total_space s)%Z by lia. simpl.
-  pose proof (total_space_signed_range s). unfold Ptrofs.divs.
-  rewrite !Ptrofs.signed_repr by rep_lia.
-  rewrite Vptrofs_unfold_true, ptrofs_to_int64_repr by reflexivity.
-  do 2 f_equal.
-  unfold WORD_SIZE. rewrite Z.mul_comm, Z.quot_mul by lia. auto.
+  intros s Hptr; rewrite <- (isptr_offset_val_zero (space_start s)) at 2 by exact Hptr.
+  replace (offset_val 0 (space_start s)) with (offset_val (WORD_SIZE * 0) (space_start s))
+    by (f_equal; lia); rewrite (sem_sub_pp_word_offsets (space_start s) (total_space s) 0)
+    by (try exact Hptr; pose proof (total_space_signed_range s); lia); now rewrite Z.sub_0_r.
 Qed.
 
 Lemma sem_sub_pp_rest_space: forall s,
@@ -56,20 +61,10 @@ Lemma sem_sub_pp_rest_space: forall s,
     if Archi.ptr64 then Vlong (Int64.repr (available_space s - used_space s)) else
       Vint (Int.repr (available_space s - used_space s)).
 Proof.
-  intros. destruct (space_start s); try contradiction. simpl. destruct (eq_block b b).
-  2: exfalso; apply n; reflexivity.
-  inv_int i. unfold sem_sub_pp; destruct eq_block; [|easy].
-  rewrite !ptrofs_add_repr, ptrofs_sub_repr.
-  replace (ofs + WORD_SIZE * available_space s - (ofs + WORD_SIZE * used_space s)) with
-          (WORD_SIZE * (available_space s - used_space s))%Z by
-      (rewrite Z.mul_sub_distr_l; lia). simpl.
-  pose proof (rest_space_signed_range s). rewrite <- Z.mul_sub_distr_l in H0.
-  rewrite Vptrofs_unfold_true by reflexivity.
-  unfold Ptrofs.divs. rewrite !Ptrofs.signed_repr by rep_lia.
-  rewrite ptrofs_to_int64_repr by reflexivity.
-  do 2 f_equal.
-  unfold WORD_SIZE.
-  rewrite Z.mul_comm, Z.quot_mul by lia. auto.
+  intros s Hptr; rewrite (sem_sub_pp_word_offsets (space_start s) (available_space s) (used_space s)) by
+      (try exact Hptr; pose proof (rest_space_signed_range s);
+       rewrite <- Z.mul_sub_distr_l in H; exact H).
+  reflexivity.
 Qed.
 
 Lemma t_info_space_address: forall t_info i,
