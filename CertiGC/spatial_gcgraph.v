@@ -223,136 +223,6 @@ intuition.
 apply andp_left2; auto.
 Qed.
 
-Lemma field_compatible0_Tarray_offset:
-(* can delete this after VST issue #700 is resolved in a release *)
- forall {cs: compspecs} t n i n' i' p p',
-  field_compatible0 (Tarray t n' noattr) (ArraySubsc i' :: nil) p ->
-  0 <= n <= n' ->
-  0 <= i <= n ->
-  n-i <= n'-i' ->
-  i <= i' ->
-  p' = offset_val (sizeof t * (i'-i)) p ->
-  field_compatible0 (Tarray t n noattr) (ArraySubsc i :: nil) p'.
-Proof.
-intros until 1. intros ?H ?H Hni Hii Hp. subst p'.
-  assert (SP := sizeof_pos t).
-  assert (SS: sizeof t * n <= sizeof t * n').
-  apply Zmult_le_compat_l. lia. lia.
-  assert (SS': (sizeof t * n + sizeof t * (n'-n) = sizeof t * n')%Z).
-  rewrite <- Z.mul_add_distr_l. f_equal. lia.
-  hnf in H|-*.
-  intuition auto with field_compatible.
-  *
-  destruct p; try contradiction.
-  clear - SP SS SS' H H4 H0 H5 H3 H8 Hni Hii.
-  red in H3|-*.
-  unfold expr.sizeof in *.
-  simpl in H3,H8|-*. rewrite Z.max_r in H3|-* by lia.
-  rename i0 into j.
-   pose proof (Ptrofs.unsigned_range j).
-   fold (sizeof t) in *.
-   assert (0 <= sizeof t * (i'-i) <= sizeof t * n').
-   split. apply Z.mul_nonneg_nonneg; lia.
-   apply Zmult_le_compat_l. lia. lia.
-  assert (sizeof t * (i'-i+n) <= sizeof t * n').
-   apply Zmult_le_compat_l. lia. lia.
-  unfold Ptrofs.add.
-  rewrite (Ptrofs.unsigned_repr (_ * _))
-    by (change Ptrofs.max_unsigned with (Ptrofs.modulus -1); lia).
-  rewrite Ptrofs.unsigned_repr_eq.
-  rewrite Zmod_small by lia.
-  pose proof Z.mul_add_distr_l (sizeof t) (i' - i) n.
-  lia.
- *
-   destruct p; try contradiction.
-   simpl in H3, H6 |- *.
-  unfold expr.sizeof in *.
-   simpl in H3, H6 |- *.
-   rewrite Z.max_r in H3 by lia.
-   constructor; intros.
-  unfold Ptrofs.add.
-   rewrite !Ptrofs.unsigned_repr_eq.
-  assert (Ptrofs.modulus <> 0) by computable.
-  rewrite Z.add_mod by auto.
-  rewrite Z.mod_mod by auto.
-  rewrite <- Z.add_mod by auto.
-  inv_int i0.
-   fold (sizeof t) in *.
-  pose_size_mult cs t (0 :: i' - i :: i' - i + i1 ::  n' :: nil).
-  rewrite Zmod_small by lia.
-  rewrite <- Z.add_assoc, <- H14.
-  eapply align_compatible_rec_Tarray_inv; [eassumption |].
-  lia.
-Qed.
-
-Lemma iter_sepcon_frame2rootpairs':
- forall (sh: share) (r: val) (s: list val),
- field_compatible0 (tarray int_or_ptr_type (Zlength s)) [] r ->
-  iter_sepcon (frame2rootpairs' r 0 s)
-    (fun av  =>  data_at sh int_or_ptr_type (rp_val av) (rp_adr av)) =
-  data_at sh (tarray int_or_ptr_type (Zlength s)) s r.
-Proof.
-  intros.
-  replace r with (offset_val (0*WORD_SIZE) r) at 2 by (apply isptr_offset_val_zero; auto with field_compatible).
-  set (n := Zlength s) in *.
-  unfold n.
-  replace 0 with (n - Zlength s) by lia.
-  assert (Zlength s <= n) by lia. clearbody n.
-  induction s; simpl.
-  change (Zlength nil) with 0.
-  rewrite data_at_zero_array_eq; try reflexivity. auto with field_compatible.
-  change (a::s) with ([a]++s).
-  rewrite split2_data_at_Tarray_app with (mid:=1) by list_solve.
-  f_equal.
-  symmetry.
-  apply data_at_singleton_array_eq; auto.
-  replace (Z.succ _) with (n - Zlength s) by list_solve.
-  rewrite IHs by list_solve.
-  replace (Zlength _ - _) with (Zlength s) by list_solve.
-  f_equal.
-  replace (Zlength (_ ++ _)) with (1 + Zlength s) by list_solve.
-  unfold field_address0.
-  rewrite if_true.
-  simpl. rewrite offset_offset_val. f_equal.
-  change WORD_SIZE with 8.
-  lia.
-  eapply (field_compatible0_Tarray_offset int_or_ptr_type (1+Zlength s) 1).
-  apply arr_field_compatible0. apply H.
-  instantiate (1:= n - Zlength s).
-  1,2,3,4,5: list_solve.
-  f_equal.
-  simpl. change WORD_SIZE with 8. lia.
-Qed.
-
-(*
-Lemma frames_rep_eq: forall sh frs, frames_rep sh frs =
-Proof.
-  induction frs as [ | [a r s] frs'].
-  - simpl; rewrite emp_sepcon; auto.
-  - unfold frames_rep; fold frames_rep. rewrite IHfrs'; clear IHfrs'.
-    unfold frames2rootpairs; fold frames2rootpairs.
-    unfold map; fold (map frame2rootpairs).
-    change (concat (?A :: ?B)) with (A ++ concat B).
-    unfold frames_shell_rep; fold frames_shell_rep.
-    unfold roots_rep.
-    rewrite iter_sepcon_app_sepcon.
-    rewrite <- !sepcon_assoc.
-    pull_right (frames_shell_rep sh frs').
-    f_equal.
-    f_equal.
-    unfold frame2rootpairs. simpl.
-    symmetry.
-    rewrite sepcon_andp_prop'.
-    rewrite sepcon_comm.
-    rewrite <- sepcon_andp_prop'.
-    rewrite sepcon_comm.
-    f_equal.
-    rewrite data_at_tarray_field_compatible0.
-    apply andp_prop_ext. reflexivity. intro. clear a frs'.
-    apply iter_sepcon_frame2rootpairs'; auto.
-Qed.
-*)
-
 Lemma frames_shell_rep_update:
  forall (sh: share) (frs: list frame) (rootvals: list val),
   Zlength rootvals = Zlength (frames2rootpairs frs) ->
@@ -997,29 +867,6 @@ Proof.
                                  (nat_inc_list (length (g_gen (glabel g)))) gen);
     [rewrite nat_inc_list_In_iff; assumption | apply derives_refl].
 Qed.
-
-(*
-Lemma graph_and_heap_rest_valid_ptr: forall (g: LGraph) (h: heap) gen,
-    graph_has_gen g gen -> ti_size_spec h ->
-    graph_heap_compatible g h ->
-    graph_rep g * heap_unused_rep h |-- valid_pointer (space_start (nth_space h gen)).
-Proof.
-  intros. sep_apply (graph_and_heap_rest_data_at_ _ _ _ H H1).
-  unfold generation_data_at_. destruct (gt_gs_compatible _ _ H1 _ H) as [? [? ?]].
-  sep_apply (data_at__memory_block_cancel
-               (nth_sh g gen)
-               (tarray int_or_ptr_type (available_size h gen)) (gen_start g gen)).
-  simpl sizeof. rewrite Z.max_r by
-      (unfold available_size; apply (proj1 (available_space_range (nth_space h gen)))).
-  unfold gen_start. if_tac. 2: contradiction.
-  rewrite H2. fold WORD_SIZE.
-  sep_apply (memory_block_valid_ptr
-               (nth_sh g gen) (WORD_SIZE * available_size h gen)
-               (space_start (nth_space h gen))); unfold WORD_SIZE;
-    [|pose proof (ti_size_gt_0 g h gen H1 H5 H0); lia | entailer!!].
-  unfold nth_sh. apply readable_nonidentity, writable_readable,
-                 generation_share_writable.
-Qed. *)
 
 Lemma heap_space_remset_rep: forall g h rh gen,
     graph_has_gen g gen ->
@@ -1963,34 +1810,6 @@ Proof.
   rewrite generation_rep_reset_same by assumption.
   rewrite emp_sepcon, sepcon_comm. reflexivity.
 Qed.
-
-(*
-Lemma heap_unused_rep_reset: forall (g: LGraph) h gen,
-    graph_heap_compatible g h -> graph_has_gen g gen ->
-    heap_unused_rep h *
-    generation_rep g gen |-- heap_unused_rep (reset_nth_heap gen h).
-Proof.
-  intros. unfold heap_unused_rep. simpl.
-  assert (gen < length (spaces h))%nat by
-      (red in H0; destruct H as [_ [_ ?]]; lia).
-  destruct (reset_nth_space_Permutation _ _ H1) as [l [? ?]].
-  rewrite (iter_sepcon_permutation _ H3). rewrite (iter_sepcon_permutation _ H2).
-  simpl. cancel. destruct (gt_gs_compatible _ _ H _ H0) as [? [? ?]].
-  fold (nth_space h gen). unfold space_unused_rep. unfold reset_space at 1.
-  assert (isptr (space_start (nth_space h gen))) by
-      (rewrite <- H4; apply start_isptr).
-  assert (space_start (nth_space h gen) <> nullval). {
-    destruct (space_start (nth_space h gen)); try contradiction.
-    intro; inversion H8. } simpl space_start. rewrite !if_false by assumption.
-  sep_apply (generation_rep_data_at_ g gen H0). unfold graph_gen_size. rewrite H6.
-  unfold gen_start. rewrite if_true by assumption. rewrite H4. unfold nth_sh.
-  rewrite H5. simpl. remember (nth_space h gen).
-  replace (WORD_SIZE * 0)%Z with 0 by lia.
-  rewrite isptr_offset_val_zero by assumption.
-  replace (available_space s - 0) with (available_space s) by lia.
-  rewrite <- data_at__tarray_value by apply used_leq_available. cancel.
-Qed.
-*)
 
 Definition space_token_rep (sp: space): mpred :=
   if Val.eq (space_start sp) nullval then emp

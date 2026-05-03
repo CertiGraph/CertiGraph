@@ -2033,7 +2033,7 @@ Lemma ucov_rawmark: forall g old_v new_v,
 Proof.
   intros. unfold update_copied_old_vlabel, update_vlabel. rewrite if_true; easy.
 Qed.
-(*here*)
+
 Lemma lcv_raw_mark_old: forall g v to,
     raw_mark (vlabel (lgraph_copy_v g v to) v) = true.
 Proof. intros. simpl. apply ucov_rawmark. Qed.
@@ -2127,26 +2127,6 @@ Proof.
     rewrite Hfgh in Hfr. simpl in Hfr. inversion Hfri; subst.
     eapply fr_graph_has_v; eauto.
   - inversion Hfri; subst. exact Hv.
-Qed.
-
-Lemma forward_remset_item_raw_mark_true_pres:
-  forall from to g h rh rmst item g' h' rh' rmst' v,
-    graph_has_gen g to ->
-    graph_has_v g v ->
-    raw_mark (vlabel g v) = true ->
-    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
-    raw_mark (vlabel g' v) = true.
-Proof.
-  intros from to g h rh rmst item g' h' rh' rmst' v Hto Hv Hmark Hfri.
-  unfold forward_remset_item in Hfri.
-  destruct (negb (remset_item_in_gen item rmst g from)).
-  - destruct (forward_graph_and_heap from to O (remset_item2forward_t item rmst g) g h)
-      as [newg newh] eqn:Hfgh.
-    pose proof fr_forward_graph_and_heap from to O (remset_item2forward_t item rmst g) g h
-      as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr. inversion Hfri; subst.
-    eapply fr_O_raw_mark_true_pres; eauto.
-  - inversion Hfri; subst. exact Hmark.
 Qed.
 
 Lemma forward_remset_item_fold_raw_mark_true_pres:
@@ -5343,151 +5323,6 @@ Proof.
   unfold unmarked_old_nonfrom_edges_to_are_pending.
   intros g rh from Hsound Hfirst Hunrec v Hgen _.
   eapply no_unrecorded_backward_edge_old_nonfrom_edges_pending; eauto.
-Qed.
-
-Definition old_nonfrom_edges_to_are_pending_or_recorded
-           (g: LGraph) (v: VType) (from: nat)
-           (pending recorded: remset_space): Prop :=
-  forall e,
-    evalid g e ->
-    vgeneration (fst e) <> from ->
-    dst g e = v ->
-    remset_space_records_edge pending e \/
-    remset_space_records_edge recorded e.
-
-Lemma remset_space_records_edge_interior:
-  forall pending e,
-    remset_space_records_edge pending e ->
-    In (RemSetInterior (InteriorVertexPos (fst e) (Z.of_nat (snd e))))
-       pending.
-Proof.
-  intros pending e [item [Hin Hrec]].
-  destruct item as [addr | [src pos]]; simpl in Hrec; [contradiction |].
-  destruct Hrec as [Hsrc Hpos].
-  subst src pos.
-  exact Hin.
-Qed.
-
-Lemma forward_remset_item_pending_or_recorded:
-  forall from to base g h rh rmst item g' h' rh' rmst' pending v,
-    0 <= Z.of_nat to < Zlength rh ->
-    old_nonfrom_edges_to_are_pending_or_recorded
-      base v from (item :: pending) (nth_remset_space rh to) ->
-    (g', h', rh', rmst') =
-      forward_remset_item from to (g, h, rh, rmst) item ->
-    old_nonfrom_edges_to_are_pending_or_recorded
-      base v from pending (nth_remset_space rh' to).
-Proof.
-  unfold old_nonfrom_edges_to_are_pending_or_recorded.
-  intros from to base g h rh rmst item g' h' rh' rmst' pending v
-         Hrange Hpending Hfri e Hevalid Hsrcgen Hdst.
-  specialize (Hpending e Hevalid Hsrcgen Hdst).
-  destruct Hpending as [Hpending | Hrecorded].
-  - destruct Hpending as [item0 [[Hhead | Htail] Hrec]].
-    + subst item0.
-      right.
-      assert (Hin_gen: remset_item_in_gen item rmst g from = false). {
-        destruct item as [addr | [src pos]]; simpl in Hrec; [contradiction |].
-        destruct Hrec as [Hsrc _].
-        subst src.
-        simpl.
-        apply Nat.eqb_neq.
-        exact Hsrcgen.
-      }
-      Opaque forward_graph_and_heap.
-      unfold forward_remset_item in Hfri.
-      rewrite Hin_gen in Hfri.
-      simpl in Hfri.
-      Transparent forward_graph_and_heap.
-      destruct (forward_graph_and_heap
-                  from to 0 (remset_item2forward_t item rmst g) g h)
-        as [new_g new_h] eqn:Hfgh.
-      inversion Hfri; subst; clear Hfri.
-      exists item.
-      split; [|exact Hrec].
-      apply nth_remset_space_upd_remset_heap_new.
-      exact Hrange.
-    + left.
-      exists item0.
-      split; assumption.
-  - right.
-    destruct Hrecorded as [item0 [Hin Hrec]].
-    exists item0.
-    split; [|exact Hrec].
-    Opaque forward_graph_and_heap.
-    unfold forward_remset_item in Hfri.
-    Transparent forward_graph_and_heap.
-    destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hdo.
-    + destruct (forward_graph_and_heap
-                  from to 0 (remset_item2forward_t item rmst g) g h)
-        as [new_g new_h] eqn:Hfgh.
-      inversion Hfri; subst; clear Hfri.
-      apply nth_remset_space_upd_remset_heap_old; assumption.
-    + inversion Hfri; subst; clear Hfri.
-      exact Hin.
-Qed.
-
-Lemma forward_remset_item_fold_pending_or_recorded:
-  forall from to base r g h rh rmst g' h' rh' rmst',
-    0 <= Z.of_nat to < Zlength rh ->
-    (g', h', rh', rmst') =
-      fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
-    forall v,
-      old_nonfrom_edges_to_are_pending_or_recorded
-        base v from r (nth_remset_space rh to) ->
-      old_nonfrom_edges_to_are_pending_or_recorded
-        base v from nil (nth_remset_space rh' to).
-Proof.
-  intros from to base r g h rh rmst g' h' rh' rmst' Hrange Hfold v Hpending.
-  eapply (forward_remset_item_fold_space_property
-            (fun r rh =>
-               old_nonfrom_edges_to_are_pending_or_recorded
-                 base v from r (nth_remset_space rh to))); eauto.
-  intros item rest g0 h0 rh0 rmst0 g2 h2 rh2 rmst2 Hrange0 Hpending0 Hfri.
-  eapply forward_remset_item_pending_or_recorded; eauto.
-Qed.
-
-Lemma forward_remset_gh_old_edges_to_from_recorded:
-  forall from to base g h rh rmst g' h' rh' rmst',
-    sound_gc_graph base ->
-    firstn_gen_clear base from ->
-    no_unrecorded_backward_edge base rh ->
-    0 <= Z.of_nat to < Zlength rh ->
-    (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
-    forall e,
-      evalid base e ->
-      vgeneration (fst e) <> from ->
-      vgeneration (dst base e) = from ->
-      In (RemSetInterior (InteriorVertexPos (fst e) (Z.of_nat (snd e))))
-         (nth_remset_space rh' to).
-Proof.
-  intros from to base g h rh rmst g' h' rh' rmst'
-         Hsound Hfirst Hunrec Hrange Hfrg e Hevalid Hsrcgen Hdstgen.
-  assert (Hpending:
-            old_nonfrom_edges_to_are_pending
-              base (dst base e) from (nth_remset_space rh from)) by
-      (eapply no_unrecorded_backward_edge_old_nonfrom_edges_pending;
-       eauto).
-  assert (Hpor:
-            old_nonfrom_edges_to_are_pending_or_recorded
-              base (dst base e) from (nth_remset_space rh from)
-              (nth_remset_space rh to)). {
-    unfold old_nonfrom_edges_to_are_pending_or_recorded.
-    intros e0 He0 Hsrc0 Hdst0.
-    left.
-    eapply Hpending; eauto.
-  }
-  unfold forward_remset_gh in Hfrg.
-  rewrite <- nth_remset_space_Znth in Hfrg.
-  pose proof (forward_remset_item_fold_pending_or_recorded
-                from to base (nth_remset_space rh from)
-                g h rh rmst g' h' rh' rmst'
-                Hrange Hfrg (dst base e) Hpor) as Hrecorded.
-  specialize (Hrecorded e Hevalid Hsrcgen eq_refl).
-  destruct Hrecorded as [Hnil | Hrecorded].
-  - destruct Hnil as [item [Hin _]].
-    contradiction.
-  - now apply remset_space_records_edge_interior.
 Qed.
 
 Lemma forward_remset_item_recorded_old_edge_target_marked:
