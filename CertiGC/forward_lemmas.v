@@ -103,14 +103,6 @@ Proof.
   rewrite roots_iff_exterior_compatible, Forall_forall in H0. now apply H0.
 Qed.
 
-Lemma weak_derives_strong: forall (P Q: mpred),
-    P |-- Q -> P |-- (weak_derives P Q && emp) * P.
-Proof.
-  intros. cancel. apply andp_right. 2: cancel.
-  assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS.
-  apply derives_weak. assumption.
-Qed.
-
 Lemma sapi_ptr_val: forall p m n,
     isptr p -> Int.min_signed <= n <= Int.max_signed ->
     (force_val

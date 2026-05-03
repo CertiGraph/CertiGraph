@@ -28,6 +28,7 @@ syntax: glob
 .Makefile.coq.d
 .\#*
 .CoqMakefile.d
+.generated_files.postprocessed
 .lia.cache
 .nia.cache
 .vscode

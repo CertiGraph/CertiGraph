@@ -9,7 +9,6 @@ Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.CertiGC.spatial_gcgraph.
 Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.CertiGC.gc_spec.
-Require Import CertiGraph.CertiGC.forward_lemmas.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 
 Local Open Scope logic.
@@ -372,12 +371,7 @@ Proof.
           eapply (forward_remset_item_fold_roots_graph_compatible_pres
                     from to g h rh rmst (Znth (Z.of_nat from) rh)
                     g0 h0 rh0 rmst0 roots).
-          -- exact H1.
           -- exact Hto.
-          -- exact Hcc.
-          -- exact Hrmnd.
-          -- exact Hrcw.
-          -- exact Hrrsc.
           -- exact Hfrg0'.
           -- exact Hrgc.
         * eapply (forward_remset_item_fold_oc

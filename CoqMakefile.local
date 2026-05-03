@@ -111,10 +111,20 @@ GENERATED_FILES += dijkstra/dijkstra3.v
 dijkstra/dijkstra3.v: dijkstra/dijkstra3.c binheap/binary_heap_pro.h
 	$(CLIGHTGEN) $(CLG_FLAGS) $< -o $@
 
-generated_files: $(GENERATED_FILES)
-		 
+POSTPROCESS_GENERATED_FILES_STAMP := .generated_files.postprocessed
+
+generated_files: $(GENERATED_FILES) $(POSTPROCESS_GENERATED_FILES_STAMP)
+
+$(POSTPROCESS_GENERATED_FILES_STAMP): $(GENERATED_FILES)
+	@for f in $(GENERATED_FILES); do \
+		if [ -f "$$f" ]; then \
+			perl -pi -e 's/^From Coq Require /From Stdlib Require /' "$$f"; \
+		fi; \
+	done
+	@touch $@
 
 clean::
 #	rm -f CoqMakefile CoqMakefile.conf
 #	rm -f */{*.vo,*.vos,*.vok,*.glob} 
 	rm -f $(GENERATED_FILES)
+	rm -f $(POSTPROCESS_GENERATED_FILES_STAMP)
