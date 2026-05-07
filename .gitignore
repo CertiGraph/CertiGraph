@@ -58,6 +58,7 @@ project.pbxproj
 rocq_mcp_cache_*.v
 xcschememanagement.plist
 CertiGC/papers/codex-experience-report/*.jsonl
+CertiGC/papers/codex-experience-report/private-*.md
 CertiGC/config.h
 CertiGC/gc.c
 CertiGC/gc.h
