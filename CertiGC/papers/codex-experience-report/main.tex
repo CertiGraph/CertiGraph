@@ -8,6 +8,7 @@
 
 \usepackage{booktabs}
 \usepackage{listings}
+\usepackage{array}
 
 \lstset{
   basicstyle=\ttfamily\footnotesize,
@@ -25,6 +26,8 @@
 \newcommand{\CertiGC}{CertiGC}
 \newcommand{\CertiGraph}{CertiGraph}
 \newcommand{\VST}{VST}
+\newcommand{\tus}{\_\allowbreak{}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 
 \title{AI-Assisted Completion of \CertiGC{} Proofs: An Experience Report}
 
@@ -50,10 +53,12 @@ backward edge is recorded.
 
 The case differs from recent reports of LLMs generating new compiler proofs
 from a close template.  Here Codex was used to finish a long-running, partially
-developed verification in a mature and brittle \VST{}/\CertiGraph{} codebase.
+developed verification in a mature, dependency-rich \VST{}/\CertiGraph{}
+codebase.
 The machine checker remained the arbiter of correctness, while the human role
-shifted toward selecting invariants, constraining specification changes,
-reviewing theorem statements, and deciding when proof cleanup was justified.
+shifted toward adjudicating invariant proposals, constraining specification
+changes, reviewing theorem statements, and deciding when proof cleanup was
+justified.
 The final sprint repaired the \VST{} relation proofs first, then restored the
 mathematical graph-isomorphism theorem, and only then audited the premise path
 from the \VST{} specification to the theorem.  That audit found and removed a
@@ -119,15 +124,21 @@ systems-verification development where the proof broke because the collector's
 semantic invariant changed.
 
 The report is intended as a focused experience report rather than a controlled
-study.  It contributes a description of the proof task, an account of the
-Codex-assisted workflow, and a comparison with recent LLM-assisted proof
-development:
+study.  It contributes the following lessons about agent-assisted proof
+maintenance:
 
 \begin{itemize}
-\item It describes the proof task needed to make mutable \CertiGC{} compatible
-with remembered sets while preserving the roots-level graph-isomorphism theorem.
-\item It reports the Codex-assisted workflow used to finish the proof, including
-how human guidance constrained specification changes and invariant design.
+\item It documents an invariant-repair case in which the central problem was not
+to generate a new proof from a nearby template, but to replace a semantic
+assumption made false by mutation while preserving the final roots-level
+graph-isomorphism theorem.
+\item It records a concrete division of labor: Codex proposed the
+recorded-backward-edge invariant and helped implement its preservation, while
+the human author judged that this invariant, rather than the old
+\texttt{no\_backward\_edge} route, was the right specification for mutable GC.
+\item It reports transcript-derived interaction statistics and explains how
+those statistics should be interpreted as evidence of supervised, checker-driven
+proof maintenance rather than autonomous proof generation.
 \item It compares this experience with a recent LLM-assisted compiler-proof
 experience report and identifies lessons specific to maintaining large
 \VST{}/\CertiGraph{} proofs.
@@ -165,8 +176,7 @@ to support.  The proof repair therefore had to remove the old invariant route
 and replace it with a condition saying that backward edges may exist, but must
 be recorded.
 
-In the C code in this branch, the generation collection path therefore starts by
-forwarding remembered-set entries:
+The C code in this branch therefore forwards remembered-set entries first:
 
 \begin{lstlisting}[language=C]
 value *p = to->next;
@@ -228,6 +238,18 @@ and the graph, but the conclusion is still the original graph-isomorphism
 property.  The remembered set is a way to prove collection correct in the
 presence of mutation; it is not part of the observable correctness result.
 
+The invariant flow has four steps.  A mutable update may create an edge from an
+older generation to a younger one.  The write barrier records the location of
+that edge in the remembered-set space for the destination generation.  During
+generation collection, \texttt{forward\_remset} interprets those recorded
+locations and forwards the target objects, so that subsequent root forwarding
+and scanning close reachability from both program roots and remembered
+locations.  After the generation is collected and its remembered-set component
+is reset, the proof must re-establish that any remaining backward edge in the
+resulting graph is still recorded in the appropriate remembered set.  This
+explains why the remembered-set assumptions appear inside the proof relation
+while the theorem conclusion remains about ordinary roots.
+
 The hard part was to bridge remembered-set forwarding, root forwarding,
 scanning, and reset into the graph-isomorphism proof.  Forwarding remembered-set
 entries temporarily turns recorded old-to-young edges into effective roots.
@@ -269,35 +291,35 @@ enough by itself.
 \caption{Proof layers and their repair roles.}
 \label{tab:proof-architecture}
 \scriptsize
-\begin{tabular}{@{}p{0.15\linewidth}p{0.25\linewidth}p{0.28\linewidth}p{0.24\linewidth}@{}}
+\begin{tabular}{@{}L{0.15\linewidth}L{0.25\linewidth}L{0.28\linewidth}L{0.24\linewidth}@{}}
 \toprule
 Layer & Main Files & Contract & Repair Issue \\
 \midrule
 One-generation C proof &
-\texttt{verif\_do\_generation.v} &
+\texttt{verif\tus do\tus generation.v} &
 The C function implements the generation-step relation after
-\texttt{forward\_remset}, root forwarding, and scanning. &
+\texttt{forward\tus remset}, root forwarding, and scanning. &
 Reorder the proof around the new call sequence without strengthening scanner
 preconditions. \\
 Collector-loop C proof &
-\texttt{verif\_garbage\_collect.v} &
-The loop implements \texttt{garbage\_collect\_relation}. &
+\texttt{verif\tus garbage\tus collect.v} &
+The loop implements \texttt{garbage\tus collect\tus relation}. &
 Preserve remembered-set compatibility and invariants across collection and
 reset. \\
 Graph invariant library &
-\texttt{GCGraph.v}, \texttt{spatial\_gcgraph.v} &
+\texttt{GCGraph.v}, \texttt{spatial\tus gcgraph.v} &
 Backward edges are allowed only when represented in the remembered set. &
 Replace global absence of backward edges with preservation of recorded backward
 edges. \\
 Mathematical theorem &
-\texttt{gc\_correct.v} &
-\texttt{garbage\_collect\_relation} implies roots-level graph isomorphism. &
+\texttt{gc\tus correct.v} &
+\texttt{garbage\tus collect\tus relation} implies roots-level graph isomorphism. &
 Use remembered-set entries as temporary roots while keeping the conclusion about
 ordinary roots. \\
 Specification boundary &
-\texttt{gc\_spec.v} and \VST{} body lemmas &
+\texttt{gc\tus spec.v} and \VST{} body lemmas &
 \VST{} preconditions justify the assumptions of the mathematical theorem. &
-Remove the stale \texttt{no\_backward\_edge} route and expose the remset
+Remove the stale \texttt{no\tus backward\tus edge} route and expose the remset
 invariant explicitly. \\
 \bottomrule
 \end{tabular}
@@ -347,6 +369,17 @@ compiling focused temporary files that replay a proof prefix and insert
 Rocq's error messages.  MCP was therefore an efficiency and ergonomics tool, not
 an assumption behind the proof result.
 
+\paragraph{Invariant proposal and adjudication.}
+The recorded-edge invariant was not fixed before the Codex session.  In the
+interaction, Codex first formulated the need for a condition informally phrased
+as ``no unrecorded backward edge'' and later wrote the first Coq definition of
+that predicate.  The human author then recognized that the old
+\texttt{no\_backward\_edge} premise was semantically invalid for mutable GC and
+directed the proof effort to replace the old invariant rather than keep it as a
+convenient hidden assumption.  This episode is representative of the
+collaboration: the assistant could propose a useful invariant, but the human had
+to decide whether accepting it preserved the intended collector specification.
+
 \paragraph{Human constraints.}
 The human guidance was deliberately conservative.  New or changed lemmas were
 acceptable, but new or changed \texttt{Definition}s required discussion.
@@ -383,15 +416,14 @@ maintenance is not cosmetic: stale helper lemmas and stale assumptions obscure
 which invariants are actually needed and make future repair harder.
 
 \paragraph{Where human judgment remained central.}
-The critical invariant choice was human-level proof engineering.  The old proof
-failed because its semantic assumption was no longer true, not because a tactic
-was missing.  Replacing \texttt{no\_backward\_edge} with a remembered-set
-condition required understanding the collector algorithm, the write barrier, and
-the desired external theorem.  Codex could help explore consequences and fill in
-preservation lemmas, but the proof had to be guided away from easy but
-undesirable exits, such as adding stronger heap/spatial preconditions to pure
-specifications or exposing internal remembered-set details in the final
-statement.
+The critical invariant choice was a proof-engineering decision rather than a
+tactic choice.  The old proof failed because its semantic assumption was no
+longer true.  Although Codex proposed the recorded-edge formulation, accepting it
+as the replacement invariant required understanding the collector algorithm, the
+write barrier, and the desired external theorem.  Codex could help explore
+consequences and fill in preservation lemmas, but the proof had to be guided
+away from easy but undesirable exits: adding stronger heap/spatial preconditions
+to pure specifications, or exposing remembered-set internals in the statement.
 
 \section{Results}
 
@@ -436,35 +468,36 @@ maintainable.
 \caption{Milestone timeline of the Codex-assisted sprint.}
 \label{tab:timeline}
 \scriptsize
-\begin{tabular}{@{}p{0.13\linewidth}p{0.18\linewidth}p{0.39\linewidth}p{0.22\linewidth}@{}}
+\begin{tabular}{@{}L{0.13\linewidth}L{0.18\linewidth}L{0.39\linewidth}L{0.22\linewidth}@{}}
 \toprule
 Date & Proof Layer & Technical Issue & Outcome \\
 \midrule
 Apr. 22--26 & One-generation \VST{} proof &
-Repair \texttt{verif\_do\_generation.v} for the new
-\texttt{forward\_remset}; \texttt{forward\_roots}; \texttt{do\_scan} sequence
+Repair \texttt{verif\tus do\tus generation.v} for the new
+\texttt{forward\tus remset}; \texttt{forward\tus roots}; \texttt{do\tus scan}
+sequence
 without adding unjustified scanner preconditions. &
-\texttt{8fc20a3f}: \texttt{verif\_do\_generation} compiled. \\
+\texttt{8fc20a3f}: \texttt{verif\tus do\tus generation} compiled. \\
 Apr. 26--27 & Collector-loop \VST{} proof &
-Repair \texttt{verif\_garbage\_collect.v}; preserve remset compatibility across
+Repair \texttt{verif\tus garbage\tus collect.v}; preserve remset compatibility across
 one-generation collection and reset; separate loop invariants from function-local
 specification requirements. &
-\texttt{9a235844}: \texttt{verif\_garbage\_collect.v} compiled. \\
+\texttt{9a235844}: \texttt{verif\tus garbage\tus collect.v} compiled. \\
 Apr. 28--29 & Mathematical correctness proof &
-Reconstruct \texttt{gc\_correct.v} around
-\texttt{no\_unrecorded\_backward\_edge}, because mutable updates make the old
-\texttt{no\_backward\_edge} route false. &
+Reconstruct \texttt{gc\tus correct.v} around
+\texttt{no\tus unrecorded\tus backward\tus edge}, because mutable updates make
+the old \texttt{no\tus backward\tus edge} route false. &
 \texttt{94922344}: main theorem compiled. \\
 May 1 & Specification and premise audit &
-Check whether the \VST{}-facing \texttt{garbage\_collect\_spec} premises justify
+Check whether the \VST{}-facing \texttt{garbage\tus collect\tus spec} premises justify
 the assumptions of the final theorem; remove the stale
-\texttt{no\_backward\_edge} route from \texttt{garbage\_collect\_condition}. &
+\texttt{no\tus backward\tus edge} route from
+\texttt{garbage\tus collect\tus condition}. &
 \texttt{51ca1b49}: remset invariant carried explicitly through the \VST{}
 specification. \\
 May 1--3 & Cleanup and integration &
 Factor reset preservation, consolidate remset lemmas, simplify partial-graph
-and semi-isomorphism helpers, and run full builds after upstream proof modules
-changed. &
+and semi-isomorphism helpers, and rerun full builds after upstream proof changes. &
 PR 30 prepared and merged into \texttt{live}. \\
 \bottomrule
 \end{tabular}
@@ -498,12 +531,18 @@ summing gaps of at most 30 minutes between recorded rollout events, following
 the same convention used by \citet{paraskevopoulou2026machinegenerated}.  Rocq
 MCP calls, meaning calls through the Rocq proof-state tool interface, are a
 subset of the function-tool-call count, not an additional category added on top
-of total tool calls.  Git counts are command invocations in the transcripts, not
-distinct repository commits.  I report wall-clock time as the sum of each active
-day's first-to-last transcript span; the longer calendar span is included only
-to make clear that the transcript spans multiple calendar days.  The statistics
-are cut off at May 3, 2026, the end of the mutable-collector development sprint;
-later transcript entries about writing this report are excluded.
+of total tool calls.  Proof-checking invocations overlap with both shell builds
+and Rocq MCP checks; they should be read as a behavioral category, not as a
+disjoint row of the table.  Git counts are command invocations in the
+transcripts, not distinct repository commits, and apply-patch counts are patch
+tool invocations rather than semantically distinct edits.  The two rollout files
+were selected because their substantive content was the CertiGC mutable-GC
+repair; no other project logs were included.  I report wall-clock time as the
+sum of each active day's first-to-last transcript span; the longer calendar span
+is included only to make clear that the transcript spans multiple calendar days.
+The statistics are cut off at May 3, 2026, the end of the mutable-collector
+development sprint; later transcript entries about writing this report are
+excluded.
 
 \begin{table}[t]
 \centering
@@ -531,6 +570,13 @@ Active hours & 59.3 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+These numbers characterize a supervised, checker-driven workflow.  The 59.3
+active hours and 415 human prompts show sustained interaction rather than a
+single autonomous generation attempt.  The large number of shell, search, read,
+and build commands reflects the main mode of work: Codex repeatedly navigated
+the existing repository, made small proof edits, and used the machine checker to
+test whether each local repair matched the surrounding proof architecture.
 
 The aggregate statistics hide an important distinction between theorem repair
 and post-theorem cleanup, so Table~\ref{tab:per-day-stats} breaks the same
@@ -566,8 +612,7 @@ The per-day table also reflects the proof story.  April 28--29 contain the
 largest concentration of Rocq MCP calls and patch edits because they correspond
 to the reconstruction of \texttt{gc\_correct.v}.  By contrast, May 1--3 have
 fewer Rocq MCP calls but still many shell builds and edits; those days were
-dominated by premise audit, cleanup, and integration after the main theorem had
-already compiled.
+dominated by premise audit, cleanup, and integration after the theorem compiled.
 
 The transcript-derived file activity aligns with the git history.  The most
 heavily edited files were \texttt{gc\_correct.v} (836 patch calls),
@@ -602,8 +647,8 @@ became easier, or letting remembered-set details leak into a theorem whose
 purpose was to state graph preservation for roots.  Definitions and
 preconditions are part of the scientific claim, not local proof conveniences;
 changing them required evidence that the collector semantics needed the change.
-The most important human review was therefore review of definitions,
-assumptions, and theorem statements.
+Human review therefore focused on definitions, assumptions, and theorem
+statements.
 
 \paragraph{LLMs are strong at local invariant plumbing.}
 Once a good invariant is chosen, a large amount of proof work is mechanical but
@@ -629,8 +674,9 @@ no-backward-edge strategy was not a proof obligation waiting to be discharged.
 It was the wrong condition for mutable collection.  Treating that failure as
 information changed the task from local script repair to invariant replacement.
 This is a useful distinction in LLM-assisted verification because an assistant
-can often make local progress under an over-strong assumption even when the
-assumption is exactly what should be rejected.
+can both propose a better invariant and make local progress under an
+over-strong assumption.  Human review is needed to identify the path that
+preserves the intended theorem.
 
 \paragraph{Compilation is not the end of validation.}
 The branch did not stop at the first successful top-level theorem.  After
@@ -699,10 +745,14 @@ and the branch was merged upstream.  Nevertheless, the checker validates only
 the statements that remain in the code.  Human review is still required to judge
 whether those statements are the intended ones.
 
-The report also does not claim that Codex independently discovered the
-remembered-set proof architecture.  The human role included understanding the
-collector semantics, identifying the invalid invariant, and constraining the
-form of acceptable specification changes.  The more defensible claim is that an
+The report also does not claim that Codex independently discovered the whole
+remembered-set proof architecture.  Codex did propose the
+\texttt{no\_unrecorded\_backward\_edge} formulation and wrote its first Coq
+definition, but accepting that formulation as the replacement for
+\texttt{no\_backward\_edge} required human semantic review.  The human role also
+included understanding the collector semantics, constraining acceptable
+specification changes, and deciding when the proof had to reject an old
+assumption rather than preserve it.  The more defensible claim is that an
 agentic assistant substantially helped turn that proof-engineering direction
 into a compiling, cleaned-up artifact.
 
@@ -724,8 +774,9 @@ measurements.
 
 The mutable-\CertiGC{} branch shows a pragmatic mode of AI-assisted formal proof
 development.  Codex did not replace the need for proof-engineering judgment, but
-it was useful once the human supplied the semantic direction and enforced
-boundaries around specifications.  The resulting proof completes the mutable
+it was useful once candidate invariants were judged against the collector
+semantics and the human enforced boundaries around specifications.  The
+resulting proof completes the mutable
 collector story by replacing an invalid no-backward-edge assumption with a
 remembered-set invariant while preserving the desired graph-isomorphism theorem.
 
@@ -733,8 +784,7 @@ The broader lesson is that agentic assistants are already useful for large
 machine-checked developments when the collaboration is organized around the
 checker and around carefully guarded theorem statements.  They are especially
 valuable for local repair, invariant propagation, and cleanup in mature
-codebases.  The remaining hard work is the semantic task of deciding what should
-be true.
+codebases.  The hard work remains deciding what should be true.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
