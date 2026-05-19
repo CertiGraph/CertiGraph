@@ -187,8 +187,8 @@ forward_roots(from->start, from->limit, &to->next, fr);
 do_scan(from->start, from->limit, p, &to->next);
 \end{lstlisting}
 
-At the specification level, the heap condition is intentionally kept separate
-from the remembered-set invariant.  The former remains a graph/heap condition:
+At the specification level, the ordinary heap condition and the remembered-set
+invariant are stated separately.  The former remains a graph/heap condition:
 
 \begin{lstlisting}
 Definition garbage_collect_condition (g: LGraph) (h : part_heap) : Prop :=
@@ -208,11 +208,12 @@ Definition no_unrecorded_backward_edge (g: LGraph) (rh: remset_heap): Prop :=
        (nth_remset_space rh (vgeneration (dst g e))).
 \end{lstlisting}
 
-This separation became an important proof-engineering constraint.  Remembered
-sets are internal collector state, and exposing them in the final user-facing
-mathematical theorem would make the theorem less useful.  The proof was
-therefore allowed to use remembered sets internally, but the end result still had
-to be a roots-level graph-isomorphism statement.
+This distinction makes clear which assumptions concern ordinary graph/heap
+well-formedness and which concern mutable-collector remembered-set state.
+Remembered sets are internal collector state, and exposing them in the final
+user-facing mathematical theorem would make the theorem less useful.  The proof
+was therefore allowed to use remembered sets internally, but the end result still
+had to be a roots-level graph-isomorphism statement.
 
 \section{The Proof Task}
 
@@ -224,13 +225,10 @@ roots-level graph-isomorphism property:
 Theorem garbage_collect_isomorphism:
   forall roots1 roots2 g1 h1 rh1 rmst1 g2 h2 rh2 rmst2,
     graph_unmarked g1 -> no_unrecorded_backward_edge g1 rh1 ->
-    no_dangling_dst g1 ->
-    roots_graph_compatible roots1 g1 ->
-    sound_gc_graph g1 ->
-    remset_graph_state g1 O rmst1 rh1 ->
+    no_dangling_dst g1 -> roots_graph_compatible roots1 g1 ->
+    sound_gc_graph g1 -> remset_graph_state g1 O rmst1 rh1 ->
     remset_heap_covers_graph g1 rh1 ->
-    garbage_collect_relation roots1 roots2
-      g1 h1 rh1 rmst1 g2 h2 rh2 rmst2 ->
+    garbage_collect_relation roots1 roots2 g1 h1 rh1 rmst1 g2 h2 rh2 rmst2 ->
     gc_graph_iso g1 roots1 g2 roots2.
 \end{lstlisting}
 
@@ -262,16 +260,23 @@ augmented-root isomorphism back to ordinary roots.  Thus the remembered set
 closes reachability during collection, but is not part of the final observable
 graph property.  After the collection of one generation, the remembered-set
 component for that generation is reset.  The proof must show that no unrecorded
-backward edge is introduced by this sequence.  One key preservation lemma has
-the following role:
+backward edge is introduced by this sequence.  Under the usual graph and
+remembered-set compatibility hypotheses, the key preservation lemma has the
+following shape:
 
 \begin{lstlisting}
-do_generation_relation_no_unrecorded_backward_edge_reset
+Lemma do_generation_relation_no_unrecorded_backward_edge_reset:
+  no_unrecorded_backward_edge g rh ->
+  remset_compatible g outlier i rmst rh h ->
+  do_generation_relation i (S i) roots roots'
+    g h rh rmst g_rem h_rem rh' rmst' g' h' ->
+  no_unrecorded_backward_edge g' (reset_nth_remset_heap i rh').
 \end{lstlisting}
 
-This lemma connects the full one-generation collection relation, including
-remembered-set forwarding and reset, back to the invariant needed by the outer
-garbage-collection loop.
+This statement says that one-generation collection may consume the current
+generation's remembered set and reset it, but the resulting graph and
+remembered-set heap still satisfy the recorded-backward-edge invariant needed by
+the outer garbage-collection loop.
 
 The task was therefore not just to patch broken proof scripts.  It required a
 change in proof architecture:
@@ -392,11 +397,7 @@ to decide whether accepting it preserved the intended collector specification.
 The human guidance was deliberately conservative.  New or changed lemmas were
 acceptable, but new or changed \texttt{Definition}s required discussion.
 Preconditions were not to be added to \VST{} specs unless there was concrete
-evidence that the source program required them.  In particular,
-\texttt{no\_unrecorded\_backward\_edge} was kept as a separate
-\texttt{garbage\_collect\_spec} precondition rather than being silently folded
-into \texttt{garbage\_collect\_condition}.  Stronger assumptions can compile
-while weakening the result.
+evidence that the source program required them.
 
 This constraint appeared early in the scanner proof.  The proof effort asked
 whether the scanner specification really needed a positive available-space
