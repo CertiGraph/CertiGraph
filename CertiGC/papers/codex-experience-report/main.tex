@@ -51,7 +51,7 @@ invalidate the old global \texttt{no\_backward\_edge} assumption, so the proof
 had to be reorganized around a remembered-set invariant stating that every
 backward edge is recorded.
 
-The case differs from recent AI-assisted formal-proof reports: unlike a new
+The case differs from recent AI-assisted formal-proof accounts: unlike a new
 compiler proof from a close template or a fresh metatheory formalization, it
 completes a long-running verification in a mature, dependency-rich
 \VST{}/\CertiGraph{} codebase.
@@ -262,10 +262,11 @@ graph property.  After the collection of one generation, the remembered-set
 component for that generation is reset.  The proof must show that no unrecorded
 backward edge is introduced by this sequence.  Under the usual graph and
 remembered-set compatibility hypotheses, the key preservation lemma has the
-following shape:
+following abridged shape:
 
 \begin{lstlisting}
 Lemma do_generation_relation_no_unrecorded_backward_edge_reset:
+  ... ->
   no_unrecorded_backward_edge g rh ->
   remset_compatible g outlier i rmst rh h ->
   do_generation_relation i (S i) roots roots'
@@ -293,28 +294,28 @@ relation agree.
 \end{itemize}
 
 Table~\ref{tab:proof-architecture} gives the proof architecture used to organize
-the repair.  The same invariant appears differently at each layer: as spatial
-resources in \VST{} proofs, as graph facts in the invariant library, as
+the repair.  The same invariant appears differently in each proof component: as
+spatial resources in \VST{} proofs, as graph facts in the invariant library, as
 premises of the abstract collection relation, and finally as assumptions of the
-mathematical theorem.  This layering is why a theorem-level repair was not
-enough by itself.
+mathematical theorem.  This component structure is why a theorem-level repair
+was not enough by itself.
 
 \begin{table}[t]
 \centering
-\caption{Proof layers and their repair roles.}
+\caption{Proof components and their repair roles.}
 \label{tab:proof-architecture}
 \scriptsize
 \begin{tabular}{@{}L{0.15\linewidth}L{0.25\linewidth}L{0.28\linewidth}L{0.24\linewidth}@{}}
 \toprule
-Layer & Main Files & Contract & Repair Issue \\
+Component & Main Files & Contract & Repair Issue \\
 \midrule
-One-generation C proof &
+One-generation \VST{} proof &
 \texttt{verif\tus do\tus generation.v} &
 The C function implements the generation-step relation after
 \texttt{forward\tus remset}, root forwarding, and scanning. &
 Reorder the proof around the new call sequence without strengthening scanner
 preconditions. \\
-Collector-loop C proof &
+Collector-loop \VST{} proof &
 \texttt{verif\tus garbage\tus collect.v} &
 The loop implements \texttt{garbage\tus collect\tus relation}. &
 Preserve remembered-set compatibility and invariants across collection and
@@ -345,7 +346,7 @@ one-shot proof generation.  The assistant was given access to the repository and
 was allowed to edit files and run targeted builds.  The human supplied the proof
 goal, design constraints, and course corrections.
 
-\paragraph{Proof-layer ordering.}
+\paragraph{Proof-component ordering.}
 The order of repair followed the proof architecture.  The \VST{} files first had
 to establish that the changed C collector still satisfied the abstract
 relations used by the mathematical proof.  Only after
@@ -464,7 +465,7 @@ Nov. 2024--May 3, 2026 & 74 CertiGC commits; +17953/-4967 & whole branch slice \
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:timeline} summarizes the proof-layer milestones of the
+Table~\ref{tab:timeline} summarizes the proof-component milestones of the
 Codex-assisted sprint.  The key point is that the main mathematical theorem was
 not the last milestone.  It compiled on April 29.  The following days audited
 the connection between the \VST{} specification and that theorem, removed the
@@ -478,7 +479,7 @@ maintainable.
 \scriptsize
 \begin{tabular}{@{}L{0.13\linewidth}L{0.18\linewidth}L{0.39\linewidth}L{0.22\linewidth}@{}}
 \toprule
-Date & Proof Layer & Technical Issue & Outcome \\
+Date & Proof Component & Technical Issue & Outcome \\
 \midrule
 Apr. 22--26 & One-generation \VST{} proof &
 Repair \texttt{verif\tus do\tus generation.v} for the new
@@ -541,11 +542,13 @@ MCP calls, meaning calls through the Rocq proof-state tool interface, are a
 subset of the function-tool-call count, not an additional category added on top
 of total tool calls.  Proof-checking invocations overlap with both shell builds
 and Rocq MCP checks; they should be read as a behavioral category, not as a
-disjoint row of the table.  Git counts are command invocations in the
-transcripts, not distinct repository commits, and apply-patch counts are patch
-tool invocations rather than semantically distinct edits.  The two rollout files
-were selected because their substantive content was the CertiGC mutable-GC
-repair; no other project logs were included.  I report wall-clock time as the
+disjoint row of the table.  The shell command subcategories are likewise
+behavioral tags rather than a partition of all shell calls.  Git counts are
+command invocations in the transcripts, not distinct repository commits, and
+apply-patch counts are patch tool invocations rather than semantically distinct
+edits.  The two rollout files were selected because their substantive content
+was the CertiGC mutable-GC repair; no other project logs were included.  I
+report wall-clock time as the
 sum of each active day's first-to-last transcript span; the longer calendar span
 is included only to make clear that the transcript spans multiple calendar days.
 The statistics are cut off at May 3, 2026, the end of the mutable-collector
@@ -708,7 +711,7 @@ proof scripts directly; they supplied high-level guidance and reviewed the
 result.
 
 The present experience is similar in three respects.  First, both tasks are
-substantial mechanized proofs in established verified-compiler infrastructure.
+substantial mechanized proofs in established \Coq{} verification infrastructure.
 Second, both rely on the proof assistant as a machine checker, not on the
 language model's self-assessment.  Third, both show that an agent can make
 progress when it can search a mature codebase, edit files, and run the checker
