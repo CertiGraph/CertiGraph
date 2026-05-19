@@ -51,10 +51,10 @@ invalidate the old global \texttt{no\_backward\_edge} assumption, so the proof
 had to be reorganized around a remembered-set invariant stating that every
 backward edge is recorded.
 
-The case differs from recent reports of LLMs generating new compiler proofs
-from a close template.  Here Codex was used to finish a long-running, partially
-developed verification in a mature, dependency-rich \VST{}/\CertiGraph{}
-codebase.
+The case differs from recent AI-assisted formal-proof reports: unlike a new
+compiler proof from a close template or a fresh metatheory formalization, it
+completes a long-running verification in a mature, dependency-rich
+\VST{}/\CertiGraph{} codebase.
 The machine checker remained the arbiter of correctness, while the human role
 shifted toward adjudicating invariant proposals, constraining specification
 changes, reviewing theorem statements, and deciding when proof cleanup was
@@ -63,9 +63,8 @@ The final sprint repaired the \VST{} relation proofs first, then restored the
 mathematical graph-isomorphism theorem, and only then audited the premise path
 from the \VST{} specification to the theorem.  That audit found and removed a
 stale \texttt{no\_backward\_edge} condition from the \VST{}-facing proof path.
-We report the workflow, the resulting artifact, and lessons about where an
-agentic assistant was useful and where human proof-engineering judgment remained
-essential.
+We report the workflow, artifact, and lessons about agentic assistance and human
+proof-engineering judgment.
 \end{abstract}
 
 \begin{document}
@@ -74,13 +73,15 @@ essential.
 
 \section{Introduction}
 
-Large language models are now routinely used as programming assistants, but
-their usefulness for formal verification remains more delicate than for ordinary
-software development.  An assistant can generate a large volume of code quickly,
-yet the risk is not merely that the code fails to compile.  In a proof
-assistant, the most damaging failure mode is often a silently weakened theorem,
-an inappropriate new precondition, or a specification change that makes the
-proved result no longer say what the development needs.
+Large language models are now routinely used as programming assistants, and
+proof engineering is beginning to adopt the same style of tool.  In ordinary
+software development, compilation is only a weak check on behavior.  In formal
+verification, by contrast, a proof script accepted by the kernel establishes its
+stated theorem.  The central risk is therefore not that one must trust the
+generated proof script, but that the definitions, theorem statement, or
+specification boundary may no longer express the intended result.  A silently
+weakened theorem, an inappropriate new precondition, or a specification change
+can make a checked proof certify the wrong property.
 
 This paper reports on a concrete proof-engineering experience in that setting:
 using OpenAI Codex to help complete the mutable-garbage-collector branch of
@@ -102,16 +103,17 @@ obtain a plausible proof script, but to get the repository into a state where
 the existing verification target compiled and the final theorem had the intended
 shape.
 
-The sprint proceeded through three proof layers.  First, the \VST{} proof of
-\texttt{do\_generation} had to account for the new remembered-set forwarding
-call in the C code.  Second, the \VST{} proof of the outer
-\texttt{garbage\_collect} loop had to preserve the remembered-set invariants
-across generation collection and reset.  Third, \texttt{gc\_correct.v} had to
-re-establish the mathematical theorem that the abstract collection relation
-preserves roots-level graph isomorphism.  The main theorem compiled before the
-end of the sprint; the final days were spent auditing assumptions, removing the
-obsolete invariant route from the specification path, and simplifying the proof
-artifact.
+The sprint had three main proof tasks across two conceptual levels.  At the
+\VST{} level, the proof of \texttt{do\_generation} first had to account for the
+new remembered-set forwarding call in the C code.  Once that callee
+specification was restored, the proof of the outer
+\texttt{garbage\_collect} loop could rely on it and had to preserve the
+remembered-set invariants across generation collection and reset.  At the
+mathematical level, \texttt{gc\_correct.v} had to re-establish that the abstract
+collection relation preserves roots-level graph isomorphism.  The main theorem
+compiled before the end of the sprint; the final days were spent auditing
+assumptions, removing the obsolete invariant route from the specification path,
+and simplifying the proof artifact.
 
 The experience was inspired by Paraskevopoulou's recent report on using Claude
 Code to mechanize an ANF transformation correctness proof for CertiCoq
@@ -253,9 +255,15 @@ while the theorem conclusion remains about ordinary roots.
 The hard part was to bridge remembered-set forwarding, root forwarding,
 scanning, and reset into the graph-isomorphism proof.  Forwarding remembered-set
 entries temporarily turns recorded old-to-young edges into effective roots.
-After the collection of one generation, the remembered-set component for that
-generation is reset.  The proof must show that no unrecorded backward edge is
-introduced by this sequence.  One key preservation lemma has the following role:
+The one-generation argument proves isomorphism for ordinary roots augmented with
+those effective roots.  Because \texttt{gc\_graph\_iso} observes only the
+subgraph reachable from its listed roots, the proof then restricts this
+augmented-root isomorphism back to ordinary roots.  Thus the remembered set
+closes reachability during collection, but is not part of the final observable
+graph property.  After the collection of one generation, the remembered-set
+component for that generation is reset.  The proof must show that no unrecorded
+backward edge is introduced by this sequence.  One key preservation lemma has
+the following role:
 
 \begin{lstlisting}
 do_generation_relation_no_unrecorded_backward_edge_reset
@@ -387,9 +395,8 @@ Preconditions were not to be added to \VST{} specs unless there was concrete
 evidence that the source program required them.  In particular,
 \texttt{no\_unrecorded\_backward\_edge} was kept as a separate
 \texttt{garbage\_collect\_spec} precondition rather than being silently folded
-into \texttt{garbage\_collect\_condition}.  This mattered because an LLM can make
-progress by strengthening assumptions in ways that compile but weaken the
-scientific result.
+into \texttt{garbage\_collect\_condition}.  Stronger assumptions can compile
+while weakening the result.
 
 This constraint appeared early in the scanner proof.  The proof effort asked
 whether the scanner specification really needed a positive available-space
@@ -728,6 +735,15 @@ an existing architecture.  For invariant repair, the main question is whether
 the assistant helps converge on the right architecture while preserving the
 semantic contract.  In this case, Codex was more like a persistent proof
 maintenance collaborator than an autonomous prover.
+
+A contemporaneous non-archival report by \citet{sergey2026moveborrow} describes
+an AI-assisted Lean mechanization of the Move borrow checker's type soundness
+theorem.  Although that work is PL metatheory rather than \VST{} program
+verification, it reports a similar pattern: the assistant handled preservation
+cases, invariant propagation, and proof repair, while the human researcher
+supplied the decisive semantic structure.  Together, these reports suggest that
+agentic assistants work best with a machine checker validating small edits and
+human review guarding semantic structure.
 
 \section{Limitations and Validation}
 
