@@ -56,7 +56,7 @@ The case differs from recent AI-assisted formal-proof accounts: unlike a new
 compiler proof from a close template or a fresh metatheory formalization, it
 completes a long-running verification in a mature codebase built on the Verified
 Software Toolchain (\VST{}) and \CertiGraph{}.
-The machine checker remained the arbiter of correctness, while the human role
+The \Rocq{} kernel remained the arbiter of correctness, while the human role
 shifted toward adjudicating invariant proposals, constraining specification
 changes, reviewing theorem statements, and deciding when proof cleanup was
 justified.
@@ -103,10 +103,9 @@ structures, a verified \texttt{forward\_remset}, updates to the mutator-side
 \texttt{mutable\_update} specification, and a refactoring of thread information
 to carry remembered-set state.  The later phase used Codex as an agentic coding
 assistant: it read the codebase, edited proof files, ran \texttt{make}, diagnosed
-errors, proposed helper lemmas, and performed cleanup.  The goal was not to
-obtain a plausible proof script, but to get the repository into a state where
-the existing verification target compiled and the final theorem had the intended
-shape.
+errors, proposed helper lemmas, and performed cleanup.  The goal was not merely
+to produce local proof-script fragments, but to state the final theorem
+correctly and have its proof accepted by the \Rocq{} kernel.
 
 The Codex-assisted development had three main proof tasks across two conceptual
 levels.  At the \VST{} level, the proof of \texttt{do\_generation} first had to
@@ -115,10 +114,10 @@ specification was restored, the proof of the outer
 \texttt{garbage\_collect} loop could rely on it and had to preserve the
 remembered-set invariants across generation collection and reset.  At the
 mathematical level, \texttt{gc\_correct.v} had to re-establish that the abstract
-collection relation preserves roots-level graph isomorphism.  The main theorem
-compiled on April 29, 2026; the final days were spent auditing
-assumptions, removing the obsolete invariant route from the specification path,
-and simplifying the proof artifact.
+collection relation preserves roots-level graph isomorphism.  Completing the
+machine-checked proof of the main theorem was not the endpoint: the remaining
+work audited assumptions, removed the obsolete invariant route from the
+specification path, and simplified the proof artifact.
 
 The experience was inspired by a recent report
 \citep{paraskevopoulou2026machinegenerated} on using Claude Code to mechanize
@@ -255,11 +254,11 @@ older generation to a younger one.  The write barrier records the location of
 that edge in the remembered-set space for the destination generation.  During
 generation collection, \texttt{forward\_remset} interprets those recorded
 locations and forwards the target objects, so that subsequent root forwarding
-and scanning close reachability from both program roots and remembered
-locations.  After the generation is collected and its remembered-set component
-is reset, the proof must re-establish that any remaining backward edge in the
-resulting graph is still recorded in the appropriate remembered set.  Thus
-remembered sets are used to close reachability during collection.
+and scanning compute the reachability closure from both program roots and
+remembered locations.  After the generation is collected and its remembered-set
+component is reset, the proof must re-establish that any remaining backward edge
+in the resulting graph is still recorded in the appropriate remembered set.
+Thus remembered-set entries are treated as additional roots during collection.
 
 The hard part was to bridge remembered-set forwarding, root forwarding,
 scanning, and reset into the graph-isomorphism proof.  Forwarding remembered-set
@@ -375,7 +374,7 @@ make CertiGC/verif_garbage_collect.vo
 \end{lstlisting}
 
 Full builds with \texttt{make -j8} were used at integration points.  The
-machine checker was the primary feedback mechanism; Codex's natural-language
+\Rocq{} kernel was the primary feedback mechanism; Codex's natural-language
 explanations were useful mainly when the failure indicated a mismatch between
 the intended invariant and the proof state.
 
@@ -464,19 +463,19 @@ manual edits from Codex-assisted edits.
 \toprule
 Interval & Evidence & Notes \\
 \midrule
-Nov. 2024--Aug. 2025 & 16 CertiGC commits; +5292/-2086 & early groundwork \\
+Nov. 2024--Aug. 2025 & 16 git commits; +5292/-2086 & early groundwork \\
 Mar. 26, 2026 & +30/-33 in one file & compatibility checkpoint \\
-Apr. 22--May 3, 2026 & 51 CertiGC commits; +13340/-3557 & Codex-assisted phase \\
-Nov. 2024--May 3, 2026 & 74 CertiGC commits; +17953/-4967 & whole branch slice \\
+Apr. 22--May 3, 2026 & 51 git commits; +13340/-3557 & Codex-assisted phase \\
+Nov. 2024--May 3, 2026 & 74 git commits; +17953/-4967 & whole branch slice \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Table~\ref{tab:timeline} summarizes the proof-component milestones of this
 phase.  The key point is that the main mathematical theorem was
-not the last milestone.  It compiled on April 29.  The following days audited
-the connection between the \VST{} specification and that theorem, removed the
-remaining obsolete invariant route, and made the proof artifact more
+not the last milestone.  \Rocq{} accepted its proof on April 29.  The following
+days audited the connection between the \VST{} specification and that theorem,
+removed the remaining obsolete invariant route, and made the proof artifact more
 maintainable.
 
 \begin{table}[t]
@@ -503,7 +502,7 @@ Apr. 28--29 & Mathematical correctness proof &
 Reconstruct \texttt{gc\tus correct.v} around
 \texttt{no\tus unrecorded\tus backward\tus edge}, because mutable updates make
 the old \texttt{no\tus backward\tus edge} route false. &
-\texttt{94922344}: main theorem compiled. \\
+\texttt{94922344}: main theorem accepted by \Rocq{}. \\
 May 1 & Specification and premise audit &
 Check whether the \VST{}-facing \texttt{garbage\tus collect\tus spec} premises justify
 the assumptions of the final theorem; remove the stale
@@ -596,17 +595,18 @@ Metric & Value \\
 \multicolumn{2}{@{}l}{\textit{Time}} \\
 \quad Calendar-span hours & 265.9 \\
 \quad Wall-clock hours, per-day sum & 106.5 \\
-\quad Active hours & 59.3 \\
+\quad Codex active hours & 59.3 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 These numbers characterize a supervised, checker-driven workflow.  The 59.3
-active hours and 415 human prompts show sustained interaction rather than a
-single autonomous generation attempt.  The large number of shell, search, read,
-and build commands reflects the main mode of work: Codex repeatedly navigated
-the existing repository, made small proof edits, and used the machine checker to
-test whether each local repair matched the surrounding proof architecture.
+Codex active hours and 415 human prompts show sustained interaction rather than
+a single autonomous generation attempt.  The large number of shell, search,
+read, and build commands reflects the main mode of work: Codex repeatedly
+navigated the existing repository, made small proof edits, and used the \Rocq{}
+kernel to test whether each local repair matched the surrounding proof
+architecture.
 
 The aggregate statistics hide an important distinction between theorem repair
 and post-theorem cleanup, so Table~\ref{tab:per-day-stats} breaks the same
@@ -702,11 +702,11 @@ can both propose a better invariant and make local progress under an
 over-strong assumption.  Human review is needed to identify the path that
 preserves the intended theorem.
 
-\paragraph{Compilation is not the end of validation.}
-The branch did not stop at the first successful top-level theorem.  After
-\texttt{garbage\_collect\_isomorphism} compiled, the remaining question was
-whether the \VST{} specification path justified exactly the assumptions of that
-theorem.  The May 1 premise audit removed the obsolete
+\paragraph{A completed machine-checked proof is not the end of validation.}
+The branch did not stop when \Rocq{} first accepted the top-level theorem
+\texttt{garbage\_collect\_isomorphism}.  The remaining question was whether the
+\VST{} specification path justified exactly the assumptions of that theorem.
+The May 1 premise audit removed the obsolete
 no-backward-edge path from \VST{}-facing conditions and made the
 recorded-backward-edge condition the explicit mutable-GC invariant.
 Subsequent cleanup factored repeated reset-preservation arguments, simplified
