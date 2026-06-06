@@ -71,7 +71,7 @@ Suggested handling: keep using "Rocq kernel", "proof assistant kernel", or
 "machine checker" when the point is trusted proof checking; use "Codex" when
 the point is LLM assistance.
 
-### C02. Page 1, highlight
+### C02. DONE. Page 1, highlight
 
 Highlighted location: the introductory CertiGC background sentence around
 "generational copying collector".
@@ -87,6 +87,9 @@ mutable-GC branch matters.
 
 Confidence note: the visible highlight appears on "collector"; the comment
 itself is a proposed insertion rather than a normal explanatory note.
+
+Resolution note: the paper now states the confirmed limitation for mutable
+references and updateable arrays, but does not include the byte-string claim.
 
 ### C03. DONE. Page 1, caret insertion
 
@@ -142,7 +145,7 @@ C code compile, or does the entire theorem check in Rocq?
 Suggested handling: say explicitly whether the repository's Rocq build checked,
 the relevant `.v` files compiled to `.vo`, or the final theorem checked.
 
-### C08. Page 1, text note
+### C08. DONE. Page 1, text note
 
 Comment: How much of the previous hand proof from 2024--2025 was preserved?
 Did Codex recreate the whole process?  If Codex recreated it, how much of the
@@ -152,11 +155,20 @@ Suggested handling: add a paragraph on continuity from the earlier human phase:
 which definitions/specifications/proof files were already present, which parts
 were repaired by Codex, and what human expertise remained necessary.
 
-### C09. Page 1, text note
+Resolution note: the introduction now states that Codex inherited the existing
+definitions, specifications, and partially repaired proofs rather than
+recreating them.  The repository-evidence table now reports the pre-Codex human
+groundwork as 23 git commits with net +5316/-2113 in `CertiGC`, compared with
+51 git commits and net +13340/-3557 in the Codex-assisted phase.
+
+### C09. DONE. Page 1, text note
 
 Comment: send the next draft to Tim Carstens as well; he will be interested.
 
 Suggested handling: not a paper edit, but note for circulation.
+
+Resolution note: this is treated as a non-paper circulation action; no paper
+text change is needed.
 
 ### C10. Page 1, text note
 
@@ -248,7 +260,7 @@ Suggested handling: when contrasting the ordinary graph/heap condition with
 the remembered-set invariant, explicitly state that the former is independent
 of the remembered set.
 
-### C19. Page 3, highlight
+### C19. DONE. Page 3, highlight
 
 Highlighted text:
 `Definition no_unrecorded_backward_edge (g: LGraph) (rh: remset_heap) : Prop :=`
@@ -259,6 +271,9 @@ Suggested handling: state the division of labor around the predicate: Codex
 proposed and first formalized the no-unrecorded-backward-edge predicate in the
 interaction, while the human author judged that this was the right semantic
 replacement for the old no-backward-edge premise.
+
+Resolution note: the paper now states this division of labor next to the
+predicate definition.
 
 ### C20. Page 3, highlight
 
@@ -295,7 +310,7 @@ Suggested handling: clarify why a backward edge can remain after collection:
 the relevant object may be in, or have been promoted into, an older generation
 not collected in that collection step.
 
-### C23. Page 4, caret insertion
+### C23. DONE. Page 4, caret insertion
 
 Insertion location: just before or around the displayed preservation lemma
 `do_generation_relation_no_unrecorded_backward_edge_reset`.
@@ -310,6 +325,11 @@ right replacement for the old no-backward-edge condition.
 Confidence note: the visible caret is near "the following abridged shape"; the
 comment likely asks who designed the key predicate/lemma, not just who wrote
 the displayed code.
+
+Resolution note: the paper now states near the preservation lemma that Codex
+introduced the VST-facing reset-preservation lemma shape under the accepted
+invariant, while the author reviewed its semantic role and later directed the
+core-and-wrapper factoring.
 
 ### C24. Page 4, highlight
 
@@ -444,7 +464,7 @@ Comment: insert "Codex ".
 Suggested handling: rename the metric to "Codex active hours" or equivalent,
 so it is not confused with active human hours.
 
-### C37. Page 8, text note
+### C37. DONE. Page 8, text note
 
 Location: Table 4 and the paragraph below it.
 
@@ -455,6 +475,10 @@ how many wall-clock hours the human would have needed without Codex?
 Suggested handling: this is probably not derivable from rollout logs alone.  If
 included, it should be explicitly labeled as an author estimate rather than a
 transcript-derived statistic.
+
+Resolution note: active human hours and hypothetical human-only effort are not
+reported, because the author cannot estimate them reliably from the available
+evidence.
 
 ### C38. DONE. Page 9, highlight
 
@@ -482,19 +506,17 @@ not from an unchecked Codex weakening.
 
 ## Items needing author confirmation
 
-1. Whether the historical statement about CertiGC being proved correct in 2018
-   and its limitations for mutable references, updateable arrays, and byte
-   strings is exactly correct.
+1. DONE. State the confirmed limitation for mutable references and updateable
+   arrays; omit the byte-string claim.
 
-2. How much of the 2024--2025 hand proof was preserved in the final branch, and
-   how much Codex repaired or regenerated.
+2. DONE. Report the pre-Codex human groundwork and clarify that Codex inherited
+   existing definitions, specifications, and partially repaired proofs.
 
-3. Whether to add an estimated human-only time cost and active human hours.
+3. DONE. Do not add an estimated human-only time cost or active human hours.
 
-4. How to describe authorship of `no_unrecorded_backward_edge`: Codex proposed
-   and formalized the predicate in the interaction history, while the author
-   decided that replacing the old no-backward-edge premise with this invariant
-   was semantically right.
+4. DONE. Describe authorship as Codex proposing/formalizing the predicate and
+   the author accepting it after semantic review as the right replacement for
+   the old no-backward-edge premise.
 
-5. Whether to include the suggested non-paper action of sending the next draft
-   to Tim Carstens.
+5. DONE. Treat sending the next draft to Tim Carstens as a non-paper
+   circulation action.

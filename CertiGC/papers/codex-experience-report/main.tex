@@ -90,9 +90,11 @@ the mutable-garbage-collector branch of \CertiGC{}.  \CertiGC{} is part of the
 \CertiGraph{} development \citep{wang2019certigraph}, which uses the Verified
 Software Toolchain (\VST{}) \citep{appel2014programlogics} and \Rocq{} to
 verify C programs manipulating heap-represented graphs.  The collector is a
-generational copying collector.  The mutable extension adds a write barrier and
-remembered sets so that the collector remains correct when older objects can be
-mutated to point to younger ones.
+generational copying collector.  The original CertiGC proof did not cover
+mutable references or updateable arrays, whose updates can create pointers from
+older objects to younger ones after allocation.  The mutable extension adds a
+write barrier and remembered sets so that the collector remains correct for
+such updates.
 This report uses \Rocq{} for the proof assistant formerly named \Coq{}; the
 older name is retained in names such as CertiCoq and in descriptions of older
 verification infrastructure.
@@ -103,11 +105,14 @@ branch already contained substantial design and verification work:
 remembered-set data structures, a verified \texttt{forward\_remset} function
 for processing remembered-set entries, updates to the mutator-side
 \texttt{mutable\_update} specification, and a refactoring of thread information
-to carry remembered-set state.  The later phase used Codex as an agentic coding
-assistant: it read the codebase, edited proof files, ran \texttt{make}, diagnosed
-errors, proposed helper lemmas, and performed cleanup.  The goal was not merely
-to produce local proof-script fragments, but to state the final theorem
-correctly and have its proof accepted by the \Rocq{} kernel.
+to carry remembered-set state.  Codex did not recreate this groundwork from
+scratch; it inherited these definitions, specifications, and partially repaired
+proofs, then worked on the remaining proof obligations and cleanup.  The
+Codex-assisted phase used the assistant as an agentic coding tool: it read the
+codebase, edited proof files, ran \texttt{make}, diagnosed errors, proposed
+helper lemmas, and performed cleanup.  The goal was not merely to produce local
+proof-script fragments, but to state the final theorem correctly and have its
+proof accepted by the \Rocq{} kernel.
 
 The Codex-assisted development had three main proof tasks across two conceptual
 levels.  At the \VST{} level, the proof of \texttt{do\_generation} first had to
@@ -218,8 +223,12 @@ Definition no_unrecorded_backward_edge (g: LGraph) (rh: remset_heap): Prop :=
        (nth_remset_space rh (vgeneration (dst g e))).
 \end{lstlisting}
 
-This distinction makes clear which assumptions concern ordinary graph/heap
-well-formedness and which concern mutable-collector remembered-set state.
+Codex first proposed and formalized this predicate during the repair session;
+the author accepted it after semantic review as the right replacement for the
+old no-backward-edge condition.
+The separation between \texttt{garbage\_collect\_condition} and this predicate
+makes clear which assumptions concern ordinary graph/heap well-formedness and
+which concern mutable-collector remembered-set state.
 In this definition, the comparison
 \texttt{egeneration e > vgeneration (dst g e)} selects old-to-young edges: the
 edge starts in an older generation and points into a younger one.  The
@@ -277,7 +286,10 @@ augmented-root isomorphism back to ordinary roots.  After that restriction, the
 reset proof must show that resetting the collected generation's remembered-set
 component does not introduce any unrecorded backward edge.  Under the usual graph
 and remembered-set compatibility hypotheses, the key preservation lemma has the
-following abridged shape:
+following abridged shape.  Codex introduced this lemma shape as the
+\VST{}-facing reset-preservation fact once the recorded-backward-edge invariant
+was accepted; the author reviewed its semantic role and later directed the
+core-and-wrapper factoring of related reset-preservation lemmas.
 
 \begin{lstlisting}
 Lemma do_generation_relation_no_unrecorded_backward_edge_reset:
@@ -465,7 +477,9 @@ artifact discussed here is pull request 30 at
 Table~\ref{tab:repo-evidence} summarizes repository evidence extracted from the
 git history.  These numbers should be read as artifact statistics, not as a
 precise measure of human or AI labor.  The git author field does not distinguish
-manual edits from Codex-assisted edits.
+manual edits from Codex-assisted edits; the phase boundary below comes from the
+transcript-confirmed start of the Codex-assisted work and the corresponding
+commit dates.
 
 \begin{table}[t]
 \centering
@@ -475,8 +489,7 @@ manual edits from Codex-assisted edits.
 \toprule
 Interval & Evidence & Notes \\
 \midrule
-Nov. 2024--Aug. 2025 & 16 git commits; +5292/-2086 & early groundwork \\
-Mar. 26, 2026 & +30/-33 in one file & compatibility checkpoint \\
+Nov. 2024--Mar. 26, 2026 & 23 git commits; +5316/-2113 & human groundwork \\
 Apr. 22--May 3, 2026 & 51 git commits; +13340/-3557 & Codex-assisted phase \\
 Nov. 2024--May 3, 2026 & 74 git commits; +17953/-4967 & whole branch slice \\
 \bottomrule
