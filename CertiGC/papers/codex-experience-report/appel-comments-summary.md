@@ -275,7 +275,7 @@ replacement for the old no-backward-edge premise.
 Resolution note: the paper now states this division of labor next to the
 predicate definition.
 
-### C20. Page 3, highlight
+### C20. DONE. Page 3, highlight
 
 Highlighted text: "remembered-set states"
 
@@ -287,6 +287,9 @@ understandable.
 Suggested handling: add a short bridge before the formal theorem explanation:
 VST speaks about concrete C states and separation-logic resources, while the
 functional model and correctness theorem speak about abstract graph heaps.
+
+Resolution note: the proof-task section now opens with this bridge and explains
+the roles of remembered-set heaps (`rh`) and remembered-set states (`rmst`).
 
 ### C21. DONE. Page 4, highlight
 
@@ -331,7 +334,7 @@ introduced the VST-facing reset-preservation lemma shape under the accepted
 invariant, while the author reviewed its semantic role and later directed the
 core-and-wrapper factoring.
 
-### C24. Page 4, highlight
+### C24. DONE. Page 4, highlight
 
 Highlighted text: "Only after `verif_do_generation.v` and
 `verif_garbage_collect.v` compiled was it productive to repair `gc_correct.v`."
@@ -345,6 +348,9 @@ collection.
 
 Suggested handling: add this proof-architecture overview before discussing the
 file-ordering workflow.
+
+Resolution note: the proof-task section now begins with the two-layer proof
+architecture before presenting the main theorem or the workflow ordering.
 
 ### C25. DONE. Page 5, caret insertion
 

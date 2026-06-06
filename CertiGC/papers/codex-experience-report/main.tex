@@ -242,8 +242,26 @@ program roots, without exposing remembered-set bookkeeping in the result.
 
 \section{The Proof Task}
 
-The central proof target was the following theorem, whose hypotheses expose the
-new remembered-set assumptions while its conclusion retains the original
+The proof task sits between two layers of the CertiGC development.  The
+\VST{} layer reasons about concrete C states through separation-logic
+resources and proves that functions such as \texttt{do\_generation} and
+\texttt{garbage\_collect} implement abstract graph relations in
+\texttt{GCGraph.v}.  The mathematical layer, especially
+\texttt{gc\_correct.v}, reasons about those abstract graphs and proves that
+collection preserves the live, roots-reachable part of the graph up to
+isomorphism.  The mutable-GC repair therefore had to keep the C specifications,
+the abstract collection relations, and the graph-isomorphism theorem aligned.
+
+In the remembered-set development, \texttt{rh} denotes the abstract
+remembered-set heap threaded through the graph relations.  The variable
+\texttt{rmst} denotes remembered-set state used by compatibility predicates that
+connect this heap to the graph and to the \VST{}-facing representation
+invariants.  This bridge explains why both kinds of remembered-set objects
+appear in the theorem below even though neither appears in its observable
+conclusion.
+
+The central proof target was the following theorem.  Its hypotheses expose the
+new remembered-set assumptions, while its conclusion retains the original
 roots-level graph-isomorphism property:
 
 \begin{lstlisting}
@@ -257,9 +275,8 @@ Theorem garbage_collect_isomorphism:
     gc_graph_iso g1 roots1 g2 roots2.
 \end{lstlisting}
 
-Here \texttt{rh1} and \texttt{rh2} are remembered-set heaps, while
-\texttt{rmst1} and \texttt{rmst2} are remembered-set states.  These variables
-are needed in the hypotheses and relation, but not in the observable conclusion.
+Here the remembered-set heap and state variables are needed in the hypotheses
+and relation, but not in the observable conclusion.
 The statement reveals the main technical compromise: remembered-set state
 appears in the hypotheses and relation, while the theorem still asserts
 graph isomorphism only for ordinary program roots.
