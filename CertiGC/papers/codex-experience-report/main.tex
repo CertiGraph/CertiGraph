@@ -162,7 +162,8 @@ uses \VST{}'s Verifiable C program logic \citep{appel2014programlogics}, whose
 soundness theorem connects the logic to CompCert's C semantics
 \citep{leroy2009compcert}.
 
-Generational collection relies on the observation that most objects die young.
+Generational collection relies on the observation that most objects die young
+\citep[Chapter~9]{jones2023gchandbook}.
 The collector copies live objects from a younger ``from'' generation to an older
 ``to'' generation, forwarding roots and then scanning copied objects until all
 reachable objects have been copied.  Here, forwarding means copying a referenced

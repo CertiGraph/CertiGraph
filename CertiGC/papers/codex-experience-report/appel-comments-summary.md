@@ -216,7 +216,7 @@ thunk update in Haskell.
 Suggested handling: use these examples to explain why mutation matters in a
 functional-language runtime.
 
-### C16. Page 2, highlight
+### C16. DONE. Page 2, highlight
 
 Highlighted text: "Generational collection"
 
