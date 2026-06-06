@@ -88,7 +88,7 @@ mutable-GC branch matters.
 Confidence note: the visible highlight appears on "collector"; the comment
 itself is a proposed insertion rather than a normal explanatory note.
 
-### C03. Page 1, caret insertion
+### C03. DONE. Page 1, caret insertion
 
 Insertion location: paragraph beginning "The work began as a conventional human
 proof effort."
@@ -99,7 +99,7 @@ for mutable references)".
 Suggested handling: revise the sentence to say what the earlier human proof
 effort was trying to strengthen, instead of simply saying that it existed.
 
-### C04. Page 1, caret insertion
+### C04. DONE. Page 1, caret insertion
 
 Insertion location: after `forward_remset`.
 
@@ -194,7 +194,7 @@ dates only in that section.
 Suggested handling: either remove this date from the introduction or move it
 into the results/timeline discussion where the other dates are already present.
 
-### C14. Page 2, caret insertion
+### C14. DONE. Page 2, caret insertion
 
 Insertion location: after the sentence saying the heap was effectively
 immutable from the collector's perspective.
@@ -206,7 +206,7 @@ could rely on the absence of old-to-young edges.
 Suggested handling: make the old immutable setting concrete before introducing
 why mutable updates break the old invariant.
 
-### C15. Page 2, caret insertion
+### C15. DONE. Page 2, caret insertion
 
 Insertion location: after "Mutable updates invalidate that invariant."
 
@@ -226,7 +226,7 @@ for this background.
 Suggested handling: add a background citation for generational collection and
 remembered sets.
 
-### C17. Page 3, highlight
+### C17. DONE. Page 3, highlight
 
 Highlighted text: "forwards remembered-set entries first"
 
@@ -238,7 +238,7 @@ Suggested handling: define forwarding before showing or discussing
 copies a reachable object to the target generation and leaves or follows a
 forwarding pointer so later references are redirected to the copied object.
 
-### C18. Page 3, caret insertion
+### C18. DONE. Page 3, caret insertion
 
 Insertion location: after the sentence introducing the ordinary heap condition.
 
@@ -283,7 +283,7 @@ Suggested handling: replace "close reachability" with clearer wording, such as
 "compute the transitive closure of reachability from both program roots and
 remembered locations", if that matches the intended technical content.
 
-### C22. Page 4, caret insertion
+### C22. DONE. Page 4, caret insertion
 
 Insertion location: the paragraph explaining that any remaining backward edge
 in the resulting graph is still recorded.
@@ -326,7 +326,7 @@ collection.
 Suggested handling: add this proof-architecture overview before discussing the
 file-ordering workflow.
 
-### C25. Page 5, caret insertion
+### C25. DONE. Page 5, caret insertion
 
 Insertion location: after `make CertiGC/GCGraph.vo`.
 
@@ -336,7 +336,7 @@ about the graph functional model".
 Suggested handling: if the command block remains, annotate commands so readers
 can see why each target matters.
 
-### C26. Page 5, caret insertion
+### C26. DONE. Page 5, caret insertion
 
 Insertion location: after `make CertiGC/gc_correct.vo`.
 
@@ -346,7 +346,7 @@ Comment: add "# rebuild proofs that the functional model preserves
 Suggested handling: explain that this target checks the mathematical
 correctness layer.
 
-### C27. Page 5, caret insertion
+### C27. DONE. Page 5, caret insertion
 
 Insertion location: after `make CertiGC/verif_garbage_collect.vo`.
 
@@ -365,7 +365,7 @@ Comment: insert "(the Rocq kernel)".
 Suggested handling: make the trusted checker explicit when explaining the
 workflow feedback mechanism.
 
-### C29. Page 5, caret insertion
+### C29. DONE. Page 5, caret insertion
 
 Insertion location: "insert `Show` commands".
 
@@ -398,7 +398,7 @@ Comment: replace "CertiGC" with "git".
 
 Suggested handling: table evidence should say "74 git commits; +17953/-4967".
 
-### C33. Page 6, highlight
+### C33. DONE. Page 6, highlight
 
 Highlighted text: "adding stronger heap/spatial preconditions to pure
 specifications"
@@ -409,7 +409,7 @@ Suggested handling: either explain the concrete bad escape hatch or remove the
 abstract phrase.  The adjacent insertion note says the issue is especially
 about not exposing remembered-set internals in the main theorem.
 
-### C34. Page 6, caret insertion
+### C34. DONE. Page 6, caret insertion
 
 Insertion location: after "exposing remembered-set internals in the statement."
 
@@ -420,7 +420,7 @@ implementation, not visible to the client)."
 Suggested handling: add this explanation, either in prose or as a footnote, if
 the sentence remains.
 
-### C35. Page 7, highlight
+### C35. DONE. Page 7, highlight
 
 Highlighted text: "route" in "the stale `no_backward_edge` route in the
 VST-facing proof"
@@ -466,7 +466,7 @@ Suggested handling: revise the topic sentence to avoid the misleading
 "compilation" wording, for example "A completed machine-checked proof is not
 the end of validation."
 
-### C39. Page 10, text note
+### C39. DONE. Page 10, text note
 
 Location: limitations/validation discussion of the stale immutable-collector
 assumption.

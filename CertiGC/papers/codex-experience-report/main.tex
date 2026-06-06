@@ -97,9 +97,11 @@ This report uses \Rocq{} for the proof assistant formerly named \Coq{}; the
 older name is retained in names such as CertiCoq and in descriptions of older
 verification infrastructure.
 
-The work began as a conventional human proof effort.  The early branch already
-contained substantial design and verification work: remembered-set data
-structures, a verified \texttt{forward\_remset}, updates to the mutator-side
+The work began as a conventional human proof effort to strengthen the
+implementation, specification, and proof for mutable references.  The early
+branch already contained substantial design and verification work:
+remembered-set data structures, a verified \texttt{forward\_remset} function
+for processing remembered-set entries, updates to the mutator-side
 \texttt{mutable\_update} specification, and a refactoring of thread information
 to carry remembered-set state.  The later phase used Codex as an agentic coding
 assistant: it read the codebase, edited proof files, ran \texttt{make}, diagnosed
@@ -116,7 +118,7 @@ remembered-set invariants across generation collection and reset.  At the
 mathematical level, \texttt{gc\_correct.v} had to re-establish that the abstract
 collection relation preserves roots-level graph isomorphism.  Completing the
 machine-checked proof of the main theorem was not the endpoint: the remaining
-work audited assumptions, removed the obsolete invariant route from the
+work audited assumptions, removed the obsolete invariant premise from the
 specification path, and simplified the proof artifact.
 
 The experience was inspired by a recent report
@@ -141,7 +143,7 @@ graph-isomorphism theorem.
 \item It records a concrete division of labor: Codex proposed the
 recorded-backward-edge invariant and helped implement its preservation, while
 the human author judged that this invariant, rather than the old
-no-backward-edge route, was the right specification for mutable GC.
+no-backward-edge condition, was the right specification for mutable GC.
 \item It reports transcript-derived interaction statistics and explains how
 those statistics should be interpreted as evidence of supervised, checker-driven
 proof maintenance rather than autonomous proof generation.
@@ -163,24 +165,26 @@ soundness theorem connects the logic to CompCert's C semantics
 Generational collection relies on the observation that most objects die young.
 The collector copies live objects from a younger ``from'' generation to an older
 ``to'' generation, forwarding roots and then scanning copied objects until all
-reachable objects have been copied.  In the original proof structure, the heap
-was effectively immutable from the collector's perspective: the proof could rely
-on the absence of old-to-young edges, usually stated as a
-\texttt{no\_backward\_edge}-style invariant.
+reachable objects have been copied.  Here, forwarding means copying a referenced
+live object to the target generation and redirecting later uses to the copy.  In
+the original proof structure, once a record cell was allocated, its fields were
+not updated.  From the collector's perspective, the heap was effectively
+immutable: the proof could rely on the absence of old-to-young edges, usually
+stated as a \texttt{no\_backward\_edge}-style invariant.
 
-Mutable updates invalidate that invariant.  A program may update a field in an
-older object to point to a younger object.  A generational collector can still be
-correct if such edges are recorded by a write barrier.  During collection, the
-remembered set is treated as an additional source of effective roots: the
-collector must forward objects reachable from recorded old-to-young edges before
-ordinary root forwarding and scanning are enough.
+Mutable updates, as used for ML-style references or lazy thunk update,
+invalidate that invariant.  A program may update a field in an older object to
+point to a younger object.  A generational collector can still be correct if
+such edges are recorded by a write barrier.  During collection, the remembered
+set is treated as an additional source of effective roots: the collector must
+forward objects reachable from recorded old-to-young edges before ordinary root
+forwarding and scanning are enough.
 
 This change broke the proof at the semantic level, not only at the tactic level.
 Keeping the old no-backward-edge invariant would make the proof easier, but it
 would verify only heaps that exclude the behavior the mutable extension is meant
-to support.  The proof repair therefore had to remove the old invariant route
-and replace it with a condition saying that backward edges may exist, but must
-be recorded.
+to support.  The proof repair therefore had to remove the old condition and
+replace it with one saying that backward edges may exist, but must be recorded.
 
 The C code in this branch therefore forwards remembered-set entries first:
 
@@ -192,7 +196,8 @@ do_scan(from->start, from->limit, p, &to->next);
 \end{lstlisting}
 
 At the specification level, the ordinary heap condition and the remembered-set
-invariant are stated separately.  The former remains a graph/heap condition:
+invariant are stated separately.  The former remains a graph/heap condition
+that does not take the remembered set as a parameter:
 
 \begin{lstlisting}
 Definition garbage_collect_condition (g: LGraph) (h : part_heap) : Prop :=
@@ -256,8 +261,9 @@ generation collection, \texttt{forward\_remset} interprets those recorded
 locations and forwards the target objects, so that subsequent root forwarding
 and scanning compute the reachability closure from both program roots and
 remembered locations.  After the generation is collected and its remembered-set
-component is reset, the proof must re-establish that any remaining backward edge
-in the resulting graph is still recorded in the appropriate remembered set.
+component is reset, the proof must re-establish that any remaining backward
+edge, whose source is in or has been promoted into an older generation not
+collected this time, is still recorded in the appropriate remembered set.
 Thus remembered-set entries are treated as additional roots during collection.
 
 The hard part was to bridge remembered-set forwarding, root forwarding,
@@ -291,7 +297,7 @@ The task was therefore not just to patch broken proof scripts.  It required a
 change in proof architecture:
 
 \begin{itemize}
-\item remove the invalid global \texttt{no\_backward\_edge} route;
+\item remove the invalid global \texttt{no\_backward\_edge} condition;
 \item introduce and preserve \texttt{no\_unrecorded\_backward\_edge};
 \item make remembered-set entries act as temporary roots during generation
 copying;
@@ -340,7 +346,7 @@ ordinary roots. \\
 Specification boundary &
 \texttt{gc\tus spec.v} and \VST{} body lemmas &
 \VST{} preconditions justify the assumptions of the mathematical theorem. &
-Remove the stale \texttt{no\tus backward\tus edge} route and expose the
+Remove the stale \texttt{no\tus backward\tus edge} condition and expose the
 recorded-backward-edge invariant explicitly. \\
 \bottomrule
 \end{tabular}
@@ -368,8 +374,11 @@ failure, searched for nearby lemmas, edited a focused region, and ran a targeted
 build such as:
 
 \begin{lstlisting}
+# rebuild definitions and proofs about the graph functional model
 make CertiGC/GCGraph.vo
+# rebuild proofs that the functional model preserves graph isomorphism
 make CertiGC/gc_correct.vo
+# rebuild proofs that the C program implements the functional model
 make CertiGC/verif_garbage_collect.vo
 \end{lstlisting}
 
@@ -385,7 +394,7 @@ start, check, and query proof files and inspect current goals without turning
 every experiment into a tracked source edit.  This made proof-state feedback
 more direct than reading compiler errors alone.  The workflow did not, however,
 depend logically on MCP support.  Similar information can be recovered by
-compiling focused temporary files that replay a proof prefix and insert
+compiling focused temporary files that replay a proof prefix while inserting
 \texttt{Show} commands, or by running targeted \texttt{.vo} builds and reading
 Rocq's error messages.  MCP was therefore an efficiency and ergonomics tool, not
 an assumption behind the proof result.
@@ -435,10 +444,12 @@ tactic choice.  The old proof failed because its semantic assumption was no
 longer true.  Although Codex proposed the recorded-backward-edge formulation,
 accepting it as the replacement invariant required understanding the collector
 algorithm, the write barrier, and the desired external theorem.  Codex could help
-explore consequences and fill in preservation lemmas, but the proof had to be
-guided away from easy but undesirable exits: adding stronger heap/spatial
-preconditions to pure specifications, or exposing remembered-set internals in
-the statement.
+explore consequences and fill in preservation lemmas, but the proof had to avoid
+easy but undesirable exits.  It would have been easier to strengthen pure
+specifications with extra heap or remembered-set preconditions, or to expose
+remembered-set internals in the main theorem.  Both changes would have altered
+the result being verified; the remembered set is implementation-private
+collector state, not part of the client-visible correctness statement.
 
 \section{Results}
 
@@ -475,7 +486,7 @@ Table~\ref{tab:timeline} summarizes the proof-component milestones of this
 phase.  The key point is that the main mathematical theorem was
 not the last milestone.  \Rocq{} accepted its proof on April 29.  The following
 days audited the connection between the \VST{} specification and that theorem,
-removed the remaining obsolete invariant route, and made the proof artifact more
+removed the remaining obsolete invariant premise, and made the proof artifact more
 maintainable.
 
 \begin{table}[t]
@@ -501,12 +512,12 @@ invariants from function-local specification requirements. &
 Apr. 28--29 & Mathematical correctness proof &
 Reconstruct \texttt{gc\tus correct.v} around
 \texttt{no\tus unrecorded\tus backward\tus edge}, because mutable updates make
-the old \texttt{no\tus backward\tus edge} route false. &
+the old \texttt{no\tus backward\tus edge} condition false. &
 \texttt{94922344}: main theorem accepted by \Rocq{}. \\
 May 1 & Specification and premise audit &
 Check whether the \VST{}-facing \texttt{garbage\tus collect\tus spec} premises justify
 the assumptions of the final theorem; remove the stale
-\texttt{no\tus backward\tus edge} route from
+\texttt{no\tus backward\tus edge} condition from
 \texttt{garbage\tus collect\tus condition}. &
 \texttt{51ca1b49}: remembered-set invariant carried explicitly through the \VST{}
 specification. \\
@@ -520,7 +531,7 @@ PR 30 prepared and merged into \texttt{live}. \\
 
 The May 1 audit began by checking whether the collector specification's
 preconditions were sufficient for the assumptions of the final isomorphism
-theorem.  That check exposed the stale \path|no_backward_edge| route in the
+theorem.  That check exposed the stale \path|no_backward_edge| premise path in the
 \VST{}-facing proof.  The condition \path|garbage_collect_condition| fed the
 \path|body_garbage_collect| loop invariant and the
 \path|gc_cond_implies_do_gen_cons| bridge to per-generation
@@ -778,6 +789,11 @@ The strongest validation is machine checking.  The relevant proof files compile,
 and the branch was merged upstream.  Nevertheless, the checker validates only
 the statements that remain in the code.  Human review is still required to judge
 whether those statements are the intended ones.
+
+The stale \texttt{no\_backward\_edge} assumption was not introduced during the
+Codex-assisted phase.  It came from the earlier proof of the effectively
+immutable collector and became invalid only when mutable updates entered the
+collector model.
 
 This account also does not claim that Codex independently discovered the whole
 remembered-set proof architecture.  Codex did propose the
