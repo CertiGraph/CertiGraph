@@ -123,7 +123,7 @@ more precise contrast, such as "not merely to obtain a script that checked
 locally" or another phrase that avoids implying that proof scripts can be
 plausible apart from the theorem they establish.
 
-### C06. Page 1, highlight
+### C06. DONE. Page 1, highlight
 
 Highlighted text: `do_generation`
 
@@ -133,6 +133,11 @@ reader is also unlikely to know how generational garbage collection works.
 
 Suggested handling: move or add a compact GC and CertiGC-code orientation
 before these function names become central.
+
+Resolution note: the introduction now gives a compact operational orientation
+before these names become central: generation collection, the mutator-side write
+barrier, `mutable_update`, `forward_remset`, and `do_generation`.  It also
+cross-references the labeled `do_generation` call-sequence listing.
 
 ### C07. DONE. Page 1, highlight
 
@@ -170,7 +175,7 @@ Suggested handling: not a paper edit, but note for circulation.
 Resolution note: this is treated as a non-paper circulation action; no paper
 text change is needed.
 
-### C10. Page 1, text note
+### C10. DONE. Page 1, text note
 
 Comment: the biggest overall comment is to reread from the viewpoint of a
 reader who knows verification, knows something about AI, knows very little
@@ -178,6 +183,14 @@ about garbage collection, and knows nothing about this C program.
 
 Suggested handling: use this as the main revision principle.  Background and
 proof-task sections should not assume local CertiGC knowledge.
+
+Resolution note: the introduction now gives a compact operational account of
+generational collection, `mutable_update`, `forward_remset`, and
+`do_generation` before these names drive the proof story.  The proof-task
+section now opens with the VST/mathematical-layer bridge, explains the main
+remembered-set variables around the theorem statement, and rewrites the
+specification-audit discussion to give the natural-language dependency path
+before listing local source names.
 
 ### C11. DONE. Page 2, strikeout
 
