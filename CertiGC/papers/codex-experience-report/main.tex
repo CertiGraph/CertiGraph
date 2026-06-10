@@ -178,6 +178,11 @@ experience report and identifies lessons specific to maintaining large
 \VST{}/\CertiGraph{} proofs.
 \end{itemize}
 
+The claim is not autonomous proof discovery.  Rather, the claim is that agentic
+assistance can materially help with checker-driven proof repair when candidate
+invariants and specification changes are continuously reviewed by a human proof
+engineer.
+
 \section{Background: \CertiGC{}, \VST{}, and Remembered Sets}
 
 \CertiGraph{} \citep{wang2019certigraph} provides a framework for verifying
@@ -233,6 +238,16 @@ extension is meant to support.  The repair therefore had to change the
 specification path itself: the old claim that no old-to-young edges exist had to
 be replaced by the weaker recorded-backward-edge invariant, which permits only
 recorded old-to-young edges.
+
+A concrete instance fixes the direction of the invariant before the formal
+definitions.  Suppose field \texttt{k} of an object \texttt{x} in generation 2
+is updated to point to an object \texttt{y} in generation 0.  This creates an
+old-to-young edge: \texttt{x} is not part of the generation being collected, but
+\texttt{y} may still need to survive that collection.  The write barrier records
+the source location \texttt{(x,k)} in generation 0's remembered-set component.
+When generation 0 is collected, \texttt{forward\_remset} reads such recorded
+locations, follows the pointers stored there, and treats the targets as
+additional root-like sources.  The predicate below formalizes this obligation.
 
 At the specification level, this repair keeps the ordinary heap condition and
 the remembered-set invariant separate.  The former remains a graph/heap
@@ -703,10 +718,6 @@ The aggregate statistics hide an important distinction between theorem repair
 and post-theorem cleanup, so Table~\ref{tab:per-day-stats} breaks the same
 categories down by day.
 
-The per-day table also reflects the proof story: April 28--29 correspond to the
-\texttt{gc\_correct.v} reconstruction, while May 1--3 show the later premise
-audit, cleanup, and integration work.
-
 \begin{table}[htbp]
 \centering
 \caption{Per-day Codex development activity.  \textsc{Tools} is the total;
@@ -735,6 +746,15 @@ Total & 415 & 88 & 13,305 & 8,077 & 1,368 & 2,096 & 2,131 & 795 & 2,018 & 5,337 
 \bottomrule
 \end{tabular}
 \end{table}
+
+The daily breakdown makes the artifact story visible in the interaction data.
+The largest activity peak occurs on Apr. 28--29, with 5,775 tool calls and
+1,273 Rocq MCP calls, matching the reconstruction of \texttt{gc\_correct.v}.
+The May 1--3 tail is smaller but still substantial: 81 prompts, 1,931 tool
+calls, and 19 git command invocations after the main theorem proof had already
+been accepted.  This supports the claim that theorem acceptance was followed by
+substantive premise audit, cleanup, and integration work rather than by a final
+build alone.
 
 The transcript-derived file activity aligns with the git history.  The most
 heavily edited files were \texttt{gc\tus correct.v} (836 patch calls),
