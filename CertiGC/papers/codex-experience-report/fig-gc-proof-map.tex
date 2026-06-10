@@ -33,7 +33,7 @@
   call/.style={->, thick, rounded corners=3pt},
   prooflink/.style={->, dashed, thick},
   note/.style={align=center, font=\scriptsize},
-  legendtext/.style={font=\scriptsize, anchor=west}
+  legendtext/.style={font=\footnotesize, anchor=west}
 ]
 
 \node[note] at (0,0.45) {\textbf{C Functions}};
@@ -120,15 +120,15 @@
   to[out=0,in=180,looseness=0.42] ($(specs.west)+(0,-0.80)$);
 \draw[prooflink] (specs.south) -- (iso.north);
 
-\begin{scope}[shift={(10.0,-6.10)}]
+\begin{scope}[shift={(10.0,-5.95)}]
   \node[legendtext] at (0,0.55) {\textbf{Legend}};
   \draw[call] (0,0.18) -- (0.75,0.18);
   \node[legendtext] at (0.95,0.18) {C call};
   \draw[prooflink] (0,-0.20) -- (0.75,-0.20);
   \node[legendtext] at (0.95,-0.20) {proof/contract link};
-  \node[box,existing,minimum width=0.45cm,minimum height=0.22cm,inner sep=0pt] at (0.22,-0.60) {};
+  \node[box,existing,minimum width=0.52cm,minimum height=0.26cm,inner sep=0pt] at (0.26,-0.60) {};
   \node[legendtext] at (0.95,-0.60) {pre-existing artifact};
-  \node[box,repaired,minimum width=0.45cm,minimum height=0.22cm,inner sep=0pt] at (0.22,-0.98) {};
+  \node[box,repaired,minimum width=0.52cm,minimum height=0.26cm,inner sep=0pt] at (0.26,-0.98) {};
   \node[legendtext] at (0.95,-0.98) {Codex-assisted repair};
 \end{scope}
 
