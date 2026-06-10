@@ -52,7 +52,7 @@ re-establishing the top-level graph-isomorphism correctness theorem.  The
 central technical issue was not low-level proof scripting alone: mutable updates
 invalidate the old global no-backward-edge assumption, so the proof had to be
 reorganized around a recorded-backward-edge invariant stating that every
-backward edge is recorded in the remembered set.
+backward edge is recorded in the appropriate remembered-set component.
 
 This case differs from recent AI-assisted formal-proof accounts: unlike a new
 compiler proof from a close template or a fresh metatheory formalization, it
@@ -77,7 +77,7 @@ agentic proof maintenance.
 \section{Introduction}
 
 Large language models are now routinely used as programming assistants, and
-proof engineering is beginning to adopt the same style of tool.  In ordinary
+proof engineering is beginning to adopt the same style of assistance.  In ordinary
 software development, compilation is only a weak check on behavior.  In formal
 verification, by contrast, a proof script accepted by the kernel establishes its
 stated theorem.  The central risk is therefore not that one must trust the
@@ -94,7 +94,7 @@ Software Toolchain (\VST{}) \citep{appel2014programlogics} and \Rocq{} to
 verify C programs manipulating heap-represented graphs.  This report uses
 \Rocq{} for the proof assistant formerly named \Coq{}.  The collector is a
 generational copying collector.  The original CertiGC proof did not cover
-mutable references or updateable arrays, whose updates can create pointers from
+mutable references or updatable arrays, whose updates can create pointers from
 older objects to younger ones after allocation.  The mutable extension adds a
 write barrier and remembered sets, giving the collector the extra information
 needed to handle such updates.
@@ -150,7 +150,7 @@ The experience was inspired by a recent report
 \citep{paraskevopoulou2026machinegenerated} on using Claude Code to mechanize
 an ANF transformation correctness proof for CertiCoq.  That paper showed that an
 agentic assistant can adapt an existing compiler-proof technique to a new
-transformation and produce a machine-checked proof in days.  This report studies
+transformation and produce a machine-checked proof in days.  This report examines
 a different point in the design space.  Codex did not start from a clean
 template and a fresh theorem.  Instead, it worked inside an existing
 systems-verification development where mutable updates invalidated the old
@@ -224,7 +224,7 @@ Figure~\ref{fig:gc-proof-map} shows, by adding \texttt{forward\_remset} to the
 locations as root-like sources and forwards the younger objects they reach.
 This ordering makes the reachability computation complete: subsequent root
 forwarding and scanning compute the closure from both ordinary program roots and
-recorded remembered-set locations.
+locations recorded in remembered sets.
 
 For the proof, this program change did more than create new proof-script
 obligations.  Keeping the old no-backward-edge invariant would make the proof
@@ -266,7 +266,7 @@ has a remembered-set entry for the generation it points into.
 
 The separation between \texttt{garbage\_collect\_condition} and this predicate
 makes clear which assumptions concern ordinary graph/heap well-formedness and
-which concern mutable-collector remembered-set state.  This condition is the
+which concern mutable-collector remembered-set state.  This predicate is the
 recorded-backward-edge invariant used below.  Codex first proposed and
 formalized the predicate during the repair session; the author accepted it
 after semantic review as the right replacement for the old no-backward-edge
@@ -288,7 +288,7 @@ In the remembered-set development, \texttt{rh} denotes the abstract
 remembered-set heap threaded through the graph relations.  The variable
 \texttt{rmst} denotes remembered-set state used by compatibility predicates that
 connect this heap to the graph and to the \VST{}-facing representation
-invariants.  This bridge explains why both kinds of remembered-set objects
+invariants.  This bridge explains why both remembered-set components
 appear in the theorem below even though neither appears in its observable
 conclusion.
 
@@ -318,17 +318,19 @@ separation is deliberate: remembered-set bookkeeping is internal collector
 state, so exposing it in the user-facing theorem would make the result less
 useful.
 
-The invariant flow has four steps.  A mutable update may create an edge from an
+The invariant flow is as follows.  A mutable update may create an edge from an
 older generation to a younger one.  The write barrier records the location of
 that edge in the remembered-set space for the destination generation.  During
 generation collection, \texttt{forward\_remset} interprets those recorded
 locations and forwards the target objects.  Subsequent root forwarding and
 scanning then compute the reachability closure from both program roots and
-remembered locations.  After the generation is collected and its remembered-set
-component is reset, the proof must re-establish that any remaining backward
-edge is still recorded in the appropriate remembered set.  Such an edge either
-starts in an older generation or starts from an object promoted into one during
-the collection; in either case, its source was not collected this time.
+locations recorded in remembered sets.  After the generation is collected and
+its remembered-set component is reset, the proof must re-establish that any
+remaining backward edge is still recorded in the appropriate remembered set.
+Resetting is safe only because the collected generation no longer contains the
+live destination objects that would require entries in the reset component;
+backward edges into other generations use remembered-set components that are not
+reset.
 Thus remembered-set entries are treated as additional roots during collection.
 
 The hard part was to bridge remembered-set forwarding, root forwarding,
@@ -339,9 +341,9 @@ those effective roots.  Because \texttt{gc\_graph\_iso} observes only the
 subgraph reachable from its listed roots, the proof then restricts this
 augmented-root isomorphism back to ordinary roots.  After that restriction, the
 reset proof must show that resetting the collected generation's remembered-set
-component does not introduce any unrecorded backward edge.  Under the usual graph
+component does not leave any remaining backward edge unrecorded.  Under the usual graph
 and remembered-set compatibility hypotheses, the key preservation lemma has the
-following abridged shape.  Codex introduced this lemma shape as the
+following abridged shape.  Codex introduced this form of lemma as the
 \VST{}-facing reset-preservation fact once the recorded-backward-edge invariant
 was accepted; the author reviewed its semantic role and later directed the
 core-and-wrapper factoring of related reset-preservation lemmas.
@@ -361,9 +363,8 @@ generation's remembered set and reset it, but the resulting graph and
 remembered-set heap still satisfy the recorded-backward-edge invariant needed by
 the outer garbage-collection loop.
 
-The repair was therefore not just a matter of patching broken proof scripts.  It
-required a
-change in proof architecture:
+The repair therefore required a change in proof architecture, not just patches
+to broken proof scripts:
 
 \begin{itemize}
 \item remove the invalid global \texttt{no\_backward\_edge} condition;
@@ -474,7 +475,7 @@ the interaction, Codex first formulated the need for a condition informally
 phrased as ``no unrecorded backward edge'' and later wrote the first \Rocq{}
 definition of that predicate.  The human author then recognized that the old
 \texttt{no\_backward\_edge} premise was semantically invalid for mutable GC and
-directed the proof effort to replace the old invariant rather than keep it as a
+directed the repair to replace the old invariant rather than keep it as a
 convenient hidden assumption.  This episode is representative of the
 collaboration: the assistant could propose a useful invariant, but the human had
 to decide whether accepting it preserved the intended collector specification
@@ -486,23 +487,23 @@ acceptable, but new or changed \texttt{Definition}s required discussion.
 Preconditions were not to be added to \VST{} specs unless there was concrete
 evidence that the source program required them.
 
-This constraint appeared early in the scanner proof.  The proof effort asked
+This constraint appeared early in the scanner proof, where the question was
 whether the scanner specification really needed a positive available-space
 precondition after remembered-set forwarding.  The accepted direction removed an
-over-strong condition; proposed additions such as extra pointer or heap
+overly strong condition; proposed additions such as extra pointer or heap
 predicates were rejected unless existing specifications justified them.
 
 \paragraph{Effective uses of Codex.}
-Codex was effective at local proof repair and repetitive invariant propagation.
+Codex was effective at local proof repair and repeated invariant propagation.
 Once the recorded-backward-edge invariant and bridge shape were clear, many
 subgoals amounted to proving that a property was preserved by a fold over
 \texttt{forward\_remset\_item}, by heap updates, or by adding/resetting one
 generation.  These tasks are tedious for a human but well suited to an agent
 that can search the development, try variants, and run the checker repeatedly.
 
-Codex was also useful for cleanup after the theorem was restored.  The branch
+Codex also helped with cleanup after the theorem was restored.  The branch
 contains several later commits whose purpose was not to change the theorem but
-to remove stale proof leftovers, factor repeated preservation arguments, audit
+to remove stale proof artifacts, factor repeated preservation arguments, audit
 the theorem's assumptions against \VST{} specifications, update deprecated
 names, and simplify helper lemmas.  In a large proof development, this
 maintenance is not cosmetic: stale helper lemmas and stale assumptions obscure
@@ -515,11 +516,12 @@ longer true.  Although Codex proposed the recorded-backward-edge formulation,
 accepting it as the replacement invariant required understanding the collector
 algorithm, the write barrier, and the desired external theorem.  Codex could help
 explore consequences and fill in preservation lemmas, but the proof had to avoid
-easy but undesirable exits.  It would have been easier to strengthen pure
-specifications with extra heap or remembered-set preconditions, or to expose
-remembered-set internals in the main theorem.  Both changes would have altered
-the result being verified.  The remembered set is private collector state; making
-it part of the theorem would change the public correctness claim.
+shortcuts that would change the result.  Two tempting shortcuts were to
+strengthen mathematical specifications with extra heap or remembered-set
+preconditions, or to expose remembered-set internals in the main theorem.  Both
+changes would have altered the result being verified.  The remembered set is
+private collector state; making it part of the theorem would change the public
+correctness claim.
 
 \section{Results}
 
@@ -583,7 +585,7 @@ Apr. 28--29 & Mathematical correctness proof &
 Reconstruct \texttt{gc\tus correct.v} around
 \texttt{no\tus unrecorded\tus backward\tus edge}, because mutable updates make
 the old \texttt{no\tus backward\tus edge} condition false. &
-\texttt{94922344}: main theorem accepted by \Rocq{}. \\
+\texttt{94922344}: main theorem proof accepted by \Rocq{}. \\
 May 1 & Specification and premise audit &
 Check whether the \VST{}-facing \texttt{garbage\tus collect\tus spec} premises justify
 the assumptions of the final theorem; remove the stale
@@ -775,7 +777,7 @@ became unnecessary after the proof architecture stabilized.
 \paragraph{Existing libraries are both leverage and constraint.}
 \VST{} and \CertiGraph{} made the result possible because they already provided
 the semantic model, spatial graph representation, and verification discipline.
-They also constrained the shape of the proof.  A small change to a definition
+They also constrained the shape of the repair.  A small change to a definition
 could ripple through many files, and automation failures were often symptoms of
 larger mismatches between mathematical and spatial invariants.  Codex was more
 effective when the development stayed within existing patterns than when it
@@ -788,7 +790,7 @@ It was the wrong condition for mutable collection.  Treating that failure as
 information changed the task from local script repair to invariant replacement.
 This is a useful distinction in LLM-assisted verification because an assistant
 can both propose a better invariant and make local progress under an
-over-strong assumption.  Human review is needed to identify the path that
+overly strong assumption.  Human review is needed to identify the path that
 preserves the intended theorem.
 
 \paragraph{A completed machine-checked proof is not the end of validation.}
@@ -908,7 +910,7 @@ no-backward-edge assumption with the recorded-backward-edge invariant while
 preserving graph isomorphism over ordinary program roots rather than collector
 bookkeeping.
 
-The broader lesson is that agentic assistants are already useful for large
+The broader lesson is that agentic assistants can already help with large
 machine-checked developments when the collaboration is organized around the
 checker and around carefully guarded theorem statements.  They are especially
 valuable for local repair, invariant propagation, and cleanup in mature
