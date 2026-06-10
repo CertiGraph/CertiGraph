@@ -50,16 +50,16 @@
 \draw[call] (gc) -- (dg);
 \draw[call] (dg) -- (frs);
 \draw[call] ($(dg.west)+(0,-0.18)$)
-  .. controls +(-0.70,-0.25) and +(-0.45,0.30) ..
+  .. controls +(-0.80,-0.32) and +(-0.50,0.32) ..
   ($(fr.west)+(0,0.18)$);
 \draw[call] ($(dg.west)+(0,0.18)$)
   .. controls +(-1.35,-0.15) and +(-1.05,0.55) ..
   (ds.west);
-\draw[call] ($(frs.west)+(0,-0.10)$)
+\draw[call] (frs.west)
   .. controls +(-1.60,-0.35) and +(-0.80,0.30) ..
   ($(fwd.west)+(0,-0.18)$);
 \draw[call] ($(fr.west)+(0,-0.18)$)
-  .. controls +(-0.95,-0.40) and +(-0.55,0.34) ..
+  .. controls +(-0.80,-0.32) and +(-0.50,0.32) ..
   ($(fwd.west)+(0,0.18)$);
 \draw[call] (ds) -- (fwd);
 
