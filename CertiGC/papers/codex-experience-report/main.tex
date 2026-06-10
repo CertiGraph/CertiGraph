@@ -96,44 +96,55 @@ verify C programs manipulating heap-represented graphs.  This report uses
 generational copying collector.  The original CertiGC proof did not cover
 mutable references or updateable arrays, whose updates can create pointers from
 older objects to younger ones after allocation.  The mutable extension adds a
-write barrier and remembered sets so that the collector remains correct for
-such updates.
+write barrier and remembered sets, giving the collector the extra information
+needed to handle such updates.
 
-Operationally, CertiGC collects one generation at a time: the
-\texttt{do\_generation} routine copies live objects out of a selected younger
-generation, forwards program roots, and scans copied objects for further
-references.  The mutable branch adds a write-barrier path:
-\texttt{mutable\_update} records old-to-young pointer writes, and
-\texttt{forward\_remset} is called inside \texttt{do\_generation} to process
-the recorded locations before ordinary root forwarding and scanning
-(Listing~\ref{lst:do-generation-remset}).
+\begin{figure}[t]
+\centering
+\resizebox{\textwidth}{!}{\input{fig-gc-proof-map}}
+\caption{Mutable-collector proof map.}
+\label{fig:gc-proof-map}
+\Description{A three-column diagram showing the C function call graph, the
+corresponding VST proof files and abstract effects, the shared model and
+specification files, and the final theorem in gc_correct.v.}
+\end{figure}
+
+Figure~\ref{fig:gc-proof-map} gives the big-picture map for the repaired
+mutable branch and marks the division of work reported here.  The left column
+shows the C call graph for the repaired generational collection code, including
+the remembered-set path inside \texttt{do\_generation}.  The middle column pairs
+each function with the corresponding \VST{} proof file and abstract effect; the
+right column shows shared graph/specification files feeding the final theorem in
+\texttt{gc\_correct.v}.  Unshaded boxes mark pre-existing artifacts; shaded
+boxes mark proof/model artifacts repaired with Codex assistance.
 
 The work began as a conventional human proof effort to strengthen the
-implementation, specification, and proof for mutable references.  The early
-branch already contained substantial design and verification work:
-remembered-set data structures, a verified \texttt{forward\_remset} function
-for processing remembered-set entries, updates to the mutator-side
-\texttt{mutable\_update} specification, and a refactoring of thread information
-to carry remembered-set state.  Codex did not recreate this groundwork from
-scratch; it inherited these definitions, specifications, and partially repaired
-proofs, then worked on the remaining proof obligations and cleanup.  The
-Codex-assisted phase used the assistant as an agentic coding tool: it read the
-codebase, edited proof files, ran \texttt{make}, diagnosed errors, proposed
-helper lemmas, and performed cleanup.  The goal was not merely to produce local
-proof-script fragments, but to state the final theorem correctly and have its
-proof accepted by the \Rocq{} kernel.
+implementation, specification, and proof for mutable references.  By the time
+Codex was used, the branch already contained the unshaded artifacts in
+Figure~\ref{fig:gc-proof-map}: the lower-level collector proofs for
+\texttt{forward}, \texttt{forward\_roots}, and \texttt{do\_scan}, together with
+the human-written mutable-collector additions, including remembered-set data
+structures, mutator-side write-barrier specification work, a refactoring of
+thread information to carry remembered-set state, and a verified
+\texttt{forward\_remset} function for processing remembered-set entries.  The
+remaining Codex-assisted work was to repair the shaded proof/model artifacts
+and clean them up.  The Codex-assisted phase used the assistant as an
+agentic coding tool: it read the codebase, edited proof files, ran
+\texttt{make}, diagnosed errors, proposed helper lemmas, and performed cleanup.
+The goal was not merely to produce local proof-script fragments, but to state
+the final theorem correctly and have its proof accepted by the \Rocq{} kernel.
 
-The Codex-assisted development had three main proof tasks across two conceptual
-levels.  At the \VST{} level, the proof of \texttt{do\_generation} first had to
-account for the new remembered-set forwarding call in the C code.  Once the
-\texttt{do\_generation} specification and body proof were restored, the proof
-of the outer \texttt{garbage\_collect} loop could rely on them and had to
-preserve the remembered-set invariants across generation collection and reset.  At the
-mathematical level, \texttt{gc\_correct.v} had to re-establish that the abstract
-collection relation preserves roots-level graph isomorphism.  Completing the
-machine-checked proof of the main theorem was not the endpoint: the remaining
-work audited assumptions, removed the obsolete invariant premise from the
-specification path, and simplified the proof artifact.
+The Codex-assisted development then broke into three main proof tasks.  First,
+the \VST{} proof of \texttt{do\_generation} had to incorporate the
+remembered-set \texttt{forward\_remset} call and expose the right abstract
+relation.  Second, the outer \texttt{garbage\_collect} \VST{} proof had to use
+that restored relation while preserving remembered-set invariants across
+collection and reset.
+Third, \texttt{gc\_correct.v} had to re-establish that the abstract collection
+relation still preserves roots-level graph isomorphism.  The main theorem was
+accepted before the end of the effort, but later work still mattered.  It
+audited assumptions, removed a stale no-backward-edge premise from the
+specification path, and simplified the theorem's supporting proof structure.
 
 The experience was inspired by a recent report
 \citep{paraskevopoulou2026machinegenerated} on using Claude Code to mechanize
@@ -142,8 +153,9 @@ agentic assistant can adapt an existing compiler-proof technique to a new
 transformation and produce a machine-checked proof in days.  The present case
 studies a different point in the design space.  Codex did not start from a clean
 template and a fresh theorem.  Instead, it worked inside an existing
-systems-verification development where the proof broke because the collector's
-semantic invariant changed.
+systems-verification development where mutable updates invalidated the old
+collector invariant, turning the task into proof repair rather than template
+adaptation.
 
 The report is intended as a focused experience report rather than a controlled
 study.  It contributes the following lessons about agent-assisted proof
@@ -156,8 +168,8 @@ assumption made false by mutation while preserving the final roots-level
 graph-isomorphism theorem.
 \item It records a concrete division of labor: Codex proposed the
 recorded-backward-edge invariant and helped implement its preservation, while
-the human author judged that this invariant, rather than the old
-no-backward-edge condition, was the right specification for mutable GC.
+the human author judged that invariant to be the right specification for the
+mutable collector.
 \item It reports transcript-derived interaction statistics and explains how
 those statistics should be interpreted as evidence of supervised, checker-driven
 proof maintenance rather than autonomous proof generation.
@@ -176,68 +188,64 @@ uses \VST{}'s Verifiable C program logic \citep{appel2014programlogics}, whose
 soundness theorem connects the logic to CompCert's C semantics
 \citep{leroy2009compcert}.
 
-\begin{figure}[t]
-\centering
-\resizebox{\textwidth}{!}{\input{fig-gc-proof-map}}
-\caption{Mutable-collector proof map.}
-\Description{A three-column diagram showing the C function call graph, the
-corresponding VST proof files and abstract effects, the shared model and
-specification files, and the final theorem in gc_correct.v.}
-\end{figure}
+The map in Figure~\ref{fig:gc-proof-map} is the repaired mutable-collector map:
+its left column already includes the remembered-set forwarding path.  To read
+the map, the key background is how the original collection path differs from the
+mutable path, and how that difference forced an invariant change.
 
 Generational collection relies on the observation that most objects die young
-\citep[Chapter~9]{jones2023gchandbook}.
-The collector copies live objects from a younger ``from'' generation to an older
-``to'' generation, then forwards roots and scans copied objects to find the
-remaining reachable objects.  Here, forwarding means copying a referenced live
-object to the target generation and redirecting later uses to the copy.  In
-the original proof structure, once a record cell was allocated, its fields were
-not updated.  From the collector's perspective, the heap was effectively
-immutable: the proof could rely on the absence of old-to-young edges, usually
-stated as a \texttt{no\_backward\_edge}-style invariant.
+\citep[Chapter~9]{jones2023gchandbook}.  The heap is divided into generations
+ordered by age; collecting a younger generation copies its live objects to an
+older target generation and redirects later uses to the copies.  In
+\CertiGC{}, \texttt{garbage\_collect} invokes \texttt{do\_generation} for the
+generation currently being collected.  In the original collection path,
+\texttt{do\_generation} called \texttt{forward\_roots} and \texttt{do\_scan},
+but not \texttt{forward\_remset}.  The first routine follows ordinary program
+roots, the externally held pointers from which collection starts; the second
+follows fields of objects that have already been copied.  Both ultimately use
+\texttt{forward}, which copies a referenced live object to the target
+generation.
+
+That original path matched the effectively immutable setting that CertiGC first
+verified.  Once a graph cell had been allocated, its pointer fields were not
+updated, so an older object could not later acquire a pointer to a younger
+object.  The proof could therefore rely on the absence of old-to-young edges,
+usually stated as a \texttt{no\_backward\_edge}-style invariant.
 
 Mutable updates, as used for ML-style references or lazy thunk update,
 invalidate that invariant.  A program may update a field in an older object to
-point to a younger object.  A generational collector can still be correct if
-such edges are recorded by a write barrier.  During collection, the remembered
-set is treated as an additional source of effective roots: the collector must
-first forward objects reachable from recorded old-to-young edges, so that
-subsequent root forwarding and scanning compute the right reachability closure.
+point to a younger object.  If the collector only follows ordinary roots and
+scans copied objects, such a younger object can be missed: the old object that
+points to it is outside the younger generation being collected and need not be
+scanned.  The mutable branch handles this case by recording old-to-young
+pointer writes in a remembered set of source field locations and, as
+Figure~\ref{fig:gc-proof-map} shows, by adding \texttt{forward\_remset} to the
+\texttt{do\_generation} path before \texttt{forward\_roots} and
+\texttt{do\_scan}.  During collection, \texttt{forward\_remset} treats recorded
+locations as root-like sources and forwards the younger objects they reach.
+This ordering makes the reachability computation complete: subsequent root
+forwarding and scanning compute the closure from both ordinary program roots and
+recorded remembered-set locations.
 
-This change broke the proof at the semantic level, not only at the tactic level.
-Keeping the old no-backward-edge invariant would make the proof easier, but it
-would verify only heaps that exclude the behavior the mutable extension is meant
-to support.  The proof repair therefore had to remove the old condition and
-replace it with a recorded-backward-edge invariant: backward edges may exist,
-but each one must be represented in the remembered set.
+The proof consequence was not just a need for different proof scripts.  Keeping
+the old no-backward-edge invariant would make the proof easier, but it would
+verify only heaps that exclude the behavior the mutable extension is meant to
+support.  The repair therefore had to change the specification path itself: the
+old claim that no old-to-young edges exist had to be replaced by the weaker
+recorded-backward-edge invariant, which permits only recorded old-to-young
+edges.
 
-Inside \texttt{do\_generation}, this invariant is reflected directly in the call
-sequence: remembered-set entries are forwarded before ordinary roots and
-scanning, so the C order matches the recorded-backward-edge invariant carried
-by the proof.
-
-\begin{lstlisting}[language=C,
-  caption={The \texttt{do\_generation} call sequence forwards remembered-set
-    entries before roots and scanning.},
-  label={lst:do-generation-remset}]
-value *p = to->next;
-forward_remset(from, to, &to->next);
-forward_roots(from->start, from->limit, &to->next, fr);
-do_scan(from->start, from->limit, p, &to->next);
-\end{lstlisting}
-
-At the specification level, the ordinary heap condition and the remembered-set
-invariant are stated separately.  The former remains a graph/heap condition that
-says nothing about remembered-set state; that state is handled by the separate
-predicate below:
+At the specification level, this repair keeps the ordinary heap condition and
+the remembered-set invariant separate.  The former remains a graph/heap
+well-formedness condition that says nothing about remembered-set state:
 
 \begin{lstlisting}
 Definition garbage_collect_condition (g: LGraph) (h : part_heap) : Prop :=
   graph_unmarked g /\ no_dangling_dst g /\ ti_size_spec h.
 \end{lstlisting}
 
-The latter records the mutable-collector obligation that every backward edge is
-represented in the appropriate remembered set:
+The mutable-collector obligation is stated by a separate predicate.  It says
+that every old-to-young edge is represented in the appropriate remembered set:
 
 \begin{lstlisting}
 Definition no_unrecorded_backward_edge (g: LGraph) (rh: remset_heap): Prop :=
@@ -249,18 +257,21 @@ Definition no_unrecorded_backward_edge (g: LGraph) (rh: remset_heap): Prop :=
        (nth_remset_space rh (vgeneration (dst g e))).
 \end{lstlisting}
 
-Codex first proposed and formalized this predicate during the repair session;
-the author accepted it after semantic review as the right replacement for the
-old no-backward-edge condition.
-The separation between \texttt{garbage\_collect\_condition} and this predicate
-makes clear which assumptions concern ordinary graph/heap well-formedness and
-which concern mutable-collector remembered-set state.
 In this definition, the comparison
 \texttt{egeneration e > vgeneration (dst g e)} selects old-to-young edges: the
 edge starts in an older generation and points into a younger one.  The
 conclusion then requires the source field position to occur in the
-remembered-set space indexed by the destination generation.  This condition is
-the recorded-backward-edge invariant used below.
+remembered-set space indexed by the destination generation.  Thus the predicate
+says that every old-to-young pointer field that may matter to a later collection
+has a remembered-set entry for the generation it points into.
+
+The separation between \texttt{garbage\_collect\_condition} and this predicate
+makes clear which assumptions concern ordinary graph/heap well-formedness and
+which concern mutable-collector remembered-set state.  This condition is the
+recorded-backward-edge invariant used below.  Codex first proposed and
+formalized the predicate during the repair session; the author accepted it
+after semantic review as the right replacement for the old no-backward-edge
+condition.
 
 \section{The Proof Task}
 
@@ -271,8 +282,8 @@ resources and proves that functions such as \texttt{do\_generation} and
 \texttt{GCGraph.v}.  The mathematical layer, especially
 \texttt{gc\_correct.v}, reasons about those abstract graphs and proves that
 collection preserves the live, roots-reachable part of the graph up to
-isomorphism.  The mutable-GC repair therefore had to keep the C specifications,
-the abstract collection relations, and the graph-isomorphism theorem aligned.
+isomorphism.  The repair had to keep C specifications, abstract relations, and
+the graph-isomorphism theorem in sync.
 
 In the remembered-set development, \texttt{rh} denotes the abstract
 remembered-set heap threaded through the graph relations.  The variable
@@ -466,7 +477,8 @@ definition of that predicate.  The human author then recognized that the old
 directed the proof effort to replace the old invariant rather than keep it as a
 convenient hidden assumption.  This episode is representative of the
 collaboration: the assistant could propose a useful invariant, but the human had
-to decide whether accepting it preserved the intended collector specification.
+to decide whether accepting it preserved the intended collector specification
+rather than merely making the scripts compile.
 
 \paragraph{Human constraints.}
 The human guidance was deliberately conservative.  New or changed lemmas were
@@ -506,8 +518,8 @@ explore consequences and fill in preservation lemmas, but the proof had to avoid
 easy but undesirable exits.  It would have been easier to strengthen pure
 specifications with extra heap or remembered-set preconditions, or to expose
 remembered-set internals in the main theorem.  Both changes would have altered
-the result being verified; the remembered set is implementation-private
-collector state, not part of the client-visible correctness statement.
+the result being verified.  The remembered set is private collector state; making
+it part of the theorem would change the theorem.
 
 \section{Results}
 
@@ -515,9 +527,8 @@ The branch reached a compiling state and was merged into the upstream
 \texttt{live} branch as pull request 30 with the merge message ``Replace invalid
 \texttt{no\_backward\_edge} invariant for mutable GC'' on May 3, 2026.  The
 source repository is \url{https://github.com/CertiGraph/CertiGraph}; the proof
-artifact discussed here is pull request 30 at
-\url{https://github.com/CertiGraph/CertiGraph/pull/30}, merged as commit
-\texttt{85da48e4}.
+artifact discussed here is \href{https://github.com/CertiGraph/CertiGraph/pull/30}{pull request 30},
+whose merge commit is \texttt{85da48e4}.
 
 Table~\ref{tab:repo-evidence} summarizes repository evidence extracted from the
 git history.  These numbers should be read as artifact statistics, not as a
@@ -596,9 +607,9 @@ lemma: it flowed from the top-level collector condition into the loop invariant
 and then into the preconditions for each generation-collection step.  In code,
 this path ran from \path|garbage_collect_condition| through
 \path|body_garbage_collect| and \path|gc_cond_implies_do_gen_cons| to
-\path|do_generation_condition| obligations.  In other words, the old
-immutable-collector invariant had survived in a place where ordinary commit
-statistics would have reported only another proof-maintenance commit.
+\path|do_generation_condition| obligations.  In other words, commit statistics
+alone would have hidden a semantic repair inside what looked like routine proof
+maintenance.
 
 This phase touched 18 \CertiGC{} files.  The largest
 proof changes were in \texttt{GCGraph.v}, which accumulated the remembered-set
@@ -782,8 +793,8 @@ The May 1 premise audit removed the obsolete
 no-backward-edge path from \VST{}-facing conditions and made the
 recorded-backward-edge condition the explicit mutable-GC invariant.
 Subsequent cleanup factored repeated reset-preservation arguments, simplified
-helper lemmas, and updated deprecated \Rocq{} names.  For mechanized
-proofs, this cleanup is also a way to expose the real proof dependencies.
+helper lemmas, and updated deprecated \Rocq{} names.  In a mechanized
+development, this cleanup also exposes the proof's real dependencies.
 
 \section{Comparison with Related Accounts}
 
@@ -800,8 +811,8 @@ substantial mechanized proofs in established proof-assistant verification
 infrastructure.
 Second, both rely on the proof assistant as a machine checker, not on the
 language model's self-assessment.  Third, both show that an agent can make
-progress when it can search a mature codebase, edit files, and run the checker
-many times.
+progress when it can repeatedly search a mature codebase, edit proof files, and
+invoke the checker in the same loop.
 
 The differences are more instructive.  The ANF report is primarily a
 template-adaptation story: a known proof technique for CPS was adapted to a
@@ -878,7 +889,7 @@ information, and stable references to nearby applicable lemmas.
 Full proof builds during the Codex-assisted development phase used
 \texttt{make -j8} in the \texttt{certigraph} opam switch with \Rocq{} 9.1.1, OCaml 4.14.3,
 CompCert 3.17, and \VST{} 2.16.  Because this report does not report wall-clock
-proof-build duration, hardware-dependent build-time measurements are omitted.
+proof-build duration, it omits hardware-dependent build-time measurements.
 
 \section{Conclusion}
 
@@ -888,8 +899,8 @@ it was useful once candidate invariants were judged against the collector
 semantics and the human enforced boundaries around specifications.  The
 resulting proof completes the mutable-collector story by replacing an invalid
 no-backward-edge assumption with the recorded-backward-edge invariant while
-preserving graph isomorphism over the ordinary program roots, not over collector
-bookkeeping state.
+preserving graph isomorphism over ordinary program roots rather than collector
+bookkeeping.
 
 The broader lesson is that agentic assistants are already useful for large
 machine-checked developments when the collaboration is organized around the
@@ -901,9 +912,8 @@ codebases.  The hard work remains deciding what should be true.
 The author thanks Andrew Appel for suggesting this experience report and for
 discussions about \CertiGC{} and AI-assisted proof development.  The author also
 thanks Zoe Paraskevopoulou for making the related experience report available;
-that successful use of Claude Code on a substantial CertiCoq proof was the
-direct motivation for trying an agentic LLM assistant on the unfinished
-\CertiGC{} proofs.
+that successful use of Claude Code on a substantial CertiCoq proof directly
+motivated this agent-assisted \CertiGC{} proof effort.
 \end{acks}
 
 \bibliographystyle{ACM-Reference-Format}
