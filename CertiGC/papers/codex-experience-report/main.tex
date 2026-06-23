@@ -54,10 +54,11 @@ invalidate the old global no-backward-edge assumption, so the proof had to be
 reorganized around a recorded-backward-edge invariant stating that every
 backward edge is recorded in the appropriate remembered-set component.
 
-This case differs from recent AI-assisted formal-proof accounts: unlike a new
-compiler proof from a close template or a fresh metatheory formalization, it
-completes a long-running verification in a mature codebase built on the Verified
-Software Toolchain (\VST{}) and \CertiGraph{}, both mechanized in \Rocq{}.
+This case differs from recent AI-assisted formal-proof accounts: unlike the
+adaptation of a nearby compiler-proof architecture or a fresh metatheory
+formalization, it completes a long-running verification in a mature codebase
+built on the Verified Software Toolchain (\VST{}) and \CertiGraph{}, both
+mechanized in \Rocq{}.
 The \Rocq{} kernel remained the arbiter of correctness, while our role
 shifted toward adjudicating invariant proposals, constraining specification
 changes, reviewing theorem statements, and deciding when proof cleanup was
@@ -162,11 +163,11 @@ mechanize an ANF transformation correctness proof for CertiCoq.  That
 paper showed that an agentic assistant can adapt an existing
 compiler-proof technique to a new transformation and produce a
 machine-checked proof in a few days.  This report examines a
-different point in the design space.  Codex did not start from a clean
-template and a fresh theorem.  Instead, it worked inside an existing
-systems-verification development where mutable updates invalidated the
-old collector invariant, turning the task into proof repair rather
-than template adaptation.
+different point in the design space.  Codex did not start by adapting
+a nearby proof architecture whose central assumptions remained valid.
+Instead, it worked inside an existing systems-verification development
+where mutable updates invalidated the old collector invariant, turning
+the task into proof repair rather than proof-architecture adaptation.
 
 The report is intended as a focused experience report rather than a
 controlled study.  We contribute the following lessons about
@@ -174,8 +175,8 @@ agent-assisted proof maintenance:
 
 \begin{itemize}
 \item We document an invariant-repair case in which the central
-  problem was not to generate a new proof from a nearby template, but
-  to replace a semantic assumption made false by mutation while
+  problem was not to adapt a related proof architecture, but to
+  replace a semantic assumption made false by mutation while
   preserving the final roots-level graph-isomorphism theorem.
 \item We describe a concrete division of labor: Codex proposed the
   recorded-backward-edge invariant and helped implement its
@@ -490,15 +491,28 @@ the intended invariant and the proof state.
 
 \paragraph{Proof-state access.}
 In addition to shell builds, the session used a locally configured
-\texttt{rocq\_mcp} Model Context Protocol server.  The Rocq MCP tools let Codex
-start, check, and query proof files and inspect current goals without turning
-every experiment into a tracked source edit.  This made proof-state feedback
-more direct than reading compiler errors alone.  The workflow did not, however,
-depend logically on MCP support.  Similar information can be recovered by
-compiling focused temporary files that replay a proof prefix while inserting
-\texttt{Show} commands, or by running targeted \texttt{.vo} builds and reading
-Rocq's error messages.  MCP was therefore an efficiency and ergonomics tool, not
-an assumption behind the proof result.
+\texttt{rocq-mcp} Model Context Protocol server
+\citep{llm4rocq2026rocqmcp}.  The server exposes Rocq compilation,
+environment queries, proof-state startup, tactic checking, multi-tactic
+probing, file outlines, and assumption queries as tools for LLM agents.  In
+this project it was configured as a repository-local Codex MCP server using the
+same \texttt{coqc} binary as the \VST{} build.  Codex could therefore call
+tools such as \texttt{rocq\_start}, \texttt{rocq\_check},
+\texttt{rocq\_step\_multi}, and \texttt{rocq\_query} from the conversation:
+start a proof state at a theorem or error position, inspect the current goals,
+query the environment, try small tactic sequences, and then edit the tracked
+proof file or run a targeted build.
+
+This made proof-state feedback cheaper and more direct than reading compiler
+errors alone.  The development did not include a controlled timing comparison,
+so this report does not claim a measured speedup.  Qualitatively, however, MCP
+shortened local feedback loops by avoiding many edit-compile-read-error cycles
+for exploratory proof-state inspection.  The workflow did not depend logically
+on MCP support: similar information can be recovered by compiling focused
+temporary files that replay a proof prefix while inserting \texttt{Show}
+commands, or by running targeted \texttt{.vo} builds and reading Rocq's error
+messages.  MCP was therefore an efficiency and ergonomics tool, not an
+assumption behind the proof result.
 
 \paragraph{Invariant proposal and adjudication.}
 The recorded-backward-edge invariant was not fixed before the Codex session.  In
@@ -857,14 +871,15 @@ language model's self-assessment.  Third, both show that an agent can make
 progress when it can repeatedly search a mature codebase, edit proof files, and
 invoke the checker in the same loop.
 
-The differences are more instructive.  The ANF report is primarily a
-template-adaptation story: a known proof technique for CPS was adapted to a
-related transformation.  The mutable-\CertiGC{} work is an invariant-repair and
-proof-maintenance story.  There was no single adjacent proof to copy.  The old
-proof path was invalid because mutable updates changed the mathematical
-assumption.  The central problem was to choose a new invariant and thread it
-through existing \VST{}, \CertiGraph{}, and collector-correctness layers without
-weakening the final theorem.
+The differences are more instructive.  The ANF report is primarily an
+adaptation story: a closely related CPS proof supplied a proof architecture that
+Claude Code could adapt to ANF, although the new proof still required genuinely
+new reasoning.  The mutable-\CertiGC{} work is an invariant-repair and
+proof-maintenance story.  Its nearby proof path was not a reusable architecture,
+because mutable updates made the central mathematical assumption false.  The
+central problem was to choose a new invariant and thread it through existing
+\VST{}, \CertiGraph{}, and collector-correctness layers without weakening the
+final theorem.
 
 A second difference is that the first compiling version of the main theorem was
 not the endpoint.  The post-theorem premise audit changed the
@@ -873,12 +888,12 @@ assumption.  That phase is less visible if one measures only theorem completion,
 but it was essential to making the final artifact match the mutable-collector
 semantics.
 
-This distinction affects how one should evaluate the assistant.  For template
-adaptation, productivity can be measured by how quickly the assistant instantiates
-an existing architecture.  For invariant repair, the main question is whether
-the assistant helps converge on the right architecture while preserving the
-semantic contract.  In this case, Codex was more like a persistent proof
-maintenance collaborator than an autonomous prover.
+This distinction affects how one should evaluate the assistant.  When a related
+proof architecture is available, productivity can be measured by how quickly the
+assistant adapts it while filling in the genuinely new reasoning.  For invariant
+repair, the main question is whether the assistant helps converge on the right
+architecture while preserving the semantic contract.  In this case, Codex was
+more like a persistent proof maintenance collaborator than an autonomous prover.
 
 A contemporaneous non-archival report \citep{sergey2026moveborrow} describes an
 AI-assisted Lean mechanization of the Move borrow checker's type soundness
