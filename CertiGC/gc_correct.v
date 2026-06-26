@@ -5289,11 +5289,11 @@ Proof.
     eapply Hext; exact Hvertex.
 Qed.
 
-Lemma no_unrecorded_backward_edge_old_nonfrom_edges_pending:
+Lemma current_remset_edges_pending:
   forall g rh from v,
     sound_gc_graph g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     vgeneration v = from ->
     old_nonfrom_edges_to_are_pending g v from (nth_remset_space rh from).
 Proof.
@@ -5312,17 +5312,17 @@ Proof.
   simpl. split; reflexivity.
 Qed.
 
-Lemma no_unrecorded_backward_edge_unmarked_old_nonfrom_edges_pending:
+Lemma unmarked_current_remset_edges_pending:
   forall g rh from,
     sound_gc_graph g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     unmarked_old_nonfrom_edges_to_are_pending
       g g from (nth_remset_space rh from).
 Proof.
   unfold unmarked_old_nonfrom_edges_to_are_pending.
   intros g rh from Hsound Hfirst Hunrec v Hgen _.
-  eapply no_unrecorded_backward_edge_old_nonfrom_edges_pending; eauto.
+  eapply current_remset_edges_pending; eauto.
 Qed.
 
 Lemma forward_remset_item_recorded_old_edge_target_marked:
@@ -5947,7 +5947,7 @@ Lemma forward_remset_gh_remset_semi_iso_closed:
     no_dangling_dst g ->
     gen_unmarked g from ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
     exists l,
       gc_graph_remset_semi_iso g g' from to l /\
@@ -5977,7 +5977,7 @@ Proof.
   assert (Hpending:
             unmarked_old_nonfrom_edges_to_are_pending
               g g from (nth_remset_space rh from)) by
-      (eapply no_unrecorded_backward_edge_unmarked_old_nonfrom_edges_pending;
+      (eapply unmarked_current_remset_edges_pending;
        eauto).
   unfold forward_remset_gh in Hfrg.
   rewrite <- nth_remset_space_Znth in Hfrg.
@@ -6002,7 +6002,7 @@ Lemma forward_remset_gh_interior_root_marked:
     graph_unmarked g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_nodup rmst ->
     remset_graph_compatible g rmst ->
     remset_and_remset_heap_compatible g from rmst rh ->
@@ -6080,7 +6080,7 @@ Lemma forward_remset_gh_frr_remset_semi_iso:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_nodup rmst ->
     remset_graph_compatible g rmst ->
     remset_and_remset_heap_compatible g from rmst rh ->
@@ -6160,7 +6160,7 @@ Lemma forward_remset_gh_frr_dsr_remset_semi_iso:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_nodup rmst ->
     remset_graph_compatible g rmst ->
     remset_and_remset_heap_compatible g from rmst rh ->
@@ -6292,7 +6292,7 @@ Lemma forward_remset_gh_frr_dsr_augmented_iso:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_nodup rmst ->
     remset_graph_compatible g rmst ->
     remset_and_remset_heap_compatible g from rmst rh ->
@@ -6431,7 +6431,7 @@ Lemma forward_remset_gh_effective_roots_marked:
     graph_unmarked g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     In (ExteriorVertex v) (effective_remset_roots g rmst rh from) ->
     (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
@@ -6568,7 +6568,7 @@ Qed.
 Lemma old_nonfrom_edge_dst_in_effective_remset_roots:
   forall g rh rmst from e,
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     graph_has_e g e ->
     vgeneration (fst e) <> from ->
     vgeneration (dst g e) = from ->
@@ -6595,11 +6595,14 @@ Proof.
     rewrite Hdst_gen.
     exact Hsrc_gt.
   }
-  specialize (Hunrec e Hge Hback).
-  rewrite Hdst_gen in Hunrec.
+  assert (Hin:
+            In (RemSetInterior (InteriorVertexPos (fst e) (Z.of_nat (snd e))))
+               (nth_remset_space rh from)) by
+      (eapply no_unrecorded_backward_edge_current_remset_direct;
+       [exact Hunrec | exact Hge | unfold egeneration; exact Hsrc_gt | exact Hdst_gen]).
   rewrite effective_remset_roots_In.
   exists (RemSetInterior (InteriorVertexPos (fst e) (Z.of_nat (snd e)))).
-  split; [exact Hunrec | split].
+  split; [exact Hin | split].
   - simpl. apply Nat.eqb_neq. exact Hsrc_ne.
   - simpl. now rewrite graph_has_e_make_fields_Znth_edge.
 Qed.
@@ -6607,7 +6610,7 @@ Qed.
 Lemma old_nonfrom_edge_dst_in_remset_augmented_roots:
   forall g rh rmst from roots e,
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     graph_has_e g e ->
     vgeneration (fst e) <> from ->
     vgeneration (dst g e) = from ->
@@ -6846,7 +6849,7 @@ Lemma forward_remset_gh_effective_root_reachable_or_marked:
     graph_unmarked g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
     gc_graph_remset_semi_iso g g' from to l ->
@@ -6923,7 +6926,7 @@ Lemma forward_remset_gh_augmented_root_reachable_or_marked:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
     gc_graph_remset_semi_iso g g' from to l ->
@@ -7325,7 +7328,7 @@ Lemma forward_remset_gh_remset_semi_iso_closed_effective_roots:
     no_dangling_dst g ->
     gen_unmarked g from ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
     exists l,
       gc_graph_remset_semi_iso g g' from to l /\
@@ -7385,7 +7388,7 @@ Lemma forward_remset_gh_backward_edge_prop_mapped_roots_effective:
     no_dangling_dst g ->
     gen_unmarked g from ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     (g', h', rh', rmst') = forward_remset_gh from to g h rh rmst ->
     exists l,
       gc_graph_remset_semi_iso g g' from to l /\
@@ -7907,7 +7910,7 @@ Lemma forward_remset_gh_augmented_reachable_or_marked:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     (g_rem, h_rem, rh', rmst') = forward_remset_gh from to g h rh rmst ->
     gc_graph_remset_semi_iso g g_rem from to l ->
@@ -8851,7 +8854,7 @@ Lemma forward_remset_gh_frr_no_edge2gen_before_scan:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     (g_rem, h_rem, rh', rmst') = forward_remset_gh from to g h rh rmst ->
     forward_roots_relation from to roots g_rem roots' g1 ->
@@ -8921,7 +8924,7 @@ Lemma forward_remset_gh_frr_dsr_no_edge2gen:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     (g_rem, h_rem, rh', rmst') = forward_remset_gh from to g h rh rmst ->
     forward_roots_relation from to roots g_rem roots' g1 ->
@@ -9067,7 +9070,7 @@ Lemma forward_remset_gh_frr_dsr_mapped_ready_marked:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     (g_rem, h_rem, rh', rmst') = forward_remset_gh from to g h rh rmst ->
     copied_vertex_prop g_rem from to ->
@@ -9127,7 +9130,7 @@ Lemma forward_remset_gh_frr_dsr_mapped_ready_marked_state:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     (g_rem, h_rem, rh', rmst') = forward_remset_gh from to g h rh rmst ->
     forward_roots_relation from to roots g_rem roots' g1 ->
@@ -9165,7 +9168,7 @@ Lemma forward_remset_gh_frr_dsr_mapped_ready_marked_base_state:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     (g_rem, h_rem, rh', rmst') = forward_remset_gh from to g h rh rmst ->
     forward_roots_relation from to roots g_rem roots' g1 ->
@@ -9223,7 +9226,7 @@ Lemma do_generation_relation_no_dangling_dst_noedge_state:
     no_dangling_dst g ->
     roots_graph_compatible roots g ->
     firstn_gen_clear g i ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from i g rh ->
     remset_graph_state g i rmst rh ->
     do_generation_relation i (S i) roots roots' g h rh rmst
       g_rem h_rem rh' rmst' g' h' ->
@@ -9267,14 +9270,14 @@ Lemma do_generation_relation_no_unrecorded_backward_edge_reset_state:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     remset_heap_covers_graph g rh ->
     firstn_gen_clear g' (S from) ->
     no_dangling_dst g' ->
     do_generation_relation from (S from) roots roots' g h rh rmst
       g_rem h_rem rh' rmst' g' h' ->
-    no_unrecorded_backward_edge g' (reset_nth_remset_heap from rh').
+    no_unrecorded_backward_edge_from (S from) g' (reset_nth_remset_heap from rh').
 Proof.
   intros from roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h'
          Hto Hun Hroots Hndd Hfirst Hunrec Hstate Hcover Hfirst' Hndd' Hrel.
@@ -9432,7 +9435,7 @@ Lemma forward_remset_gh_frr_dsr_roots_iso_from_augmented:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_nodup rmst ->
     remset_graph_compatible g rmst ->
     remset_and_remset_heap_compatible g from rmst rh ->
@@ -9472,7 +9475,7 @@ Lemma forward_remset_gh_frr_dsr_roots_iso_from_rom_bridge_state:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     (g_rem, h_rem, rh', rmst') = forward_remset_gh from to g h rh rmst ->
     forward_roots_relation from to roots g_rem roots' g1 ->
@@ -9521,7 +9524,7 @@ Lemma forward_remset_gh_frr_dsr_roots_iso_from_rom_path_bridge_state:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     (g_rem, h_rem, rh', rmst') = forward_remset_gh from to g h rh rmst ->
     forward_roots_relation from to roots g_rem roots' g1 ->
@@ -9572,7 +9575,7 @@ Lemma do_generation_relation_roots_iso_from_rom_path_bridge_state:
     roots_graph_compatible roots g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_graph_state g from rmst rh ->
     do_generation_relation from to roots roots' g h rh rmst
       g_rem h_rem rh' rmst' g' h' ->
@@ -9621,7 +9624,10 @@ Proof.
   unfold nat_inc_list in Hloop.
   pose proof (graph_has_gen_O g1) as Hgen0.
   assert (Hfirst: firstn_gen_clear g1 O) by (red; intros; lia).
-  remember O as s. clear Heqs.
+  remember O as s.
+  change (no_unrecorded_backward_edge_from O g1 rh1) in Hunrec.
+  rewrite <- Heqs in Hunrec.
+  clear Heqs.
   remember (S n) as m. clear n Heqm. rename m into n.
   revert s roots1 g1 h1 rh1 rmst1 roots2 g2 h2 rh2 rmst2
          Hstate_init Hcover_init Hun Hunrec Hndd Hrgc Hsound Hgen0 Hfirst Hloop.
@@ -9634,8 +9640,8 @@ Proof.
         (eapply new_gen_heap_graph_has_gen; eauto).
     assert (Hun3: graph_unmarked g3) by
         (eapply new_gen_heap_graph_unmarked; eauto).
-    assert (Hunrec3: no_unrecorded_backward_edge g3 rh1) by
-        (eapply new_gen_heap_no_unrecorded_backward_edge_pres; eauto).
+    assert (Hunrec3: no_unrecorded_backward_edge_from s g3 rh1) by
+        (eapply new_gen_heap_unrecorded_from_pres; eauto).
     assert (Hrgc3: roots_graph_compatible roots1 g3) by
         (eapply new_gen_heap_roots_graph_compatible; eauto).
     assert (Hndd3: no_dangling_dst g3) by
@@ -9664,7 +9670,8 @@ Proof.
               remset_heap_covers_graph g4 (reset_nth_remset_heap s rh3)) by
         (eapply do_generation_relation_remset_heap_covers_graph; eauto).
     assert (Hunrec4:
-              no_unrecorded_backward_edge g4 (reset_nth_remset_heap s rh3)). {
+              no_unrecorded_backward_edge_from (S s) g4
+                (reset_nth_remset_heap s rh3)). {
       eapply (do_generation_relation_no_unrecorded_backward_edge_reset_state
                 s roots1 roots3 g3 h3 rh1 rmst1
                 g_rem h_rem rh3 rmst3 g4 h4); eauto; try lia.

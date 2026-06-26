@@ -1,0 +1,135 @@
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >=Latex,
+  box/.style={
+    draw,
+    rounded corners=2pt,
+    align=center,
+    inner xsep=5pt,
+    inner ysep=4pt,
+    minimum height=0.72cm
+  },
+  cbox/.style={box, minimum width=3.1cm},
+  smallc/.style={box, minimum width=3.1cm},
+  widec/.style={box, minimum width=3.1cm},
+  splitbox/.style={
+    box,
+    shape=rectangle split,
+    rectangle split parts=2,
+    rectangle split part align={center,center}
+  },
+  proofbox/.style={splitbox, minimum width=4.4cm, minimum height=1.06cm},
+  theorem/.style={splitbox, minimum width=4.2cm, minimum height=1.45cm},
+  specbox/.style={
+    box,
+    shape=rectangle split,
+    rectangle split parts=3,
+    rectangle split part align={center,center,center},
+    minimum width=4.2cm,
+    inner ysep=7pt
+  },
+  existing/.style={fill=white},
+  repaired/.style={fill=black!12},
+  call/.style={->, thick, rounded corners=3pt},
+  prooflink/.style={->, dashed, thick},
+  note/.style={align=center, font=\scriptsize},
+  legendtext/.style={font=\footnotesize, anchor=west}
+]
+
+\node[note] at (0,0.45) {\textbf{C Functions}};
+\node[note] at (5.575,0.45) {\textbf{VST Proof Files / Abstract Effects}};
+\node[note] at (11.7,0.45) {\textbf{Shared Model / Final Theorem}};
+
+\node[cbox,existing] (gc) at (0,-0.45) {\texttt{garbage\_collect}};
+\node[cbox,existing] (dg) at (0,-1.70) {\texttt{do\_generation}};
+\node[smallc,existing] (frs) at (0,-2.95) {\texttt{forward\_remset}};
+\node[smallc,existing] (fr) at (0,-4.20) {\texttt{forward\_roots}};
+\node[smallc,existing] (ds) at (0,-5.45) {\texttt{do\_scan}};
+\node[widec,existing] (fwd) at (0,-6.70) {\texttt{forward}};
+
+\draw[call] (gc) -- (dg);
+\draw[call] (dg) -- (frs);
+\draw[call] ($(dg.west)+(0,-0.18)$)
+  .. controls +(-0.80,-0.32) and +(-0.50,0.32) ..
+  ($(fr.west)+(0,0.18)$);
+\draw[call] ($(dg.west)+(0,0.18)$)
+  .. controls +(-1.35,-0.15) and +(-1.05,0.55) ..
+  (ds.west);
+\draw[call] (frs.west)
+  .. controls +(-1.60,-0.35) and +(-0.80,0.30) ..
+  ($(fwd.west)+(0,-0.18)$);
+\draw[call] ($(fr.west)+(0,-0.18)$)
+  .. controls +(-0.80,-0.32) and +(-0.50,0.32) ..
+  ($(fwd.west)+(0,0.18)$);
+\draw[call] (ds) -- (fwd);
+
+\node[proofbox,repaired] (vgc) at (5.575,-0.45)
+  {\texttt{verif\_garbage\_collect.v}
+   \nodepart{two}
+   \texttt{garbage\_collect\_relation}};
+\node[proofbox,repaired] (vdg) at (5.575,-1.70)
+  {\texttt{verif\_do\_generation.v}
+   \nodepart{two}
+   \texttt{do\_generation\_relation}};
+\node[proofbox,existing] (vrs) at (5.575,-2.95)
+  {\texttt{verif\_forward\_remset.v}
+   \nodepart{two}
+   \texttt{forward\_remset\_gh}};
+\node[proofbox,existing] (vfr) at (5.575,-4.20)
+  {\texttt{verif\_forward\_roots.v}
+   \nodepart{two}
+   \texttt{forward\_roots\_relation}};
+\node[proofbox,existing] (vds) at (5.575,-5.45)
+  {\texttt{verif\_do\_scan.v}
+   \nodepart{two}
+   \texttt{do\_scan\_relation}};
+\node[proofbox,existing] (vfwd) at (5.575,-6.70)
+  {\texttt{verif\_forward.v}
+   \nodepart{two}
+   \texttt{forward\_relation}};
+
+\draw[prooflink] (gc.east) -- (vgc.west);
+\draw[prooflink] (dg.east) -- (vdg.west);
+\draw[prooflink] (frs.east) -- (vrs.west);
+\draw[prooflink] (fr.east) -- (vfr.west);
+\draw[prooflink] (ds.east) -- (vds.west);
+\draw[prooflink] (fwd.east) -- (vfwd.west);
+
+\node[specbox,repaired,anchor=north] (specs) at (11.7,0 |- vgc.north)
+  {\texttt{GCGraph.v}
+   \nodepart{two}
+   \texttt{spatial\_gcgraph.v}
+   \nodepart{three}
+   \texttt{gc\_spec.v}};
+\node[theorem,repaired,anchor=north] (iso) at ($(specs.south)+(0,-0.80)$)
+  {\texttt{gc\_correct.v}
+   \nodepart{two}
+   \texttt{garbage\_collect\_isomorphism}};
+
+\draw[prooflink] (vgc.east)
+  to[out=0,in=180,looseness=1.18] ($(specs.west)+(0,0.80)$);
+\draw[prooflink] (vdg.east)
+  to[out=0,in=180,looseness=1.12] ($(specs.west)+(0,0.48)$);
+\draw[prooflink] (vrs.east)
+  to[out=0,in=180,looseness=1.05] ($(specs.west)+(0,0.16)$);
+\draw[prooflink] (vfr.east)
+  to[out=0,in=180,looseness=0.78] ($(specs.west)+(0,-0.16)$);
+\draw[prooflink] (vds.east)
+  to[out=0,in=180,looseness=0.58] ($(specs.west)+(0,-0.48)$);
+\draw[prooflink] (vfwd.east)
+  to[out=0,in=180,looseness=0.42] ($(specs.west)+(0,-0.80)$);
+\draw[prooflink] (specs.south) -- (iso.north);
+
+\begin{scope}[shift={(10.0,-5.95)}]
+  \node[legendtext] at (0,0.55) {\textbf{Legend}};
+  \draw[call] (0,0.18) -- (0.75,0.18);
+  \node[legendtext] at (0.95,0.18) {C call};
+  \draw[prooflink] (0,-0.20) -- (0.75,-0.20);
+  \node[legendtext] at (0.95,-0.20) {proof/contract link};
+  \node[box,existing,minimum width=0.52cm,minimum height=0.26cm,inner sep=0pt] at (0.26,-0.60) {};
+  \node[legendtext] at (0.95,-0.60) {pre-existing artifact};
+  \node[box,repaired,minimum width=0.52cm,minimum height=0.26cm,inner sep=0pt] at (0.26,-0.98) {};
+  \node[legendtext] at (0.95,-0.98) {Codex-assisted repair};
+\end{scope}
+
+\end{tikzpicture}

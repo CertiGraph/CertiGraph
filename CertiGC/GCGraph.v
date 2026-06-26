@@ -6861,12 +6861,21 @@ Fixpoint reset_nth_remset_heap (n: nat) (rh: remset_heap) : remset_heap :=
             end
   end.
 
-Definition no_unrecorded_backward_edge (g: LGraph) (rh: remset_heap): Prop :=
+Definition remset_heap_records_edge (rh: remset_heap) (k: nat) (e: EType): Prop :=
+  In (RemSetInterior (InteriorVertexPos (fst e) (Z.of_nat (snd e))))
+     (nth_remset_space rh k).
+
+Definition no_unrecorded_backward_edge_from
+           (from: nat) (g: LGraph) (rh: remset_heap): Prop :=
   forall e,
     graph_has_e g e ->
     (egeneration e > vgeneration (dst g e))%nat ->
-    In (RemSetInterior (InteriorVertexPos (fst e) (Z.of_nat (snd e))))
-       (nth_remset_space rh (vgeneration (dst g e))).
+    exists k,
+      (from <= k <= vgeneration (dst g e))%nat /\
+      remset_heap_records_edge rh k e.
+
+Definition no_unrecorded_backward_edge (g: LGraph) (rh: remset_heap): Prop :=
+  no_unrecorded_backward_edge_from O g rh.
 
 Lemma firstn_gen_clear_edge_source_gt:
   forall g from e,
@@ -6888,10 +6897,30 @@ Proof.
   - exact Hgt.
 Qed.
 
+Lemma no_unrecorded_backward_edge_current_remset_direct:
+  forall g rh from e,
+    no_unrecorded_backward_edge_from from g rh ->
+    graph_has_e g e ->
+    (egeneration e > from)%nat ->
+    vgeneration (dst g e) = from ->
+    In (RemSetInterior (InteriorVertexPos (fst e) (Z.of_nat (snd e))))
+       (nth_remset_space rh from).
+Proof.
+  intros g rh from e Hunrec He Hsrc Hdst.
+  assert (Hback: (egeneration e > vgeneration (dst g e))%nat) by
+      (rewrite Hdst; exact Hsrc).
+  specialize (Hunrec e He Hback).
+  destruct Hunrec as [k [[Hlo Hhi] Hrec]].
+  unfold remset_heap_records_edge in Hrec.
+  rewrite Hdst in Hhi.
+  replace k with from in Hrec by lia.
+  exact Hrec.
+Qed.
+
 Lemma no_unrecorded_backward_edge_current_remset:
   forall g rh from e,
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     graph_has_e g e ->
     egeneration e <> from ->
     vgeneration (dst g e) = from ->
@@ -6899,11 +6928,10 @@ Lemma no_unrecorded_backward_edge_current_remset:
        (nth_remset_space rh from).
 Proof.
   intros g rh from e Hfirst Hunrec He Hsrc Hdst.
-  specialize (Hunrec e He).
   assert (Hback: (egeneration e > vgeneration (dst g e))%nat) by
       (rewrite Hdst; eapply firstn_gen_clear_edge_source_gt; eauto).
-  specialize (Hunrec Hback).
-  now rewrite Hdst in Hunrec.
+  eapply no_unrecorded_backward_edge_current_remset_direct; eauto.
+  rewrite <- Hdst. exact Hback.
 Qed.
 
 Lemma reset_nth_remset_heap_length: forall n rh,
@@ -10438,7 +10466,7 @@ Lemma forward_remset_gh_old_edge_dst_not_from:
     copy_compatible g ->
     no_dangling_dst g ->
     firstn_gen_clear g from ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from from g rh ->
     remset_nodup rmst ->
     remset_compatible g outlier from rmst rh h ->
     vgeneration v <> from ->
@@ -10571,7 +10599,7 @@ Lemma do_generation_relation_no_dangling_dst_unrecorded:
     graph_unmarked g ->
     copy_compatible g ->
     no_dangling_dst g ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from i g rh ->
     firstn_gen_clear g i ->
     roots_graph_compatible roots g ->
     remset_nodup rmst ->
@@ -10704,7 +10732,7 @@ Lemma do_generation_relation_no_unrecorded_backward_edge_reset_core:
     graph_unmarked g ->
     copy_compatible g ->
     no_dangling_dst g ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from i g rh ->
     firstn_gen_clear g i ->
     roots_graph_compatible roots g ->
     remset_nodup rmst ->
@@ -10715,14 +10743,14 @@ Lemma do_generation_relation_no_unrecorded_backward_edge_reset_core:
     0 <= Z.of_nat (S i) < Zlength rh ->
     do_generation_relation i (S i) roots roots' g h rh rmst
       g_rem h_rem rh' rmst' g' h' ->
-    no_unrecorded_backward_edge g' (reset_nth_remset_heap i rh').
+    no_unrecorded_backward_edge_from (S i) g' (reset_nth_remset_heap i rh').
 Proof.
   intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i
          Hto Hun Hcc Hndd Hunrec Hfirst Hroots Hrnd Hrgc Hrrhc
          Hfirst' Hndd' Hrange_to Hrel.
   destruct Hrel as [[g1 [g2 [Hfrg [Hfrr [Hscan Hreset]]]]] _].
   subst g'.
-  unfold no_unrecorded_backward_edge.
+  unfold no_unrecorded_backward_edge_from.
   intros e He Hback.
   rewrite graph_has_e_reset in He.
   destruct He as [He_scan Hsrc_not_from].
@@ -10754,7 +10782,7 @@ Proof.
     unfold gen_has_index in Hdst_idx. simpl in Hdst_idx.
     specialize (Hfirst' dgen Hdst_lt).
     rewrite Hfirst' in Hdst_idx. lia.
-  - rewrite reset_nth_remset_heap_diff by lia.
+  -
     assert (Hsrc_gt_to: (S i < egeneration e)%nat) by lia.
     assert (Hneq: i <> S i) by lia.
     assert (Hneq': S i <> i) by lia.
@@ -10896,6 +10924,9 @@ Proof.
       }
       rewrite <- Hdst_rem_scan.
       rewrite Hdst_rem_to.
+      exists (S i). split; [lia |].
+      unfold remset_heap_records_edge.
+      rewrite reset_nth_remset_heap_diff by lia.
       eapply forward_remset_gh_records_nonfrom_interior; eauto.
     + assert (Hdst_rem_g: dst g_rem e = dst g e). {
         unfold forward_remset_gh in Hfrg.
@@ -10929,9 +10960,20 @@ Proof.
         rewrite <- Hdst_rem_g.
         rewrite Hdst_rem_scan. exact Hback.
       }
+      destruct (Hunrec e He_g Hback_g) as [k [[Hklo Hkhi] Hrec]].
+      unfold remset_heap_records_edge in Hrec.
       rewrite <- Hdst_rem_scan.
       rewrite Hdst_rem_g.
-      eapply forward_remset_gh_preserves_remset_entry; eauto.
+      destruct (Nat.eq_dec k i) as [Hk_eq | Hk_neq].
+      * subst k.
+        exists (S i). split; [lia |].
+        unfold remset_heap_records_edge.
+        rewrite reset_nth_remset_heap_diff by lia.
+        eapply forward_remset_gh_records_nonfrom_interior; eauto.
+      * exists k. split; [lia |].
+        unfold remset_heap_records_edge.
+        rewrite reset_nth_remset_heap_diff by lia.
+        eapply forward_remset_gh_preserves_remset_entry; eauto.
 Qed.
 
 Lemma do_generation_relation_no_unrecorded_backward_edge_reset:
@@ -10940,7 +10982,7 @@ Lemma do_generation_relation_no_unrecorded_backward_edge_reset:
     graph_unmarked g ->
     copy_compatible g ->
     no_dangling_dst g ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from i g rh ->
     firstn_gen_clear g i ->
     roots_graph_compatible roots g ->
     remset_nodup rmst ->
@@ -10950,7 +10992,7 @@ Lemma do_generation_relation_no_unrecorded_backward_edge_reset:
     0 <= Z.of_nat (S i) < Zlength rh ->
     do_generation_relation i (S i) roots roots' g h rh rmst
       g_rem h_rem rh' rmst' g' h' ->
-    no_unrecorded_backward_edge g' (reset_nth_remset_heap i rh').
+    no_unrecorded_backward_edge_from (S i) g' (reset_nth_remset_heap i rh').
 Proof.
   intros g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i outlier
          Hto Hun Hcc Hndd Hunrec Hfirst Hroots Hrnd Hremc Hfirst' Hndd'
@@ -11002,7 +11044,7 @@ Lemma do_generation_relation_gcc:
     graph_unmarked g ->
     copy_compatible g ->
     no_dangling_dst g ->
-    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge_from i g rh ->
     firstn_gen_clear g i ->
     roots_graph_compatible roots g ->
     remset_nodup rmst ->
@@ -11034,19 +11076,19 @@ Definition new_gen_heap_relation
       g' = lgraph_add_new_gen g gi /\
       h' = add_new_space h sp i Hs.
 
-Lemma new_gen_heap_no_unrecorded_backward_edge_pres:
-  forall g1 h1 g2 h2 rh gen,
-    no_unrecorded_backward_edge g1 rh ->
+Lemma new_gen_heap_unrecorded_from_pres:
+  forall g1 h1 g2 h2 rh gen from,
+    no_unrecorded_backward_edge_from from g1 rh ->
     new_gen_heap_relation gen g1 h1 g2 h2 ->
-    no_unrecorded_backward_edge g2 rh.
+    no_unrecorded_backward_edge_from from g2 rh.
 Proof.
-  intros g1 h1 g2 h2 rh gen Hunrec Hrel.
+  intros g1 h1 g2 h2 rh gen from Hunrec Hrel.
   unfold new_gen_heap_relation in Hrel.
   destruct (graph_has_gen_dec g1 gen).
   - destruct Hrel as [Hg2 _]. subst g2. exact Hunrec.
   - destruct Hrel as [gi [sp [i [Hs [Hgen [Hempty [Htotal [Havail [Hused [Hg2 _]]]]]]]]]].
     subst g2.
-    unfold no_unrecorded_backward_edge in *.
+    unfold no_unrecorded_backward_edge_from in *.
     intros e He Hback.
     apply Hunrec; [|exact Hback].
     destruct e as [v idx].
@@ -11056,6 +11098,17 @@ Proof.
     + unfold get_edges, make_fields in Hin |- *.
       simpl in Hin |- *.
       exact Hin.
+Qed.
+
+Lemma new_gen_heap_no_unrecorded_backward_edge_pres:
+  forall g1 h1 g2 h2 rh gen,
+    no_unrecorded_backward_edge g1 rh ->
+    new_gen_heap_relation gen g1 h1 g2 h2 ->
+    no_unrecorded_backward_edge g2 rh.
+Proof.
+  unfold no_unrecorded_backward_edge.
+  intros.
+  eapply new_gen_heap_unrecorded_from_pres; eauto.
 Qed.
 
 Inductive garbage_collect_loop
