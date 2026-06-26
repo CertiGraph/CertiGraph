@@ -5289,7 +5289,7 @@ Proof.
     eapply Hext; exact Hvertex.
 Qed.
 
-Lemma no_unrecorded_backward_edge_old_nonfrom_edges_pending:
+Lemma current_remset_edges_pending:
   forall g rh from v,
     sound_gc_graph g ->
     firstn_gen_clear g from ->
@@ -5312,7 +5312,7 @@ Proof.
   simpl. split; reflexivity.
 Qed.
 
-Lemma no_unrecorded_backward_edge_unmarked_old_nonfrom_edges_pending:
+Lemma unmarked_current_remset_edges_pending:
   forall g rh from,
     sound_gc_graph g ->
     firstn_gen_clear g from ->
@@ -5322,7 +5322,7 @@ Lemma no_unrecorded_backward_edge_unmarked_old_nonfrom_edges_pending:
 Proof.
   unfold unmarked_old_nonfrom_edges_to_are_pending.
   intros g rh from Hsound Hfirst Hunrec v Hgen _.
-  eapply no_unrecorded_backward_edge_old_nonfrom_edges_pending; eauto.
+  eapply current_remset_edges_pending; eauto.
 Qed.
 
 Lemma forward_remset_item_recorded_old_edge_target_marked:
@@ -5977,7 +5977,7 @@ Proof.
   assert (Hpending:
             unmarked_old_nonfrom_edges_to_are_pending
               g g from (nth_remset_space rh from)) by
-      (eapply no_unrecorded_backward_edge_unmarked_old_nonfrom_edges_pending;
+      (eapply unmarked_current_remset_edges_pending;
        eauto).
   unfold forward_remset_gh in Hfrg.
   rewrite <- nth_remset_space_Znth in Hfrg.
@@ -9641,7 +9641,7 @@ Proof.
     assert (Hun3: graph_unmarked g3) by
         (eapply new_gen_heap_graph_unmarked; eauto).
     assert (Hunrec3: no_unrecorded_backward_edge_from s g3 rh1) by
-        (eapply new_gen_heap_no_unrecorded_backward_edge_from_pres; eauto).
+        (eapply new_gen_heap_unrecorded_from_pres; eauto).
     assert (Hrgc3: roots_graph_compatible roots1 g3) by
         (eapply new_gen_heap_roots_graph_compatible; eauto).
     assert (Hndd3: no_dangling_dst g3) by

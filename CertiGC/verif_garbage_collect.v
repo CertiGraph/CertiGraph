@@ -774,7 +774,7 @@ Proof.
         assert (garbage_collect_condition g1 (pt_heap (ti_heap t_info1))) by
             (subst g1 t_info1; apply gcc_add; assumption).
         assert (no_unrecorded_backward_edge_from (Z.to_nat i) g1 rh') by
-            (subst g1 t_info1; eapply new_gen_heap_no_unrecorded_backward_edge_from_pres; eauto).
+            (subst g1 t_info1; eapply new_gen_heap_unrecorded_from_pres; eauto).
         pose proof Hremc_loop as Hremc_parts.
         destruct Hremc_parts as [Hrgo [Hrgh Hrhh]].
         assert (remset_compatible g1 outlier (Z.to_nat i) rmst' rh'

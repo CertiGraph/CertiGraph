@@ -11076,7 +11076,7 @@ Definition new_gen_heap_relation
       g' = lgraph_add_new_gen g gi /\
       h' = add_new_space h sp i Hs.
 
-Lemma new_gen_heap_no_unrecorded_backward_edge_from_pres:
+Lemma new_gen_heap_unrecorded_from_pres:
   forall g1 h1 g2 h2 rh gen from,
     no_unrecorded_backward_edge_from from g1 rh ->
     new_gen_heap_relation gen g1 h1 g2 h2 ->
@@ -11108,7 +11108,7 @@ Lemma new_gen_heap_no_unrecorded_backward_edge_pres:
 Proof.
   unfold no_unrecorded_backward_edge.
   intros.
-  eapply new_gen_heap_no_unrecorded_backward_edge_from_pres; eauto.
+  eapply new_gen_heap_unrecorded_from_pres; eauto.
 Qed.
 
 Inductive garbage_collect_loop
