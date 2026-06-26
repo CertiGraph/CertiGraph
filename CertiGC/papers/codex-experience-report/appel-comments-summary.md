@@ -288,6 +288,10 @@ replacement for the old no-backward-edge premise.
 Resolution note: the paper now states this division of labor next to the
 predicate definition.
 
+Current code note: the public name `no_unrecorded_backward_edge` is now a
+wrapper for `no_unrecorded_backward_edge_from O`; collector-side loop proofs use
+the indexed predicate internally.
+
 ### C20. DONE. Page 3, highlight
 
 Highlighted text: "remembered-set states"
@@ -346,6 +350,10 @@ Resolution note: the paper now states near the preservation lemma that Codex
 introduced the VST-facing reset-preservation lemma shape under the accepted
 invariant, while the author reviewed its semantic role and later directed the
 core-and-wrapper factoring.
+
+Current code note: the preservation lemma now advances the indexed invariant
+from the current collection index to the next one after resetting the collected
+remembered-set component.
 
 ### C24. DONE. Page 4, highlight
 
