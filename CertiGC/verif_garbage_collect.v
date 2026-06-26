@@ -501,7 +501,7 @@ Proof.
      EX rh': remset_heap, EX rmst': remset,
      PROP (super_compatible g' (ti_heap t_info').(pt_heap) (frames2rootpairs (ti_frames t_info')) roots' outlier;
            garbage_collect_condition g' (ti_heap t_info').(pt_heap);
-           no_unrecorded_backward_edge g' rh';
+           no_unrecorded_backward_edge_from (Z.to_nat i) g' rh';
            safe_to_copy_to_except g' (Z.to_nat i);
            safe_to_copy_to_except_heap g' (ti_heap t_info').(pt_heap) (Z.to_nat i);
            firstn_gen_clear g' (Z.to_nat i);
@@ -551,7 +551,7 @@ Proof.
        EX rh1: remset_heap, EX rmst1: remset,
        PROP (super_compatible g1 (pt_heap (ti_heap t_info1)) (frames2rootpairs (ti_frames t_info1)) roots' outlier;
              garbage_collect_condition g1 (pt_heap (ti_heap t_info1));
-             no_unrecorded_backward_edge g1 rh1;
+             no_unrecorded_backward_edge_from (Z.to_nat i) g1 rh1;
              safe_to_copy_to_except g1 (Z.to_nat i);
              safe_to_copy_to_except_heap g1 (pt_heap (ti_heap t_info1)) (Z.to_nat i);
              firstn_gen_clear g1 (Z.to_nat i);
@@ -773,8 +773,8 @@ Proof.
         }
         assert (garbage_collect_condition g1 (pt_heap (ti_heap t_info1))) by
             (subst g1 t_info1; apply gcc_add; assumption).
-        assert (no_unrecorded_backward_edge g1 rh') by
-            (subst g1 t_info1; eapply new_gen_heap_no_unrecorded_backward_edge_pres; eauto).
+        assert (no_unrecorded_backward_edge_from (Z.to_nat i) g1 rh') by
+            (subst g1 t_info1; eapply new_gen_heap_no_unrecorded_backward_edge_from_pres; eauto).
         pose proof Hremc_loop as Hremc_parts.
         destruct Hremc_parts as [Hrgo [Hrgh Hrhh]].
         assert (remset_compatible g1 outlier (Z.to_nat i) rmst' rh'
@@ -1227,7 +1227,7 @@ Proof.
                      Hto1 Hrel_loop Hnofrom Hrgoc_rem Hrrhc_rem
                      Hrhhc_rem Hremgen_next).
         assert (Hunrec1':
-                  no_unrecorded_backward_edge g1 rh') by
+                  no_unrecorded_backward_edge_from (Z.to_nat i) g1 rh') by
             (rewrite <- Hrh1_eq; exact Hunrec1).
         assert (Hremc1':
                   remset_compatible g1 outlier (Z.to_nat i) rmst'
@@ -1242,7 +1242,7 @@ Proof.
         assert (Hndd2': no_dangling_dst g2) by
             (destruct Hgcc2 as [_ [Hndd2' _]]; exact Hndd2').
         assert (Hunrec_next:
-                  no_unrecorded_backward_edge g2
+                  no_unrecorded_backward_edge_from (S (Z.to_nat i)) g2
                     (reset_nth_remset_heap (Z.to_nat i) rh2)). {
           exact (do_generation_relation_no_unrecorded_backward_edge_reset
                    g1 (pt_heap (ti_heap t_info1)) rh' rmst'
