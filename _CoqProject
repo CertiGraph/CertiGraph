@@ -145,6 +145,7 @@ CertiGC/verif_forward1.v
 CertiGC/verif_forward2.v
 CertiGC/verif_do_generation.v
 CertiGC/gc_correct.v
+CertiGC/assumptions.v
 
 kruskal/kruskal_edgelist.v 
 kruskal/WeightedEdgeListGraph.v
