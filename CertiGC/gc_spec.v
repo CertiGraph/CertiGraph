@@ -482,16 +482,20 @@ Definition resume_spec :=
          graph_rep g;
          before_gc_thread_info_rep sh t_info ti).
 
-(* TODO *)
 Definition decr_info_nursery (ti: thread_info) (x: val): thread_info :=
-  if isptr_dec x then ti else ti.
-    (* Build_thread_info (ti_heap_p ti) (incr_remset_heap (ti_heap ti).(pt_heap) 0) *)
-    (*   (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti). *)
+  if isptr_dec x then
+    Build_thread_info
+      (ti_heap_p ti)
+      (build_compatible_heap (incr_remset_heap (ti_heap ti).(pt_heap) 0))
+      (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti)
+  else ti.
 
 Definition mtb_upd_remset_heap (x: val) (item: remset_space_item) (rh: remset_heap) : remset_heap :=
   if isptr_dec x then upd_remset_heap item rh O else rh.
 
-Definition info_recordable (ti: thread_info): Prop := True.
+Definition info_recordable (ti: thread_info): Prop :=
+  let nursery := heap_head (ti_heap ti).(pt_heap) in
+  used_space nursery < available_space nursery.
 
 Definition ext_mutable_update_spec :=
   DECLARE _mutable_update
@@ -562,9 +566,10 @@ Definition int_mutable_update_spec :=
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
   PROP (writable_share sh;
         info_recordable t_info;
-        outlier_compatible g outlier;
-        exterior_compatible g outlier v;
-        interior_compatible g O it)
+        graph_heap_compatible g (ti_heap t_info).(pt_heap);
+        remset_heap_and_heap_compatible rh (ti_heap t_info).(pt_heap);
+        mutable_location_compatible g it;
+        exterior_compatible g outlier v)
     PARAMS (ti; interior_address it g; exterior2val g v)
     GLOBALS ()
     SEP (graph_rep g;
@@ -573,9 +578,9 @@ Definition int_mutable_update_spec :=
          heap_remset_rep g (ti_heap t_info).(pt_heap) rh)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX rh': remset_heap,
-    PROP (t_info' = decr_info_nursery t_info (exterior2val g v);
-          rh' = mtb_upd_remset_heap (exterior2val g v) (RemSetInterior it) rh
-          (* relation or function about g and g' *))
+    PROP (mutable_graph_update g it v g';
+          t_info' = decr_info_nursery t_info (exterior2val g v);
+          rh' = mtb_upd_remset_heap (exterior2val g v) (RemSetInterior it) rh)
     RETURN ()
     SEP (graph_rep g';
          outlier_rep outlier;
@@ -677,4 +682,5 @@ Definition Gprog: funspecs :=
                       create_heap_spec;
                       make_tinfo_spec;
                       resume_spec;
+                      int_mutable_update_spec;
                       garbage_collect_spec]).

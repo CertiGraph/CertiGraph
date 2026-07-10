@@ -1,5 +1,6 @@
 Require Import Stdlib.ZArith.ZArith.
 Require Export Stdlib.Program.Basics.
+Require Import Stdlib.Logic.ProofIrrelevance.
 Require Import Stdlib.micromega.Lia.
 Require Import compcert.lib.Integers.
 Require Import compcert.common.Values.
@@ -1109,6 +1110,10 @@ Proof. intros. destruct r; simpl; split; intro S; inversion S; subst; reflexivit
 Definition get_edges (g: LGraph) (v: VType): list EType :=
   filter_proj field_proj_edge (make_fields g v).
 
+Definition lgraph_remove_edge (g: LGraph) (e: EType): LGraph :=
+  Build_LabeledGraph _ _ _ (pregraph_remove_edge (pg_lg g) e)
+                     (vlabel g) (elabel g) (glabel g).
+
 Definition pregraph_remove_vertex_and_edges
            (g: LGraph) (v: VType): PreGraph VType EType :=
   fold_left pregraph_remove_edge (get_edges g v) (pregraph_remove_vertex g v).
@@ -1699,6 +1704,428 @@ Definition interior_compatible (g: LGraph) (from: nat) (intr: interior_t) : Prop
                              (vlabel g v).(raw_tag) < NO_SCAN_TAG /\
                               vgeneration v <> from
   end.
+
+Definition raw_vertex_field_update
+    (rvb: raw_vertex_block) (pos: Z) (rf: raw_field)
+    (rvb': raw_vertex_block): Prop :=
+  raw_fields rvb' = upd_Znth pos (raw_fields rvb) rf /\
+  raw_mark rvb' = raw_mark rvb /\
+  copied_vertex rvb' = copied_vertex rvb /\
+  raw_color rvb' = raw_color rvb /\
+  raw_tag rvb' = raw_tag rvb.
+
+Definition mutable_location_compatible (g: LGraph) (it: interior_t): Prop :=
+  match it with
+  | InteriorVertexPos src pos =>
+      graph_has_v g src /\
+      0 <= pos < Zlength (raw_fields (vlabel g src)) /\
+      raw_mark (vlabel g src) = false /\
+      raw_tag (vlabel g src) < NO_SCAN_TAG
+  end.
+
+Definition internal_write_at
+    (g: LGraph) (src: VType) (pos: Z)
+    (new: exterior_t) (g': LGraph): Prop :=
+  let e : EType := (src, Z.to_nat pos) in
+  match new with
+  | ExteriorVertex dst =>
+      match Znth pos (raw_fields (vlabel g src)) with
+      | RawInternal => g' = labeledgraph_gen_dst g e dst
+      | RawUnboxed _ =>
+          exists rvb',
+            raw_vertex_field_update (vlabel g src) pos RawInternal rvb' /\
+            g' = labeledgraph_vgen
+                   (labeledgraph_add_edge g e src dst (Z.to_nat pos))
+                   src rvb'
+      | RawOutlier _ =>
+          exists rvb',
+            raw_vertex_field_update (vlabel g src) pos RawInternal rvb' /\
+            g' = labeledgraph_vgen
+                   (labeledgraph_add_edge g e src dst (Z.to_nat pos))
+                   src rvb'
+      end
+  | ExteriorUnboxed z =>
+      exists rvb',
+        raw_vertex_field_update (vlabel g src) pos (RawUnboxed z) rvb' /\
+        g' = labeledgraph_vgen (lgraph_remove_edge g e) src rvb'
+  | ExteriorOutlier p =>
+      exists rvb',
+        raw_vertex_field_update (vlabel g src) pos (RawOutlier p) rvb' /\
+        g' = labeledgraph_vgen (lgraph_remove_edge g e) src rvb'
+  end.
+
+Definition mutable_graph_update
+    (g: LGraph) (it: interior_t) (new: exterior_t) (g': LGraph): Prop :=
+  match it with
+  | InteriorVertexPos src pos => internal_write_at g src pos new g'
+  end.
+
+Lemma raw_vertex_field_update_exists:
+  forall rvb pos rf,
+    raw_tag rvb < NO_SCAN_TAG ->
+    exists rvb', raw_vertex_field_update rvb pos rf rvb'.
+Proof.
+  intros rvb pos rf Htag.
+  assert (Hrange:
+    0 < Zlength (upd_Znth pos (raw_fields rvb) rf) <
+        two_p (WORD_SIZE * 8 - 10)).
+  { rewrite Zlength_upd_Znth. apply raw_fields_range. }
+  assert (Hnoscan:
+    NO_SCAN_TAG <= raw_tag rvb ->
+    ~ In RawInternal (upd_Znth pos (raw_fields rvb) rf)).
+  { intros. exfalso. lia. }
+  exists (Build_raw_vertex_block
+      (raw_mark rvb) (copied_vertex rvb)
+      (upd_Znth pos (raw_fields rvb) rf)
+      (raw_color rvb) (raw_tag rvb)
+      (raw_tag_range rvb) (raw_color_range rvb) Hrange Hnoscan).
+  repeat split; reflexivity.
+Qed.
+
+Lemma raw_vertex_field_update_unique:
+  forall rvb pos rf rvb1 rvb2,
+    raw_vertex_field_update rvb pos rf rvb1 ->
+    raw_vertex_field_update rvb pos rf rvb2 ->
+    rvb1 = rvb2.
+Proof.
+  intros rvb pos rf
+    [m1 c1 fs1 col1 tag1 tr1 cr1 fr1 ns1]
+    [m2 c2 fs2 col2 tag2 tr2 cr2 fr2 ns2] H1 H2.
+  unfold raw_vertex_field_update in H1, H2; simpl in H1, H2.
+  destruct H1 as [? [? [? [? ?]]]].
+  destruct H2 as [? [? [? [? ?]]]].
+  subst fs1 fs2 m1 m2 c1 c2 col1 col2 tag1 tag2.
+  f_equal; apply proof_irrelevance.
+Qed.
+
+Lemma internal_write_at_exists:
+  forall g src pos new,
+    raw_tag (vlabel g src) < NO_SCAN_TAG ->
+    exists g', internal_write_at g src pos new g'.
+Proof.
+  intros g src pos new Htag.
+  unfold internal_write_at.
+  destruct new as [z | p | dst].
+  - destruct (raw_vertex_field_update_exists
+                (vlabel g src) pos (RawUnboxed z) Htag) as [rvb' Hu].
+    eexists. exists rvb'. split; [exact Hu | reflexivity].
+  - destruct (raw_vertex_field_update_exists
+                (vlabel g src) pos (RawOutlier p) Htag) as [rvb' Hu].
+    eexists. exists rvb'. split; [exact Hu | reflexivity].
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + eexists; reflexivity.
+    + destruct (raw_vertex_field_update_exists
+                  (vlabel g src) pos RawInternal Htag) as [rvb' Hu].
+      eexists. exists rvb'. split; [exact Hu | reflexivity].
+    + destruct (raw_vertex_field_update_exists
+                  (vlabel g src) pos RawInternal Htag) as [rvb' Hu].
+      eexists. exists rvb'. split; [exact Hu | reflexivity].
+Qed.
+
+Lemma mutable_graph_update_exists:
+  forall g it new,
+    mutable_location_compatible g it ->
+    exists g', mutable_graph_update g it new g'.
+Proof.
+  intros g [src pos] new [_ [_ [_ Htag]]].
+  apply internal_write_at_exists; exact Htag.
+Qed.
+
+Lemma internal_write_at_deterministic:
+  forall g src pos new g1 g2,
+    internal_write_at g src pos new g1 ->
+    internal_write_at g src pos new g2 ->
+    g1 = g2.
+Proof.
+  intros g src pos new g1 g2 H1 H2.
+  unfold internal_write_at in H1, H2.
+  destruct new as [z | p | dst].
+  - destruct H1 as [rvb1 [Hu1 Hg1]].
+    destruct H2 as [rvb2 [Hu2 Hg2]].
+    pose proof (raw_vertex_field_update_unique _ _ _ _ _ Hu1 Hu2).
+    subst rvb2. congruence.
+  - destruct H1 as [rvb1 [Hu1 Hg1]].
+    destruct H2 as [rvb2 [Hu2 Hg2]].
+    pose proof (raw_vertex_field_update_unique _ _ _ _ _ Hu1 Hu2).
+    subst rvb2. congruence.
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + congruence.
+    + destruct H1 as [rvb1 [Hu1 Hg1]].
+      destruct H2 as [rvb2 [Hu2 Hg2]].
+      pose proof (raw_vertex_field_update_unique _ _ _ _ _ Hu1 Hu2).
+      subst rvb2. congruence.
+    + destruct H1 as [rvb1 [Hu1 Hg1]].
+      destruct H2 as [rvb2 [Hu2 Hg2]].
+      pose proof (raw_vertex_field_update_unique _ _ _ _ _ Hu1 Hu2).
+      subst rvb2. congruence.
+Qed.
+
+Lemma mutable_graph_update_deterministic:
+  forall g it new g1 g2,
+    mutable_graph_update g it new g1 ->
+    mutable_graph_update g it new g2 ->
+    g1 = g2.
+Proof.
+  intros g [src pos] new g1 g2.
+  apply internal_write_at_deterministic.
+Qed.
+
+Lemma mutable_graph_update_glabel:
+  forall g it new g',
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    glabel g' = glabel g.
+Proof.
+  intros g [src pos] new g' Hloc Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dst].
+  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
+  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. reflexivity.
+    + destruct Hupd as [rvb' [_ ->]]. reflexivity.
+    + destruct Hupd as [rvb' [_ ->]]. reflexivity.
+Qed.
+
+Lemma mutable_graph_update_graph_has_v:
+  forall g it new g' v,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    (graph_has_v g' v <-> graph_has_v g v).
+Proof.
+  intros g it new g' v Hloc Hupd.
+  pose proof (mutable_graph_update_glabel _ _ _ _ Hloc Hupd) as Hglabel.
+  unfold graph_has_v, graph_has_gen, gen_has_index, nth_gen.
+  rewrite Hglabel. reflexivity.
+Qed.
+
+Lemma mutable_graph_update_nth_gen:
+  forall g it new g' gen,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    nth_gen g' gen = nth_gen g gen.
+Proof.
+  intros. unfold nth_gen.
+  rewrite (mutable_graph_update_glabel _ _ _ _ H H0).
+  reflexivity.
+Qed.
+
+Lemma rvfu_vgen_raw_fields_length:
+  forall (g: LGraph) (src: VType) pos rf rvb' (v: VType),
+    raw_vertex_field_update (vlabel g src) pos rf rvb' ->
+    Zlength (raw_fields (vlabel (labeledgraph_vgen g src rvb') v)) =
+    Zlength (raw_fields (vlabel g v)).
+Proof.
+  intros g src pos rf rvb' v Hupd.
+  unfold raw_vertex_field_update in Hupd.
+  destruct Hupd as [Hfields _].
+  unfold labeledgraph_vgen; simpl.
+  unfold update_vlabel.
+  destruct (EquivDec.equiv_dec src v) as [Heq | Hneq].
+  - hnf in Heq. subst v. rewrite Hfields, Zlength_upd_Znth. reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma mutable_graph_update_raw_fields_length:
+  forall g it new g' v,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    Zlength (raw_fields (vlabel g' v)) =
+    Zlength (raw_fields (vlabel g v)).
+Proof.
+  intros g [src pos] new g' v Hloc Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dst].
+  - destruct Hupd as [rvb' [Hu ->]].
+    change (Zlength (raw_fields (vlabel (labeledgraph_vgen g src rvb') v)) =
+            Zlength (raw_fields (vlabel g v))).
+    exact (rvfu_vgen_raw_fields_length g src pos (RawUnboxed z) rvb' v Hu).
+  - destruct Hupd as [rvb' [Hu ->]].
+    change (Zlength (raw_fields (vlabel (labeledgraph_vgen g src rvb') v)) =
+            Zlength (raw_fields (vlabel g v))).
+    exact (rvfu_vgen_raw_fields_length g src pos (RawOutlier p) rvb' v Hu).
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. reflexivity.
+    + destruct Hupd as [rvb' [Hu ->]].
+      change (Zlength (raw_fields (vlabel (labeledgraph_vgen g src rvb') v)) =
+              Zlength (raw_fields (vlabel g v))).
+      exact (rvfu_vgen_raw_fields_length g src pos RawInternal rvb' v Hu).
+    + destruct Hupd as [rvb' [Hu ->]].
+      change (Zlength (raw_fields (vlabel (labeledgraph_vgen g src rvb') v)) =
+              Zlength (raw_fields (vlabel g v))).
+      exact (rvfu_vgen_raw_fields_length g src pos RawInternal rvb' v Hu).
+Qed.
+
+Lemma mutable_graph_update_vertex_size:
+  forall g it new g' v,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    vertex_size g' v = vertex_size g v.
+Proof.
+  intros. unfold vertex_size.
+  rewrite (mutable_graph_update_raw_fields_length g it new g' v H H0).
+  reflexivity.
+Qed.
+
+Lemma mutable_graph_update_previous_vertices_size:
+  forall g it new g' gen i,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    previous_vertices_size g' gen i = previous_vertices_size g gen i.
+Proof.
+  intros g it new g' gen i Hloc Hupd.
+  induction i.
+  - reflexivity.
+  - rewrite !pvs_S, IHi.
+    rewrite (mutable_graph_update_vertex_size g it new g' (gen, i) Hloc Hupd).
+    reflexivity.
+Qed.
+
+Lemma mutable_graph_update_gen_start:
+  forall g it new g' gen,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    gen_start g' gen = gen_start g gen.
+Proof.
+  intros g it new g' gen Hloc Hupd.
+  unfold gen_start.
+  destruct (graph_has_gen_dec g' gen) as [Hg' | Hg'];
+    destruct (graph_has_gen_dec g gen) as [Hg | Hg].
+  - rewrite (mutable_graph_update_nth_gen _ _ _ _ _ Hloc Hupd). reflexivity.
+  - exfalso. apply Hg. unfold graph_has_gen in *.
+    rewrite (mutable_graph_update_glabel _ _ _ _ Hloc Hupd) in Hg'. exact Hg'.
+  - exfalso. apply Hg'. unfold graph_has_gen in *.
+    rewrite (mutable_graph_update_glabel _ _ _ _ Hloc Hupd). exact Hg.
+  - reflexivity.
+Qed.
+
+Lemma mutable_graph_update_vertex_address:
+  forall g it new g' v,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    vertex_address g' v = vertex_address g v.
+Proof.
+  intros g it new g' v Hloc Hupd.
+  unfold vertex_address, vertex_offset.
+  rewrite (mutable_graph_update_previous_vertices_size
+             g it new g' (vgeneration v) (vindex v) Hloc Hupd).
+  rewrite (mutable_graph_update_gen_start
+             g it new g' (vgeneration v) Hloc Hupd).
+  reflexivity.
+Qed.
+
+Lemma rvfu_vgen_make_header:
+  forall (g: LGraph) (src: VType) pos rf rvb' (v: VType),
+    raw_vertex_field_update (vlabel g src) pos rf rvb' ->
+    make_header (labeledgraph_vgen g src rvb') v = make_header g v.
+Proof.
+  intros g src pos rf rvb' v Hupd.
+  unfold raw_vertex_field_update in Hupd.
+  destruct Hupd as [Hfields [Hmark [_ [Hcolor Htag]]]].
+  unfold make_header, labeledgraph_vgen; simpl.
+  unfold update_vlabel.
+  destruct (EquivDec.equiv_dec src v) as [Heq | Hneq].
+  - hnf in Heq. subst v.
+    rewrite Hmark, Htag, Hcolor, Hfields, Zlength_upd_Znth.
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma mutable_graph_update_make_header:
+  forall g it new g' v,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    make_header g' v = make_header g v.
+Proof.
+  intros g [src pos] new g' v Hloc Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dst].
+  - destruct Hupd as [rvb' [Hu ->]].
+    change (make_header (labeledgraph_vgen g src rvb') v = make_header g v).
+    exact (rvfu_vgen_make_header g src pos (RawUnboxed z) rvb' v Hu).
+  - destruct Hupd as [rvb' [Hu ->]].
+    change (make_header (labeledgraph_vgen g src rvb') v = make_header g v).
+    exact (rvfu_vgen_make_header g src pos (RawOutlier p) rvb' v Hu).
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. reflexivity.
+    + destruct Hupd as [rvb' [Hu ->]].
+      change (make_header (labeledgraph_vgen g src rvb') v = make_header g v).
+      exact (rvfu_vgen_make_header g src pos RawInternal rvb' v Hu).
+    + destruct Hupd as [rvb' [Hu ->]].
+      change (make_header (labeledgraph_vgen g src rvb') v = make_header g v).
+      exact (rvfu_vgen_make_header g src pos RawInternal rvb' v Hu).
+Qed.
+
+Lemma mutable_graph_update_exterior2val:
+  forall g it new g',
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    exterior2val g' new = exterior2val g new.
+Proof.
+  intros g it new g' Hloc Hupd.
+  destruct new; simpl; try reflexivity.
+  eapply mutable_graph_update_vertex_address; eassumption.
+Qed.
+
+Lemma labeledgraph_vgen_vlabel_neq:
+  forall (g: LGraph) src rvb v,
+    v <> src ->
+    vlabel (labeledgraph_vgen g src rvb) v = vlabel g v.
+Proof.
+  intros g src rvb v Hneq.
+  unfold labeledgraph_vgen; simpl; unfold update_vlabel.
+  destruct (EquivDec.equiv_dec src v) as [Heq | Hne].
+  - hnf in Heq. subst v. exfalso. apply Hneq. reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma mutable_graph_update_vlabel_other:
+  forall g src pos new g' v,
+    v <> src ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    vlabel g' v = vlabel g v.
+Proof.
+  intros g src pos new g' v Hneq Hloc Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dst].
+  - destruct Hupd as [rvb' [_ ->]].
+    change (vlabel (labeledgraph_vgen g src rvb') v = vlabel g v).
+    apply labeledgraph_vgen_vlabel_neq; exact Hneq.
+  - destruct Hupd as [rvb' [_ ->]].
+    change (vlabel (labeledgraph_vgen g src rvb') v = vlabel g v).
+    apply labeledgraph_vgen_vlabel_neq; exact Hneq.
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. reflexivity.
+    + destruct Hupd as [rvb' [_ ->]].
+      change (vlabel (labeledgraph_vgen g src rvb') v = vlabel g v).
+      apply labeledgraph_vgen_vlabel_neq; exact Hneq.
+    + destruct Hupd as [rvb' [_ ->]].
+      change (vlabel (labeledgraph_vgen g src rvb') v = vlabel g v).
+      apply labeledgraph_vgen_vlabel_neq; exact Hneq.
+Qed.
+
+Lemma mutable_graph_update_graph_heap_compatible:
+  forall g it new g' h,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    graph_heap_compatible g h ->
+    graph_heap_compatible g' h.
+Proof.
+  intros g it new g' h Hloc Hupd [Hgens [Hnull Hlen]].
+  pose proof (mutable_graph_update_glabel _ _ _ _ Hloc Hupd) as Hglabel.
+  unfold graph_heap_compatible.
+  rewrite Hglabel.
+  split; [|split; assumption].
+  eapply Forall_impl; [|exact Hgens].
+  intros [[gen gi] sp] Hcomp.
+  unfold generation_space_compatible in Hcomp |- *.
+  destruct Hcomp as [Hstart [Hsh Hused]].
+  split; [exact Hstart | split; [exact Hsh |]].
+  rewrite (mutable_graph_update_previous_vertices_size
+             g it new g' gen (number_of_vertices gi) Hloc Hupd).
+  exact Hused.
+Qed.
 
 Definition forward_p_compatible
   (p: forward_p_type) (outlier: outlier_t) (g: LGraph) (from: nat): Prop :=
@@ -3179,6 +3606,75 @@ Proof.
   apply (H v H0).
 Qed.
 
+Lemma mutable_graph_update_nth_sh:
+  forall g it new g' gen,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    nth_sh g' gen = nth_sh g gen.
+Proof.
+  intros g it new g' gen Hloc Hupd.
+  unfold nth_sh, nth_gen.
+  rewrite (mutable_graph_update_glabel _ _ _ _ Hloc Hupd).
+  reflexivity.
+Qed.
+
+Lemma mutable_graph_update_dst_other:
+  forall (g: LGraph) (src: VType) pos new g' (e: EType),
+    fst e <> src ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    dst g' e = dst g e.
+Proof.
+  intros g src pos new g' e Hfst Hloc Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  assert (Hedge: (src, Z.to_nat pos) <> e).
+  { intro Heq. apply Hfst. rewrite <- Heq. reflexivity. }
+  destruct new as [z | p | new_dst].
+  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
+  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. apply lgd_dst_old. exact Hedge.
+    + destruct Hupd as [rvb' [_ ->]].
+      apply add_edge_preserves_dst. exact Hedge.
+    + destruct Hupd as [rvb' [_ ->]].
+      apply add_edge_preserves_dst. exact Hedge.
+Qed.
+
+Lemma mutable_graph_update_make_fields_vals_other:
+  forall g src pos new g' v,
+    v <> src ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    make_fields_vals g' v = make_fields_vals g v.
+Proof.
+  intros g src pos new g' v Hneq Hloc Hupd.
+  pose proof (mutable_graph_update_vlabel_other
+                g src pos new g' v Hneq Hloc Hupd) as Hvlabel.
+  assert (Hfields: make_fields g' v = make_fields g v).
+  { unfold make_fields. rewrite Hvlabel. reflexivity. }
+  assert (Hmap:
+    map (field2val (raw_tag (vlabel g v)) g') (make_fields g v) =
+    map (field2val (raw_tag (vlabel g v)) g) (make_fields g v)).
+  {
+    apply map_ext_in. intros fd Hin.
+    destruct fd as [z | p | e]; simpl; try reflexivity.
+    pose proof (e_in_make_fields g v e Hin) as [n He]. subst e.
+    rewrite (mutable_graph_update_vertex_address
+               g (InteriorVertexPos src pos) new g' (dst g' (v, n)) Hloc Hupd).
+    rewrite (mutable_graph_update_dst_other
+               g src pos new g' (v, n) Hneq Hloc Hupd).
+    reflexivity.
+  }
+  unfold make_fields_vals.
+  rewrite Hvlabel, Hfields.
+  destruct (raw_mark (vlabel g v)) eqn:Hmark.
+  - rewrite (mutable_graph_update_vertex_address
+               g (InteriorVertexPos src pos) new g'
+               (copied_vertex (vlabel g v)) Hloc Hupd).
+    rewrite Hmap. reflexivity.
+  - exact Hmap.
+Qed.
+
 Lemma fr_general_prop_bootstrap: forall depth from to p g g'
                                         (P: nat -> LGraph -> LGraph -> Prop),
     (forall to g, P to g g) ->
@@ -4072,6 +4568,189 @@ Proof.
   unfold upd_Znth. unfold Sumbool.sumbool_and.
   if_tac; auto.
   list_solve.
+Qed.
+
+Lemma labeledgraph_vgen_vlabel_eq:
+  forall (g: LGraph) src rvb,
+    vlabel (labeledgraph_vgen g src rvb) src = rvb.
+Proof.
+  intros. unfold labeledgraph_vgen; simpl; unfold update_vlabel.
+  destruct (EquivDec.equiv_dec src src); [reflexivity|].
+  exfalso. apply c. reflexivity.
+Qed.
+
+Lemma mutable_graph_update_vlabel_src:
+  forall g src pos new g',
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    raw_vertex_field_update (vlabel g src) pos
+      (match new with
+       | ExteriorUnboxed z => RawUnboxed z
+       | ExteriorOutlier p => RawOutlier p
+       | ExteriorVertex _ => RawInternal
+       end)
+      (vlabel g' src).
+Proof.
+  intros g src pos new g' Hloc Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dst].
+  - destruct Hupd as [rvb' [Hu ->]].
+    rewrite labeledgraph_vgen_vlabel_eq. exact Hu.
+  - destruct Hupd as [rvb' [Hu ->]].
+    rewrite labeledgraph_vgen_vlabel_eq. exact Hu.
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. change (raw_vertex_field_update (vlabel g src) pos RawInternal
+                          (vlabel g src)).
+      unfold raw_vertex_field_update.
+      split.
+      * rewrite <- Hold, upd_Znth_unchanged'. reflexivity.
+      * repeat split; reflexivity.
+    + destruct Hupd as [rvb' [Hu ->]].
+      rewrite labeledgraph_vgen_vlabel_eq. exact Hu.
+    + destruct Hupd as [rvb' [Hu ->]].
+      rewrite labeledgraph_vgen_vlabel_eq. exact Hu.
+Qed.
+
+Lemma mutable_graph_update_dst_neq:
+  forall (g: LGraph) src pos new g' (e: EType),
+    e <> (src, Z.to_nat pos) ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    dst g' e = dst g e.
+Proof.
+  intros g src pos new g' e Hneq Hloc Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  assert (Hedge: (src, Z.to_nat pos) <> e) by congruence.
+  destruct new as [z | p | new_dst].
+  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
+  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. apply lgd_dst_old. exact Hedge.
+    + destruct Hupd as [rvb' [_ ->]].
+      apply add_edge_preserves_dst. exact Hedge.
+    + destruct Hupd as [rvb' [_ ->]].
+      apply add_edge_preserves_dst. exact Hedge.
+Qed.
+
+Lemma mutable_graph_update_dst_new:
+  forall g src pos dstv g',
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) (ExteriorVertex dstv) g' ->
+    dst g' (src, Z.to_nat pos) = dstv.
+Proof.
+  intros g src pos dstv g' Hloc Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+  - subst g'. apply lgd_dst_new.
+  - destruct Hupd as [rvb' [_ ->]]. apply add_edge_dst.
+  - destruct Hupd as [rvb' [_ ->]]. apply add_edge_dst.
+Qed.
+
+Lemma nth_make_fields':
+  forall l v base i,
+    (i < length l)%nat ->
+    nth i (make_fields' l v base) field_t_inhabitant =
+    match nth i l raw_field_inhabitant with
+    | RawInternal => FieldEdge (v, (base + i)%nat)
+    | RawUnboxed z => FieldUnboxed z
+    | RawOutlier p => FieldOutlier p
+    end.
+Proof.
+  induction l as [|rf l IH]; intros v base i Hi; [simpl in Hi; lia|].
+  destruct i as [|i].
+  - destruct rf; simpl; rewrite ?Nat.add_0_r; reflexivity.
+  - destruct rf; simpl in Hi |- *.
+    all: rewrite (IH v (base + 1)%nat i) by lia.
+    all: destruct (nth i l raw_field_inhabitant); simpl; try reflexivity.
+    all: replace (base + 1 + i)%nat with (base + S i)%nat by lia; reflexivity.
+Qed.
+
+Lemma Znth_make_fields:
+  forall g v pos,
+    0 <= pos < Zlength (raw_fields (vlabel g v)) ->
+    Znth pos (make_fields g v) =
+    match Znth pos (raw_fields (vlabel g v)) with
+    | RawInternal => FieldEdge (v, Z.to_nat pos)
+    | RawUnboxed z => FieldUnboxed z
+    | RawOutlier p => FieldOutlier p
+    end.
+Proof.
+  intros g v pos Hpos.
+  unfold make_fields.
+  rewrite <- nth_Znth by (rewrite make_fields'_eq_Zlength; exact Hpos).
+  rewrite <- nth_Znth by exact Hpos.
+  rewrite nth_make_fields' by (rewrite <- ZtoNat_Zlength; lia).
+  simpl. reflexivity.
+Qed.
+
+Lemma mutable_graph_update_make_fields_vals_src:
+  forall g src pos new g',
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    make_fields_vals g' src =
+    upd_Znth pos (make_fields_vals g src) (exterior2val g new).
+Proof.
+  intros g src pos new g' Hloc Hupd.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  assert (Hloc': mutable_location_compatible g (InteriorVertexPos src pos)).
+  { exact (conj Hv (conj Hpos (conj Hmark Htag))). }
+  pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc' Hupd) as Hsrc.
+  unfold raw_vertex_field_update in Hsrc.
+  destruct Hsrc as [Hfields [Hmark' [_ [_ Htag']]]].
+  apply (proj2 (Znth_list_eq _ _)).
+  split.
+  - rewrite upd_Znth_Zlength by (rewrite fields_eq_length; exact Hpos).
+    rewrite !fields_eq_length, Hfields, Zlength_upd_Znth. reflexivity.
+  - intros j Hjnew.
+    assert (Hjnewraw: 0 <= j < Zlength (raw_fields (vlabel g' src))) by
+      (rewrite <- fields_eq_length; exact Hjnew).
+    assert (Hjoldraw: 0 <= j < Zlength (raw_fields (vlabel g src))).
+    { rewrite Hfields, Zlength_upd_Znth in Hjnewraw. exact Hjnewraw. }
+    unfold make_fields_vals.
+    rewrite Hmark', Hmark, Htag'.
+    rewrite Znth_map by (rewrite make_fields_eq_length; exact Hjnewraw).
+    assert (Hposmap:
+      0 <= pos < Zlength
+        (map (field2val (raw_tag (vlabel g src)) g) (make_fields g src))).
+    { rewrite Zlength_map, make_fields_eq_length. exact Hpos. }
+    destruct (Z.eq_dec j pos) as [Heq | Hneq].
+    + subst j.
+      rewrite upd_Znth_same by exact Hposmap.
+      rewrite (Znth_make_fields g' src pos Hjnewraw).
+      assert (Hrawnew:
+        Znth pos (raw_fields (vlabel g' src)) =
+        match new with
+        | ExteriorUnboxed z => RawUnboxed z
+        | ExteriorOutlier p => RawOutlier p
+        | ExteriorVertex _ => RawInternal
+        end).
+      { rewrite Hfields, upd_Znth_same by exact Hpos. reflexivity. }
+      rewrite Hrawnew. destruct new as [z | p | dstv]; simpl.
+      * destruct (zlt (raw_tag (vlabel g src)) NO_SCAN_TAG); [reflexivity|lia].
+      * reflexivity.
+      * rewrite (mutable_graph_update_dst_new g src pos dstv g' Hloc' Hupd).
+        rewrite (mutable_graph_update_vertex_address
+                   g (InteriorVertexPos src pos) (ExteriorVertex dstv) g' dstv
+                   Hloc' Hupd).
+        reflexivity.
+    + rewrite upd_Znth_diff_strong; [|exact Hposmap|exact Hneq].
+      rewrite Znth_map by (rewrite make_fields_eq_length; exact Hjoldraw).
+      rewrite (Znth_make_fields g' src j Hjnewraw).
+      rewrite (Znth_make_fields g src j Hjoldraw).
+      assert (Hrawsame:
+        Znth j (raw_fields (vlabel g' src)) =
+        Znth j (raw_fields (vlabel g src))).
+      { rewrite Hfields. apply upd_Znth_diff; lia. }
+      rewrite Hrawsame.
+      destruct (Znth j (raw_fields (vlabel g src))) eqn:Hraw; simpl; try reflexivity.
+      assert (Hedge: (src, Z.to_nat j) <> (src, Z.to_nat pos)).
+      { intro He. inversion He. apply Hneq. apply Z2Nat.inj; lia. }
+      rewrite (mutable_graph_update_vertex_address
+                 g (InteriorVertexPos src pos) new g'
+                 (dst g' (src, Z.to_nat j)) Hloc' Hupd).
+      rewrite (mutable_graph_update_dst_neq
+                 g src pos new g' (src, Z.to_nat j) Hedge Hloc' Hupd).
+      reflexivity.
 Qed.
 
 Lemma fr_roots_outlier_compatible: forall from to i g roots outlier,

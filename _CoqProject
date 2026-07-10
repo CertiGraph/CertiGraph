@@ -133,6 +133,7 @@ CertiGC/verif_create_heap.v
 CertiGC/verif_make_tinfo.v
 CertiGC/env_graph_gc.v
 CertiGC/verif_is_ptr.v
+CertiGC/verif_mutable_update.v
 CertiGC/verif_garbage_collect.v
 CertiGC/verif_resume.v
 CertiGC/GCGraph.v

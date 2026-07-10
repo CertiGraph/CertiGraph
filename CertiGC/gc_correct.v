@@ -9863,3 +9863,500 @@ Proof.
   - eapply remset_compatible_remset_heap_covers_graph; eauto.
   - exact Hrel.
 Qed.
+
+Lemma mutable_update_remset_heap_and_heap_compatible:
+  forall (g: LGraph) (h: part_heap) (rh: remset_heap)
+         (x: val) (item: remset_space_item),
+    graph_heap_compatible g h ->
+    used_space (nth_space h O) < available_space (nth_space h O) ->
+    remset_heap_and_heap_compatible rh h ->
+    remset_heap_and_heap_compatible
+      (if isptr_dec x then upd_remset_heap item rh O else rh)
+      (if isptr_dec x then incr_remset_heap h 0 else h).
+Proof.
+  intros g h rh x item Hghc Hcapacity Hrhhc.
+  destruct (isptr_dec x).
+  - eapply upd_incr_remset_heap_rhhc; eauto.
+    apply graph_has_gen_O.
+  - exact Hrhhc.
+Qed.
+
+Lemma mutable_update_remset_generation_compatible:
+  forall (x: val) (it: interior_t) (rh: remset_heap) (rmst: remset),
+    0 <= Z.of_nat O < Zlength rh ->
+    remset_generation_compatible O rmst rh ->
+    remset_generation_compatible O rmst
+      (if isptr_dec x
+       then upd_remset_heap (RemSetInterior it) rh O
+       else rh).
+Proof.
+  intros x it rh rmst Hrange Hcompatible.
+  destruct (isptr_dec x).
+  2: exact Hcompatible.
+  destruct Hcompatible as [Hext [Horder _]].
+  split.
+  - unfold remset_ext_space_compatible in *.
+    intros v addr Hin.
+    eapply nth_remset_space_upd_remset_heap_old; eauto.
+  - split.
+    + eapply upd_remset_heap_interior_generation_order; eauto.
+      intros. apply Nat.le_0_l.
+    + unfold remset_lower_generations_empty.
+      intros gen Hlt. lia.
+Qed.
+
+Lemma graph_has_e_iff_raw_internal:
+  forall g v n,
+    graph_has_v g v ->
+    (graph_has_e g (v, n) <->
+     0 <= Z.of_nat n < Zlength (raw_fields (vlabel g v)) /\
+     Znth (Z.of_nat n) (raw_fields (vlabel g v)) = RawInternal).
+Proof.
+  intros g v n Hv. split.
+  - intro He. pose proof (graph_has_e_Znth g v n He) as [Hrange Hfield].
+    split; [exact Hrange|].
+    rewrite (Znth_make_fields g v (Z.of_nat n) Hrange) in Hfield.
+    destruct (Znth (Z.of_nat n) (raw_fields (vlabel g v)));
+      inversion Hfield; reflexivity.
+  - intros [Hrange Hraw]. split; [exact Hv|].
+    rewrite get_edges_In_iff.
+    assert (Hfield: Znth (Z.of_nat n) (make_fields g v) = FieldEdge (v, n)).
+    { rewrite (Znth_make_fields g v (Z.of_nat n) Hrange), Hraw, Nat2Z.id.
+      reflexivity. }
+    rewrite <- Hfield. apply Znth_In.
+    rewrite make_fields_eq_length. exact Hrange.
+Qed.
+
+Lemma mutable_graph_update_graph_has_e_neq:
+  forall g src pos new g' e,
+    e <> (src, Z.to_nat pos) ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    (graph_has_e g' e <-> graph_has_e g e).
+Proof.
+  intros g src pos new g' [v n] Hneq Hloc Hupd.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  assert (Hloc': mutable_location_compatible g (InteriorVertexPos src pos))
+    by exact (conj Hv (conj Hpos (conj Hmark Htag))).
+  destruct (V_EqDec v src) as [Heq | Hne].
+  - hnf in Heq. subst v.
+    assert (Hidx: Z.of_nat n <> pos).
+    { intro Heq. apply Hneq. f_equal. rewrite <- Heq, Nat2Z.id. reflexivity. }
+    pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc' Hupd) as Hsrc.
+    unfold raw_vertex_field_update in Hsrc. destruct Hsrc as [Hfields _].
+    rewrite (graph_has_e_iff_raw_internal g' src n).
+    2: rewrite (mutable_graph_update_graph_has_v g (InteriorVertexPos src pos)
+                  new g' src Hloc' Hupd); exact Hv.
+    rewrite (graph_has_e_iff_raw_internal g src n Hv).
+    rewrite Hfields, Zlength_upd_Znth.
+    rewrite upd_Znth_diff_strong; [reflexivity|exact Hpos|exact Hidx].
+  - unfold graph_has_e; simpl fst.
+    rewrite (mutable_graph_update_graph_has_v
+               g (InteriorVertexPos src pos) new g' v Hloc' Hupd).
+    unfold get_edges, make_fields.
+    rewrite (mutable_graph_update_vlabel_other
+               g src pos new g' v Hne Hloc' Hupd).
+    reflexivity.
+Qed.
+
+Lemma mutable_graph_update_graph_has_e_target:
+  forall g src pos new g',
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    (graph_has_e g' (src, Z.to_nat pos) <->
+     exists dstv, new = ExteriorVertex dstv).
+Proof.
+  intros g src pos new g' Hloc Hupd.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  assert (Hloc': mutable_location_compatible g (InteriorVertexPos src pos))
+    by exact (conj Hv (conj Hpos (conj Hmark Htag))).
+  rewrite (graph_has_e_iff_raw_internal g' src (Z.to_nat pos)).
+  2: rewrite (mutable_graph_update_graph_has_v g (InteriorVertexPos src pos)
+                new g' src Hloc' Hupd); exact Hv.
+  rewrite Z2Nat.id by lia.
+  pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc' Hupd) as Hsrc.
+  unfold raw_vertex_field_update in Hsrc. destruct Hsrc as [Hfields _].
+  rewrite Hfields, Zlength_upd_Znth, upd_Znth_same by exact Hpos.
+  destruct new as [z | p | dstv]; simpl.
+  - split; [intros [_ H]; discriminate|intros [x H]; discriminate].
+  - split; [intros [_ H]; discriminate|intros [x H]; discriminate].
+  - split; [intros; now exists dstv|intros; split; [exact Hpos|reflexivity]].
+Qed.
+
+Lemma mutable_graph_update_evalid_neq:
+  forall g src pos new g' e,
+    e <> (src, Z.to_nat pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    (evalid g' e <-> evalid g e).
+Proof.
+  intros g src pos new g' e Hneq Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dstv].
+  - destruct Hupd as [rvb' [_ ->]].
+    simpl. unfold removeValidFunc. tauto.
+  - destruct Hupd as [rvb' [_ ->]].
+    simpl. unfold removeValidFunc. tauto.
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. reflexivity.
+    + destruct Hupd as [rvb' [_ ->]].
+      simpl. unfold addValidFunc. tauto.
+    + destruct Hupd as [rvb' [_ ->]].
+      simpl. unfold addValidFunc. tauto.
+Qed.
+
+Lemma mutable_graph_update_evalid_target:
+  forall g src pos new g',
+    sound_gc_graph g ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    (evalid g' (src, Z.to_nat pos) <->
+     exists dstv, new = ExteriorVertex dstv).
+Proof.
+  intros g src pos new g' Hsound Hloc Hupd.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  destruct Hsound as [Hvv [Hev [Hsrc Helabel]]].
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dstv].
+  - destruct Hupd as [rvb' [_ ->]].
+    simpl. unfold removeValidFunc. split; [tauto|intros [x H]; discriminate].
+  - destruct Hupd as [rvb' [_ ->]].
+    simpl. unfold removeValidFunc. split; [tauto|intros [x H]; discriminate].
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. split.
+      * intros. now exists dstv.
+      * intros _. apply Hev.
+        apply (proj2 (graph_has_e_iff_raw_internal g src (Z.to_nat pos) Hv)).
+        rewrite Z2Nat.id by lia. split; assumption.
+    + destruct Hupd as [rvb' [_ ->]].
+      split; [intros; now exists dstv|intros; apply add_edge_evalid].
+    + destruct Hupd as [rvb' [_ ->]].
+      split; [intros; now exists dstv|intros; apply add_edge_evalid].
+Qed.
+
+Lemma mutable_graph_update_vvalid:
+  forall g it new g' v,
+    mutable_graph_update g it new g' ->
+    (vvalid g' v <-> vvalid g v).
+Proof.
+  intros g [src pos] new g' v Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dstv].
+  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
+  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
+  - destruct (Znth pos (raw_fields (vlabel g src))).
+    + subst g'. reflexivity.
+    + destruct Hupd as [rvb' [_ ->]]. reflexivity.
+    + destruct Hupd as [rvb' [_ ->]]. reflexivity.
+Qed.
+
+Lemma mutable_graph_update_src_edge:
+  forall (g: LGraph) it new g',
+    src_edge g -> mutable_graph_update g it new g' -> src_edge g'.
+Proof.
+  intros g [srcv pos] new g' Hsrc Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dstv].
+  - destruct Hupd as [rvb' [_ ->]]. exact Hsrc.
+  - destruct Hupd as [rvb' [_ ->]]. exact Hsrc.
+  - destruct (Znth pos (raw_fields (vlabel g srcv))).
+    + subst g'. exact Hsrc.
+    + destruct Hupd as [rvb' [_ ->]]. intros e.
+      simpl. unfold updateEdgeFunc. if_tac.
+      * hnf in H. subst e. reflexivity.
+      * apply Hsrc.
+    + destruct Hupd as [rvb' [_ ->]]. intros e.
+      simpl. unfold updateEdgeFunc. if_tac.
+      * hnf in H. subst e. reflexivity.
+      * apply Hsrc.
+Qed.
+
+Lemma mutable_graph_update_edge_label_same:
+  forall (g: LGraph) it new g',
+    edge_label_same g ->
+    mutable_graph_update g it new g' ->
+    edge_label_same g'.
+Proof.
+  intros g [srcv pos] new g' Hlabel Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dstv].
+  - destruct Hupd as [rvb' [_ ->]]. exact Hlabel.
+  - destruct Hupd as [rvb' [_ ->]]. exact Hlabel.
+  - destruct (Znth pos (raw_fields (vlabel g srcv))).
+    + subst g'. exact Hlabel.
+    + destruct Hupd as [rvb' [_ ->]]. intros e.
+      simpl. unfold update_elabel. if_tac.
+      * hnf in H. subst e. reflexivity.
+      * apply Hlabel.
+    + destruct Hupd as [rvb' [_ ->]]. intros e.
+      simpl. unfold update_elabel. if_tac.
+      * hnf in H. subst e. reflexivity.
+      * apply Hlabel.
+Qed.
+
+Theorem mutable_graph_update_sound:
+  forall g src pos new g' outlier,
+    sound_gc_graph g ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    sound_gc_graph g'.
+Proof.
+  intros g src pos new g' outlier Hsound Hloc Hext Hupd.
+  destruct Hsound as [Hvv [Hev [Hsrc Hlabel]]].
+  assert (Hsound': sound_gc_graph g).
+  { exact (conj Hvv (conj Hev (conj Hsrc Hlabel))). }
+  split; [|split; [|split]].
+  - intro v.
+    rewrite (mutable_graph_update_vvalid g (InteriorVertexPos src pos) new g' v Hupd).
+    rewrite (mutable_graph_update_graph_has_v g (InteriorVertexPos src pos)
+               new g' v Hloc Hupd).
+    apply Hvv.
+  - intro e. destruct (E_EqDec e (src, Z.to_nat pos)) as [Heq | Hneq].
+    + hnf in Heq. subst e.
+      rewrite (mutable_graph_update_evalid_target g src pos new g' Hsound' Hloc Hupd).
+      rewrite (mutable_graph_update_graph_has_e_target g src pos new g' Hloc Hupd).
+      reflexivity.
+    + rewrite (mutable_graph_update_evalid_neq g src pos new g' e Hneq Hupd).
+      rewrite (mutable_graph_update_graph_has_e_neq g src pos new g' e Hneq Hloc Hupd).
+      apply Hev.
+  - eapply mutable_graph_update_src_edge; eassumption.
+  - eapply mutable_graph_update_edge_label_same; eassumption.
+Qed.
+
+Theorem mutable_graph_update_outlier_compatible:
+  forall g src pos new g' outlier,
+    outlier_compatible g outlier ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    outlier_compatible g' outlier.
+Proof.
+  intros g src pos new g' outlier Hold Hloc Hext Hupd.
+  intros v Hv' p Hin.
+  assert (Hv: graph_has_v g v).
+  { rewrite <- (mutable_graph_update_graph_has_v g (InteriorVertexPos src pos)
+                   new g' v Hloc Hupd). exact Hv'. }
+  destruct (V_EqDec v src) as [Heq | Hneq].
+  - hnf in Heq. subst v.
+    pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc Hupd) as Hsrc.
+    unfold raw_vertex_field_update in Hsrc. destruct Hsrc as [Hfields _].
+    rewrite <- (filter_proj_In_iff raw_proj_outlier_spec) in Hin.
+    rewrite Hfields in Hin. apply In_upd_Znth in Hin. destruct Hin as [Hnew | Holdin].
+    + destruct new as [z | q | dstv]; inversion Hnew; subst. exact Hext.
+    + apply (Hold src Hv).
+      rewrite <- (filter_proj_In_iff raw_proj_outlier_spec). exact Holdin.
+  - apply (Hold v Hv).
+    rewrite (mutable_graph_update_vlabel_other g src pos new g' v Hneq Hloc Hupd) in Hin.
+    exact Hin.
+Qed.
+
+Theorem mutable_graph_update_no_unrecorded_backward_edge:
+  forall g src pos new g' outlier rh,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    0 <= Z.of_nat O < Zlength rh ->
+    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge g'
+      (if isptr_dec (exterior2val g new)
+       then upd_remset_heap (RemSetInterior (InteriorVertexPos src pos)) rh O
+       else rh).
+Proof.
+  intros g src pos new g' outlier rh Hloc Hext Hupd Hrange Hold.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  assert (Hloc': mutable_location_compatible g (InteriorVertexPos src pos))
+    by exact (conj Hv (conj Hpos (conj Hmark Htag))).
+  unfold no_unrecorded_backward_edge, no_unrecorded_backward_edge_from in *.
+  intros e He' Hback.
+  destruct (E_EqDec e (src, Z.to_nat pos)) as [Heq | Hneq].
+  - hnf in Heq. subst e.
+    apply (mutable_graph_update_graph_has_e_target g src pos new g' Hloc' Hupd) in He'.
+    destruct He' as [dstv Hnew]. subst new.
+    destruct (isptr_dec (exterior2val g (ExteriorVertex dstv))) as [Hptr | Hnptr].
+    2: exfalso; apply Hnptr; simpl; apply graph_has_v_addr_isptr; exact Hext.
+    exists O. split.
+    + split; lia.
+    + unfold remset_heap_records_edge. simpl fst. simpl snd.
+      rewrite Z2Nat.id by lia.
+      apply nth_remset_space_upd_remset_heap_new. exact Hrange.
+  - assert (He: graph_has_e g e).
+    { apply (proj1 (mutable_graph_update_graph_has_e_neq
+                      g src pos new g' e Hneq Hloc' Hupd)). exact He'. }
+    pose proof (mutable_graph_update_dst_neq
+                  g src pos new g' e Hneq Hloc' Hupd) as Hdst.
+    rewrite Hdst in Hback.
+    specialize (Hold e He Hback).
+    destruct Hold as [k [Hbounds Hrecord]].
+    assert (Hbounds': (O <= k <= vgeneration (dst g' e))%nat).
+    { rewrite Hdst. exact Hbounds. }
+    exists k. split; [exact Hbounds'|].
+    destruct (isptr_dec (exterior2val g new)) as [Hptr | Hnptr].
+    + unfold remset_heap_records_edge in *.
+      eapply nth_remset_space_upd_remset_heap_old; eauto.
+    + exact Hrecord.
+Qed.
+
+Lemma mutable_graph_update_raw_mark_tag:
+  forall g src pos new g' v,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    raw_mark (vlabel g' v) = raw_mark (vlabel g v) /\
+    raw_tag (vlabel g' v) = raw_tag (vlabel g v).
+Proof.
+  intros g src pos new g' v Hloc Hupd.
+  destruct (V_EqDec v src) as [Heq | Hneq].
+  - hnf in Heq. subst v.
+    pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc Hupd) as Hsrc.
+    unfold raw_vertex_field_update in Hsrc. tauto.
+  - rewrite (mutable_graph_update_vlabel_other
+               g src pos new g' v Hneq Hloc Hupd).
+    split; reflexivity.
+Qed.
+
+Lemma mutable_graph_update_remset_ext_compatible:
+  forall g it new g' outlier re,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    remset_ext_compatible g outlier re ->
+    remset_ext_compatible g' outlier re.
+Proof.
+  intros g it new g' outlier re Hloc Hupd Hold.
+  destruct re as [p addr | v addr]; simpl in *.
+  - exact Hold.
+  - rewrite (mutable_graph_update_graph_has_v g it new g' v Hloc Hupd).
+    exact Hold.
+Qed.
+
+Lemma mutable_graph_update_remset_graph_outlier_compatible:
+  forall g it new g' outlier rmst,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    remset_graph_outlier_compatible g outlier rmst ->
+    remset_graph_outlier_compatible g' outlier rmst.
+Proof.
+  intros g it new g' outlier rmst Hloc Hupd Hold.
+  unfold remset_graph_outlier_compatible in *.
+  eapply Forall_impl; [|exact Hold].
+  intros re Hre.
+  eapply mutable_graph_update_remset_ext_compatible; eauto.
+Qed.
+
+Lemma mutable_graph_update_remset_item_compatible:
+  forall g src pos new g' from rmst item,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    remset_item_compatible g from rmst item ->
+    remset_item_compatible g' from rmst item.
+Proof.
+  intros g src pos new g' from rmst item Hloc Hupd Hold.
+  destruct item as [addr | [v n]]; simpl in *; [exact Hold|].
+  destruct Hold as [Hv [Hn Hscan]].
+  split.
+  - rewrite (mutable_graph_update_graph_has_v
+               g (InteriorVertexPos src pos) new g' v Hloc Hupd).
+    exact Hv.
+  - split.
+    + rewrite (mutable_graph_update_raw_fields_length
+                 g (InteriorVertexPos src pos) new g' v Hloc Hupd).
+      exact Hn.
+    + intros Hgen. specialize (Hscan Hgen). destruct Hscan as [Hmark Htag].
+      pose proof (mutable_graph_update_raw_mark_tag
+                    g src pos new g' v Hloc Hupd) as [Hmark' Htag'].
+      rewrite Hmark', Htag'. split; assumption.
+Qed.
+
+Lemma mutable_graph_update_new_remset_item_compatible:
+  forall g src pos new g' from rmst,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    remset_item_compatible g' from rmst
+      (RemSetInterior (InteriorVertexPos src pos)).
+Proof.
+  intros g src pos new g' from rmst Hloc Hupd.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  assert (Hloc': mutable_location_compatible g (InteriorVertexPos src pos))
+    by exact (conj Hv (conj Hpos (conj Hmark Htag))).
+  simpl. split.
+  - rewrite (mutable_graph_update_graph_has_v
+               g (InteriorVertexPos src pos) new g' src Hloc' Hupd).
+    exact Hv.
+  - split.
+    + rewrite (mutable_graph_update_raw_fields_length
+                 g (InteriorVertexPos src pos) new g' src Hloc' Hupd).
+      exact Hpos.
+    + intros _.
+      pose proof (mutable_graph_update_raw_mark_tag
+                    g src pos new g' src Hloc' Hupd) as [Hmark' Htag'].
+      rewrite Hmark', Htag'. split; assumption.
+Qed.
+
+Lemma mutable_graph_update_remset_space_compatible:
+  forall g src pos new g' from rmst items,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    remset_and_remset_space_compatible g from rmst items ->
+    remset_and_remset_space_compatible g' from rmst items.
+Proof.
+  intros g src pos new g' from rmst items Hloc Hupd Hold.
+  unfold remset_and_remset_space_compatible in *.
+  eapply Forall_impl; [|exact Hold].
+  intros item Hitem.
+  eapply mutable_graph_update_remset_item_compatible; eauto.
+Qed.
+
+Lemma mutable_update_remset_and_remset_heap_compatible:
+  forall g src pos new g' from rmst rh x,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    0 <= Z.of_nat O < Zlength rh ->
+    remset_and_remset_heap_compatible g from rmst rh ->
+    remset_and_remset_heap_compatible g' from rmst
+      (if isptr_dec x
+       then upd_remset_heap
+              (RemSetInterior (InteriorVertexPos src pos)) rh O
+       else rh).
+Proof.
+  intros g src pos new g' from rmst rh x Hloc Hupd Hrange Hold.
+  destruct (isptr_dec x) as [Hptr | Hnptr].
+  2: {
+    unfold remset_and_remset_heap_compatible in *.
+    eapply Forall_impl; [|exact Hold].
+    intros items Hitems.
+    eapply mutable_graph_update_remset_space_compatible; eauto.
+  }
+  unfold remset_and_remset_heap_compatible in *.
+  rewrite Forall_forall in *. intros items Hin.
+  apply upd_remset_heap_In in Hin. destruct Hin as [Hin | ->].
+  - eapply mutable_graph_update_remset_space_compatible; eauto.
+  - constructor.
+    + eapply mutable_graph_update_new_remset_item_compatible; eauto.
+    + eapply mutable_graph_update_remset_space_compatible; eauto.
+      apply Hold. apply Znth_In. exact Hrange.
+Qed.
+
+Theorem mutable_update_remset_compatible:
+  forall g src pos new g' outlier from rmst rh h,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    graph_heap_compatible g h ->
+    used_space (nth_space h O) < available_space (nth_space h O) ->
+    remset_compatible g outlier from rmst rh h ->
+    remset_compatible g' outlier from rmst
+      (if isptr_dec (exterior2val g new)
+       then upd_remset_heap
+              (RemSetInterior (InteriorVertexPos src pos)) rh O
+       else rh)
+      (if isptr_dec (exterior2val g new)
+       then incr_remset_heap h 0
+       else h).
+Proof.
+  intros g src pos new g' outlier from rmst rh h
+         Hloc Hupd Hghc Hcapacity [Hrgoc [Hrrhc Hrhhc]].
+  assert (Hrange: 0 <= Z.of_nat O < Zlength rh).
+  { eapply gen_range_remset_heap; eauto. apply graph_has_gen_O. }
+  split.
+  - eapply mutable_graph_update_remset_graph_outlier_compatible; eauto.
+  - split.
+    + eapply mutable_update_remset_and_remset_heap_compatible; eauto.
+    + eapply mutable_update_remset_heap_and_heap_compatible; eauto.
+Qed.
