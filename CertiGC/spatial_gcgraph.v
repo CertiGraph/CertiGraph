@@ -234,6 +234,23 @@ Proof. intros. destruct ext; simpl; reflexivity. Qed.
 Definition remset_rep (sh: share) (g: LGraph) (rmst: remset) : mpred :=
   iter_sepcon rmst (remset_ext_rep sh g).
 
+Lemma remset_ext_rep_vertex_address_eq: forall sh g g' ext,
+    (forall v, vertex_address g v = vertex_address g' v) ->
+    remset_ext_rep sh g ext = remset_ext_rep sh g' ext.
+Proof.
+  intros sh g g' [p v | vertex v] Haddr; simpl; auto.
+  now rewrite Haddr.
+Qed.
+
+Lemma remset_rep_vertex_address_eq: forall sh g g' rmst,
+    (forall v, vertex_address g v = vertex_address g' v) ->
+    remset_rep sh g rmst = remset_rep sh g' rmst.
+Proof.
+  intros sh g g' rmst Haddr. unfold remset_rep.
+  apply iter_sepcon_func_strong. intros ext Hin.
+  now apply remset_ext_rep_vertex_address_eq.
+Qed.
+
 Lemma remset_rep_ramif_stable: forall sh g rmst rext,
     In rext rmst ->
     remset_rep sh g rmst |-- remset_ext_rep sh g rext *
@@ -1553,6 +1570,17 @@ Lemma heap_remset_rep_mutable_graph_update:
 Proof.
   intros g it new g' h rh Hloc Hupd.
   apply heap_remset_rep_vertex_address_eq. intros v.
+  symmetry. eapply mutable_graph_update_vertex_address; eassumption.
+Qed.
+
+Lemma remset_rep_mutable_graph_update:
+  forall sh g it new g' rmst,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    remset_rep sh g rmst = remset_rep sh g' rmst.
+Proof.
+  intros sh g it new g' rmst Hloc Hupd.
+  apply remset_rep_vertex_address_eq. intros v.
   symmetry. eapply mutable_graph_update_vertex_address; eassumption.
 Qed.
 

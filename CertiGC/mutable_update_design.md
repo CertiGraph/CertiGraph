@@ -109,6 +109,32 @@ belong in `spatial_gcgraph.v`; soundness preservation belongs in
 - When a write creates a new old-to-young internal edge, recording
   `RemSetInterior it` in remset generation 0 supplies witness `k = 0` for the
   current indexed `no_unrecorded_backward_edge` invariant.
+- Prove component preservation lemmas sufficient to re-establish every
+  model-level `PROP` premise of `garbage_collect_spec`, including
+  `super_compatible`, `garbage_collect_condition`, `safe_to_copy_heap`, and
+  the remset invariants, for the pointer-conditional updated graph, heap, and
+  authoritative remset.
+- Package those component lemmas into a collector-entry closure theorem: the
+  old `garbage_collect_spec` model-level `PROP` premises together with the
+  operational premises and transition of `mutable_update` imply the
+  corresponding `PROP` premises for the updated state.  This theorem is an
+  external bridge between the weak mutator funspec and the collector boundary;
+  it does not strengthen or change either settled specification.
+- At the spec-facing layer, provide a thin corollary that instantiates the
+  abstract conditional heap/remset transition with the actual POST equations
+  for `decr_info_nursery` and `mtb_upd_remset_heap`; the definition of
+  `decr_info_nursery` also leaves `ti_frames` unchanged.
+- Prove that `remset_rep sh g rmst` can be rewritten for the updated graph by
+  address preservation.  The share premises, `mem_mgr`, and string constants
+  are unchanged environmental resources carried across the call (with the
+  spatial resources framed), rather than effects derived from the graph
+  transition.
+
+`sound_gc_graph` remains a separately preserved global semantic property.  It
+is intentionally not included in the collector-entry closure theorem for the
+model-level state premises of `garbage_collect_spec`.  The readable/writable
+share premises are unchanged caller facts, and `decr_info_nursery`
+definitionally preserves the frames used to instantiate `rootpairs`.
 
 ## Mutator/collector pointer handoff
 
@@ -219,17 +245,13 @@ owner.  That refactor would change widely used record types and require
 substantial reproving.  It is deliberately **not part of the current
 `mutable_update` task** and must not be mixed into this implementation.
 
-## Still open
+## Implementation status
 
-The specification semantics are settled.  The following are implementation
-and proof tasks, not remaining design choices:
-
-- implement the settled capacity condition replacing
-  `info_recordable := True`;
-- implementation of the settled mutator/collector handoff representation and
-  the localized repairs to `verif_resume.v` and `verif_garbage_collect.v`;
-- implementation of the settled abstract `thread_info` transition currently
-  stubbed by `decr_info_nursery`;
-- implement the graph transition, spatial update lemmas, and conditional
-  preservation theorems;
-- registration of the final funspec and the VST body proof.
+The settled capacity condition, mutator/collector handoff representation,
+abstract `thread_info` transition, concrete graph transition, spatial update
+lemmas, conditional preservation theorems, final funspec, and VST body proof
+have been implemented.  The collector-premise component lemmas, the
+`remset_rep` address-preservation rewrite, and the collector-entry closure
+theorem, including its spec-facing `thread_info` corollary, have also been
+proved.  These proofs complete the agreed scope without changing the settled
+definitions or moving the global invariants into the base funspec.

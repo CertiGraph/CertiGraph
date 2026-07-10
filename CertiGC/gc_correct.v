@@ -10360,3 +10360,228 @@ Proof.
     + eapply mutable_update_remset_and_remset_heap_compatible; eauto.
     + eapply mutable_update_remset_heap_and_heap_compatible; eauto.
 Qed.
+
+Lemma mutable_graph_update_exterior2val_all:
+  forall g it new g' ext,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    exterior2val g' ext = exterior2val g ext.
+Proof.
+  intros g it new g' ext Hloc Hupd.
+  destruct ext; simpl; try reflexivity.
+  eapply mutable_graph_update_vertex_address; eassumption.
+Qed.
+
+Lemma mutable_graph_update_rootpairs_compatible:
+  forall g it new g' rootpairs roots,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    rootpairs_compatible g rootpairs roots ->
+    rootpairs_compatible g' rootpairs roots.
+Proof.
+  intros g it new g' rootpairs roots Hloc Hupd Hcompatible.
+  unfold rootpairs_compatible in *.
+  rewrite <- Hcompatible. clear Hcompatible rootpairs.
+  induction roots as [|ext roots IH]; simpl; [reflexivity|].
+  rewrite (mutable_graph_update_exterior2val_all
+             g it new g' ext Hloc Hupd), IH.
+  reflexivity.
+Qed.
+
+Lemma mutable_graph_update_roots_compatible:
+  forall g it new g' outlier roots,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    roots_compatible g outlier roots ->
+    roots_compatible g' outlier roots.
+Proof.
+  intros g it new g' outlier roots Hloc Hupd [Houtlier Hgraph].
+  split; [exact Houtlier|].
+  unfold roots_graph_compatible in *.
+  eapply Forall_impl; [|exact Hgraph].
+  intros v Hv.
+  rewrite (mutable_graph_update_graph_has_v g it new g' v Hloc Hupd).
+  exact Hv.
+Qed.
+
+Lemma mutable_graph_update_graph_unmarked:
+  forall g src pos new g',
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    graph_unmarked g ->
+    graph_unmarked g'.
+Proof.
+  intros g src pos new g' Hloc Hupd Hunmarked v Hv'.
+  pose proof (mutable_graph_update_raw_mark_tag
+                g src pos new g' v Hloc Hupd) as [Hmark _].
+  rewrite Hmark. apply Hunmarked.
+  rewrite <- (mutable_graph_update_graph_has_v
+                 g (InteriorVertexPos src pos) new g' v Hloc Hupd).
+  exact Hv'.
+Qed.
+
+Lemma mutable_graph_update_no_dangling_dst:
+  forall g src pos new g' outlier,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    no_dangling_dst g ->
+    no_dangling_dst g'.
+Proof.
+  intros g src pos new g' outlier Hloc Hext Hupd Hno v Hv' e Hin'.
+  assert (Hfst': fst e = v) by (eapply get_edges_fst; exact Hin').
+  assert (He': graph_has_e g' e).
+  { unfold graph_has_e. rewrite Hfst'. split; assumption. }
+  destruct (E_EqDec e (src, Z.to_nat pos)) as [Heq | Hneq].
+  - hnf in Heq. subst e.
+    apply (mutable_graph_update_graph_has_e_target
+             g src pos new g' Hloc Hupd) in He'.
+    destruct He' as [dstv Hnew]. subst new.
+    rewrite (mutable_graph_update_dst_new g src pos dstv g' Hloc Hupd).
+    rewrite (mutable_graph_update_graph_has_v
+               g (InteriorVertexPos src pos) (ExteriorVertex dstv)
+               g' dstv Hloc Hupd).
+    exact Hext.
+  - assert (He: graph_has_e g e).
+    { apply (proj1 (mutable_graph_update_graph_has_e_neq
+                      g src pos new g' e Hneq Hloc Hupd)). exact He'. }
+    destruct He as [Hsrc Hin].
+    specialize (Hno _ Hsrc _ Hin).
+    rewrite (mutable_graph_update_dst_neq
+               g src pos new g' e Hneq Hloc Hupd).
+    rewrite (mutable_graph_update_graph_has_v
+               g (InteriorVertexPos src pos) new g'
+               (dst g e) Hloc Hupd).
+    exact Hno.
+Qed.
+
+Theorem mutable_update_super_compatible:
+  forall g src pos new g' h rootpairs roots outlier,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    super_compatible g h rootpairs roots outlier ->
+    super_compatible g'
+      (if isptr_dec (exterior2val g new)
+       then incr_remset_heap h 0
+       else h)
+      rootpairs roots outlier.
+Proof.
+  intros g src pos new g' h rootpairs roots outlier
+         Hloc Hext Hupd [Hghc [Hrootpairs [Hroots Houtlier]]].
+  split; [|split; [|split]].
+  - destruct (isptr_dec (exterior2val g new)).
+    + apply incr_remset_heap_ghc.
+      eapply mutable_graph_update_graph_heap_compatible; eauto.
+    + eapply mutable_graph_update_graph_heap_compatible; eauto.
+  - eapply mutable_graph_update_rootpairs_compatible; eauto.
+  - eapply mutable_graph_update_roots_compatible; eauto.
+  - eapply mutable_graph_update_outlier_compatible; eauto.
+Qed.
+
+Theorem mutable_update_garbage_collect_condition:
+  forall g src pos new g' outlier h,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    garbage_collect_condition g h ->
+    garbage_collect_condition g'
+      (if isptr_dec (exterior2val g new)
+       then incr_remset_heap h 0
+       else h).
+Proof.
+  intros g src pos new g' outlier h Hloc Hext Hupd
+         [Hunmarked [Hno_dangling Hsize]].
+  split; [|split].
+  - eapply mutable_graph_update_graph_unmarked; eauto.
+  - eapply mutable_graph_update_no_dangling_dst; eauto.
+  - destruct (isptr_dec (exterior2val g new)).
+    + eapply weak_heap_relation_size_spec; eauto.
+      apply incr_remset_heap_whr.
+    + exact Hsize.
+Qed.
+
+Lemma incr_remset_heap_rest_gen_size_above_nursery:
+  forall h n,
+    rest_gen_size (incr_remset_heap h 0) (S n) =
+    rest_gen_size h (S n).
+Proof.
+  intros h n. unfold rest_gen_size.
+  rewrite !nth_space_Znth.
+  rewrite (irh_Znth_spaces_not_eq h (Z.of_nat (S n)) 0) by lia.
+  reflexivity.
+Qed.
+
+Theorem mutable_update_safe_to_copy_heap:
+  forall g src pos new g' h,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    safe_to_copy_heap g h ->
+    safe_to_copy_heap g'
+      (if isptr_dec (exterior2val g new)
+       then incr_remset_heap h 0
+       else h).
+Proof.
+  intros g src pos new g' h Hloc Hupd Hsafe.
+  unfold safe_to_copy_heap in *. intros n Hgen'.
+  assert (Hgen: graph_has_gen g (S n)).
+  { unfold graph_has_gen in *.
+    rewrite (mutable_graph_update_glabel
+               g (InteriorVertexPos src pos) new g' Hloc Hupd) in Hgen'.
+    exact Hgen'. }
+  specialize (Hsafe n Hgen).
+  destruct (isptr_dec (exterior2val g new)).
+  - unfold safe_to_copy_gen_heap in *.
+    unfold total_size.
+    rewrite irh_total_space.
+    rewrite incr_remset_heap_rest_gen_size_above_nursery.
+    exact Hsafe.
+  - exact Hsafe.
+Qed.
+
+Theorem mutable_update_garbage_collect_model_preconditions:
+  forall g src pos new g' h rootpairs roots outlier rmst rh,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    used_space (nth_space h O) < available_space (nth_space h O) ->
+    super_compatible g h rootpairs roots outlier ->
+    garbage_collect_condition g h ->
+    no_unrecorded_backward_edge g rh ->
+    safe_to_copy_heap g h ->
+    remset_compatible g outlier O rmst rh h ->
+    remset_generation_compatible O rmst rh ->
+    let x := exterior2val g new in
+    let h' := if isptr_dec x then incr_remset_heap h 0 else h in
+    let rh' :=
+      if isptr_dec x
+      then upd_remset_heap
+             (RemSetInterior (InteriorVertexPos src pos)) rh O
+      else rh in
+    super_compatible g' h' rootpairs roots outlier /\
+    garbage_collect_condition g' h' /\
+    no_unrecorded_backward_edge g' rh' /\
+    safe_to_copy_heap g' h' /\
+    remset_compatible g' outlier O rmst rh' h' /\
+    remset_generation_compatible O rmst rh'.
+Proof.
+  intros g src pos new g' h rootpairs roots outlier rmst rh
+         Hloc Hext Hupd Hcapacity Hsuper Hgcc Hunrecorded Hsafe Hremset Hremgen.
+  simpl.
+  assert (Hghc: graph_heap_compatible g h) by exact (proj1 Hsuper).
+  assert (Hrhhc: remset_heap_and_heap_compatible rh h).
+  { exact (proj2 (proj2 Hremset)). }
+  assert (Hrange: 0 <= Z.of_nat O < Zlength rh).
+  { eapply gen_range_remset_heap; eauto. apply graph_has_gen_O. }
+  split.
+  - eapply mutable_update_super_compatible; eauto.
+  - split.
+    + eapply mutable_update_garbage_collect_condition; eauto.
+    + split.
+      * eapply mutable_graph_update_no_unrecorded_backward_edge; eauto.
+      * split.
+        -- eapply mutable_update_safe_to_copy_heap; eauto.
+        -- split.
+           ++ eapply mutable_update_remset_compatible; eauto.
+           ++ eapply mutable_update_remset_generation_compatible; eauto.
+Qed.
