@@ -22,21 +22,6 @@ Proof.
   do 2 f_equal; unfold WORD_SIZE; rewrite Z.mul_comm, Z.quot_mul by lia; auto.
 Qed.
 
-Lemma sem_sub_pp_available_space: forall s,
-    isptr (space_start s) ->
-    force_val
-      (sem_sub_pp int_or_ptr_type
-                  (offset_val (WORD_SIZE * available_space s) (space_start s))
-                  (space_start s)) =
-    if Archi.ptr64 then Vlong (Int64.repr (available_space s)) else
-      Vint (Int.repr (available_space s)).
-Proof.
-  intros s Hptr; rewrite <- (isptr_offset_val_zero (space_start s)) at 2 by exact Hptr.
-  replace (offset_val 0 (space_start s)) with (offset_val (WORD_SIZE * 0) (space_start s))
-    by (f_equal; lia); rewrite (sem_sub_pp_word_offsets (space_start s) (available_space s) 0)
-    by (try exact Hptr; pose proof (available_space_signed_range s); lia); now rewrite Z.sub_0_r.
-Qed.
-
 Lemma sem_sub_pp_total_space: forall s,
     isptr (space_start s) ->
     force_val
@@ -98,18 +83,6 @@ Proof.
   unfold thread_info_rep, heap_rep, heap_struct_rep.
   do 2 unfold_data_at (data_at _ thread_info_type _ _).
   cancel.
-Qed.
-
-Lemma ti_rel_token_the_same_weak: forall (h1 h2: part_heap) p,
-    weak_heap_relation h1 h2 -> ti_token_rep h1 p = ti_token_rep h2 p.
-Proof.
-  intros h1 h2 p [Hstart Htotal]. unfold ti_token_rep. f_equal.
-  apply (iter_sepcon_pointwise_eq _ _ _ _ null_space null_space).
-  - rewrite <- !ZtoNat_Zlength, !spaces_size. reflexivity.
-  - intros. fold (nth_space h1 i). fold (nth_space h2 i).
-    unfold total_size in Htotal.
-    unfold space_token_rep.
-    rewrite Hstart, Htotal. reflexivity.
 Qed.
 
 Lemma remset_item_val_add_new_gen: forall g gi from rmst item,
@@ -857,7 +830,7 @@ Proof.
       change fr2 with (ti_frames t_info2).
       unfold heap_rep. Intros. unfold heap_struct_rep.
       replace_SEP 10 (ti_token_rep (pt_heap (ti_heap t_info2)) (ti_heap_p t_info2))
-        by (erewrite ti_rel_token_the_same_weak; eauto; entailer!!; apply derives_refl).
+        by (erewrite ti_token_rep_weak_heap_relation; eauto; entailer!!; apply derives_refl).
       sep_apply gather_thread_info_rep.
       unfold thread_info_rep, heap_rep, heap_struct_rep.
       Intros. assert (Hhas_i1_g2: graph_has_gen g2 (Z.to_nat (i + 1))) by

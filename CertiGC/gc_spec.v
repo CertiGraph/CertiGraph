@@ -524,41 +524,6 @@ Definition ext_mutable_update_spec :=
          data_at sh int_or_ptr_type (exterior2val g v) p;
          heap_remset_rep g (ti_heap t_info').(pt_heap) rh').
 
-(* Maybe exterior_t could be renamed into root_t *)
-
-Lemma upd_rvb_range: forall rvb pos rf,
-    0 < Zlength (upd_Znth pos (raw_fields rvb) rf) < two_p (WORD_SIZE * 8 - 10).
-Proof.
-  intros rvb pos rf. pose proof raw_fields_range rvb. rewrite Zlength_upd_Znth. assumption.
-Qed.
-
-(*
-
-Definition upd_rvb (rvb: raw_vertex_block) (pos: Z) (rf: raw_field) : raw_vertex_block :=
-  Build_raw_vertex_block
-    (raw_mark rvb) (copied_vertex rvb) (upd_Znth pos (raw_fields rvb) rf)
-    (raw_color rvb) (raw_tag rvb) (raw_tag_range rvb)
-    (raw_color_range rvb) (upd_rvb_range rvb pos rf) (tag_no_scan rvb).
-
-Definition mtb_upd_graph (g: LGraph) (it: interior_t) (v: exterior_t) : LGraph :=
-  match it with
-  | InteriorVertexPos v pos =>
-      match Znth pos (raw_fields (vlabel g v)) with
-      | RawInternal => match v with
-                       | ExteriorUnboxed z =>
-                       | ExteriorOutlier p =>
-                       | ExteriorVertex vtx =>
-                       end
-      | RawUnboxed _
-      | RawOutlier _ => match v with
-                       | ExteriorUnboxed z =>
-                       | ExteriorOutlier p =>
-                       | ExteriorVertex vtx =>
-                       end
-  end
-
-*)
-
 Definition int_mutable_update_spec :=
   DECLARE _mutable_update
     WITH ti: val, v: exterior_t, t_info: thread_info, sh: share, g: LGraph,
@@ -586,11 +551,6 @@ Definition int_mutable_update_spec :=
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info' ti;
          heap_remset_rep g' (ti_heap t_info').(pt_heap) rh').
-
-(* Change before_gc_thread_info_rep *)
-(* Define a new heap_management to hide details in
-   before_gc_thread_info_rep *)
-(* combine heap and remset_heap *)
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
@@ -636,32 +596,6 @@ Definition garbage_collect_spec :=
          heap_remset_rep g' (ti_heap t_info').(pt_heap) rh';
          remset_rep sh g' rmst';
          before_gc_thread_info_rep sh t_info' ti).
-
-(*
-Definition reset_heap_spec :=
-   (* THIS IS A PLACEHOLDER AND NOT CORRECT *)
-  DECLARE _reset_heap
-  WITH h: val
-  PRE [tptr heap_type]
-    PROP ()
-    PARAMS (h)
-    GLOBALS ()
-    SEP ()
-  POST [tvoid]
-  PROP () RETURN () SEP ().
-
-Definition free_heap_spec :=
-   (* THIS IS A PLACEHOLDER AND NOT CORRECT *)
-  DECLARE _free_heap
-  WITH h: heap, p: val, rsh: share, gv: globals
-  PRE [tptr heap_type]
-    PROP (readable_share rsh) PARAMS (p) GLOBALS (gv)
-    SEP (heap_rep Ews h p; ti_token_rep h p;
-         mem_mgr gv; all_string_constants rsh gv)
-  POST [tvoid]
-  PROP () RETURN ()
-  SEP (mem_mgr gv; all_string_constants rsh gv).
-*)
 
 Definition Gprog: funspecs :=
   ltac:(with_library prog

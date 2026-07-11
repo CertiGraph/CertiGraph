@@ -131,7 +131,7 @@ Proof.
     destruct H0 as [x [? _]]; now subst v.
 Qed.
 
-Lemma edge_label_same_resset: forall g gen,
+Lemma edge_label_same_reset: forall g gen,
     edge_label_same g -> edge_label_same (reset_graph gen g).
 Proof.
   unfold edge_label_same. intros g gen He e. simpl.
@@ -144,7 +144,7 @@ Proof.
   intros. destruct H as [? [? [? ?]]].
   now split; [|split; [|split]];
     [apply vertex_valid_reset | apply edge_valid_reset |
-      apply src_edge_reset | apply edge_label_same_resset ].
+      apply src_edge_reset | apply edge_label_same_reset ].
 Qed.
 
 (** Quasi-Isomorphism to Full-Isomorphism *)
@@ -9184,39 +9184,6 @@ Proof.
             g1 g_scan); eauto.
 Qed.
 
-Lemma no_dangling_dst_reset_from_no_edge2gen:
-  forall g gen,
-    no_dangling_dst g ->
-    no_edge2gen g gen ->
-    no_dangling_dst (reset_graph gen g).
-Proof.
-  unfold no_dangling_dst.
-  intros g gen Hndd Hnoedge v Hv e Hin.
-  rewrite graph_has_v_reset in Hv.
-  rewrite get_edges_reset in Hin.
-  simpl.
-  rewrite remove_ve_dst_unchanged.
-  rewrite graph_has_v_reset.
-  split.
-  - eapply Hndd; eauto.
-    tauto.
-  - intro Hdst_gen.
-    destruct Hv as [Hv Hsrc_ne].
-    pose proof (get_edges_fst g v e Hin) as Hfst.
-    assert (He: graph_has_e g e). {
-      unfold graph_has_e.
-      rewrite Hfst.
-      split; assumption.
-    }
-    destruct e as [[src_gen src_idx] e_idx].
-    destruct v as [v_gen v_idx].
-    simpl in *.
-    inversion Hfst; subst src_gen src_idx.
-    specialize (Hnoedge v_gen (not_eq_sym Hsrc_ne) v_idx e_idx He).
-    symmetry in Hdst_gen.
-    contradiction.
-Qed.
-
 Lemma do_generation_relation_no_dangling_dst_noedge_state:
   forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i,
     sound_gc_graph g ->
@@ -9260,7 +9227,7 @@ Proof.
               i (S i) roots roots' g h rh rmst
               g_rem h_rem rh' rmst' g1 g2); eauto.
   }
-  subst g'. eapply no_dangling_dst_reset_from_no_edge2gen; eauto.
+  subst g'. eapply no_dangling_dst_reset; eauto.
 Qed.
 
 Lemma do_generation_relation_no_unrecorded_backward_edge_reset_state:

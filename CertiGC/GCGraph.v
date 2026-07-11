@@ -3606,18 +3606,6 @@ Proof.
   apply (H v H0).
 Qed.
 
-Lemma mutable_graph_update_nth_sh:
-  forall g it new g' gen,
-    mutable_location_compatible g it ->
-    mutable_graph_update g it new g' ->
-    nth_sh g' gen = nth_sh g gen.
-Proof.
-  intros g it new g' gen Hloc Hupd.
-  unfold nth_sh, nth_gen.
-  rewrite (mutable_graph_update_glabel _ _ _ _ Hloc Hupd).
-  reflexivity.
-Qed.
-
 Lemma mutable_graph_update_dst_other:
   forall (g: LGraph) (src: VType) pos new g' (e: EType),
     fst e <> src ->
@@ -6720,8 +6708,6 @@ Proof.
   rewrite ?Ptrofs.signed_repr by rep_lia;
   auto.
 Qed.
-
-#[export] Instance Inh_rootpair : Inhabitant rootpair := {| rp_adr:=Vundef; rp_val:=Vundef|}.
 
 Lemma Znth_frame2rootpairs' :
 forall z r s,

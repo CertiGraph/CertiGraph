@@ -344,20 +344,6 @@ Definition roots_rep (sh: share) (roots: list rootpair) : mpred :=
 
 Definition frames_rep (sh: share) (frs: list frame) := frames_shell_rep sh frs * roots_rep sh (frames2rootpairs frs).
 
- Lemma data_at_tarray_field_compatible0:
- forall sh t s r,
- data_at sh (tarray t (Zlength s)) s r =
-!! field_compatible0 (tarray t (Zlength s)) [] r
- && data_at sh (tarray t (Zlength s)) s r.
-Proof.
- intros.
-apply pred_ext. apply andp_right; auto.
-unfold data_at, field_at. apply andp_left1.
-apply prop_derives. unfold field_compatible, field_compatible0.
-intuition.
-apply andp_left2; auto.
-Qed.
-
 Lemma frames_shell_rep_update:
  forall (sh: share) (frs: list frame) (rootvals: list val),
   Zlength rootvals = Zlength (frames2rootpairs frs) ->
@@ -1509,23 +1495,6 @@ Proof.
   rewrite (mutable_graph_update_make_fields_vals_other
              g src pos new g' v Hneq Hloc Hupd).
   reflexivity.
-Qed.
-
-Lemma mutable_graph_update_graph_vertex_ramif:
-  forall g src pos new g',
-    mutable_location_compatible g (InteriorVertexPos src pos) ->
-    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
-    graph_has_v g src ->
-    graph_rep g |-- vertex_rep (nth_sh g (vgeneration src)) g src *
-      (vertex_rep (nth_sh g (vgeneration src)) g' src -* graph_rep g').
-Proof.
-  intros g src pos new g' Hloc Hupd Hsrc.
-  apply graph_vertex_update_ramif.
-  - eapply mutable_graph_update_glabel; eassumption.
-  - intros sh v Hneq.
-    exact (mutable_graph_update_vertex_rep_other
-             g src pos new g' sh v Hneq Hloc Hupd).
-  - exact Hsrc.
 Qed.
 
 Lemma graph_rep_mutable_update_ramif:

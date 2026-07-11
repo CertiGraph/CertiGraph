@@ -135,21 +135,6 @@ Proof.
       generation_share_writable.
 Qed.
 
-Lemma sem_sub_pi_available_space_minus: forall s,
-    isptr (space_start s) ->
-    force_val
-      (sem_sub_pi int_or_ptr_type Signed
-        (offset_val (WORD_SIZE * available_space s) (space_start s))
-        (Vint (Int.repr 1))) =
-    offset_val (WORD_SIZE * (available_space s - 1)) (space_start s).
-Proof.
-  intros s Hptr. destruct (space_start s); try contradiction. simpl.
-  rewrite ptrofs_of_ints_unfold, ptrofs_mul_repr, Ptrofs.add_commut,
-    Ptrofs.sub_add_l.
-  rewrite ptrofs_sub_repr, Int.signed_repr by rep_lia.
-  rewrite Ptrofs.add_commut. do 3 f_equal. unfold WORD_SIZE. lia.
-Qed.
-
 Lemma align_compatible_int_or_ptr_tptr: forall z,
     align_compatible_rec cenv_cs int_or_ptr_type z <->
     align_compatible_rec cenv_cs (tptr int_or_ptr_type) z.
