@@ -85,16 +85,11 @@ Lemma forward_remset_item_fold_closure_has_v:
     closure_has_v g x ->
     closure_has_v g' x.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' x Hto Hfold Hcl; simpl in Hfold.
-  - now inversion Hfold.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfold. symmetry in Hfri2.
-    assert (Hto2: graph_has_gen g2 to).
-    { rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to). exact Hto. }
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' x Hto2 Hfold).
-    eapply (fri_closure_has_v from to g h rh rmst a g2 h2 rh2 rmst2 x); eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' x Hto Hfold Hcl.
+  eapply (forward_remset_item_fold_graph_property
+            (fun g0 => closure_has_v g0 x));
+    [| exact Hto | exact Hcl | exact Hfold].
+  intros. eapply fri_closure_has_v; eassumption.
 Qed.
 
 Lemma forward_remset_item_fold_vertex_address:
@@ -104,18 +99,16 @@ Lemma forward_remset_item_fold_vertex_address:
     closure_has_v g x ->
     vertex_address g x = vertex_address g' x.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' x Hto Hfold Hcl; simpl in Hfold.
-  - now inversion Hfold.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfold. symmetry in Hfri2.
-    assert (Hto2: graph_has_gen g2 to).
-    { rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to). exact Hto. }
-    assert (Hcl2: closure_has_v g2 x) by
-        (eapply (fri_closure_has_v from to g h rh rmst a g2 h2 rh2 rmst2 x); eauto).
-    rewrite <- (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' x Hto2 Hfold Hcl2).
-    eapply (fri_vertex_address from to g h rh rmst a g2 h2 rh2 rmst2 x); eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' x Hto Hfold Hcl.
+  eapply (forward_remset_item_fold_graph_property
+            (fun g0 => closure_has_v g0 x /\
+               vertex_address g x = vertex_address g0 x));
+    [| exact Hto | split; [exact Hcl | reflexivity] | exact Hfold].
+  intros item g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 Hto0 [Hcl0 Haddr] Hitem.
+  split.
+  - eapply fri_closure_has_v; eassumption.
+  - transitivity (vertex_address g0 x); [exact Haddr |].
+    eapply fri_vertex_address; eassumption.
 Qed.
 
 Lemma forward_remset_item_fold_rootpairs_compatible:
@@ -131,24 +124,16 @@ Lemma forward_remset_item_fold_rootpairs_compatible:
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     rootpairs_compatible g' rootpairs roots.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' rootpairs roots Hneq Hto Hcc Hrnd Hrc Hrrsc Hrgc Hrpc Hfri;
-    simpl in Hfri.
-  - now inversion Hfri.
-  - hnf in Hrrsc. rewrite Forall_cons_iff in Hrrsc. destruct Hrrsc as [Hrica Hricr].
-    destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfri. symmetry in Hfri2.
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' rootpairs roots); eauto.
-    + eapply forward_remset_item_ghg with (g := g); eassumption.
-    + eapply fri_copy_compatible; eauto.
-    + eapply fri_remset_nodup; eassumption.
-    + eapply fri_remset_graph_compatible; eauto.
-    + hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
-    + eapply (forward_remset_item_roots_graph_compatible_pres
-                from to g h rh rmst a g2 h2 rh2 rmst2 roots); eauto.
-    + eapply (fri_rootpairs_compatible from to g h rh rmst a g2 h2 rh2 rmst2 rootpairs roots); eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' rootpairs roots
+         _ Hto _ _ _ _ Hrgc Hrpc Hfold.
+  eapply (forward_remset_item_fold_graph_property
+            (fun g0 => roots_graph_compatible roots g0 /\
+               rootpairs_compatible g0 rootpairs roots));
+    [| exact Hto | split; [exact Hrgc | exact Hrpc] | exact Hfold].
+  intros item g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 Hto0 [Hrgc0 Hrpc0] Hitem.
+  split.
+  - eapply forward_remset_item_roots_graph_compatible_pres; eassumption.
+  - eapply fri_rootpairs_compatible; eassumption.
 Qed.
 
 #[local] Lemma heap_remset_zero_available_weak_valid: forall g h rh gen,

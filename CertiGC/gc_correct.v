@@ -1327,6 +1327,19 @@ Definition gc_graph_pending_remset_semi_iso
     (fun g1 g2 l from => remset_partial_graph_pending g1 g2 l from pending)
     g1 g2 from to l.
 
+#[local] Lemma gc_graph_remset_semi_iso_parts_impl:
+  forall Partial1 Partial2 g1 g2 from to l,
+    gc_graph_remset_semi_iso_parts Partial1 g1 g2 from to l ->
+    (Partial1 g1 g2 l from -> Partial2 g1 g2 l from) ->
+    gc_graph_remset_semi_iso_parts Partial2 g1 g2 from to l.
+Proof.
+  unfold gc_graph_remset_semi_iso_parts.
+  intros Partial1 Partial2 g1 g2 from to l [Hcopy Hspec] Himpl.
+  split; [exact Hcopy |].
+  destruct (split l) as [from_l to_l].
+  intuition.
+Qed.
+
 Lemma gc_graph_remset_semi_iso_parts_partial:
   forall Partial g1 g2 from to l,
     gc_graph_remset_semi_iso_parts Partial g1 g2 from to l ->
@@ -1770,17 +1783,10 @@ Lemma pending_remset_semi_iso_nil:
     gc_graph_pending_remset_semi_iso g1 g2 from to nil l ->
     gc_graph_remset_semi_iso g1 g2 from to l.
 Proof.
-  intros g1 g2 from to l [Hcopy Hspec].
-  split; [exact Hcopy |].
-  destruct (split l) as [from_l to_l] eqn:Hsplit.
-  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
-  split; [exact Hfrom |]. split; [exact Hto |].
-  split; [exact Hlabel |].
-  unfold remset_partial_graph_pending in Hpartial.
-  unfold remset_partial_graph.
-  destruct Hpartial as [Hold [Hedges Hunmarked]].
-  split; [exact Hold |]. split; [|exact Hunmarked].
-  now apply old_nonfrom_edges_mapped_pending_nil.
+  intros g1 g2 from to l Hiso.
+  eapply gc_graph_remset_semi_iso_parts_impl; [exact Hiso |].
+  unfold remset_partial_graph_pending, remset_partial_graph.
+  intuition eauto using old_nonfrom_edges_mapped_pending_nil.
 Qed.
 
 Lemma remset_semi_iso_pending:
@@ -1788,17 +1794,10 @@ Lemma remset_semi_iso_pending:
     gc_graph_remset_semi_iso g1 g2 from to l ->
     gc_graph_pending_remset_semi_iso g1 g2 from to pending l.
 Proof.
-  intros g1 g2 from to l pending [Hcopy Hspec].
-  split; [exact Hcopy |].
-  destruct (split l) as [from_l to_l] eqn:Hsplit.
-  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
-  split; [exact Hfrom |]. split; [exact Hto |].
-  split; [exact Hlabel |].
-  unfold remset_partial_graph in Hpartial.
-  unfold remset_partial_graph_pending.
-  destruct Hpartial as [Hold [Hedges Hunmarked]].
-  split; [exact Hold |]. split; [|exact Hunmarked].
-  now apply old_nonfrom_edges_mapped_pending_intro.
+  intros g1 g2 from to l pending Hiso.
+  eapply gc_graph_remset_semi_iso_parts_impl; [exact Hiso |].
+  unfold remset_partial_graph, remset_partial_graph_pending.
+  intuition eauto using old_nonfrom_edges_mapped_pending_intro.
 Qed.
 
 Lemma pending_remset_semi_iso_lift_partial:
@@ -1808,13 +1807,8 @@ Lemma pending_remset_semi_iso_lift_partial:
     gc_graph_pending_remset_semi_iso g1 g2 from to pending1 l ->
     gc_graph_pending_remset_semi_iso g1 g2 from to pending2 l.
 Proof.
-  intros g1 g2 from to pending1 pending2 l Hlift [Hcopy Hspec].
-  split; [exact Hcopy |].
-  destruct (split l) as [from_l to_l] eqn:Hsplit.
-  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
-  split; [exact Hfrom |]. split; [exact Hto |].
-  split; [exact Hlabel |].
-  now apply Hlift.
+  intros g1 g2 from to pending1 pending2 l Hlift Hiso.
+  eapply gc_graph_remset_semi_iso_parts_impl; [exact Hiso | exact Hlift].
 Qed.
 
 Lemma pending_remset_semi_iso_cons_drop:
