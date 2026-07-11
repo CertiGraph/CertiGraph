@@ -1225,7 +1225,7 @@ Proof.
   - rewrite Z2Nat.id; [assumption | lia].
 Qed.
 
-Lemma make_fields'_n_doesnt_matter: forall i l v n m gcptr,
+#[local] Lemma make_fields'_n_doesnt_matter: forall i l v n m gcptr,
     nth i (make_fields' l v n) field_t_inhabitant = FieldOutlier gcptr ->
     nth i (make_fields' l v m) field_t_inhabitant = FieldOutlier gcptr.
 Proof.
@@ -1241,7 +1241,7 @@ Proof.
     - destruct a; simpl; intro; apply IHl with (m:=(m+1)%nat) in H; assumption.
 Qed.
 
-Lemma make_fields'_item_was_in_list: forall l v n gcptr,
+#[local] Lemma make_fields'_item_was_in_list: forall l v n gcptr,
     0 <= n < Zlength l ->
     Znth n (make_fields' l v 0) = FieldOutlier gcptr ->
     Znth n l = RawOutlier gcptr.
@@ -1760,7 +1760,7 @@ Definition mutable_graph_update
   | InteriorVertexPos src pos => internal_write_at g src pos new g'
   end.
 
-Lemma raw_vertex_field_update_exists:
+#[local] Lemma raw_vertex_field_update_exists:
   forall rvb pos rf,
     raw_tag rvb < NO_SCAN_TAG ->
     exists rvb', raw_vertex_field_update rvb pos rf rvb'.
@@ -1782,7 +1782,7 @@ Proof.
   repeat split; reflexivity.
 Qed.
 
-Lemma raw_vertex_field_update_unique:
+#[local] Lemma raw_vertex_field_update_unique:
   forall rvb pos rf rvb1 rvb2,
     raw_vertex_field_update rvb pos rf rvb1 ->
     raw_vertex_field_update rvb pos rf rvb2 ->
@@ -1798,7 +1798,7 @@ Proof.
   f_equal; apply proof_irrelevance.
 Qed.
 
-Lemma internal_write_at_exists:
+#[local] Lemma internal_write_at_exists:
   forall g src pos new,
     raw_tag (vlabel g src) < NO_SCAN_TAG ->
     exists g', internal_write_at g src pos new g'.
@@ -1831,7 +1831,7 @@ Proof.
   apply internal_write_at_exists; exact Htag.
 Qed.
 
-Lemma internal_write_at_deterministic:
+#[local] Lemma internal_write_at_deterministic:
   forall g src pos new g1 g2,
     internal_write_at g src pos new g1 ->
     internal_write_at g src pos new g2 ->
@@ -1910,7 +1910,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma rvfu_vgen_raw_fields_length:
+#[local] Lemma rvfu_vgen_raw_fields_length:
   forall (g: LGraph) (src: VType) pos rf rvb' (v: VType),
     raw_vertex_field_update (vlabel g src) pos rf rvb' ->
     Zlength (raw_fields (vlabel (labeledgraph_vgen g src rvb') v)) =
@@ -2014,7 +2014,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma rvfu_vgen_make_header:
+#[local] Lemma rvfu_vgen_make_header:
   forall (g: LGraph) (src: VType) pos rf rvb' (v: VType),
     raw_vertex_field_update (vlabel g src) pos rf rvb' ->
     make_header (labeledgraph_vgen g src rvb') v = make_header g v.
@@ -2597,7 +2597,7 @@ Proof.
   intros. unfold make_header. rewrite lacv_vlabel_old by assumption. reflexivity.
 Qed.
 
-Lemma e_in_make_fields': forall l v n e,
+#[local] Lemma e_in_make_fields': forall l v n e,
     In (FieldEdge e) (make_fields' l v n) -> exists s, e = (v, s).
 Proof.
   induction l; intros; simpl in *. 1: exfalso; assumption. destruct a.
@@ -2612,7 +2612,7 @@ Lemma e_in_make_fields: forall g v e,
     In (FieldEdge e) (make_fields g v) -> exists s, e = (v, s).
 Proof. unfold make_fields. intros. apply e_in_make_fields' in H. assumption. Qed.
 
-Lemma flcvae_dst_old: forall g new (l: list (EType * VType)) e,
+#[local] Lemma flcvae_dst_old: forall g new (l: list (EType * VType)) e,
     ~ In e (map fst l) -> dst (fold_left (copy_v_add_edge new) l g) e = dst g e.
 Proof.
   intros. revert g H. induction l; intros; simpl. 1: reflexivity.
@@ -2621,7 +2621,7 @@ Proof.
   apply H. simpl. left; assumption.
 Qed.
 
-Lemma flcvae_dst_new: forall g new (l: list (EType * VType)) e v,
+#[local] Lemma flcvae_dst_new: forall g new (l: list (EType * VType)) e v,
     NoDup (map fst l) -> In (e, v) l ->
     dst (fold_left (copy_v_add_edge new) l g) e = v.
 Proof.
@@ -2648,7 +2648,7 @@ Proof.
   intros. unfold get_edges. rewrite <- (filter_proj_In_iff field_proj_edge_spec). tauto.
 Qed.
 
-Lemma e_in_get_edges: forall g v e, In e (get_edges g v) -> exists s, e = (v, s).
+#[local] Lemma e_in_get_edges: forall g v e, In e (get_edges g v) -> exists s, e = (v, s).
 Proof. intros. rewrite get_edges_In_iff in H. apply e_in_make_fields in H. assumption. Qed.
 
 Lemma pcv_dst_new: forall g old new n,
@@ -4218,7 +4218,7 @@ Proof.
   - eapply svfl_gen_unmarked; eauto.
 Qed.
 
-Lemma make_header_tag_prep64: forall z,
+#[local] Lemma make_header_tag_prep64: forall z,
     0 <= z < two_p (8 * 8) ->
     Int64.and (Int64.repr z) (Int64.repr 255) =
     Int64.sub (Int64.repr z)
@@ -4237,7 +4237,7 @@ Proof.
     simpl Z.of_nat. lia.
 Qed.
 
-Lemma make_header_tag_prep32: forall z,
+#[local] Lemma make_header_tag_prep32: forall z,
     0 <= z < two_p (4 * 8) ->
     Int.and (Int.repr z) (Int.repr 255) =
     Int.sub (Int.repr z)
@@ -4588,7 +4588,7 @@ Proof.
   - destruct Hupd as [rvb' [_ ->]]. apply add_edge_dst.
 Qed.
 
-Lemma nth_make_fields':
+#[local] Lemma nth_make_fields':
   forall l v base i,
     (i < length l)%nat ->
     nth i (make_fields' l v base) field_t_inhabitant =
@@ -5699,7 +5699,7 @@ Qed.
 Definition is_field_same_v (g: LGraph) (v: VType) (p: interior_t) : Prop :=
   exists i : Z, p = InteriorVertexPos v i /\ (0 <= i < Zlength (make_fields g v))%Z.
 
-Lemma fr_is_field_same_v: forall (from to depth: nat) p (g1 g2: LGraph) (v: VType) l,
+#[local] Lemma fr_is_field_same_v: forall (from to depth: nat) p (g1 g2: LGraph) (v: VType) l,
     graph_has_gen g1 to ->
     graph_has_v g1 v ->
     forward_relation from to depth p g1 g2 ->
@@ -5710,7 +5710,7 @@ Proof.
   - rewrite !make_fields_eq_length. f_equal. eapply fr_raw_fields; eassumption.
 Qed.
 
-Lemma fl_no_dangling_dst_helper: forall (from to depth: nat) (g' : LGraph) (vv : VType)
+#[local] Lemma fl_no_dangling_dst_helper: forall (from to depth: nat) (g' : LGraph) (vv : VType)
                                    (l : list interior_t) (gg : LGraph),
     from <> to ->
     (forall (p : forward_t) (g g' : LGraph),
@@ -6963,7 +6963,7 @@ Proof.
     apply estc_has_space; [|assumption..]. destruct H. apply (H0 _ H _ H4).
 Qed.
 
-Lemma forward_gh_loop_ghc_helper: forall (from to depth: nat) (vv : VType)
+#[local] Lemma forward_gh_loop_ghc_helper: forall (from to depth: nat) (vv : VType)
                              (l : list interior_t) (gg : LGraph) (hh : part_heap),
     from <> to ->
     (forall (p : forward_t) (g : LGraph) (h : part_heap),
@@ -7056,7 +7056,7 @@ Proof.
     apply estc_has_space; [|assumption..]. destruct H; apply (H0 _ H _ H6).
 Qed.
 
-Lemma raw_tag_biteq: forall (g: LGraph) (v: VType),
+#[local] Lemma raw_tag_biteq: forall (g: LGraph) (v: VType),
     raw_mark (vlabel g v) = false ->
     Int64.unsigned (Int64.and (Int64.repr (make_header g v)) (Int64.repr 255)) =
       (raw_tag (vlabel g v)) mod 256.
@@ -7225,7 +7225,7 @@ Proof.
   - destruct Hfc as [? [? [? [? ?]]]]. rewrite <- fr_is_field_same_v; eassumption.
 Qed.
 
-Lemma fl_outlier_compatible_helper:
+#[local] Lemma fl_outlier_compatible_helper:
   forall (from to depth: nat) outlier (g g' : LGraph) (v : VType) (l : list interior_t),
     from <> to ->
     (forall (p : forward_t) (g1 g2 : LGraph),
@@ -7495,7 +7495,7 @@ Definition no_unrecorded_backward_edge_from
 Definition no_unrecorded_backward_edge (g: LGraph) (rh: remset_heap): Prop :=
   no_unrecorded_backward_edge_from O g rh.
 
-Lemma firstn_gen_clear_edge_source_gt:
+#[local] Lemma firstn_gen_clear_edge_source_gt:
   forall g from e,
     firstn_gen_clear g from ->
     graph_has_e g e ->
