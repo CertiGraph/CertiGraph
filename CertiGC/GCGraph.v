@@ -7848,6 +7848,36 @@ Definition forward_remset_gh (from to : nat) (g: LGraph) (h: part_heap) (rh: rem
   (rmst: remset) : (LGraph * part_heap * remset_heap * remset) :=
   fold_left (forward_remset_item from to) (Znth (Z.of_nat from) rh) (g, h, rh, rmst).
 
+Lemma forward_remset_item_fold_suffix_invariant:
+  forall (Inv: remset_space -> LGraph -> part_heap -> remset_heap -> remset -> Prop)
+    from to r g h rh rmst g' h' rh' rmst',
+    (forall item rest g0 h0 rh0 rmst0 g1 h1 rh1 rmst1,
+        Inv (item :: rest) g0 h0 rh0 rmst0 ->
+        (g1, h1, rh1, rmst1) =
+          forward_remset_item from to (g0, h0, rh0, rmst0) item ->
+        Inv rest g1 h1 rh1 rmst1) ->
+    Inv r g h rh rmst ->
+    (g', h', rh', rmst') =
+      fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    Inv nil g' h' rh' rmst'.
+Proof.
+  intros Inv from to r g h rh rmst g' h' rh' rmst' Hstep HInv Hfold.
+  change (let '(g0, h0, rh0, rmst0) := (g', h', rh', rmst') in
+          Inv nil g0 h0 rh0 rmst0).
+  rewrite Hfold.
+  eapply (List_ext.fold_left_suffix_invariant
+            (forward_remset_item from to)
+            (fun rest s =>
+               let '(g0, h0, rh0, rmst0) := s in
+               Inv rest g0 h0 rh0 rmst0)).
+  - intros item rest [[[g0 h0] rh0] rmst0] HInv0.
+    destruct (forward_remset_item from to (g0, h0, rh0, rmst0) item)
+      as [[[g1 h1] rh1] rmst1] eqn:Hitem.
+    simpl.
+    eapply Hstep; [exact HInv0 | symmetry; exact Hitem].
+  - exact HInv.
+Qed.
+
 Lemma remset_ext_compatible_weakened: forall g outlier re,
     remset_ext_compatible g outlier re -> remset_ext_compatible' g re.
 Proof. intros g outlier re Hrec. destruct re; simpl in *; auto. Qed.
@@ -8528,11 +8558,11 @@ Lemma forward_remset_item_fold_len: forall from to r g h rh rmst g' h' rh' rmst'
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     length rh' = length (spaces h').
 Proof.
-  intros from to r. Opaque forward_remset_item.
-  induction r; intros g h rh rmst g' h' rh' rmst' Hlen Hfold; simpl in Hfold.
-  1: inversion Hfold; assumption. Transparent forward_remset_item.
-  destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-  symmetry in Hfri. apply forward_remset_item_len in Hfri; auto. eapply IHr; eassumption.
+  intros from to r g h rh rmst g' h' rh' rmst' Hlen Hfold.
+  eapply (forward_remset_item_fold_suffix_invariant
+            (fun _ _ h0 rh0 _ => length rh0 = length (spaces h0)));
+    [| exact Hlen | exact Hfold].
+  intros. eapply forward_remset_item_len; eassumption.
 Qed.
 
 Lemma incr_remset_heap_whr: forall h gen, weak_heap_relation h (incr_remset_heap h gen).
@@ -8563,11 +8593,13 @@ Lemma forward_remset_item_fold_whr: forall from to r g h rh rmst g' h' rh' rmst'
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     weak_heap_relation h h'.
 Proof.
-  intros from to r. Opaque forward_remset_item.
-  induction r; intros g h rh rmst g' h' rh' rmst' Hfold; simpl in Hfold. 1: now inversion Hfold.
-  Transparent forward_remset_item.
-  destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-  symmetry in Hfri. apply forward_remset_item_whr in Hfri. transitivity h2; auto. eapply IHr; eassumption.
+  intros from to r g h rh rmst g' h' rh' rmst' Hfold.
+  eapply (forward_remset_item_fold_suffix_invariant
+            (fun _ _ h0 _ _ => weak_heap_relation h h0));
+    [| reflexivity | exact Hfold].
+  intros item rest g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 Hinv Hstep.
+  transitivity h0; [exact Hinv |].
+  eapply forward_remset_item_whr. exact Hstep.
 Qed.
 
 Lemma total_size_irh: forall h from to,
@@ -8638,19 +8670,14 @@ Lemma forward_remset_item_fold_available_size_not_to:
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     available_size h' gen = available_size h gen.
 Proof.
-  intros from to r. induction r; intros g h rh rmst g' h' rh' rmst' gen Hgen Hfold.
-  - simpl in Hfold. inversion Hfold. reflexivity.
-  - simpl in Hfold.
-    destruct (forward_remset_item from to (g, h, rh, rmst) a)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
-    rewrite Hfri in Hfold.
-    assert (Hav_step: available_size h2 gen = available_size h gen). {
-      symmetry in Hfri.
-      eapply fri_available_size_not_to; eassumption.
-    }
-    pose proof (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen Hgen Hfold) as Hav_tail.
-    rewrite Hav_tail. exact Hav_step.
+  intros from to r g h rh rmst g' h' rh' rmst' gen Hgen Hfold.
+  eapply (forward_remset_item_fold_suffix_invariant
+            (fun _ _ h0 _ _ =>
+               available_size h0 gen = available_size h gen));
+    [| reflexivity | exact Hfold].
+  intros item rest g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 HInv Hstep.
+  rewrite <- HInv.
+  eapply fri_available_size_not_to; eassumption.
 Qed.
 
 Lemma forward_remset_gh_available_size_not_to:
@@ -8741,12 +8768,14 @@ Lemma fold_fri_remset_gen_size: forall from to r g h rh rmst g' h' rh' rmst',
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     remset_gen_size h' from = remset_gen_size h from.
 Proof.
-  intros from to r g h rh rmst g' h' rh' rmst' Hneq. revert g h rh rmst g' h' rh' rmst'.
-  Opaque forward_remset_item.
-  induction r; intros g h rh rmst g' h' rh' rmst' Hfold; simpl in Hfold. 1: now inversion Hfold.
-  Transparent forward_remset_item.
-  destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-  symmetry in Hfri. apply fri_remset_gen_size in Hfri; auto. rewrite <- Hfri. eapply IHr; eassumption.
+  intros from to r g h rh rmst g' h' rh' rmst' Hneq Hfold.
+  eapply (forward_remset_item_fold_suffix_invariant
+            (fun _ _ h0 _ _ =>
+               remset_gen_size h0 from = remset_gen_size h from));
+    [| reflexivity | exact Hfold].
+  intros item rest g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 HInv Hstep.
+  rewrite <- HInv.
+  eapply fri_remset_gen_size; eassumption.
 Qed.
 
 Lemma nth_remset_space_Znth: forall rh n, nth_remset_space rh n = Znth (Z.of_nat n) rh.
@@ -9195,11 +9224,11 @@ Lemma fri_remset_nodup_fold: forall from to g h rh rmst r g' h' rh' rmst',
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     remset_nodup rmst'.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' Hrnd Hfri. 1: simpl in Hfri; now inversion Hfri.
-  Opaque forward_remset_item. simpl in Hfri. Transparent forward_remset_item.
-  destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-  eapply (IHr g2); [|eassumption]. symmetry in Hfri2. eapply fri_remset_nodup; eassumption.
+  intros from to g h rh rmst r g' h' rh' rmst' Hrnd Hfold.
+  eapply (forward_remset_item_fold_suffix_invariant
+            (fun _ _ _ _ rmst0 => remset_nodup rmst0));
+    [| exact Hrnd | exact Hfold].
+  intros. eapply fri_remset_nodup; eassumption.
 Qed.
 
 Lemma exterior_forward_t_compatible: forall g outlier ext,

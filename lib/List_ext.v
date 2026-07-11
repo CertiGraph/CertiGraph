@@ -1205,6 +1205,16 @@ Proof.
     rewrite !fold_left_app. simpl. rewrite H. f_equal. apply H0.
 Qed.
 
+Lemma fold_left_suffix_invariant:
+  forall {A B} (f: A -> B -> A) (Inv: list B -> A -> Prop),
+    (forall x xs s, Inv (x :: xs) s -> Inv xs (f s x)) ->
+    forall xs s, Inv xs s -> Inv nil (fold_left f xs s).
+Proof.
+  intros A B f Inv Hstep xs. induction xs as [|x xs IH]; intros s HInv.
+  - exact HInv.
+  - simpl. apply IH. apply Hstep. exact HInv.
+Qed.
+
 Local Open Scope Z_scope.
 
 Lemma exists_element_list:

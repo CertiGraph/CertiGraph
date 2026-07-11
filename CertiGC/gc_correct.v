@@ -1307,44 +1307,6 @@ Proof.
   intros. eapply fr_O_sound; eauto.
 Qed.
 
-Lemma forward_remset_item_step_state_with_tail:
-  forall from to g h rh rmst item rest g' h' rh' rmst',
-    from <> to ->
-    graph_has_gen g to ->
-    copy_compatible g ->
-    remset_nodup rmst ->
-    remset_graph_compatible g rmst ->
-    remset_item_compatible g from rmst item ->
-    remset_and_remset_space_compatible g from rmst rest ->
-    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
-    graph_has_gen g' to /\
-    copy_compatible g' /\
-    remset_nodup rmst' /\
-    remset_graph_compatible g' rmst' /\
-    remset_and_remset_space_compatible g' from rmst' rest.
-Proof.
-  intros from to g h rh rmst item rest g' h' rh' rmst'
-         Hneq Hto Hcc Hrnd Hrgc Hric Hrest Hfri.
-  split.
-  - rewrite <- (forward_remset_item_ghg from to g h rh rmst item
-                  g' h' rh' rmst' Hto Hfri to).
-    exact Hto.
-  - split.
-    + exact (fri_copy_compatible from to g h rh rmst item g' h' rh' rmst'
-               Hneq Hto Hcc Hfri).
-    + split.
-      * exact (fri_remset_nodup from to g h rh rmst item g' h' rh' rmst'
-                 Hrnd Hfri).
-      * split.
-        -- exact (fri_remset_graph_compatible from to g h rh rmst item
-                    g' h' rh' rmst' Hto Hcc Hrnd Hrgc Hric Hfri).
-        -- unfold remset_and_remset_space_compatible in Hrest |- *.
-           rewrite Forall_forall in Hrest |- *.
-           intros tail_item Hin_tail.
-           specialize (Hrest _ Hin_tail).
-           eapply fri_remset_item_compatible with (rmst := rmst) (item := item);
-             eassumption.
-Qed.
 
 (** Semi-Isomorphism **)
 
@@ -5143,7 +5105,7 @@ Proof.
         -- destruct (forward_remset_item from to (g, h, rh, rmst) (RemSetExterior item_addr))
              as [[[g2 h2] rh2] rmst2] eqn:Hfri.
            symmetry in Hfri.
-           destruct (forward_remset_item_step_state_with_tail
+           destruct (forward_remset_item_step_facts
                        from to g h rh rmst (RemSetExterior item_addr) rest
                        g2 h2 rh2 rmst2 Hneq Hto Hcc Hrnd Hrgc Hric_item
                        Hrrsc_tail Hfri)
@@ -5163,7 +5125,7 @@ Proof.
       * destruct (forward_remset_item from to (g, h, rh, rmst) (RemSetInterior intr))
           as [[[g2 h2] rh2] rmst2] eqn:Hfri.
         symmetry in Hfri.
-        destruct (forward_remset_item_step_state_with_tail
+        destruct (forward_remset_item_step_facts
                     from to g h rh rmst (RemSetInterior intr) rest
                     g2 h2 rh2 rmst2 Hneq Hto Hcc Hrnd Hrgc Hric_item
                     Hrrsc_tail Hfri)
@@ -5769,7 +5731,7 @@ Proof.
     assert (Hsound2: sound_gc_graph g2) by
         (eapply forward_remset_item_P_holds; eauto;
          intros; eapply fr_O_sound; eauto).
-    destruct (forward_remset_item_step_state_with_tail
+    destruct (forward_remset_item_step_facts
                 from to g h rh rmst item r g2 h2 rh2 rmst2
                 Hneq Hto Hcc Hrnd Hrgc Hric_item Hrrsc_tail Hfri)
       as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
@@ -7215,7 +7177,7 @@ Proof.
         as [Hnotin Heff].
       eapply remset_item_effective_root_in_effective_roots_from_space_cons;
         eauto.
-    + destruct (forward_remset_item_step_state_with_tail
+    + destruct (forward_remset_item_step_facts
                   from to g h rh rmst item rest g2 h2 rh2 rmst2
                   Hneq Hto Hcc Hrnd Hrgc Hric_item Hrrsc_tail Hfri)
         as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
@@ -8411,7 +8373,7 @@ Proof.
     assert (Hrange2: 0 <= Z.of_nat to < Zlength rh2) by
         (pose proof (fri_rh_Zlength_same from to g h rh rmst item
                        g2 h2 rh2 rmst2 Hfri); lia).
-    destruct (forward_remset_item_step_state_with_tail
+    destruct (forward_remset_item_step_facts
                 from to g h rh rmst item rest g2 h2 rh2 rmst2
                 Hneq Hto Hcc Hrnd Hrgc Hitem Hrrsc_tail Hfri)
       as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
@@ -8465,7 +8427,7 @@ Proof.
     symmetry in Hfri.
     hnf in Hrrsc. rewrite Forall_cons_iff in Hrrsc.
     destruct Hrrsc as [Hitem Hrrsc_tail].
-    destruct (forward_remset_item_step_state_with_tail
+    destruct (forward_remset_item_step_facts
                 from to g h rh rmst item rest g2 h2 rh2 rmst2
                 Hneq Hto Hcc Hrnd Hrgc Hitem Hrrsc_tail Hfri)
       as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
@@ -8648,7 +8610,7 @@ Proof.
     assert (Hsound2: sound_gc_graph g2) by
         (eapply forward_remset_item_P_holds;
          [intros; eapply fr_O_sound; eauto | exact Hsound | exact Hto | exact Hfri]).
-    destruct (forward_remset_item_step_state_with_tail
+    destruct (forward_remset_item_step_facts
                 from to g h rh rmst item rest g2 h2 rh2 rmst2
                 Hneq Hto Hcc Hrnd Hrgc Hric Hrrsc_tail Hfri)
       as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
