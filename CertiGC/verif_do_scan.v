@@ -33,7 +33,7 @@ Proof.
                       apply predicates_hered.ext_refl | exact HPa].
 Qed.
 
-Lemma typed_true_tag: forall (to : nat) (g : LGraph) (index : nat),
+#[local] Lemma typed_true_tag: forall (to : nat) (g : LGraph) (index : nat),
     typed_true tint
                (force_val
                   (option_map (fun b : bool => Val.of_bool (negb b))
@@ -52,7 +52,7 @@ Proof.
   - red. rep_lia.
 Qed.
 
-Lemma typed_false_tag: forall (to : nat) (g : LGraph) (index : nat),
+#[local] Lemma typed_false_tag: forall (to : nat) (g : LGraph) (index : nat),
     typed_false tint
                (force_val
                   (option_map (fun b : bool => Val.of_bool (negb b))

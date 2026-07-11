@@ -4,7 +4,7 @@ Require Import CertiGraph.graph.graph_model.
 
 #[local] Open Scope logic.
 
-Lemma graph_rep_interior_field_address: forall g src pos,
+#[local] Lemma graph_rep_interior_field_address: forall g src pos,
     graph_has_v g src ->
     0 <= pos < Zlength (raw_fields (vlabel g src)) ->
     graph_rep g |--
@@ -28,7 +28,7 @@ Proof.
     end.
 Qed.
 
-Lemma heap_head_nth_space_O: forall h,
+#[local] Lemma heap_head_nth_space_O: forall h,
     heap_head h = nth_space h O.
 Proof.
   intros h.
@@ -97,7 +97,7 @@ Proof.
   exact Hclosed.
 Qed.
 
-Lemma generation_data_at__test_order: forall g h gen i j,
+#[local] Lemma generation_data_at__test_order: forall g h gen i j,
     graph_has_gen g gen ->
     0 <= i <= available_size h gen ->
     0 <= j <= available_size h gen ->
@@ -135,7 +135,7 @@ Proof.
       generation_share_writable.
 Qed.
 
-Lemma align_compatible_int_or_ptr_tptr: forall z,
+#[local] Lemma align_compatible_int_or_ptr_tptr: forall z,
     align_compatible_rec cenv_cs int_or_ptr_type z <->
     align_compatible_rec cenv_cs (tptr int_or_ptr_type) z.
 Proof.
@@ -148,7 +148,7 @@ Proof.
       [reflexivity|exact H].
 Qed.
 
-Lemma data_at__int_or_ptr_tptr: forall sh p,
+#[local] Lemma data_at__int_or_ptr_tptr: forall sh p,
     data_at_ sh int_or_ptr_type p = data_at_ sh (tptr int_or_ptr_type) p.
 Proof.
   intros. unfold data_at_, field_at_, data_at, field_at.
@@ -157,7 +157,7 @@ Proof.
   rewrite align_compatible_int_or_ptr_tptr. reflexivity.
 Qed.
 
-Lemma data_at_int_or_ptr_tptr: forall sh p v,
+#[local] Lemma data_at_int_or_ptr_tptr: forall sh p v,
     isptr v ->
     data_at sh int_or_ptr_type v p =
     data_at sh (tptr int_or_ptr_type) v p.

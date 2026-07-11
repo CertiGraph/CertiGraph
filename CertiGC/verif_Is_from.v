@@ -48,9 +48,9 @@ Definition Is_from_sem : extcall_sem :=
 Definition Is_from_sig : signature :=
   mksignature (AST.Xptr :: AST.Xptr :: AST.Xptr :: nil) AST.Xint cc_default.
 
-Ltac split3 := split; [|split ].
+#[local] Ltac split3 := split; [|split ].
 
-Lemma lt_ptr_mod: forall n1 n2,
+#[local] Lemma lt_ptr_mod: forall n1 n2,
     n1 <= n2 <= Ptrofs.max_unsigned -> n1 <= n2 < Ptrofs.modulus.
 Proof.
   intros.

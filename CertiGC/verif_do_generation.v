@@ -148,7 +148,7 @@ Proof.
     + eapply (fri_rootpairs_compatible from to g h rh rmst a g2 h2 rh2 rmst2 rootpairs roots); eauto.
 Qed.
 
-Lemma heap_remset_zero_available_weak_valid: forall g h rh gen,
+#[local] Lemma heap_remset_zero_available_weak_valid: forall g h rh gen,
     graph_heap_compatible g h ->
     graph_has_gen g gen ->
     remset_heap_and_heap_compatible rh h ->
@@ -183,7 +183,7 @@ Proof.
     rep_lia.
 Qed.
 
-Lemma heap_unused_rep_reset_with_remset:
+#[local] Lemma heap_unused_rep_reset_with_remset:
   forall g h rg rhh rh gen,
     graph_heap_compatible g h ->
     graph_has_gen g gen ->

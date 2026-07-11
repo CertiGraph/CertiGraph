@@ -1,6 +1,6 @@
 From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 
-Lemma int64_ltu_ptrofs_to_int_64:
+#[local] Lemma int64_ltu_ptrofs_to_int_64:
   forall x y, Archi.ptr64 = true ->
     Int64.ltu (Ptrofs.to_int64 x) (Ptrofs.to_int64 y) =  Ptrofs.ltu x y.
 Proof.
@@ -20,7 +20,7 @@ Proof.
   auto.
 Qed.
 
-Lemma int_ltu_ptrofs_to_int:
+#[local] Lemma int_ltu_ptrofs_to_int:
   forall x y, Archi.ptr64 = false ->
     Int.ltu (Ptrofs.to_int x) (Ptrofs.to_int y) =  Ptrofs.ltu x y.
 Proof.

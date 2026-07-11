@@ -22,7 +22,7 @@ Proof.
   do 2 f_equal; unfold WORD_SIZE; rewrite Z.mul_comm, Z.quot_mul by lia; auto.
 Qed.
 
-Lemma sem_sub_pp_total_space: forall s,
+#[local] Lemma sem_sub_pp_total_space: forall s,
     isptr (space_start s) ->
     force_val
       (sem_sub_pp int_or_ptr_type
@@ -37,7 +37,7 @@ Proof.
     by (try exact Hptr; pose proof (total_space_signed_range s); lia); now rewrite Z.sub_0_r.
 Qed.
 
-Lemma sem_sub_pp_rest_space: forall s,
+#[local] Lemma sem_sub_pp_rest_space: forall s,
     isptr (space_start s) ->
     force_val
       (sem_sub_pp int_or_ptr_type
@@ -52,7 +52,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma t_info_space_address: forall t_info i,
+#[local] Lemma t_info_space_address: forall t_info i,
     0 <= i -> isptr (ti_heap_p t_info) ->
     (if Archi.ptr64 then
       force_val (sem_add_ptr_long space_type (offset_val 0 (ti_heap_p t_info))
@@ -66,11 +66,11 @@ Proof.
   unfold space_address. rewrite Z2Nat.id by lia. simpl. f_equal.
 Qed.
 
-Ltac tc_val_Znth := entailer!!; rewrite Znth_map by assumption;
+#[local] Ltac tc_val_Znth := entailer!!; rewrite Znth_map by assumption;
                     unfold space_quad; apply isptr_is_pointer_or_null;
                     try assumption.
 
-Lemma gather_thread_info_rep:
+#[local] Lemma gather_thread_info_rep:
   forall (v1 v2: val) sh t_info ti ,
    data_at sh thread_info_type (v1,(v2, (ti_heap_p t_info, (ti_args t_info, (ti_fp t_info, (Vptrofs(ti_nalloc t_info),nullval)))))) ti
    * frames_rep sh (ti_frames t_info)
@@ -85,7 +85,7 @@ Proof.
   cancel.
 Qed.
 
-Lemma remset_item_val_add_new_gen: forall g gi from rmst item,
+#[local] Lemma remset_item_val_add_new_gen: forall g gi from rmst item,
     remset_item_compatible g from rmst item ->
     remset_item_val (lgraph_add_new_gen g gi) item = remset_item_val g item.
 Proof.
@@ -93,7 +93,7 @@ Proof.
   destruct H as [Hv _]. rewrite ang_vertex_address_old by exact Hv. reflexivity.
 Qed.
 
-Lemma space_remset_rep_add_new_gen: forall g gi from rmst sp rs,
+#[local] Lemma space_remset_rep_add_new_gen: forall g gi from rmst sp rs,
     remset_and_remset_space_compatible g from rmst rs ->
     space_remset_rep g (sp, rs) =
     space_remset_rep (lgraph_add_new_gen g gi) (sp, rs).
@@ -105,7 +105,7 @@ Proof.
   apply H. exact Hin.
 Qed.
 
-Lemma heap_remset_rep_add_new_gen: forall g h rh gi from rmst,
+#[local] Lemma heap_remset_rep_add_new_gen: forall g h rh gi from rmst,
     remset_and_remset_heap_compatible g from rmst rh ->
     heap_remset_rep g h rh =
     heap_remset_rep (lgraph_add_new_gen g gi) h rh.
@@ -116,7 +116,7 @@ Proof.
   eapply in_combine_r. exact Hin.
 Qed.
 
-Lemma remset_rep_add_new_gen: forall sh g gi outlier rmst,
+#[local] Lemma remset_rep_add_new_gen: forall sh g gi outlier rmst,
     remset_graph_outlier_compatible g outlier rmst ->
     remset_rep sh g rmst =
     remset_rep sh (lgraph_add_new_gen g gi) rmst.
@@ -129,7 +129,7 @@ Proof.
   specialize (H _ Hin). simpl in H. exact H.
 Qed.
 
-Lemma remset_ext_compatible_add_new_gen: forall g gi outlier rext,
+#[local] Lemma remset_ext_compatible_add_new_gen: forall g gi outlier rext,
     remset_ext_compatible g outlier rext ->
     remset_ext_compatible (lgraph_add_new_gen g gi) outlier rext.
 Proof.
@@ -137,7 +137,7 @@ Proof.
   apply ang_graph_has_v. assumption.
 Qed.
 
-Lemma remset_item_compatible_add_new_gen: forall g gi from rmst item,
+#[local] Lemma remset_item_compatible_add_new_gen: forall g gi from rmst item,
     remset_item_compatible g from rmst item ->
     remset_item_compatible (lgraph_add_new_gen g gi) from rmst item.
 Proof.
@@ -147,7 +147,7 @@ Proof.
   - split; assumption.
 Qed.
 
-Lemma remset_compatible_add_new_empty: forall g h rh rmst outlier from gi sp i
+#[local] Lemma remset_compatible_add_new_empty: forall g h rh rmst outlier from gi sp i
     (Hs: 0 <= i < MAX_SPACES),
     remset_compatible g outlier from rmst rh h ->
     space_start (Znth i (spaces h)) = nullval ->
@@ -190,7 +190,7 @@ Proof.
            apply Hrhh. exact Hj.
 Qed.
 
-Lemma heap_remset_rep_add_empty_space: forall g h rh sp i (Hs: 0 <= i < MAX_SPACES),
+#[local] Lemma heap_remset_rep_add_empty_space: forall g h rh sp i (Hs: 0 <= i < MAX_SPACES),
     remset_heap_and_heap_compatible rh h ->
     space_start (Znth i (spaces h)) = nullval ->
     available_space sp = total_space sp ->
@@ -239,7 +239,7 @@ Proof.
       [entailer! | reflexivity | apply isptr_offset_val'; exact Hptr | reflexivity].
 Qed.
 
-Lemma remset_rep_do_generation_eq:
+#[local] Lemma remset_rep_do_generation_eq:
   forall sh from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h',
     graph_has_gen g_rem to ->
     remset_graph_compatible g_rem rmst' ->
@@ -257,7 +257,7 @@ Proof.
   apply graph_has_v_in_closure. exact Hrgc.
 Qed.
 
-Lemma space_remset_rep_do_generation_eq:
+#[local] Lemma space_remset_rep_do_generation_eq:
   forall from to roots roots' g h rh rmst g_rem h_rem rh' rmst' g' h' sp rs,
     graph_has_gen g_rem to ->
     remset_and_remset_space_compatible g_rem from rmst' rs ->
@@ -275,7 +275,7 @@ Proof.
   apply graph_has_v_in_closure. tauto.
 Qed.
 
-Lemma remset_and_remset_heap_compatible_nth:
+#[local] Lemma remset_and_remset_heap_compatible_nth:
   forall g from rmst rh gen,
     (gen < length rh)%nat ->
     remset_and_remset_heap_compatible g from rmst rh ->
@@ -287,7 +287,7 @@ Proof.
   apply Hrrhc. apply nth_In. exact Hgen.
 Qed.
 
-Lemma space_remset_rep_heap_eq:
+#[local] Lemma space_remset_rep_heap_eq:
   forall g h1 h2 rh gen,
     space_start (nth_space h1 gen) = space_start (nth_space h2 gen) ->
     available_size h1 gen = available_size h2 gen ->
@@ -303,7 +303,7 @@ Proof.
   rewrite Hsh, Hav, Htotal. reflexivity.
 Qed.
 
-Lemma heap_remset_rep_except_eq:
+#[local] Lemma heap_remset_rep_except_eq:
   forall g1 g2 h1 h2 rh gen,
     length rh = length (spaces h1) ->
     length rh = length (spaces h2) ->
@@ -350,7 +350,7 @@ Proof.
       apply Hspace; lia.
 Qed.
 
-Lemma heap_remset_rep_except_reset_rh:
+#[local] Lemma heap_remset_rep_except_reset_rh:
   forall g h rh gen,
     length rh = length (spaces h) ->
     (gen < length (spaces h))%nat ->
@@ -399,7 +399,7 @@ Proof.
       rewrite reset_nth_remset_heap_diff by lia. reflexivity.
 Qed.
 
-Lemma heap_remset_rep_reset_nth_remset:
+#[local] Lemma heap_remset_rep_reset_nth_remset:
   forall g h rh gen,
     length rh = length (spaces h) ->
     (gen < length (spaces h))%nat ->

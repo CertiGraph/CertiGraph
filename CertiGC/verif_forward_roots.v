@@ -12,7 +12,7 @@ Require Import CertiGraph.CertiGC.gc_spec.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 Require Import CertiGraph.CertiGC.forward_lemmas.
 
-Lemma frames_shell_rep_isolate:
+#[local] Lemma frames_shell_rep_isolate:
   forall sh frs k,
    0 <= k < Zlength frs ->
    frames_shell_rep sh frs |--
@@ -40,7 +40,7 @@ Proof.
     cancel.
 Qed.
 
-Lemma Zlength_update_frames:
+#[local] Lemma Zlength_update_frames:
  forall frs roots,
    Zlength roots = Zlength (frames2rootpairs frs) ->
    Zlength (update_frames frs roots) = Zlength frs.
@@ -49,7 +49,7 @@ Lemma Zlength_update_frames:
    autorewrite with sublist in *. simpl in *. list_solve.
 Qed.
 
-Lemma frames_p_update_frames_sublist:
+#[local] Lemma frames_p_update_frames_sublist:
  forall frs roots k,
     Zlength (frames2rootpairs frs) = Zlength roots ->
     0 <= k <= Zlength frs ->
@@ -65,7 +65,7 @@ destruct (zeq k 0).
   apply IHfrs; clear IHfrs. list_solve. lia.
 Qed.
 
-Lemma frames_p_isptr:
+#[local] Lemma frames_p_isptr:
   forall sh frs,
     frames_shell_rep sh frs |-- !! forall k, 0 <= k < Zlength frs -> isptr (frames_p (sublist k (Zlength frs) frs)).
 Proof.
