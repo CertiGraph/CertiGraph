@@ -15,7 +15,7 @@ Require Import CertiGraph.CertiGC.forward_lemmas.
 #[local] Opaque Int64.repr.
 #[local] Opaque lgraph_copy_v.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 Lemma body_forward_intr:
   forall (Espec : OracleKind)

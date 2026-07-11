@@ -1,7 +1,7 @@
 From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 Require Import CertiGraph.msl_ext.iter_sepcon.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 Lemma sem_sub_pp_word_offsets: forall base hi lo, isptr base ->
     Ptrofs.min_signed <= WORD_SIZE * (hi - lo) <= Ptrofs.max_signed ->
@@ -763,7 +763,7 @@ Proof.
                    g' (add_new_space (pt_heap (ti_heap t_info')) sp (i + 1) Hi1_max)
                    rh' gi (Z.to_nat i) rmst' Hrgh).
         rewrite (remset_rep_add_new_gen sh g' gi outlier rmst' Hrgo).
-        Local Opaque super_compatible. Exists g1 t_info1 rh' rmst'. entailer!!.
+        #[local] Opaque super_compatible. Exists g1 t_info1 rh' rmst'. entailer!!.
     + forward. remember (space_start (Znth (i + 1) (spaces (pt_heap (ti_heap t_info'))))).
       assert (Hisptr_next: isptr v). {
         destruct v; try contradiction.

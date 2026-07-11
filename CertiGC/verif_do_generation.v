@@ -11,7 +11,7 @@ Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.CertiGC.gc_spec.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 Lemma fri_rootpairs_compatible:
   forall from to g h rh rmst item g' h' rh' rmst' rootpairs roots,

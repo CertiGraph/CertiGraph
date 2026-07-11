@@ -2,7 +2,7 @@ From CertiGraph.CertiGC Require Import
   env_graph_gc gc_spec forward_lemmas gc_correct.
 Require Import CertiGraph.graph.graph_model.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 Lemma graph_rep_interior_field_address: forall g src pos,
     graph_has_v g src ->

@@ -3,7 +3,7 @@ Require Import CertiGraph.msl_ext.ramification_lemmas.
 Require Import CertiGraph.CertiGC.verif_forward1.
 Require Import CertiGraph.CertiGC.verif_forward2.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 Lemma body_forward: semax_body Vprog Gprog f_forward forward_spec.
 Proof.

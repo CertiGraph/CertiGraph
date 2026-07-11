@@ -1,6 +1,6 @@
 From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
 Lemma body_create_space: semax_body Vprog Gprog f_create_space create_space_spec.
 Proof.

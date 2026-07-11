@@ -1,6 +1,6 @@
 From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 
 Lemma data_at_heaptype_eq:  forall (sh: share) v h,

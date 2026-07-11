@@ -11,9 +11,9 @@ Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.CertiGC.gc_spec.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 
-Local Opaque Int64.repr.
+#[local] Opaque Int64.repr.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 Lemma weak_derives_elim: forall P Q : mpred,
   (weak_derives P Q && emp) * P |-- Q.

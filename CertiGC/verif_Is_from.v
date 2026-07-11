@@ -13,7 +13,7 @@ Require Import compcert.common.Values compcert.common.AST.
 Require Import compcert.lib.Integers.
 Require Import Stdlib.ZArith.BinInt Stdlib.Lists.List Stdlib.micromega.Lia.
 Import ListNotations.
-Local Open Scope Z_scope. Local Open Scope list_scope.
+#[local] Open Scope Z_scope. #[local] Open Scope list_scope.
 
 (* Verification of the function Is_from *)
 
