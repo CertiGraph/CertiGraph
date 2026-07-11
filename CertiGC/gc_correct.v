@@ -43,25 +43,25 @@ Definition sound_gc_graph (g: LGraph): Prop :=
 
 (** Reset is sound *)
 
-Lemma fold_left_remove_edge_vvalid: forall (g: PreGraph VType EType) l v,
+#[local] Lemma fold_left_remove_edge_vvalid: forall (g: PreGraph VType EType) l v,
     vvalid (fold_left pregraph_remove_edge l g) v <-> vvalid g v.
 Proof. now intros; revert g; induction l; [|intros; simpl; rewrite IHl]. Qed.
 
-Lemma lrvae_vvalid: forall g v1 v2,
+#[local] Lemma lrvae_vvalid: forall g v1 v2,
     vvalid (lgraph_remove_vertex_and_edges g v1) v2 <-> vvalid g v2 /\ v1 <> v2.
 Proof.
   intros. simpl. unfold pregraph_remove_vertex_and_edges.
   rewrite fold_left_remove_edge_vvalid, remove_vertex_vvalid. intuition.
 Qed.
 
-Lemma fold_left_lrvae_vvalid: forall g l v,
+#[local] Lemma fold_left_lrvae_vvalid: forall g l v,
     vvalid (fold_left lgraph_remove_vertex_and_edges l g) v <->
     vvalid g v /\ ~ In v l.
 Proof.
   intros; revert g v; induction l; intros; simpl; [|rewrite IHl, lrvae_vvalid]; intuition.
 Qed.
 
-Lemma vertex_valid_reset: forall g gen,
+#[local] Lemma vertex_valid_reset: forall g gen,
     vertex_valid g -> vertex_valid (reset_graph gen g).
 Proof.
   intros. unfold vertex_valid in *. intros. simpl. rewrite graph_has_v_reset.
@@ -71,7 +71,7 @@ Proof.
     rewrite nat_inc_list_In_iff. destruct H1. now red in H1.   - apply list_in_map_inv in H0. destruct H0 as [? [? _]]; now subst v.
 Qed.
 
-Lemma remove_ve_src_unchanged: forall g gen e,
+#[local] Lemma remove_ve_src_unchanged: forall g gen e,
     src (remove_nth_gen_ve g gen) e = src g e.
 Proof.
   intros. unfold remove_nth_gen_ve.
@@ -85,20 +85,20 @@ Proof.
   now induction l; intros; simpl; [|rewrite IHl].
 Qed.
 
-Lemma src_edge_reset: forall (g: LGraph) gen,
+#[local] Lemma src_edge_reset: forall (g: LGraph) gen,
     src_edge g -> src_edge (reset_graph gen g).
 Proof.
   intros. unfold src_edge in *. intros.
   simpl. rewrite remove_ve_src_unchanged. apply H.
 Qed.
 
-Lemma fold_left_remove_edge_evalid: forall (g: PreGraph VType EType) l e,
+#[local] Lemma fold_left_remove_edge_evalid: forall (g: PreGraph VType EType) l e,
     evalid (fold_left pregraph_remove_edge l g) e <-> evalid g e /\ ~ In e l.
 Proof.
   intros; revert g; induction l; intros; simpl; [|rewrite IHl, remove_edge_evalid]; intuition.
 Qed.
 
-Lemma lrvae_evalid: forall g v e,
+#[local] Lemma lrvae_evalid: forall g v e,
     evalid (lgraph_remove_vertex_and_edges g v) e <->
     evalid g e /\ ~ In e (get_edges g v).
 Proof.
@@ -106,7 +106,7 @@ Proof.
   rewrite fold_left_remove_edge_evalid. intuition.
 Qed.
 
-Lemma fold_left_lrvae_evalid: forall g l e,
+#[local] Lemma fold_left_lrvae_evalid: forall g l e,
     evalid (fold_left lgraph_remove_vertex_and_edges l g) e <->
     evalid g e /\ forall v, In v l -> ~ In e (get_edges g v).
 Proof.
@@ -117,7 +117,7 @@ Proof.
   - apply (H1 v); intuition.
 Qed.
 
-Lemma edge_valid_reset: forall g gen, edge_valid g -> edge_valid (reset_graph gen g).
+#[local] Lemma edge_valid_reset: forall g gen, edge_valid g -> edge_valid (reset_graph gen g).
 Proof.
   intros. unfold edge_valid in *. intros. rewrite graph_has_e_reset. simpl.
   unfold remove_nth_gen_ve. rewrite fold_left_lrvae_evalid, H. intuition.
@@ -131,7 +131,7 @@ Proof.
     destruct H0 as [x [? _]]; now subst v.
 Qed.
 
-Lemma edge_label_same_reset: forall g gen,
+#[local] Lemma edge_label_same_reset: forall g gen,
     edge_label_same g -> edge_label_same (reset_graph gen g).
 Proof.
   unfold edge_label_same. intros g gen He e. simpl.
@@ -156,7 +156,7 @@ Definition exterior_map (vmap: VType -> VType) (r: exterior_t): exterior_t :=
   | ExteriorVertex r => ExteriorVertex (vmap r)
   end.
 
-Lemma bijective_exterior_map: forall vmap1 vmap2,
+#[local] Lemma bijective_exterior_map: forall vmap1 vmap2,
     bijective vmap1 vmap2 -> bijective (exterior_map vmap1) (exterior_map vmap2).
 Proof.
   intros. destruct H. split; intros.
@@ -181,7 +181,7 @@ Proof.
   clear. induction roots; simpl; auto. rewrite <- IHroots. f_equal. destruct a; auto.
 Qed.
 
-Lemma map_exterior_map_bijective:
+#[local] Lemma map_exterior_map_bijective:
   forall (roots1 roots2 : roots_t) (vmap12 vmap21 : VType -> VType),
     roots2 = map (exterior_map vmap12) roots1 ->
     bijective vmap12 vmap21 -> roots1 = map (exterior_map vmap21) roots2.
@@ -212,7 +212,7 @@ Definition gen_edge_pair_list
            (g: LGraph) (l: list (VType * VType)): list (EType * EType) :=
   concat (map (gen_single_edge_pair_list g) l).
 
-Lemma get_edges_snd_NoDup: forall g v, NoDup (map snd (get_edges g v)).
+#[local] Lemma get_edges_snd_NoDup: forall g v, NoDup (map snd (get_edges g v)).
 Proof.
   intros. unfold get_edges. unfold make_fields.
   remember (raw_fields (vlabel g v)). remember O.
@@ -227,7 +227,7 @@ Proof.
   apply Nat2Z.inj_lt; assumption.
 Qed.
 
-Lemma get_edges_map_map: forall g v,
+#[local] Lemma get_edges_map_map: forall g v,
     get_edges g v = map (fun idx => (v, idx)) (map snd (get_edges g v)).
 Proof.
   intros. rewrite map_map. unfold get_edges, make_fields.
@@ -236,13 +236,13 @@ Proof.
     simpl; rewrite <- IHl; auto.
 Qed.
 
-Lemma get_edges_NoDup: forall g v, NoDup (get_edges g v).
+#[local] Lemma get_edges_NoDup: forall g v, NoDup (get_edges g v).
 Proof.
   intros. rewrite get_edges_map_map, <- combine_repeat_eq_map;
             apply NoDup_combine_r, get_edges_snd_NoDup.
 Qed.
 
-Lemma gsepl_DoubleNoDup: forall (v1 v2 : VType) (g : LGraph),
+#[local] Lemma gsepl_DoubleNoDup: forall (v1 v2 : VType) (g : LGraph),
     v1 <> v2 -> DoubleNoDup (gen_single_edge_pair_list g (v1, v2)).
 Proof.
   intros. simpl. pose proof (get_edges_NoDup g v1). remember (get_edges g v1).
@@ -268,7 +268,7 @@ Proof.
       apply NoDup_cons_2 in H0. contradiction.
 Qed.
 
-Lemma gsepl_InEither: forall x g a,
+#[local] Lemma gsepl_InEither: forall x g a,
     InEither x (gen_single_edge_pair_list g a) -> IsEither (fst x) a.
 Proof.
   intros. destruct a as [v1 v2]. red. simpl.
@@ -283,7 +283,7 @@ Proof.
   - apply IHl; auto.
 Qed.
 
-Lemma gepl_InEither: forall x g l,
+#[local] Lemma gepl_InEither: forall x g l,
     InEither x (gen_edge_pair_list g l) -> InEither (fst x) l.
 Proof.
   intros. induction l; simpl in *; unfold gen_edge_pair_list in H; simpl in H.
@@ -292,7 +292,7 @@ Proof.
   destruct H; [left; eapply gsepl_InEither; eauto | right; apply IHl; assumption].
 Qed.
 
-Lemma gepl_DoubleNoDup:
+#[local] Lemma gepl_DoubleNoDup:
   forall g l, DoubleNoDup l -> DoubleNoDup (gen_edge_pair_list g l).
 Proof.
   intros g l. revert g. induction l; intros.
@@ -305,7 +305,7 @@ Proof.
   simpl in H3. destruct H3; rewrite H3 in H4; contradiction.
 Qed.
 
-Lemma get_edges_inv: forall g v e,
+#[local] Lemma get_edges_inv: forall g v e,
     In e (get_edges g v) <->
     exists idx, e = (v, idx) /\ In idx (map snd (get_edges g v)).
 Proof.
@@ -315,11 +315,11 @@ Proof.
   - destruct H as [? [? ?]]. inversion H. subst. rewrite get_edges_In. assumption.
 Qed.
 
-Lemma In_snd_get_edges: forall g v idx,
+#[local] Lemma In_snd_get_edges: forall g v idx,
     In idx (map snd (get_edges g v)) -> In (v, idx) (get_edges g v).
 Proof. intros. rewrite get_edges_inv. exists idx. split; auto. Qed.
 
-Lemma vlabel_get_edges_snd: forall v1 v2 (g1 g2: LGraph),
+#[local] Lemma vlabel_get_edges_snd: forall v1 v2 (g1 g2: LGraph),
     vlabel g1 v1 = vlabel g2 v2 ->
     map snd (get_edges g1 v1) = map snd (get_edges g2 v2).
 Proof.
@@ -330,7 +330,7 @@ Proof.
   now destruct a; rewrite filter_proj_cons; simpl; rewrite IHl.
 Qed.
 
-Lemma gsepl_key: forall e g v,
+#[local] Lemma gsepl_key: forall e g v,
     In e (get_edges g (fst e)) ->
     In (e, (v, snd e)) (gen_single_edge_pair_list g (fst e, v)).
 Proof.
@@ -338,7 +338,7 @@ Proof.
   induction l; simpl in *; auto. now destruct H; [left; subst | right; apply IHl].
 Qed.
 
-Lemma gsepl_value: forall (e: EType) k (g1 g2: LGraph),
+#[local] Lemma gsepl_value: forall (e: EType) k (g1 g2: LGraph),
     In e (get_edges g2 (fst e)) -> vlabel g1 k = vlabel g2 (fst e) ->
     In (k, snd e, e) (gen_single_edge_pair_list g1 (k, fst e)).
 Proof.
@@ -349,7 +349,7 @@ Proof.
   now destruct H; [left; subst a | right; apply IHl].
 Qed.
 
-Lemma gepl_key: forall (g : LGraph) (vpl : list (VType * VType)) (e : EType) v,
+#[local] Lemma gepl_key: forall (g : LGraph) (vpl : list (VType * VType)) (e : EType) v,
     In e (get_edges g (fst e)) -> In (fst e, v) vpl ->
     In (e, (v, snd e)) (gen_edge_pair_list g vpl).
 Proof.
@@ -358,7 +358,7 @@ Proof.
   destruct H0; [left; subst a; apply gsepl_key | right; apply IHvpl]; auto.
 Qed.
 
-Lemma gepl_value: forall (e: EType) k (g1 g2: LGraph) vpl,
+#[local] Lemma gepl_value: forall (e: EType) k (g1 g2: LGraph) vpl,
     In e (get_edges g2 (fst e)) -> In (k, fst e) vpl ->
     vlabel g1 k = vlabel g2 (fst e) -> In (k, snd e, e) (gen_edge_pair_list g1 vpl).
 Proof.
@@ -373,7 +373,7 @@ Definition GenNoDup (l: list VType) (gen: nat): Prop :=
 Definition PairGenNoDup (l: list (VType * VType)) (from to: nat): Prop :=
   let (left_l, right_l) := split l in GenNoDup left_l from /\ GenNoDup right_l to.
 
-Lemma PairGenNoDup_DoubleNoDup: forall l from to,
+#[local] Lemma PairGenNoDup_DoubleNoDup: forall l from to,
     from <> to -> PairGenNoDup l from to -> DoubleNoDup l.
 Proof.
   intros. red in H0 |-* . destruct (split l) as [l1 l2]. destruct H0 as [[? ?] [? ?]].
@@ -499,7 +499,7 @@ Proof.
   destruct (lt_dec idx (number_of_vertices (nth_gen g gen))); [left | right]; auto.
 Defined.
 
-Lemma graph_has_v_dec: forall (g: LGraph) (v: VType),
+#[local] Lemma graph_has_v_dec: forall (g: LGraph) (v: VType),
     {graph_has_v g v} + {~ graph_has_v g v}.
 Proof.
   intros. destruct v as [vgen vidx]. destruct (graph_has_gen_dec g vgen).
@@ -508,7 +508,7 @@ Proof.
   - right; intro; apply n; destruct H; auto.
 Defined.
 
-Lemma vvalid_lcm: forall g v, vertex_valid g -> vvalid g v \/ ~ vvalid g v.
+#[local] Lemma vvalid_lcm: forall g v, vertex_valid g -> vvalid g v \/ ~ vvalid g v.
 Proof. intros. red in H. rewrite H. destruct (graph_has_v_dec g v); auto. Qed.
 
 Lemma reachable_map_reachable_sub_edges:
@@ -991,7 +991,7 @@ Proof.
       intro Hedge_in. apply Hnin. apply gepl_InEither in Hedge_in. assumption.
 Qed.
 
-Lemma new_gen_heap_new_gen_relation: forall g1 h1 g2 h2 gen,
+#[local] Lemma new_gen_heap_new_gen_relation: forall g1 h1 g2 h2 gen,
     new_gen_heap_relation gen g1 h1 g2 h2 -> new_gen_relation gen g1 g2.
 Proof.
   intros g1 h1 g2 h2 gen Hrel.
@@ -1002,7 +1002,7 @@ Proof.
     exists gi. split; assumption.
 Qed.
 
-Lemma ngr_vertex_valid: forall g1 g2 gen,
+#[local] Lemma ngr_vertex_valid: forall g1 g2 gen,
     vertex_valid g1 -> new_gen_relation gen g1 g2 -> vertex_valid g2.
 Proof.
   intros. red in H0. destruct (graph_has_gen_dec g1 gen).
@@ -1011,7 +1011,7 @@ Proof.
     rewrite H. now split; intros; [apply ang_graph_has_v | apply ang_graph_has_v_inv in H1].
 Qed.
 
-Lemma ngr_edge_valid: forall g1 g2 gen,
+#[local] Lemma ngr_edge_valid: forall g1 g2 gen,
     edge_valid g1 -> new_gen_relation gen g1 g2 -> edge_valid g2.
 Proof.
   intros. red in H0. destruct (graph_has_gen_dec g1 gen).
@@ -1021,7 +1021,7 @@ Proof.
     [apply ang_graph_has_v | | apply ang_graph_has_v_inv in H1|].
 Qed.
 
-Lemma ngr_src_edge: forall (g1 g2: LGraph) gen,
+#[local] Lemma ngr_src_edge: forall (g1 g2: LGraph) gen,
     src_edge g1 -> new_gen_relation gen g1 g2 -> src_edge g2.
 Proof.
   intros. red in H0. destruct (graph_has_gen_dec g1 gen).
@@ -1029,7 +1029,7 @@ Proof.
   - destruct H0 as [gen_i [? ?]]. subst g2. now unfold src_edge in *.
 Qed.
 
-Lemma ngr_edge_label_same: forall (g1 g2: LGraph) gen,
+#[local] Lemma ngr_edge_label_same: forall (g1 g2: LGraph) gen,
     edge_label_same g1 -> new_gen_relation gen g1 g2 -> edge_label_same g2.
 Proof.
   intros. red in H0. destruct (graph_has_gen_dec g1 gen).
@@ -1047,7 +1047,7 @@ Proof.
   - eapply ngr_edge_label_same; eauto.
 Qed.
 
-Lemma cvae_vvalid_iff: forall g v' l v0,
+#[local] Lemma cvae_vvalid_iff: forall g v' l v0,
     vvalid (fold_left (copy_v_add_edge v') l g) v0 <-> vvalid g v0.
 Proof.
   intros. split; intro.
@@ -1059,14 +1059,14 @@ Proof.
         reflexivity; assumption.
 Qed.
 
-Lemma pcv_vvalid_iff: forall g v v' new,
+#[local] Lemma pcv_vvalid_iff: forall g v v' new,
     vvalid (pregraph_copy_v g v new) v' <-> vvalid g v' \/ v' = new.
 Proof.
   intros. unfold pregraph_copy_v. rewrite cvae_vvalid_iff. simpl.
   unfold addValidFunc. reflexivity.
 Qed.
 
-Lemma lcv_graph_has_v_iff: forall (g : LGraph) (v : VType) (to : nat) (x : VType),
+#[local] Lemma lcv_graph_has_v_iff: forall (g : LGraph) (v : VType) (to : nat) (x : VType),
   graph_has_gen g to ->
   graph_has_v (lgraph_copy_v g v to) x <-> graph_has_v g x \/ x = new_copied_v g to.
 Proof.
@@ -1075,21 +1075,21 @@ Proof.
   - now destruct H0; [apply lcv_graph_has_v_old | subst x; apply lcv_graph_has_v_new].
 Qed.
 
-Lemma lcv_vertex_valid: forall g v to,
+#[local] Lemma lcv_vertex_valid: forall g v to,
     vertex_valid g -> graph_has_gen g to -> vertex_valid (lgraph_copy_v g v to).
 Proof.
   intros. unfold vertex_valid in *. intros. simpl.
   rewrite pcv_vvalid_iff, lcv_graph_has_v_iff; auto. now rewrite H.
 Qed.
 
-Lemma fr_O_vertex_valid: forall g g' from to p,
+#[local] Lemma fr_O_vertex_valid: forall g g' from to p,
     vertex_valid g -> graph_has_gen g to -> forward_relation from to 0 p g g' ->
     vertex_valid g'.
 Proof.
   intros. inversion H1; subst; try assumption; try now apply lcv_vertex_valid.
 Qed.
 
-Lemma lcv_get_edges_old: forall (g: LGraph) v v' to,
+#[local] Lemma lcv_get_edges_old: forall (g: LGraph) v v' to,
     graph_has_v g v' -> graph_has_gen g to ->
     get_edges (lgraph_copy_v g v to) v' = get_edges g v'.
 Proof.
@@ -1097,14 +1097,14 @@ Proof.
   now erewrite <- lcv_raw_fields by assumption.
 Qed.
 
-Lemma cvae_evalid_iff: forall g v l e,
+#[local] Lemma cvae_evalid_iff: forall g v l e,
     evalid (fold_left (copy_v_add_edge v) l g) e <-> evalid g e \/ In e (map fst l).
 Proof.
   intros. revert g. induction l; intros; simpl; [intuition|].
   rewrite IHl. unfold copy_v_add_edge. simpl. unfold addValidFunc. intuition.
 Qed.
 
-Lemma pcv_evalid_iff: forall g v new e,
+#[local] Lemma pcv_evalid_iff: forall g v new e,
     evalid (pregraph_copy_v g v new) e <->
     evalid g e \/ In e (map (fun x => (new, snd x)) (get_edges g v)).
 Proof.
@@ -1116,14 +1116,14 @@ Proof.
     apply Nat.min_id.
 Qed.
 
-Lemma lcv_lacv_get_edges: forall g v to new,
+#[local] Lemma lcv_lacv_get_edges: forall g v to new,
     get_edges (lgraph_copy_v g v to) new = get_edges (lgraph_add_copied_v g v to) new.
 Proof.
   intros. unfold lgraph_copy_v, get_edges, make_fields. rewrite <- lmc_raw_fields.
   reflexivity.
 Qed.
 
-Lemma lcv_edge_valid: forall g v to,
+#[local] Lemma lcv_edge_valid: forall g v to,
     edge_valid g -> graph_has_gen g to -> edge_valid (lgraph_copy_v g v to).
 Proof.
   intros. unfold edge_valid in *. intros. unfold graph_has_e in *. simpl.
@@ -1141,14 +1141,14 @@ Proof.
       assumption.
 Qed.
 
-Lemma fr_O_edge_valid: forall g1 g2 from to p,
+#[local] Lemma fr_O_edge_valid: forall g1 g2 from to p,
     edge_valid g1 -> graph_has_gen g1 to ->
     forward_relation from to O p g1 g2 -> edge_valid g2.
 Proof.
   intros. inversion H1; subst; try assumption; try now apply lcv_edge_valid.
 Qed.
 
-Lemma flcvae_src_old: forall g new (l: list (EType * VType)) e,
+#[local] Lemma flcvae_src_old: forall g new (l: list (EType * VType)) e,
     ~ In e (map fst l) -> src (fold_left (copy_v_add_edge new) l g) e = src g e.
 Proof.
   intros. revert g H. induction l; intros; simpl; trivial.
@@ -1158,7 +1158,7 @@ Proof.
   apply H. simpl. left; assumption.
 Qed.
 
-Lemma flcvae_src_new: forall g new (l: list (EType * VType)) e,
+#[local] Lemma flcvae_src_new: forall g new (l: list (EType * VType)) e,
     In e (map fst l) -> src (fold_left (copy_v_add_edge new) l g) e = new.
 Proof.
   intros. revert g. induction l. 1: simpl in H; exfalso; assumption.
@@ -1170,7 +1170,7 @@ Proof.
   - apply IHl; assumption.
 Qed.
 
-Lemma pcv_src_old: forall (g : LGraph) (old new : VType) (e : VType * nat),
+#[local] Lemma pcv_src_old: forall (g : LGraph) (old new : VType) (e : VType * nat),
     fst e <> new -> src (pregraph_copy_v g old new) e = src g e.
 Proof.
   intros. unfold pregraph_copy_v. rewrite flcvae_src_old. 1: now simpl.
@@ -1179,7 +1179,7 @@ Proof.
   - unfold EType. now rewrite length_combine, repeat_length, !length_map, Nat.min_id.
 Qed.
 
-Lemma pcv_src_new: forall (g : LGraph) (old new : VType) (n : nat),
+#[local] Lemma pcv_src_new: forall (g : LGraph) (old new : VType) (n : nat),
        In n (map snd (get_edges g old)) ->
        src (pregraph_copy_v g old new) (new, n) = new.
 Proof.
@@ -1193,7 +1193,7 @@ Proof.
   - unfold EType. now rewrite length_combine, repeat_length, !length_map, Nat.min_id.
 Qed.
 
-Lemma pcv_src_edge: forall (g: LGraph) v new,
+#[local] Lemma pcv_src_edge: forall (g: LGraph) v new,
     src_edge g -> src_edge (pregraph_copy_v g v new).
 Proof.
   intros. unfold src_edge in *. intros. unfold pregraph_copy_v.
@@ -1208,13 +1208,13 @@ Proof.
   - rewrite flcvae_src_old; auto. simpl. apply H.
 Qed.
 
-Lemma fr_O_src_edge: forall (g1 g2: LGraph) from to p,
+#[local] Lemma fr_O_src_edge: forall (g1 g2: LGraph) from to p,
     src_edge g1 -> forward_relation from to O p g1 g2 -> src_edge g2.
 Proof.
   intros. inversion H0; subst; try assumption; try (apply pcv_src_edge; assumption).
 Qed.
 
-Lemma fr_O_edge_label_same: forall (g1 g2: LGraph) from to p,
+#[local] Lemma fr_O_edge_label_same: forall (g1 g2: LGraph) from to p,
     edge_label_same g1 -> forward_relation from to O p g1 g2 -> edge_label_same g2.
 Proof. intros. inversion H0; subst; try assumption. Qed.
 
@@ -9790,7 +9790,7 @@ Proof.
       intros gen Hlt. lia.
 Qed.
 
-Lemma graph_has_e_iff_raw_internal:
+#[local] Lemma graph_has_e_iff_raw_internal:
   forall g v n,
     graph_has_v g v ->
     (graph_has_e g (v, n) <->
