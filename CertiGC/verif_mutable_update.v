@@ -28,14 +28,6 @@ Proof.
     end.
 Qed.
 
-#[local] Lemma heap_head_nth_space_O: forall h,
-    heap_head h = nth_space h O.
-Proof.
-  intros h.
-  destruct (heap_head_cons h) as [sp [rest [Hspaces Hhead]]].
-  unfold nth_space. rewrite Hspaces, Hhead. reflexivity.
-Qed.
-
 Theorem int_mutable_update_restores_garbage_collect_model_preconditions:
   forall g src pos new g' t_info t_info' roots outlier rmst rh rh',
     mutable_location_compatible g (InteriorVertexPos src pos) ->

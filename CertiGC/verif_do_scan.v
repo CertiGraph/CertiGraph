@@ -412,18 +412,20 @@ Proof.
                      rewrite <- Hsvfl. unfold no_scan in Hxx. lia.
               ** Intros vret. destruct vret as [g4 h4]. simpl fst in *. simpl snd in *.
                  Exists i g4 h4. rename H0 into Hgh. simpl forward_p2forward_t in Hgh.
-                 pose proof fr_forward_graph_and_heap from to O
-                   (field2forward (Znth (i - 1) (make_fields g3 (to, index)))) g3 h3 as Hfr.
-                 simpl Z.to_nat in Hgh. rewrite <- Hgh in Hfr. simpl fst in Hfr.
-                 pose proof heaprel_forward_graph_and_heap from to O
-                   (field2forward (Znth (i - 1) (make_fields g3 (to, index)))) g3 h3 as Hhr4.
-                 rewrite <- Hgh in Hhr4. simpl snd in Hhr4.
+                 simpl Z.to_nat in Hgh.
+                 pose proof (fr_forward_graph_and_heap_eq from to O
+                   (field2forward (Znth (i - 1) (make_fields g3 (to, index))))
+                   g3 h3 g4 h4 Hgh) as Hfr.
+                 pose proof (heaprel_forward_graph_and_heap_eq from to O
+                   (field2forward (Znth (i - 1) (make_fields g3 (to, index))))
+                   g3 h3 g4 h4 Hgh) as Hhr4.
                  assert (Hgsf: gen_start g3 from = gen_start g4 from) by
                    (eapply fr_gen_start; eassumption).
                  assert (Hgst: gen_start g3 to = gen_start g4 to) by
                    (eapply fr_gen_start; eassumption).
                  assert (Hla: limit_address g3 h3 from = limit_address g4 h4 from). {
-                   unfold limit_address. rewrite Hgsf. do 2 f_equal. apply (proj1 Hhr4). }
+                   unfold limit_address. rewrite Hgsf. do 2 f_equal.
+                   apply (heap_relation_available_size _ _ _ Hhr4). }
                  simpl forward_p_rep. entailer !!.
                  assert (Hcpt: forward_t_compatible
                                  (field2forward
@@ -454,7 +456,9 @@ Proof.
                  --- apply hr_trans with h3; assumption.
                  --- f_equal. symmetry. eapply fr_vertex_address; eauto.
                      apply graph_has_v_in_closure; assumption.
-                 --- rewrite Hgst. rewrite <- (proj1 Hhr4 to). apply derives_refl.
+                 --- rewrite Hgst.
+                     rewrite <- (heap_relation_available_size _ _ to Hhr4).
+                     apply derives_refl.
         -- Intros i g3 h3. cbv [Archi.ptr64]. forward.
            ++ entailer !!. simpl in Hzr.
               first [rewrite !Int.signed_repr | rewrite Int64.signed_repr]; rep_lia.

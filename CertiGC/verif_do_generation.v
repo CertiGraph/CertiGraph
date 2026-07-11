@@ -27,8 +27,9 @@ Proof.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [newg newh] eqn:Hfgh.
     simpl in Hfri. inversion Hfri; subst; clear Hfri.
-    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq from to 0
+                  (remset_item2forward_t item rmst g) g h newg newh
+                  (eq_sym Hfgh)) as Hfr.
     unfold rootpairs_compatible in *. rewrite <- Hrpc. apply map_ext_in.
     intros x Hin. destruct x; simpl; auto.
     symmetry. eapply fr_vertex_address; eauto. apply graph_has_v_in_closure.
@@ -50,8 +51,9 @@ Proof.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [newg newh] eqn:Hfgh.
     simpl in Hfri. inversion Hfri; subst; clear Hfri.
-    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq from to 0
+                  (remset_item2forward_t item rmst g) g h newg newh
+                  (eq_sym Hfgh)) as Hfr.
     eapply fr_closure_has_v; eauto.
   - now inversion Hfri.
 Qed.
@@ -69,8 +71,9 @@ Proof.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [newg newh] eqn:Hfgh.
     simpl in Hfri. inversion Hfri; subst; clear Hfri.
-    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq from to 0
+                  (remset_item2forward_t item rmst g) g h newg newh
+                  (eq_sym Hfgh)) as Hfr.
     eapply fr_vertex_address; eauto.
   - now inversion Hfri.
 Qed.
@@ -509,7 +512,7 @@ Proof.
       destruct (zlt 0 (available_size h1 to)) as [Hav1|Hav1].
       - cancel.
       - assert (Hzero0: available_size h0 to = 0). {
-          rewrite (proj1 H23 to).
+          rewrite (heap_relation_available_size _ _ to H23).
           pose proof available_space_range (nth_space h1 to).
           unfold available_size in *. lia.
         }
@@ -603,20 +606,21 @@ Proof.
           (eapply hr_trans; [exact H23 | exact H34]).
       assert (Hstart02: gen_start g0 from = gen_start g2 from). {
         destruct (gt_gs_compatible _ _ Hghc0 _ Hfrom_g0) as [Hs0 _].
-        destruct Hhr02 as [_ [Hss _]].
         unfold gen_start at 1. rewrite if_true by exact Hfrom_g0.
-        rewrite Hs0, Hss. exact Hstart2_from.
+        rewrite Hs0, (heap_relation_space_start _ _ from Hhr02).
+        exact Hstart2_from.
       }
       assert (Hsh02: nth_sh g0 from = nth_sh g2 from). {
         destruct (gt_gs_compatible _ _ Hghc0 _ Hfrom_g0) as [_ [Hsh0 _]].
         destruct (gt_gs_compatible _ _ Hghc2 _ Hfrom_g2) as [_ [Hsh2 _]].
-        destruct Hhr02 as [_ [_ [_ Hshh]]].
-        unfold nth_sh. rewrite Hsh0, Hshh, <- Hsh2. reflexivity.
+        unfold nth_sh.
+        rewrite Hsh0, (heap_relation_space_sh _ _ from Hhr02), <- Hsh2.
+        reflexivity.
       }
       assert (Hav02: available_size h0 from = available_size h2 from) by
-          (destruct Hhr02 as [Hav _]; apply Hav).
+          (apply (heap_relation_available_size _ _ from Hhr02)).
       assert (Htot02: total_size h0 from = total_size h2 from) by
-          (destruct Hhr02 as [_ [_ [Htot _]]]; apply Htot).
+          (apply (heap_relation_total_size _ _ from Hhr02)).
       sep_apply (heap_unused_rep_reset_with_remset
                    g2 h2 g0 h0 rh0 from Hghc2 Hfrom_g2
                    Hghc0 Hfrom_g0 Hrhhc0 Hstart02 Hsh02 Hav02 Htot02).

@@ -1254,9 +1254,7 @@ Proof.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [new_g new_h] eqn:Hfgh.
     inversion Hfri; subst. eapply HP; eauto.
-    pose proof (fr_forward_graph_and_heap
-                  from to 0 (remset_item2forward_t item rmst g) g h) as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr. exact Hfr.
+    eapply fr_forward_graph_and_heap_eq. symmetry. exact Hfgh.
   - inversion Hfri; subst. assumption.
 Qed.
 
@@ -4973,9 +4971,7 @@ Proof.
     as [new_g new_h] eqn:Hfgh.
   inversion Hfri; subst; clear Hfri.
   rewrite remset_item2forward_p_eq.
-  pose proof fr_forward_graph_and_heap
-       from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-  rewrite Hfgh in Hfr. simpl in Hfr. exact Hfr.
+  eapply fr_forward_graph_and_heap_eq. symmetry. exact Hfgh.
 Qed.
 
 Lemma forward_remset_item_effective_root_marked:
@@ -5248,9 +5244,9 @@ Proof.
   destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hnotin.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [new_g new_h] eqn:Hfgh.
-    pose proof fr_forward_graph_and_heap
-         from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq
+                  from to 0 (remset_item2forward_t item rmst g) g h
+                  new_g new_h (eq_sym Hfgh)) as Hfr.
     inversion Hfri; subst; clear Hfri.
     destruct Hmarked_or_current as [Hmark_g | Hdst_current].
     + eapply fr_O_raw_mark_true_pres; eauto.
@@ -5317,9 +5313,9 @@ Proof.
     destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hnotin.
     - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
         as [new_g new_h] eqn:Hfgh.
-      pose proof fr_forward_graph_and_heap
-           from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-      rewrite Hfgh in Hfr. simpl in Hfr.
+      pose proof (fr_forward_graph_and_heap_eq
+                    from to 0 (remset_item2forward_t item rmst g) g h
+                    new_g new_h (eq_sym Hfgh)) as Hfr.
       inversion Hfri; subst; clear Hfri.
       eapply fr_O_raw_mark_false_inv; eauto.
     - inversion Hfri; subst; clear Hfri. exact Hmark_new.
@@ -7039,9 +7035,9 @@ Proof.
   destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hitem.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [newg newh] eqn:Hfgh.
-    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h
-      as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq
+                  from to 0 (remset_item2forward_t item rmst g) g h
+                  newg newh (eq_sym Hfgh)) as Hfr.
     inversion Hfri; subst g2 h2 rh2 rmst2; clear Hfri.
     destruct item as [addr | [isrc ipos]]; simpl in Hfr.
     + destruct (find_remset_ext addr rmst) as [rext |] eqn:Hfind; simpl in Hfr.
@@ -7510,10 +7506,9 @@ Proof.
     destruct (forward_graph_and_heap from to O
                 (remset_item2forward_t item rmst g) g h)
       as [newg newh] eqn:Hfgh.
-    pose proof (fr_forward_graph_and_heap
-                  from to O (remset_item2forward_t item rmst g) g h)
-      as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq
+                  from to O (remset_item2forward_t item rmst g) g h
+                  newg newh (eq_sym Hfgh)) as Hfr.
     inversion Hfri; subst g' h' rh' rmst'; clear Hfri.
     eapply fr_O_from_edge_inv; eauto.
     intros e0 Hedge.

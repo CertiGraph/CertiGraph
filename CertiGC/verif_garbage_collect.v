@@ -446,9 +446,9 @@ Proof.
   destruct Hsc_init as [Hghc_init _].
   pose proof (gt_gs_compatible _ _ Hghc_init _ (graph_has_gen_O _)) as Hgen0.
   destruct Hgen0 as [Hstart0 [? ?]].
-  replace (heap_head (pt_heap (ti_heap t_info))) with (nth_space (pt_heap (ti_heap t_info)) 0) by
-      (destruct (heap_head_cons (pt_heap (ti_heap t_info))) as [hs [hl [Hspaces_head Hhead_eq]]];
-       unfold nth_space; rewrite Hspaces_head, Hhead_eq; simpl; reflexivity).
+  replace (heap_head (pt_heap (ti_heap t_info))) with
+    (nth_space (pt_heap (ti_heap t_info)) 0) by
+    (symmetry; apply heap_head_nth_space_O).
   assert (isptr (space_start (nth_space (pt_heap (ti_heap t_info)) 0))) by
     (rewrite <- Hstart0; apply start_isptr). do 2 forward. deadvars!.
   simpl fst in *. simpl snd in *. rewrite upd_Znth0_old.
@@ -1035,8 +1035,7 @@ Proof.
              rewrite <- ZtoNat_Zlength. apply Z2Nat.inj_lt; lia.
            }
            assert (Hlen_h2: length rh2 = length (spaces h2)). {
-             rewrite Hlen_rem.
-             rewrite <- !ZtoNat_Zlength, !spaces_size. reflexivity.
+             rewrite Hlen_rem. apply part_heap_spaces_length_eq.
            }
            assert (Hfrom_hrem: (Z.to_nat i < length (spaces h_rem))%nat). {
              rewrite <- Hlen_rem. rewrite Hlen_h2. exact Hfrom_h2.
@@ -1235,8 +1234,7 @@ Proof.
           rewrite <- ZtoNat_Zlength. apply Z2Nat.inj_lt; lia.
         }
         assert (Hlen_h2: length rh2 = length (spaces h2)). {
-          rewrite Hlen_rem.
-          rewrite <- !ZtoNat_Zlength, !spaces_size. reflexivity.
+          rewrite Hlen_rem. apply part_heap_spaces_length_eq.
         }
         assert (Hfrom_hrem: (Z.to_nat i < length (spaces h_rem))%nat). {
           rewrite <- Hlen_rem. rewrite Hlen_h2. exact Hfrom_h2.

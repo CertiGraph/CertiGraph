@@ -426,14 +426,13 @@ Proof.
       remember (Znth (nr k + i) (roots'' ++ oldroots k i)) as extr.
       remember (upd_roots from to (nr k + i) g'' (roots'' ++ oldroots k i)) as roots3.
       rename Heqroots3 into H16. simpl Z.to_nat in H15.
-      pose proof fr_forward_graph_and_heap from to O (exterior2forward extr) g'' h''.
-      rewrite <- H15 in H17. simpl fst in H17.
+      pose proof (fr_forward_graph_and_heap_eq from to O (exterior2forward extr)
+                    g'' h'' g3 h3 H15) as H17.
       assert (forward_condition g3 h3 from to). {
         eapply forward_graph_and_heap_fc; [assumption | | eassumption..].
         destruct extr as [z | p | v]; simpl; auto. }
-      assert (heap_relation h'' h3). {
-        pose proof heaprel_forward_graph_and_heap from to O (exterior2forward extr) g'' h''.
-        rewrite <- H15 in H19. simpl snd in H19. apply H19. }
+      assert (H19: heap_relation h'' h3) by
+        (eapply heaprel_forward_graph_and_heap_eq; exact H15).
       Exists g3 h3 (sublist 0 (nr k + (i+1)) roots3).
       entailer !!.
       -- split; [|split; [|split; [|split]]].
@@ -506,12 +505,13 @@ Proof.
             destruct H0 as [_ [_ [? _]]].
             erewrite <- frr_graph_has_gen; eauto.
         ++ unfold limit_address.
-           destruct H19; rewrite H16.
+           pose proof (heap_relation_available_size h'' h3 from H19) as Havail.
+           rewrite Havail.
            f_equal.
            symmetry; eapply fr_gen_start with (x:=from); try eassumption.
            destruct H0 as [_ [_ [? _]]].
            eapply frr_graph_has_gen with (gen:=to) in H11; eauto.
-           rewrite <- H11; auto.
+           rewrite <- H11. exact H0.
       -- apply derives_trans with
            (Q := roots_rep sh
                    (update_rootpairs rp''

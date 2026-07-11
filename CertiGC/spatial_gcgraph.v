@@ -2437,8 +2437,7 @@ Proof.
   intros from to sh g h g' h' rext Hghg Hcc Hrec Hfgh. Opaque forward_graph_and_heap.
   destruct rext as [out | vtx]; simpl in *; auto. unfold remset_ext2forward_t in Hfgh. simpl in Hfgh.
   f_equal. eapply fr_vertex_address; eauto.
-  - pose proof fr_forward_graph_and_heap from to O (ForwardVertex vtx) g h as Hfr.
-    rewrite <- Hfgh in Hfr. simpl in Hfr. eassumption. Transparent forward_graph_and_heap.
+  - eapply fr_forward_graph_and_heap_eq; exact Hfgh. Transparent forward_graph_and_heap.
   - symmetry in Hfgh. eapply fgh_O_closure_has_v_update_vertex; eassumption.
 Qed.
 
@@ -2462,8 +2461,7 @@ Proof.
   - clear e. subst. eapply fgh_remset_ext_rep_upd_eq; eassumption.
   - eapply fr_remset_ext_rep_eq; eauto.
     + apply Hrc. symmetry in Hperm. eapply Permutation_in; eauto. right. assumption.
-    + pose proof fr_forward_graph_and_heap from to O (remset_ext2forward_t rext) g h as Hfr.
-      rewrite <- Hfgh in Hfr. simpl in Hfr. eassumption.
+    + eapply fr_forward_graph_and_heap_eq; exact Hfgh.
 Qed.
 
 Lemma heap_rem_ramif: forall sh h p gen,
@@ -2513,12 +2511,16 @@ Proof.
   assert (Hghc': graph_heap_compatible g' h') by (eapply forward_graph_and_heap_ghc; eassumption).
   assert (Hlen': length rh = length (spaces h')) by (rewrite <- !ZtoNat_Zlength in *; lia).
   rewrite !heap_remset_rep_iter_sepcon; [|assumption..].
-  pose proof fr_forward_graph_and_heap from to depth p g h as Hfr. rewrite <- Hfgh in Hfr. simpl in Hfr.
+  pose proof (fr_forward_graph_and_heap_eq from to depth p g h g' h' Hfgh) as Hfr.
   pose proof fr_g_gen_len_presv depth from to p g g' Hghg Hfr as Hgenlen. rewrite <- Hgenlen.
   apply iter_sepcon_func_strong. intros gen Hgen. Transparent space_remset_rep. simpl.
   rewrite nat_inc_list_In_iff in Hgen. fold (graph_has_gen g gen) in Hgen.
-  pose proof heaprel_forward_graph_and_heap from to depth p g h as Hh. rewrite <- Hfgh in Hh. simpl in Hh.
-  destruct Hh as [Ha [Hs [Ht Hss]]]. unfold available_size in Ha. unfold total_size in Ht.
+  pose proof (heaprel_forward_graph_and_heap_eq from to depth p g h g' h' Hfgh) as Hh.
+  pose proof (heap_relation_available_size h h' gen Hh) as Ha.
+  pose proof (heap_relation_space_start h h' gen Hh) as Hs.
+  pose proof (heap_relation_total_size h h' gen Hh) as Ht.
+  pose proof (heap_relation_space_sh h h' gen Hh) as Hss.
+  unfold available_size in Ha. unfold total_size in Ht.
   rewrite <- Hs, <- Ha, <- Ht, <- Hss.
   cut (map (remset_item_val g) (nth_remset_space rh gen) =
          map (remset_item_val g') (nth_remset_space rh gen)).
@@ -2621,7 +2623,7 @@ Proof.
   apply iter_sepcon_func_strong. intros ext Hinx. hnf in Hrc. rewrite Forall_forall in Hrc.
   pose proof Hrc _ Hinx as Hrcext. destruct ext as [gp | gn]; simpl; auto. simpl in Hrcext. f_equal.
   apply (fr_vertex_address 0 from to item g g'); auto.
-  - pose proof fr_forward_graph_and_heap from to O item g h. rewrite <- Hfgh in H. simpl in H. assumption.
+  - eapply fr_forward_graph_and_heap_eq; exact Hfgh.
   - apply graph_has_v_in_closure. assumption.
 Qed.
 

@@ -320,8 +320,9 @@ Proof.
                  assert (Hghc2: graph_heap_compatible g2 h2). {
                    eapply forward_graph_and_heap_O_ghc with (g := g'); eauto. }
                  assert (Hghgt2: graph_has_gen g2 to). {
-                   pose proof fr_forward_graph_and_heap from to O (remset_ext2forward_t rext) g' h'.
-                   rewrite <- Hfgh in H. simpl in H. erewrite <- fr_graph_has_gen; eassumption. }
+                   pose proof (fr_forward_graph_and_heap_eq from to O
+                     (remset_ext2forward_t rext) g' h' g2 h2 Hfgh) as Hfr.
+                   erewrite <- fr_graph_has_gen; eassumption. }
                  assert (Hgsc: generation_space_compatible g2 (to, nth_gen g2 to, nth_space h2 to)) by
                    (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrt2 [Hsht2 Hsizet2]].
                  assert (Hptrt2: isptr (space_start (nth_space h2 to))) by
@@ -363,8 +364,7 @@ Proof.
                  gather_SEP (data_at_ _ _ _) (heap_remset_rep _ _ _). Intros.
                  assert (Hrhhc2: remset_heap_and_heap_compatible rh' h2). {
                    apply heap_relation_rhhc with h'; auto.
-                   pose proof heaprel_forward_graph_and_heap from to O (remset_ext2forward_t rext) g' h'.
-                   rewrite <- Hfgh in H. simpl in H. assumption. }
+                   eapply heaprel_forward_graph_and_heap_eq; exact Hfgh. }
                  assert ((g2, incr_remset_heap h2 (Z.of_nat to),
                            upd_remset_heap (RemSetExterior v) rh' to,
                            upd_remset from to g' (RemSetExterior v) rmst') =
@@ -457,8 +457,9 @@ Proof.
               assert (Hghc2: graph_heap_compatible g2 h2). {
                 eapply forward_graph_and_heap_O_ghc with (g := g'); eauto. }
               assert (Hghgt2: graph_has_gen g2 to). {
-                pose proof fr_forward_graph_and_heap from to O ft g' h'.
-                rewrite <- Hfgh in H. simpl in H. erewrite <- fr_graph_has_gen; eassumption. }
+                pose proof (fr_forward_graph_and_heap_eq from to O ft
+                  g' h' g2 h2 Hfgh) as Hfr.
+                erewrite <- fr_graph_has_gen; eassumption. }
               assert (Hgsc: generation_space_compatible g2 (to, nth_gen g2 to, nth_space h2 to)) by
                 (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrt2 [Hsht2 Hsizet2]].
               assert (Hptrt2: isptr (space_start (nth_space h2 to))) by
@@ -500,8 +501,7 @@ Proof.
               gather_SEP (data_at_ _ _ _) (heap_remset_rep _ _ _). Intros.
               assert (Hrhhc2: remset_heap_and_heap_compatible rh' h2). {
                 apply heap_relation_rhhc with h'; auto.
-                pose proof heaprel_forward_graph_and_heap from to O ft g' h'.
-                rewrite <- Hfgh in H. simpl in H. assumption. }
+                eapply heaprel_forward_graph_and_heap_eq; exact Hfgh. }
               assert ((g2, incr_remset_heap h2 (Z.of_nat to),
                         upd_remset_heap (RemSetInterior (InteriorVertexPos v pos)) rh' to,
                         upd_remset from to g' (RemSetInterior (InteriorVertexPos v pos)) rmst') =
@@ -515,9 +515,10 @@ Proof.
                 (upd_remset from to g' (RemSetInterior (InteriorVertexPos v pos)) rmst').
               unfold limit_address. clear Heqfp. rewrite <- Hgens in Haddrf'.
               entailer !!. 1: rewrite Haddrf'; unfold available_size; f_equal. lia. simpl. cancel.
-              pose proof fr_forward_graph_and_heap from to 0
-                (field2forward (Znth pos (make_fields g' v))) g' h' as Hfr. rewrite <- Hfgh in Hfr.
-              simpl fst in Hfr. replace (vertex_address g' v) with (vertex_address g2 v).
+              pose proof (fr_forward_graph_and_heap_eq from to 0
+                (field2forward (Znth pos (make_fields g' v)))
+                g' h' g2 h2 Hfgh) as Hfr.
+              replace (vertex_address g' v) with (vertex_address g2 v).
               2: { symmetry. eapply fr_vertex_address; eauto. apply graph_has_v_in_closure; assumption. }
               sep_apply remset_rep_upd_int; auto.
            ++ destruct vret as [Hvin | Hvnot]. 2: contradiction. subst P. clear Pweak Hweakp H. Intros.
