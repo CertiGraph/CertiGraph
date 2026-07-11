@@ -1268,20 +1268,10 @@ Lemma forward_remset_item_fold_P_holds:
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     P g'.
 Proof.
-  intros P from to r. induction r; intros g h rh rmst g' h' rh' rmst' HP HPg Hto Hfold.
-  - inversion Hfold; subst. assumption.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    change (fold_left (forward_remset_item from to) (a :: r) (g, h, rh, rmst))
-      with (fold_left (forward_remset_item from to) r
-              (forward_remset_item from to (g, h, rh, rmst) a)) in Hfold.
-    rewrite Hfri in Hfold.
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst').
-    + exact HP.
-    + eapply forward_remset_item_P_holds; eauto.
-    + apply (proj1 (forward_remset_item_ghg from to g h rh rmst a
-                      g2 h2 rh2 rmst2 Hto (eq_sym Hfri) to)); exact Hto.
-    + exact Hfold.
+  intros P from to r g h rh rmst g' h' rh' rmst' HP HPg Hto Hfold.
+  eapply (forward_remset_item_fold_graph_property P);
+    [| exact Hto | exact HPg | exact Hfold].
+  intros. eapply forward_remset_item_P_holds; eassumption.
 Qed.
 
 Lemma forward_remset_gh_P_holds:
@@ -8233,18 +8223,13 @@ Lemma forward_remset_item_fold_rh_Zlength_same:
       fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     Zlength rh = Zlength rh'.
 Proof.
-  intros from to r. induction r as [|item rest IH];
-    intros g h rh rmst g' h' rh' rmst' Hfold.
-  - simpl in Hfold. inversion Hfold. reflexivity.
-  - Opaque forward_remset_item.
-    simpl in Hfold.
-    Transparent forward_remset_item.
-    destruct (forward_remset_item from to (g, h, rh, rmst) item)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    symmetry in Hfri.
-    transitivity (Zlength rh2).
-    + eapply fri_rh_Zlength_same; exact Hfri.
-    + eapply IH; exact Hfold.
+  intros from to r g h rh rmst g' h' rh' rmst' Hfold.
+  eapply (forward_remset_item_fold_suffix_invariant
+            (fun _ _ _ rh0 _ => Zlength rh = Zlength rh0));
+    [| reflexivity | exact Hfold].
+  intros item rest g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 Hlen Hstep.
+  transitivity (Zlength rh0); [exact Hlen |].
+  eapply fri_rh_Zlength_same; exact Hstep.
 Qed.
 
 Lemma forward_remset_gh_rh_Zlength_same:

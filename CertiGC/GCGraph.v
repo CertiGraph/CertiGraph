@@ -8019,6 +8019,32 @@ Proof.
   rewrite H0 in H1. simpl in H1. inversion Hfri. eapply fr_graph_has_gen; eauto.
 Qed.
 
+Lemma forward_remset_item_fold_graph_property:
+  forall (P: LGraph -> Prop) from to r g h rh rmst g' h' rh' rmst',
+    (forall item g0 h0 rh0 rmst0 g1 h1 rh1 rmst1,
+        graph_has_gen g0 to ->
+        P g0 ->
+        (g1, h1, rh1, rmst1) =
+          forward_remset_item from to (g0, h0, rh0, rmst0) item ->
+        P g1) ->
+    graph_has_gen g to ->
+    P g ->
+    (g', h', rh', rmst') =
+      fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
+    P g'.
+Proof.
+  intros P from to r g h rh rmst g' h' rh' rmst' Hstep Hto HP Hfold.
+  enough (graph_has_gen g' to /\ P g') as [_ H]; [exact H |].
+  eapply (forward_remset_item_fold_suffix_invariant
+            (fun _ g0 _ _ _ => graph_has_gen g0 to /\ P g0));
+    [| split; [exact Hto | exact HP] | exact Hfold].
+  intros item rest g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 [Hto0 HP0] Hitem.
+  split.
+  - apply (proj1 (forward_remset_item_ghg from to g0 h0 rh0 rmst0 item
+                    g1 h1 rh1 rmst1 Hto0 Hitem to)); exact Hto0.
+  - eapply Hstep; eassumption.
+Qed.
+
 Lemma fri_copy_compatible: forall from to g h rh rmst item g' h' rh' rmst',
     from <> to -> graph_has_gen g to -> copy_compatible g ->
     (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
@@ -8715,29 +8741,20 @@ Lemma forward_remset_item_fold_graph_gen_size_unchanged:
     fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     graph_gen_size g gen = graph_gen_size g' gen.
 Proof.
-  intros from to r. induction r;
-    intros g h rh rmst g' h' rh' rmst' gen Hto Hgen Hneq Hfold.
-  - simpl in Hfold. inversion Hfold. reflexivity.
-  - simpl in Hfold.
-    destruct (forward_remset_item from to (g, h, rh, rmst) a)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
-    rewrite Hfri in Hfold.
-    assert (Hfri_sym:
-              (g2, h2, rh2, rmst2) =
-              forward_remset_item from to (g, h, rh, rmst) a)
-      by (symmetry; exact Hfri).
-    transitivity (graph_gen_size g2 gen).
-    + eapply (forward_remset_item_graph_gen_size_unchanged from to); eauto.
-    + apply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen).
-      * rewrite <- (forward_remset_item_ghg
-                      from to g h rh rmst a g2 h2 rh2 rmst2
-                      Hto Hfri_sym to); exact Hto.
-      * rewrite <- (forward_remset_item_ghg
-                      from to g h rh rmst a g2 h2 rh2 rmst2
-                      Hto Hfri_sym gen); exact Hgen.
-      * exact Hneq.
-      * exact Hfold.
+  intros from to r g h rh rmst g' h' rh' rmst' gen Hto Hgen Hneq Hfold.
+  enough (graph_has_gen g' gen /\
+          graph_gen_size g gen = graph_gen_size g' gen) as [_ H]; [exact H |].
+  eapply (forward_remset_item_fold_graph_property
+            (fun g0 => graph_has_gen g0 gen /\
+               graph_gen_size g gen = graph_gen_size g0 gen));
+    [| exact Hto | split; [exact Hgen | reflexivity] | exact Hfold].
+  intros item g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 Hto0 [Hgen0 Hsize0] Hstep.
+  split.
+  - apply (proj1 (forward_remset_item_ghg from to g0 h0 rh0 rmst0 item
+                    g1 h1 rh1 rmst1 Hto0 Hstep gen)); exact Hgen0.
+  - transitivity (graph_gen_size g0 gen); [exact Hsize0 |].
+    eapply (forward_remset_item_graph_gen_size_unchanged
+              from to g0 h0 rh0 rmst0 item g1 h1 rh1 rmst1 gen); eassumption.
 Qed.
 
 Lemma forward_remset_gh_graph_gen_size_unchanged:
@@ -9127,14 +9144,10 @@ Lemma fri_copy_compatible_fold: forall from to g h rh rmst r g' h' rh' rmst',
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     copy_compatible g'.
 Proof.
-  intros from to g h rh rmst r g' h' rh' rmst' Hfr. revert g h rh rmst g' h' rh' rmst'.
-  Opaque forward_remset_item. induction r;
-    intros g h rh rmst g' h' rh' rmst' Hghg Hcc Hfri; simpl in Hfri.
-  1: inversion Hfri; assumption. Transparent forward_remset_item.
-  destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-  symmetry in Hfri2. eapply (IHr g2 h2 rh2 rmst2); eauto.
-  - eapply forward_remset_item_ghg with (g := g); eassumption.
-  - eapply (fri_copy_compatible from to); eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' Hfr Hto Hcc Hfold.
+  eapply (forward_remset_item_fold_graph_property copy_compatible);
+    [| exact Hto | exact Hcc | exact Hfold].
+  intros. eapply fri_copy_compatible; eassumption.
 Qed.
 
 Lemma fri_no_dangling_dst_fold: forall from to g h rh rmst r g' h' rh' rmst',
@@ -9678,16 +9691,11 @@ Lemma forward_remset_item_fold_roots_graph_compatible_pres:
     roots_graph_compatible roots g ->
     roots_graph_compatible roots g'.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' roots Hto Hfold Hrgc; simpl in Hfold.
-  - now inversion Hfold.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    pose proof Hfri as Hfri'. unfold forward_remset_item in Hfri'. simpl in Hfri'.
-    rewrite Hfri' in Hfold. symmetry in Hfri.
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' roots); eauto.
-    + rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri to).
-      exact Hto.
-    + eapply forward_remset_item_roots_graph_compatible_pres; eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' roots Hto Hfold Hrgc.
+  eapply (forward_remset_item_fold_graph_property
+            (roots_graph_compatible roots));
+    [| exact Hto | exact Hrgc | exact Hfold].
+  intros. eapply forward_remset_item_roots_graph_compatible_pres; eassumption.
 Qed.
 
 Lemma forward_remset_gh_roots_graph_compatible:
@@ -9730,16 +9738,10 @@ Lemma forward_remset_item_fold_gen_unmarked_pres:
     gen_unmarked g gen ->
     gen_unmarked g' gen.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' gen Hto Hneq Hfold Hunmk; simpl in Hfold.
-  - now inversion Hfold.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfold. symmetry in Hfri2.
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to); exact Hto).
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen Hto2 Hneq Hfold).
-    eapply (forward_remset_item_gen_unmarked_pres from to g h rh rmst a g2 h2 rh2 rmst2 gen); eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' gen Hto Hneq Hfold Hunmk.
+  eapply (forward_remset_item_fold_graph_property (fun g0 => gen_unmarked g0 gen));
+    [| exact Hto | exact Hunmk | exact Hfold].
+  intros. eapply forward_remset_item_gen_unmarked_pres; eassumption.
 Qed.
 
 Lemma forward_remset_gh_gen_unmarked:
@@ -9783,17 +9785,11 @@ Lemma forward_remset_item_fold_firstn_gen_clear_pres:
     firstn_gen_clear g gen ->
     firstn_gen_clear g' gen.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' gen Hto Hle Hfold Hclear; simpl in Hfold.
-  - now inversion Hfold.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfold. symmetry in Hfri2.
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to); exact Hto).
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen Hto2 Hle Hfold).
-    eapply (forward_remset_item_firstn_gen_clear_pres from to g h rh rmst a g2 h2 rh2 rmst2 gen);
-      eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' gen Hto Hle Hfold Hclear.
+  eapply (forward_remset_item_fold_graph_property
+            (fun g0 => firstn_gen_clear g0 gen));
+    [| exact Hto | exact Hclear | exact Hfold].
+  intros. eapply forward_remset_item_firstn_gen_clear_pres; eassumption.
 Qed.
 
 Lemma forward_remset_gh_firstn_gen_clear:
@@ -9838,20 +9834,19 @@ Lemma forward_remset_item_fold_stcg_pres:
     safe_to_copy_gen g gen1 gen2 ->
     safe_to_copy_gen g' gen1 gen2.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' gen1 gen2 Hto Hgen Hneq Hfold Hsafe;
-    simpl in Hfold.
-  - now inversion Hfold.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfold. symmetry in Hfri2.
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to); exact Hto).
-    assert (Hgen2: graph_has_gen g2 gen2) by
-        (rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 gen2); exact Hgen).
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' gen1 gen2 Hto2 Hgen2 Hneq Hfold).
-    eapply (forward_remset_item_stcg_pres from to g h rh rmst a g2 h2 rh2 rmst2 gen1 gen2);
-      eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' gen1 gen2
+         Hto Hgen Hneq Hfold Hsafe.
+  enough (graph_has_gen g' gen2 /\ safe_to_copy_gen g' gen1 gen2)
+    as [_ H]; [exact H |].
+  eapply (forward_remset_item_fold_graph_property
+            (fun g0 => graph_has_gen g0 gen2 /\ safe_to_copy_gen g0 gen1 gen2));
+    [| exact Hto | split; assumption | exact Hfold].
+  intros item g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 Hto0 [Hgen0 Hsafe0] Hstep.
+  split.
+  - apply (proj1 (forward_remset_item_ghg from to g0 h0 rh0 rmst0 item
+                    g1 h1 rh1 rmst1 Hto0 Hstep gen2)); exact Hgen0.
+  - eapply (forward_remset_item_stcg_pres from to g0 h0 rh0 rmst0 item
+              g1 h1 rh1 rmst1 gen1 gen2); eassumption.
 Qed.
 
 Lemma forward_remset_gh_stcg:
@@ -9971,20 +9966,17 @@ Lemma forward_remset_item_fold_space_property:
       fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     Q nil rh'.
 Proof.
-  intros Q from to r.
-  induction r as [|item rest IH];
-    intros g h rh rmst g' h' rh' rmst' Hrange HQ HQstep Hfold.
-  - simpl in Hfold. inversion Hfold; subst. exact HQ.
-  - Opaque forward_remset_item.
-    simpl in Hfold.
-    Transparent forward_remset_item.
-    destruct (forward_remset_item from to (g, h, rh, rmst) item)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    symmetry in Hfri.
-    assert (Hrange2: 0 <= Z.of_nat to < Zlength rh2) by
-        (pose proof (fri_rh_Zlength_same from to g h rh rmst item
-                       g2 h2 rh2 rmst2 Hfri); lia).
-    eapply (IH g2 h2 rh2 rmst2 g' h' rh' rmst'); eauto.
+  intros Q from to r g h rh rmst g' h' rh' rmst' Hrange HQ HQstep Hfold.
+  enough (0 <= Z.of_nat to < Zlength rh' /\ Q nil rh') as [_ H]; [exact H |].
+  eapply (forward_remset_item_fold_suffix_invariant
+            (fun rest _ _ rh0 _ =>
+               0 <= Z.of_nat to < Zlength rh0 /\ Q rest rh0));
+    [| split; [exact Hrange | exact HQ] | exact Hfold].
+  intros item rest g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 [Hrange0 HQ0] Hstep.
+  split.
+  - pose proof (fri_rh_Zlength_same from to g0 h0 rh0 rmst0 item
+                  g1 h1 rh1 rmst1 Hstep); lia.
+  - eapply HQstep; eassumption.
 Qed.
 
 Lemma remset_item2forward_t_not_edge:
@@ -10503,33 +10495,23 @@ Lemma forward_remset_item_fold_interior_generation_order:
     (g', h', rh', rmst') = fold_left (forward_remset_item from (S from)) r (g, h, rh, rmst) ->
     remset_interior_generation_order rh'.
 Proof.
-  intros from r. induction r;
-    intros g h rh rmst g' h' rh' rmst' Hrange Horder Hbound Hfold.
-  - simpl in Hfold. inversion Hfold; subst. exact Horder.
-  - simpl in Hfold.
-    change (if negb (remset_item_in_gen a rmst g from)
-            then let (new_g, new_h) :=
-                   forward_graph_and_heap from (S from) 0 (remset_item2forward_t a rmst g) g h in
-                 (new_g, incr_remset_heap new_h (Z.pos (Pos.of_succ_nat from)),
-                  upd_remset_heap a rh (S from), upd_remset from (S from) g a rmst)
-            else (g, h, rh, rmst))
-      with (forward_remset_item from (S from) (g, h, rh, rmst) a) in Hfold.
-    destruct (forward_remset_item from (S from) (g, h, rh, rmst) a)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    symmetry in Hfri.
-    assert (Horder2: remset_interior_generation_order rh2). {
-      eapply forward_remset_item_interior_generation_order; eauto.
-      intros v pos Heq. eapply Hbound. simpl. left. exact Heq.
-    }
-    assert (Hrange2: 0 <= Z.of_nat (S from) < Zlength rh2). {
-      pose proof (fri_rh_Zlength_same from (S from) g h rh rmst a g2 h2 rh2 rmst2 Hfri).
-      lia.
-    }
-    assert (Hbound2: remset_space_interior_generation_order_from from r). {
-      unfold remset_space_interior_generation_order_from in *. intros v pos Hin.
-      eapply (Hbound v pos). simpl. right. exact Hin.
-    }
-    eapply IHr; eauto.
+  intros from r g h rh rmst g' h' rh' rmst' Hrange Horder Hbound Hfold.
+  enough (remset_interior_generation_order rh' /\
+          remset_space_interior_generation_order_from from nil) as [H _];
+    [exact H |].
+  eapply (forward_remset_item_fold_space_property
+            (fun rest rh0 => remset_interior_generation_order rh0 /\
+               remset_space_interior_generation_order_from from rest)
+            from (S from));
+    [exact Hrange | split; [exact Horder | exact Hbound] | | exact Hfold].
+  intros item rest g0 h0 rh0 rmst0 g1 h1 rh1 rmst1
+         Hrange0 [Horder0 Hbound0] Hstep.
+  unfold remset_space_interior_generation_order_from in Hbound0.
+  split.
+  - eapply forward_remset_item_interior_generation_order; eauto.
+    intros v pos Heq. apply (Hbound0 v pos). simpl. left. exact Heq.
+  - unfold remset_space_interior_generation_order_from.
+    intros v pos Hin. apply (Hbound0 v pos). simpl. right. exact Hin.
 Qed.
 
 Lemma forward_remset_gh_interior_generation_order:
@@ -10722,22 +10704,13 @@ Lemma forward_remset_item_fold_gen_v_num_to:
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     (gen_v_num g to <= gen_v_num g' to)%nat.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' Hto Hfold.
-  - simpl in Hfold. inversion Hfold; subst. lia.
-  - simpl in Hfold.
-    destruct (forward_remset_item from to (g, h, rh, rmst) a)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    symmetry in Hfri2.
-    fold (forward_remset_item from to (g, h, rh, rmst) a) in Hfold.
-    rewrite <- Hfri2 in Hfold.
-    assert (Hto2: graph_has_gen g2 to) by
-        (rewrite <- (forward_remset_item_ghg from to g h rh rmst a g2 h2 rh2 rmst2
-                       Hto Hfri2 to); exact Hto).
-    pose proof (forward_remset_item_gen_v_num_to from to g h rh rmst a g2 h2 rh2 rmst2
-                  Hto Hfri2).
-    pose proof (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' Hto2 Hfold).
-    lia.
+  intros from to g h rh rmst r g' h' rh' rmst' Hto Hfold.
+  eapply (forward_remset_item_fold_graph_property
+            (fun g0 => (gen_v_num g to <= gen_v_num g0 to)%nat));
+    [| exact Hto | lia | exact Hfold].
+  intros item g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 Hto0 Hle Hstep.
+  transitivity (gen_v_num g0 to); [exact Hle |].
+  eapply forward_remset_item_gen_v_num_to; eassumption.
 Qed.
 
 Lemma forward_remset_gh_gen_v_num_to:
