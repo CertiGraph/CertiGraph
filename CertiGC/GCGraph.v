@@ -22,7 +22,7 @@ Require Import CertiGraph.graph.graph_model.
 Require Export CertiGraph.graph.graph_gen.
 Import ListNotations.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 Require CertiGraph.CertiGC.gc_stack.
 Import Ctypes compspecs Cop2 Clight.
 
@@ -172,7 +172,7 @@ Record raw_vertex_block : Type :=
     (* what's up with this? why can raw_f be None at all? *)
   }.
 
-Local Close Scope Z_scope.
+#[local] Close Scope Z_scope.
 
 Lemma raw_fields_not_nil: forall rvb, raw_fields rvb <> nil.
 Proof.
@@ -196,7 +196,7 @@ Proof.
   - exists r, raw_fields0. split; reflexivity.
 Qed.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
 Record generation_info: Type :=
   {
@@ -224,7 +224,7 @@ Record graph_info : Type :=
 
 Definition LGraph := LabeledGraph VType EType raw_vertex_block nat graph_info.
 
-Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+#[local] Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Record space: Type :=
   {
@@ -406,7 +406,7 @@ Proof.
   intros. unfold vertex_size. pose proof raw_fields_range (vlabel g v). lia.
 Qed.
 
-Local Close Scope Z_scope.
+#[local] Close Scope Z_scope.
 
 Lemma seq_Permutation_cons: forall s i n,
     i < n -> exists l, Permutation (seq s n) (s + i :: l).
@@ -447,7 +447,7 @@ Proof.
   apply seq_Permutation_cons. assumption.
 Qed.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
 Definition vertex_size_accum g gen (s: Z) (n: nat) := s + vertex_size g (gen, n).
 
@@ -498,7 +498,7 @@ Definition generation_space_compatible (g: LGraph)
     previous_vertices_size g gen gi.(number_of_vertices) = sp.(used_space)
   end.
 
-Local Close Scope Z_scope.
+#[local] Close Scope Z_scope.
 
 Definition graph_heap_compatible (g: LGraph) (h: part_heap): Prop :=
   Forall (generation_space_compatible g)
@@ -946,7 +946,7 @@ Definition make_header (g: LGraph) (v: VType): Z:=
                             vb.(raw_tag) + (Z.shiftl vb.(raw_color) 8) +
                             (Z.shiftl (Zlength vb.(raw_fields)) 10).
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
 Lemma make_header_mark_iff: forall g v,
     make_header g v = 0 <-> raw_mark (vlabel g v) = true.
@@ -2164,7 +2164,7 @@ Proof.
   apply H. rewrite <- (filter_proj_In_iff exterior_proj_vertex_spec). assumption.
 Qed.
 
-Local Close Scope Z_scope.
+#[local] Close Scope Z_scope.
 
 Definition update_vertex (from to: nat) (g: LGraph) (v: VType) : VType :=
   if Nat.eq_dec (vgeneration v) from
@@ -2312,7 +2312,7 @@ Proof.
   - assumption.
 Qed.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
 Lemma vo_lt_gs: forall g v pos,
     0 <= pos < Zlength (raw_fields (vlabel g v)) ->
@@ -2476,7 +2476,7 @@ Proof.
   rewrite isptr_offset_val. apply graph_has_gen_start_isptr, (proj1 (H _ H1 Heqb)).
 Qed.
 
-Local Close Scope Z_scope.
+#[local] Close Scope Z_scope.
 
 Lemma cvmgil_length: forall l to,
     to < length l -> length (copy_v_mod_gen_info_list l to) = length l.
@@ -3006,7 +3006,7 @@ Lemma lcv_outlier_compatible: forall g outlier v to,
     outlier_compatible (lgraph_copy_v g v to) outlier.
 Proof. intros. apply lmc_outlier_compatible, lacv_outlier_compatible; assumption. Qed.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
 Lemma lacv_unmarked_gen_size: forall g v to from,
     from <> to -> graph_has_gen g to ->
@@ -5203,7 +5203,7 @@ Proof.
   - cut (two_p (Z.of_nat gen) > 0). 1: lia. apply two_p_gt_ZERO. lia.
 Qed.
 
-Local Close Scope Z_scope.
+#[local] Close Scope Z_scope.
 
 Lemma lcv_gen_v_num_to: forall g v to,
     graph_has_gen g to -> gen_v_num g to <= gen_v_num (lgraph_copy_v g v to) to.
@@ -6080,7 +6080,7 @@ Definition new_gen_relation (gen: nat) (g1 g2: LGraph): Prop :=
 Definition garbage_collect_condition (g: LGraph) (h : part_heap) : Prop :=
   graph_unmarked g /\ no_dangling_dst g /\ ti_size_spec h.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
 Lemma upd_heap_Zlength: forall (hp : part_heap) (sp : space) (i : Z),
     0 <= i < MAX_SPACES -> Zlength (upd_Znth i (spaces hp) sp) = MAX_SPACES.

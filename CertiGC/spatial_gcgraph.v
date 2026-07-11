@@ -12,7 +12,7 @@ Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import Stdlib.Lists.List.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
   Eval cbv delta [Archi.ptr64] match

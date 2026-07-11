@@ -26,9 +26,9 @@ Require Import CertiGraph.graph.reachable_ind.
 Require Import CertiGraph.CertiGC.GCGraph.
 Import ListNotations.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
-Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+#[local] Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Definition vertex_valid (g: LGraph): Prop := forall v, vvalid g v <-> graph_has_v g v.
 
