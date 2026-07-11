@@ -2487,10 +2487,10 @@ Proof.
   cut (l1 = l3 /\ l2 = l4).
   - intros Heq. clear -Heq. destruct Heq. subst. apply wand_frame_intro.
   - pose proof spaces_size h. pose proof spaces_size (incr_remset_heap h (Z.of_nat gen)). split.
-    + subst. rewrite Znth_list_eq. split; [list_solve |].
+    + subst. apply List_ext.list_eq_Znth; [list_solve |].
       intros j Hj. rewrite !Znth_sublist; [|list_solve..].
       symmetry. apply irh_Znth_spaces_not_eq. lia.
-    + subst. rewrite Znth_list_eq. split; [list_solve |].
+    + subst. apply List_ext.list_eq_Znth; [list_solve |].
       intros j Hj. rewrite !Znth_sublist; [|list_solve..].
       symmetry. apply irh_Znth_spaces_not_eq. list_solve.
 Qed.

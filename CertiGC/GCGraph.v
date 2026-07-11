@@ -3205,9 +3205,14 @@ Proof.
    destruct a; auto. destruct v0; auto. simpl in H0. inv H0; auto.
 Qed.
 
-Lemma upd_Znth_unchanged: forall {A : Type} {d : Inhabitant A} (i : Z) (l : list A),
-    0 <= i < Zlength l -> upd_Znth i l (Znth i l) = l.
-Proof. intros. list_solve. Qed.
+Lemma upd_Znth_unchanged': forall {A} `{d: Inhabitant A} (i: Z) (al: list A),
+    upd_Znth i al (Znth i al) = al.
+Proof.
+  intros.
+  unfold upd_Znth. unfold Sumbool.sumbool_and.
+  if_tac; auto.
+  list_solve.
+Qed.
 
 Lemma upd_rootpairs_compatible': forall g rootpairs roots i extr,
     rootpairs_compatible g rootpairs roots ->
@@ -3295,7 +3300,7 @@ Proof.
                              (cut_space (Znth (Z.of_nat to) (spaces h))
                                 (vertex_size g v)))). {
     rewrite <- upd_Znth_map. unfold_cut_space. simpl. rewrite <- Znth_map by assumption.
-    rewrite upd_Znth_unchanged; [reflexivity | rewrite Zlength_map; assumption]. }
+    rewrite upd_Znth_unchanged'. reflexivity. }
   unfold_cut_heap. split; [|split]; [|simpl; rewrite cvmgil_length by assumption..].
   - rewrite gsc_iff in *; simpl. 2: assumption.
     + intros. unfold nth_space. simpl.
@@ -3312,7 +3317,7 @@ Proof.
                 map space_sh (spaces h)). {
           rewrite <- upd_Znth_map. unfold_cut_space. simpl.
           rewrite <- Znth_map by assumption.
-          rewrite upd_Znth_unchanged; [reflexivity|rewrite Zlength_map; assumption]. }
+          rewrite upd_Znth_unchanged'. reflexivity. }
         rewrite <- map_nth, H7, map_nth. clear -H5 H. unfold nth_gen, nth_space in *.
         simpl. destruct (Nat.eq_dec gen to).
         -- subst gen. rewrite cvmgil_eq; simpl; assumption.
@@ -3464,27 +3469,6 @@ Proof.
   unfold updateEdgeFunc; if_tac; [exfalso; apply H; rewrite H0|]; reflexivity.
 Qed.
 
-Lemma Znth_list_eq {X: Type} {d: Inhabitant X}: forall (l1 l2: list X),
-    l1 = l2 <-> (Zlength l1 = Zlength l2 /\
-                 forall j, 0 <= j < Zlength l1 -> Znth j l1 = Znth j l2).
-Proof.
-  induction l1; destruct l2; split; intros.
-  - split; intros; reflexivity.
-  - reflexivity.
-  - inversion H.
-  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_lia.
-  - inversion H.
-  - destruct H. rewrite Zlength_nil, Zlength_cons in H. exfalso; rep_lia.
-  - inversion H. subst a. subst l1. split; intros; reflexivity.
-  - destruct H. assert (0 <= 0 < Zlength (a :: l1)) by
-        (rewrite Zlength_cons; rep_lia). apply H0 in H1. rewrite !Znth_0_cons in H1.
-    subst a. rewrite !Zlength_cons in H. f_equal. rewrite IHl1. split. 1: rep_lia.
-    intros. assert (0 < j + 1) by lia.
-    assert (0 <= j + 1 < Zlength (x :: l1)) by (rewrite Zlength_cons; rep_lia).
-    specialize (H0 _ H3). rewrite !Znth_pos_cons in H0 by assumption.
-    replace (j + 1 - 1) with j in H0 by lia. assumption.
-Qed.
-
 Lemma lgd_map_f2v_diff_vert_eq: forall tag g v v' v1 e n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = FieldEdge e ->
@@ -3495,14 +3479,13 @@ Lemma lgd_map_f2v_diff_vert_eq: forall tag g v v' v1 e n,
 Proof.
     intros.
     rewrite lgd_make_fields_eq.
-    apply Znth_list_eq. split.
-    1: repeat rewrite Zlength_map; reflexivity.
-    intros. rewrite Zlength_map in H2.
+    apply List_ext.list_eq_Znth.
+    - repeat rewrite Zlength_map; reflexivity.
+    - intros j Hj. rewrite Zlength_map in Hj.
     repeat rewrite Znth_map by assumption.
-    apply lgd_f2v_eq_except_one. intro.
-    pose proof (make_fields_edge_unique g e v v1 n j H H2 H0 H3).
-    destruct H4. unfold not in H1. symmetry in H5.
-    apply (H1 H5).
+    apply lgd_f2v_eq_except_one. intro Hfd.
+    pose proof (make_fields_edge_unique g e v v1 n j H Hj H0 Hfd) as [_ Hv].
+    apply H1. symmetry. exact Hv.
 Qed.
 
 Lemma lgd_f2v_eq_after_update: forall tag g v v' e n j,
@@ -3542,18 +3525,18 @@ Lemma lgd_mfv_change_in_one_spot: forall g v e v' n,
     (make_fields_vals (labeledgraph_gen_dst g e v') v).
 Proof.
   intros.
-  rewrite (Znth_list_eq (upd_Znth n (make_fields_vals g v)
-               (vertex_address g v')) (make_fields_vals
-                     (labeledgraph_gen_dst g e v') v)).
-  rewrite upd_Znth_Zlength, fields_eq_length.
-  2: rewrite fields_eq_length; rewrite make_fields_eq_length in H; assumption.
-  split. 1: rewrite fields_eq_length; reflexivity.
-  intros.
-  unfold make_fields_vals.
-  replace (raw_mark (vlabel (labeledgraph_gen_dst g e v') v))
-    with (raw_mark (vlabel g v)) by reflexivity.
-  rewrite H0; rewrite <- make_fields_eq_length in H2.
-  apply lgd_f2v_eq_after_update; assumption.
+  apply List_ext.list_eq_Znth.
+  - rewrite upd_Znth_Zlength, fields_eq_length.
+    2: rewrite fields_eq_length; rewrite make_fields_eq_length in H; assumption.
+    rewrite fields_eq_length; reflexivity.
+  - intros j Hj.
+    rewrite upd_Znth_Zlength in Hj.
+    2: rewrite fields_eq_length; rewrite make_fields_eq_length in H; assumption.
+    unfold make_fields_vals.
+    replace (raw_mark (vlabel (labeledgraph_gen_dst g e v') v))
+      with (raw_mark (vlabel g v)) by reflexivity.
+    rewrite H0; rewrite fields_eq_length, <- make_fields_eq_length in Hj.
+    apply lgd_f2v_eq_after_update; assumption.
 Qed.
 
 Lemma lgd_no_dangling_dst: forall g e v',
@@ -3606,17 +3589,16 @@ Proof.
   apply (H v H0).
 Qed.
 
-Lemma mutable_graph_update_dst_other:
-  forall (g: LGraph) (src: VType) pos new g' (e: EType),
-    fst e <> src ->
+Lemma mutable_graph_update_dst_neq:
+  forall (g: LGraph) src pos new g' (e: EType),
+    e <> (src, Z.to_nat pos) ->
     mutable_location_compatible g (InteriorVertexPos src pos) ->
     mutable_graph_update g (InteriorVertexPos src pos) new g' ->
     dst g' e = dst g e.
 Proof.
-  intros g src pos new g' e Hfst Hloc Hupd.
+  intros g src pos new g' e Hneq Hloc Hupd.
   unfold mutable_graph_update, internal_write_at in Hupd.
-  assert (Hedge: (src, Z.to_nat pos) <> e).
-  { intro Heq. apply Hfst. rewrite <- Heq. reflexivity. }
+  assert (Hedge: (src, Z.to_nat pos) <> e) by congruence.
   destruct new as [z | p | new_dst].
   - destruct Hupd as [rvb' [_ ->]]. reflexivity.
   - destruct Hupd as [rvb' [_ ->]]. reflexivity.
@@ -3649,8 +3631,10 @@ Proof.
     pose proof (e_in_make_fields g v e Hin) as [n He]. subst e.
     rewrite (mutable_graph_update_vertex_address
                g (InteriorVertexPos src pos) new g' (dst g' (v, n)) Hloc Hupd).
-    rewrite (mutable_graph_update_dst_other
-               g src pos new g' (v, n) Hneq Hloc Hupd).
+    assert (Hedge: (v, n) <> (src, Z.to_nat pos)).
+    { intro Heq. inversion Heq. contradiction. }
+    rewrite (mutable_graph_update_dst_neq
+               g src pos new g' (v, n) Hedge Hloc Hupd).
     reflexivity.
   }
   unfold make_fields_vals.
@@ -4511,7 +4495,7 @@ Proof.
       assert (0 <= Z.of_nat gen < Zlength l0) by (rewrite Zlength_correct; lia).
       replace (space_start (Znth (Z.of_nat gen) l0))
         with (Znth (Z.of_nat gen) (map space_start l0)) by (rewrite Znth_map; auto).
-      rewrite upd_Znth_unchanged; [|rewrite Zlength_map]; assumption.
+      rewrite upd_Znth_unchanged'. assumption.
   - rewrite remove_ve_glabel_unchanged, reset_nth_space_length. assumption.
 Qed.
 
@@ -4547,15 +4531,6 @@ Proof.
   cut (roots_graph_compatible roots g2).
   - intros. apply (IHl g2 _ v); try assumption. rewrite <- fr_graph_has_gen; eauto.
   - eapply fr_roots_graph_compatible; eassumption.
-Qed.
-
-Lemma upd_Znth_unchanged': forall {A} `{d: Inhabitant A} (i: Z) (al: list A),
-   upd_Znth i al (Znth i al) = al.
-Proof.
-  intros.
-  unfold upd_Znth. unfold Sumbool.sumbool_and.
-  if_tac; auto.
-  list_solve.
 Qed.
 
 Lemma labeledgraph_vgen_vlabel_eq:
@@ -4597,27 +4572,6 @@ Proof.
       rewrite labeledgraph_vgen_vlabel_eq. exact Hu.
     + destruct Hupd as [rvb' [Hu ->]].
       rewrite labeledgraph_vgen_vlabel_eq. exact Hu.
-Qed.
-
-Lemma mutable_graph_update_dst_neq:
-  forall (g: LGraph) src pos new g' (e: EType),
-    e <> (src, Z.to_nat pos) ->
-    mutable_location_compatible g (InteriorVertexPos src pos) ->
-    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
-    dst g' e = dst g e.
-Proof.
-  intros g src pos new g' e Hneq Hloc Hupd.
-  unfold mutable_graph_update, internal_write_at in Hupd.
-  assert (Hedge: (src, Z.to_nat pos) <> e) by congruence.
-  destruct new as [z | p | new_dst].
-  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
-  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
-  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
-    + subst g'. apply lgd_dst_old. exact Hedge.
-    + destruct Hupd as [rvb' [_ ->]].
-      apply add_edge_preserves_dst. exact Hedge.
-    + destruct Hupd as [rvb' [_ ->]].
-      apply add_edge_preserves_dst. exact Hedge.
 Qed.
 
 Lemma mutable_graph_update_dst_new:
@@ -4685,8 +4639,7 @@ Proof.
   pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc' Hupd) as Hsrc.
   unfold raw_vertex_field_update in Hsrc.
   destruct Hsrc as [Hfields [Hmark' [_ [_ Htag']]]].
-  apply (proj2 (Znth_list_eq _ _)).
-  split.
+  apply List_ext.list_eq_Znth.
   - rewrite upd_Znth_Zlength by (rewrite fields_eq_length; exact Hpos).
     rewrite !fields_eq_length, Hfields, Zlength_upd_Znth. reflexivity.
   - intros j Hjnew.
@@ -8125,16 +8078,8 @@ Proof. intros. unfold remset_nodup in *. simpl. rewrite NoDup_cons_iff. tauto. Q
 
 Lemma remset_nodup_perm: forall l1 l2, Permutation l1 l2 -> remset_nodup l1 -> remset_nodup l2.
 Proof.
-  intros. revert H0. induction H; intros; auto.
-  - rewrite remset_nodup_cons_iff in H0 |- *. destruct H0. split; auto.
-    intro. apply H0. apply (Permutation_map extract_address) in H. symmetry in H.
-    eapply Permutation_in; eassumption.
-  - rewrite remset_nodup_cons_iff in *. simpl map in *. destruct H0.
-    rewrite remset_nodup_cons_iff in *. destruct H0. split; [|split]; auto.
-    + simpl. intro. destruct H2.
-      * apply H. simpl. left; auto.
-      * apply H0; assumption.
-    + intro. apply H. simpl. right. assumption.
+  intros l1 l2 Hperm Hnodup. unfold remset_nodup in *.
+  apply (Permutation_NoDup (Permutation_map extract_address Hperm)), Hnodup.
 Qed.
 
 Lemma upd_remset_addr_perm: forall from to g addr rmst1 rmst2,
@@ -9322,13 +9267,13 @@ Proof.
   pose proof incr_remset_heap_len h gen as Hlen2.
   rewrite (split3_full_length_list 0 gen MAX_SPACES (spaces (incr_remset_heap h gen))) by lia. simpl.
   rewrite Z.sub_0_r. f_equal; [|f_equal].
-  - rewrite Znth_list_eq. split. 1: rewrite !Zlength_firstn; lia. intros j Hj.
+  - apply List_ext.list_eq_Znth. 1: rewrite !Zlength_firstn; lia. intros j Hj.
     rewrite Zlength_firstn, Hlen2, Hlen1 in Hj.
     replace (Z.min _ _) with gen in Hj by lia. rewrite !Znth_firstn by lia.
     apply irh_Znth_spaces_not_eq. lia.
   - unfold incr_remset_heap. destruct (spaces_index_dec _ _). 2: lia. simpl.
     rewrite Znth_upd_Znth_same by lia. reflexivity.
-  - rewrite Znth_list_eq. split. 1: rewrite !Zlength_skipn; lia. intros j Hj.
+  - apply List_ext.list_eq_Znth. 1: rewrite !Zlength_skipn; lia. intros j Hj.
     rewrite Zlength_skipn, Hlen2, Hlen1 in Hj.
     replace (Z.max _ _) with (MAX_SPACES - (gen + 1)) in Hj by lia.
     rewrite !Znth_skipn by lia. apply irh_Znth_spaces_not_eq. lia.
@@ -9343,12 +9288,12 @@ Proof.
   intros rh gen item Hrg. pose proof upd_remset_heap_len rh item gen as Hlenu.
   rewrite (split3_full_length_list 0 (Z.of_nat gen) (Zlength rh) (upd_remset_heap item rh gen)) by lia.
   simpl. rewrite Z.sub_0_r. f_equal; [|f_equal].
-  - rewrite Znth_list_eq. split. 1: rewrite !Zlength_firstn; lia.
+  - apply List_ext.list_eq_Znth. 1: rewrite !Zlength_firstn; lia.
     intros j Hj. rewrite Zlength_firstn, Hlenu in Hj.
     replace (Z.min _ _) with (Z.of_nat gen) in Hj by lia. rewrite !Znth_firstn by lia.
     unfold upd_remset_heap. rewrite Znth_upd_Znth_diff by lia. reflexivity.
   - unfold upd_remset_heap. rewrite Znth_upd_Znth_same by lia. reflexivity.
-  - rewrite Znth_list_eq. split. 1: rewrite !Zlength_skipn; lia. intros j Hj.
+  - apply List_ext.list_eq_Znth. 1: rewrite !Zlength_skipn; lia. intros j Hj.
     rewrite Zlength_skipn, Hlenu in Hj.
     replace (Z.max _ _) with (Zlength rh - (Z.of_nat gen + 1)) in Hj by lia.
     rewrite !Znth_skipn by lia. unfold upd_remset_heap. rewrite Znth_upd_Znth_diff by lia. reflexivity.

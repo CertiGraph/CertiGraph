@@ -1818,78 +1818,6 @@ Proof.
   now apply Hlift.
 Qed.
 
-Lemma remset_partial_graph_pending_nil:
-  forall g1 g2 l from,
-    remset_partial_graph_pending g1 g2 l from nil ->
-    remset_partial_graph g1 g2 l from.
-Proof.
-  unfold remset_partial_graph_pending, remset_partial_graph.
-  intros g1 g2 l from [Hold [Hedges Hunmarked]].
-  split; [exact Hold |].
-  split; [|exact Hunmarked].
-  now apply old_nonfrom_edges_mapped_pending_nil.
-Qed.
-
-Lemma remset_partial_graph_pending_intro:
-  forall g1 g2 l from pending,
-    remset_partial_graph g1 g2 l from ->
-    remset_partial_graph_pending g1 g2 l from pending.
-Proof.
-  unfold remset_partial_graph_pending, remset_partial_graph.
-  intros g1 g2 l from pending [Hold [Hedges Hunmarked]].
-  split; [exact Hold |].
-  split; [|exact Hunmarked].
-  now apply old_nonfrom_edges_mapped_pending_intro.
-Qed.
-
-Lemma remset_partial_graph_pending_cons_drop:
-  forall g1 g2 l from item pending,
-    (forall e, ~ remset_item_records_edge item e) ->
-    remset_partial_graph_pending g1 g2 l from (item :: pending) ->
-    remset_partial_graph_pending g1 g2 l from pending.
-Proof.
-  intros g1 g2 l from item pending Hnone Hpartial.
-  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
-  intros Hedges. eapply old_nonfrom_edges_mapped_pending_cons_drop; eauto.
-Qed.
-
-Lemma remset_partial_graph_pending_cons_drop_old_nonfrom:
-  forall g1 g2 l from item pending,
-    (forall e, vgeneration (fst e) <> from -> ~ remset_item_records_edge item e) ->
-    remset_partial_graph_pending g1 g2 l from (item :: pending) ->
-    remset_partial_graph_pending g1 g2 l from pending.
-Proof.
-  intros g1 g2 l from item pending Hnone Hpartial.
-  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
-  intros Hedges. eapply old_nonfrom_edges_mapped_pending_cons_drop_old_nonfrom; eauto.
-Qed.
-
-Lemma remset_partial_graph_pending_consume_item_not_to:
-  forall (g1 g2: LGraph) (l: list (VType * VType)) from item
-         (pending: remset_space) e,
-    remset_item_records_edge item e ->
-    vgeneration (dst g2 e) <> from ->
-    remset_partial_graph_pending g1 g2 l from (item :: pending) ->
-    remset_partial_graph_pending g1 g2 l from pending.
-Proof.
-  intros g1 g2 l from item pending e Hitem Hdst_not Hpartial.
-  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
-  intros Hedges. eapply old_nonfrom_edges_mapped_pending_consume_item_not_to; eauto.
-Qed.
-
-Lemma remset_partial_graph_pending_consume_item_no_current_edge:
-  forall (g1 g2: LGraph) (l: list (VType * VType)) from item
-         (pending: remset_space),
-    (forall e, remset_item_records_edge item e -> ~ evalid g2 e) ->
-    remset_partial_graph_pending g1 g2 l from (item :: pending) ->
-    remset_partial_graph_pending g1 g2 l from pending.
-Proof.
-  intros g1 g2 l from item pending Hno_current Hpartial.
-  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
-  intros Hedges.
-  eapply old_nonfrom_edges_mapped_pending_consume_item_no_current_edge; eauto.
-Qed.
-
 Lemma pending_remset_semi_iso_nil:
   forall g1 g2 from to l,
     gc_graph_pending_remset_semi_iso g1 g2 from to nil l ->
@@ -1901,7 +1829,11 @@ Proof.
   destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
   split; [exact Hfrom |]. split; [exact Hto |].
   split; [exact Hlabel |].
-  now apply remset_partial_graph_pending_nil.
+  unfold remset_partial_graph_pending in Hpartial.
+  unfold remset_partial_graph.
+  destruct Hpartial as [Hold [Hedges Hunmarked]].
+  split; [exact Hold |]. split; [|exact Hunmarked].
+  now apply old_nonfrom_edges_mapped_pending_nil.
 Qed.
 
 Lemma remset_semi_iso_pending:
@@ -1915,7 +1847,11 @@ Proof.
   destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
   split; [exact Hfrom |]. split; [exact Hto |].
   split; [exact Hlabel |].
-  now apply remset_partial_graph_pending_intro.
+  unfold remset_partial_graph in Hpartial.
+  unfold remset_partial_graph_pending.
+  destruct Hpartial as [Hold [Hedges Hunmarked]].
+  split; [exact Hold |]. split; [|exact Hunmarked].
+  now apply old_nonfrom_edges_mapped_pending_intro.
 Qed.
 
 Lemma pending_remset_semi_iso_lift_partial:
@@ -1942,7 +1878,9 @@ Lemma pending_remset_semi_iso_cons_drop:
 Proof.
   intros g1 g2 from to item pending l Hnone Hiso.
   eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
-  intros Hpartial. eapply remset_partial_graph_pending_cons_drop; eauto.
+  intros Hpartial.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges. eapply old_nonfrom_edges_mapped_pending_cons_drop; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_cons_drop_old_nonfrom:
@@ -1954,7 +1892,9 @@ Proof.
   intros g1 g2 from to item pending l Hnone Hiso.
   eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
   intros Hpartial.
-  eapply remset_partial_graph_pending_cons_drop_old_nonfrom; eauto.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges.
+  eapply old_nonfrom_edges_mapped_pending_cons_drop_old_nonfrom; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_consume_item_not_to:
@@ -1968,7 +1908,9 @@ Proof.
   intros g1 g2 from to item pending l e Hitem Hdst_not Hiso.
   eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
   intros Hpartial.
-  eapply remset_partial_graph_pending_consume_item_not_to; eauto.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges.
+  eapply old_nonfrom_edges_mapped_pending_consume_item_not_to; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_consume_item_no_current_edge:
@@ -1981,7 +1923,9 @@ Proof.
   intros g1 g2 from to item pending l Hno_current Hiso.
   eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
   intros Hpartial.
-  eapply remset_partial_graph_pending_consume_item_no_current_edge; eauto.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges.
+  eapply old_nonfrom_edges_mapped_pending_consume_item_no_current_edge; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_refl:
@@ -2118,15 +2062,10 @@ Lemma forward_remset_item_graph_has_v_pres:
     graph_has_v g' v.
 Proof.
   intros from to g h rh rmst item g' h' rh' rmst' v Hto Hv Hfri.
-  unfold forward_remset_item in Hfri.
-  destruct (negb (remset_item_in_gen item rmst g from)).
-  - destruct (forward_graph_and_heap from to O (remset_item2forward_t item rmst g) g h)
-      as [newg newh] eqn:Hfgh.
-    pose proof fr_forward_graph_and_heap from to O (remset_item2forward_t item rmst g) g h
-      as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr. inversion Hfri; subst.
-    eapply fr_graph_has_v; eauto.
-  - inversion Hfri; subst. exact Hv.
+  eapply (forward_remset_item_P_holds
+            (fun g0 => graph_has_v g0 v)); eauto.
+  intros g1 g2 p Hv1 Hto1 Hfr.
+  eapply fr_graph_has_v; eauto.
 Qed.
 
 Lemma forward_remset_item_fold_raw_mark_true_pres:
@@ -3493,26 +3432,6 @@ Proof.
         now rewrite make_fields_eq_length.
 Qed.
 
-Lemma fr_O_no_unmarked_old_nonfrom_dst:
-  forall base from to p g g',
-    from <> to ->
-    forward_relation from to O (forward_p2forward_t p g) g g' ->
-    no_unmarked_old_nonfrom_dst base g from ->
-    no_unmarked_old_nonfrom_dst base g' from.
-Proof.
-  intros base from to p g g' Hneq Hfr Hclosed.
-  destruct p; simpl in Hfr.
-  - destruct extr; simpl in Hfr; inversion Hfr; subst; auto.
-    eapply no_unmarked_old_nonfrom_dst_lcv; eauto.
-  - destruct intr as [v i]. simpl in Hfr.
-    destruct (Znth i (make_fields g v)); simpl in Hfr; inversion Hfr; subst; auto;
-      try solve [
-        eapply no_unmarked_old_nonfrom_dst_lgd;
-        eapply no_unmarked_old_nonfrom_dst_lcv; eauto
-      ];
-      eapply no_unmarked_old_nonfrom_dst_lgd; eauto.
-Qed.
-
 Lemma fr_O_no_unmarked_old_nonfrom_dst_t:
   forall base from to p g g',
     from <> to ->
@@ -3581,7 +3500,7 @@ Proof.
       now apply roots_graph_compatible_inv in Hroots.
     + eapply fr_O_no_dangling_dst' with (p := FwdPntExtr r); eauto.
     + eapply fr_copy_compatible; eauto.
-    + eapply fr_O_no_unmarked_old_nonfrom_dst with (p := FwdPntExtr r); eauto.
+    + eapply fr_O_no_unmarked_old_nonfrom_dst_t; eauto.
     + exists (l3 ++ l2). rewrite <- app_assoc. split; auto. subst roots2. f_equal.
       inversion Hupd as [Hupd_exterior]. clear Hupd. rewrite Hupd_exterior.
       unfold exterior_map. destruct r; auto.
@@ -3647,8 +3566,7 @@ Proof.
                     g2 g0 H2 H16 v H20 NOSCAN).
       exact H12.
     + eapply (fr_copy_compatible O from); eauto.
-    + eapply fr_O_no_unmarked_old_nonfrom_dst with
-        (p := FwdPntIntr (InteriorVertexPos v (Z.of_nat a))); eauto.
+    + eapply fr_O_no_unmarked_old_nonfrom_dst_t; eauto.
 Qed.
 
 Lemma svfl_no_unmarked_old_nonfrom_dst:
@@ -6068,7 +5986,7 @@ Proof.
   apply IHHfrr.
   - rewrite <- (fr_graph_has_gen 0 from to (exterior2forward r) g1 g2 Hto H to).
     exact Hto.
-  - eapply fr_O_no_unmarked_old_nonfrom_dst with (p := FwdPntExtr r); eauto.
+  - eapply fr_O_no_unmarked_old_nonfrom_dst_t; eauto.
 Qed.
 
 Lemma forward_remset_gh_frr_remset_semi_iso:
@@ -9902,9 +9820,8 @@ Lemma mutable_graph_update_graph_has_e_neq:
     (graph_has_e g' e <-> graph_has_e g e).
 Proof.
   intros g src pos new g' [v n] Hneq Hloc Hupd.
+  pose proof Hloc as Hloc'.
   destruct Hloc as [Hv [Hpos [Hmark Htag]]].
-  assert (Hloc': mutable_location_compatible g (InteriorVertexPos src pos))
-    by exact (conj Hv (conj Hpos (conj Hmark Htag))).
   destruct (V_EqDec v src) as [Heq | Hne].
   - hnf in Heq. subst v.
     assert (Hidx: Z.of_nat n <> pos).
@@ -9934,9 +9851,8 @@ Lemma mutable_graph_update_graph_has_e_target:
      exists dstv, new = ExteriorVertex dstv).
 Proof.
   intros g src pos new g' Hloc Hupd.
+  pose proof Hloc as Hloc'.
   destruct Hloc as [Hv [Hpos [Hmark Htag]]].
-  assert (Hloc': mutable_location_compatible g (InteriorVertexPos src pos))
-    by exact (conj Hv (conj Hpos (conj Hmark Htag))).
   rewrite (graph_has_e_iff_raw_internal g' src (Z.to_nat pos)).
   2: rewrite (mutable_graph_update_graph_has_v g (InteriorVertexPos src pos)
                 new g' src Hloc' Hupd); exact Hv.
@@ -10069,9 +9985,8 @@ Theorem mutable_graph_update_sound:
     sound_gc_graph g'.
 Proof.
   intros g src pos new g' outlier Hsound Hloc Hext Hupd.
+  pose proof Hsound as Hsound'.
   destruct Hsound as [Hvv [Hev [Hsrc Hlabel]]].
-  assert (Hsound': sound_gc_graph g).
-  { exact (conj Hvv (conj Hev (conj Hsrc Hlabel))). }
   split; [|split; [|split]].
   - intro v.
     rewrite (mutable_graph_update_vvalid g (InteriorVertexPos src pos) new g' v Hupd).
@@ -10130,9 +10045,8 @@ Theorem mutable_graph_update_no_unrecorded_backward_edge:
        else rh).
 Proof.
   intros g src pos new g' outlier rh Hloc Hext Hupd Hrange Hold.
+  pose proof Hloc as Hloc'.
   destruct Hloc as [Hv [Hpos [Hmark Htag]]].
-  assert (Hloc': mutable_location_compatible g (InteriorVertexPos src pos))
-    by exact (conj Hv (conj Hpos (conj Hmark Htag))).
   unfold no_unrecorded_backward_edge, no_unrecorded_backward_edge_from in *.
   intros e He' Hback.
   destruct (E_EqDec e (src, Z.to_nat pos)) as [Heq | Hneq].
@@ -10240,9 +10154,8 @@ Lemma mutable_graph_update_new_remset_item_compatible:
       (RemSetInterior (InteriorVertexPos src pos)).
 Proof.
   intros g src pos new g' from rmst Hloc Hupd.
+  pose proof Hloc as Hloc'.
   destruct Hloc as [Hv [Hpos [Hmark Htag]]].
-  assert (Hloc': mutable_location_compatible g (InteriorVertexPos src pos))
-    by exact (conj Hv (conj Hpos (conj Hmark Htag))).
   simpl. split.
   - rewrite (mutable_graph_update_graph_has_v
                g (InteriorVertexPos src pos) new g' src Hloc' Hupd).
