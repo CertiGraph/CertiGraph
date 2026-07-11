@@ -1233,11 +1233,8 @@ Lemma new_gen_heap_sound: forall g1 h1 g2 h2 gen,
     sound_gc_graph g1 -> new_gen_heap_relation gen g1 h1 g2 h2 -> sound_gc_graph g2.
 Proof.
   intros g1 h1 g2 h2 gen Hsound Hrel.
-  eapply (ngr_sound g1 g2 gen); eauto. unfold new_gen_relation, new_gen_heap_relation in *.
-  destruct (graph_has_gen_dec g1 gen).
-  - destruct Hrel as [Hg _]. symmetry. assumption.
-  - destruct Hrel as [gi [sp [i [Hs [_ [Hnum [_ [_ [_ [Hg _]]]]]]]]]].
-    exists gi. split; assumption.
+  eapply (ngr_sound g1 g2 gen); eauto.
+  eapply new_gen_heap_new_gen_relation; exact Hrel.
 Qed.
 
 Lemma forward_remset_item_P_holds:

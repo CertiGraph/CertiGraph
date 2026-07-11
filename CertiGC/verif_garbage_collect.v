@@ -303,6 +303,25 @@ Proof.
   rewrite Hsh, Hav, Htotal. reflexivity.
 Qed.
 
+#[local] Lemma space_remset_rep_do_generation_heap_eq:
+  forall from to h h_rem h' g rh gen,
+    gen <> from ->
+    do_generation_heap_relation from to h h_rem h' ->
+    space_remset_rep g (nth_space h_rem gen, nth_remset_space rh gen) =
+    space_remset_rep g (nth_space h' gen, nth_remset_space rh gen).
+Proof.
+  intros from to h h_rem h' g rh gen Hnfrom [_ [h_scan [Hhr Hreset]]].
+  subst h'. apply space_remset_rep_heap_eq.
+  - rewrite reset_nth_heap_nth_space_diff by lia.
+    now apply heap_relation_space_start.
+  - rewrite reset_nth_heap_available_size_diff by exact Hnfrom.
+    now apply heap_relation_available_size.
+  - rewrite reset_nth_heap_total_size.
+    now apply heap_relation_total_size.
+  - rewrite reset_nth_heap_nth_space_diff by lia.
+    now apply heap_relation_space_sh.
+Qed.
+
 #[local] Lemma heap_remset_rep_except_eq:
   forall g1 g2 h1 h2 rh gen,
     length rh = length (spaces h1) ->
@@ -1078,25 +1097,7 @@ Proof.
                   (nth_space h_rem n, nth_remset_space rh2 n)).
              - eapply space_remset_rep_do_generation_eq; eauto.
                eapply remset_and_remset_heap_compatible_nth; eauto.
-             - apply space_remset_rep_heap_eq.
-               + destruct Hdg_heap as [_ [h_scan [Hhr Hreset]]].
-                 destruct Hhr as [_ [Hstart_hr [_ _]]]. subst h2.
-                 unfold nth_space, reset_nth_heap; simpl.
-                 rewrite reset_nth_space_diff by exact Hnfrom.
-                 apply Hstart_hr.
-               + destruct Hdg_heap as [_ [h_scan [Hhr Hreset]]].
-                 destruct Hhr as [Hav_hr _]. subst h2.
-                 rewrite reset_nth_heap_available_size_diff by exact Hnfrom.
-                 apply Hav_hr.
-               + destruct Hdg_heap as [_ [h_scan [Hhr Hreset]]].
-                 destruct Hhr as [_ [_ [Htotal_hr _]]]. subst h2.
-                 rewrite reset_nth_heap_total_size.
-                 apply Htotal_hr.
-               + destruct Hdg_heap as [_ [h_scan [Hhr Hreset]]].
-                 destruct Hhr as [_ [_ [_ Hsh_hr]]]. subst h2.
-                 unfold nth_space, reset_nth_heap; simpl.
-                 rewrite reset_nth_space_diff by exact Hnfrom.
-                 apply Hsh_hr.
+             - eapply space_remset_rep_do_generation_heap_eq; eauto.
            }
            rewrite <- Hexcept_eq. cancel.
       * forward. Intros.
@@ -1279,25 +1280,7 @@ Proof.
                (nth_space h_rem n, nth_remset_space rh2 n)).
           - eapply space_remset_rep_do_generation_eq; eauto.
             eapply remset_and_remset_heap_compatible_nth; eauto.
-          - apply space_remset_rep_heap_eq.
-            + destruct Hdg_heap as [_ [h_scan [Hhr Hreset]]].
-              destruct Hhr as [_ [Hstart_hr [_ _]]]. subst h2.
-              unfold nth_space, reset_nth_heap; simpl.
-              rewrite reset_nth_space_diff by exact Hnfrom.
-              apply Hstart_hr.
-            + destruct Hdg_heap as [_ [h_scan [Hhr Hreset]]].
-              destruct Hhr as [Hav_hr _]. subst h2.
-              rewrite reset_nth_heap_available_size_diff by exact Hnfrom.
-              apply Hav_hr.
-            + destruct Hdg_heap as [_ [h_scan [Hhr Hreset]]].
-              destruct Hhr as [_ [_ [Htotal_hr _]]]. subst h2.
-              rewrite reset_nth_heap_total_size.
-              apply Htotal_hr.
-            + destruct Hdg_heap as [_ [h_scan [Hhr Hreset]]].
-              destruct Hhr as [_ [_ [_ Hsh_hr]]]. subst h2.
-              unfold nth_space, reset_nth_heap; simpl.
-              rewrite reset_nth_space_diff by exact Hnfrom.
-              apply Hsh_hr.
+          - eapply space_remset_rep_do_generation_heap_eq; eauto.
         }
         rewrite <- Hexcept_eq. cancel.
   - Intros g2 roots2 t_info2 rh2 rmst2. unfold all_string_constants. Intros.
