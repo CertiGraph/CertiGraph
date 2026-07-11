@@ -28,7 +28,7 @@ Definition vertex_field_hole
   SingletonHole.array_with_hole
     sh int_or_ptr_type pos (Zlength lst_fields) lst_fields p.
 
-Lemma vertex_at_field_hole_intro: forall sh p header lst_fields pos,
+#[local] Lemma vertex_at_field_hole_intro: forall sh p header lst_fields pos,
     0 <= pos < Zlength lst_fields ->
     vertex_at sh p header lst_fields |--
       data_at sh int_or_ptr_type (Znth pos lst_fields)
@@ -45,7 +45,7 @@ Proof.
   cancel.
 Qed.
 
-Lemma vertex_at_field_hole_elim: forall sh p header lst_fields pos new,
+#[local] Lemma vertex_at_field_hole_elim: forall sh p header lst_fields pos new,
     data_at sh int_or_ptr_type new
       (field_address
          (tarray int_or_ptr_type (Zlength lst_fields))
@@ -142,7 +142,7 @@ Definition heap_unused_rep (hp: part_heap): mpred := iter_sepcon hp.(spaces) spa
 Definition heap_remset_rep (g: LGraph) (h: part_heap) (rh : remset_heap) : mpred :=
   iter_sepcon (combine (spaces h) rh) (space_remset_rep g).
 
-Lemma remset_item_val_vertex_address_eq: forall g g' item,
+#[local] Lemma remset_item_val_vertex_address_eq: forall g g' item,
     (forall v, vertex_address g v = vertex_address g' v) ->
     remset_item_val g item = remset_item_val g' item.
 Proof.
@@ -150,7 +150,7 @@ Proof.
   now rewrite Haddr.
 Qed.
 
-Lemma space_remset_rep_vertex_address_eq: forall g g' sp rs,
+#[local] Lemma space_remset_rep_vertex_address_eq: forall g g' sp rs,
     (forall v, vertex_address g v = vertex_address g' v) ->
     space_remset_rep g (sp, rs) = space_remset_rep g' (sp, rs).
 Proof.
@@ -234,7 +234,7 @@ Proof. intros. destruct ext; simpl; reflexivity. Qed.
 Definition remset_rep (sh: share) (g: LGraph) (rmst: remset) : mpred :=
   iter_sepcon rmst (remset_ext_rep sh g).
 
-Lemma remset_ext_rep_vertex_address_eq: forall sh g g' ext,
+#[local] Lemma remset_ext_rep_vertex_address_eq: forall sh g g' ext,
     (forall v, vertex_address g v = vertex_address g' v) ->
     remset_ext_rep sh g ext = remset_ext_rep sh g' ext.
 Proof.
@@ -518,7 +518,7 @@ Proof.
   unfold WORD_SIZE. simpl sizeof. rewrite Z.max_r; auto.
 Qed.
 
-Lemma iter_sepcon_vertex_rep_ptrofs: forall g gen b i sh num,
+#[local] Lemma iter_sepcon_vertex_rep_ptrofs: forall g gen b i sh num,
     Vptr b i = gen_start g gen ->
     iter_sepcon (map (fun x : nat => (gen, x)) (nat_inc_list num)) (vertex_rep sh g)
                 |-- !! (WORD_SIZE * previous_vertices_size g gen num +
@@ -783,7 +783,7 @@ Proof.
   - first [now exists (Z.div Int.modulus 2) | now exists (Z.div Int64.modulus 2)].
 Qed.
 
-Lemma even_divided_odd_false: forall n z,
+#[local] Lemma even_divided_odd_false: forall n z,
     Z.even n = true -> (n | z) -> Z.odd z = false.
 Proof.
   intros. rewrite Zodd_mod. destruct (Zaux.Zeven_ex n) as [p ?].
@@ -792,7 +792,7 @@ Proof.
   rewrite Z_mod_mult; reflexivity.
 Qed.
 
-Lemma four_divided_tenth_pl_false: forall n i,
+#[local] Lemma four_divided_tenth_pl_false: forall n i,
     (4 | n) -> (n | Ptrofs.unsigned i) -> Ptrofs.testbit i 1 = false.
 Proof.
   intros. unfold Ptrofs.testbit. inversion H. inversion H0. rewrite H2. subst.
@@ -943,7 +943,7 @@ Qed.
 Definition generation_data_at_ g t_info gen :=
   data_at_ (nth_sh g gen) (tarray int_or_ptr_type (available_size t_info gen)) (gen_start g gen).
 
-Lemma gr_hrgda_data_at_: forall g h gen,
+#[local] Lemma gr_hrgda_data_at_: forall g h gen,
     graph_has_gen g gen ->
     graph_heap_compatible g h ->
     generation_rep g gen *
@@ -1017,7 +1017,7 @@ Qed.
 Definition total_gen_data_at_ g h gen :=
   data_at_ (nth_sh g gen) (tarray int_or_ptr_type (total_size h gen)) (gen_start g gen).
 
-Lemma gr_hrgda_srr_data_at_: forall g h rh gen,
+#[local] Lemma gr_hrgda_srr_data_at_: forall g h rh gen,
     graph_has_gen g gen ->
     graph_heap_compatible g h ->
     generation_rep g gen * heap_rest_gen_data_at_ g h gen *
@@ -1594,7 +1594,7 @@ Proof.
   rewrite data_at__eq, (data_at_singleton_array_eq _ _ (default_val tp)); reflexivity.
 Qed.
 
-Lemma field_compatible_int_or_ptr_integer_iff: forall p,
+#[local] Lemma field_compatible_int_or_ptr_integer_iff: forall p,
     field_compatible int_or_ptr_type [] p <->
     field_compatible (if Archi.ptr64 then tulong else tuint) [] p.
 Proof.
@@ -1613,7 +1613,7 @@ Proof.
           field_compatible_int_or_ptr_integer_iff. reflexivity.
 Qed.
 
-Lemma lacv_generation_rep_not_eq: forall g v to n,
+#[local] Lemma lacv_generation_rep_not_eq: forall g v to n,
     n <> to -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     generation_rep (lgraph_add_copied_v g v to) n = generation_rep g n.
 Proof.
@@ -1632,7 +1632,7 @@ Proof.
   - apply lacv_make_fields_vals_old; assumption.
 Qed.
 
-Lemma lacv_icgr_not_eq: forall l g v to,
+#[local] Lemma lacv_icgr_not_eq: forall l g v to,
     ~ In to l -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     iter_sepcon l (generation_rep (lgraph_add_copied_v g v to)) =
     iter_sepcon l (generation_rep g).
@@ -1643,7 +1643,7 @@ Proof.
   - intro. apply H. right. assumption.
 Qed.
 
-Lemma lacv_generation_rep_eq: forall g v to,
+#[local] Lemma lacv_generation_rep_eq: forall g v to,
     graph_has_v g v -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     generation_rep (lgraph_add_copied_v g v to) to =
     vertex_at (nth_sh g to) (vertex_address g (new_copied_v g to))
@@ -1755,7 +1755,7 @@ Proof.
     + rewrite Zlength_cons. rep_lia.
 Qed.
 
-Lemma lmc_vertex_rep_not_eq: forall sh g v new_v x,
+#[local] Lemma lmc_vertex_rep_not_eq: forall sh g v new_v x,
     x <> v -> vertex_rep sh (lgraph_mark_copied g v new_v) x = vertex_rep sh g x.
 Proof.
   intros. unfold vertex_rep. rewrite lmc_vertex_address, lmc_make_fields_vals_not_eq.
@@ -1763,7 +1763,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma lmc_generation_rep_not_eq: forall (g : LGraph) (v new_v : VType) (x : nat),
+#[local] Lemma lmc_generation_rep_not_eq: forall (g : LGraph) (v new_v : VType) (x : nat),
     x <> vgeneration v ->
     generation_rep g x = generation_rep (lgraph_mark_copied g v new_v) x.
 Proof.
@@ -1776,7 +1776,7 @@ Proof.
   inversion H0. subst. contradiction.
 Qed.
 
-Lemma graph_gen_lmc_ramif: forall g v new_v,
+#[local] Lemma graph_gen_lmc_ramif: forall g v new_v,
     graph_has_gen g (vgeneration v) ->
     graph_rep g |-- generation_rep g (vgeneration v) *
     (generation_rep (lgraph_mark_copied g v new_v) (vgeneration v) -*
@@ -1790,7 +1790,7 @@ Proof.
   rewrite <- lmc_generation_rep_not_eq. 1: reflexivity. intro. subst. contradiction.
 Qed.
 
-Lemma gen_vertex_lmc_ramif: forall g gen index new_v,
+#[local] Lemma gen_vertex_lmc_ramif: forall g gen index new_v,
     gen_has_index g gen index ->
     generation_rep g gen |-- vertex_rep (nth_sh g gen) g (gen, index) *
     (vertex_rep (nth_sh g gen) (lgraph_mark_copied g (gen, index) new_v)
@@ -1823,7 +1823,7 @@ Proof.
   sep_apply (gen_vertex_lmc_ramif g gen index new_v H0). cancel. apply wand_frame_ver.
 Qed.
 
-Lemma lgd_vertex_rep_eq_in_diff_vert: forall sh g v' v v1 e n,
+#[local] Lemma lgd_vertex_rep_eq_in_diff_vert: forall sh g v' v v1 e n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = FieldEdge e ->
     v1 <> v ->
@@ -1838,7 +1838,7 @@ Proof.
     try reflexivity; assumption.
 Qed.
 
-Lemma lgd_gen_rep_eq_in_diff_gen: forall (g : LGraph) (v v' : VType) (x : nat) e n,
+#[local] Lemma lgd_gen_rep_eq_in_diff_gen: forall (g : LGraph) (v v' : VType) (x : nat) e n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = FieldEdge e ->
     x <> vgeneration v ->
@@ -1859,7 +1859,7 @@ Proof.
   apply (lgd_vertex_rep_eq_in_diff_vert sh g v' v v1 e n); assumption.
 Qed.
 
-Lemma graph_gen_lgd_ramif: forall g v v' e n,
+#[local] Lemma graph_gen_lgd_ramif: forall g v v' e n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = FieldEdge e ->
     graph_has_gen g (vgeneration v) ->
@@ -1880,7 +1880,7 @@ Proof.
   apply (lgd_gen_rep_eq_in_diff_gen g v v' x e n); assumption.
 Qed.
 
-Lemma gen_vertex_lgd_ramif: forall g gen index new_v v n e,
+#[local] Lemma gen_vertex_lgd_ramif: forall g gen index new_v v n e,
     gen_has_index g gen index ->
 0 <= n < Zlength (make_fields g v) ->
        Znth n (make_fields g v) = FieldEdge e ->
@@ -2098,14 +2098,14 @@ Proof.
   apply wand_frame_intro.
 Qed.
 
-Lemma vertex_rep_reset: forall g i j x sh,
+#[local] Lemma vertex_rep_reset: forall g i j x sh,
     vertex_rep sh (reset_graph j g) (i, x) = vertex_rep sh g (i, x).
 Proof.
   intros. unfold vertex_rep.
   rewrite vertex_address_reset, make_header_reset, make_fields_reset. reflexivity.
 Qed.
 
-Lemma generation_rep_reset_diff: forall (g: LGraph) i j,
+#[local] Lemma generation_rep_reset_diff: forall (g: LGraph) i j,
     i <> j -> generation_rep (reset_graph j g) i = generation_rep g i.
 Proof.
   intros. unfold generation_rep. rewrite <- !iter_sepcon_map.
@@ -2113,7 +2113,7 @@ Proof.
   apply iter_sepcon_func; intros. apply vertex_rep_reset.
 Qed.
 
-Lemma generation_rep_reset_same: forall (g: LGraph) i,
+#[local] Lemma generation_rep_reset_same: forall (g: LGraph) i,
     graph_has_gen g i -> generation_rep (reset_graph i g) i = emp.
 Proof.
   intros. unfold generation_rep. rewrite <- !iter_sepcon_map.
@@ -2218,7 +2218,7 @@ Proof.
   rewrite if_true by assumption. rewrite emp_sepcon. reflexivity.
 Qed.
 
-Lemma vertex_rep_add: forall (g : LGraph) (gi : generation_info) v sh,
+#[local] Lemma vertex_rep_add: forall (g : LGraph) (gi : generation_info) v sh,
     graph_has_v g v -> copy_compatible g -> no_dangling_dst g ->
     vertex_rep sh g v = vertex_rep sh (lgraph_add_new_gen g gi) v.
 Proof.
@@ -2416,7 +2416,7 @@ Proof.
     + simpl. destruct (Val.eq _ _); [constructor; reflexivity | contradiction].
 Qed.
 
-Lemma fr_remset_ext_rep_eq: forall from to depth p sh g1 g2 rext,
+#[local] Lemma fr_remset_ext_rep_eq: forall from to depth p sh g1 g2 rext,
     graph_has_gen g1 to ->
     remset_ext_compatible' g1 rext ->
     forward_relation from to depth p g1 g2 ->
