@@ -463,8 +463,8 @@ Proof.
   forward.
   pose proof H as Hsc_init.
   destruct Hsc_init as [Hghc_init _].
-  pose proof (gt_gs_compatible _ _ Hghc_init _ (graph_has_gen_O _)) as Hgen0.
-  destruct Hgen0 as [Hstart0 [? ?]].
+  destruct (gt_gs_compatible _ _ Hghc_init _ (graph_has_gen_O _))
+    as [Hstart0 [? ?]].
   replace (heap_head (pt_heap (ti_heap t_info))) with
     (nth_space (pt_heap (ti_heap t_info)) 0) by
     (symmetry; apply heap_head_nth_space_O).
@@ -828,12 +828,8 @@ Proof.
       Intros vret. destruct vret as [[gpack h2] roots2].
       destruct gpack as [[[[g_rem h_rem] rh2] rmst2] g2].
       simpl fst in *. simpl snd in *.
+      pose proof H11 as Hrel_full.
       destruct H11 as [H11 Hdg_heap].
-      assert (Hrel_full:
-                do_generation_relation (Z.to_nat i) (Z.to_nat (i + 1))
-                  roots' roots2 g1 (pt_heap (ti_heap t_info1)) rh1 rmst1
-                  g_rem h_rem rh2 rmst2 g2 h2) by
-          (split; [exact H11 | exact Hdg_heap]).
       set (fr2 := update_frames _ _) in *.
       thaw FR1.
       pose (t_info2 := {| ti_heap_p := ti_heap_p t_info1;

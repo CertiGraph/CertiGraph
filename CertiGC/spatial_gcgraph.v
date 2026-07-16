@@ -1410,10 +1410,7 @@ Lemma graph_generation_vertex_update_ramif:
 Proof.
   intros g g' v Hglabel Hvertex Hgen.
   unfold graph_rep.
-  assert (Hlength:
-    length (g_gen (glabel g')) = length (g_gen (glabel g))).
-  { now rewrite Hglabel. }
-  rewrite Hlength.
+  rewrite Hglabel.
   apply iter_sepcon_ramif_pred_1.
   remember (nat_inc_list (length (g_gen (glabel g)))) as generations.
   assert (Hin: In (vgeneration v) generations).
@@ -1515,15 +1512,13 @@ Lemma graph_rep_mutable_update_ramif:
        graph_rep g').
 Proof.
   intros g src pos new g' Hloc Hupd.
-  destruct Hloc as [Hsrc [Hpos [Hmark Htag]]].
-  assert (Hloc': mutable_location_compatible
-                   g (InteriorVertexPos src pos)) by
-    (exact (conj Hsrc (conj Hpos (conj Hmark Htag)))).
+  pose proof Hloc as Hloc_parts.
+  destruct Hloc_parts as [Hsrc [Hpos [Hmark Htag]]].
   apply graph_rep_vertex_field_update_ramif.
   - eapply mutable_graph_update_glabel; eassumption.
   - intros sh v Hneq.
     exact (mutable_graph_update_vertex_rep_other
-             g src pos new g' sh v Hneq Hloc' Hupd).
+             g src pos new g' sh v Hneq Hloc Hupd).
   - exact Hsrc.
   - rewrite fields_eq_length. exact Hpos.
   - eapply mutable_graph_update_vertex_address; eassumption.

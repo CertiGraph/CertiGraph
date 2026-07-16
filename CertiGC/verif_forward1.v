@@ -86,8 +86,7 @@ Proof.
     replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
       (entailer; assumption). Intros. simpl exterior2val in *. simpl in Hfpc.
     assert (P |-- (weak_derives P (valid_pointer (Vptr b i) * TT) && emp) * P) as Hweakp. {
-      subst. cancel. apply andp_right. 2: cancel.
-      assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS. apply derives_weak.
+      apply weak_derives_strong. subst.
       sep_apply (outlier_rep_valid_pointer _ _ Hfpc).
       simpl GC_Pointer2val. cancel. }
     replace_SEP 1 ((weak_derives P (valid_pointer (Vptr b i) * TT) && emp) * P) by

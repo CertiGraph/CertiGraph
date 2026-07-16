@@ -102,8 +102,7 @@ Proof.
       (entailer; assumption). Intros.
     assert (HGC: In (GCPtr b i) outlier) by (eapply in_gcptr_outlier; eauto).
     assert (Hweakp: P |-- (weak_derives P (valid_pointer (Vptr b i) * TT) && emp) * P). {
-      subst; cancel; apply andp_right; [|cancel].
-      assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS. apply derives_weak.
+      apply weak_derives_strong. subst.
       sep_apply (outlier_rep_valid_pointer outlier (GCPtr b i) HGC).
       simpl GC_Pointer2val. cancel. }
     replace_SEP 1 ((weak_derives P (valid_pointer (Vptr b i) * TT) && emp) * P) by

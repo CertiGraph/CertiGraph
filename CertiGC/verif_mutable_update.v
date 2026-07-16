@@ -173,10 +173,8 @@ Proof.
   rename H2 into Hloc.
   rename H3 into Hext.
   destruct it as [src pos].
-  destruct Hloc as [Hsrc [Hpos [Hmark Htag]]].
-  assert (Hloc: mutable_location_compatible
-                  g (InteriorVertexPos src pos)) by
-    (exact (conj Hsrc (conj Hpos (conj Hmark Htag)))).
+  pose proof Hloc as Hloc_parts.
+  destruct Hloc_parts as [Hsrc [Hpos [Hmark Htag]]].
   destruct (mutable_graph_update_exists
               g (InteriorVertexPos src pos) v Hloc) as [g' Hupd].
   assert_PROP (valid_int_or_ptr (exterior2val g v)) as Hvalid.
@@ -188,10 +186,9 @@ Proof.
        [ArraySubsc pos] (vertex_address g src)) as Hcell.
   { sep_apply (graph_rep_interior_field_address g src pos Hsrc Hpos).
     entailer!. }
-  pose proof
+  destruct
     (gt_gs_compatible g (pt_heap (ti_heap t_info)) Hghc O
-       (graph_has_gen_O g)) as Hgsc.
-  destruct Hgsc as [Hstart [Hspace_sh Hused]].
+       (graph_has_gen_O g)) as [Hstart [Hspace_sh Hused]].
   assert (Hgenstart:
     gen_start g O =
     space_start (heap_head (pt_heap (ti_heap t_info)))).

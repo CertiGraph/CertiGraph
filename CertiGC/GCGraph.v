@@ -1920,9 +1920,8 @@ Lemma mutable_graph_update_graph_has_v:
     (graph_has_v g' v <-> graph_has_v g v).
 Proof.
   intros g it new g' v Hloc Hupd.
-  pose proof (mutable_graph_update_glabel _ _ _ _ Hloc Hupd) as Hglabel.
   unfold graph_has_v, graph_has_gen, gen_has_index, nth_gen.
-  rewrite Hglabel. reflexivity.
+  rewrite (mutable_graph_update_glabel _ _ _ _ Hloc Hupd). reflexivity.
 Qed.
 
 Lemma mutable_graph_update_nth_gen:
@@ -2139,9 +2138,8 @@ Lemma mutable_graph_update_graph_heap_compatible:
     graph_heap_compatible g' h.
 Proof.
   intros g it new g' h Hloc Hupd [Hgens [Hnull Hlen]].
-  pose proof (mutable_graph_update_glabel _ _ _ _ Hloc Hupd) as Hglabel.
   unfold graph_heap_compatible.
-  rewrite Hglabel.
+  rewrite (mutable_graph_update_glabel _ _ _ _ Hloc Hupd).
   split; [|split; assumption].
   eapply Forall_impl; [|exact Hgens].
   intros [[gen gi] sp] Hcomp.
@@ -4687,10 +4685,9 @@ Lemma mutable_graph_update_make_fields_vals_src:
     upd_Znth pos (make_fields_vals g src) (exterior2val g new).
 Proof.
   intros g src pos new g' Hloc Hupd.
-  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
-  assert (Hloc': mutable_location_compatible g (InteriorVertexPos src pos)).
-  { exact (conj Hv (conj Hpos (conj Hmark Htag))). }
-  pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc' Hupd) as Hsrc.
+  pose proof Hloc as Hloc_parts.
+  destruct Hloc_parts as [Hv [Hpos [Hmark Htag]]].
+  pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc Hupd) as Hsrc.
   unfold raw_vertex_field_update in Hsrc.
   destruct Hsrc as [Hfields [Hmark' [_ [_ Htag']]]].
   apply List_ext.list_eq_Znth.
@@ -4723,10 +4720,10 @@ Proof.
       rewrite Hrawnew. destruct new as [z | p | dstv]; simpl.
       * destruct (zlt (raw_tag (vlabel g src)) NO_SCAN_TAG); [reflexivity|lia].
       * reflexivity.
-      * rewrite (mutable_graph_update_dst_new g src pos dstv g' Hloc' Hupd).
+      * rewrite (mutable_graph_update_dst_new g src pos dstv g' Hloc Hupd).
         rewrite (mutable_graph_update_vertex_address
                    g (InteriorVertexPos src pos) (ExteriorVertex dstv) g' dstv
-                   Hloc' Hupd).
+                   Hloc Hupd).
         reflexivity.
     + rewrite upd_Znth_diff_strong; [|exact Hposmap|exact Hneq].
       rewrite Znth_map by (rewrite make_fields_eq_length; exact Hjoldraw).
@@ -4742,9 +4739,9 @@ Proof.
       { intro He. inversion He. apply Hneq. apply Z2Nat.inj; lia. }
       rewrite (mutable_graph_update_vertex_address
                  g (InteriorVertexPos src pos) new g'
-                 (dst g' (src, Z.to_nat j)) Hloc' Hupd).
+                 (dst g' (src, Z.to_nat j)) Hloc Hupd).
       rewrite (mutable_graph_update_dst_neq
-                 g src pos new g' (src, Z.to_nat j) Hedge Hloc' Hupd).
+                 g src pos new g' (src, Z.to_nat j) Hedge Hloc Hupd).
       reflexivity.
 Qed.
 

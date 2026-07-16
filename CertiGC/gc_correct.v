@@ -2308,8 +2308,6 @@ Proof.
          Hdd_l Hiso Hpartial_new.
   pose proof Hsound_base as Hsound_base0.
   pose proof Hsound_g as Hsound_g0.
-  assert (Hsound_lcv: sound_gc_graph (lgraph_copy_v g v to)) by
-      (apply lcv_sound; auto).
   destruct Hiso as [Hcopy Hspec].
   destruct (split l) as [from_l to_l] eqn:Hsplit.
   destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
@@ -3074,8 +3072,7 @@ Proof.
               Hevalid Hsrcgen Hdstgen)
     as [Hdst_eq [Hdst_valid_base Hdst_base_gen]].
   assert (Holdvalid: old_vertices_valid base g). {
-    pose proof Hsemi as Hsemi0.
-    destruct Hsemi0 as [_ Hspec].
+    destruct Hsemi as [_ Hspec].
     destruct (split l) as [from_l to_l].
     destruct Hspec as [_ [_ [_ Hpartial]]].
     exact (proj1 Hpartial).
@@ -3167,9 +3164,8 @@ Proof.
   intros base g from to l e Hneq Hsound_base Hndd_base Hsemi
          Hevalid Hsrcgen Hdstgen.
   destruct Hsound_base as [Hvv_base [Hev_base _]].
-  pose proof Hsemi as Hsemi0.
   assert (Hdd: DoubleNoDup l) by
-      (eapply remset_semi_iso_DoubleNoDup; [exact Hneq | exact Hsemi0]).
+      (eapply remset_semi_iso_DoubleNoDup; [exact Hneq | exact Hsemi]).
   destruct Hsemi as [_ Hspec].
   destruct (split l) as [from_l to_l] eqn:Hsplit.
   destruct Hspec as [[_ Hfrom] [[_ [Hto_valid Hto_gen]] [_ Hpartial]]].
@@ -3272,11 +3268,7 @@ Lemma fr_O_remset_semi_iso:
 Proof.
   intros from to p base g1 g2 l1 Hneq Hsound_base Hsound_g1 Hto Hsemi
          Hcompat Hndd_base Hndd_g1 Hspecial Hclosed Hfr.
-  pose proof Hsound_base as Hsound_base0.
-  pose proof Hsound_g1 as Hsound_g1_0.
   assert (Hdd: DoubleNoDup l1) by (eapply remset_semi_iso_DoubleNoDup; eauto).
-  assert (Hbij: bijective (roots_map l1) (roots_map l1)) by
-      (now apply roots_map_bijective).
   assert (Hvv_base: vertex_valid base) by (destruct Hsound_base as [Hvv _]; exact Hvv).
   assert (Hvv_g1: vertex_valid g1) by (destruct Hsound_g1 as [Hvv _]; exact Hvv).
   destruct p; simpl in Hcompat, Hfr.
@@ -5217,10 +5209,8 @@ Proof.
              Hneq Hsemi Hevalid_base Hsrcgen Hdst_base Hgenv).
   }
   assert (Hgv: graph_has_v g v). {
-    pose proof Hsound_base as Hsound_base0.
-    pose proof Hsound_g as Hsound_g0.
-    destruct Hsound_base0 as [Hvv_base [Hev_base _]].
-    destruct Hsound_g0 as [Hvv_g _].
+    destruct Hsound_base as [Hvv_base [Hev_base _]].
+    destruct Hsound_g as [Hvv_g _].
     assert (Hge_base: graph_has_e base e) by
         (apply (proj1 (Hev_base _)); exact Hevalid_base).
     assert (Hdst_has_base: graph_has_v base (dst base e)) by
@@ -5285,10 +5275,8 @@ Proof.
             remset_partial_graph_pending base g l from (item :: pending)) by
       (eapply gc_graph_remset_semi_iso_parts_partial; exact Hsemi).
   assert (Hgv: graph_has_v g v). {
-    pose proof Hsound_base as Hsound_base0.
-    pose proof Hsound_g as Hsound_g0.
-    destruct Hsound_base0 as [Hvv_base [Hev_base _]].
-    destruct Hsound_g0 as [Hvv_g _].
+    destruct Hsound_base as [Hvv_base [Hev_base _]].
+    destruct Hsound_g as [Hvv_g _].
     assert (Hge_base: graph_has_e base e) by
         (apply (proj1 (Hev_base _)); exact Hevalid_base).
     assert (Hdst_has_base: graph_has_v base (dst base e)) by
@@ -5591,8 +5579,7 @@ Proof.
       eapply lcv_pending_remset_semi_iso; eauto.
     }
     assert (Hsrc_not_new: fst e <> new_copied_v g to). {
-      pose proof Hsound_g as Hsound_g0.
-      destruct Hsound_g0 as [_ [Hev_g _]].
+      destruct Hsound_g as [_ [Hev_g _]].
       assert (Hge_g: graph_has_e g e) by
           (apply (proj1 (Hev_g _)); exact Hevalid_g).
       destruct Hge_g as [Hsrc_has _].
@@ -7988,14 +7975,12 @@ Proof.
       eapply svwl_graph_has_v in Hv; eauto.
       now rewrite Hvv3.
     - rewrite Hvv3 in Hv.
-      pose proof Hscan as Hscan_loop'.
-      destruct Hscan_loop' as [n' [Hsvwl_loop' _]].
+      destruct Hscan as [n' [Hsvwl_loop' _]].
       apply svwl_graph_has_v_inv with (v := v0) in Hsvwl_loop'; auto.
       destruct Hsvwl_loop' as [Hv2 | [Hgen_to _]].
       2: (rewrite Hgen_to in Hgen; exfalso; apply Hneq; symmetry; exact Hgen).
-      pose proof Hfrr as Hfrr_inv.
-      apply frr_graph_has_v_inv with (v := v0) in Hfrr_inv; auto.
-      destruct Hfrr_inv as [Hv1 | [Hgen_to _]].
+      apply frr_graph_has_v_inv with (v := v0) in Hfrr; auto.
+      destruct Hfrr as [Hv1 | [Hgen_to _]].
       2: (rewrite Hgen_to in Hgen; exfalso; apply Hneq; symmetry; exact Hgen).
       now rewrite Hvv1.
   }

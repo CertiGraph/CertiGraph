@@ -19,10 +19,8 @@ Proof.
   start_function.
   rename H into Hghc. rename H0 into Hoc. rename H1 into Hfrc. rename H2 into Hrc.
   rename H3 into Hrhc. rename H4 into Hftneq. destruct Hfrc as [Hese [Hghgf [Hghgt [Hcc [Hndd Htsc]]]]].
-  assert (Hgsc: generation_space_compatible g (from, nth_gen g from, nth_space h from)) by
-    (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrf [Hshf Hsizef]].
-  assert (Hgsc: generation_space_compatible g (to, nth_gen g to, nth_space h to)) by
-    (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrt [Hsht Hsizet]].
+  destruct (gt_gs_compatible g h Hghc from Hghgf) as [Haddrf [Hshf Hsizef]].
+  destruct (gt_gs_compatible g h Hghc to Hghgt) as [Haddrt [Hsht Hsizet]].
   assert (Hptrf: isptr (space_start (nth_space h from))) by
     (rewrite <- Haddrf; apply start_isptr).
   assert (Hptrt: isptr (space_start (nth_space h to))) by
@@ -261,8 +259,7 @@ Proof.
            replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
              (entailer !!; assumption). Intros.
            assert (P |-- (weak_derives P (valid_pointer v * TT) && emp) * P) as Hweakp. {
-             subst. cancel. apply andp_right. 2: cancel.
-             assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS. apply derives_weak.
+             apply weak_derives_strong. subst.
              sep_apply (remset_rep_valid_pointer sh g' rmst' v SH0 Hinv). cancel. }
            replace_SEP 1 ((weak_derives P (valid_pointer v * TT) && emp) * P) by
              (entailer !!; assumption). Intros.
@@ -323,8 +320,8 @@ Proof.
                    pose proof (fr_forward_graph_and_heap_eq from to O
                      (remset_ext2forward_t rext) g' h' g2 h2 Hfgh) as Hfr.
                    erewrite <- fr_graph_has_gen; eassumption. }
-                 assert (Hgsc: generation_space_compatible g2 (to, nth_gen g2 to, nth_space h2 to)) by
-                   (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrt2 [Hsht2 Hsizet2]].
+                 destruct (gt_gs_compatible g2 h2 Hghc2 to Hghgt2)
+                   as [Haddrt2 [Hsht2 Hsizet2]].
                  assert (Hptrt2: isptr (space_start (nth_space h2 to))) by
                    (rewrite <- Haddrt2; apply start_isptr). unfold heap_rep. Intros.
                  freeze [0; 1; 2; 3; 5; 6] FR.
@@ -404,8 +401,7 @@ Proof.
            assert (P |-- (weak_derives P (valid_pointer (offset_val (pos * WORD_SIZE)
                                                            (vertex_address g' v)) * TT) && emp) * P)
              as Hweakp. {
-             subst. cancel. apply andp_right. 2: cancel.
-             assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS. apply derives_weak.
+             apply weak_derives_strong. subst.
              sep_apply (graph_rep_interiro_vptr g' v pos). cancel. }
            replace_SEP 1 ((weak_derives P (valid_pointer (offset_val (pos * WORD_SIZE)
                                                             (vertex_address g' v)) * TT) && emp) * P) by
@@ -460,8 +456,8 @@ Proof.
                 pose proof (fr_forward_graph_and_heap_eq from to O ft
                   g' h' g2 h2 Hfgh) as Hfr.
                 erewrite <- fr_graph_has_gen; eassumption. }
-              assert (Hgsc: generation_space_compatible g2 (to, nth_gen g2 to, nth_space h2 to)) by
-                (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrt2 [Hsht2 Hsizet2]].
+              destruct (gt_gs_compatible g2 h2 Hghc2 to Hghgt2)
+                as [Haddrt2 [Hsht2 Hsizet2]].
               assert (Hptrt2: isptr (space_start (nth_space h2 to))) by
                 (rewrite <- Haddrt2; apply start_isptr). unfold heap_rep. Intros.
               freeze [0; 1; 2; 4; 5; 6] FR.
