@@ -103,8 +103,8 @@ Proof.
       simpl fold_left.
       replace (WORD_SIZE * 0)%Z with 0 by lia.
       rewrite !isptr_offset_val_zero by assumption.
+      unfold headroom.
       rewrite H1. simpl tl.
-      rewrite Z.sub_0_r.
       entailer_for_return.
       assert (MAX_SPACES = Zlength (map space_quad hl) + 1). {
         pose proof (spaces_size (ti_heap t_info).(pt_heap)).

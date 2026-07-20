@@ -61,7 +61,7 @@ Proof.
          Hloc Hext Hupd Hrecordable Htinfo Hrh
          Hsuper Hgcc Hunrecorded Hsafe Hremset Hremgen.
   subst t_info' rh'.
-  unfold info_recordable in Hrecordable.
+  rewrite info_recordable_iff_used_lt_available in Hrecordable.
   rewrite heap_head_nth_space_O in Hrecordable.
   pose proof
     (mutable_update_garbage_collect_model_preconditions
@@ -194,7 +194,8 @@ Proof.
     space_start (heap_head (pt_heap (ti_heap t_info)))).
   { unfold gen_start. rewrite if_true by apply graph_has_gen_O.
     rewrite heap_head_nth_space_O. exact Hstart. }
-  unfold info_recordable in Hrecordable.
+  change (info_recordable t_info) in Hrecordable.
+  rewrite info_recordable_iff_used_lt_available in Hrecordable.
   unfold before_gc_thread_info_rep, heap_management_rep. Intros.
   assert_PROP
     (field_compatible

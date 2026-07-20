@@ -459,6 +459,24 @@ Definition make_tinfo_spec :=
          malloc_token Ews (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
 
+Definition headroom (ti : thread_info) : Z :=
+  let nursery := heap_head (pt_heap (ti_heap ti)) in
+  available_space nursery - used_space nursery.
+
+Definition info_recordable (ti : thread_info) : Prop :=
+  1 <= headroom ti.
+
+Lemma info_recordable_iff_used_lt_available:
+  forall ti,
+    info_recordable ti <->
+    used_space (heap_head (pt_heap (ti_heap ti))) <
+    available_space (heap_head (pt_heap (ti_heap ti))).
+Proof.
+  intros ti.
+  unfold info_recordable, headroom.
+  lia.
+Qed.
+
 Definition resume_spec :=
   DECLARE _resume
   WITH rsh: share, sh: share, gv: globals, ti: val,
@@ -474,9 +492,7 @@ Definition resume_spec :=
          graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
-    PROP (Ptrofs.unsigned (ti_nalloc t_info) <=
-           available_space (heap_head (ti_heap t_info).(pt_heap))
-          - used_space (heap_head (ti_heap t_info).(pt_heap)))
+    PROP (Ptrofs.unsigned (ti_nalloc t_info) <= headroom t_info)
     RETURN ()
     SEP (all_string_constants rsh gv;
          graph_rep g;
@@ -493,17 +509,13 @@ Definition decr_info_nursery (ti: thread_info) (x: val): thread_info :=
 Definition mtb_upd_remset_heap (x: val) (item: remset_space_item) (rh: remset_heap) : remset_heap :=
   if isptr_dec x then upd_remset_heap item rh O else rh.
 
-Definition info_recordable (ti: thread_info): Prop :=
-  let nursery := heap_head (ti_heap ti).(pt_heap) in
-  used_space nursery < available_space nursery.
-
 Definition ext_mutable_update_spec :=
   DECLARE _mutable_update
     WITH ti: val, p: val, v: exterior_t, t_info: thread_info, sh: share,
          g: LGraph, outlier: outlier_t, rh: remset_heap
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
   PROP (writable_share sh;
-        info_recordable t_info;
+        1 <= headroom t_info;
         outlier_compatible g outlier;
         exterior_compatible g outlier v)
     PARAMS (ti; p; exterior2val g v)
@@ -530,7 +542,7 @@ Definition int_mutable_update_spec :=
          it: interior_t, outlier: outlier_t, rh: remset_heap
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
   PROP (writable_share sh;
-        info_recordable t_info;
+        1 <= headroom t_info;
         graph_heap_compatible g (ti_heap t_info).(pt_heap);
         remset_heap_and_heap_compatible rh (ti_heap t_info).(pt_heap);
         mutable_location_compatible g it;
@@ -585,9 +597,7 @@ Definition garbage_collect_spec :=
           garbage_collect_condition g' (ti_heap t_info').(pt_heap);
           safe_to_copy_heap g' (ti_heap t_info').(pt_heap);
           frame_shells_eq (ti_frames t_info) (ti_frames t_info');
-          Ptrofs.unsigned (ti_nalloc t_info) <=
-                 available_space (heap_head (ti_heap t_info').(pt_heap))
-                    - used_space (heap_head (ti_heap t_info').(pt_heap)))
+          Ptrofs.unsigned (ti_nalloc t_info) <= headroom t_info')
     RETURN ()
     SEP (mem_mgr gv;
          all_string_constants rsh gv;
