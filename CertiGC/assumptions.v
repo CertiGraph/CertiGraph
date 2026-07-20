@@ -40,8 +40,7 @@ Definition verified_bodies :=
 Definition model_endpoints :=
   (garbage_collect_spec_preconditions_imply_isomorphism,
    mutable_graph_update_sound,
-   mutable_update_garbage_collect_model_preconditions,
-   int_mutable_update_restores_garbage_collect_model_preconditions,
+   mutable_update_gc_ready,
    remset_rep_mutable_graph_update).
 
 (** These results establish [extcall_properties] for legacy external-call

@@ -1,5 +1,5 @@
 From CertiGraph.CertiGC Require Import
-  env_graph_gc gc_spec forward_lemmas gc_correct.
+  env_graph_gc gc_spec forward_lemmas.
 Require Import CertiGraph.graph.graph_model.
 
 #[local] Open Scope logic.
@@ -26,67 +26,6 @@ Proof.
         rewrite <- fields_eq_length in Hpos;
         unfold field_compatible in *; simpl in *; tauto
     end.
-Qed.
-
-Theorem int_mutable_update_restores_garbage_collect_model_preconditions:
-  forall g src pos new g' t_info t_info' roots outlier rmst rh rh',
-    mutable_location_compatible g (InteriorVertexPos src pos) ->
-    exterior_compatible g outlier new ->
-    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
-    info_recordable t_info ->
-    t_info' = decr_info_nursery t_info (exterior2val g new) ->
-    rh' = mtb_upd_remset_heap
-            (exterior2val g new)
-            (RemSetInterior (InteriorVertexPos src pos)) rh ->
-    super_compatible
-      g (pt_heap (ti_heap t_info))
-      (frames2rootpairs (ti_frames t_info)) roots outlier ->
-    garbage_collect_condition g (pt_heap (ti_heap t_info)) ->
-    no_unrecorded_backward_edge g rh ->
-    safe_to_copy_heap g (pt_heap (ti_heap t_info)) ->
-    remset_compatible
-      g outlier O rmst rh (pt_heap (ti_heap t_info)) ->
-    remset_generation_compatible O rmst rh ->
-    super_compatible
-      g' (pt_heap (ti_heap t_info'))
-      (frames2rootpairs (ti_frames t_info')) roots outlier /\
-    garbage_collect_condition g' (pt_heap (ti_heap t_info')) /\
-    no_unrecorded_backward_edge g' rh' /\
-    safe_to_copy_heap g' (pt_heap (ti_heap t_info')) /\
-    remset_compatible
-      g' outlier O rmst rh' (pt_heap (ti_heap t_info')) /\
-    remset_generation_compatible O rmst rh'.
-Proof.
-  intros g src pos new g' t_info t_info' roots outlier rmst rh rh'
-         Hloc Hext Hupd Hrecordable Htinfo Hrh
-         Hsuper Hgcc Hunrecorded Hsafe Hremset Hremgen.
-  subst t_info' rh'.
-  rewrite info_recordable_iff_used_lt_available in Hrecordable.
-  rewrite heap_head_nth_space_O in Hrecordable.
-  pose proof
-    (mutable_update_garbage_collect_model_preconditions
-       g src pos new g' (pt_heap (ti_heap t_info))
-       (frames2rootpairs (ti_frames t_info)) roots outlier rmst rh
-       Hloc Hext Hupd Hrecordable Hsuper Hgcc Hunrecorded Hsafe
-       Hremset Hremgen) as Hclosed.
-  assert (Hheap:
-    pt_heap
-      (ti_heap
-        (decr_info_nursery t_info (exterior2val g new))) =
-    if isptr_dec (exterior2val g new)
-    then incr_remset_heap (pt_heap (ti_heap t_info)) 0
-    else pt_heap (ti_heap t_info)).
-  { unfold decr_info_nursery.
-    destruct (isptr_dec (exterior2val g new)); reflexivity. }
-  assert (Hframes:
-    ti_frames
-      (decr_info_nursery t_info (exterior2val g new)) =
-    ti_frames t_info).
-  { unfold decr_info_nursery.
-    destruct (isptr_dec (exterior2val g new)); reflexivity. }
-  rewrite Hheap, Hframes.
-  unfold mtb_upd_remset_heap.
-  exact Hclosed.
 Qed.
 
 #[local] Lemma generation_data_at__test_order: forall g h gen i j,

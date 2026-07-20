@@ -10337,7 +10337,7 @@ Proof.
   - exact Hsafe.
 Qed.
 
-Theorem mutable_update_garbage_collect_model_preconditions:
+Theorem mutable_update_gc_ready:
   forall g src pos new g' h rootpairs roots outlier rmst rh,
     mutable_location_compatible g (InteriorVertexPos src pos) ->
     exterior_compatible g outlier new ->
