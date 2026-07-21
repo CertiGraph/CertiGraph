@@ -572,10 +572,9 @@ Definition garbage_collect_spec :=
        rh: remset_heap, rmst: remset
   PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info).(pt_heap) (frames2rootpairs (ti_frames t_info)) roots outlier;
-          garbage_collect_condition g (ti_heap t_info).(pt_heap);
+          full_gc g (ti_heap t_info).(pt_heap)
+            (frames2rootpairs (ti_frames t_info)) roots outlier;
           no_unrecorded_backward_edge g rh;
-          safe_to_copy_heap g (ti_heap t_info).(pt_heap);
           remset_compatible g outlier O rmst rh (ti_heap t_info).(pt_heap);
           remset_generation_compatible O rmst rh)
     PARAMS (ti)
@@ -590,12 +589,11 @@ Definition garbage_collect_spec :=
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     EX rh': remset_heap, EX rmst': remset,
-    PROP (super_compatible g' (ti_heap t_info').(pt_heap) (frames2rootpairs (ti_frames t_info')) roots' outlier;
+    PROP (full_gc g' (ti_heap t_info').(pt_heap)
+            (frames2rootpairs (ti_frames t_info')) roots' outlier;
           garbage_collect_relation roots roots'
             g (ti_heap t_info).(pt_heap) rh rmst
             g' (ti_heap t_info').(pt_heap) rh' rmst';
-          garbage_collect_condition g' (ti_heap t_info').(pt_heap);
-          safe_to_copy_heap g' (ti_heap t_info').(pt_heap);
           frame_shells_eq (ti_frames t_info) (ti_frames t_info');
           Ptrofs.unsigned (ti_nalloc t_info) <= headroom t_info')
     RETURN ()

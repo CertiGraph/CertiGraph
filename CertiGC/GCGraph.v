@@ -6131,6 +6131,16 @@ Definition new_gen_relation (gen: nat) (g1 g2: LGraph): Prop :=
 Definition garbage_collect_condition (g: LGraph) (h : part_heap) : Prop :=
   graph_unmarked g /\ no_dangling_dst g /\ ti_size_spec h.
 
+Definition full_gc
+    (g : LGraph)
+    (h : part_heap)
+    (rootpairs : list rootpair)
+    (roots : roots_t)
+    (outlier : outlier_t) : Prop :=
+  super_compatible g h rootpairs roots outlier /\
+  garbage_collect_condition g h /\
+  safe_to_copy_heap g h.
+
 #[local] Open Scope Z_scope.
 
 Definition add_new_space (hp: part_heap) (sp: space) i (Hs: 0 <= i < MAX_SPACES): part_heap :=

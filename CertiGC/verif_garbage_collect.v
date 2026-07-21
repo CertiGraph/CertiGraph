@@ -454,8 +454,8 @@ Proof.
                        space_address (ti_heap_p tif) (Z.to_nat j)). {
           intros. unfold space_address. now rewrite Z2Nat.id. }
   unfold before_gc_thread_info_rep, heap_management_rep, heap_struct_rep. Intros.
-  rename H1 into Hunrec_init. rename H2 into Hsafeh.
-  rename H3 into Hremc. rename H4 into Hremgen.
+  rename H0 into Hunrec_init. rename H1 into Hremc. rename H2 into Hremgen.
+  unfold full_gc in H. destruct H as [H [H0 Hsafeh]].
   pose proof H0 as Hgcc_init.
   assert (Hsafe_graph: safe_to_copy g) by
       (eapply safe_to_copy_heap_implies_safe_to_copy;
@@ -990,9 +990,9 @@ Proof.
         assert (graph_gen_clear g2 O) by (apply Hfirst2; rewrite Hi1_nat2; lia).
         forward_call (rsh, sh, gv, ti, g2, t_info2, roots2). forward.
         Exists g2 t_info2 roots2 (reset_nth_remset_heap (Z.to_nat i) rh2) rmst2.
-        entailer!!. split3.
-        -- exists (Z.to_nat i). rewrite <- Hi1_nat2 at 1. split; assumption.
+        unfold full_gc. entailer!!. split3.
         -- eapply safe_to_copy_heap_complete; eauto.
+        -- exists (Z.to_nat i). rewrite <- Hi1_nat2 at 1. split; assumption.
         -- rewrite HN. auto.
         -- pose proof Hsc1 as Hsc1_parts.
            destruct Hsc1_parts as [Hghc1 _].
