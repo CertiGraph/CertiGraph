@@ -15,7 +15,7 @@ Require Import CertiGraph.CertiGC.forward_lemmas.
 #[local] Opaque Int64.repr.
 #[local] Opaque lgraph_copy_v.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 Lemma body_forward_intr:
   forall (Espec : OracleKind)
@@ -102,8 +102,7 @@ Proof.
       (entailer; assumption). Intros.
     assert (HGC: In (GCPtr b i) outlier) by (eapply in_gcptr_outlier; eauto).
     assert (Hweakp: P |-- (weak_derives P (valid_pointer (Vptr b i) * TT) && emp) * P). {
-      subst; cancel; apply andp_right; [|cancel].
-      assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS. apply derives_weak.
+      apply weak_derives_strong. subst.
       sep_apply (outlier_rep_valid_pointer outlier (GCPtr b i) HGC).
       simpl GC_Pointer2val. cancel. }
     replace_SEP 1 ((weak_derives P (valid_pointer (Vptr b i) * TT) && emp) * P) by
@@ -525,17 +524,16 @@ Proof.
                         simpl fst in *. simpl snd in *. Exists g4 h4. simpl in Hgh4.
                         simpl upd_fwd. simpl forward_p_rep.
                         remember (field2forward (Znth i (make_fields g3 ncv))) as newi.
-                        pose proof fr_forward_graph_and_heap from to (Z.to_nat (depth - 1))
-                          newi g3 h3 as Hfr3. rewrite <- Hgh4 in Hfr3. simpl fst in Hfr3.
+                        pose proof (fr_forward_graph_and_heap_eq from to
+                          (Z.to_nat (depth - 1)) newi g3 h3 g4 h4 Hgh4) as Hfr3.
                         assert (Hgs: gen_start g3 from = gen_start g4 from). {
                           eapply fr_gen_start; [| eassumption ].
                           erewrite <- fl_graph_has_gen; eauto. } rewrite Hgs.
-                        pose proof heaprel_forward_graph_and_heap from to
-                          (Z.to_nat (depth - 1)) newi g3 h3 as Hhr.
-                        rewrite <- Hgh4 in Hhr. simpl snd in Hhr.
+                        pose proof (heaprel_forward_graph_and_heap_eq from to
+                          (Z.to_nat (depth - 1)) newi g3 h3 g4 h4 Hgh4) as Hhr.
                         assert (Hla: limit_address g3 h3 from = limit_address g4 h4 from). {
                           unfold limit_address. f_equal. 2: assumption. f_equal.
-                          destruct Hhr as [Hgsize _]. rewrite Hgsize. reflexivity. }
+                          rewrite (heap_relation_available_size _ _ _ Hhr). reflexivity. }
                         rewrite Hla. entailer !!. eapply forward_gh_loop_add_tail_vpp; eauto.
                         simpl. Transparent lgraph_copy_v. rewrite lcv_vlabel_new; assumption.
                 --- Intros g3 h3. rename H0 into Hfwdlp.

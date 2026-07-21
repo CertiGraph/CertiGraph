@@ -1,4 +1,4 @@
-From CertiGraph.CertiGC Require Import 
+From CertiGraph.CertiGC Require Import
   verif_garbage_collect
   verif_create_heap
   verif_create_space
@@ -8,64 +8,51 @@ From CertiGraph.CertiGC Require Import
   verif_forward_roots
   verif_forward
   verif_make_tinfo
-   gc_correct.
+  verif_conversion
+  verif_is_ptr
+  verif_resume
+  verif_mutable_update
+  verif_Is_from
+  spatial_gcgraph
+  gc_correct.
 
-Definition collection := 
-(body_garbage_collect,
- body_create_heap,
- body_create_space,
- body_do_generation,
- body_do_scan,
- body_forward_remset,
- body_forward_roots,
- body_forward,
- body_make_tinfo,
- garbage_collect_spec_preconditions_imply_isomorphism).
- 
+(** VST proofs of the sixteen verified internal Clight function bodies. *)
+Definition verified_bodies :=
+  (body_garbage_collect,
+   body_create_heap,
+   body_create_space,
+   body_do_generation,
+   body_do_scan,
+   body_forward_remset,
+   body_forward_roots,
+   body_forward,
+   body_make_tinfo,
+   body_int_to_int_or_ptr,
+   body_int_or_ptr_to_int,
+   body_ptr_to_int_or_ptr,
+   body_int_or_ptr_to_ptr,
+   body_is_ptr,
+   body_resume,
+   body_mutable_update).
 
-Print Assumptions collection.
+(** Model-level and spatial correctness endpoints used when auditing the
+    collector and the mutable-update boundary. *)
+Definition model_endpoints :=
+  (garbage_collect_spec_preconditions_imply_isomorphism,
+   mutable_graph_update_sound,
+   mutable_update_gc_ready,
+   remset_rep_mutable_graph_update).
 
-(* Print Assumptions produces the following list:
- Part 1, standard extensionality axioms
+(** These results establish [extcall_properties] for legacy external-call
+    semantics.  They are not [semax_body] proofs of the corresponding
+    internal Clight functions in [Gprog]. *)
+Definition legacy_extcall_endpoints :=
+  (Is_from_extcall, test_iop__extcall).
 
-ClassicalDedekindReals.sig_not_dec :
-  forall P : Prop, {~ ~ P} + {~ P} 
-ClassicalDedekindReals.sig_forall_dec :
-  forall P : nat -> Prop,
-  (forall n : nat, {P n} + {~ P n}) ->
-  {n : nat | ~ P n} + {forall n : nat, P n}
-Axioms.prop_ext : ClassicalFacts.prop_extensionality
-FunctionalExtensionality.functional_extensionality_dep :
-  forall (A : Type) (B : A -> Type)
-    (f g : forall x : A, B x),
-  (forall x : A, f x = g x) -> f = g
-Eqdep.Eq_rect_eq.eq_rect_eq :
-  forall (U : Type) (p : U) (Q : U -> Type) 
-    (x : Q p) (h : p = p),
-  x = eq_rect p Q x p h
-Classical_Prop.classic : forall P : Prop, P \/ ~ P
-Ensembles.Extensionality_Ensembles :
-  forall (U : Type) (A B : Ensembles.Ensemble U),
-  Ensembles.Same_set A B -> A = B
+(** In particular, [Gprog] currently has no [body_test_int_or_ptr],
+    [body_Is_from], or [body_abort_with] theorem.  The legacy extcall results
+    above do not close those internal-function body-proof obligations. *)
+Definition audit_collection :=
+  (verified_bodies, model_endpoints, legacy_extcall_endpoints).
 
-Part 2, axiomatization of a malloc/free system, for use when the g.c.
-  needs to allocate a new generation from the operating system's virtual memory.
-
-library.mem_mgr : SeparationLogic.globals -> mpred.mpred
-library.malloc_token_valid_pointer :
-  forall (cs : compspecs.compspecs) (sh : shares.share)
-    (t : Ctypes.type) (p : Values.val),
-  BinInt.Z.le (expr.sizeof t) BinNums.Z0 ->
-  seplog.derives (library.malloc_token sh t p)
-    (expr.valid_pointer p)
-library.malloc_token_local_facts :
-  forall (cs : compspecs.compspecs) (sh : shares.share)
-    (t : Ctypes.type) (p : Values.val),
-  seplog.derives (library.malloc_token sh t p)
-    (seplog.prop
-       (field_at.malloc_compatible (expr.sizeof t) p))
-library.malloc_token :
-  compspecs.compspecs ->
-  shares.share -> Ctypes.type -> Values.val -> mpred.mpred
-
-*)
+Print Assumptions audit_collection.

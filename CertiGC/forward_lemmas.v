@@ -94,15 +94,6 @@ Proof.
     + rewrite get_edges_In_iff, <- Heqf. now apply Znth_In; rewrite make_fields_eq_length.
 Qed.
 
-Lemma root_valid_int_or_ptr: forall g (roots: roots_t) root outlier,
-    In root roots ->
-    roots_compatible g outlier roots ->
-    graph_rep g * outlier_rep outlier |-- !! (valid_int_or_ptr (exterior2val g root)).
-Proof.
-  intros. apply extr_valid_int_or_ptr.
-  rewrite roots_iff_exterior_compatible, Forall_forall in H0. now apply H0.
-Qed.
-
 Lemma sapi_ptr_val: forall p m n,
     isptr p -> Int.min_signed <= n <= Int.max_signed ->
     (force_val
@@ -112,6 +103,21 @@ Proof.
   intros. rewrite sem_add_pi_ptr_special; [| easy | | easy].
   - simpl. rewrite offset_offset_val. f_equal. fold WORD_SIZE; rep_lia.
   - rewrite isptr_offset_val. assumption.
+Qed.
+
+Lemma sem_sub_pi_available_space_minus: forall s,
+    isptr (space_start s) ->
+    force_val
+      (sem_sub_pi int_or_ptr_type Signed
+        (offset_val (WORD_SIZE * available_space s) (space_start s))
+        (Vint (Int.repr 1))) =
+    offset_val (WORD_SIZE * (available_space s - 1)) (space_start s).
+Proof.
+  intros s Hptr. destruct (space_start s); try contradiction. simpl.
+  rewrite ptrofs_of_ints_unfold, ptrofs_mul_repr, Ptrofs.add_commut,
+    Ptrofs.sub_add_l.
+  rewrite ptrofs_sub_repr, Int.signed_repr by rep_lia.
+  rewrite Ptrofs.add_commut. do 3 f_equal. unfold WORD_SIZE. lia.
 Qed.
 
 Lemma sapil_ptr_val: forall p m n,

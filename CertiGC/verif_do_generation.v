@@ -11,7 +11,7 @@ Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.CertiGC.gc_spec.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 Lemma fri_rootpairs_compatible:
   forall from to g h rh rmst item g' h' rh' rmst' rootpairs roots,
@@ -27,8 +27,9 @@ Proof.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [newg newh] eqn:Hfgh.
     simpl in Hfri. inversion Hfri; subst; clear Hfri.
-    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq from to 0
+                  (remset_item2forward_t item rmst g) g h newg newh
+                  (eq_sym Hfgh)) as Hfr.
     unfold rootpairs_compatible in *. rewrite <- Hrpc. apply map_ext_in.
     intros x Hin. destruct x; simpl; auto.
     symmetry. eapply fr_vertex_address; eauto. apply graph_has_v_in_closure.
@@ -50,8 +51,9 @@ Proof.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [newg newh] eqn:Hfgh.
     simpl in Hfri. inversion Hfri; subst; clear Hfri.
-    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq from to 0
+                  (remset_item2forward_t item rmst g) g h newg newh
+                  (eq_sym Hfgh)) as Hfr.
     eapply fr_closure_has_v; eauto.
   - now inversion Hfri.
 Qed.
@@ -69,8 +71,9 @@ Proof.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [newg newh] eqn:Hfgh.
     simpl in Hfri. inversion Hfri; subst; clear Hfri.
-    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq from to 0
+                  (remset_item2forward_t item rmst g) g h newg newh
+                  (eq_sym Hfgh)) as Hfr.
     eapply fr_vertex_address; eauto.
   - now inversion Hfri.
 Qed.
@@ -82,16 +85,11 @@ Lemma forward_remset_item_fold_closure_has_v:
     closure_has_v g x ->
     closure_has_v g' x.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' x Hto Hfold Hcl; simpl in Hfold.
-  - now inversion Hfold.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfold. symmetry in Hfri2.
-    assert (Hto2: graph_has_gen g2 to).
-    { rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to). exact Hto. }
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' x Hto2 Hfold).
-    eapply (fri_closure_has_v from to g h rh rmst a g2 h2 rh2 rmst2 x); eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' x Hto Hfold Hcl.
+  eapply (forward_remset_item_fold_graph_property
+            (fun g0 => closure_has_v g0 x));
+    [| exact Hto | exact Hcl | exact Hfold].
+  intros. eapply fri_closure_has_v; eassumption.
 Qed.
 
 Lemma forward_remset_item_fold_vertex_address:
@@ -101,18 +99,16 @@ Lemma forward_remset_item_fold_vertex_address:
     closure_has_v g x ->
     vertex_address g x = vertex_address g' x.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' x Hto Hfold Hcl; simpl in Hfold.
-  - now inversion Hfold.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfold. symmetry in Hfri2.
-    assert (Hto2: graph_has_gen g2 to).
-    { rewrite <- (forward_remset_item_ghg _ _ _ _ _ _ _ _ _ _ _ Hto Hfri2 to). exact Hto. }
-    assert (Hcl2: closure_has_v g2 x) by
-        (eapply (fri_closure_has_v from to g h rh rmst a g2 h2 rh2 rmst2 x); eauto).
-    rewrite <- (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' x Hto2 Hfold Hcl2).
-    eapply (fri_vertex_address from to g h rh rmst a g2 h2 rh2 rmst2 x); eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' x Hto Hfold Hcl.
+  eapply (forward_remset_item_fold_graph_property
+            (fun g0 => closure_has_v g0 x /\
+               vertex_address g x = vertex_address g0 x));
+    [| exact Hto | split; [exact Hcl | reflexivity] | exact Hfold].
+  intros item g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 Hto0 [Hcl0 Haddr] Hitem.
+  split.
+  - eapply fri_closure_has_v; eassumption.
+  - transitivity (vertex_address g0 x); [exact Haddr |].
+    eapply fri_vertex_address; eassumption.
 Qed.
 
 Lemma forward_remset_item_fold_rootpairs_compatible:
@@ -128,27 +124,19 @@ Lemma forward_remset_item_fold_rootpairs_compatible:
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     rootpairs_compatible g' rootpairs roots.
 Proof.
-  intros from to g h rh rmst r. revert g h rh rmst.
-  induction r; intros g h rh rmst g' h' rh' rmst' rootpairs roots Hneq Hto Hcc Hrnd Hrc Hrrsc Hrgc Hrpc Hfri;
-    simpl in Hfri.
-  - now inversion Hfri.
-  - hnf in Hrrsc. rewrite Forall_cons_iff in Hrrsc. destruct Hrrsc as [Hrica Hricr].
-    destruct (forward_remset_item from to (g, h, rh, rmst) a) as [[[g2 h2] rh2] rmst2] eqn:Hfri2.
-    pose proof Hfri2 as Hfri2'. unfold forward_remset_item in Hfri2'. simpl in Hfri2'.
-    rewrite Hfri2' in Hfri. symmetry in Hfri2.
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst' rootpairs roots); eauto.
-    + eapply forward_remset_item_ghg with (g := g); eassumption.
-    + eapply fri_copy_compatible; eauto.
-    + eapply fri_remset_nodup; eassumption.
-    + eapply fri_remset_graph_compatible; eauto.
-    + hnf. rewrite Forall_forall in Hricr |- *. intros x Hin. specialize (Hricr _ Hin).
-      eapply fri_remset_item_compatible with (rmst := rmst) (item := a); eassumption.
-    + eapply (forward_remset_item_roots_graph_compatible_pres
-                from to g h rh rmst a g2 h2 rh2 rmst2 roots); eauto.
-    + eapply (fri_rootpairs_compatible from to g h rh rmst a g2 h2 rh2 rmst2 rootpairs roots); eauto.
+  intros from to g h rh rmst r g' h' rh' rmst' rootpairs roots
+         _ Hto _ _ _ _ Hrgc Hrpc Hfold.
+  eapply (forward_remset_item_fold_graph_property
+            (fun g0 => roots_graph_compatible roots g0 /\
+               rootpairs_compatible g0 rootpairs roots));
+    [| exact Hto | split; [exact Hrgc | exact Hrpc] | exact Hfold].
+  intros item g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 Hto0 [Hrgc0 Hrpc0] Hitem.
+  split.
+  - eapply forward_remset_item_roots_graph_compatible_pres; eassumption.
+  - eapply fri_rootpairs_compatible; eassumption.
 Qed.
 
-Lemma heap_remset_zero_available_weak_valid: forall g h rh gen,
+#[local] Lemma heap_remset_zero_available_weak_valid: forall g h rh gen,
     graph_heap_compatible g h ->
     graph_has_gen g gen ->
     remset_heap_and_heap_compatible rh h ->
@@ -183,7 +171,7 @@ Proof.
     rep_lia.
 Qed.
 
-Lemma heap_unused_rep_reset_with_remset:
+#[local] Lemma heap_unused_rep_reset_with_remset:
   forall g h rg rhh rh gen,
     graph_heap_compatible g h ->
     graph_has_gen g gen ->
@@ -509,7 +497,7 @@ Proof.
       destruct (zlt 0 (available_size h1 to)) as [Hav1|Hav1].
       - cancel.
       - assert (Hzero0: available_size h0 to = 0). {
-          rewrite (proj1 H23 to).
+          rewrite (heap_relation_available_size _ _ to H23).
           pose proof available_space_range (nth_space h1 to).
           unfold available_size in *. lia.
         }
@@ -603,20 +591,21 @@ Proof.
           (eapply hr_trans; [exact H23 | exact H34]).
       assert (Hstart02: gen_start g0 from = gen_start g2 from). {
         destruct (gt_gs_compatible _ _ Hghc0 _ Hfrom_g0) as [Hs0 _].
-        destruct Hhr02 as [_ [Hss _]].
         unfold gen_start at 1. rewrite if_true by exact Hfrom_g0.
-        rewrite Hs0, Hss. exact Hstart2_from.
+        rewrite Hs0, (heap_relation_space_start _ _ from Hhr02).
+        exact Hstart2_from.
       }
       assert (Hsh02: nth_sh g0 from = nth_sh g2 from). {
         destruct (gt_gs_compatible _ _ Hghc0 _ Hfrom_g0) as [_ [Hsh0 _]].
         destruct (gt_gs_compatible _ _ Hghc2 _ Hfrom_g2) as [_ [Hsh2 _]].
-        destruct Hhr02 as [_ [_ [_ Hshh]]].
-        unfold nth_sh. rewrite Hsh0, Hshh, <- Hsh2. reflexivity.
+        unfold nth_sh.
+        rewrite Hsh0, (heap_relation_space_sh _ _ from Hhr02), <- Hsh2.
+        reflexivity.
       }
       assert (Hav02: available_size h0 from = available_size h2 from) by
-          (destruct Hhr02 as [Hav _]; apply Hav).
+          (apply (heap_relation_available_size _ _ from Hhr02)).
       assert (Htot02: total_size h0 from = total_size h2 from) by
-          (destruct Hhr02 as [_ [_ [Htot _]]]; apply Htot).
+          (apply (heap_relation_total_size _ _ from Hhr02)).
       sep_apply (heap_unused_rep_reset_with_remset
                    g2 h2 g0 h0 rh0 from Hghc2 Hfrom_g2
                    Hghc0 Hfrom_g0 Hrhhc0 Hstart02 Hsh02 Hav02 Htot02).

@@ -9,32 +9,18 @@ Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.CertiGC.spatial_gcgraph.
 Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import CertiGraph.CertiGC.gc_spec.
+Require Import CertiGraph.CertiGC.forward_lemmas.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
 
 #[local] Open Scope logic.
-
-Lemma sem_sub_pi_available_space_minus: forall s,
-    isptr (space_start s) ->
-    force_val
-       (sem_sub_pi int_or_ptr_type Signed
-          (offset_val (WORD_SIZE * available_space s) (space_start s)) (Vint (Int.repr 1))) =
-      offset_val (WORD_SIZE * (available_space s - 1)) (space_start s).
-Proof.
-  intros s Hptr. destruct (space_start s); try contradiction. simpl.
-  rewrite ptrofs_of_ints_unfold, ptrofs_mul_repr, Ptrofs.add_commut, Ptrofs.sub_add_l.
-  rewrite ptrofs_sub_repr, Int.signed_repr by rep_lia. rewrite Ptrofs.add_commut. do 3 f_equal.
-  unfold WORD_SIZE. lia.
-Qed.
 
 Lemma body_forward_remset: semax_body Vprog Gprog f_forward_remset forward_remset_spec.
 Proof.
   start_function.
   rename H into Hghc. rename H0 into Hoc. rename H1 into Hfrc. rename H2 into Hrc.
   rename H3 into Hrhc. rename H4 into Hftneq. destruct Hfrc as [Hese [Hghgf [Hghgt [Hcc [Hndd Htsc]]]]].
-  assert (Hgsc: generation_space_compatible g (from, nth_gen g from, nth_space h from)) by
-    (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrf [Hshf Hsizef]].
-  assert (Hgsc: generation_space_compatible g (to, nth_gen g to, nth_space h to)) by
-    (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrt [Hsht Hsizet]].
+  destruct (gt_gs_compatible g h Hghc from Hghgf) as [Haddrf [Hshf Hsizef]].
+  destruct (gt_gs_compatible g h Hghc to Hghgt) as [Haddrt [Hsht Hsizet]].
   assert (Hptrf: isptr (space_start (nth_space h from))) by
     (rewrite <- Haddrf; apply start_isptr).
   assert (Hptrt: isptr (space_start (nth_space h to))) by
@@ -273,8 +259,7 @@ Proof.
            replace_SEP 0 ((weak_derives P (memory_block fsh fn fp * TT) && emp) * P) by
              (entailer !!; assumption). Intros.
            assert (P |-- (weak_derives P (valid_pointer v * TT) && emp) * P) as Hweakp. {
-             subst. cancel. apply andp_right. 2: cancel.
-             assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS. apply derives_weak.
+             apply weak_derives_strong. subst.
              sep_apply (remset_rep_valid_pointer sh g' rmst' v SH0 Hinv). cancel. }
            replace_SEP 1 ((weak_derives P (valid_pointer v * TT) && emp) * P) by
              (entailer !!; assumption). Intros.
@@ -332,10 +317,11 @@ Proof.
                  assert (Hghc2: graph_heap_compatible g2 h2). {
                    eapply forward_graph_and_heap_O_ghc with (g := g'); eauto. }
                  assert (Hghgt2: graph_has_gen g2 to). {
-                   pose proof fr_forward_graph_and_heap from to O (remset_ext2forward_t rext) g' h'.
-                   rewrite <- Hfgh in H. simpl in H. erewrite <- fr_graph_has_gen; eassumption. }
-                 assert (Hgsc: generation_space_compatible g2 (to, nth_gen g2 to, nth_space h2 to)) by
-                   (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrt2 [Hsht2 Hsizet2]].
+                   pose proof (fr_forward_graph_and_heap_eq from to O
+                     (remset_ext2forward_t rext) g' h' g2 h2 Hfgh) as Hfr.
+                   erewrite <- fr_graph_has_gen; eassumption. }
+                 destruct (gt_gs_compatible g2 h2 Hghc2 to Hghgt2)
+                   as [Haddrt2 [Hsht2 Hsizet2]].
                  assert (Hptrt2: isptr (space_start (nth_space h2 to))) by
                    (rewrite <- Haddrt2; apply start_isptr). unfold heap_rep. Intros.
                  freeze [0; 1; 2; 3; 5; 6] FR.
@@ -375,8 +361,7 @@ Proof.
                  gather_SEP (data_at_ _ _ _) (heap_remset_rep _ _ _). Intros.
                  assert (Hrhhc2: remset_heap_and_heap_compatible rh' h2). {
                    apply heap_relation_rhhc with h'; auto.
-                   pose proof heaprel_forward_graph_and_heap from to O (remset_ext2forward_t rext) g' h'.
-                   rewrite <- Hfgh in H. simpl in H. assumption. }
+                   eapply heaprel_forward_graph_and_heap_eq; exact Hfgh. }
                  assert ((g2, incr_remset_heap h2 (Z.of_nat to),
                            upd_remset_heap (RemSetExterior v) rh' to,
                            upd_remset from to g' (RemSetExterior v) rmst') =
@@ -416,8 +401,7 @@ Proof.
            assert (P |-- (weak_derives P (valid_pointer (offset_val (pos * WORD_SIZE)
                                                            (vertex_address g' v)) * TT) && emp) * P)
              as Hweakp. {
-             subst. cancel. apply andp_right. 2: cancel.
-             assert (HS: emp |-- TT) by entailer; sep_apply HS; clear HS. apply derives_weak.
+             apply weak_derives_strong. subst.
              sep_apply (graph_rep_interiro_vptr g' v pos). cancel. }
            replace_SEP 1 ((weak_derives P (valid_pointer (offset_val (pos * WORD_SIZE)
                                                             (vertex_address g' v)) * TT) && emp) * P) by
@@ -469,10 +453,11 @@ Proof.
               assert (Hghc2: graph_heap_compatible g2 h2). {
                 eapply forward_graph_and_heap_O_ghc with (g := g'); eauto. }
               assert (Hghgt2: graph_has_gen g2 to). {
-                pose proof fr_forward_graph_and_heap from to O ft g' h'.
-                rewrite <- Hfgh in H. simpl in H. erewrite <- fr_graph_has_gen; eassumption. }
-              assert (Hgsc: generation_space_compatible g2 (to, nth_gen g2 to, nth_space h2 to)) by
-                (apply gt_gs_compatible; assumption). destruct Hgsc as [Haddrt2 [Hsht2 Hsizet2]].
+                pose proof (fr_forward_graph_and_heap_eq from to O ft
+                  g' h' g2 h2 Hfgh) as Hfr.
+                erewrite <- fr_graph_has_gen; eassumption. }
+              destruct (gt_gs_compatible g2 h2 Hghc2 to Hghgt2)
+                as [Haddrt2 [Hsht2 Hsizet2]].
               assert (Hptrt2: isptr (space_start (nth_space h2 to))) by
                 (rewrite <- Haddrt2; apply start_isptr). unfold heap_rep. Intros.
               freeze [0; 1; 2; 4; 5; 6] FR.
@@ -512,8 +497,7 @@ Proof.
               gather_SEP (data_at_ _ _ _) (heap_remset_rep _ _ _). Intros.
               assert (Hrhhc2: remset_heap_and_heap_compatible rh' h2). {
                 apply heap_relation_rhhc with h'; auto.
-                pose proof heaprel_forward_graph_and_heap from to O ft g' h'.
-                rewrite <- Hfgh in H. simpl in H. assumption. }
+                eapply heaprel_forward_graph_and_heap_eq; exact Hfgh. }
               assert ((g2, incr_remset_heap h2 (Z.of_nat to),
                         upd_remset_heap (RemSetInterior (InteriorVertexPos v pos)) rh' to,
                         upd_remset from to g' (RemSetInterior (InteriorVertexPos v pos)) rmst') =
@@ -527,9 +511,10 @@ Proof.
                 (upd_remset from to g' (RemSetInterior (InteriorVertexPos v pos)) rmst').
               unfold limit_address. clear Heqfp. rewrite <- Hgens in Haddrf'.
               entailer !!. 1: rewrite Haddrf'; unfold available_size; f_equal. lia. simpl. cancel.
-              pose proof fr_forward_graph_and_heap from to 0
-                (field2forward (Znth pos (make_fields g' v))) g' h' as Hfr. rewrite <- Hfgh in Hfr.
-              simpl fst in Hfr. replace (vertex_address g' v) with (vertex_address g2 v).
+              pose proof (fr_forward_graph_and_heap_eq from to 0
+                (field2forward (Znth pos (make_fields g' v)))
+                g' h' g2 h2 Hfgh) as Hfr.
+              replace (vertex_address g' v) with (vertex_address g2 v).
               2: { symmetry. eapply fr_vertex_address; eauto. apply graph_has_v_in_closure; assumption. }
               sep_apply remset_rep_upd_int; auto.
            ++ destruct vret as [Hvin | Hvnot]. 2: contradiction. subst P. clear Pweak Hweakp H. Intros.

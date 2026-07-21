@@ -1,9 +1,9 @@
 From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 
-Lemma data_at_heaptype_eq:  forall (sh: share) v h,
+#[local] Lemma data_at_heaptype_eq:  forall (sh: share) v h,
     isptr h -> 
     field_compatible heap_type [StructField _spaces] h ->
     @data_at CompSpecs sh heap_type v h = @data_at CompSpecs sh (tarray space_type MAX_SPACES) v h.
@@ -14,7 +14,7 @@ Proof.
   rewrite isptr_offset_val_zero; auto.
 Qed.
 
-Lemma split2_data_at_Tarray_space_type:
+#[local] Lemma split2_data_at_Tarray_space_type:
   forall (sh: share) (n n1: Z) (v: list (val * (val * (val*val)))) (p: val),
     0 <= n1 <= n -> n = Zlength v ->
     data_at sh (tarray space_type n) v p =
@@ -28,7 +28,7 @@ Proof.
   - rewrite sublist_same; auto.
 Qed.
 
-Lemma space_array_1_eq: forall (sh: share) (v: (val * (val * (val*val)))) (p: val),
+#[local] Lemma space_array_1_eq: forall (sh: share) (v: (val * (val * (val*val)))) (p: val),
     data_at sh (tarray space_type 1) [v] p = data_at sh space_type v p.
 Proof.
   intros. pose proof (data_at_singleton_array_eq sh space_type). apply H. reflexivity.

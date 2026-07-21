@@ -2,6 +2,7 @@ Require Import VST.veric.compcert_rmaps.
 Require Import VST.msl.shares.
 Require Import VST.msl.wand_frame.
 Require Import VST.concurrency.conclib.
+Require Import VST.floyd.field_at_wand.
 Require Import CertiGraph.lib.List_ext.
 Require Import CertiGraph.msl_ext.log_normalize.
 Require Import CertiGraph.msl_ext.ramification_lemmas.
@@ -11,7 +12,7 @@ Require Import CertiGraph.CertiGC.env_graph_gc.
 Require Import CertiGraph.msl_ext.iter_sepcon.
 Require Import Stdlib.Lists.List.
 
-Local Open Scope logic.
+#[local] Open Scope logic.
 
 Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
   Eval cbv delta [Archi.ptr64] match
@@ -20,8 +21,98 @@ Definition vertex_at (sh: share) (p: val) (header: Z) (lst_fields: list val) :=
                   (Z2val header) (offset_val (- WORD_SIZE) p) *
           data_at sh (tarray int_or_ptr_type (Zlength lst_fields)) lst_fields p).
 
+Definition vertex_field_hole
+    (sh: share) (p: val) (header: Z) (lst_fields: list val) (pos: Z): mpred :=
+  data_at sh (if Archi.ptr64 then tulong else tuint)
+          (Z2val header) (offset_val (- WORD_SIZE) p) *
+  SingletonHole.array_with_hole
+    sh int_or_ptr_type pos (Zlength lst_fields) lst_fields p.
+
+#[local] Lemma vertex_at_field_hole_intro: forall sh p header lst_fields pos,
+    0 <= pos < Zlength lst_fields ->
+    vertex_at sh p header lst_fields |--
+      data_at sh int_or_ptr_type (Znth pos lst_fields)
+        (field_address
+           (tarray int_or_ptr_type (Zlength lst_fields))
+           [ArraySubsc pos] p) *
+      vertex_field_hole sh p header lst_fields pos.
+Proof.
+  intros sh p header lst_fields pos Hpos.
+  unfold vertex_at, vertex_field_hole.
+  sep_apply
+    (SingletonHole.array_with_hole_intro
+       sh int_or_ptr_type pos (Zlength lst_fields) lst_fields p Hpos).
+  cancel.
+Qed.
+
+#[local] Lemma vertex_at_field_hole_elim: forall sh p header lst_fields pos new,
+    data_at sh int_or_ptr_type new
+      (field_address
+         (tarray int_or_ptr_type (Zlength lst_fields))
+         [ArraySubsc pos] p) *
+    vertex_field_hole sh p header lst_fields pos |--
+      vertex_at sh p header (upd_Znth pos lst_fields new).
+Proof.
+  intros sh p header lst_fields pos new.
+  unfold vertex_field_hole, vertex_at.
+  rewrite Zlength_upd_Znth.
+  sep_apply
+    (SingletonHole.array_with_hole_elim
+       sh int_or_ptr_type pos (Zlength lst_fields) new lst_fields p).
+  cancel.
+Qed.
+
+Opaque vertex_field_hole.
+
+Lemma vertex_at_field_update_ramif:
+  forall sh p header lst_fields pos new,
+    0 <= pos < Zlength lst_fields ->
+    vertex_at sh p header lst_fields |--
+      data_at sh int_or_ptr_type (Znth pos lst_fields)
+        (field_address
+           (tarray int_or_ptr_type (Zlength lst_fields))
+           [ArraySubsc pos] p) *
+      (data_at sh int_or_ptr_type new
+         (field_address
+            (tarray int_or_ptr_type (Zlength lst_fields))
+            [ArraySubsc pos] p) -*
+       vertex_at sh p header (upd_Znth pos lst_fields new)).
+Proof.
+  intros sh p header lst_fields pos new Hpos.
+  sep_apply (vertex_at_field_hole_intro sh p header lst_fields pos Hpos).
+  apply sepcon_derives; [apply derives_refl |].
+  apply wand_sepcon_adjoint.
+  rewrite sepcon_comm.
+  apply vertex_at_field_hole_elim.
+Qed.
+
+Transparent vertex_field_hole.
+
 Definition vertex_rep (sh: share) (g: LGraph) (v: VType): mpred :=
   vertex_at sh (vertex_address g v) (make_header g v) (make_fields_vals g v).
+
+Lemma vertex_rep_field_update_ramif:
+  forall sh g g' v pos new,
+    0 <= pos < Zlength (make_fields_vals g v) ->
+    vertex_address g' v = vertex_address g v ->
+    make_header g' v = make_header g v ->
+    make_fields_vals g' v =
+      upd_Znth pos (make_fields_vals g v) new ->
+    vertex_rep sh g v |--
+      data_at sh int_or_ptr_type (Znth pos (make_fields_vals g v))
+        (field_address
+           (tarray int_or_ptr_type (Zlength (make_fields_vals g v)))
+           [ArraySubsc pos] (vertex_address g v)) *
+      (data_at sh int_or_ptr_type new
+         (field_address
+            (tarray int_or_ptr_type (Zlength (make_fields_vals g v)))
+            [ArraySubsc pos] (vertex_address g v)) -*
+       vertex_rep sh g' v).
+Proof.
+  intros sh g g' v pos new Hpos Haddr Hheader Hfields.
+  unfold vertex_rep. rewrite Haddr, Hheader, Hfields.
+  apply vertex_at_field_update_ramif; exact Hpos.
+Qed.
 
 Definition generation_rep (g: LGraph) (gen: nat): mpred :=
   iter_sepcon (map (fun x => (gen, x))
@@ -50,6 +141,33 @@ Definition heap_unused_rep (hp: part_heap): mpred := iter_sepcon hp.(spaces) spa
 
 Definition heap_remset_rep (g: LGraph) (h: part_heap) (rh : remset_heap) : mpred :=
   iter_sepcon (combine (spaces h) rh) (space_remset_rep g).
+
+#[local] Lemma remset_item_val_vertex_address_eq: forall g g' item,
+    (forall v, vertex_address g v = vertex_address g' v) ->
+    remset_item_val g item = remset_item_val g' item.
+Proof.
+  intros g g' [p | [v pos]] Haddr; simpl; auto.
+  now rewrite Haddr.
+Qed.
+
+#[local] Lemma space_remset_rep_vertex_address_eq: forall g g' sp rs,
+    (forall v, vertex_address g v = vertex_address g' v) ->
+    space_remset_rep g (sp, rs) = space_remset_rep g' (sp, rs).
+Proof.
+  intros g g' sp rs Haddr. unfold space_remset_rep.
+  destruct (Val.eq (space_start sp) nullval); [reflexivity |].
+  f_equal. apply map_ext. intros.
+  now apply remset_item_val_vertex_address_eq.
+Qed.
+
+Lemma heap_remset_rep_vertex_address_eq: forall g g' h rh,
+    (forall v, vertex_address g v = vertex_address g' v) ->
+    heap_remset_rep g h rh = heap_remset_rep g' h rh.
+Proof.
+  intros g g' h rh Haddr. unfold heap_remset_rep.
+  apply iter_sepcon_func_strong. intros [sp rs] Hin.
+  now apply space_remset_rep_vertex_address_eq.
+Qed.
 
 Definition heap_remset_rep_except (g: LGraph) (h: part_heap)
            (rh : remset_heap) (gen: nat) : mpred :=
@@ -115,6 +233,23 @@ Proof. intros. destruct ext; simpl; reflexivity. Qed.
 
 Definition remset_rep (sh: share) (g: LGraph) (rmst: remset) : mpred :=
   iter_sepcon rmst (remset_ext_rep sh g).
+
+#[local] Lemma remset_ext_rep_vertex_address_eq: forall sh g g' ext,
+    (forall v, vertex_address g v = vertex_address g' v) ->
+    remset_ext_rep sh g ext = remset_ext_rep sh g' ext.
+Proof.
+  intros sh g g' [p v | vertex v] Haddr; simpl; auto.
+  now rewrite Haddr.
+Qed.
+
+Lemma remset_rep_vertex_address_eq: forall sh g g' rmst,
+    (forall v, vertex_address g v = vertex_address g' v) ->
+    remset_rep sh g rmst = remset_rep sh g' rmst.
+Proof.
+  intros sh g g' rmst Haddr. unfold remset_rep.
+  apply iter_sepcon_func_strong. intros ext Hin.
+  now apply remset_ext_rep_vertex_address_eq.
+Qed.
 
 Lemma remset_rep_ramif_stable: forall sh g rmst rext,
     In rext rmst ->
@@ -208,20 +343,6 @@ Definition roots_rep (sh: share) (roots: list rootpair) : mpred :=
   iter_sepcon roots (fun av => data_at sh int_or_ptr_type (rp_val av) (rp_adr av)).
 
 Definition frames_rep (sh: share) (frs: list frame) := frames_shell_rep sh frs * roots_rep sh (frames2rootpairs frs).
-
- Lemma data_at_tarray_field_compatible0:
- forall sh t s r,
- data_at sh (tarray t (Zlength s)) s r =
-!! field_compatible0 (tarray t (Zlength s)) [] r
- && data_at sh (tarray t (Zlength s)) s r.
-Proof.
- intros.
-apply pred_ext. apply andp_right; auto.
-unfold data_at, field_at. apply andp_left1.
-apply prop_derives. unfold field_compatible, field_compatible0.
-intuition.
-apply andp_left2; auto.
-Qed.
 
 Lemma frames_shell_rep_update:
  forall (sh: share) (frs: list frame) (rootvals: list val),
@@ -397,7 +518,7 @@ Proof.
   unfold WORD_SIZE. simpl sizeof. rewrite Z.max_r; auto.
 Qed.
 
-Lemma iter_sepcon_vertex_rep_ptrofs: forall g gen b i sh num,
+#[local] Lemma iter_sepcon_vertex_rep_ptrofs: forall g gen b i sh num,
     Vptr b i = gen_start g gen ->
     iter_sepcon (map (fun x : nat => (gen, x)) (nat_inc_list num)) (vertex_rep sh g)
                 |-- !! (WORD_SIZE * previous_vertices_size g gen num +
@@ -662,7 +783,7 @@ Proof.
   - first [now exists (Z.div Int.modulus 2) | now exists (Z.div Int64.modulus 2)].
 Qed.
 
-Lemma even_divided_odd_false: forall n z,
+#[local] Lemma even_divided_odd_false: forall n z,
     Z.even n = true -> (n | z) -> Z.odd z = false.
 Proof.
   intros. rewrite Zodd_mod. destruct (Zaux.Zeven_ex n) as [p ?].
@@ -671,7 +792,7 @@ Proof.
   rewrite Z_mod_mult; reflexivity.
 Qed.
 
-Lemma four_divided_tenth_pl_false: forall n i,
+#[local] Lemma four_divided_tenth_pl_false: forall n i,
     (4 | n) -> (n | Ptrofs.unsigned i) -> Ptrofs.testbit i 1 = false.
 Proof.
   intros. unfold Ptrofs.testbit. inversion H. inversion H0. rewrite H2. subst.
@@ -822,7 +943,7 @@ Qed.
 Definition generation_data_at_ g t_info gen :=
   data_at_ (nth_sh g gen) (tarray int_or_ptr_type (available_size t_info gen)) (gen_start g gen).
 
-Lemma gr_hrgda_data_at_: forall g h gen,
+#[local] Lemma gr_hrgda_data_at_: forall g h gen,
     graph_has_gen g gen ->
     graph_heap_compatible g h ->
     generation_rep g gen *
@@ -896,7 +1017,7 @@ Qed.
 Definition total_gen_data_at_ g h gen :=
   data_at_ (nth_sh g gen) (tarray int_or_ptr_type (total_size h gen)) (gen_start g gen).
 
-Lemma gr_hrgda_srr_data_at_: forall g h rh gen,
+#[local] Lemma gr_hrgda_srr_data_at_: forall g h rh gen,
     graph_has_gen g gen ->
     graph_heap_compatible g h ->
     generation_rep g gen * heap_rest_gen_data_at_ g h gen *
@@ -1224,6 +1345,209 @@ Proof.
   simpl. cancel. apply wand_frame_ver.
 Qed.
 
+Lemma generation_rep_vertex_update_eq_in_diff_gen:
+  forall g g' v gen,
+    glabel g' = glabel g ->
+    (forall sh v', v' <> v -> vertex_rep sh g v' = vertex_rep sh g' v') ->
+    gen <> vgeneration v ->
+    generation_rep g gen = generation_rep g' gen.
+Proof.
+  intros g g' v gen Hglabel Hvertex Hgen.
+  unfold generation_rep.
+  assert (Hnth: nth_gen g' gen = nth_gen g gen).
+  { unfold nth_gen. now rewrite Hglabel. }
+  assert (Hsh: nth_sh g' gen = nth_sh g gen).
+  { unfold nth_sh. now rewrite Hnth. }
+  rewrite Hnth, Hsh.
+  apply iter_sepcon_func_strong. intros v' Hin.
+  apply list_in_map_inv in Hin. destruct Hin as [index [? _]]. subst v'.
+  apply Hvertex. intro Heq. subst v.
+  simpl in Hgen. contradiction.
+Qed.
+
+Lemma generation_vertex_update_ramif:
+  forall g g' gen index,
+    glabel g' = glabel g ->
+    (forall sh v', v' <> (gen, index) ->
+       vertex_rep sh g v' = vertex_rep sh g' v') ->
+    gen_has_index g gen index ->
+    generation_rep g gen |--
+      vertex_rep (nth_sh g gen) g (gen, index) *
+      (vertex_rep (nth_sh g gen) g' (gen, index) -*
+       generation_rep g' gen).
+Proof.
+  intros g g' gen index Hglabel Hvertex Hindex.
+  unfold generation_rep.
+  assert (Hnth: nth_gen g' gen = nth_gen g gen).
+  { unfold nth_gen. now rewrite Hglabel. }
+  assert (Hsh: nth_sh g' gen = nth_sh g gen).
+  { unfold nth_sh. now rewrite Hnth. }
+  rewrite Hnth, Hsh.
+  apply iter_sepcon_ramif_pred_1.
+  remember
+    (map (fun x : nat => (gen, x))
+         (nat_inc_list (number_of_vertices (nth_gen g gen)))) as vertices.
+  assert (Hin: In (gen, index) vertices).
+  { subst vertices. apply in_map. rewrite nat_inc_list_In_iff. exact Hindex. }
+  apply In_Permutation_cons in Hin. destruct Hin as [rest Hperm].
+  exists rest. split; [exact Hperm |].
+  intros v' Hin'. apply Hvertex.
+  assert (Hnodup: NoDup vertices).
+  { subst vertices. apply FinFun.Injective_map_NoDup.
+    - intros x y Heq. now inversion Heq.
+    - apply nat_inc_list_NoDup. }
+  apply (Permutation_NoDup Hperm), NoDup_cons_2 in Hnodup.
+  intro Heq. subst v'. contradiction.
+Qed.
+
+Lemma graph_generation_vertex_update_ramif:
+  forall g g' v,
+    glabel g' = glabel g ->
+    (forall sh v', v' <> v -> vertex_rep sh g v' = vertex_rep sh g' v') ->
+    graph_has_gen g (vgeneration v) ->
+    graph_rep g |-- generation_rep g (vgeneration v) *
+      (generation_rep g' (vgeneration v) -* graph_rep g').
+Proof.
+  intros g g' v Hglabel Hvertex Hgen.
+  unfold graph_rep.
+  rewrite Hglabel.
+  apply iter_sepcon_ramif_pred_1.
+  remember (nat_inc_list (length (g_gen (glabel g)))) as generations.
+  assert (Hin: In (vgeneration v) generations).
+  { subst generations. rewrite nat_inc_list_In_iff. exact Hgen. }
+  apply In_Permutation_cons in Hin. destruct Hin as [rest Hperm].
+  exists rest. split; [exact Hperm |].
+  intros gen Hin'.
+  apply generation_rep_vertex_update_eq_in_diff_gen with (v := v); auto.
+  assert (Hnodup: NoDup generations) by
+    (subst generations; apply nat_inc_list_NoDup).
+  apply (Permutation_NoDup Hperm), NoDup_cons_2 in Hnodup.
+  intro Heq. subst gen. contradiction.
+Qed.
+
+Lemma graph_vertex_update_ramif:
+  forall g g' v,
+    glabel g' = glabel g ->
+    (forall sh v', v' <> v -> vertex_rep sh g v' = vertex_rep sh g' v') ->
+    graph_has_v g v ->
+    graph_rep g |-- vertex_rep (nth_sh g (vgeneration v)) g v *
+      (vertex_rep (nth_sh g (vgeneration v)) g' v -* graph_rep g').
+Proof.
+  intros g g' [gen index] Hglabel Hvertex [Hgen Hindex].
+  simpl in *.
+  sep_apply (graph_generation_vertex_update_ramif
+               g g' (gen, index) Hglabel Hvertex Hgen).
+  change
+    (generation_rep g gen * (generation_rep g' gen -* graph_rep g') |--
+     vertex_rep (nth_sh g gen) g (gen, index) *
+       (vertex_rep (nth_sh g gen) g' (gen, index) -* graph_rep g')).
+  sep_apply (generation_vertex_update_ramif
+               g g' gen index Hglabel Hvertex Hindex).
+  cancel. apply wand_frame_ver.
+Qed.
+
+Lemma graph_rep_vertex_field_update_ramif:
+  forall g g' v pos new,
+    glabel g' = glabel g ->
+    (forall sh v', v' <> v -> vertex_rep sh g v' = vertex_rep sh g' v') ->
+    graph_has_v g v ->
+    0 <= pos < Zlength (make_fields_vals g v) ->
+    vertex_address g' v = vertex_address g v ->
+    make_header g' v = make_header g v ->
+    make_fields_vals g' v =
+      upd_Znth pos (make_fields_vals g v) new ->
+    graph_rep g |--
+      data_at (nth_sh g (vgeneration v)) int_or_ptr_type
+        (Znth pos (make_fields_vals g v))
+        (field_address
+           (tarray int_or_ptr_type (Zlength (make_fields_vals g v)))
+           [ArraySubsc pos] (vertex_address g v)) *
+      (data_at (nth_sh g (vgeneration v)) int_or_ptr_type new
+         (field_address
+            (tarray int_or_ptr_type (Zlength (make_fields_vals g v)))
+            [ArraySubsc pos] (vertex_address g v)) -*
+       graph_rep g').
+Proof.
+  intros g g' v pos new Hglabel Hother Hv Hpos Haddr Hheader Hfields.
+  sep_apply (graph_vertex_update_ramif g g' v Hglabel Hother Hv).
+  sep_apply (vertex_rep_field_update_ramif
+               (nth_sh g (vgeneration v)) g g' v pos new
+               Hpos Haddr Hheader Hfields).
+  cancel. apply wand_frame_ver.
+Qed.
+
+Lemma mutable_graph_update_vertex_rep_other:
+  forall g src pos new g' sh v,
+    v <> src ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    vertex_rep sh g v = vertex_rep sh g' v.
+Proof.
+  intros g src pos new g' sh v Hneq Hloc Hupd.
+  unfold vertex_rep.
+  rewrite (mutable_graph_update_vertex_address
+             g (InteriorVertexPos src pos) new g' v Hloc Hupd).
+  rewrite (mutable_graph_update_make_header
+             g (InteriorVertexPos src pos) new g' v Hloc Hupd).
+  rewrite (mutable_graph_update_make_fields_vals_other
+             g src pos new g' v Hneq Hloc Hupd).
+  reflexivity.
+Qed.
+
+Lemma graph_rep_mutable_update_ramif:
+  forall g src pos new g',
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    graph_rep g |--
+      data_at (nth_sh g (vgeneration src)) int_or_ptr_type
+        (Znth pos (make_fields_vals g src))
+        (field_address
+           (tarray int_or_ptr_type (Zlength (make_fields_vals g src)))
+           [ArraySubsc pos] (vertex_address g src)) *
+      (data_at (nth_sh g (vgeneration src)) int_or_ptr_type
+         (exterior2val g new)
+         (field_address
+            (tarray int_or_ptr_type (Zlength (make_fields_vals g src)))
+            [ArraySubsc pos] (vertex_address g src)) -*
+       graph_rep g').
+Proof.
+  intros g src pos new g' Hloc Hupd.
+  pose proof Hloc as Hloc_parts.
+  destruct Hloc_parts as [Hsrc [Hpos [Hmark Htag]]].
+  apply graph_rep_vertex_field_update_ramif.
+  - eapply mutable_graph_update_glabel; eassumption.
+  - intros sh v Hneq.
+    exact (mutable_graph_update_vertex_rep_other
+             g src pos new g' sh v Hneq Hloc Hupd).
+  - exact Hsrc.
+  - rewrite fields_eq_length. exact Hpos.
+  - eapply mutable_graph_update_vertex_address; eassumption.
+  - eapply mutable_graph_update_make_header; eassumption.
+  - eapply mutable_graph_update_make_fields_vals_src; eassumption.
+Qed.
+
+Lemma heap_remset_rep_mutable_graph_update:
+  forall g it new g' h rh,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    heap_remset_rep g h rh = heap_remset_rep g' h rh.
+Proof.
+  intros g it new g' h rh Hloc Hupd.
+  apply heap_remset_rep_vertex_address_eq. intros v.
+  symmetry. eapply mutable_graph_update_vertex_address; eassumption.
+Qed.
+
+Lemma remset_rep_mutable_graph_update:
+  forall sh g it new g' rmst,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    remset_rep sh g rmst = remset_rep sh g' rmst.
+Proof.
+  intros sh g it new g' rmst Hloc Hupd.
+  apply remset_rep_vertex_address_eq. intros v.
+  symmetry. eapply mutable_graph_update_vertex_address; eassumption.
+Qed.
+
 Lemma heap_unused_rep_cut: forall (h: part_heap) i s (H1: 0 <= i < Zlength (spaces h))
                                 (H2: has_space (Znth i (spaces h)) s),
     space_start (Znth i (spaces h)) <> nullval ->
@@ -1265,7 +1589,7 @@ Proof.
   rewrite data_at__eq, (data_at_singleton_array_eq _ _ (default_val tp)); reflexivity.
 Qed.
 
-Lemma field_compatible_int_or_ptr_integer_iff: forall p,
+#[local] Lemma field_compatible_int_or_ptr_integer_iff: forall p,
     field_compatible int_or_ptr_type [] p <->
     field_compatible (if Archi.ptr64 then tulong else tuint) [] p.
 Proof.
@@ -1284,7 +1608,7 @@ Proof.
           field_compatible_int_or_ptr_integer_iff. reflexivity.
 Qed.
 
-Lemma lacv_generation_rep_not_eq: forall g v to n,
+#[local] Lemma lacv_generation_rep_not_eq: forall g v to n,
     n <> to -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     generation_rep (lgraph_add_copied_v g v to) n = generation_rep g n.
 Proof.
@@ -1303,7 +1627,7 @@ Proof.
   - apply lacv_make_fields_vals_old; assumption.
 Qed.
 
-Lemma lacv_icgr_not_eq: forall l g v to,
+#[local] Lemma lacv_icgr_not_eq: forall l g v to,
     ~ In to l -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     iter_sepcon l (generation_rep (lgraph_add_copied_v g v to)) =
     iter_sepcon l (generation_rep g).
@@ -1314,7 +1638,7 @@ Proof.
   - intro. apply H. right. assumption.
 Qed.
 
-Lemma lacv_generation_rep_eq: forall g v to,
+#[local] Lemma lacv_generation_rep_eq: forall g v to,
     graph_has_v g v -> graph_has_gen g to -> no_dangling_dst g -> copy_compatible g ->
     generation_rep (lgraph_add_copied_v g v to) to =
     vertex_at (nth_sh g to) (vertex_address g (new_copied_v g to))
@@ -1426,60 +1750,12 @@ Proof.
     + rewrite Zlength_cons. rep_lia.
 Qed.
 
-Lemma lmc_vertex_rep_not_eq: forall sh g v new_v x,
+#[local] Lemma lmc_vertex_rep_not_eq: forall sh g v new_v x,
     x <> v -> vertex_rep sh (lgraph_mark_copied g v new_v) x = vertex_rep sh g x.
 Proof.
   intros. unfold vertex_rep. rewrite lmc_vertex_address, lmc_make_fields_vals_not_eq.
   2: assumption. f_equal. unfold make_header. rewrite lmc_vlabel_not_eq by assumption.
   reflexivity.
-Qed.
-
-Lemma lmc_generation_rep_not_eq: forall (g : LGraph) (v new_v : VType) (x : nat),
-    x <> vgeneration v ->
-    generation_rep g x = generation_rep (lgraph_mark_copied g v new_v) x.
-Proof.
-  intros. unfold generation_rep. unfold nth_sh, nth_gen. simpl.
-  remember (nat_inc_list (number_of_vertices (nth x (g_gen (glabel g)) null_info))).
-  apply iter_sepcon_func_strong. intros. destruct x0 as [n m].
-  apply list_in_map_inv in H0. destruct H0 as [x0 [? ?]]. inversion H0. subst n x0.
-  clear H0. remember (generation_sh (nth x (g_gen (glabel g)) null_info)) as sh.
-  rewrite lmc_vertex_rep_not_eq. 1: reflexivity. intro. destruct v. simpl in *.
-  inversion H0. subst. contradiction.
-Qed.
-
-Lemma graph_gen_lmc_ramif: forall g v new_v,
-    graph_has_gen g (vgeneration v) ->
-    graph_rep g |-- generation_rep g (vgeneration v) *
-    (generation_rep (lgraph_mark_copied g v new_v) (vgeneration v) -*
-                    graph_rep (lgraph_mark_copied g v new_v)).
-Proof.
-  intros. unfold graph_rep. simpl. apply iter_sepcon_ramif_pred_1.
-  red in H. rewrite <- nat_inc_list_In_iff in H. apply In_Permutation_cons in H.
-  destruct H as [f ?]. exists f. split. 1: assumption. intros.
-  assert (NoDup (vgeneration v :: f)) by
-      (apply (Permutation_NoDup H), nat_inc_list_NoDup). apply NoDup_cons_2 in H1.
-  rewrite <- lmc_generation_rep_not_eq. 1: reflexivity. intro. subst. contradiction.
-Qed.
-
-Lemma gen_vertex_lmc_ramif: forall g gen index new_v,
-    gen_has_index g gen index ->
-    generation_rep g gen |-- vertex_rep (nth_sh g gen) g (gen, index) *
-    (vertex_rep (nth_sh g gen) (lgraph_mark_copied g (gen, index) new_v)
-                (gen, index) -*
-                generation_rep (lgraph_mark_copied g (gen, index) new_v) gen).
-Proof.
-  intros. unfold generation_rep. unfold nth_gen. simpl. apply iter_sepcon_ramif_pred_1.
-  change (nth gen (g_gen (glabel g)) null_info) with (nth_gen g gen).
-  remember (map (fun x : nat => (gen, x))
-                (nat_inc_list (number_of_vertices (nth_gen g gen)))).
-  assert (In (gen, index) l) by
-      (subst l; apply in_map; rewrite nat_inc_list_In_iff; assumption).
-  apply In_Permutation_cons in H0. destruct H0 as [f ?]. exists f. split.
-  1: assumption. intros. unfold nth_sh, nth_gen. simpl. rewrite lmc_vertex_rep_not_eq.
-  1: reflexivity. assert (NoDup l). {
-    subst l. apply FinFun.Injective_map_NoDup. 2: apply nat_inc_list_NoDup.
-    red. intros. inversion H2. reflexivity. }
-  apply (Permutation_NoDup H0), NoDup_cons_2 in H2. intro. subst. contradiction.
 Qed.
 
 Lemma graph_vertex_lmc_ramif: forall g v new_v,
@@ -1489,12 +1765,14 @@ Lemma graph_vertex_lmc_ramif: forall g v new_v,
                 (lgraph_mark_copied g v new_v) v -*
                 graph_rep (lgraph_mark_copied g v new_v)).
 Proof.
-  intros. destruct H. sep_apply (graph_gen_lmc_ramif g v new_v H).
-  destruct v as [gen index]. simpl vgeneration in *. simpl vindex in *.
-  sep_apply (gen_vertex_lmc_ramif g gen index new_v H0). cancel. apply wand_frame_ver.
+  intros g v new_v Hv.
+  apply graph_vertex_update_ramif.
+  - reflexivity.
+  - intros sh v' Hneq. symmetry. now apply lmc_vertex_rep_not_eq.
+  - exact Hv.
 Qed.
 
-Lemma lgd_vertex_rep_eq_in_diff_vert: forall sh g v' v v1 e n,
+#[local] Lemma lgd_vertex_rep_eq_in_diff_vert: forall sh g v' v v1 e n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = FieldEdge e ->
     v1 <> v ->
@@ -1509,77 +1787,6 @@ Proof.
     try reflexivity; assumption.
 Qed.
 
-Lemma lgd_gen_rep_eq_in_diff_gen: forall (g : LGraph) (v v' : VType) (x : nat) e n,
-    0 <= n < Zlength (make_fields g v) ->
-    Znth n (make_fields g v) = FieldEdge e ->
-    x <> vgeneration v ->
-     generation_rep g x = generation_rep (labeledgraph_gen_dst g e v') x.
-Proof.
-  intros. unfold generation_rep.
-  unfold nth_sh, nth_gen. simpl.
-  remember (nat_inc_list (number_of_vertices
-                            (nth x (g_gen (glabel g)) null_info))).
-  apply iter_sepcon_func_strong. intros v1 H2.
-  apply list_in_map_inv in H2.
-  destruct H2 as [x1 [? ?]].
-  remember (generation_sh (nth x (g_gen (glabel g)) null_info)) as sh.
-  assert (v1 <> v). {
-    intro. unfold vgeneration in H1.
-    rewrite H4 in H2. rewrite H2 in H1. unfold not in H1.
-    simpl in H1. lia. }
-  apply (lgd_vertex_rep_eq_in_diff_vert sh g v' v v1 e n); assumption.
-Qed.
-
-Lemma graph_gen_lgd_ramif: forall g v v' e n,
-    0 <= n < Zlength (make_fields g v) ->
-    Znth n (make_fields g v) = FieldEdge e ->
-    graph_has_gen g (vgeneration v) ->
-    graph_rep g |-- generation_rep g (vgeneration v) *
-    (generation_rep (labeledgraph_gen_dst g e v') (vgeneration v) -*
-                    graph_rep (labeledgraph_gen_dst g e v')).
-Proof.
-  intros. unfold graph_rep. simpl.
-  apply iter_sepcon_ramif_pred_1.
-  red in H1. rewrite <- nat_inc_list_In_iff in H1.
-  apply In_Permutation_cons in H1.
-  destruct H1 as [f ?]. exists f. split. 1: assumption. intros.
-  assert (NoDup (vgeneration v :: f)) by
-      (apply (Permutation_NoDup H1), nat_inc_list_NoDup).
-  apply NoDup_cons_2 in H3.
-  assert (x <> vgeneration v) by
-      (unfold not; intro; subst; contradiction).
-  apply (lgd_gen_rep_eq_in_diff_gen g v v' x e n); assumption.
-Qed.
-
-Lemma gen_vertex_lgd_ramif: forall g gen index new_v v n e,
-    gen_has_index g gen index ->
-0 <= n < Zlength (make_fields g v) ->
-       Znth n (make_fields g v) = FieldEdge e ->
-       v = (gen, index) ->
-    generation_rep g gen |-- vertex_rep (nth_sh g gen) g (gen, index) *
-    (vertex_rep (nth_sh g gen) (labeledgraph_gen_dst g e new_v)
-                (gen, index) -*
-                generation_rep (labeledgraph_gen_dst g e new_v) gen).
-Proof.
-  intros. unfold generation_rep. unfold nth_gen.
-  simpl. apply iter_sepcon_ramif_pred_1.
-  change (nth gen (g_gen (glabel g)) null_info) with (nth_gen g gen).
-  remember (map (fun x : nat => (gen, x))
-                (nat_inc_list (number_of_vertices (nth_gen g gen)))).
-  assert (In (gen, index) l) by
-      (subst l; apply in_map; rewrite nat_inc_list_In_iff; assumption).
-  apply In_Permutation_cons in H3. destruct H3 as [f ?]. exists f. split.
-  1: assumption. intros. unfold nth_sh, nth_gen. simpl.
-  remember (generation_sh (nth gen (g_gen (glabel g)) null_info)) as sh.
-  rewrite (lgd_vertex_rep_eq_in_diff_vert sh g new_v v x e n);
-    try reflexivity; try assumption.
-  assert (NoDup l). {
-    subst l. apply FinFun.Injective_map_NoDup. 2: apply nat_inc_list_NoDup.
-    red. intros. inversion H5. reflexivity. }
-  apply (Permutation_NoDup H3), NoDup_cons_2 in H5. intro.
-  rewrite H2 in H6. rewrite H6 in H4. intuition.
-Qed.
-
 Lemma graph_vertex_lgd_ramif: forall g v e v' n,
     0 <= n < Zlength (make_fields g v) ->
     Znth n (make_fields g v) = FieldEdge e ->
@@ -1589,13 +1796,12 @@ Lemma graph_vertex_lgd_ramif: forall g v e v' n,
                 (labeledgraph_gen_dst g e v') v -*
                 graph_rep (labeledgraph_gen_dst g e v')).
 Proof.
-  intros. destruct H1. sep_apply (graph_gen_lgd_ramif g v v' e n);
-                         try assumption.
-  destruct v as [gen index] eqn:?. simpl vgeneration in *.
-  simpl vindex in *. rewrite <- Heqv0 in H, H0.
-  sep_apply (gen_vertex_lgd_ramif g gen index v' v n e);
-    try assumption.
-  cancel. apply wand_frame_ver.
+  intros g v e v' n Hn He Hv.
+  apply graph_vertex_update_ramif.
+  - reflexivity.
+  - intros sh v1 Hneq.
+    now apply (lgd_vertex_rep_eq_in_diff_vert sh g v' v v1 e n).
+  - exact Hv.
 Qed.
 
 Definition space_struct_rep (sh: share) (heap_p: val) (h: part_heap) (gen: nat) :=
@@ -1769,14 +1975,14 @@ Proof.
   apply wand_frame_intro.
 Qed.
 
-Lemma vertex_rep_reset: forall g i j x sh,
+#[local] Lemma vertex_rep_reset: forall g i j x sh,
     vertex_rep sh (reset_graph j g) (i, x) = vertex_rep sh g (i, x).
 Proof.
   intros. unfold vertex_rep.
   rewrite vertex_address_reset, make_header_reset, make_fields_reset. reflexivity.
 Qed.
 
-Lemma generation_rep_reset_diff: forall (g: LGraph) i j,
+#[local] Lemma generation_rep_reset_diff: forall (g: LGraph) i j,
     i <> j -> generation_rep (reset_graph j g) i = generation_rep g i.
 Proof.
   intros. unfold generation_rep. rewrite <- !iter_sepcon_map.
@@ -1784,7 +1990,7 @@ Proof.
   apply iter_sepcon_func; intros. apply vertex_rep_reset.
 Qed.
 
-Lemma generation_rep_reset_same: forall (g: LGraph) i,
+#[local] Lemma generation_rep_reset_same: forall (g: LGraph) i,
     graph_has_gen g i -> generation_rep (reset_graph i g) i = emp.
 Proof.
   intros. unfold generation_rep. rewrite <- !iter_sepcon_map.
@@ -1817,6 +2023,18 @@ Definition space_token_rep (sp: space): mpred :=
 
 Definition ti_token_rep (h: part_heap) (p: val): mpred :=
   malloc_token Ews heap_type p * iter_sepcon (spaces h) space_token_rep.
+
+Lemma ti_token_rep_weak_heap_relation: forall h h' p,
+    weak_heap_relation h h' ->
+    ti_token_rep h p = ti_token_rep h' p.
+Proof.
+  intros h h' p [Hstart Htotal]. unfold ti_token_rep. f_equal.
+  apply (iter_sepcon_pointwise_eq _ _ _ _ null_space null_space).
+  - rewrite <- !ZtoNat_Zlength, !spaces_size. reflexivity.
+  - intros. fold (nth_space h i). fold (nth_space h' i).
+    unfold total_size in Htotal. unfold space_token_rep.
+    rewrite Hstart, Htotal. reflexivity.
+Qed.
 
 Lemma ti_token_rep_add: forall h p sp i (Hs: 0 <= i < MAX_SPACES),
     space_start (Znth i (spaces h)) = nullval ->
@@ -1877,7 +2095,7 @@ Proof.
   rewrite if_true by assumption. rewrite emp_sepcon. reflexivity.
 Qed.
 
-Lemma vertex_rep_add: forall (g : LGraph) (gi : generation_info) v sh,
+#[local] Lemma vertex_rep_add: forall (g : LGraph) (gi : generation_info) v sh,
     graph_has_v g v -> copy_compatible g -> no_dangling_dst g ->
     vertex_rep sh g v = vertex_rep sh (lgraph_add_new_gen g gi) v.
 Proof.
@@ -2075,7 +2293,7 @@ Proof.
     + simpl. destruct (Val.eq _ _); [constructor; reflexivity | contradiction].
 Qed.
 
-Lemma fr_remset_ext_rep_eq: forall from to depth p sh g1 g2 rext,
+#[local] Lemma fr_remset_ext_rep_eq: forall from to depth p sh g1 g2 rext,
     graph_has_gen g1 to ->
     remset_ext_compatible' g1 rext ->
     forward_relation from to depth p g1 g2 ->
@@ -2096,8 +2314,7 @@ Proof.
   intros from to sh g h g' h' rext Hghg Hcc Hrec Hfgh. Opaque forward_graph_and_heap.
   destruct rext as [out | vtx]; simpl in *; auto. unfold remset_ext2forward_t in Hfgh. simpl in Hfgh.
   f_equal. eapply fr_vertex_address; eauto.
-  - pose proof fr_forward_graph_and_heap from to O (ForwardVertex vtx) g h as Hfr.
-    rewrite <- Hfgh in Hfr. simpl in Hfr. eassumption. Transparent forward_graph_and_heap.
+  - eapply fr_forward_graph_and_heap_eq; exact Hfgh. Transparent forward_graph_and_heap.
   - symmetry in Hfgh. eapply fgh_O_closure_has_v_update_vertex; eassumption.
 Qed.
 
@@ -2121,8 +2338,7 @@ Proof.
   - clear e. subst. eapply fgh_remset_ext_rep_upd_eq; eassumption.
   - eapply fr_remset_ext_rep_eq; eauto.
     + apply Hrc. symmetry in Hperm. eapply Permutation_in; eauto. right. assumption.
-    + pose proof fr_forward_graph_and_heap from to O (remset_ext2forward_t rext) g h as Hfr.
-      rewrite <- Hfgh in Hfr. simpl in Hfr. eassumption.
+    + eapply fr_forward_graph_and_heap_eq; exact Hfgh.
 Qed.
 
 Lemma heap_rem_ramif: forall sh h p gen,
@@ -2146,10 +2362,10 @@ Proof.
   cut (l1 = l3 /\ l2 = l4).
   - intros Heq. clear -Heq. destruct Heq. subst. apply wand_frame_intro.
   - pose proof spaces_size h. pose proof spaces_size (incr_remset_heap h (Z.of_nat gen)). split.
-    + subst. rewrite Znth_list_eq. split; [list_solve |].
+    + subst. apply List_ext.list_eq_Znth; [list_solve |].
       intros j Hj. rewrite !Znth_sublist; [|list_solve..].
       symmetry. apply irh_Znth_spaces_not_eq. lia.
-    + subst. rewrite Znth_list_eq. split; [list_solve |].
+    + subst. apply List_ext.list_eq_Znth; [list_solve |].
       intros j Hj. rewrite !Znth_sublist; [|list_solve..].
       symmetry. apply irh_Znth_spaces_not_eq. list_solve.
 Qed.
@@ -2172,12 +2388,16 @@ Proof.
   assert (Hghc': graph_heap_compatible g' h') by (eapply forward_graph_and_heap_ghc; eassumption).
   assert (Hlen': length rh = length (spaces h')) by (rewrite <- !ZtoNat_Zlength in *; lia).
   rewrite !heap_remset_rep_iter_sepcon; [|assumption..].
-  pose proof fr_forward_graph_and_heap from to depth p g h as Hfr. rewrite <- Hfgh in Hfr. simpl in Hfr.
+  pose proof (fr_forward_graph_and_heap_eq from to depth p g h g' h' Hfgh) as Hfr.
   pose proof fr_g_gen_len_presv depth from to p g g' Hghg Hfr as Hgenlen. rewrite <- Hgenlen.
   apply iter_sepcon_func_strong. intros gen Hgen. Transparent space_remset_rep. simpl.
   rewrite nat_inc_list_In_iff in Hgen. fold (graph_has_gen g gen) in Hgen.
-  pose proof heaprel_forward_graph_and_heap from to depth p g h as Hh. rewrite <- Hfgh in Hh. simpl in Hh.
-  destruct Hh as [Ha [Hs [Ht Hss]]]. unfold available_size in Ha. unfold total_size in Ht.
+  pose proof (heaprel_forward_graph_and_heap_eq from to depth p g h g' h' Hfgh) as Hh.
+  pose proof (heap_relation_available_size h h' gen Hh) as Ha.
+  pose proof (heap_relation_space_start h h' gen Hh) as Hs.
+  pose proof (heap_relation_total_size h h' gen Hh) as Ht.
+  pose proof (heap_relation_space_sh h h' gen Hh) as Hss.
+  unfold available_size in Ha. unfold total_size in Ht.
   rewrite <- Hs, <- Ha, <- Ht, <- Hss.
   cut (map (remset_item_val g) (nth_remset_space rh gen) =
          map (remset_item_val g') (nth_remset_space rh gen)).
@@ -2280,7 +2500,7 @@ Proof.
   apply iter_sepcon_func_strong. intros ext Hinx. hnf in Hrc. rewrite Forall_forall in Hrc.
   pose proof Hrc _ Hinx as Hrcext. destruct ext as [gp | gn]; simpl; auto. simpl in Hrcext. f_equal.
   apply (fr_vertex_address 0 from to item g g'); auto.
-  - pose proof fr_forward_graph_and_heap from to O item g h. rewrite <- Hfgh in H. simpl in H. assumption.
+  - eapply fr_forward_graph_and_heap_eq; exact Hfgh.
   - apply graph_has_v_in_closure. assumption.
 Qed.
 
@@ -2328,7 +2548,7 @@ Definition heap_management_rep (sh: share) (ti: thread_info) : mpred :=
   let n_lim := offset_val (WORD_SIZE * nursery.(available_space)) p in
   let n_ttl := offset_val (WORD_SIZE * nursery.(total_space)) p in
   heap_struct_rep
-    sh ((p, (Vundef, (n_lim, n_ttl)))
+    sh ((p, (Vundef, (Vundef, n_ttl)))
           :: map space_quad (tl ti.(ti_heap).(pt_heap).(spaces))) ti.(ti_heap_p) *
     heap_unused_rep ti.(ti_heap).(pt_heap) *
     ti_token_rep (ti_heap ti).(pt_heap) (ti_heap_p ti).

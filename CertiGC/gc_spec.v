@@ -459,6 +459,24 @@ Definition make_tinfo_spec :=
          malloc_token Ews (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
 
+Definition headroom (ti : thread_info) : Z :=
+  let nursery := heap_head (pt_heap (ti_heap ti)) in
+  available_space nursery - used_space nursery.
+
+Definition info_recordable (ti : thread_info) : Prop :=
+  1 <= headroom ti.
+
+Lemma info_recordable_iff_used_lt_available:
+  forall ti,
+    info_recordable ti <->
+    used_space (heap_head (pt_heap (ti_heap ti))) <
+    available_space (heap_head (pt_heap (ti_heap ti))).
+Proof.
+  intros ti.
+  unfold info_recordable, headroom.
+  lia.
+Qed.
+
 Definition resume_spec :=
   DECLARE _resume
   WITH rsh: share, sh: share, gv: globals, ti: val,
@@ -474,24 +492,22 @@ Definition resume_spec :=
          graph_rep g;
          thread_info_rep sh t_info ti)
   POST [tvoid]
-    PROP (Ptrofs.unsigned (ti_nalloc t_info) <=
-           available_space (heap_head (ti_heap t_info).(pt_heap))
-          - used_space (heap_head (ti_heap t_info).(pt_heap)))
+    PROP (Ptrofs.unsigned (ti_nalloc t_info) <= headroom t_info)
     RETURN ()
     SEP (all_string_constants rsh gv;
          graph_rep g;
          before_gc_thread_info_rep sh t_info ti).
 
-(* TODO *)
 Definition decr_info_nursery (ti: thread_info) (x: val): thread_info :=
-  if isptr_dec x then ti else ti.
-    (* Build_thread_info (ti_heap_p ti) (incr_remset_heap (ti_heap ti).(pt_heap) 0) *)
-    (*   (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti). *)
+  if isptr_dec x then
+    Build_thread_info
+      (ti_heap_p ti)
+      (build_compatible_heap (incr_remset_heap (ti_heap ti).(pt_heap) 0))
+      (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti)
+  else ti.
 
 Definition mtb_upd_remset_heap (x: val) (item: remset_space_item) (rh: remset_heap) : remset_heap :=
   if isptr_dec x then upd_remset_heap item rh O else rh.
-
-Definition info_recordable (ti: thread_info): Prop := True.
 
 Definition ext_mutable_update_spec :=
   DECLARE _mutable_update
@@ -499,7 +515,7 @@ Definition ext_mutable_update_spec :=
          g: LGraph, outlier: outlier_t, rh: remset_heap
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
   PROP (writable_share sh;
-        info_recordable t_info;
+        1 <= headroom t_info;
         outlier_compatible g outlier;
         exterior_compatible g outlier v)
     PARAMS (ti; p; exterior2val g v)
@@ -520,51 +536,17 @@ Definition ext_mutable_update_spec :=
          data_at sh int_or_ptr_type (exterior2val g v) p;
          heap_remset_rep g (ti_heap t_info').(pt_heap) rh').
 
-(* Maybe exterior_t could be renamed into root_t *)
-
-Lemma upd_rvb_range: forall rvb pos rf,
-    0 < Zlength (upd_Znth pos (raw_fields rvb) rf) < two_p (WORD_SIZE * 8 - 10).
-Proof.
-  intros rvb pos rf. pose proof raw_fields_range rvb. rewrite Zlength_upd_Znth. assumption.
-Qed.
-
-(*
-
-Definition upd_rvb (rvb: raw_vertex_block) (pos: Z) (rf: raw_field) : raw_vertex_block :=
-  Build_raw_vertex_block
-    (raw_mark rvb) (copied_vertex rvb) (upd_Znth pos (raw_fields rvb) rf)
-    (raw_color rvb) (raw_tag rvb) (raw_tag_range rvb)
-    (raw_color_range rvb) (upd_rvb_range rvb pos rf) (tag_no_scan rvb).
-
-Definition mtb_upd_graph (g: LGraph) (it: interior_t) (v: exterior_t) : LGraph :=
-  match it with
-  | InteriorVertexPos v pos =>
-      match Znth pos (raw_fields (vlabel g v)) with
-      | RawInternal => match v with
-                       | ExteriorUnboxed z =>
-                       | ExteriorOutlier p =>
-                       | ExteriorVertex vtx =>
-                       end
-      | RawUnboxed _
-      | RawOutlier _ => match v with
-                       | ExteriorUnboxed z =>
-                       | ExteriorOutlier p =>
-                       | ExteriorVertex vtx =>
-                       end
-  end
-
-*)
-
 Definition int_mutable_update_spec :=
   DECLARE _mutable_update
     WITH ti: val, v: exterior_t, t_info: thread_info, sh: share, g: LGraph,
          it: interior_t, outlier: outlier_t, rh: remset_heap
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
   PROP (writable_share sh;
-        info_recordable t_info;
-        outlier_compatible g outlier;
-        exterior_compatible g outlier v;
-        interior_compatible g O it)
+        1 <= headroom t_info;
+        graph_heap_compatible g (ti_heap t_info).(pt_heap);
+        remset_heap_and_heap_compatible rh (ti_heap t_info).(pt_heap);
+        mutable_location_compatible g it;
+        exterior_compatible g outlier v)
     PARAMS (ti; interior_address it g; exterior2val g v)
     GLOBALS ()
     SEP (graph_rep g;
@@ -573,19 +555,25 @@ Definition int_mutable_update_spec :=
          heap_remset_rep g (ti_heap t_info).(pt_heap) rh)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX rh': remset_heap,
-    PROP (t_info' = decr_info_nursery t_info (exterior2val g v);
-          rh' = mtb_upd_remset_heap (exterior2val g v) (RemSetInterior it) rh
-          (* relation or function about g and g' *))
+    PROP (mutable_graph_update g it v g';
+          t_info' = decr_info_nursery t_info (exterior2val g v);
+          rh' = mtb_upd_remset_heap (exterior2val g v) (RemSetInterior it) rh)
     RETURN ()
     SEP (graph_rep g';
          outlier_rep outlier;
          before_gc_thread_info_rep sh t_info' ti;
          heap_remset_rep g' (ti_heap t_info').(pt_heap) rh').
 
-(* Change before_gc_thread_info_rep *)
-(* Define a new heap_management to hide details in
-   before_gc_thread_info_rep *)
-(* combine heap and remset_heap *)
+Definition gc_sep (rsh sh : share) (gv : globals) (ti : val)
+    (g : LGraph) (t_info : thread_info) (outlier : outlier_t)
+    (rh : remset_heap) (rmst : remset) : mpred :=
+  mem_mgr gv *
+  all_string_constants rsh gv *
+  outlier_rep outlier *
+  graph_rep g *
+  heap_remset_rep g (pt_heap (ti_heap t_info)) rh *
+  remset_rep sh g rmst *
+  before_gc_thread_info_rep sh t_info ti.
 
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
@@ -595,68 +583,25 @@ Definition garbage_collect_spec :=
        rh: remset_heap, rmst: remset
   PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          super_compatible g (ti_heap t_info).(pt_heap) (frames2rootpairs (ti_frames t_info)) roots outlier;
-          garbage_collect_condition g (ti_heap t_info).(pt_heap);
-          no_unrecorded_backward_edge g rh;
-          safe_to_copy_heap g (ti_heap t_info).(pt_heap);
-          remset_compatible g outlier O rmst rh (ti_heap t_info).(pt_heap);
-          remset_generation_compatible O rmst rh)
+          full_gc g (ti_heap t_info).(pt_heap)
+            (frames2rootpairs (ti_frames t_info)) roots outlier;
+          remembered_set_ok O g (ti_heap t_info).(pt_heap)
+            outlier rh rmst)
     PARAMS (ti)
     GLOBALS (gv)
-    SEP (mem_mgr gv;
-         all_string_constants rsh gv;
-         outlier_rep outlier;
-         graph_rep g;
-         heap_remset_rep g (ti_heap t_info).(pt_heap) rh;
-         remset_rep sh g rmst;
-         before_gc_thread_info_rep sh t_info ti)
+    SEP (gc_sep rsh sh gv ti g t_info outlier rh rmst)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     EX rh': remset_heap, EX rmst': remset,
-    PROP (super_compatible g' (ti_heap t_info').(pt_heap) (frames2rootpairs (ti_frames t_info')) roots' outlier;
+    PROP (full_gc g' (ti_heap t_info').(pt_heap)
+            (frames2rootpairs (ti_frames t_info')) roots' outlier;
           garbage_collect_relation roots roots'
             g (ti_heap t_info).(pt_heap) rh rmst
             g' (ti_heap t_info').(pt_heap) rh' rmst';
-          garbage_collect_condition g' (ti_heap t_info').(pt_heap);
-          safe_to_copy_heap g' (ti_heap t_info').(pt_heap);
           frame_shells_eq (ti_frames t_info) (ti_frames t_info');
-          Ptrofs.unsigned (ti_nalloc t_info) <=
-                 available_space (heap_head (ti_heap t_info').(pt_heap))
-                    - used_space (heap_head (ti_heap t_info').(pt_heap)))
+          Ptrofs.unsigned (ti_nalloc t_info) <= headroom t_info')
     RETURN ()
-    SEP (mem_mgr gv;
-         all_string_constants rsh gv;
-         outlier_rep outlier;
-         graph_rep g';
-         heap_remset_rep g' (ti_heap t_info').(pt_heap) rh';
-         remset_rep sh g' rmst';
-         before_gc_thread_info_rep sh t_info' ti).
-
-(*
-Definition reset_heap_spec :=
-   (* THIS IS A PLACEHOLDER AND NOT CORRECT *)
-  DECLARE _reset_heap
-  WITH h: val
-  PRE [tptr heap_type]
-    PROP ()
-    PARAMS (h)
-    GLOBALS ()
-    SEP ()
-  POST [tvoid]
-  PROP () RETURN () SEP ().
-
-Definition free_heap_spec :=
-   (* THIS IS A PLACEHOLDER AND NOT CORRECT *)
-  DECLARE _free_heap
-  WITH h: heap, p: val, rsh: share, gv: globals
-  PRE [tptr heap_type]
-    PROP (readable_share rsh) PARAMS (p) GLOBALS (gv)
-    SEP (heap_rep Ews h p; ti_token_rep h p;
-         mem_mgr gv; all_string_constants rsh gv)
-  POST [tvoid]
-  PROP () RETURN ()
-  SEP (mem_mgr gv; all_string_constants rsh gv).
-*)
+    SEP (gc_sep rsh sh gv ti g' t_info' outlier rh' rmst').
 
 Definition Gprog: funspecs :=
   ltac:(with_library prog
@@ -677,4 +622,5 @@ Definition Gprog: funspecs :=
                       create_heap_spec;
                       make_tinfo_spec;
                       resume_spec;
+                      int_mutable_update_spec;
                       garbage_collect_spec]).

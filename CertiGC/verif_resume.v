@@ -1,6 +1,6 @@
 From CertiGraph.CertiGC Require Import env_graph_gc gc_spec.
 
-Lemma int64_ltu_ptrofs_to_int_64:
+#[local] Lemma int64_ltu_ptrofs_to_int_64:
   forall x y, Archi.ptr64 = true ->
     Int64.ltu (Ptrofs.to_int64 x) (Ptrofs.to_int64 y) =  Ptrofs.ltu x y.
 Proof.
@@ -20,7 +20,7 @@ Proof.
   auto.
 Qed.
 
-Lemma int_ltu_ptrofs_to_int:
+#[local] Lemma int_ltu_ptrofs_to_int:
   forall x y, Archi.ptr64 = false ->
     Int.ltu (Ptrofs.to_int x) (Ptrofs.to_int y) =  Ptrofs.ltu x y.
 Proof.
@@ -103,8 +103,8 @@ Proof.
       simpl fold_left.
       replace (WORD_SIZE * 0)%Z with 0 by lia.
       rewrite !isptr_offset_val_zero by assumption.
+      unfold headroom.
       rewrite H1. simpl tl.
-      rewrite Z.sub_0_r.
       entailer_for_return.
       assert (MAX_SPACES = Zlength (map space_quad hl) + 1). {
         pose proof (spaces_size (ti_heap t_info).(pt_heap)).

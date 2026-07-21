@@ -26,9 +26,9 @@ Require Import CertiGraph.graph.reachable_ind.
 Require Import CertiGraph.CertiGC.GCGraph.
 Import ListNotations.
 
-Local Open Scope Z_scope.
+#[local] Open Scope Z_scope.
 
-Local Coercion pg_lg: LabeledGraph >-> PreGraph.
+#[local] Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 Definition vertex_valid (g: LGraph): Prop := forall v, vvalid g v <-> graph_has_v g v.
 
@@ -43,25 +43,25 @@ Definition sound_gc_graph (g: LGraph): Prop :=
 
 (** Reset is sound *)
 
-Lemma fold_left_remove_edge_vvalid: forall (g: PreGraph VType EType) l v,
+#[local] Lemma fold_left_remove_edge_vvalid: forall (g: PreGraph VType EType) l v,
     vvalid (fold_left pregraph_remove_edge l g) v <-> vvalid g v.
 Proof. now intros; revert g; induction l; [|intros; simpl; rewrite IHl]. Qed.
 
-Lemma lrvae_vvalid: forall g v1 v2,
+#[local] Lemma lrvae_vvalid: forall g v1 v2,
     vvalid (lgraph_remove_vertex_and_edges g v1) v2 <-> vvalid g v2 /\ v1 <> v2.
 Proof.
   intros. simpl. unfold pregraph_remove_vertex_and_edges.
   rewrite fold_left_remove_edge_vvalid, remove_vertex_vvalid. intuition.
 Qed.
 
-Lemma fold_left_lrvae_vvalid: forall g l v,
+#[local] Lemma fold_left_lrvae_vvalid: forall g l v,
     vvalid (fold_left lgraph_remove_vertex_and_edges l g) v <->
     vvalid g v /\ ~ In v l.
 Proof.
   intros; revert g v; induction l; intros; simpl; [|rewrite IHl, lrvae_vvalid]; intuition.
 Qed.
 
-Lemma vertex_valid_reset: forall g gen,
+#[local] Lemma vertex_valid_reset: forall g gen,
     vertex_valid g -> vertex_valid (reset_graph gen g).
 Proof.
   intros. unfold vertex_valid in *. intros. simpl. rewrite graph_has_v_reset.
@@ -71,7 +71,7 @@ Proof.
     rewrite nat_inc_list_In_iff. destruct H1. now red in H1.   - apply list_in_map_inv in H0. destruct H0 as [? [? _]]; now subst v.
 Qed.
 
-Lemma remove_ve_src_unchanged: forall g gen e,
+#[local] Lemma remove_ve_src_unchanged: forall g gen e,
     src (remove_nth_gen_ve g gen) e = src g e.
 Proof.
   intros. unfold remove_nth_gen_ve.
@@ -85,20 +85,20 @@ Proof.
   now induction l; intros; simpl; [|rewrite IHl].
 Qed.
 
-Lemma src_edge_reset: forall (g: LGraph) gen,
+#[local] Lemma src_edge_reset: forall (g: LGraph) gen,
     src_edge g -> src_edge (reset_graph gen g).
 Proof.
   intros. unfold src_edge in *. intros.
   simpl. rewrite remove_ve_src_unchanged. apply H.
 Qed.
 
-Lemma fold_left_remove_edge_evalid: forall (g: PreGraph VType EType) l e,
+#[local] Lemma fold_left_remove_edge_evalid: forall (g: PreGraph VType EType) l e,
     evalid (fold_left pregraph_remove_edge l g) e <-> evalid g e /\ ~ In e l.
 Proof.
   intros; revert g; induction l; intros; simpl; [|rewrite IHl, remove_edge_evalid]; intuition.
 Qed.
 
-Lemma lrvae_evalid: forall g v e,
+#[local] Lemma lrvae_evalid: forall g v e,
     evalid (lgraph_remove_vertex_and_edges g v) e <->
     evalid g e /\ ~ In e (get_edges g v).
 Proof.
@@ -106,7 +106,7 @@ Proof.
   rewrite fold_left_remove_edge_evalid. intuition.
 Qed.
 
-Lemma fold_left_lrvae_evalid: forall g l e,
+#[local] Lemma fold_left_lrvae_evalid: forall g l e,
     evalid (fold_left lgraph_remove_vertex_and_edges l g) e <->
     evalid g e /\ forall v, In v l -> ~ In e (get_edges g v).
 Proof.
@@ -117,7 +117,7 @@ Proof.
   - apply (H1 v); intuition.
 Qed.
 
-Lemma edge_valid_reset: forall g gen, edge_valid g -> edge_valid (reset_graph gen g).
+#[local] Lemma edge_valid_reset: forall g gen, edge_valid g -> edge_valid (reset_graph gen g).
 Proof.
   intros. unfold edge_valid in *. intros. rewrite graph_has_e_reset. simpl.
   unfold remove_nth_gen_ve. rewrite fold_left_lrvae_evalid, H. intuition.
@@ -131,7 +131,7 @@ Proof.
     destruct H0 as [x [? _]]; now subst v.
 Qed.
 
-Lemma edge_label_same_resset: forall g gen,
+#[local] Lemma edge_label_same_reset: forall g gen,
     edge_label_same g -> edge_label_same (reset_graph gen g).
 Proof.
   unfold edge_label_same. intros g gen He e. simpl.
@@ -144,7 +144,7 @@ Proof.
   intros. destruct H as [? [? [? ?]]].
   now split; [|split; [|split]];
     [apply vertex_valid_reset | apply edge_valid_reset |
-      apply src_edge_reset | apply edge_label_same_resset ].
+      apply src_edge_reset | apply edge_label_same_reset ].
 Qed.
 
 (** Quasi-Isomorphism to Full-Isomorphism *)
@@ -156,7 +156,7 @@ Definition exterior_map (vmap: VType -> VType) (r: exterior_t): exterior_t :=
   | ExteriorVertex r => ExteriorVertex (vmap r)
   end.
 
-Lemma bijective_exterior_map: forall vmap1 vmap2,
+#[local] Lemma bijective_exterior_map: forall vmap1 vmap2,
     bijective vmap1 vmap2 -> bijective (exterior_map vmap1) (exterior_map vmap2).
 Proof.
   intros. destruct H. split; intros.
@@ -181,7 +181,7 @@ Proof.
   clear. induction roots; simpl; auto. rewrite <- IHroots. f_equal. destruct a; auto.
 Qed.
 
-Lemma map_exterior_map_bijective:
+#[local] Lemma map_exterior_map_bijective:
   forall (roots1 roots2 : roots_t) (vmap12 vmap21 : VType -> VType),
     roots2 = map (exterior_map vmap12) roots1 ->
     bijective vmap12 vmap21 -> roots1 = map (exterior_map vmap21) roots2.
@@ -212,7 +212,7 @@ Definition gen_edge_pair_list
            (g: LGraph) (l: list (VType * VType)): list (EType * EType) :=
   concat (map (gen_single_edge_pair_list g) l).
 
-Lemma get_edges_snd_NoDup: forall g v, NoDup (map snd (get_edges g v)).
+#[local] Lemma get_edges_snd_NoDup: forall g v, NoDup (map snd (get_edges g v)).
 Proof.
   intros. unfold get_edges. unfold make_fields.
   remember (raw_fields (vlabel g v)). remember O.
@@ -227,7 +227,7 @@ Proof.
   apply Nat2Z.inj_lt; assumption.
 Qed.
 
-Lemma get_edges_map_map: forall g v,
+#[local] Lemma get_edges_map_map: forall g v,
     get_edges g v = map (fun idx => (v, idx)) (map snd (get_edges g v)).
 Proof.
   intros. rewrite map_map. unfold get_edges, make_fields.
@@ -236,13 +236,13 @@ Proof.
     simpl; rewrite <- IHl; auto.
 Qed.
 
-Lemma get_edges_NoDup: forall g v, NoDup (get_edges g v).
+#[local] Lemma get_edges_NoDup: forall g v, NoDup (get_edges g v).
 Proof.
   intros. rewrite get_edges_map_map, <- combine_repeat_eq_map;
             apply NoDup_combine_r, get_edges_snd_NoDup.
 Qed.
 
-Lemma gsepl_DoubleNoDup: forall (v1 v2 : VType) (g : LGraph),
+#[local] Lemma gsepl_DoubleNoDup: forall (v1 v2 : VType) (g : LGraph),
     v1 <> v2 -> DoubleNoDup (gen_single_edge_pair_list g (v1, v2)).
 Proof.
   intros. simpl. pose proof (get_edges_NoDup g v1). remember (get_edges g v1).
@@ -268,7 +268,7 @@ Proof.
       apply NoDup_cons_2 in H0. contradiction.
 Qed.
 
-Lemma gsepl_InEither: forall x g a,
+#[local] Lemma gsepl_InEither: forall x g a,
     InEither x (gen_single_edge_pair_list g a) -> IsEither (fst x) a.
 Proof.
   intros. destruct a as [v1 v2]. red. simpl.
@@ -283,7 +283,7 @@ Proof.
   - apply IHl; auto.
 Qed.
 
-Lemma gepl_InEither: forall x g l,
+#[local] Lemma gepl_InEither: forall x g l,
     InEither x (gen_edge_pair_list g l) -> InEither (fst x) l.
 Proof.
   intros. induction l; simpl in *; unfold gen_edge_pair_list in H; simpl in H.
@@ -292,7 +292,7 @@ Proof.
   destruct H; [left; eapply gsepl_InEither; eauto | right; apply IHl; assumption].
 Qed.
 
-Lemma gepl_DoubleNoDup:
+#[local] Lemma gepl_DoubleNoDup:
   forall g l, DoubleNoDup l -> DoubleNoDup (gen_edge_pair_list g l).
 Proof.
   intros g l. revert g. induction l; intros.
@@ -305,7 +305,7 @@ Proof.
   simpl in H3. destruct H3; rewrite H3 in H4; contradiction.
 Qed.
 
-Lemma get_edges_inv: forall g v e,
+#[local] Lemma get_edges_inv: forall g v e,
     In e (get_edges g v) <->
     exists idx, e = (v, idx) /\ In idx (map snd (get_edges g v)).
 Proof.
@@ -315,11 +315,11 @@ Proof.
   - destruct H as [? [? ?]]. inversion H. subst. rewrite get_edges_In. assumption.
 Qed.
 
-Lemma In_snd_get_edges: forall g v idx,
+#[local] Lemma In_snd_get_edges: forall g v idx,
     In idx (map snd (get_edges g v)) -> In (v, idx) (get_edges g v).
 Proof. intros. rewrite get_edges_inv. exists idx. split; auto. Qed.
 
-Lemma vlabel_get_edges_snd: forall v1 v2 (g1 g2: LGraph),
+#[local] Lemma vlabel_get_edges_snd: forall v1 v2 (g1 g2: LGraph),
     vlabel g1 v1 = vlabel g2 v2 ->
     map snd (get_edges g1 v1) = map snd (get_edges g2 v2).
 Proof.
@@ -330,7 +330,7 @@ Proof.
   now destruct a; rewrite filter_proj_cons; simpl; rewrite IHl.
 Qed.
 
-Lemma gsepl_key: forall e g v,
+#[local] Lemma gsepl_key: forall e g v,
     In e (get_edges g (fst e)) ->
     In (e, (v, snd e)) (gen_single_edge_pair_list g (fst e, v)).
 Proof.
@@ -338,7 +338,7 @@ Proof.
   induction l; simpl in *; auto. now destruct H; [left; subst | right; apply IHl].
 Qed.
 
-Lemma gsepl_value: forall (e: EType) k (g1 g2: LGraph),
+#[local] Lemma gsepl_value: forall (e: EType) k (g1 g2: LGraph),
     In e (get_edges g2 (fst e)) -> vlabel g1 k = vlabel g2 (fst e) ->
     In (k, snd e, e) (gen_single_edge_pair_list g1 (k, fst e)).
 Proof.
@@ -349,7 +349,7 @@ Proof.
   now destruct H; [left; subst a | right; apply IHl].
 Qed.
 
-Lemma gepl_key: forall (g : LGraph) (vpl : list (VType * VType)) (e : EType) v,
+#[local] Lemma gepl_key: forall (g : LGraph) (vpl : list (VType * VType)) (e : EType) v,
     In e (get_edges g (fst e)) -> In (fst e, v) vpl ->
     In (e, (v, snd e)) (gen_edge_pair_list g vpl).
 Proof.
@@ -358,7 +358,7 @@ Proof.
   destruct H0; [left; subst a; apply gsepl_key | right; apply IHvpl]; auto.
 Qed.
 
-Lemma gepl_value: forall (e: EType) k (g1 g2: LGraph) vpl,
+#[local] Lemma gepl_value: forall (e: EType) k (g1 g2: LGraph) vpl,
     In e (get_edges g2 (fst e)) -> In (k, fst e) vpl ->
     vlabel g1 k = vlabel g2 (fst e) -> In (k, snd e, e) (gen_edge_pair_list g1 vpl).
 Proof.
@@ -373,7 +373,7 @@ Definition GenNoDup (l: list VType) (gen: nat): Prop :=
 Definition PairGenNoDup (l: list (VType * VType)) (from to: nat): Prop :=
   let (left_l, right_l) := split l in GenNoDup left_l from /\ GenNoDup right_l to.
 
-Lemma PairGenNoDup_DoubleNoDup: forall l from to,
+#[local] Lemma PairGenNoDup_DoubleNoDup: forall l from to,
     from <> to -> PairGenNoDup l from to -> DoubleNoDup l.
 Proof.
   intros. red in H0 |-* . destruct (split l) as [l1 l2]. destruct H0 as [[? ?] [? ?]].
@@ -499,7 +499,7 @@ Proof.
   destruct (lt_dec idx (number_of_vertices (nth_gen g gen))); [left | right]; auto.
 Defined.
 
-Lemma graph_has_v_dec: forall (g: LGraph) (v: VType),
+#[local] Lemma graph_has_v_dec: forall (g: LGraph) (v: VType),
     {graph_has_v g v} + {~ graph_has_v g v}.
 Proof.
   intros. destruct v as [vgen vidx]. destruct (graph_has_gen_dec g vgen).
@@ -508,7 +508,7 @@ Proof.
   - right; intro; apply n; destruct H; auto.
 Defined.
 
-Lemma vvalid_lcm: forall g v, vertex_valid g -> vvalid g v \/ ~ vvalid g v.
+#[local] Lemma vvalid_lcm: forall g v, vertex_valid g -> vvalid g v \/ ~ vvalid g v.
 Proof. intros. red in H. rewrite H. destruct (graph_has_v_dec g v); auto. Qed.
 
 Lemma reachable_map_reachable_sub_edges:
@@ -991,7 +991,7 @@ Proof.
       intro Hedge_in. apply Hnin. apply gepl_InEither in Hedge_in. assumption.
 Qed.
 
-Lemma new_gen_heap_new_gen_relation: forall g1 h1 g2 h2 gen,
+#[local] Lemma new_gen_heap_new_gen_relation: forall g1 h1 g2 h2 gen,
     new_gen_heap_relation gen g1 h1 g2 h2 -> new_gen_relation gen g1 g2.
 Proof.
   intros g1 h1 g2 h2 gen Hrel.
@@ -1002,7 +1002,7 @@ Proof.
     exists gi. split; assumption.
 Qed.
 
-Lemma ngr_vertex_valid: forall g1 g2 gen,
+#[local] Lemma ngr_vertex_valid: forall g1 g2 gen,
     vertex_valid g1 -> new_gen_relation gen g1 g2 -> vertex_valid g2.
 Proof.
   intros. red in H0. destruct (graph_has_gen_dec g1 gen).
@@ -1011,7 +1011,7 @@ Proof.
     rewrite H. now split; intros; [apply ang_graph_has_v | apply ang_graph_has_v_inv in H1].
 Qed.
 
-Lemma ngr_edge_valid: forall g1 g2 gen,
+#[local] Lemma ngr_edge_valid: forall g1 g2 gen,
     edge_valid g1 -> new_gen_relation gen g1 g2 -> edge_valid g2.
 Proof.
   intros. red in H0. destruct (graph_has_gen_dec g1 gen).
@@ -1021,7 +1021,7 @@ Proof.
     [apply ang_graph_has_v | | apply ang_graph_has_v_inv in H1|].
 Qed.
 
-Lemma ngr_src_edge: forall (g1 g2: LGraph) gen,
+#[local] Lemma ngr_src_edge: forall (g1 g2: LGraph) gen,
     src_edge g1 -> new_gen_relation gen g1 g2 -> src_edge g2.
 Proof.
   intros. red in H0. destruct (graph_has_gen_dec g1 gen).
@@ -1029,7 +1029,7 @@ Proof.
   - destruct H0 as [gen_i [? ?]]. subst g2. now unfold src_edge in *.
 Qed.
 
-Lemma ngr_edge_label_same: forall (g1 g2: LGraph) gen,
+#[local] Lemma ngr_edge_label_same: forall (g1 g2: LGraph) gen,
     edge_label_same g1 -> new_gen_relation gen g1 g2 -> edge_label_same g2.
 Proof.
   intros. red in H0. destruct (graph_has_gen_dec g1 gen).
@@ -1047,7 +1047,7 @@ Proof.
   - eapply ngr_edge_label_same; eauto.
 Qed.
 
-Lemma cvae_vvalid_iff: forall g v' l v0,
+#[local] Lemma cvae_vvalid_iff: forall g v' l v0,
     vvalid (fold_left (copy_v_add_edge v') l g) v0 <-> vvalid g v0.
 Proof.
   intros. split; intro.
@@ -1059,14 +1059,14 @@ Proof.
         reflexivity; assumption.
 Qed.
 
-Lemma pcv_vvalid_iff: forall g v v' new,
+#[local] Lemma pcv_vvalid_iff: forall g v v' new,
     vvalid (pregraph_copy_v g v new) v' <-> vvalid g v' \/ v' = new.
 Proof.
   intros. unfold pregraph_copy_v. rewrite cvae_vvalid_iff. simpl.
   unfold addValidFunc. reflexivity.
 Qed.
 
-Lemma lcv_graph_has_v_iff: forall (g : LGraph) (v : VType) (to : nat) (x : VType),
+#[local] Lemma lcv_graph_has_v_iff: forall (g : LGraph) (v : VType) (to : nat) (x : VType),
   graph_has_gen g to ->
   graph_has_v (lgraph_copy_v g v to) x <-> graph_has_v g x \/ x = new_copied_v g to.
 Proof.
@@ -1075,21 +1075,21 @@ Proof.
   - now destruct H0; [apply lcv_graph_has_v_old | subst x; apply lcv_graph_has_v_new].
 Qed.
 
-Lemma lcv_vertex_valid: forall g v to,
+#[local] Lemma lcv_vertex_valid: forall g v to,
     vertex_valid g -> graph_has_gen g to -> vertex_valid (lgraph_copy_v g v to).
 Proof.
   intros. unfold vertex_valid in *. intros. simpl.
   rewrite pcv_vvalid_iff, lcv_graph_has_v_iff; auto. now rewrite H.
 Qed.
 
-Lemma fr_O_vertex_valid: forall g g' from to p,
+#[local] Lemma fr_O_vertex_valid: forall g g' from to p,
     vertex_valid g -> graph_has_gen g to -> forward_relation from to 0 p g g' ->
     vertex_valid g'.
 Proof.
   intros. inversion H1; subst; try assumption; try now apply lcv_vertex_valid.
 Qed.
 
-Lemma lcv_get_edges_old: forall (g: LGraph) v v' to,
+#[local] Lemma lcv_get_edges_old: forall (g: LGraph) v v' to,
     graph_has_v g v' -> graph_has_gen g to ->
     get_edges (lgraph_copy_v g v to) v' = get_edges g v'.
 Proof.
@@ -1097,14 +1097,14 @@ Proof.
   now erewrite <- lcv_raw_fields by assumption.
 Qed.
 
-Lemma cvae_evalid_iff: forall g v l e,
+#[local] Lemma cvae_evalid_iff: forall g v l e,
     evalid (fold_left (copy_v_add_edge v) l g) e <-> evalid g e \/ In e (map fst l).
 Proof.
   intros. revert g. induction l; intros; simpl; [intuition|].
   rewrite IHl. unfold copy_v_add_edge. simpl. unfold addValidFunc. intuition.
 Qed.
 
-Lemma pcv_evalid_iff: forall g v new e,
+#[local] Lemma pcv_evalid_iff: forall g v new e,
     evalid (pregraph_copy_v g v new) e <->
     evalid g e \/ In e (map (fun x => (new, snd x)) (get_edges g v)).
 Proof.
@@ -1116,14 +1116,14 @@ Proof.
     apply Nat.min_id.
 Qed.
 
-Lemma lcv_lacv_get_edges: forall g v to new,
+#[local] Lemma lcv_lacv_get_edges: forall g v to new,
     get_edges (lgraph_copy_v g v to) new = get_edges (lgraph_add_copied_v g v to) new.
 Proof.
   intros. unfold lgraph_copy_v, get_edges, make_fields. rewrite <- lmc_raw_fields.
   reflexivity.
 Qed.
 
-Lemma lcv_edge_valid: forall g v to,
+#[local] Lemma lcv_edge_valid: forall g v to,
     edge_valid g -> graph_has_gen g to -> edge_valid (lgraph_copy_v g v to).
 Proof.
   intros. unfold edge_valid in *. intros. unfold graph_has_e in *. simpl.
@@ -1141,14 +1141,14 @@ Proof.
       assumption.
 Qed.
 
-Lemma fr_O_edge_valid: forall g1 g2 from to p,
+#[local] Lemma fr_O_edge_valid: forall g1 g2 from to p,
     edge_valid g1 -> graph_has_gen g1 to ->
     forward_relation from to O p g1 g2 -> edge_valid g2.
 Proof.
   intros. inversion H1; subst; try assumption; try now apply lcv_edge_valid.
 Qed.
 
-Lemma flcvae_src_old: forall g new (l: list (EType * VType)) e,
+#[local] Lemma flcvae_src_old: forall g new (l: list (EType * VType)) e,
     ~ In e (map fst l) -> src (fold_left (copy_v_add_edge new) l g) e = src g e.
 Proof.
   intros. revert g H. induction l; intros; simpl; trivial.
@@ -1158,7 +1158,7 @@ Proof.
   apply H. simpl. left; assumption.
 Qed.
 
-Lemma flcvae_src_new: forall g new (l: list (EType * VType)) e,
+#[local] Lemma flcvae_src_new: forall g new (l: list (EType * VType)) e,
     In e (map fst l) -> src (fold_left (copy_v_add_edge new) l g) e = new.
 Proof.
   intros. revert g. induction l. 1: simpl in H; exfalso; assumption.
@@ -1170,7 +1170,7 @@ Proof.
   - apply IHl; assumption.
 Qed.
 
-Lemma pcv_src_old: forall (g : LGraph) (old new : VType) (e : VType * nat),
+#[local] Lemma pcv_src_old: forall (g : LGraph) (old new : VType) (e : VType * nat),
     fst e <> new -> src (pregraph_copy_v g old new) e = src g e.
 Proof.
   intros. unfold pregraph_copy_v. rewrite flcvae_src_old. 1: now simpl.
@@ -1179,7 +1179,7 @@ Proof.
   - unfold EType. now rewrite length_combine, repeat_length, !length_map, Nat.min_id.
 Qed.
 
-Lemma pcv_src_new: forall (g : LGraph) (old new : VType) (n : nat),
+#[local] Lemma pcv_src_new: forall (g : LGraph) (old new : VType) (n : nat),
        In n (map snd (get_edges g old)) ->
        src (pregraph_copy_v g old new) (new, n) = new.
 Proof.
@@ -1193,7 +1193,7 @@ Proof.
   - unfold EType. now rewrite length_combine, repeat_length, !length_map, Nat.min_id.
 Qed.
 
-Lemma pcv_src_edge: forall (g: LGraph) v new,
+#[local] Lemma pcv_src_edge: forall (g: LGraph) v new,
     src_edge g -> src_edge (pregraph_copy_v g v new).
 Proof.
   intros. unfold src_edge in *. intros. unfold pregraph_copy_v.
@@ -1208,13 +1208,13 @@ Proof.
   - rewrite flcvae_src_old; auto. simpl. apply H.
 Qed.
 
-Lemma fr_O_src_edge: forall (g1 g2: LGraph) from to p,
+#[local] Lemma fr_O_src_edge: forall (g1 g2: LGraph) from to p,
     src_edge g1 -> forward_relation from to O p g1 g2 -> src_edge g2.
 Proof.
   intros. inversion H0; subst; try assumption; try (apply pcv_src_edge; assumption).
 Qed.
 
-Lemma fr_O_edge_label_same: forall (g1 g2: LGraph) from to p,
+#[local] Lemma fr_O_edge_label_same: forall (g1 g2: LGraph) from to p,
     edge_label_same g1 -> forward_relation from to O p g1 g2 -> edge_label_same g2.
 Proof. intros. inversion H0; subst; try assumption. Qed.
 
@@ -1233,11 +1233,8 @@ Lemma new_gen_heap_sound: forall g1 h1 g2 h2 gen,
     sound_gc_graph g1 -> new_gen_heap_relation gen g1 h1 g2 h2 -> sound_gc_graph g2.
 Proof.
   intros g1 h1 g2 h2 gen Hsound Hrel.
-  eapply (ngr_sound g1 g2 gen); eauto. unfold new_gen_relation, new_gen_heap_relation in *.
-  destruct (graph_has_gen_dec g1 gen).
-  - destruct Hrel as [Hg _]. symmetry. assumption.
-  - destruct Hrel as [gi [sp [i [Hs [_ [Hnum [_ [_ [_ [Hg _]]]]]]]]]].
-    exists gi. split; assumption.
+  eapply (ngr_sound g1 g2 gen); eauto.
+  eapply new_gen_heap_new_gen_relation; exact Hrel.
 Qed.
 
 Lemma forward_remset_item_P_holds:
@@ -1254,9 +1251,7 @@ Proof.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [new_g new_h] eqn:Hfgh.
     inversion Hfri; subst. eapply HP; eauto.
-    pose proof (fr_forward_graph_and_heap
-                  from to 0 (remset_item2forward_t item rmst g) g h) as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr. exact Hfr.
+    eapply fr_forward_graph_and_heap_eq. symmetry. exact Hfgh.
   - inversion Hfri; subst. assumption.
 Qed.
 
@@ -1268,20 +1263,10 @@ Lemma forward_remset_item_fold_P_holds:
     (g', h', rh', rmst') = fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     P g'.
 Proof.
-  intros P from to r. induction r; intros g h rh rmst g' h' rh' rmst' HP HPg Hto Hfold.
-  - inversion Hfold; subst. assumption.
-  - destruct (forward_remset_item from to (g, h, rh, rmst) a)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    change (fold_left (forward_remset_item from to) (a :: r) (g, h, rh, rmst))
-      with (fold_left (forward_remset_item from to) r
-              (forward_remset_item from to (g, h, rh, rmst) a)) in Hfold.
-    rewrite Hfri in Hfold.
-    eapply (IHr g2 h2 rh2 rmst2 g' h' rh' rmst').
-    + exact HP.
-    + eapply forward_remset_item_P_holds; eauto.
-    + apply (proj1 (forward_remset_item_ghg from to g h rh rmst a
-                      g2 h2 rh2 rmst2 Hto (eq_sym Hfri) to)); exact Hto.
-    + exact Hfold.
+  intros P from to r g h rh rmst g' h' rh' rmst' HP HPg Hto Hfold.
+  eapply (forward_remset_item_fold_graph_property P);
+    [| exact Hto | exact HPg | exact Hfold].
+  intros. eapply forward_remset_item_P_holds; eassumption.
 Qed.
 
 Lemma forward_remset_gh_P_holds:
@@ -1307,44 +1292,6 @@ Proof.
   intros. eapply fr_O_sound; eauto.
 Qed.
 
-Lemma forward_remset_item_step_state_with_tail:
-  forall from to g h rh rmst item rest g' h' rh' rmst',
-    from <> to ->
-    graph_has_gen g to ->
-    copy_compatible g ->
-    remset_nodup rmst ->
-    remset_graph_compatible g rmst ->
-    remset_item_compatible g from rmst item ->
-    remset_and_remset_space_compatible g from rmst rest ->
-    (g', h', rh', rmst') = forward_remset_item from to (g, h, rh, rmst) item ->
-    graph_has_gen g' to /\
-    copy_compatible g' /\
-    remset_nodup rmst' /\
-    remset_graph_compatible g' rmst' /\
-    remset_and_remset_space_compatible g' from rmst' rest.
-Proof.
-  intros from to g h rh rmst item rest g' h' rh' rmst'
-         Hneq Hto Hcc Hrnd Hrgc Hric Hrest Hfri.
-  split.
-  - rewrite <- (forward_remset_item_ghg from to g h rh rmst item
-                  g' h' rh' rmst' Hto Hfri to).
-    exact Hto.
-  - split.
-    + exact (fri_copy_compatible from to g h rh rmst item g' h' rh' rmst'
-               Hneq Hto Hcc Hfri).
-    + split.
-      * exact (fri_remset_nodup from to g h rh rmst item g' h' rh' rmst'
-                 Hrnd Hfri).
-      * split.
-        -- exact (fri_remset_graph_compatible from to g h rh rmst item
-                    g' h' rh' rmst' Hto Hcc Hrnd Hrgc Hric Hfri).
-        -- unfold remset_and_remset_space_compatible in Hrest |- *.
-           rewrite Forall_forall in Hrest |- *.
-           intros tail_item Hin_tail.
-           specialize (Hrest _ Hin_tail).
-           eapply fri_remset_item_compatible with (rmst := rmst) (item := item);
-             eassumption.
-Qed.
 
 (** Semi-Isomorphism **)
 
@@ -1379,6 +1326,19 @@ Definition gc_graph_pending_remset_semi_iso
   gc_graph_remset_semi_iso_parts
     (fun g1 g2 l from => remset_partial_graph_pending g1 g2 l from pending)
     g1 g2 from to l.
+
+#[local] Lemma gc_graph_remset_semi_iso_parts_impl:
+  forall Partial1 Partial2 g1 g2 from to l,
+    gc_graph_remset_semi_iso_parts Partial1 g1 g2 from to l ->
+    (Partial1 g1 g2 l from -> Partial2 g1 g2 l from) ->
+    gc_graph_remset_semi_iso_parts Partial2 g1 g2 from to l.
+Proof.
+  unfold gc_graph_remset_semi_iso_parts.
+  intros Partial1 Partial2 g1 g2 from to l [Hcopy Hspec] Himpl.
+  split; [exact Hcopy |].
+  destruct (split l) as [from_l to_l].
+  intuition.
+Qed.
 
 Lemma gc_graph_remset_semi_iso_parts_partial:
   forall Partial g1 g2 from to l,
@@ -1818,90 +1778,15 @@ Proof.
   now apply Hlift.
 Qed.
 
-Lemma remset_partial_graph_pending_nil:
-  forall g1 g2 l from,
-    remset_partial_graph_pending g1 g2 l from nil ->
-    remset_partial_graph g1 g2 l from.
-Proof.
-  unfold remset_partial_graph_pending, remset_partial_graph.
-  intros g1 g2 l from [Hold [Hedges Hunmarked]].
-  split; [exact Hold |].
-  split; [|exact Hunmarked].
-  now apply old_nonfrom_edges_mapped_pending_nil.
-Qed.
-
-Lemma remset_partial_graph_pending_intro:
-  forall g1 g2 l from pending,
-    remset_partial_graph g1 g2 l from ->
-    remset_partial_graph_pending g1 g2 l from pending.
-Proof.
-  unfold remset_partial_graph_pending, remset_partial_graph.
-  intros g1 g2 l from pending [Hold [Hedges Hunmarked]].
-  split; [exact Hold |].
-  split; [|exact Hunmarked].
-  now apply old_nonfrom_edges_mapped_pending_intro.
-Qed.
-
-Lemma remset_partial_graph_pending_cons_drop:
-  forall g1 g2 l from item pending,
-    (forall e, ~ remset_item_records_edge item e) ->
-    remset_partial_graph_pending g1 g2 l from (item :: pending) ->
-    remset_partial_graph_pending g1 g2 l from pending.
-Proof.
-  intros g1 g2 l from item pending Hnone Hpartial.
-  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
-  intros Hedges. eapply old_nonfrom_edges_mapped_pending_cons_drop; eauto.
-Qed.
-
-Lemma remset_partial_graph_pending_cons_drop_old_nonfrom:
-  forall g1 g2 l from item pending,
-    (forall e, vgeneration (fst e) <> from -> ~ remset_item_records_edge item e) ->
-    remset_partial_graph_pending g1 g2 l from (item :: pending) ->
-    remset_partial_graph_pending g1 g2 l from pending.
-Proof.
-  intros g1 g2 l from item pending Hnone Hpartial.
-  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
-  intros Hedges. eapply old_nonfrom_edges_mapped_pending_cons_drop_old_nonfrom; eauto.
-Qed.
-
-Lemma remset_partial_graph_pending_consume_item_not_to:
-  forall (g1 g2: LGraph) (l: list (VType * VType)) from item
-         (pending: remset_space) e,
-    remset_item_records_edge item e ->
-    vgeneration (dst g2 e) <> from ->
-    remset_partial_graph_pending g1 g2 l from (item :: pending) ->
-    remset_partial_graph_pending g1 g2 l from pending.
-Proof.
-  intros g1 g2 l from item pending e Hitem Hdst_not Hpartial.
-  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
-  intros Hedges. eapply old_nonfrom_edges_mapped_pending_consume_item_not_to; eauto.
-Qed.
-
-Lemma remset_partial_graph_pending_consume_item_no_current_edge:
-  forall (g1 g2: LGraph) (l: list (VType * VType)) from item
-         (pending: remset_space),
-    (forall e, remset_item_records_edge item e -> ~ evalid g2 e) ->
-    remset_partial_graph_pending g1 g2 l from (item :: pending) ->
-    remset_partial_graph_pending g1 g2 l from pending.
-Proof.
-  intros g1 g2 l from item pending Hno_current Hpartial.
-  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
-  intros Hedges.
-  eapply old_nonfrom_edges_mapped_pending_consume_item_no_current_edge; eauto.
-Qed.
-
 Lemma pending_remset_semi_iso_nil:
   forall g1 g2 from to l,
     gc_graph_pending_remset_semi_iso g1 g2 from to nil l ->
     gc_graph_remset_semi_iso g1 g2 from to l.
 Proof.
-  intros g1 g2 from to l [Hcopy Hspec].
-  split; [exact Hcopy |].
-  destruct (split l) as [from_l to_l] eqn:Hsplit.
-  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
-  split; [exact Hfrom |]. split; [exact Hto |].
-  split; [exact Hlabel |].
-  now apply remset_partial_graph_pending_nil.
+  intros g1 g2 from to l Hiso.
+  eapply gc_graph_remset_semi_iso_parts_impl; [exact Hiso |].
+  unfold remset_partial_graph_pending, remset_partial_graph.
+  intuition eauto using old_nonfrom_edges_mapped_pending_nil.
 Qed.
 
 Lemma remset_semi_iso_pending:
@@ -1909,13 +1794,10 @@ Lemma remset_semi_iso_pending:
     gc_graph_remset_semi_iso g1 g2 from to l ->
     gc_graph_pending_remset_semi_iso g1 g2 from to pending l.
 Proof.
-  intros g1 g2 from to l pending [Hcopy Hspec].
-  split; [exact Hcopy |].
-  destruct (split l) as [from_l to_l] eqn:Hsplit.
-  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
-  split; [exact Hfrom |]. split; [exact Hto |].
-  split; [exact Hlabel |].
-  now apply remset_partial_graph_pending_intro.
+  intros g1 g2 from to l pending Hiso.
+  eapply gc_graph_remset_semi_iso_parts_impl; [exact Hiso |].
+  unfold remset_partial_graph, remset_partial_graph_pending.
+  intuition eauto using old_nonfrom_edges_mapped_pending_intro.
 Qed.
 
 Lemma pending_remset_semi_iso_lift_partial:
@@ -1925,13 +1807,8 @@ Lemma pending_remset_semi_iso_lift_partial:
     gc_graph_pending_remset_semi_iso g1 g2 from to pending1 l ->
     gc_graph_pending_remset_semi_iso g1 g2 from to pending2 l.
 Proof.
-  intros g1 g2 from to pending1 pending2 l Hlift [Hcopy Hspec].
-  split; [exact Hcopy |].
-  destruct (split l) as [from_l to_l] eqn:Hsplit.
-  destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
-  split; [exact Hfrom |]. split; [exact Hto |].
-  split; [exact Hlabel |].
-  now apply Hlift.
+  intros g1 g2 from to pending1 pending2 l Hlift Hiso.
+  eapply gc_graph_remset_semi_iso_parts_impl; [exact Hiso | exact Hlift].
 Qed.
 
 Lemma pending_remset_semi_iso_cons_drop:
@@ -1942,7 +1819,9 @@ Lemma pending_remset_semi_iso_cons_drop:
 Proof.
   intros g1 g2 from to item pending l Hnone Hiso.
   eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
-  intros Hpartial. eapply remset_partial_graph_pending_cons_drop; eauto.
+  intros Hpartial.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges. eapply old_nonfrom_edges_mapped_pending_cons_drop; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_cons_drop_old_nonfrom:
@@ -1954,7 +1833,9 @@ Proof.
   intros g1 g2 from to item pending l Hnone Hiso.
   eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
   intros Hpartial.
-  eapply remset_partial_graph_pending_cons_drop_old_nonfrom; eauto.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges.
+  eapply old_nonfrom_edges_mapped_pending_cons_drop_old_nonfrom; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_consume_item_not_to:
@@ -1968,7 +1849,9 @@ Proof.
   intros g1 g2 from to item pending l e Hitem Hdst_not Hiso.
   eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
   intros Hpartial.
-  eapply remset_partial_graph_pending_consume_item_not_to; eauto.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges.
+  eapply old_nonfrom_edges_mapped_pending_consume_item_not_to; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_consume_item_no_current_edge:
@@ -1981,7 +1864,9 @@ Proof.
   intros g1 g2 from to item pending l Hno_current Hiso.
   eapply pending_remset_semi_iso_lift_partial; [|exact Hiso].
   intros Hpartial.
-  eapply remset_partial_graph_pending_consume_item_no_current_edge; eauto.
+  eapply remset_partial_graph_pending_lift_edges; [|exact Hpartial].
+  intros Hedges.
+  eapply old_nonfrom_edges_mapped_pending_consume_item_no_current_edge; eauto.
 Qed.
 
 Lemma pending_remset_semi_iso_refl:
@@ -2118,15 +2003,10 @@ Lemma forward_remset_item_graph_has_v_pres:
     graph_has_v g' v.
 Proof.
   intros from to g h rh rmst item g' h' rh' rmst' v Hto Hv Hfri.
-  unfold forward_remset_item in Hfri.
-  destruct (negb (remset_item_in_gen item rmst g from)).
-  - destruct (forward_graph_and_heap from to O (remset_item2forward_t item rmst g) g h)
-      as [newg newh] eqn:Hfgh.
-    pose proof fr_forward_graph_and_heap from to O (remset_item2forward_t item rmst g) g h
-      as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr. inversion Hfri; subst.
-    eapply fr_graph_has_v; eauto.
-  - inversion Hfri; subst. exact Hv.
+  eapply (forward_remset_item_P_holds
+            (fun g0 => graph_has_v g0 v)); eauto.
+  intros g1 g2 p Hv1 Hto1 Hfr.
+  eapply fr_graph_has_v; eauto.
 Qed.
 
 Lemma forward_remset_item_fold_raw_mark_true_pres:
@@ -2428,8 +2308,6 @@ Proof.
          Hdd_l Hiso Hpartial_new.
   pose proof Hsound_base as Hsound_base0.
   pose proof Hsound_g as Hsound_g0.
-  assert (Hsound_lcv: sound_gc_graph (lgraph_copy_v g v to)) by
-      (apply lcv_sound; auto).
   destruct Hiso as [Hcopy Hspec].
   destruct (split l) as [from_l to_l] eqn:Hsplit.
   destruct Hspec as [Hfrom [Hto [Hlabel Hpartial]]].
@@ -3194,8 +3072,7 @@ Proof.
               Hevalid Hsrcgen Hdstgen)
     as [Hdst_eq [Hdst_valid_base Hdst_base_gen]].
   assert (Holdvalid: old_vertices_valid base g). {
-    pose proof Hsemi as Hsemi0.
-    destruct Hsemi0 as [_ Hspec].
+    destruct Hsemi as [_ Hspec].
     destruct (split l) as [from_l to_l].
     destruct Hspec as [_ [_ [_ Hpartial]]].
     exact (proj1 Hpartial).
@@ -3287,9 +3164,8 @@ Proof.
   intros base g from to l e Hneq Hsound_base Hndd_base Hsemi
          Hevalid Hsrcgen Hdstgen.
   destruct Hsound_base as [Hvv_base [Hev_base _]].
-  pose proof Hsemi as Hsemi0.
   assert (Hdd: DoubleNoDup l) by
-      (eapply remset_semi_iso_DoubleNoDup; [exact Hneq | exact Hsemi0]).
+      (eapply remset_semi_iso_DoubleNoDup; [exact Hneq | exact Hsemi]).
   destruct Hsemi as [_ Hspec].
   destruct (split l) as [from_l to_l] eqn:Hsplit.
   destruct Hspec as [[_ Hfrom] [[_ [Hto_valid Hto_gen]] [_ Hpartial]]].
@@ -3392,11 +3268,7 @@ Lemma fr_O_remset_semi_iso:
 Proof.
   intros from to p base g1 g2 l1 Hneq Hsound_base Hsound_g1 Hto Hsemi
          Hcompat Hndd_base Hndd_g1 Hspecial Hclosed Hfr.
-  pose proof Hsound_base as Hsound_base0.
-  pose proof Hsound_g1 as Hsound_g1_0.
   assert (Hdd: DoubleNoDup l1) by (eapply remset_semi_iso_DoubleNoDup; eauto).
-  assert (Hbij: bijective (roots_map l1) (roots_map l1)) by
-      (now apply roots_map_bijective).
   assert (Hvv_base: vertex_valid base) by (destruct Hsound_base as [Hvv _]; exact Hvv).
   assert (Hvv_g1: vertex_valid g1) by (destruct Hsound_g1 as [Hvv _]; exact Hvv).
   destruct p; simpl in Hcompat, Hfr.
@@ -3493,26 +3365,6 @@ Proof.
         now rewrite make_fields_eq_length.
 Qed.
 
-Lemma fr_O_no_unmarked_old_nonfrom_dst:
-  forall base from to p g g',
-    from <> to ->
-    forward_relation from to O (forward_p2forward_t p g) g g' ->
-    no_unmarked_old_nonfrom_dst base g from ->
-    no_unmarked_old_nonfrom_dst base g' from.
-Proof.
-  intros base from to p g g' Hneq Hfr Hclosed.
-  destruct p; simpl in Hfr.
-  - destruct extr; simpl in Hfr; inversion Hfr; subst; auto.
-    eapply no_unmarked_old_nonfrom_dst_lcv; eauto.
-  - destruct intr as [v i]. simpl in Hfr.
-    destruct (Znth i (make_fields g v)); simpl in Hfr; inversion Hfr; subst; auto;
-      try solve [
-        eapply no_unmarked_old_nonfrom_dst_lgd;
-        eapply no_unmarked_old_nonfrom_dst_lcv; eauto
-      ];
-      eapply no_unmarked_old_nonfrom_dst_lgd; eauto.
-Qed.
-
 Lemma fr_O_no_unmarked_old_nonfrom_dst_t:
   forall base from to p g g',
     from <> to ->
@@ -3581,7 +3433,7 @@ Proof.
       now apply roots_graph_compatible_inv in Hroots.
     + eapply fr_O_no_dangling_dst' with (p := FwdPntExtr r); eauto.
     + eapply fr_copy_compatible; eauto.
-    + eapply fr_O_no_unmarked_old_nonfrom_dst with (p := FwdPntExtr r); eauto.
+    + eapply fr_O_no_unmarked_old_nonfrom_dst_t; eauto.
     + exists (l3 ++ l2). rewrite <- app_assoc. split; auto. subst roots2. f_equal.
       inversion Hupd as [Hupd_exterior]. clear Hupd. rewrite Hupd_exterior.
       unfold exterior_map. destruct r; auto.
@@ -3647,8 +3499,7 @@ Proof.
                     g2 g0 H2 H16 v H20 NOSCAN).
       exact H12.
     + eapply (fr_copy_compatible O from); eauto.
-    + eapply fr_O_no_unmarked_old_nonfrom_dst with
-        (p := FwdPntIntr (InteriorVertexPos v (Z.of_nat a))); eauto.
+    + eapply fr_O_no_unmarked_old_nonfrom_dst_t; eauto.
 Qed.
 
 Lemma svfl_no_unmarked_old_nonfrom_dst:
@@ -5103,9 +4954,7 @@ Proof.
     as [new_g new_h] eqn:Hfgh.
   inversion Hfri; subst; clear Hfri.
   rewrite remset_item2forward_p_eq.
-  pose proof fr_forward_graph_and_heap
-       from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-  rewrite Hfgh in Hfr. simpl in Hfr. exact Hfr.
+  eapply fr_forward_graph_and_heap_eq. symmetry. exact Hfgh.
 Qed.
 
 Lemma forward_remset_item_effective_root_marked:
@@ -5225,7 +5074,7 @@ Proof.
         -- destruct (forward_remset_item from to (g, h, rh, rmst) (RemSetExterior item_addr))
              as [[[g2 h2] rh2] rmst2] eqn:Hfri.
            symmetry in Hfri.
-           destruct (forward_remset_item_step_state_with_tail
+           destruct (forward_remset_item_step_facts
                        from to g h rh rmst (RemSetExterior item_addr) rest
                        g2 h2 rh2 rmst2 Hneq Hto Hcc Hrnd Hrgc Hric_item
                        Hrrsc_tail Hfri)
@@ -5245,7 +5094,7 @@ Proof.
       * destruct (forward_remset_item from to (g, h, rh, rmst) (RemSetInterior intr))
           as [[[g2 h2] rh2] rmst2] eqn:Hfri.
         symmetry in Hfri.
-        destruct (forward_remset_item_step_state_with_tail
+        destruct (forward_remset_item_step_facts
                     from to g h rh rmst (RemSetInterior intr) rest
                     g2 h2 rh2 rmst2 Hneq Hto Hcc Hrnd Hrgc Hric_item
                     Hrrsc_tail Hfri)
@@ -5360,10 +5209,8 @@ Proof.
              Hneq Hsemi Hevalid_base Hsrcgen Hdst_base Hgenv).
   }
   assert (Hgv: graph_has_v g v). {
-    pose proof Hsound_base as Hsound_base0.
-    pose proof Hsound_g as Hsound_g0.
-    destruct Hsound_base0 as [Hvv_base [Hev_base _]].
-    destruct Hsound_g0 as [Hvv_g _].
+    destruct Hsound_base as [Hvv_base [Hev_base _]].
+    destruct Hsound_g as [Hvv_g _].
     assert (Hge_base: graph_has_e base e) by
         (apply (proj1 (Hev_base _)); exact Hevalid_base).
     assert (Hdst_has_base: graph_has_v base (dst base e)) by
@@ -5378,9 +5225,9 @@ Proof.
   destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hnotin.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [new_g new_h] eqn:Hfgh.
-    pose proof fr_forward_graph_and_heap
-         from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq
+                  from to 0 (remset_item2forward_t item rmst g) g h
+                  new_g new_h (eq_sym Hfgh)) as Hfr.
     inversion Hfri; subst; clear Hfri.
     destruct Hmarked_or_current as [Hmark_g | Hdst_current].
     + eapply fr_O_raw_mark_true_pres; eauto.
@@ -5428,10 +5275,8 @@ Proof.
             remset_partial_graph_pending base g l from (item :: pending)) by
       (eapply gc_graph_remset_semi_iso_parts_partial; exact Hsemi).
   assert (Hgv: graph_has_v g v). {
-    pose proof Hsound_base as Hsound_base0.
-    pose proof Hsound_g as Hsound_g0.
-    destruct Hsound_base0 as [Hvv_base [Hev_base _]].
-    destruct Hsound_g0 as [Hvv_g _].
+    destruct Hsound_base as [Hvv_base [Hev_base _]].
+    destruct Hsound_g as [Hvv_g _].
     assert (Hge_base: graph_has_e base e) by
         (apply (proj1 (Hev_base _)); exact Hevalid_base).
     assert (Hdst_has_base: graph_has_v base (dst base e)) by
@@ -5447,9 +5292,9 @@ Proof.
     destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hnotin.
     - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
         as [new_g new_h] eqn:Hfgh.
-      pose proof fr_forward_graph_and_heap
-           from to 0 (remset_item2forward_t item rmst g) g h as Hfr.
-      rewrite Hfgh in Hfr. simpl in Hfr.
+      pose proof (fr_forward_graph_and_heap_eq
+                    from to 0 (remset_item2forward_t item rmst g) g h
+                    new_g new_h (eq_sym Hfgh)) as Hfr.
       inversion Hfri; subst; clear Hfri.
       eapply fr_O_raw_mark_false_inv; eauto.
     - inversion Hfri; subst; clear Hfri. exact Hmark_new.
@@ -5734,8 +5579,7 @@ Proof.
       eapply lcv_pending_remset_semi_iso; eauto.
     }
     assert (Hsrc_not_new: fst e <> new_copied_v g to). {
-      pose proof Hsound_g as Hsound_g0.
-      destruct Hsound_g0 as [_ [Hev_g _]].
+      destruct Hsound_g as [_ [Hev_g _]].
       assert (Hge_g: graph_has_e g e) by
           (apply (proj1 (Hev_g _)); exact Hevalid_g).
       destruct Hge_g as [Hsrc_has _].
@@ -5851,7 +5695,7 @@ Proof.
     assert (Hsound2: sound_gc_graph g2) by
         (eapply forward_remset_item_P_holds; eauto;
          intros; eapply fr_O_sound; eauto).
-    destruct (forward_remset_item_step_state_with_tail
+    destruct (forward_remset_item_step_facts
                 from to g h rh rmst item r g2 h2 rh2 rmst2
                 Hneq Hto Hcc Hrnd Hrgc Hric_item Hrrsc_tail Hfri)
       as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
@@ -6068,7 +5912,7 @@ Proof.
   apply IHHfrr.
   - rewrite <- (fr_graph_has_gen 0 from to (exterior2forward r) g1 g2 Hto H to).
     exact Hto.
-  - eapply fr_O_no_unmarked_old_nonfrom_dst with (p := FwdPntExtr r); eauto.
+  - eapply fr_O_no_unmarked_old_nonfrom_dst_t; eauto.
 Qed.
 
 Lemma forward_remset_gh_frr_remset_semi_iso:
@@ -7169,9 +7013,9 @@ Proof.
   destruct (negb (remset_item_in_gen item rmst g from)) eqn:Hitem.
   - destruct (forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h)
       as [newg newh] eqn:Hfgh.
-    pose proof fr_forward_graph_and_heap from to 0 (remset_item2forward_t item rmst g) g h
-      as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq
+                  from to 0 (remset_item2forward_t item rmst g) g h
+                  newg newh (eq_sym Hfgh)) as Hfr.
     inversion Hfri; subst g2 h2 rh2 rmst2; clear Hfri.
     destruct item as [addr | [isrc ipos]]; simpl in Hfr.
     + destruct (find_remset_ext addr rmst) as [rext |] eqn:Hfind; simpl in Hfr.
@@ -7297,7 +7141,7 @@ Proof.
         as [Hnotin Heff].
       eapply remset_item_effective_root_in_effective_roots_from_space_cons;
         eauto.
-    + destruct (forward_remset_item_step_state_with_tail
+    + destruct (forward_remset_item_step_facts
                   from to g h rh rmst item rest g2 h2 rh2 rmst2
                   Hneq Hto Hcc Hrnd Hrgc Hric_item Hrrsc_tail Hfri)
         as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
@@ -7640,10 +7484,9 @@ Proof.
     destruct (forward_graph_and_heap from to O
                 (remset_item2forward_t item rmst g) g h)
       as [newg newh] eqn:Hfgh.
-    pose proof (fr_forward_graph_and_heap
-                  from to O (remset_item2forward_t item rmst g) g h)
-      as Hfr.
-    rewrite Hfgh in Hfr. simpl in Hfr.
+    pose proof (fr_forward_graph_and_heap_eq
+                  from to O (remset_item2forward_t item rmst g) g h
+                  newg newh (eq_sym Hfgh)) as Hfr.
     inversion Hfri; subst g' h' rh' rmst'; clear Hfri.
     eapply fr_O_from_edge_inv; eauto.
     intros e0 Hedge.
@@ -8132,14 +7975,12 @@ Proof.
       eapply svwl_graph_has_v in Hv; eauto.
       now rewrite Hvv3.
     - rewrite Hvv3 in Hv.
-      pose proof Hscan as Hscan_loop'.
-      destruct Hscan_loop' as [n' [Hsvwl_loop' _]].
+      destruct Hscan as [n' [Hsvwl_loop' _]].
       apply svwl_graph_has_v_inv with (v := v0) in Hsvwl_loop'; auto.
       destruct Hsvwl_loop' as [Hv2 | [Hgen_to _]].
       2: (rewrite Hgen_to in Hgen; exfalso; apply Hneq; symmetry; exact Hgen).
-      pose proof Hfrr as Hfrr_inv.
-      apply frr_graph_has_v_inv with (v := v0) in Hfrr_inv; auto.
-      destruct Hfrr_inv as [Hv1 | [Hgen_to _]].
+      apply frr_graph_has_v_inv with (v := v0) in Hfrr; auto.
+      destruct Hfrr as [Hv1 | [Hgen_to _]].
       2: (rewrite Hgen_to in Hgen; exfalso; apply Hneq; symmetry; exact Hgen).
       now rewrite Hvv1.
   }
@@ -8353,18 +8194,13 @@ Lemma forward_remset_item_fold_rh_Zlength_same:
       fold_left (forward_remset_item from to) r (g, h, rh, rmst) ->
     Zlength rh = Zlength rh'.
 Proof.
-  intros from to r. induction r as [|item rest IH];
-    intros g h rh rmst g' h' rh' rmst' Hfold.
-  - simpl in Hfold. inversion Hfold. reflexivity.
-  - Opaque forward_remset_item.
-    simpl in Hfold.
-    Transparent forward_remset_item.
-    destruct (forward_remset_item from to (g, h, rh, rmst) item)
-      as [[[g2 h2] rh2] rmst2] eqn:Hfri.
-    symmetry in Hfri.
-    transitivity (Zlength rh2).
-    + eapply fri_rh_Zlength_same; exact Hfri.
-    + eapply IH; exact Hfold.
+  intros from to r g h rh rmst g' h' rh' rmst' Hfold.
+  eapply (forward_remset_item_fold_suffix_invariant
+            (fun _ _ _ rh0 _ => Zlength rh = Zlength rh0));
+    [| reflexivity | exact Hfold].
+  intros item rest g0 h0 rh0 rmst0 g1 h1 rh1 rmst1 Hlen Hstep.
+  transitivity (Zlength rh0); [exact Hlen |].
+  eapply fri_rh_Zlength_same; exact Hstep.
 Qed.
 
 Lemma forward_remset_gh_rh_Zlength_same:
@@ -8493,7 +8329,7 @@ Proof.
     assert (Hrange2: 0 <= Z.of_nat to < Zlength rh2) by
         (pose proof (fri_rh_Zlength_same from to g h rh rmst item
                        g2 h2 rh2 rmst2 Hfri); lia).
-    destruct (forward_remset_item_step_state_with_tail
+    destruct (forward_remset_item_step_facts
                 from to g h rh rmst item rest g2 h2 rh2 rmst2
                 Hneq Hto Hcc Hrnd Hrgc Hitem Hrrsc_tail Hfri)
       as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
@@ -8547,7 +8383,7 @@ Proof.
     symmetry in Hfri.
     hnf in Hrrsc. rewrite Forall_cons_iff in Hrrsc.
     destruct Hrrsc as [Hitem Hrrsc_tail].
-    destruct (forward_remset_item_step_state_with_tail
+    destruct (forward_remset_item_step_facts
                 from to g h rh rmst item rest g2 h2 rh2 rmst2
                 Hneq Hto Hcc Hrnd Hrgc Hitem Hrrsc_tail Hfri)
       as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
@@ -8730,7 +8566,7 @@ Proof.
     assert (Hsound2: sound_gc_graph g2) by
         (eapply forward_remset_item_P_holds;
          [intros; eapply fr_O_sound; eauto | exact Hsound | exact Hto | exact Hfri]).
-    destruct (forward_remset_item_step_state_with_tail
+    destruct (forward_remset_item_step_facts
                 from to g h rh rmst item rest g2 h2 rh2 rmst2
                 Hneq Hto Hcc Hrnd Hrgc Hric Hrrsc_tail Hfri)
       as [Hto2 [Hcc2 [Hrnd2 [Hrgc2 Hrrsc2]]]].
@@ -9184,39 +9020,6 @@ Proof.
             g1 g_scan); eauto.
 Qed.
 
-Lemma no_dangling_dst_reset_from_no_edge2gen:
-  forall g gen,
-    no_dangling_dst g ->
-    no_edge2gen g gen ->
-    no_dangling_dst (reset_graph gen g).
-Proof.
-  unfold no_dangling_dst.
-  intros g gen Hndd Hnoedge v Hv e Hin.
-  rewrite graph_has_v_reset in Hv.
-  rewrite get_edges_reset in Hin.
-  simpl.
-  rewrite remove_ve_dst_unchanged.
-  rewrite graph_has_v_reset.
-  split.
-  - eapply Hndd; eauto.
-    tauto.
-  - intro Hdst_gen.
-    destruct Hv as [Hv Hsrc_ne].
-    pose proof (get_edges_fst g v e Hin) as Hfst.
-    assert (He: graph_has_e g e). {
-      unfold graph_has_e.
-      rewrite Hfst.
-      split; assumption.
-    }
-    destruct e as [[src_gen src_idx] e_idx].
-    destruct v as [v_gen v_idx].
-    simpl in *.
-    inversion Hfst; subst src_gen src_idx.
-    specialize (Hnoedge v_gen (not_eq_sym Hsrc_ne) v_idx e_idx He).
-    symmetry in Hdst_gen.
-    contradiction.
-Qed.
-
 Lemma do_generation_relation_no_dangling_dst_noedge_state:
   forall g h rh rmst g_rem h_rem rh' rmst' g' h' roots roots' i,
     sound_gc_graph g ->
@@ -9260,7 +9063,7 @@ Proof.
               i (S i) roots roots' g h rh rmst
               g_rem h_rem rh' rmst' g1 g2); eauto.
   }
-  subst g'. eapply no_dangling_dst_reset_from_no_edge2gen; eauto.
+  subst g'. eapply no_dangling_dst_reset; eauto.
 Qed.
 
 Lemma do_generation_relation_no_unrecorded_backward_edge_reset_state:
@@ -9862,4 +9665,721 @@ Proof.
   - eapply remset_graph_state_from_spec_pre; eauto.
   - eapply remset_compatible_remset_heap_covers_graph; eauto.
   - exact Hrel.
+Qed.
+
+Lemma mutable_update_remset_heap_and_heap_compatible:
+  forall (g: LGraph) (h: part_heap) (rh: remset_heap)
+         (x: val) (item: remset_space_item),
+    graph_heap_compatible g h ->
+    used_space (nth_space h O) < available_space (nth_space h O) ->
+    remset_heap_and_heap_compatible rh h ->
+    remset_heap_and_heap_compatible
+      (if isptr_dec x then upd_remset_heap item rh O else rh)
+      (if isptr_dec x then incr_remset_heap h 0 else h).
+Proof.
+  intros g h rh x item Hghc Hcapacity Hrhhc.
+  destruct (isptr_dec x).
+  - eapply upd_incr_remset_heap_rhhc; eauto.
+    apply graph_has_gen_O.
+  - exact Hrhhc.
+Qed.
+
+Lemma mutable_update_remset_generation_compatible:
+  forall (x: val) (it: interior_t) (rh: remset_heap) (rmst: remset),
+    0 <= Z.of_nat O < Zlength rh ->
+    remset_generation_compatible O rmst rh ->
+    remset_generation_compatible O rmst
+      (if isptr_dec x
+       then upd_remset_heap (RemSetInterior it) rh O
+       else rh).
+Proof.
+  intros x it rh rmst Hrange Hcompatible.
+  destruct (isptr_dec x).
+  2: exact Hcompatible.
+  destruct Hcompatible as [Hext [Horder _]].
+  split.
+  - unfold remset_ext_space_compatible in *.
+    intros v addr Hin.
+    eapply nth_remset_space_upd_remset_heap_old; eauto.
+  - split.
+    + eapply upd_remset_heap_interior_generation_order; eauto.
+      intros. apply Nat.le_0_l.
+    + unfold remset_lower_generations_empty.
+      intros gen Hlt. lia.
+Qed.
+
+#[local] Lemma graph_has_e_iff_raw_internal:
+  forall g v n,
+    graph_has_v g v ->
+    (graph_has_e g (v, n) <->
+     0 <= Z.of_nat n < Zlength (raw_fields (vlabel g v)) /\
+     Znth (Z.of_nat n) (raw_fields (vlabel g v)) = RawInternal).
+Proof.
+  intros g v n Hv. split.
+  - intro He. pose proof (graph_has_e_Znth g v n He) as [Hrange Hfield].
+    split; [exact Hrange|].
+    rewrite (Znth_make_fields g v (Z.of_nat n) Hrange) in Hfield.
+    destruct (Znth (Z.of_nat n) (raw_fields (vlabel g v)));
+      inversion Hfield; reflexivity.
+  - intros [Hrange Hraw]. split; [exact Hv|].
+    rewrite get_edges_In_iff.
+    assert (Hfield: Znth (Z.of_nat n) (make_fields g v) = FieldEdge (v, n)).
+    { rewrite (Znth_make_fields g v (Z.of_nat n) Hrange), Hraw, Nat2Z.id.
+      reflexivity. }
+    rewrite <- Hfield. apply Znth_In.
+    rewrite make_fields_eq_length. exact Hrange.
+Qed.
+
+Lemma mutable_graph_update_graph_has_e_neq:
+  forall g src pos new g' e,
+    e <> (src, Z.to_nat pos) ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    (graph_has_e g' e <-> graph_has_e g e).
+Proof.
+  intros g src pos new g' [v n] Hneq Hloc Hupd.
+  pose proof Hloc as Hloc'.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  destruct (V_EqDec v src) as [Heq | Hne].
+  - hnf in Heq. subst v.
+    assert (Hidx: Z.of_nat n <> pos).
+    { intro Heq. apply Hneq. f_equal. rewrite <- Heq, Nat2Z.id. reflexivity. }
+    pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc' Hupd) as Hsrc.
+    unfold raw_vertex_field_update in Hsrc. destruct Hsrc as [Hfields _].
+    rewrite (graph_has_e_iff_raw_internal g' src n).
+    2: rewrite (mutable_graph_update_graph_has_v g (InteriorVertexPos src pos)
+                  new g' src Hloc' Hupd); exact Hv.
+    rewrite (graph_has_e_iff_raw_internal g src n Hv).
+    rewrite Hfields, Zlength_upd_Znth.
+    rewrite upd_Znth_diff_strong; [reflexivity|exact Hpos|exact Hidx].
+  - unfold graph_has_e; simpl fst.
+    rewrite (mutable_graph_update_graph_has_v
+               g (InteriorVertexPos src pos) new g' v Hloc' Hupd).
+    unfold get_edges, make_fields.
+    rewrite (mutable_graph_update_vlabel_other
+               g src pos new g' v Hne Hloc' Hupd).
+    reflexivity.
+Qed.
+
+Lemma mutable_graph_update_graph_has_e_target:
+  forall g src pos new g',
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    (graph_has_e g' (src, Z.to_nat pos) <->
+     exists dstv, new = ExteriorVertex dstv).
+Proof.
+  intros g src pos new g' Hloc Hupd.
+  pose proof Hloc as Hloc'.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  rewrite (graph_has_e_iff_raw_internal g' src (Z.to_nat pos)).
+  2: rewrite (mutable_graph_update_graph_has_v g (InteriorVertexPos src pos)
+                new g' src Hloc' Hupd); exact Hv.
+  rewrite Z2Nat.id by lia.
+  pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc' Hupd) as Hsrc.
+  unfold raw_vertex_field_update in Hsrc. destruct Hsrc as [Hfields _].
+  rewrite Hfields, Zlength_upd_Znth, upd_Znth_same by exact Hpos.
+  destruct new as [z | p | dstv]; simpl.
+  - split; [intros [_ H]; discriminate|intros [x H]; discriminate].
+  - split; [intros [_ H]; discriminate|intros [x H]; discriminate].
+  - split; [intros; now exists dstv|intros; split; [exact Hpos|reflexivity]].
+Qed.
+
+Lemma mutable_graph_update_evalid_neq:
+  forall g src pos new g' e,
+    e <> (src, Z.to_nat pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    (evalid g' e <-> evalid g e).
+Proof.
+  intros g src pos new g' e Hneq Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dstv].
+  - destruct Hupd as [rvb' [_ ->]].
+    simpl. unfold removeValidFunc. tauto.
+  - destruct Hupd as [rvb' [_ ->]].
+    simpl. unfold removeValidFunc. tauto.
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. reflexivity.
+    + destruct Hupd as [rvb' [_ ->]].
+      simpl. unfold addValidFunc. tauto.
+    + destruct Hupd as [rvb' [_ ->]].
+      simpl. unfold addValidFunc. tauto.
+Qed.
+
+Lemma mutable_graph_update_evalid_target:
+  forall g src pos new g',
+    sound_gc_graph g ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    (evalid g' (src, Z.to_nat pos) <->
+     exists dstv, new = ExteriorVertex dstv).
+Proof.
+  intros g src pos new g' Hsound Hloc Hupd.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  destruct Hsound as [Hvv [Hev [Hsrc Helabel]]].
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dstv].
+  - destruct Hupd as [rvb' [_ ->]].
+    simpl. unfold removeValidFunc. split; [tauto|intros [x H]; discriminate].
+  - destruct Hupd as [rvb' [_ ->]].
+    simpl. unfold removeValidFunc. split; [tauto|intros [x H]; discriminate].
+  - destruct (Znth pos (raw_fields (vlabel g src))) eqn:Hold.
+    + subst g'. split.
+      * intros. now exists dstv.
+      * intros _. apply Hev.
+        apply (proj2 (graph_has_e_iff_raw_internal g src (Z.to_nat pos) Hv)).
+        rewrite Z2Nat.id by lia. split; assumption.
+    + destruct Hupd as [rvb' [_ ->]].
+      split; [intros; now exists dstv|intros; apply add_edge_evalid].
+    + destruct Hupd as [rvb' [_ ->]].
+      split; [intros; now exists dstv|intros; apply add_edge_evalid].
+Qed.
+
+Lemma mutable_graph_update_vvalid:
+  forall g it new g' v,
+    mutable_graph_update g it new g' ->
+    (vvalid g' v <-> vvalid g v).
+Proof.
+  intros g [src pos] new g' v Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dstv].
+  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
+  - destruct Hupd as [rvb' [_ ->]]. reflexivity.
+  - destruct (Znth pos (raw_fields (vlabel g src))).
+    + subst g'. reflexivity.
+    + destruct Hupd as [rvb' [_ ->]]. reflexivity.
+    + destruct Hupd as [rvb' [_ ->]]. reflexivity.
+Qed.
+
+Lemma mutable_graph_update_src_edge:
+  forall (g: LGraph) it new g',
+    src_edge g -> mutable_graph_update g it new g' -> src_edge g'.
+Proof.
+  intros g [srcv pos] new g' Hsrc Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dstv].
+  - destruct Hupd as [rvb' [_ ->]]. exact Hsrc.
+  - destruct Hupd as [rvb' [_ ->]]. exact Hsrc.
+  - destruct (Znth pos (raw_fields (vlabel g srcv))).
+    + subst g'. exact Hsrc.
+    + destruct Hupd as [rvb' [_ ->]]. intros e.
+      simpl. unfold updateEdgeFunc. if_tac.
+      * hnf in H. subst e. reflexivity.
+      * apply Hsrc.
+    + destruct Hupd as [rvb' [_ ->]]. intros e.
+      simpl. unfold updateEdgeFunc. if_tac.
+      * hnf in H. subst e. reflexivity.
+      * apply Hsrc.
+Qed.
+
+Lemma mutable_graph_update_edge_label_same:
+  forall (g: LGraph) it new g',
+    edge_label_same g ->
+    mutable_graph_update g it new g' ->
+    edge_label_same g'.
+Proof.
+  intros g [srcv pos] new g' Hlabel Hupd.
+  unfold mutable_graph_update, internal_write_at in Hupd.
+  destruct new as [z | p | dstv].
+  - destruct Hupd as [rvb' [_ ->]]. exact Hlabel.
+  - destruct Hupd as [rvb' [_ ->]]. exact Hlabel.
+  - destruct (Znth pos (raw_fields (vlabel g srcv))).
+    + subst g'. exact Hlabel.
+    + destruct Hupd as [rvb' [_ ->]]. intros e.
+      simpl. unfold update_elabel. if_tac.
+      * hnf in H. subst e. reflexivity.
+      * apply Hlabel.
+    + destruct Hupd as [rvb' [_ ->]]. intros e.
+      simpl. unfold update_elabel. if_tac.
+      * hnf in H. subst e. reflexivity.
+      * apply Hlabel.
+Qed.
+
+Theorem mutable_graph_update_sound:
+  forall g src pos new g' outlier,
+    sound_gc_graph g ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    sound_gc_graph g'.
+Proof.
+  intros g src pos new g' outlier Hsound Hloc Hext Hupd.
+  pose proof Hsound as Hsound'.
+  destruct Hsound as [Hvv [Hev [Hsrc Hlabel]]].
+  split; [|split; [|split]].
+  - intro v.
+    rewrite (mutable_graph_update_vvalid g (InteriorVertexPos src pos) new g' v Hupd).
+    rewrite (mutable_graph_update_graph_has_v g (InteriorVertexPos src pos)
+               new g' v Hloc Hupd).
+    apply Hvv.
+  - intro e. destruct (E_EqDec e (src, Z.to_nat pos)) as [Heq | Hneq].
+    + hnf in Heq. subst e.
+      rewrite (mutable_graph_update_evalid_target g src pos new g' Hsound' Hloc Hupd).
+      rewrite (mutable_graph_update_graph_has_e_target g src pos new g' Hloc Hupd).
+      reflexivity.
+    + rewrite (mutable_graph_update_evalid_neq g src pos new g' e Hneq Hupd).
+      rewrite (mutable_graph_update_graph_has_e_neq g src pos new g' e Hneq Hloc Hupd).
+      apply Hev.
+  - eapply mutable_graph_update_src_edge; eassumption.
+  - eapply mutable_graph_update_edge_label_same; eassumption.
+Qed.
+
+Theorem mutable_graph_update_outlier_compatible:
+  forall g src pos new g' outlier,
+    outlier_compatible g outlier ->
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    outlier_compatible g' outlier.
+Proof.
+  intros g src pos new g' outlier Hold Hloc Hext Hupd.
+  intros v Hv' p Hin.
+  assert (Hv: graph_has_v g v).
+  { rewrite <- (mutable_graph_update_graph_has_v g (InteriorVertexPos src pos)
+                   new g' v Hloc Hupd). exact Hv'. }
+  destruct (V_EqDec v src) as [Heq | Hneq].
+  - hnf in Heq. subst v.
+    pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc Hupd) as Hsrc.
+    unfold raw_vertex_field_update in Hsrc. destruct Hsrc as [Hfields _].
+    rewrite <- (filter_proj_In_iff raw_proj_outlier_spec) in Hin.
+    rewrite Hfields in Hin. apply In_upd_Znth in Hin. destruct Hin as [Hnew | Holdin].
+    + destruct new as [z | q | dstv]; inversion Hnew; subst. exact Hext.
+    + apply (Hold src Hv).
+      rewrite <- (filter_proj_In_iff raw_proj_outlier_spec). exact Holdin.
+  - apply (Hold v Hv).
+    rewrite (mutable_graph_update_vlabel_other g src pos new g' v Hneq Hloc Hupd) in Hin.
+    exact Hin.
+Qed.
+
+Theorem mutable_graph_update_no_unrecorded_backward_edge:
+  forall g src pos new g' outlier rh,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    0 <= Z.of_nat O < Zlength rh ->
+    no_unrecorded_backward_edge g rh ->
+    no_unrecorded_backward_edge g'
+      (if isptr_dec (exterior2val g new)
+       then upd_remset_heap (RemSetInterior (InteriorVertexPos src pos)) rh O
+       else rh).
+Proof.
+  intros g src pos new g' outlier rh Hloc Hext Hupd Hrange Hold.
+  pose proof Hloc as Hloc'.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  unfold no_unrecorded_backward_edge, no_unrecorded_backward_edge_from in *.
+  intros e He' Hback.
+  destruct (E_EqDec e (src, Z.to_nat pos)) as [Heq | Hneq].
+  - hnf in Heq. subst e.
+    apply (mutable_graph_update_graph_has_e_target g src pos new g' Hloc' Hupd) in He'.
+    destruct He' as [dstv Hnew]. subst new.
+    destruct (isptr_dec (exterior2val g (ExteriorVertex dstv))) as [Hptr | Hnptr].
+    2: exfalso; apply Hnptr; simpl; apply graph_has_v_addr_isptr; exact Hext.
+    exists O. split.
+    + split; lia.
+    + unfold remset_heap_records_edge. simpl fst. simpl snd.
+      rewrite Z2Nat.id by lia.
+      apply nth_remset_space_upd_remset_heap_new. exact Hrange.
+  - assert (He: graph_has_e g e).
+    { apply (proj1 (mutable_graph_update_graph_has_e_neq
+                      g src pos new g' e Hneq Hloc' Hupd)). exact He'. }
+    pose proof (mutable_graph_update_dst_neq
+                  g src pos new g' e Hneq Hloc' Hupd) as Hdst.
+    rewrite Hdst in Hback.
+    specialize (Hold e He Hback).
+    destruct Hold as [k [Hbounds Hrecord]].
+    assert (Hbounds': (O <= k <= vgeneration (dst g' e))%nat).
+    { rewrite Hdst. exact Hbounds. }
+    exists k. split; [exact Hbounds'|].
+    destruct (isptr_dec (exterior2val g new)) as [Hptr | Hnptr].
+    + unfold remset_heap_records_edge in *.
+      eapply nth_remset_space_upd_remset_heap_old; eauto.
+    + exact Hrecord.
+Qed.
+
+Lemma mutable_graph_update_raw_mark_tag:
+  forall g src pos new g' v,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    raw_mark (vlabel g' v) = raw_mark (vlabel g v) /\
+    raw_tag (vlabel g' v) = raw_tag (vlabel g v).
+Proof.
+  intros g src pos new g' v Hloc Hupd.
+  destruct (V_EqDec v src) as [Heq | Hneq].
+  - hnf in Heq. subst v.
+    pose proof (mutable_graph_update_vlabel_src g src pos new g' Hloc Hupd) as Hsrc.
+    unfold raw_vertex_field_update in Hsrc. tauto.
+  - rewrite (mutable_graph_update_vlabel_other
+               g src pos new g' v Hneq Hloc Hupd).
+    split; reflexivity.
+Qed.
+
+Lemma mutable_graph_update_remset_ext_compatible:
+  forall g it new g' outlier re,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    remset_ext_compatible g outlier re ->
+    remset_ext_compatible g' outlier re.
+Proof.
+  intros g it new g' outlier re Hloc Hupd Hold.
+  destruct re as [p addr | v addr]; simpl in *.
+  - exact Hold.
+  - rewrite (mutable_graph_update_graph_has_v g it new g' v Hloc Hupd).
+    exact Hold.
+Qed.
+
+Lemma mutable_graph_update_remset_graph_outlier_compatible:
+  forall g it new g' outlier rmst,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    remset_graph_outlier_compatible g outlier rmst ->
+    remset_graph_outlier_compatible g' outlier rmst.
+Proof.
+  intros g it new g' outlier rmst Hloc Hupd Hold.
+  unfold remset_graph_outlier_compatible in *.
+  eapply Forall_impl; [|exact Hold].
+  intros re Hre.
+  eapply mutable_graph_update_remset_ext_compatible; eauto.
+Qed.
+
+Lemma mutable_graph_update_remset_item_compatible:
+  forall g src pos new g' from rmst item,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    remset_item_compatible g from rmst item ->
+    remset_item_compatible g' from rmst item.
+Proof.
+  intros g src pos new g' from rmst item Hloc Hupd Hold.
+  destruct item as [addr | [v n]]; simpl in *; [exact Hold|].
+  destruct Hold as [Hv [Hn Hscan]].
+  split.
+  - rewrite (mutable_graph_update_graph_has_v
+               g (InteriorVertexPos src pos) new g' v Hloc Hupd).
+    exact Hv.
+  - split.
+    + rewrite (mutable_graph_update_raw_fields_length
+                 g (InteriorVertexPos src pos) new g' v Hloc Hupd).
+      exact Hn.
+    + intros Hgen. specialize (Hscan Hgen). destruct Hscan as [Hmark Htag].
+      pose proof (mutable_graph_update_raw_mark_tag
+                    g src pos new g' v Hloc Hupd) as [Hmark' Htag'].
+      rewrite Hmark', Htag'. split; assumption.
+Qed.
+
+Lemma mutable_graph_update_new_remset_item_compatible:
+  forall g src pos new g' from rmst,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    remset_item_compatible g' from rmst
+      (RemSetInterior (InteriorVertexPos src pos)).
+Proof.
+  intros g src pos new g' from rmst Hloc Hupd.
+  pose proof Hloc as Hloc'.
+  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
+  simpl. split.
+  - rewrite (mutable_graph_update_graph_has_v
+               g (InteriorVertexPos src pos) new g' src Hloc' Hupd).
+    exact Hv.
+  - split.
+    + rewrite (mutable_graph_update_raw_fields_length
+                 g (InteriorVertexPos src pos) new g' src Hloc' Hupd).
+      exact Hpos.
+    + intros _.
+      pose proof (mutable_graph_update_raw_mark_tag
+                    g src pos new g' src Hloc' Hupd) as [Hmark' Htag'].
+      rewrite Hmark', Htag'. split; assumption.
+Qed.
+
+Lemma mutable_graph_update_remset_space_compatible:
+  forall g src pos new g' from rmst items,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    remset_and_remset_space_compatible g from rmst items ->
+    remset_and_remset_space_compatible g' from rmst items.
+Proof.
+  intros g src pos new g' from rmst items Hloc Hupd Hold.
+  unfold remset_and_remset_space_compatible in *.
+  eapply Forall_impl; [|exact Hold].
+  intros item Hitem.
+  eapply mutable_graph_update_remset_item_compatible; eauto.
+Qed.
+
+Lemma mutable_update_remset_and_remset_heap_compatible:
+  forall g src pos new g' from rmst rh x,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    0 <= Z.of_nat O < Zlength rh ->
+    remset_and_remset_heap_compatible g from rmst rh ->
+    remset_and_remset_heap_compatible g' from rmst
+      (if isptr_dec x
+       then upd_remset_heap
+              (RemSetInterior (InteriorVertexPos src pos)) rh O
+       else rh).
+Proof.
+  intros g src pos new g' from rmst rh x Hloc Hupd Hrange Hold.
+  destruct (isptr_dec x) as [Hptr | Hnptr].
+  2: {
+    unfold remset_and_remset_heap_compatible in *.
+    eapply Forall_impl; [|exact Hold].
+    intros items Hitems.
+    eapply mutable_graph_update_remset_space_compatible; eauto.
+  }
+  unfold remset_and_remset_heap_compatible in *.
+  rewrite Forall_forall in *. intros items Hin.
+  apply upd_remset_heap_In in Hin. destruct Hin as [Hin | ->].
+  - eapply mutable_graph_update_remset_space_compatible; eauto.
+  - constructor.
+    + eapply mutable_graph_update_new_remset_item_compatible; eauto.
+    + eapply mutable_graph_update_remset_space_compatible; eauto.
+      apply Hold. apply Znth_In. exact Hrange.
+Qed.
+
+Theorem mutable_update_remset_compatible:
+  forall g src pos new g' outlier from rmst rh h,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    graph_heap_compatible g h ->
+    used_space (nth_space h O) < available_space (nth_space h O) ->
+    remset_compatible g outlier from rmst rh h ->
+    remset_compatible g' outlier from rmst
+      (if isptr_dec (exterior2val g new)
+       then upd_remset_heap
+              (RemSetInterior (InteriorVertexPos src pos)) rh O
+       else rh)
+      (if isptr_dec (exterior2val g new)
+       then incr_remset_heap h 0
+       else h).
+Proof.
+  intros g src pos new g' outlier from rmst rh h
+         Hloc Hupd Hghc Hcapacity [Hrgoc [Hrrhc Hrhhc]].
+  assert (Hrange: 0 <= Z.of_nat O < Zlength rh).
+  { eapply gen_range_remset_heap; eauto. apply graph_has_gen_O. }
+  split.
+  - eapply mutable_graph_update_remset_graph_outlier_compatible; eauto.
+  - split.
+    + eapply mutable_update_remset_and_remset_heap_compatible; eauto.
+    + eapply mutable_update_remset_heap_and_heap_compatible; eauto.
+Qed.
+
+Lemma mutable_graph_update_exterior2val_all:
+  forall g it new g' ext,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    exterior2val g' ext = exterior2val g ext.
+Proof.
+  intros g it new g' ext Hloc Hupd.
+  destruct ext; simpl; try reflexivity.
+  eapply mutable_graph_update_vertex_address; eassumption.
+Qed.
+
+Lemma mutable_graph_update_rootpairs_compatible:
+  forall g it new g' rootpairs roots,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    rootpairs_compatible g rootpairs roots ->
+    rootpairs_compatible g' rootpairs roots.
+Proof.
+  intros g it new g' rootpairs roots Hloc Hupd Hcompatible.
+  unfold rootpairs_compatible in *.
+  rewrite <- Hcompatible. clear Hcompatible rootpairs.
+  induction roots as [|ext roots IH]; simpl; [reflexivity|].
+  rewrite (mutable_graph_update_exterior2val_all
+             g it new g' ext Hloc Hupd), IH.
+  reflexivity.
+Qed.
+
+Lemma mutable_graph_update_roots_compatible:
+  forall g it new g' outlier roots,
+    mutable_location_compatible g it ->
+    mutable_graph_update g it new g' ->
+    roots_compatible g outlier roots ->
+    roots_compatible g' outlier roots.
+Proof.
+  intros g it new g' outlier roots Hloc Hupd [Houtlier Hgraph].
+  split; [exact Houtlier|].
+  unfold roots_graph_compatible in *.
+  eapply Forall_impl; [|exact Hgraph].
+  intros v Hv.
+  rewrite (mutable_graph_update_graph_has_v g it new g' v Hloc Hupd).
+  exact Hv.
+Qed.
+
+Lemma mutable_graph_update_graph_unmarked:
+  forall g src pos new g',
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    graph_unmarked g ->
+    graph_unmarked g'.
+Proof.
+  intros g src pos new g' Hloc Hupd Hunmarked v Hv'.
+  pose proof (mutable_graph_update_raw_mark_tag
+                g src pos new g' v Hloc Hupd) as [Hmark _].
+  rewrite Hmark. apply Hunmarked.
+  rewrite <- (mutable_graph_update_graph_has_v
+                 g (InteriorVertexPos src pos) new g' v Hloc Hupd).
+  exact Hv'.
+Qed.
+
+Lemma mutable_graph_update_no_dangling_dst:
+  forall g src pos new g' outlier,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    no_dangling_dst g ->
+    no_dangling_dst g'.
+Proof.
+  intros g src pos new g' outlier Hloc Hext Hupd Hno v Hv' e Hin'.
+  assert (Hfst': fst e = v) by (eapply get_edges_fst; exact Hin').
+  assert (He': graph_has_e g' e).
+  { unfold graph_has_e. rewrite Hfst'. split; assumption. }
+  destruct (E_EqDec e (src, Z.to_nat pos)) as [Heq | Hneq].
+  - hnf in Heq. subst e.
+    apply (mutable_graph_update_graph_has_e_target
+             g src pos new g' Hloc Hupd) in He'.
+    destruct He' as [dstv Hnew]. subst new.
+    rewrite (mutable_graph_update_dst_new g src pos dstv g' Hloc Hupd).
+    rewrite (mutable_graph_update_graph_has_v
+               g (InteriorVertexPos src pos) (ExteriorVertex dstv)
+               g' dstv Hloc Hupd).
+    exact Hext.
+  - assert (He: graph_has_e g e).
+    { apply (proj1 (mutable_graph_update_graph_has_e_neq
+                      g src pos new g' e Hneq Hloc Hupd)). exact He'. }
+    destruct He as [Hsrc Hin].
+    specialize (Hno _ Hsrc _ Hin).
+    rewrite (mutable_graph_update_dst_neq
+               g src pos new g' e Hneq Hloc Hupd).
+    rewrite (mutable_graph_update_graph_has_v
+               g (InteriorVertexPos src pos) new g'
+               (dst g e) Hloc Hupd).
+    exact Hno.
+Qed.
+
+Theorem mutable_update_super_compatible:
+  forall g src pos new g' h rootpairs roots outlier,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    super_compatible g h rootpairs roots outlier ->
+    super_compatible g'
+      (if isptr_dec (exterior2val g new)
+       then incr_remset_heap h 0
+       else h)
+      rootpairs roots outlier.
+Proof.
+  intros g src pos new g' h rootpairs roots outlier
+         Hloc Hext Hupd [Hghc [Hrootpairs [Hroots Houtlier]]].
+  split; [|split; [|split]].
+  - destruct (isptr_dec (exterior2val g new)).
+    + apply incr_remset_heap_ghc.
+      eapply mutable_graph_update_graph_heap_compatible; eauto.
+    + eapply mutable_graph_update_graph_heap_compatible; eauto.
+  - eapply mutable_graph_update_rootpairs_compatible; eauto.
+  - eapply mutable_graph_update_roots_compatible; eauto.
+  - eapply mutable_graph_update_outlier_compatible; eauto.
+Qed.
+
+Theorem mutable_update_garbage_collect_condition:
+  forall g src pos new g' outlier h,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    garbage_collect_condition g h ->
+    garbage_collect_condition g'
+      (if isptr_dec (exterior2val g new)
+       then incr_remset_heap h 0
+       else h).
+Proof.
+  intros g src pos new g' outlier h Hloc Hext Hupd
+         [Hunmarked [Hno_dangling Hsize]].
+  split; [|split].
+  - eapply mutable_graph_update_graph_unmarked; eauto.
+  - eapply mutable_graph_update_no_dangling_dst; eauto.
+  - destruct (isptr_dec (exterior2val g new)).
+    + eapply weak_heap_relation_size_spec; eauto.
+      apply incr_remset_heap_whr.
+    + exact Hsize.
+Qed.
+
+Lemma incr_remset_heap_rest_gen_size_above_nursery:
+  forall h n,
+    rest_gen_size (incr_remset_heap h 0) (S n) =
+    rest_gen_size h (S n).
+Proof.
+  intros h n. unfold rest_gen_size.
+  rewrite !nth_space_Znth.
+  rewrite (irh_Znth_spaces_not_eq h (Z.of_nat (S n)) 0) by lia.
+  reflexivity.
+Qed.
+
+Theorem mutable_update_safe_to_copy_heap:
+  forall g src pos new g' h,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    safe_to_copy_heap g h ->
+    safe_to_copy_heap g'
+      (if isptr_dec (exterior2val g new)
+       then incr_remset_heap h 0
+       else h).
+Proof.
+  intros g src pos new g' h Hloc Hupd Hsafe.
+  unfold safe_to_copy_heap in *. intros n Hgen'.
+  assert (Hgen: graph_has_gen g (S n)).
+  { unfold graph_has_gen in *.
+    rewrite (mutable_graph_update_glabel
+               g (InteriorVertexPos src pos) new g' Hloc Hupd) in Hgen'.
+    exact Hgen'. }
+  specialize (Hsafe n Hgen).
+  destruct (isptr_dec (exterior2val g new)).
+  - unfold safe_to_copy_gen_heap in *.
+    unfold total_size.
+    rewrite irh_total_space.
+    rewrite incr_remset_heap_rest_gen_size_above_nursery.
+    exact Hsafe.
+  - exact Hsafe.
+Qed.
+
+Theorem mutable_update_gc_ready:
+  forall g src pos new g' h rootpairs roots outlier rmst rh,
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    exterior_compatible g outlier new ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    used_space (nth_space h O) < available_space (nth_space h O) ->
+    super_compatible g h rootpairs roots outlier ->
+    garbage_collect_condition g h ->
+    no_unrecorded_backward_edge g rh ->
+    safe_to_copy_heap g h ->
+    remset_compatible g outlier O rmst rh h ->
+    remset_generation_compatible O rmst rh ->
+    let x := exterior2val g new in
+    let h' := if isptr_dec x then incr_remset_heap h 0 else h in
+    let rh' :=
+      if isptr_dec x
+      then upd_remset_heap
+             (RemSetInterior (InteriorVertexPos src pos)) rh O
+      else rh in
+    super_compatible g' h' rootpairs roots outlier /\
+    garbage_collect_condition g' h' /\
+    no_unrecorded_backward_edge g' rh' /\
+    safe_to_copy_heap g' h' /\
+    remset_compatible g' outlier O rmst rh' h' /\
+    remset_generation_compatible O rmst rh'.
+Proof.
+  intros g src pos new g' h rootpairs roots outlier rmst rh
+         Hloc Hext Hupd Hcapacity Hsuper Hgcc Hunrecorded Hsafe Hremset Hremgen.
+  simpl.
+  assert (Hghc: graph_heap_compatible g h) by exact (proj1 Hsuper).
+  assert (Hrhhc: remset_heap_and_heap_compatible rh h).
+  { exact (proj2 (proj2 Hremset)). }
+  assert (Hrange: 0 <= Z.of_nat O < Zlength rh).
+  { eapply gen_range_remset_heap; eauto. apply graph_has_gen_O. }
+  split.
+  - eapply mutable_update_super_compatible; eauto.
+  - split.
+    + eapply mutable_update_garbage_collect_condition; eauto.
+    + split.
+      * eapply mutable_graph_update_no_unrecorded_backward_edge; eauto.
+      * split.
+        -- eapply mutable_update_safe_to_copy_heap; eauto.
+        -- split.
+           ++ eapply mutable_update_remset_compatible; eauto.
+           ++ eapply mutable_update_remset_generation_compatible; eauto.
 Qed.
