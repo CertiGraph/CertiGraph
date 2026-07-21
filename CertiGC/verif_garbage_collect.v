@@ -453,8 +453,9 @@ Proof.
              0 <= j -> offset_val (sizeof (Tstruct _space noattr) * j) (ti_heap_p tif)=
                        space_address (ti_heap_p tif) (Z.to_nat j)). {
           intros. unfold space_address. now rewrite Z2Nat.id. }
-  unfold before_gc_thread_info_rep, heap_management_rep, heap_struct_rep. Intros.
-  rename H0 into Hunrec_init. rename H1 into Hremc. rename H2 into Hremgen.
+  unfold gc_sep, before_gc_thread_info_rep, heap_management_rep, heap_struct_rep. Intros.
+  unfold remembered_set_ok in H0.
+  destruct H0 as [Hunrec_init [Hremc Hremgen]].
   unfold full_gc in H. destruct H as [H [H0 Hsafeh]].
   pose proof H0 as Hgcc_init.
   assert (Hsafe_graph: safe_to_copy g) by
@@ -990,7 +991,7 @@ Proof.
         assert (graph_gen_clear g2 O) by (apply Hfirst2; rewrite Hi1_nat2; lia).
         forward_call (rsh, sh, gv, ti, g2, t_info2, roots2). forward.
         Exists g2 t_info2 roots2 (reset_nth_remset_heap (Z.to_nat i) rh2) rmst2.
-        unfold full_gc. entailer!!. split3.
+        unfold full_gc, gc_sep. entailer!!. split3.
         -- eapply safe_to_copy_heap_complete; eauto.
         -- exists (Z.to_nat i). rewrite <- Hi1_nat2 at 1. split; assumption.
         -- rewrite HN. auto.

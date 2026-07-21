@@ -564,6 +564,17 @@ Definition int_mutable_update_spec :=
          before_gc_thread_info_rep sh t_info' ti;
          heap_remset_rep g' (ti_heap t_info').(pt_heap) rh').
 
+Definition gc_sep (rsh sh : share) (gv : globals) (ti : val)
+    (g : LGraph) (t_info : thread_info) (outlier : outlier_t)
+    (rh : remset_heap) (rmst : remset) : mpred :=
+  mem_mgr gv *
+  all_string_constants rsh gv *
+  outlier_rep outlier *
+  graph_rep g *
+  heap_remset_rep g (pt_heap (ti_heap t_info)) rh *
+  remset_rep sh g rmst *
+  before_gc_thread_info_rep sh t_info ti.
+
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
   WITH rsh: share, sh: share, gv: globals, ti: val,
@@ -574,18 +585,11 @@ Definition garbage_collect_spec :=
     PROP (readable_share rsh; writable_share sh;
           full_gc g (ti_heap t_info).(pt_heap)
             (frames2rootpairs (ti_frames t_info)) roots outlier;
-          no_unrecorded_backward_edge g rh;
-          remset_compatible g outlier O rmst rh (ti_heap t_info).(pt_heap);
-          remset_generation_compatible O rmst rh)
+          remembered_set_ok O g (ti_heap t_info).(pt_heap)
+            outlier rh rmst)
     PARAMS (ti)
     GLOBALS (gv)
-    SEP (mem_mgr gv;
-         all_string_constants rsh gv;
-         outlier_rep outlier;
-         graph_rep g;
-         heap_remset_rep g (ti_heap t_info).(pt_heap) rh;
-         remset_rep sh g rmst;
-         before_gc_thread_info_rep sh t_info ti)
+    SEP (gc_sep rsh sh gv ti g t_info outlier rh rmst)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     EX rh': remset_heap, EX rmst': remset,
@@ -597,13 +601,7 @@ Definition garbage_collect_spec :=
           frame_shells_eq (ti_frames t_info) (ti_frames t_info');
           Ptrofs.unsigned (ti_nalloc t_info) <= headroom t_info')
     RETURN ()
-    SEP (mem_mgr gv;
-         all_string_constants rsh gv;
-         outlier_rep outlier;
-         graph_rep g';
-         heap_remset_rep g' (ti_heap t_info').(pt_heap) rh';
-         remset_rep sh g' rmst';
-         before_gc_thread_info_rep sh t_info' ti).
+    SEP (gc_sep rsh sh gv ti g' t_info' outlier rh' rmst').
 
 Definition Gprog: funspecs :=
   ltac:(with_library prog

@@ -7751,6 +7751,17 @@ Definition remset_generation_compatible
   remset_interior_generation_order rh /\
   remset_lower_generations_empty from rh.
 
+Definition remembered_set_ok
+    (from : nat)
+    (g : LGraph)
+    (h : part_heap)
+    (outlier : outlier_t)
+    (rh : remset_heap)
+    (rmst : remset) : Prop :=
+  no_unrecorded_backward_edge_from from g rh /\
+  remset_compatible g outlier from rmst rh h /\
+  remset_generation_compatible from rmst rh.
+
 Definition forward_remset_condition g h from to : Prop :=
   enough_space_enhanced g h from to /\ graph_has_gen g from /\ graph_has_gen g to /\
     copy_compatible g /\ no_dangling_dst g /\ ti_size_spec h.
