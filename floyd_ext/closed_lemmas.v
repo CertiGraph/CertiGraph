@@ -21,4 +21,9 @@ Proof.
   simpl. f_equal; eauto.
 Qed.
 
+(* Preserve the opacity of the formerly implicit hint database. *)
+#[local] Create HintDb closed.
+#[local] Hint Constants Opaque : closed.
+#[local] Hint Variables Opaque : closed.
+#[local] Hint Projections Opaque : closed.
 #[export] Hint Resolve closed_wrt_wand closed_wrtl_wand : closed.

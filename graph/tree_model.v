@@ -15,6 +15,8 @@ Section TREE_DEF.
 
   Context {Vertex: Type}.
 
+  (* Preserve the existing non-nested induction principles. *)
+  #[warnings="-register-all"]
   Inductive Tree :=
   | EPT: Tree
   | T: Vertex -> list Tree -> Tree.

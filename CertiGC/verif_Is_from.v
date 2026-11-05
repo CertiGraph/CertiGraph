@@ -382,7 +382,7 @@ Proof.
         unfold Ptrofs.add; repeat rewrite Ptrofs.unsigned_repr_eq.
         rewrite Z.add_mod_idemp_r, (Z.mod_small (Ptrofs.unsigned i + delta) _) by easy.
         rewrite <- parity1. do 2 f_equal.
-        rewrite <- Z.add_mod_idemp_r, (Znumtheory.Zdivide_mod delta 2) by easy.
+        rewrite <- Z.add_mod_idemp_r, (Zdivisibility.Z.mod0_divide delta 2) by easy.
         now replace (Ptrofs.unsigned i + 0) with (Ptrofs.unsigned i) by lia.
       * destruct (valid_b_o_So_dec m1' b2 (Ptrofs.add i (Ptrofs.repr delta))); auto.
         destruct n.

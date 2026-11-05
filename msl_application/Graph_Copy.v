@@ -46,8 +46,8 @@ Defined.
 #[global] Instance GMS: GraphMorphismSetting V E M V E V E M :=
   Build_GraphMorphismSetting _ _ _ _ _ _ _ _ (fun v => v) (fun e => e) default_v default_e default_g.
 
-Notation Graph := (LabeledGraph V E V E M).
-Notation SGraph := (PointwiseGraph V E V E).
+Abbreviation Graph := (LabeledGraph V E V E M).
+Abbreviation SGraph := (PointwiseGraph V E V E).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 

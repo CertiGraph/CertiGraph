@@ -36,7 +36,7 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation Graph := (@Graph pSGG_Bin bool unit unit).
+Abbreviation Graph := (@Graph pSGG_Bin bool unit unit).
 
 Lemma root_unfold: forall (g: Graph) x d l r,
   vvalid g x ->

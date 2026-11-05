@@ -42,6 +42,7 @@ Definition MAX_SPACES: Z := Eval compute in
      end).
 
 Lemma MAX_SPACES_eq: MAX_SPACES = ltac:(let n := eval compute in MAX_SPACES in exact n). Proof. reflexivity. Qed.
+#[local] Create Rewrite HintDb rep_lia.
 #[export] Hint Rewrite MAX_SPACES_eq: rep_lia.
 
 Definition LOG_NURSERY_SIZE : Z.
@@ -605,6 +606,7 @@ Lemma frames2rootpairs_cons: forall a bl, frames2rootpairs (a::bl) = frame2rootp
 Lemma frames2rootpairs_nil: frames2rootpairs nil = nil.
 Proof. reflexivity. Qed.
 
+#[local] Create Rewrite HintDb list_solve_rewrite.
 #[export] Hint Rewrite frames2rootpairs_app frames2rootpairs_cons frames2rootpairs_nil : sublist list_solve_rewrite.
 
 Lemma Zlength_frames2rootpairs_sublist:
@@ -670,6 +672,7 @@ Qed.
    apply Zlength_frame2rootpairs'.
  Qed.
 
+ #[local] Create Rewrite HintDb Zlength.
  #[export] Hint Rewrite Zlength_frame2rootpairs Zlength_frame2rootpairs': sublist Zlength.
 
 

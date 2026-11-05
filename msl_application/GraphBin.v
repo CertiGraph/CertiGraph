@@ -265,6 +265,11 @@ Proof.
   destruct H; [right | left]; auto.
   pose proof valid_not_null g x; tauto.
 Qed.
+(* Preserve the opacity of the formerly implicit hint database. *)
+#[local] Create HintDb GraphDec.
+#[local] Hint Constants Opaque : GraphDec.
+#[local] Hint Variables Opaque : GraphDec.
+#[local] Hint Projections Opaque : GraphDec.
 Hint Resolve weak_valid_vvalid_dec : GraphDec.
 
 Lemma invalid_null: forall (g: Graph), ~ vvalid g null.
@@ -968,7 +973,7 @@ Spatial Facts (with Strong Assumption) Part
 
   Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
-  Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bin DV DE sSGG_Bin) _ x g).
+  Abbreviation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bin DV DE sSGG_Bin) _ x g).
 
   Lemma bin_graph_unfold: forall (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->

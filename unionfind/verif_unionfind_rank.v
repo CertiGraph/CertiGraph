@@ -18,11 +18,11 @@ Local Identity Coercion LGraph_LabeledGraph: UnionFindGraph.LGraph >-> LabeledGr
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation vertices_at sh P g:= (@vertices_at _ _ _ _ _ mpred (@SGP pSGG_VST nat unit (sSGG_VST sh)) (SGA_VST sh) P g).
-Notation whole_graph sh g := (vertices_at sh (vvalid g) g).
-Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
-Notation UFGraph := (@UFGraph pSGG_VST).
-Notation uf_under_bound g := (uf_under_bound id g).
+Abbreviation vertices_at sh P g:= (@vertices_at _ _ _ _ _ mpred (@SGP pSGG_VST nat unit (sSGG_VST sh)) (SGA_VST sh) P g).
+Abbreviation whole_graph sh g := (vertices_at sh (vvalid g) g).
+Abbreviation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ _ _ (@SGP pSGG_VST nat unit (sSGG_VST sh)) _ x g).
+Abbreviation UFGraph := (@UFGraph pSGG_VST).
+Abbreviation uf_under_bound g := (uf_under_bound id g).
 #[local] Existing Instances maGraph finGraph liGraph RGF.
 
 Definition vlabel_in_bound (g: UFGraph) := forall x, vvalid g x -> Z.of_nat (vlabel g x) <= Int.max_unsigned.

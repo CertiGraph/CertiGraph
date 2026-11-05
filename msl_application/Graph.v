@@ -283,7 +283,7 @@ Section SPATIAL_FACTS.
 Context {Pred: Type}.
 Context {SGP: PointwiseGraphPred V E GV GE Pred}.
 Context {SGA: PointwiseGraphAssum SGP}.
-Notation Graph := (PointwiseGraph V E GV GE).
+Abbreviation Graph := (PointwiseGraph V E GV GE).
 
 Definition graph_vcell (g: Graph) (v : V) : Pred := vertex_at v (vgamma g v).
 Definition graph_ecell (g: Graph) (e : E) : Pred := edge_at e (egamma g e).
@@ -700,7 +700,7 @@ Section SPATIAL_FACTS.
 Context {Pred: Type}.
 Context {SGP: PointwiseGraphPred V E GV GE Pred}.
 Context {SGA: PointwiseGraphAssum SGP}.
-Notation Graph := (LabeledGraph V E DV DE DG).
+Abbreviation Graph := (LabeledGraph V E DV DE DG).
 
 Definition full_vertices_at (g: Graph): Pred := vertices_at (vvalid g) (Graph_PointwiseGraph g).
 

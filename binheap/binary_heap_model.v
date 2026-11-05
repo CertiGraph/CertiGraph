@@ -1565,7 +1565,7 @@ Definition singleton (a : A) : multiset A := SingletonBag eq Aeq_dec a.
 Definition heap2multiset : list A -> multiset A := fun L =>
   fold_right (fun a ms => munion ms (singleton a)) empty L.
 
-Notation h2ms := heap2multiset.
+Abbreviation h2ms := heap2multiset.
 
 Lemma multiset_meq_eq: forall A (M1 : multiset A) M2,
   meq M1 M2 <->

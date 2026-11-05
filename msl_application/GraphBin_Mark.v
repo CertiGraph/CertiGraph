@@ -35,7 +35,7 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation Graph := (@Graph pSGG_Bin bool unit unit).
+Abbreviation Graph := (@Graph pSGG_Bin bool unit unit).
 
 (* TODO: move this lemma into Graph_Mark.v. *)
 Lemma vlabel_eq: forall (g1 g2: Graph) x1 x2, (WeakMarkGraph.marked g1 x1 <-> WeakMarkGraph.marked g2 x2) -> vlabel g1 x1 = vlabel g2 x2.

@@ -13,7 +13,7 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 
-Local Notation PGraph := (PreGraph V E).
+Local Abbreviation PGraph := (PreGraph V E).
 
 (*as long as there is an edge from u to v, u and v are connected, regardless of who is the src*)
 Definition adj_edge (g: PGraph) (e: E) (u v: V) :=
@@ -1471,7 +1471,7 @@ Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 Local Coercion lg_gg: GeneralGraph >-> LabeledGraph.
 
 Context {DV DE DG: Type}.
-Local Notation LGraph := (LabeledGraph V E DV DE DG).
+Local Abbreviation LGraph := (LabeledGraph V E DV DE DG).
 
 Lemma is_partial_graph_adj_edge:
   forall (g1 g2: PGraph) e u v, is_partial_graph g1 g2 -> adj_edge g1 e u v -> adj_edge g2 e u v.

@@ -282,23 +282,23 @@ Fixpoint lseg (ls: listspec list_structid list_link list_token) (dsh psh: share)
             (contents: list (val * elemtype ls)) (x z: val) : mpred :=
  match contents with
  | (p,h)::hs => !! (p=x /\ ~ptr_eq x z) &&
-              EX y:val,  !! is_pointer_or_null y &&
+              (EX y:val,  !! is_pointer_or_null y &&
               list_token dsh x * list_cell ls dsh h x
               * field_at psh list_struct (StructField list_link ::nil)
                   (valinject (nested_field_type list_struct (StructField list_link :: nil)) y) x
-              * lseg ls dsh psh hs y z
+              * lseg ls dsh psh hs y z)
  | nil => !! (ptr_eq x z) && emp
  end.
 
 Lemma lseg_unfold (ls: listspec list_structid list_link list_token): forall dsh psh contents v1 v2,
     lseg ls dsh psh contents v1 v2 =
      match contents with
-     | (p,h)::t => !! (p=v1 /\ ~ ptr_eq v1 v2) && EX tail: val,
+     | (p,h)::t => !! (p=v1 /\ ~ ptr_eq v1 v2) && (EX tail: val,
                       !! is_pointer_or_null tail &&
                       list_token dsh v1 * list_cell ls dsh h v1
                       * field_at psh list_struct (StructField list_link :: nil)
                           (valinject (nested_field_type list_struct (StructField list_link :: nil)) tail) v1
-                      * lseg ls dsh psh t tail v2
+                      * lseg ls dsh psh t tail v2)
      | nil => !! (ptr_eq v1 v2) && emp
      end.
 Proof.
@@ -332,11 +332,11 @@ Qed.
 
 Definition lseg_cons (ls: listspec list_structid list_link list_token) dsh psh (l: list (val * elemtype ls)) (x z: val) : mpred :=
         !! (~ ptr_eq x z) &&
-       EX h:(elemtype ls), EX r:list (val * elemtype ls), EX y:val,
+       (EX h:(elemtype ls), EX r:list (val * elemtype ls), EX y:val,
              !!(l=(x,h)::r  /\ is_pointer_or_null y) &&
              list_token dsh x * list_cell ls dsh h x *
              field_at psh list_struct (StructField list_link :: nil) (valinject (nested_field_type list_struct (StructField list_link :: nil)) y) x *
-             lseg ls dsh psh r y z.
+             lseg ls dsh psh r y z).
 
 Lemma lseg_unroll (ls: listspec list_structid list_link list_token): forall dsh psh l x z ,
     lseg ls dsh psh l x z =
@@ -557,9 +557,9 @@ Qed.
 Lemma semax_lseg_nonnull (ls: listspec list_structid list_link list_token):
   forall (Espec: OracleKind)
       Delta P Q dsh psh s v R c Post,
-   ENTAIL Delta, PROPx P (LOCALx Q
+   (ENTAIL Delta, PROPx P (LOCALx Q
             (SEPx (lseg ls dsh psh s v nullval :: R))) |--
-                        !!(typed_true (tptr list_struct) v)  ->
+                        !!(typed_true (tptr list_struct) v))  ->
   (forall (h: elemtype ls) (r: list (val * elemtype ls)) (y: val),
     s=(v,h)::r -> is_pointer_or_null y ->
     semax Delta
@@ -626,11 +626,11 @@ Qed.
 Definition lseg_cons_right (ls: listspec list_structid list_link list_token)
            dsh psh (l: list (val * elemtype ls)) (x z: val) : mpred :=
         !! (~ ptr_eq x z) &&
-       EX h:(elemtype ls), EX r:list (val * elemtype ls), EX y:val,
+       (EX h:(elemtype ls), EX r:list (val * elemtype ls), EX y:val,
              !!(l=r++(y,h)::nil /\ is_pointer_or_null y)  &&
                        list_token dsh y * list_cell ls dsh h y *
              field_at psh list_struct (StructField list_link :: nil) (valinject (nested_field_type list_struct (StructField list_link :: nil)) z) y *
-             lseg ls dsh psh r x y.
+             lseg ls dsh psh r x y).
 
 Lemma lseg_cons_right_neq (ls: listspec list_structid list_link list_token): forall dsh psh l x h y w z,
              sepalg.nonidentity psh ->
@@ -876,12 +876,12 @@ Definition lseg (ls: listspec list_structid list_link list_token) (sh: share)
 Lemma lseg_unfold (ls: listspec list_structid list_link list_token): forall sh contents v1 v2,
     lseg ls sh contents v1 v2 =
      match contents with
-     | h::t => !! (~ ptr_eq v1 v2) && EX tail: val,
+     | h::t => !! (~ ptr_eq v1 v2) && (EX tail: val,
                       !! is_pointer_or_null tail &&
                       list_token sh v1 * list_cell ls sh h v1
                       * field_at sh list_struct (StructField list_link :: nil)
                           (valinject (nested_field_type list_struct (StructField list_link :: nil)) tail) v1
-                      *  lseg ls sh t tail v2
+                      *  lseg ls sh t tail v2)
      | nil => !! (ptr_eq v1 v2) && emp
      end.
 Proof.
@@ -929,11 +929,11 @@ Qed.
 
 Definition lseg_cons (ls: listspec list_structid list_link list_token) sh (l: list (elemtype ls)) (x z: val) : mpred :=
         !! (~ ptr_eq x z) &&
-       EX h:(elemtype ls), EX r:list (elemtype ls), EX y:val,
+       (EX h:(elemtype ls), EX r:list (elemtype ls), EX y:val,
              !!(l=h::r  /\ is_pointer_or_null y) &&
              list_token sh x * list_cell ls sh h x *
              field_at sh list_struct (StructField list_link :: nil) (valinject (nested_field_type list_struct (StructField list_link :: nil)) y) x *
-              lseg ls sh r y z.
+              lseg ls sh r y z).
 
 Lemma lseg_unroll (ls: listspec list_structid list_link list_token): forall sh l x z ,
     lseg ls sh l x z =
@@ -1149,9 +1149,9 @@ Qed.
 Lemma semax_lseg_nonnull (ls: listspec list_structid list_link list_token):
   forall (Espec: OracleKind)
       Delta P Q sh s v R c Post,
-      ENTAIL Delta, PROPx P (LOCALx Q
+      (ENTAIL Delta, PROPx P (LOCALx Q
             (SEPx (lseg ls sh s v nullval :: R))) |--
-                        !!(typed_true (tptr list_struct) v)  ->
+                        !!(typed_true (tptr list_struct) v))  ->
   (forall (h: elemtype ls) (r: list (elemtype ls)) (y: val),
     s=h::r -> is_pointer_or_null y ->
     semax Delta
@@ -1216,11 +1216,11 @@ Qed.
 Definition lseg_cons_right (ls: listspec list_structid list_link list_token)
            sh (l: list (elemtype ls)) (x z: val) : mpred :=
         !! (~ ptr_eq x z) &&
-       EX h:(elemtype ls), EX r:list (elemtype ls), EX y:val,
+       (EX h:(elemtype ls), EX r:list (elemtype ls), EX y:val,
              !!(l=r++(h::nil) /\ is_pointer_or_null y)  &&
                        list_token sh y * list_cell ls sh h y *
              field_at sh list_struct (StructField list_link :: nil) (valinject (nested_field_type list_struct (StructField list_link :: nil)) z) y *
-              lseg ls sh r x y.
+              lseg ls sh r x y).
 
 Lemma lseg_cons_right_neq (ls: listspec list_structid list_link list_token): forall sh l x h y w z,
        sepalg.nonidentity sh ->
@@ -1415,12 +1415,12 @@ Definition lseg (ls: listspec list_structid list_link list_token) (dsh psh: shar
 Lemma lseg_unfold (ls: listspec list_structid list_link list_token): forall dsh psh contents v1 v2,
     lseg ls dsh psh contents v1 v2 =
      match contents with
-     | p::t => !! (p=v1 /\ ~ ptr_eq v1 v2) && EX tail: val,
+     | p::t => !! (p=v1 /\ ~ ptr_eq v1 v2) && (EX tail: val,
                       !! is_pointer_or_null tail &&
                       list_token dsh v1 * list_cell ls dsh (vund ls) v1
                       * field_at psh list_struct (StructField list_link :: nil)
                           (valinject (nested_field_type list_struct (StructField list_link :: nil)) tail) v1
-                      * lseg ls dsh psh t tail v2
+                      * lseg ls dsh psh t tail v2)
      | nil => !! (ptr_eq v1 v2) && emp
      end.
 Proof.
@@ -1453,11 +1453,11 @@ Qed.
 Definition lseg_cons (ls: listspec list_structid list_link list_token) dsh psh
            (l: list val) (x z: val) : mpred :=
         !! (~ ptr_eq x z) &&
-       EX h:(elemtype ls), EX r:list val, EX y:val,
+       (EX h:(elemtype ls), EX r:list val, EX y:val,
              !!(l=x::r  /\ is_pointer_or_null y) &&
              list_token dsh x * list_cell ls dsh h x *
              field_at psh list_struct (StructField list_link :: nil) (valinject (nested_field_type list_struct (StructField list_link :: nil)) y) x *
-             lseg ls dsh psh r y z.
+             lseg ls dsh psh r y z).
 
 Lemma lseg_nil_eq (ls: listspec list_structid list_link list_token):
     forall dsh psh p q,
@@ -1469,11 +1469,11 @@ Qed.
 Definition lseg_cons_right (ls: listspec list_structid list_link list_token)
            dsh psh (l: list val) (x z: val) : mpred :=
         !! (~ ptr_eq x z) &&
-       EX r:list val , EX y:val,
+       (EX r:list val , EX y:val,
              !!(l=r++y::nil /\ is_pointer_or_null y)  &&
                        list_cell ls dsh (vund ls) y *
              field_at psh list_struct (StructField list_link :: nil) (valinject (nested_field_type list_struct (StructField list_link :: nil)) z) y *
-             lseg ls dsh psh r x y.
+             lseg ls dsh psh r x y).
 
 Lemma lseg_unroll_right (ls: listspec list_structid list_link list_token): forall sh sh' l x z ,
     lseg ls sh sh' l x z = (!! (ptr_eq x z) && !! (l=nil) && emp) || lseg_cons_right ls sh sh' l x z.

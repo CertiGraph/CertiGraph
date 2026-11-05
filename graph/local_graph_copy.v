@@ -34,8 +34,8 @@ Context {DV DE DG DV' DE' DG': Type}.
 
 Context {GMS: GraphMorphismSetting DV DE DG V' E' DV' DE' DG'}.
 
-Notation Graph := (LabeledGraph V E DV DE DG).
-Notation Graph' := (LabeledGraph V' E' DV' DE' DG').
+Abbreviation Graph := (LabeledGraph V E DV DE DG).
+Abbreviation Graph' := (LabeledGraph V' E' DV' DE' DG').
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 
 Definition vmap (g: Graph): V -> V' := fun v => co_vertex (vlabel g v).

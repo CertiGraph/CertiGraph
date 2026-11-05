@@ -44,8 +44,8 @@ Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Notation Graph := (@Graph pSGG_Bin addr (addr * LR) unit).
-Notation Graph' := (@Graph' pSGG_Bin addr (addr * LR) unit).
+Abbreviation Graph := (@Graph pSGG_Bin addr (addr * LR) unit).
+Abbreviation Graph' := (@Graph' pSGG_Bin addr (addr * LR) unit).
 
 #[global] Instance CCS: CompactCopySetting addr (addr * LR) unit.
   apply (Build_CompactCopySetting _ _ _ null (null, L) tt).

@@ -146,7 +146,7 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 
-Notation Graph := (PreGraph V E).
+Abbreviation Graph := (PreGraph V E).
 
 Definition empty_pregraph (src0 dst0: E -> V): Graph :=
   @Build_PreGraph V E EV EE (fun v => False) (fun e => False) src0 dst0.
@@ -712,7 +712,7 @@ Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 Context {DV DE DG: Type}.
 
-Notation Graph := (LabeledGraph V E DV DE DG).
+Abbreviation Graph := (LabeledGraph V E DV DE DG).
 
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 
@@ -929,7 +929,7 @@ Class NormalGeneralGraph (P: LabeledGraph V E DV DE DG -> Type): Type := {
 
 Context {P: LabeledGraph V E DV DE DG -> Type}.
 
-Notation Graph := (GeneralGraph V E DV DE DG P).
+Abbreviation Graph := (GeneralGraph V E DV DE DG P).
 
 Local Coercion pg_lg : LabeledGraph >-> PreGraph.
 Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
@@ -950,7 +950,7 @@ Section ADD_GRAPH_GEN.
   Context {EV: EqDec V eq}.
   Context {EE: EqDec E eq}.
   Context {DV DE: Type}.
-  Notation Gph := (PreGraph V E).
+  Abbreviation Gph := (PreGraph V E).
 
   Variable g: Gph.
 

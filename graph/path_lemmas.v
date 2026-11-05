@@ -14,7 +14,7 @@ Section PATH_LEM.
 Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
-Notation Gph := (PreGraph V E).
+Abbreviation Gph := (PreGraph V E).
 
 (******************************************
 

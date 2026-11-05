@@ -777,9 +777,8 @@ Proof.
   rewrite Zodd_mod.
   apply Z.eqb_eq.
   replace (i+i) with (2 * i)%Z by lia.
-  rewrite <- Zmod_div_mod; try lia.
+  rewrite Z.mod_mod_divide.
   - rewrite Z.mul_comm, Z.add_comm, Z_mod_plus_full. reflexivity.
-  - compute; reflexivity.
   - first [now exists (Z.div Int.modulus 2) | now exists (Z.div Int64.modulus 2)].
 Qed.
 
