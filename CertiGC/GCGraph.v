@@ -34,6 +34,8 @@ Fixpoint find_struct (i: ident) (cs: list composite_definition) : option members
   |  _ :: rest => find_struct i rest
   end.
 
+(* Read the generation count from the Clight translation of gc_stack.h,
+   so changing MAX_SPACES in C also changes the model. *)
 Definition MAX_SPACES: Z := Eval compute in
     (match find_struct gc_stack._heap gc_stack.composites with
      | Some  (Member_plain _ (Tarray _ n _) :: nil) => n | _ => 0
@@ -62,6 +64,8 @@ Global Opaque MAX_ARGS.
 
 Definition WORD_SIZE: Z := Eval cbv [Archi.ptr64] in if Archi.ptr64 then 8 else 4.
 
+(* Sizes in the model count words.  Pointer subtraction additionally requires
+   the corresponding byte difference to fit in Ptrofs's signed range. *)
 Definition MAX_SPACE_SIZE: Z :=
     Z.shiftl 1 ltac:(let a := constr:(LOG_NURSERY_SIZE+MAX_SPACES-1) in
                      let a := eval compute in a in exact a).
@@ -99,19 +103,21 @@ Proof.
   intro; discriminate.
 Qed.
 
+(* The 1 retained in the C definition gives 2^(W-2) bytes for the largest
+   generation.  With 0, this would be 2^(W-1), one past max_signed, and the
+   bound below (and pointer subtraction for an empty maximal space) is false. *)
+Lemma MAX_SPACE_SIZE_signed_bound:
+    WORD_SIZE * MAX_SPACE_SIZE <= Ptrofs.max_signed.
+Proof. vm_compute; discriminate. Qed.
+
 Lemma MSS_max_wordsize_signed_range: forall n,
     0 <= n <= MAX_SPACE_SIZE -> Ptrofs.min_signed <= WORD_SIZE * n <= Ptrofs.max_signed.
 Proof.
   intros. destruct H. split.
   - unfold WORD_SIZE. transitivity 0. 2: lia. rewrite Z.le_lteq. left.
     apply Ptrofs.min_signed_neg.
-  - apply Z.le_trans with (WORD_SIZE * MAX_SPACE_SIZE).
-    apply Z.mul_le_mono_nonneg_l. compute; congruence.  auto.
-    unfold WORD_SIZE.
-    unfold MAX_SPACE_SIZE.
-    unfold Ptrofs.max_signed, Ptrofs.half_modulus, Ptrofs.modulus, Ptrofs.wordsize,
-      Wordsize_Ptrofs.wordsize.
-    destruct Archi.ptr64 eqn:?; first [now inversion Heqb | simpl; lia].
+  - eapply Z.le_trans; [|exact MAX_SPACE_SIZE_signed_bound].
+    apply Z.mul_le_mono_nonneg_l; [unfold WORD_SIZE; lia | assumption].
 Qed.
 
 Definition VType: Type := nat * nat.  (* generation number, block-number within generation *)

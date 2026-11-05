@@ -112,7 +112,8 @@ typedef const uintnat *fun_info;
 #endif
 #define LOG_NURSERY_SIZE 16
 #define NURSERY_SIZE (1<<LOG_NURSERY_SIZE)
-#define MAX_SPACES (8*sizeof(value)-(2+LOG_WORDSIZE+LOG_NURSERY_SIZE)) /* how many generations */
+/* Keep byte differences within the signed pointer-offset range; see gc_stack.c. */
+#define MAX_SPACES (8*sizeof(value)-(1+LOG_WORDSIZE+LOG_NURSERY_SIZE)) /* how many generations */
 
 struct space { value *start, *next, *limit, *rem_limit; };
 struct heap {  struct space spaces[MAX_SPACES]; };
