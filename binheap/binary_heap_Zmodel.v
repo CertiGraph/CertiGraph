@@ -1,4 +1,5 @@
 Require Import VST.floyd.proofauto.
+Require Import Stdlib.Vectors.FinFun.
 Require Import CertiGraph.binheap.binary_heap_model.
 
 (* Versions in Z... *)

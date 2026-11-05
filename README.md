@@ -1,9 +1,9 @@
 # CertiGraph
 
 [![build](https://github.com/CertiGraph/CertiGraph/actions/workflows/build.yml/badge.svg?branch=live)](https://github.com/CertiGraph/CertiGraph/actions/workflows/build.yml)
-![Rocq/Coq](https://img.shields.io/badge/Rocq%2FCoq-9.1-blue)
-![VST](https://img.shields.io/badge/VST-2.16-blue)
-![CompCert](https://img.shields.io/badge/CompCert-3.17-blue)
+![Rocq/Coq](https://img.shields.io/badge/Rocq%2FCoq-9.2-blue)
+![VST](https://img.shields.io/badge/VST-2.17-blue)
+![CompCert](https://img.shields.io/badge/CompCert-3.18-blue)
 [![license](https://img.shields.io/github/license/CertiGraph/CertiGraph)](LICENSE)
 
 A library for verifying graph-manipulating programs.
@@ -12,7 +12,7 @@ Powered by [Coq](https://coq.inria.fr) and [VST](https://vst.cs.princeton.edu/).
 
 The [OVERVIEW](OVERVIEW.md) describes what it's for, and the [demo](demo) gives a brief tutorial introduction.
 
-This version of CertiGraph is compatible with Rocq/Coq 9.1, CompCert 3.17, and VST 2.16.
+This version of CertiGraph is compatible with Rocq/Coq 9.2, CompCert 3.18, and VST 2.17.
 
 ## Contributors
 

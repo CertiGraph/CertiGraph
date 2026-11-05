@@ -1393,7 +1393,7 @@ Proof.
   exists rest. split; [exact Hperm |].
   intros v' Hin'. apply Hvertex.
   assert (Hnodup: NoDup vertices).
-  { subst vertices. apply FinFun.Injective_map_NoDup.
+  { subst vertices. apply Finite.Injective_map_NoDup.
     - intros x y Heq. now inversion Heq.
     - apply nat_inc_list_NoDup. }
   apply (Permutation_NoDup Hperm), NoDup_cons_2 in Hnodup.

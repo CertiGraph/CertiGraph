@@ -355,9 +355,12 @@ Proof.
       assert (OF: Ptrofs.unsigned (Ptrofs.add i (Ptrofs.repr delta)) = Ptrofs.unsigned i + delta).
         { eapply Mem.address_inject; eauto. apply v. lia. }
         assert (AL: (2 | delta)).
-        { change 2 with (align_chunk Mint16unsigned).
-          clear - H10 v H1.
-          eauto using Mem.mi_align, Mem.mi_inj, Mem.range_perm_max. }
+        { change 2 with (Memdata.min_safe_alignment 2).
+          eapply Mem.mi_align with (ofs := Ptrofs.unsigned i) (p := Nonempty).
+          - exact (Mem.mi_inj _ _ _ H1).
+          - exact H10.
+          - lia.
+          - apply Mem.range_perm_max with (k := Cur). exact v. }
         destruct (Ptrofs.eq Ptrofs.one
                           (Ptrofs.modu (Ptrofs.add i (Ptrofs.repr delta)) (Ptrofs.repr 2))) eqn:parity2.
       * assert (0 <= Ptrofs.unsigned i + delta < Ptrofs.modulus). {
