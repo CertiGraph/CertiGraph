@@ -536,33 +536,48 @@ Definition ext_mutable_update_spec :=
          data_at sh int_or_ptr_type (exterior2val g v) p;
          heap_remset_rep g (ti_heap t_info').(pt_heap) rh').
 
+Definition mutable_update_pre (sh : share)
+    (g : LGraph) (t_info : thread_info)
+    (outlier : outlier_t) (rh : remset_heap)
+    (it : interior_t) (new : exterior_t) : Prop :=
+  writable_share sh /\
+  1 <= headroom t_info /\
+  graph_heap_compatible g (pt_heap (ti_heap t_info)) /\
+  remset_heap_and_heap_compatible rh (pt_heap (ti_heap t_info)) /\
+  mutable_location_compatible g it /\
+  exterior_compatible g outlier new.
+
+Definition mutable_update_post
+    (g : LGraph) (t_info : thread_info) (rh : remset_heap)
+    (it : interior_t) (new : exterior_t)
+    (g' : LGraph) (t_info' : thread_info) (rh' : remset_heap) : Prop :=
+  mutable_graph_update g it new g' /\
+  t_info' = decr_info_nursery t_info (exterior2val g new) /\
+  rh' = mtb_upd_remset_heap
+          (exterior2val g new) (RemSetInterior it) rh.
+
+Definition mutator_sep (sh : share) (ti : val)
+    (g : LGraph) (t_info : thread_info)
+    (outlier : outlier_t) (rh : remset_heap) : mpred :=
+  graph_rep g *
+  outlier_rep outlier *
+  before_gc_thread_info_rep sh t_info ti *
+  heap_remset_rep g (pt_heap (ti_heap t_info)) rh.
+
 Definition int_mutable_update_spec :=
   DECLARE _mutable_update
     WITH ti: val, v: exterior_t, t_info: thread_info, sh: share, g: LGraph,
          it: interior_t, outlier: outlier_t, rh: remset_heap
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
-  PROP (writable_share sh;
-        1 <= headroom t_info;
-        graph_heap_compatible g (ti_heap t_info).(pt_heap);
-        remset_heap_and_heap_compatible rh (ti_heap t_info).(pt_heap);
-        mutable_location_compatible g it;
-        exterior_compatible g outlier v)
+    PROP (mutable_update_pre sh g t_info outlier rh it v)
     PARAMS (ti; interior_address it g; exterior2val g v)
     GLOBALS ()
-    SEP (graph_rep g;
-         outlier_rep outlier;
-         before_gc_thread_info_rep sh t_info ti;
-         heap_remset_rep g (ti_heap t_info).(pt_heap) rh)
+    SEP (mutator_sep sh ti g t_info outlier rh)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX rh': remset_heap,
-    PROP (mutable_graph_update g it v g';
-          t_info' = decr_info_nursery t_info (exterior2val g v);
-          rh' = mtb_upd_remset_heap (exterior2val g v) (RemSetInterior it) rh)
+    PROP (mutable_update_post g t_info rh it v g' t_info' rh')
     RETURN ()
-    SEP (graph_rep g';
-         outlier_rep outlier;
-         before_gc_thread_info_rep sh t_info' ti;
-         heap_remset_rep g' (ti_heap t_info').(pt_heap) rh').
+    SEP (mutator_sep sh ti g' t_info' outlier rh').
 
 Definition gc_sep (rsh sh : share) (gv : globals) (ti : val)
     (g : LGraph) (t_info : thread_info) (outlier : outlier_t)

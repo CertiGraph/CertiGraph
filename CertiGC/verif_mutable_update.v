@@ -106,11 +106,10 @@ Lemma body_mutable_update:
   semax_body Vprog Gprog f_mutable_update int_mutable_update_spec.
 Proof.
   start_function.
-  rename H into Hrecordable.
-  rename H0 into Hghc.
-  rename H1 into Hrhhc.
-  rename H2 into Hloc.
-  rename H3 into Hext.
+  unfold mutable_update_pre in H.
+  destruct H as [Hsh [Hrecordable [Hghc [Hrhhc [Hloc Hext]]]]].
+  unfold mutator_sep.
+  Intros.
   destruct it as [src pos].
   pose proof Hloc as Hloc_parts.
   destruct Hloc_parts as [Hsrc [Hpos [Hmark Htag]]].
@@ -283,7 +282,8 @@ Proof.
             assert (Hnptr: ~ isptr (exterior2val g v)).
             { intro Hp. rewrite <- Hx in Hp. contradiction. }
             Exists g' t_info rh.
-            unfold decr_info_nursery, mtb_upd_remset_heap.
+            unfold mutable_update_post, mutator_sep,
+              decr_info_nursery, mtb_upd_remset_heap.
             destruct (isptr_dec (exterior2val g v)); [contradiction|].
             entailer!.
             unfold before_gc_thread_info_rep, heap_management_rep.
@@ -355,7 +355,9 @@ Proof.
                  (ti_frames t_info) (ti_nalloc t_info))
               (upd_remset_heap
                  (RemSetInterior (InteriorVertexPos src pos)) rh O).
-            unfold decr_info_nursery, mtb_upd_remset_heap.
+            unfold mutable_update_post, mutator_sep,
+              decr_info_nursery, mtb_upd_remset_heap.
+            rewrite <- Hx.
             destruct (isptr_dec (Vptr b i)) as [Hptr | Hnptr].
             2: { exfalso. apply Hnptr. exact I. }
             entailer!.
