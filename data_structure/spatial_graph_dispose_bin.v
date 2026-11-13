@@ -45,7 +45,7 @@ Section SPATIAL_GRAPH_DISPOSE_BIN.
   Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-  Abbreviation Graph := (@Graph pSGG_Bin bool unit unit).
+  Notation Graph := (@Graph pSGG_Bin bool unit unit).
 
   Lemma vgamma_is_true: forall (g : Graph) (x l r : addr), vgamma g x = (true, l, r) -> marked g x.
   Proof. intros. simpl in H. simpl. destruct (vlabel g x) eqn:? . auto. inversion H. Qed.

@@ -427,7 +427,7 @@ Section UNION_FIND_GENERAL.
   Context {DV DE DG: Type}.
   Context {P: LabeledGraph Vertex Edge DV DE DG -> Type}.
 
-  Abbreviation Graph := (GeneralGraph Vertex Edge DV DE DG P).
+  Notation Graph := (GeneralGraph Vertex Edge DV DE DG P).
   Local Coercion pg_lg : LabeledGraph >-> PreGraph.
   Local Coercion lg_gg : GeneralGraph >-> LabeledGraph.
 

@@ -973,7 +973,7 @@ Spatial Facts (with Strong Assumption) Part
 
   Context {SGSA: PointwiseGraphStrongAssum SGP}.
 
-  Abbreviation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bin DV DE sSGG_Bin) _ x g).
+  Notation graph x g := (@reachable_vertices_at _ _ _ _ _ _ _ _ (_) _ (@SGP pSGG_Bin DV DE sSGG_Bin) _ x g).
 
   Lemma bin_graph_unfold: forall (g: Graph) x d l r,
       vvalid g x -> vgamma g x = (d, l, r) ->

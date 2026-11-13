@@ -71,8 +71,8 @@ Section GRAPH_GList.
   Local Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
   Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-  Abbreviation UFGraph := (@UFGraph addr (addr * unit) _ _ is_null_SGBA (fun x => (x, tt)) DV DE DG).
-  Abbreviation LGraph := (@LGraph addr (addr * unit) _ _ DV DE DG).
+  Notation UFGraph := (@UFGraph addr (addr * unit) _ _ is_null_SGBA (fun x => (x, tt)) DV DE DG).
+  Notation LGraph := (@LGraph addr (addr * unit) _ _ DV DE DG).
 
   #[global] Instance RGF (G: UFGraph): ReachableFiniteGraph G.
   Proof.

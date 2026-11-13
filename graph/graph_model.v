@@ -300,7 +300,7 @@ Definition gremove_edge (g1: PreGraph Vertex Edge) (e0: Edge) (g2: PreGraph Vert
 Section LABELED_GRAPH_EQUIV.
 
 Context {DV DE DG: Type}.
-Abbreviation Graph := (@LabeledGraph Vertex Edge EV EE DV DE DG).
+Notation Graph := (@LabeledGraph Vertex Edge EV EE DV DE DG).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 

@@ -76,10 +76,10 @@ Local Identity Coercion SGraph_PointwiseGraph: SGraph >-> PointwiseGraph.
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 
 (** The spatial representation of the graph, specialized with instances *)
-Abbreviation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ unit unit _ mpred (@SGP pSGG_VST bool unit (sSGG_VST sh)) (SGA_VST sh) x g).
+Notation graph sh x g := (@reachable_vertices_at _ _ _ _ _ _ unit unit _ mpred (@SGP pSGG_VST bool unit (sSGG_VST sh)) (SGA_VST sh) x g).
 
 (** The definition of graph. *)
-Abbreviation Graph := (@Graph pSGG_VST bool unit unit).
+Notation Graph := (@Graph pSGG_VST bool unit unit).
 #[local] Existing Instances MGS binGraph maGraph finGraph RGF.
 
 (** The key in this spec is the predicate "mark x g g'". This is a

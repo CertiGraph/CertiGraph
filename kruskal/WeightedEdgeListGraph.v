@@ -1,5 +1,4 @@
 Require Import VST.floyd.proofauto.
-Require Import Stdlib.Lists.Finite.
 Require Import CertiGraph.lib.Coqlib.
 Require Import CertiGraph.lib.EquivDec_ext.
 Require Import CertiGraph.lib.List_ext.
@@ -148,8 +147,8 @@ Qed.
 Lemma NoDup_g2wedgelist:
   forall g, NoDup (graph_to_wedgelist g).
 Proof.
-intros. apply Finite.Injective_map_NoDup.
-unfold Finite.Injective; intros. inversion H. auto. apply NoDup_EList.
+intros. apply FinFun.Injective_map_NoDup.
+unfold FinFun.Injective; intros. inversion H. auto. apply NoDup_EList.
 Qed.
 
 Lemma g2wedgelist_evalid:
@@ -232,8 +231,8 @@ Lemma Zseq_NoDup:
   forall z, NoDup (Zseq z).
 Proof.
 unfold Zseq; intros. destruct z; simpl; try apply NoDup_nil.
-apply Finite.Injective_map_NoDup.
-unfold Finite.Injective. apply Nat2Z.inj.
+apply FinFun.Injective_map_NoDup.
+unfold FinFun.Injective. apply Nat2Z.inj.
 apply seq_NoDup.
 Qed.
 

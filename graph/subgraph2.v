@@ -723,7 +723,7 @@ Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 Context {DV DE DG: Type}.
 
-Abbreviation Graph := (LabeledGraph V E DV DE DG).
+Notation Graph := (LabeledGraph V E DV DE DG).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 

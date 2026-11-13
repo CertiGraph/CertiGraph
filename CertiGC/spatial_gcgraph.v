@@ -777,8 +777,9 @@ Proof.
   rewrite Zodd_mod.
   apply Z.eqb_eq.
   replace (i+i) with (2 * i)%Z by lia.
-  rewrite Z.mod_mod_divide.
+  rewrite <- Zmod_div_mod; try lia.
   - rewrite Z.mul_comm, Z.add_comm, Z_mod_plus_full. reflexivity.
+  - compute; reflexivity.
   - first [now exists (Z.div Int.modulus 2) | now exists (Z.div Int64.modulus 2)].
 Qed.
 
@@ -1392,7 +1393,7 @@ Proof.
   exists rest. split; [exact Hperm |].
   intros v' Hin'. apply Hvertex.
   assert (Hnodup: NoDup vertices).
-  { subst vertices. apply Finite.Injective_map_NoDup.
+  { subst vertices. apply FinFun.Injective_map_NoDup.
     - intros x y Heq. now inversion Heq.
     - apply nat_inc_list_NoDup. }
   apply (Permutation_NoDup Hperm), NoDup_cons_2 in Hnodup.

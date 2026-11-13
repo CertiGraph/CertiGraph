@@ -20,7 +20,7 @@ Context {E : Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 
-Abbreviation Graph := (PreGraph V E).
+Notation Graph := (PreGraph V E).
 
 Definition not_in_circle (g: Graph) (x: V) := forall y: V, edge g x y -> reachable g y x -> False.
 

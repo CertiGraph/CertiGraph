@@ -37,8 +37,8 @@ Proof.
   intros; destruct x; [left | right]; congruence.
 Defined.
 
-Abbreviation Graph := (LabeledGraph V E bool unit unit).
-Abbreviation SGraph := (PointwiseGraph V E GV GE).
+Notation Graph := (LabeledGraph V E bool unit unit).
+Notation SGraph := (PointwiseGraph V E GV GE).
 
 Local Coercion pg_lg: LabeledGraph >-> PreGraph.
 

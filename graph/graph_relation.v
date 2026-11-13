@@ -86,8 +86,8 @@ Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 Context {DV DE DG: Type}.
 
-Abbreviation PGraph := (PreGraph V E).
-Abbreviation LGraph := (LabeledGraph V E DV DE DG).
+Notation PGraph := (PreGraph V E).
+Notation LGraph := (LabeledGraph V E DV DE DG).
 
 Definition guarded_structurally_identical PV PE: relation PGraph := respectful_relation (gpredicate_subgraph PV PE) structurally_identical.
 
@@ -275,7 +275,7 @@ Context {V E: Type}.
 Context {EV: EqDec V eq}.
 Context {EE: EqDec E eq}.
 
-Abbreviation Graph := (PreGraph V E).
+Notation Graph := (PreGraph V E).
 
 Definition pregraph_join (PV: V -> Prop) (PE: E -> Prop) (G1 G2: Graph) : Prop :=
   Prop_join (vvalid G1) PV (vvalid G2) /\
