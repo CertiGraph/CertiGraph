@@ -146,7 +146,7 @@ destruct H as [p' H].
 Exists (ti, q, t_info, sh, g, InteriorVertexPos p' 1, outlier, rh) emp.
 normalize.
 unfold_for_go_lower; normalize.
-simpl; entailer!; intros.
+simpl; unfold mutable_update_pre, mutable_update_post, mutator_sep; entailer!; intros.
 clear H0.
 inversion H2 as [|src old h t Hv Hcell Htail]; subst.
 pose proof (cons_tail_location _ _ _ _ Hcell) as Hloc.
