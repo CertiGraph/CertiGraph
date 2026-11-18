@@ -21,7 +21,6 @@ Definition cons_pointer (g: LGraph) (v: VType) (z: Z) (w: exterior_t) : Prop :=
 Inductive graph_contains_list (g: LGraph) : exterior_t -> list Z -> Prop :=
 | GRL_nil: graph_contains_list g (ExteriorUnboxed 0) nil
 | GRL_cons: forall (v: VType) (w: exterior_t) (h: Z) (t: list Z),
-                    graph_has_v g v ->
                     cons_pointer g v h w ->
                     graph_contains_list g w t ->
                     graph_contains_list g (ExteriorVertex v) (h::t).
@@ -120,12 +119,11 @@ Qed.
     pointer_not_in_list g (ExteriorVertex src) q ->
     graph_contains_list g' q bl.
 Proof.
-  intros Hloc Hupd q bl Hl. induction Hl as [|v w h t Hv Hcons Ht IH]; intros Hnot.
+  intros Hloc Hupd q bl Hl. induction Hl as [|v w h t Hcons Ht IH]; intros Hnot.
   - constructor.
   - inversion Hnot as [|v' h' w' Hcons' Hneq' Hnot']; subst.
     assert (w = w') by (eapply cons_tail_deterministic; eassumption). subst w'.
     apply GRL_cons with w.
-    + eapply (proj2 (mutable_graph_update_graph_has_v _ _ _ _ _ Hloc Hupd)); eauto.
     + eapply cons_update_other; eauto; congruence.
     + auto.
 Qed.
@@ -148,10 +146,11 @@ normalize.
 unfold_for_go_lower; normalize.
 simpl; unfold mutable_update_pre, mutable_update_post, mutator_sep; entailer!; intros.
 clear H0.
-inversion H2 as [|src old h t Hv Hcell Htail]; subst.
+inversion H2 as [|src old h t Hcell Htail]; subst.
 pose proof (cons_tail_location _ _ _ _ Hcell) as Hloc.
 split.
-2: { split; [exact Hloc | inversion H3; subst; simpl; auto]. }
+2: { split; [exact Hloc|].
+     inversion H3 as [|v w h t Hcons Hrest]; subst; [exact I | exact (proj1 Hcons)]. }
 entailer!.
 clear rho' H.
 rename x into g'.
@@ -163,18 +162,17 @@ Exists t_info' rh'.
 entailer!!.
 pose proof (graph_contains_list_update_other _ _ _ _ Hloc Hupd q bl H3 H4) as Hq'.
 split; [ | split3].
-- apply GRL_cons with q; [ | | exact Hq'].
-  + apply (proj2 (mutable_graph_update_graph_has_v _ _ _ _ _ Hloc Hupd)); exact Hv.
-  + destruct (cons_pointer_fields _ _ _ _ Hcell) as [tail Hfields].
-    destruct Hcell as [_ [Hm [Ht _]]].
-    destruct (mutable_graph_update_vlabel_src _ _ _ _ _ Hloc Hupd)
-      as [Hf [Hm' [_ [_ Ht']]]].
-    unfold cons_pointer, get_edges, make_fields.
-    rewrite (mutable_graph_update_graph_has_v _ _ _ _ _ Hloc Hupd), Hm', Ht', Hf, Hfields.
-    split; [exact Hv|]. split; [exact Hm|]. split; [exact Ht|].
-    destruct q as [z | ptr | v]; [split; reflexivity | inversion H3 | ].
-    change (ExteriorVertex v = ExteriorVertex (dst g' (p', Z.to_nat 1)) /\ a = a).
-    rewrite (mutable_graph_update_dst_new _ _ _ _ _ Hloc Hupd). split; reflexivity.
+- apply GRL_cons with q; [ | exact Hq'].
+  destruct (cons_pointer_fields _ _ _ _ Hcell) as [tail Hfields].
+  destruct Hcell as [Hv [Hm [Ht _]]].
+  destruct (mutable_graph_update_vlabel_src _ _ _ _ _ Hloc Hupd)
+    as [Hf [Hm' [_ [_ Ht']]]].
+  unfold cons_pointer, get_edges, make_fields.
+  rewrite (mutable_graph_update_graph_has_v _ _ _ _ _ Hloc Hupd), Hm', Ht', Hf, Hfields.
+  split; [exact Hv|]. split; [exact Hm|]. split; [exact Ht|].
+  destruct q as [z | ptr | v]; [split; reflexivity | inversion H3 | ].
+  change (ExteriorVertex v = ExteriorVertex (dst g' (p', Z.to_nat 1)) /\ a = a).
+  rewrite (mutable_graph_update_dst_new _ _ _ _ _ Hloc Hupd). split; reflexivity.
 - exact Hq'.
 - eexists; reflexivity.
 - unfold rh', t_info', mtb_upd_remset_heap, decr_info_nursery.
