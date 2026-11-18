@@ -4,35 +4,35 @@ From Stdlib Require Import ZArith Psatz.
 
 Existing Instance CompSpecs.
 
-Definition tail_pointer (g: LGraph) (v: VType) (w: exterior_t) : Prop :=
+Definition cons_pointer (g: LGraph) (v: VType) (z: Z) (w: exterior_t) : Prop :=
  graph_has_v g v /\
  raw_mark(vlabel g v) = false /\
  raw_tag (vlabel g v) = 2 /\
- match (vlabel g v).(raw_fields) with     
-  | [ _ ; RawUnboxed i ] => w = ExteriorUnboxed i
-  | [ _ ; RawInternal ] => 
+ match (vlabel g v).(raw_fields) with
+  | [ RawUnboxed z' ; RawUnboxed i ] => w = ExteriorUnboxed i /\ z = z'
+  | [ RawUnboxed z' ; RawInternal ] =>
           match get_edges g v with
-           | [(w',1%nat)] => w = ExteriorVertex w'
+           | [(w',1%nat)] => w = ExteriorVertex w' /\ z = z'
            | _ => False
            end
   | _ => False
  end.
 
-Inductive graph_represents_list (g: LGraph) : exterior_t -> list Z -> Prop :=
-| GRL_nil: graph_represents_list g (ExteriorUnboxed 0) nil
+Inductive graph_contains_list (g: LGraph) : exterior_t -> list Z -> Prop :=
+| GRL_nil: graph_contains_list g (ExteriorUnboxed 0) nil
 | GRL_cons: forall (v: VType) (w: exterior_t) (h: Z) (t: list Z),
                     graph_has_v g v ->
-                    tail_pointer g v w ->
-                    graph_represents_list g w t ->
-                    graph_represents_list g (ExteriorVertex v) (h::t).
+                    cons_pointer g v h w ->
+                    graph_contains_list g w t ->
+                    graph_contains_list g (ExteriorVertex v) (h::t).
 
-Definition headroom_decrease_at_most_one (t_info t_info': thread_info) := 
+Definition headroom_decrease_at_most_one (t_info t_info': thread_info) :=
   exists v: val,  t_info' = decr_info_nursery t_info v.
 
 Inductive pointer_not_in_list (g: LGraph) (p: exterior_t) : exterior_t -> Prop :=
 | PNI_nil: pointer_not_in_list g p (ExteriorUnboxed 0)
-| PNI_cons: forall v w,
-    tail_pointer g v w ->
+| PNI_cons: forall v h w,
+    cons_pointer g v h w ->
     w <> p ->
     pointer_not_in_list g p w ->
     pointer_not_in_list g p (ExteriorVertex v).
@@ -42,8 +42,8 @@ Definition assign_it_spec : funspec :=
                p: exterior_t, a: Z, al: list Z,  q: exterior_t, bl: list Z
   PRE [tptr thread_info_type, tptr int_or_ptr_type, int_or_ptr_type]
      PROP (writable_share sh;
-                graph_represents_list g p (a::al);
-                graph_represents_list g q bl;
+                graph_contains_list g p (a::al);
+                graph_contains_list g q bl;
                 pointer_not_in_list g p q;
                 1 <= headroom t_info;
         graph_heap_compatible g (ti_heap t_info).(pt_heap);
@@ -56,8 +56,8 @@ Definition assign_it_spec : funspec :=
          heap_remset_rep g (ti_heap t_info).(pt_heap) rh)
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX rh': remset_heap,
-    PROP (graph_represents_list g' p (a::bl);
-                  graph_represents_list g' q bl;
+    PROP (graph_contains_list g' p (a::bl);
+                  graph_contains_list g' q bl;
                   headroom_decrease_at_most_one t_info t_info';
                   remset_heap_and_heap_compatible rh' (ti_heap t_info').(pt_heap))
     RETURN ()
