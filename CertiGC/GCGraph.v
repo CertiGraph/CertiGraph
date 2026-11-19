@@ -12082,6 +12082,76 @@ Record thread_info: Type :=
     ti_nalloc: Ptrofs.int
   }.
 
+Definition headroom (ti : thread_info) : Z :=
+  let nursery := heap_head (pt_heap (ti_heap ti)) in
+  available_space nursery - used_space nursery.
+
+Definition info_recordable (ti : thread_info) : Prop :=
+  1 <= headroom ti.
+
+Lemma info_recordable_iff_used_lt_available:
+  forall ti,
+    info_recordable ti <->
+    used_space (heap_head (pt_heap (ti_heap ti))) <
+    available_space (heap_head (pt_heap (ti_heap ti))).
+Proof.
+  intros ti.
+  unfold info_recordable, headroom.
+  lia.
+Qed.
+
+Definition decr_info_nursery (ti: thread_info) (x: val): thread_info :=
+  if isptr_dec x then
+    Build_thread_info
+      (ti_heap_p ti)
+      (build_compatible_heap (incr_remset_heap (ti_heap ti).(pt_heap) 0))
+      (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti)
+  else ti.
+
+Definition mtb_upd_remset_heap (x: val) (item: remset_space_item) (rh: remset_heap) : remset_heap :=
+  if isptr_dec x then upd_remset_heap item rh O else rh.
+
+Definition mutable_update_pre (sh : share)
+    (g : LGraph) (t_info : thread_info)
+    (outlier : outlier_t) (rh : remset_heap)
+    (it : interior_t) (new : exterior_t) : Prop :=
+  writable_share sh /\
+  1 <= headroom t_info /\
+  graph_heap_compatible g (pt_heap (ti_heap t_info)) /\
+  remset_heap_and_heap_compatible rh (pt_heap (ti_heap t_info)) /\
+  mutable_location_compatible g it /\
+  exterior_compatible g outlier new.
+
+(* A write may consume one nursery word or none, independently of the value
+   written. Both alternatives preserve the rest of the thread state. *)
+Definition mutator_thread_effect (ti ti' : thread_info) : Prop :=
+  exists x : val, ti' = decr_info_nursery ti x.
+
+(* Retain old members by generation. Only the updated slot may be a new
+   member, in the nursery. A backward edge must be covered, but a suitable
+   existing record suffices. This does not specify order or multiplicity. *)
+Definition remset_write_effect
+    (it : interior_t) (new : exterior_t) (rh rh' : remset_heap) : Prop :=
+  (forall k, incl (nth_remset_space rh k) (nth_remset_space rh' k)) /\
+  (forall k item, In item (nth_remset_space rh' k) ->
+     In item (nth_remset_space rh k) \/ (k = O /\ item = RemSetInterior it)) /\
+  match it, new with
+  | InteriorVertexPos src _, ExteriorVertex dstv =>
+      (vgeneration dstv < vgeneration src)%nat ->
+      exists k, (k <= vgeneration dstv)%nat /\
+                In (RemSetInterior it) (nth_remset_space rh' k)
+  | _, _ => True
+  end.
+
+Definition mutable_update_post
+    (g : LGraph) (t_info : thread_info) (rh : remset_heap)
+    (it : interior_t) (new : exterior_t)
+    (g' : LGraph) (t_info' : thread_info) (rh' : remset_heap) : Prop :=
+  mutable_graph_update g it new g' /\
+  mutator_thread_effect t_info t_info' /\
+  remset_heap_and_heap_compatible rh' (pt_heap (ti_heap t_info')) /\
+  remset_write_effect it new rh rh'.
+
 Lemma add_new_space_rhhc: forall hp sp i (Hs: 0 <= i < MAX_SPACES),
     available_space sp = total_space sp ->
     remset_heap_and_heap_compatible

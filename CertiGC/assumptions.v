@@ -41,6 +41,7 @@ Definition model_endpoints :=
   (garbage_collect_spec_preconditions_imply_isomorphism,
    mutable_graph_update_sound,
    mutable_update_gc_ready,
+   mutable_update_gc_sep,
    remset_rep_mutable_graph_update).
 
 (** These results establish [extcall_properties] for legacy external-call

@@ -2569,3 +2569,64 @@ Definition thread_info_rep (sh: share) (ti: thread_info) (t: val) :=
   frames_rep sh (ti_frames ti) *
     heap_rep sh ti.(ti_heap).(pt_heap) ti.(ti_heap_p) *
     ti_token_rep (ti_heap ti).(pt_heap) (ti_heap_p ti).
+
+Definition init_data2byte (d: init_data) : byte :=
+  match d with
+  | Init_int8 m => Byte.repr (Int.intval m)
+  | _ => Byte.one
+  end.
+
+Definition is_string_constant (d: ident * globdef Clight.fundef type) : bool :=
+  match d with
+  | (_, Gvar {| gvar_info := Tarray (Tint I8 _ _) _ _;
+             gvar_init := _; gvar_readonly := true; gvar_volatile := _ |})
+     => true
+  | _ => false
+  end.
+
+Definition sep_of_string_constant sh gv (d: ident * globdef Clight.fundef type) : mpred :=
+  match d with
+  | (i, Gvar v) => cstring sh (map init_data2byte (gvar_init v)) (gv i)
+  | _ => emp
+  end.
+
+Definition all_string_constants' (sh: share) (gv: globals) : mpred :=
+ fold_left sepcon
+  (map (sep_of_string_constant sh gv) (filter is_string_constant gc_stack.global_definitions))
+  emp.
+
+Definition all_string_constants (sh: share) (gv: globals) : mpred :=
+  ltac:(
+   let x := constr:(all_string_constants' sh gv) in
+   let x := eval hnf in x in
+   let x := eval unfold sep_of_string_constant in x in
+   match x with ?S ?A ?B => exact (sepcon A B) end).
+
+Definition mutator_sep (sh : share) (ti : val)
+    (g : LGraph) (t_info : thread_info)
+    (outlier : outlier_t) (rh : remset_heap) : mpred :=
+  graph_rep g *
+  outlier_rep outlier *
+  before_gc_thread_info_rep sh t_info ti *
+  heap_remset_rep g (pt_heap (ti_heap t_info)) rh.
+
+Definition gc_sep (rsh sh : share) (gv : globals) (ti : val)
+    (g : LGraph) (t_info : thread_info) (outlier : outlier_t)
+    (rh : remset_heap) (rmst : remset) : mpred :=
+  mem_mgr gv *
+  all_string_constants rsh gv *
+  outlier_rep outlier *
+  graph_rep g *
+  heap_remset_rep g (pt_heap (ti_heap t_info)) rh *
+  remset_rep sh g rmst *
+  before_gc_thread_info_rep sh t_info ti.
+
+Lemma mutable_update_gc_sep sh rsh gv p ti ti' g g' rh rh' it new outlier rmst :
+  mutable_location_compatible g it ->
+  mutable_update_post g ti rh it new g' ti' rh' ->
+  mem_mgr gv * all_string_constants rsh gv * remset_rep sh g rmst *
+    mutator_sep sh p g' ti' outlier rh' |-- gc_sep rsh sh gv p g' ti' outlier rh' rmst.
+Proof.
+  intros Hloc [Hu _]. unfold gc_sep, mutator_sep.
+  rewrite (remset_rep_mutable_graph_update _ _ _ _ _ _ Hloc Hu). cancel.
+Qed.

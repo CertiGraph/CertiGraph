@@ -1,4 +1,4 @@
-From CertiGraph.CertiGC Require Import env_graph_gc spatial_gcgraph gc_spec gc_correct.
+From CertiGraph.CertiGC Require Import env_graph_gc spatial_gcgraph gc_spec.
 Import graph_model.
 From Stdlib Require Import ZArith Psatz.
 
@@ -24,9 +24,6 @@ Inductive graph_contains_list (g: LGraph) : exterior_t -> list Z -> Prop :=
                     cons_pointer g v h w ->
                     graph_contains_list g w t ->
                     graph_contains_list g (ExteriorVertex v) (h::t).
-
-Definition headroom_decrease_at_most_one (t_info t_info': thread_info) :=
-  exists v: val,  t_info' = decr_info_nursery t_info v.
 
 Inductive pointer_not_in_list (g: LGraph) (p: exterior_t) : exterior_t -> Prop :=
 | PNI_nil: pointer_not_in_list g p (ExteriorUnboxed 0)
@@ -57,7 +54,7 @@ Definition assign_it_spec : funspec :=
     EX g': LGraph, EX t_info': thread_info, EX rh': remset_heap,
     PROP (graph_contains_list g' p (a::bl);
                   graph_contains_list g' q bl;
-                  headroom_decrease_at_most_one t_info t_info';
+                  mutator_thread_effect t_info t_info';
                   remset_heap_and_heap_compatible rh' (ti_heap t_info').(pt_heap))
     RETURN ()
     SEP (graph_rep g';
@@ -154,14 +151,12 @@ split.
 entailer!.
 clear rho' H.
 rename x into g'.
+rename x0 into t_info', x1 into rh'.
 assert (Hupd : mutable_graph_update g (InteriorVertexPos p' 1) q g') by assumption.
-Exists g'.
-set (t_info' := decr_info_nursery _ _).
-set (rh' := mtb_upd_remset_heap _ (RemSetInterior (InteriorVertexPos p' 1)) rh).
-Exists t_info' rh'.
+Exists g' t_info' rh'.
 entailer!!.
 pose proof (graph_contains_list_update_other _ _ _ _ Hloc Hupd q bl H3 H4) as Hq'.
-split; [ | split3].
+split.
 - apply GRL_cons with q; [ | exact Hq'].
   destruct (cons_pointer_fields _ _ _ _ Hcell) as [tail Hfields].
   destruct Hcell as [Hv [Hm [Ht _]]].
@@ -174,11 +169,4 @@ split; [ | split3].
   change (ExteriorVertex v = ExteriorVertex (dst g' (p', Z.to_nat 1)) /\ a = a).
   rewrite (mutable_graph_update_dst_new _ _ _ _ _ Hloc Hupd). split; reflexivity.
 - exact Hq'.
-- eexists; reflexivity.
-- unfold rh', t_info', mtb_upd_remset_heap, decr_info_nursery.
-  destruct (isptr_dec (exterior2val g q)); [ | exact H7].
-  simpl pt_heap. eapply upd_incr_remset_heap_rhhc with (g := g) (gen := O);
-    [exact H6 | apply graph_has_gen_O | | exact H7].
-  rewrite <- heap_head_nth_space_O.
-  apply (proj1 (info_recordable_iff_used_lt_available t_info)); exact H5.
 Qed.
