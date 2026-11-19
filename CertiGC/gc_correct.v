@@ -9667,47 +9667,6 @@ Proof.
   - exact Hrel.
 Qed.
 
-Lemma mutable_update_remset_heap_and_heap_compatible:
-  forall (g: LGraph) (h: part_heap) (rh: remset_heap)
-         (x: val) (item: remset_space_item),
-    graph_heap_compatible g h ->
-    used_space (nth_space h O) < available_space (nth_space h O) ->
-    remset_heap_and_heap_compatible rh h ->
-    remset_heap_and_heap_compatible
-      (if isptr_dec x then upd_remset_heap item rh O else rh)
-      (if isptr_dec x then incr_remset_heap h 0 else h).
-Proof.
-  intros g h rh x item Hghc Hcapacity Hrhhc.
-  destruct (isptr_dec x).
-  - eapply upd_incr_remset_heap_rhhc; eauto.
-    apply graph_has_gen_O.
-  - exact Hrhhc.
-Qed.
-
-Lemma mutable_update_remset_generation_compatible:
-  forall (x: val) (it: interior_t) (rh: remset_heap) (rmst: remset),
-    0 <= Z.of_nat O < Zlength rh ->
-    remset_generation_compatible O rmst rh ->
-    remset_generation_compatible O rmst
-      (if isptr_dec x
-       then upd_remset_heap (RemSetInterior it) rh O
-       else rh).
-Proof.
-  intros x it rh rmst Hrange Hcompatible.
-  destruct (isptr_dec x).
-  2: exact Hcompatible.
-  destruct Hcompatible as [Hext [Horder _]].
-  split.
-  - unfold remset_ext_space_compatible in *.
-    intros v addr Hin.
-    eapply nth_remset_space_upd_remset_heap_old; eauto.
-  - split.
-    + eapply upd_remset_heap_interior_generation_order; eauto.
-      intros. apply Nat.le_0_l.
-    + unfold remset_lower_generations_empty.
-      intros gen Hlt. lia.
-Qed.
-
 #[local] Lemma graph_has_e_iff_raw_internal:
   forall g v n,
     graph_has_v g v ->
@@ -9950,51 +9909,6 @@ Proof.
     exact Hin.
 Qed.
 
-Theorem mutable_graph_update_no_unrecorded_backward_edge:
-  forall g src pos new g' outlier rh,
-    mutable_location_compatible g (InteriorVertexPos src pos) ->
-    exterior_compatible g outlier new ->
-    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
-    0 <= Z.of_nat O < Zlength rh ->
-    no_unrecorded_backward_edge g rh ->
-    no_unrecorded_backward_edge g'
-      (if isptr_dec (exterior2val g new)
-       then upd_remset_heap (RemSetInterior (InteriorVertexPos src pos)) rh O
-       else rh).
-Proof.
-  intros g src pos new g' outlier rh Hloc Hext Hupd Hrange Hold.
-  pose proof Hloc as Hloc'.
-  destruct Hloc as [Hv [Hpos [Hmark Htag]]].
-  unfold no_unrecorded_backward_edge, no_unrecorded_backward_edge_from in *.
-  intros e He' Hback.
-  destruct (E_EqDec e (src, Z.to_nat pos)) as [Heq | Hneq].
-  - hnf in Heq. subst e.
-    apply (mutable_graph_update_graph_has_e_target g src pos new g' Hloc' Hupd) in He'.
-    destruct He' as [dstv Hnew]. subst new.
-    destruct (isptr_dec (exterior2val g (ExteriorVertex dstv))) as [Hptr | Hnptr].
-    2: exfalso; apply Hnptr; simpl; apply graph_has_v_addr_isptr; exact Hext.
-    exists O. split.
-    + split; lia.
-    + unfold remset_heap_records_edge. simpl fst. simpl snd.
-      rewrite Z2Nat.id by lia.
-      apply nth_remset_space_upd_remset_heap_new. exact Hrange.
-  - assert (He: graph_has_e g e).
-    { apply (proj1 (mutable_graph_update_graph_has_e_neq
-                      g src pos new g' e Hneq Hloc' Hupd)). exact He'. }
-    pose proof (mutable_graph_update_dst_neq
-                  g src pos new g' e Hneq Hloc' Hupd) as Hdst.
-    rewrite Hdst in Hback.
-    specialize (Hold e He Hback).
-    destruct Hold as [k [Hbounds Hrecord]].
-    assert (Hbounds': (O <= k <= vgeneration (dst g' e))%nat).
-    { rewrite Hdst. exact Hbounds. }
-    exists k. split; [exact Hbounds'|].
-    destruct (isptr_dec (exterior2val g new)) as [Hptr | Hnptr].
-    + unfold remset_heap_records_edge in *.
-      eapply nth_remset_space_upd_remset_heap_old; eauto.
-    + exact Hrecord.
-Qed.
-
 Lemma mutable_graph_update_raw_mark_tag:
   forall g src pos new g' v,
     mutable_location_compatible g (InteriorVertexPos src pos) ->
@@ -10088,48 +10002,36 @@ Proof.
       rewrite Hmark', Htag'. split; assumption.
 Qed.
 
-Lemma mutable_graph_update_remset_space_compatible:
-  forall g src pos new g' from rmst items,
-    mutable_location_compatible g (InteriorVertexPos src pos) ->
-    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
-    remset_and_remset_space_compatible g from rmst items ->
-    remset_and_remset_space_compatible g' from rmst items.
+#[local] Lemma nth_remset_space_item_in_heap k item rh :
+  In item (nth_remset_space rh k) -> exists items, In items rh /\ In item items.
 Proof.
-  intros g src pos new g' from rmst items Hloc Hupd Hold.
-  unfold remset_and_remset_space_compatible in *.
-  eapply Forall_impl; [|exact Hold].
-  intros item Hitem.
-  eapply mutable_graph_update_remset_item_compatible; eauto.
+  unfold nth_remset_space. revert k. induction rh as [|r rs IH]; intros [|k] Hin;
+    try contradiction.
+  - exists r. simpl; auto.
+  - destruct (IH k Hin) as [r' [Hrs Hitem]]. exists r'. simpl; auto.
 Qed.
 
-Lemma mutable_update_remset_and_remset_heap_compatible:
-  forall g src pos new g' from rmst rh x,
-    mutable_location_compatible g (InteriorVertexPos src pos) ->
-    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
-    0 <= Z.of_nat O < Zlength rh ->
-    remset_and_remset_heap_compatible g from rmst rh ->
-    remset_and_remset_heap_compatible g' from rmst
-      (if isptr_dec x
-       then upd_remset_heap
-              (RemSetInterior (InteriorVertexPos src pos)) rh O
-       else rh).
+#[local] Lemma remset_effect_compatible g src pos new g' outlier from rmst rh rh' h h' :
+  mutable_location_compatible g (InteriorVertexPos src pos) ->
+  mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+  (forall k item, In item (nth_remset_space rh' k) ->
+     In item (nth_remset_space rh k) \/ (k = O /\ item = RemSetInterior (InteriorVertexPos src pos))) ->
+  remset_heap_and_heap_compatible rh' h' ->
+  remset_compatible g outlier from rmst rh h ->
+  remset_compatible g' outlier from rmst rh' h'.
 Proof.
-  intros g src pos new g' from rmst rh x Hloc Hupd Hrange Hold.
-  destruct (isptr_dec x) as [Hptr | Hnptr].
-  2: {
-    unfold remset_and_remset_heap_compatible in *.
-    eapply Forall_impl; [|exact Hold].
-    intros items Hitems.
-    eapply mutable_graph_update_remset_space_compatible; eauto.
-  }
+  intros Hloc Hupd Honly Hsizes [Hvertices [Hitems _]].
+  split; [eapply mutable_graph_update_remset_graph_outlier_compatible; eassumption |].
+  split; [|exact Hsizes].
   unfold remset_and_remset_heap_compatible in *.
-  rewrite Forall_forall in *. intros items Hin.
-  apply upd_remset_heap_In in Hin. destruct Hin as [Hin | ->].
-  - eapply mutable_graph_update_remset_space_compatible; eauto.
-  - constructor.
-    + eapply mutable_graph_update_new_remset_item_compatible; eauto.
-    + eapply mutable_graph_update_remset_space_compatible; eauto.
-      apply Hold. apply Znth_In. exact Hrange.
+  rewrite Forall_forall in Hitems |- *. intros items Hitems'.
+  apply In_nth with (d:=[]) in Hitems'. destruct Hitems' as [k [_ Hk]].
+  apply Forall_forall. intros item Hin. rewrite <- Hk in Hin.
+  destruct (Honly k item Hin) as [Hold|[_ ->]].
+  - apply nth_remset_space_item_in_heap in Hold. destruct Hold as [r [Hr Hinr]].
+    eapply mutable_graph_update_remset_item_compatible; try eassumption.
+    specialize (Hitems _ Hr). eapply Forall_forall; eassumption.
+  - eapply mutable_graph_update_new_remset_item_compatible; eassumption.
 Qed.
 
 Theorem mutable_update_remset_compatible:
@@ -10148,15 +10050,16 @@ Theorem mutable_update_remset_compatible:
        then incr_remset_heap h 0
        else h).
 Proof.
-  intros g src pos new g' outlier from rmst rh h
-         Hloc Hupd Hghc Hcapacity [Hrgoc [Hrrhc Hrhhc]].
-  assert (Hrange: 0 <= Z.of_nat O < Zlength rh).
-  { eapply gen_range_remset_heap; eauto. apply graph_has_gen_O. }
-  split.
-  - eapply mutable_graph_update_remset_graph_outlier_compatible; eauto.
-  - split.
-    + eapply mutable_update_remset_and_remset_heap_compatible; eauto.
-    + eapply mutable_update_remset_heap_and_heap_compatible; eauto.
+  intros g src pos new g' outlier from rmst rh h Hloc Hupd Hghc Hcapacity Hrem.
+  pose proof (proj2 (proj2 Hrem)) as Hsizes.
+  eapply remset_effect_compatible; [exact Hloc|exact Hupd| | |exact Hrem].
+  - intros k item Hin. destruct (isptr_dec (exterior2val g new)); [|now left].
+    assert (Hrange : 0 <= Z.of_nat O < Zlength rh).
+    { eapply gen_range_remset_heap; [exact Hghc|apply graph_has_gen_O|exact Hsizes]. }
+    rewrite nth_remset_space_upd_remset_heap in Hin by exact Hrange.
+    destruct (Nat.eq_dec k O) as [->|Hne]; [simpl in Hin; intuition congruence|auto].
+  - destruct (isptr_dec (exterior2val g new)); [|exact Hsizes].
+    eapply upd_incr_remset_heap_rhhc; [exact Hghc|apply graph_has_gen_O|exact Hcapacity|exact Hsizes].
 Qed.
 
 Lemma mutable_graph_update_exterior2val_all:
@@ -10253,52 +10156,6 @@ Proof.
     exact Hno.
 Qed.
 
-Theorem mutable_update_super_compatible:
-  forall g src pos new g' h rootpairs roots outlier,
-    mutable_location_compatible g (InteriorVertexPos src pos) ->
-    exterior_compatible g outlier new ->
-    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
-    super_compatible g h rootpairs roots outlier ->
-    super_compatible g'
-      (if isptr_dec (exterior2val g new)
-       then incr_remset_heap h 0
-       else h)
-      rootpairs roots outlier.
-Proof.
-  intros g src pos new g' h rootpairs roots outlier
-         Hloc Hext Hupd [Hghc [Hrootpairs [Hroots Houtlier]]].
-  split; [|split; [|split]].
-  - destruct (isptr_dec (exterior2val g new)).
-    + apply incr_remset_heap_ghc.
-      eapply mutable_graph_update_graph_heap_compatible; eauto.
-    + eapply mutable_graph_update_graph_heap_compatible; eauto.
-  - eapply mutable_graph_update_rootpairs_compatible; eauto.
-  - eapply mutable_graph_update_roots_compatible; eauto.
-  - eapply mutable_graph_update_outlier_compatible; eauto.
-Qed.
-
-Theorem mutable_update_garbage_collect_condition:
-  forall g src pos new g' outlier h,
-    mutable_location_compatible g (InteriorVertexPos src pos) ->
-    exterior_compatible g outlier new ->
-    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
-    garbage_collect_condition g h ->
-    garbage_collect_condition g'
-      (if isptr_dec (exterior2val g new)
-       then incr_remset_heap h 0
-       else h).
-Proof.
-  intros g src pos new g' outlier h Hloc Hext Hupd
-         [Hunmarked [Hno_dangling Hsize]].
-  split; [|split].
-  - eapply mutable_graph_update_graph_unmarked; eauto.
-  - eapply mutable_graph_update_no_dangling_dst; eauto.
-  - destruct (isptr_dec (exterior2val g new)).
-    + eapply weak_heap_relation_size_spec; eauto.
-      apply incr_remset_heap_whr.
-    + exact Hsize.
-Qed.
-
 Lemma incr_remset_heap_rest_gen_size_above_nursery:
   forall h n,
     rest_gen_size (incr_remset_heap h 0) (S n) =
@@ -10308,6 +10165,33 @@ Proof.
   rewrite !nth_space_Znth.
   rewrite (irh_Znth_spaces_not_eq h (Z.of_nat (S n)) 0) by lia.
   reflexivity.
+Qed.
+
+#[local] Lemma safe_to_copy_heap_after_budget_step:
+  forall g src pos new g' h (x: val),
+    mutable_location_compatible g (InteriorVertexPos src pos) ->
+    mutable_graph_update g (InteriorVertexPos src pos) new g' ->
+    safe_to_copy_heap g h ->
+    safe_to_copy_heap g'
+      (if isptr_dec x
+       then incr_remset_heap h 0
+       else h).
+Proof.
+  intros g src pos new g' h x Hloc Hupd Hsafe.
+  unfold safe_to_copy_heap in *. intros n Hgen'.
+  assert (Hgen: graph_has_gen g (S n)).
+  { unfold graph_has_gen in *.
+    rewrite (mutable_graph_update_glabel
+               g (InteriorVertexPos src pos) new g' Hloc Hupd) in Hgen'.
+    exact Hgen'. }
+  specialize (Hsafe n Hgen).
+  destruct (isptr_dec x).
+  - unfold safe_to_copy_gen_heap in *.
+    unfold total_size.
+    rewrite irh_total_space.
+    rewrite incr_remset_heap_rest_gen_size_above_nursery.
+    exact Hsafe.
+  - exact Hsafe.
 Qed.
 
 Theorem mutable_update_safe_to_copy_heap:
@@ -10320,21 +10204,7 @@ Theorem mutable_update_safe_to_copy_heap:
        then incr_remset_heap h 0
        else h).
 Proof.
-  intros g src pos new g' h Hloc Hupd Hsafe.
-  unfold safe_to_copy_heap in *. intros n Hgen'.
-  assert (Hgen: graph_has_gen g (S n)).
-  { unfold graph_has_gen in *.
-    rewrite (mutable_graph_update_glabel
-               g (InteriorVertexPos src pos) new g' Hloc Hupd) in Hgen'.
-    exact Hgen'. }
-  specialize (Hsafe n Hgen).
-  destruct (isptr_dec (exterior2val g new)).
-  - unfold safe_to_copy_gen_heap in *.
-    unfold total_size.
-    rewrite irh_total_space.
-    rewrite incr_remset_heap_rest_gen_size_above_nursery.
-    exact Hsafe.
-  - exact Hsafe.
+  intros. eapply safe_to_copy_heap_after_budget_step; eassumption.
 Qed.
 
 (** Collector readiness from the public mutable-update contract. *)
@@ -10359,37 +10229,6 @@ Proof.
     rewrite (mutable_graph_update_dst_neq _ _ _ _ _ _ Hneq Hloc Hupd) in Hback |- *.
     destruct (Hold e He Hback) as [k [Hk Hin]].
     exists k; split; [exact Hk | apply Hkeep, Hin].
-Qed.
-
-#[local] Lemma nth_remset_space_item_in_heap k item rh :
-  In item (nth_remset_space rh k) -> exists items, In items rh /\ In item items.
-Proof.
-  unfold nth_remset_space. revert k. induction rh as [|r rs IH]; intros [|k] Hin;
-    try contradiction.
-  - exists r. simpl; auto.
-  - destruct (IH k Hin) as [r' [Hrs Hitem]]. exists r'. simpl; auto.
-Qed.
-
-#[local] Lemma remset_effect_compatible g src pos new g' outlier rmst rh rh' h h' :
-  mutable_location_compatible g (InteriorVertexPos src pos) ->
-  mutable_graph_update g (InteriorVertexPos src pos) new g' ->
-  remset_write_effect (InteriorVertexPos src pos) new rh rh' ->
-  remset_heap_and_heap_compatible rh' h' ->
-  remset_compatible g outlier O rmst rh h ->
-  remset_compatible g' outlier O rmst rh' h'.
-Proof.
-  intros Hloc Hupd [_ [Honly _]] Hsizes [Hvertices [Hitems _]].
-  split; [eapply mutable_graph_update_remset_graph_outlier_compatible; eassumption |].
-  split; [|exact Hsizes].
-  unfold remset_and_remset_heap_compatible in *.
-  rewrite Forall_forall in Hitems |- *. intros items Hitems'.
-  apply In_nth with (d:=[]) in Hitems'. destruct Hitems' as [k [_ Hk]].
-  apply Forall_forall. intros item Hin. rewrite <- Hk in Hin.
-  destruct (Honly k item Hin) as [Hold|[_ ->]].
-  - apply nth_remset_space_item_in_heap in Hold. destruct Hold as [r [Hr Hinr]].
-    eapply mutable_graph_update_remset_item_compatible; try eassumption.
-    specialize (Hitems _ Hr). eapply Forall_forall; eassumption.
-  - eapply mutable_graph_update_new_remset_item_compatible; eassumption.
 Qed.
 
 #[local] Lemma remset_effect_generation it new rh rh' rmst :
@@ -10420,17 +10259,14 @@ Proof.
   assert (Ho' := mutable_graph_update_outlier_compatible _ _ _ _ _ _ Ho Hloc Hext Hupd).
   assert (Hu' := mutable_graph_update_graph_unmarked _ _ _ _ _ Hloc Hupd Hu).
   assert (Hnd' := mutable_graph_update_no_dangling_dst _ _ _ _ _ _ Hloc Hext Hupd Hnd).
-  assert (Hs' : safe_to_copy_heap g' (pt_heap (ti_heap ti))).
-  { intros n Hgen. apply Hsafe. unfold graph_has_gen in *.
-    rewrite (mutable_graph_update_glabel _ _ _ _ Hloc Hupd) in Hgen. exact Hgen. }
+  pose proof (safe_to_copy_heap_after_budget_step g src pos new g' (pt_heap (ti_heap ti)) x
+                Hloc Hupd Hsafe) as Hsafe'.
   unfold decr_info_nursery. destruct (isptr_dec x).
   - set (h := pt_heap (ti_heap ti)) in *.
     change (gc_prop g' (incr_remset_heap h 0) (frames2rootpairs (ti_frames ti)) roots outlier).
     split; [split; [apply incr_remset_heap_ghc; exact Hgh'|tauto]|].
-    split; [split; [exact Hu'|split; [exact Hnd'|]]|].
-    + eapply weak_heap_relation_size_spec; [apply incr_remset_heap_whr | exact Hsize].
-    + intros n Hgen. specialize (Hs' n Hgen). unfold safe_to_copy_gen_heap, total_size.
-      rewrite irh_total_space, incr_remset_heap_rest_gen_size_above_nursery. exact Hs'.
+    split; [|exact Hsafe']. split; [exact Hu'|]. split; [exact Hnd'|].
+    eapply weak_heap_relation_size_spec; [apply incr_remset_heap_whr | exact Hsize].
   - unfold gc_prop, super_compatible, garbage_collect_condition. tauto.
 Qed.
 
@@ -10447,6 +10283,6 @@ Proof.
   intros [_ [_ [_ [_ [Hloc Hext]]]]] [Hu [Ht [Hsize Heff]]] Hgc [Hback [Hrem Hgen]]. split.
   - eapply gc_prop_after_budget_step; eassumption.
   - split; [eapply remset_effect_no_unrecorded; eassumption|]. split.
-    + eapply remset_effect_compatible; eassumption.
+    + destruct Heff as [_ [Honly _]]. eapply remset_effect_compatible; eassumption.
     + eapply remset_effect_generation; eassumption.
 Qed.
