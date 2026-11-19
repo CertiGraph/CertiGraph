@@ -6140,7 +6140,7 @@ Definition new_gen_relation (gen: nat) (g1 g2: LGraph): Prop :=
 Definition garbage_collect_condition (g: LGraph) (h : part_heap) : Prop :=
   graph_unmarked g /\ no_dangling_dst g /\ ti_size_spec h.
 
-Definition full_gc
+Definition gc_prop
     (g : LGraph)
     (h : part_heap)
     (rootpairs : list rootpair)

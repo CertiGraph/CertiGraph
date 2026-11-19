@@ -598,7 +598,7 @@ Definition garbage_collect_spec :=
        rh: remset_heap, rmst: remset
   PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          full_gc g (ti_heap t_info).(pt_heap)
+          gc_prop g (ti_heap t_info).(pt_heap)
             (frames2rootpairs (ti_frames t_info)) roots outlier;
           remembered_set_ok O g (ti_heap t_info).(pt_heap)
             outlier rh rmst)
@@ -608,7 +608,7 @@ Definition garbage_collect_spec :=
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     EX rh': remset_heap, EX rmst': remset,
-    PROP (full_gc g' (ti_heap t_info').(pt_heap)
+    PROP (gc_prop g' (ti_heap t_info').(pt_heap)
             (frames2rootpairs (ti_frames t_info')) roots' outlier;
           garbage_collect_relation roots roots'
             g (ti_heap t_info).(pt_heap) rh rmst
