@@ -44,16 +44,15 @@ Definition model_endpoints :=
    mutable_update_gc_sep,
    remset_rep_mutable_graph_update).
 
-(** These results establish [extcall_properties] for legacy external-call
-    semantics.  They are not [semax_body] proofs of the corresponding
-    internal Clight functions in [Gprog]. *)
-Definition legacy_extcall_endpoints :=
+(** CompCert [extcall_properties] for separate external-call models of
+    [Is_from] and [test_int_or_ptr], not [semax_body] proofs of their
+    internal Clight implementations. *)
+Definition extcall_endpoints :=
   (Is_from_extcall, test_iop__extcall).
 
-(** In particular, [Gprog] currently has no [body_test_int_or_ptr],
-    [body_Is_from], or [body_abort_with] theorem.  The legacy extcall results
-    above do not close those internal-function body-proof obligations. *)
+(** Three internal functions specified in [Gprog] have no [semax_body]
+    proof: [test_int_or_ptr], [Is_from], and [abort_with]. *)
 Definition audit_collection :=
-  (verified_bodies, model_endpoints, legacy_extcall_endpoints).
+  (verified_bodies, model_endpoints, extcall_endpoints).
 
 Print Assumptions audit_collection.
