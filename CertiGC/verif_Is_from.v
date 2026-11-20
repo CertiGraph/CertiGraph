@@ -283,9 +283,9 @@ Definition test_iop_sem : extcall_sem :=
     m1 = m2 /\ trc = nil /\
     match args with
     | [Vint i] =>
-      if (Int.eq Int.one (Int.modu i (Int.repr 2)))
-      then ret = Vone
-      else False
+      if andb (Int.testbit i 0) (negb Archi.ptr64) then ret = Vone else False
+    | [Vlong i] =>
+      if andb (Int64.testbit i 0) Archi.ptr64 then ret = Vone else False
     | [Vptr b ofs] =>
       if (Ptrofs.eq Ptrofs.one (Ptrofs.modu ofs (Ptrofs.repr 2)))
       then False
@@ -303,7 +303,8 @@ Proof.
   constructor; intros.
   - destruct H as [_ [_ ?]].
     destruct vargs; try destruct v; try contradiction; destruct vargs; try contradiction.
-    1: destruct (Int.eq Int.one (Int.modu i (Int.repr 2))); subst; easy.
+    1: destruct (andb (Int.testbit i 0) (negb Archi.ptr64)); subst; easy.
+    1: destruct (andb (Int64.testbit i 0) Archi.ptr64); subst; easy.
     destruct (Ptrofs.eq Ptrofs.one (Ptrofs.modu i (Ptrofs.repr 2))).
     1: contradiction.
     destruct (valid_b_o_So_dec m1 b i); subst; easy.
@@ -337,7 +338,8 @@ Proof.
       split.
       - destruct vres; auto.
         do 2 (destruct vargs; try destruct v; try contradiction).
-        + destruct (Int.eq Int.one (Int.modu i0 (Int.repr 2))); [inversion H4 | easy].
+        + destruct (andb (Int.testbit i0 0) (negb Archi.ptr64)); [inversion H4 | easy].
+        + destruct (andb (Int64.testbit i0 0) Archi.ptr64); [inversion H4 | easy].
         + destruct (Ptrofs.eq Ptrofs.one (Ptrofs.modu i0 (Ptrofs.repr 2))); try contradiction.
           destruct (valid_b_o_So_dec m2 b0 i0); [inversion H4 | easy].
       - split; [trivial|].
@@ -347,6 +349,7 @@ Proof.
     }
     split3; trivial.
     do 2 (destruct vargs; try destruct v; try contradiction).
+    + inversion H2. inversion H5. inversion H7. auto.
     + inversion H2. inversion H5. inversion H7. auto.
     + inversion H2. inversion H5. inversion H7.
       subst. clear H7 H2.
@@ -399,7 +402,8 @@ Proof.
     subst m1 m2 t1 t2.
     split; [constructor|]. intros _. split; trivial.
     do 2 (try destruct vargs; try destruct v; try contradiction).
-    + destruct (Int.eq Int.one (Int.modu i (Int.repr 2))); subst; [trivial | contradiction].
+    + destruct (andb (Int.testbit i 0) (negb Archi.ptr64)); subst; [trivial | contradiction].
+    + destruct (andb (Int64.testbit i 0) Archi.ptr64); subst; [trivial | contradiction].
     + destruct (Ptrofs.eq Ptrofs.one (Ptrofs.modu i (Ptrofs.repr 2))); [contradiction|].
       destruct (valid_b_o_So_dec m b i); [|contradiction].
       subst; trivial.
