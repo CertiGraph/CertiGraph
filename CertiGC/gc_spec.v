@@ -32,7 +32,7 @@ Definition int_or_ptr_to_int_spec :=
   DECLARE _int_or_ptr_to_int
   WITH x : val
   PRE [int_or_ptr_type ]
-    PROP (is_int I32 Signed x)
+    PROP (if Archi.ptr64 then is_long x else is_int I32 Signed x)
     PARAMS (x)
     GLOBALS ()
     SEP ()
