@@ -2586,7 +2586,9 @@ Definition is_string_constant (d: ident * globdef Clight.fundef type) : bool :=
 
 Definition sep_of_string_constant sh gv (d: ident * globdef Clight.fundef type) : mpred :=
   match d with
-  | (i, Gvar v) => cstring sh (map init_data2byte (gvar_init v)) (gv i)
+  | (i, Gvar v) =>
+      (* Clight includes the trailing NUL; cstring adds it to the contents. *)
+      cstring sh (removelast (map init_data2byte (gvar_init v))) (gv i)
   | _ => emp
   end.
 
