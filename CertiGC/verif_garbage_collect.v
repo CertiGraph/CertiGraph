@@ -456,7 +456,7 @@ Proof.
   unfold gc_sep, before_gc_thread_info_rep, heap_management_rep, heap_struct_rep. Intros.
   unfold remembered_set_ok in H0.
   destruct H0 as [Hunrec_init [Hremc Hremgen]].
-  unfold full_gc in H. destruct H as [H [H0 Hsafeh]].
+  unfold gc_prop in H. destruct H as [H [H0 Hsafeh]].
   pose proof H0 as Hgcc_init.
   assert (Hsafe_graph: safe_to_copy g) by
       (eapply safe_to_copy_heap_implies_safe_to_copy;
@@ -947,6 +947,150 @@ Proof.
             apply IHfrs. list_solve.
       }
 
+      pose proof H6 as Hdgc1.
+      destruct Hdgc1 as [Hese1 [Hfrom1 [Hto1 [Hcc1 [Hndd1
+                        [Hav_to1 [Hunmk1 Htsc1]]]]]]].
+      pose proof Hsc1 as Hsc1_parts.
+      destruct Hsc1_parts as [Hghc1 _].
+      pose proof Hremc1 as Hremc1_parts.
+      destruct Hremc1_parts as [Hrgoc1 [Hrrhc1 Hrhhc1]].
+      assert (Hrgoc1':
+                remset_graph_outlier_compatible g1 outlier rmst') by
+          (rewrite <- Hrmst1_eq; exact Hrgoc1).
+      assert (Hrrhc1':
+                remset_and_remset_heap_compatible g1 (Z.to_nat i)
+                rmst' rh') by
+          (rewrite <- Hrmst1_eq, <- Hrh1_eq; exact Hrrhc1).
+      assert (Hrhhc1':
+                remset_heap_and_heap_compatible rh'
+                (pt_heap (ti_heap t_info1))) by
+          (rewrite <- Hrh1_eq; exact Hrhhc1).
+      assert (Hremgen1':
+                remset_generation_compatible (Z.to_nat i) rmst' rh') by
+          (rewrite <- Hrmst1_eq, <- Hrh1_eq; exact Hremgen1).
+      assert (Hrmnd1': remset_nodup rmst') by
+          (rewrite <- Hrmst1_eq; exact Hrmnd1).
+      assert (Hrcw1: remset_graph_compatible g1 rmst') by
+          (eapply remset_graph_outlier_compatible_weakened; exact Hrgoc1').
+      assert (Hrrsc1:
+                remset_and_remset_space_compatible g1 (Z.to_nat i) rmst'
+                  (Znth (Z.of_nat (Z.to_nat i)) rh')) by
+          (eapply rrhc_forall_rrsc; exact Hrrhc1').
+      pose proof Hrel_loop as Hrel_parts.
+      destruct Hrel_parts as [[g_roots [g_scan [Hfrg_rem _]]] _].
+      assert (Hrgoc_rem:
+                remset_graph_outlier_compatible g_rem outlier rmst2). {
+        unfold forward_remset_gh in Hfrg_rem.
+        eapply (fri_remset_graph_outlier_compatible_fold
+                  (Z.to_nat i) (S (Z.to_nat i)) g1
+                  (pt_heap (ti_heap t_info1)) rh' rmst'
+                  (Znth (Z.of_nat (Z.to_nat i)) rh')
+                  g_rem h_rem rh2 rmst2 outlier); eauto; lia.
+      }
+      assert (Hrrhc_rem:
+                remset_and_remset_heap_compatible g_rem (Z.to_nat i)
+                  rmst2 rh2). {
+        unfold forward_remset_gh in Hfrg_rem.
+        eapply (forward_remset_item_fold_rrhc
+                  (Z.to_nat i) (S (Z.to_nat i)) g1
+                  (pt_heap (ti_heap t_info1)) rh' rmst'
+                  g_rem h_rem rh2 rmst2
+                  (Znth (Z.of_nat (Z.to_nat i)) rh')); eauto; try lia.
+        unfold enough_space_enhanced in Hese1.
+        rewrite (compatible_remset_gen_size
+                   g1 (pt_heap (ti_heap t_info1)) rh' (Z.to_nat i)
+                   Hghc1 Hfrom1 Hrhhc1') in Hese1.
+        exact Hese1.
+      }
+      assert (Hrhhc_rem: remset_heap_and_heap_compatible rh2 h_rem). {
+        unfold forward_remset_gh in Hfrg_rem.
+        eapply (forward_remset_item_fold_rhhc
+                  (Z.to_nat i) (S (Z.to_nat i)) g1
+                  (pt_heap (ti_heap t_info1)) rh' rmst'
+                  g_rem h_rem rh2 rmst2
+                  (Znth (Z.of_nat (Z.to_nat i)) rh')); eauto; try lia.
+        unfold enough_space_enhanced in Hese1.
+        rewrite (compatible_remset_gen_size
+                   g1 (pt_heap (ti_heap t_info1)) rh' (Z.to_nat i)
+                   Hghc1 Hfrom1 Hrhhc1') in Hese1.
+        exact Hese1.
+      }
+      assert (Hct1:
+                copied_to_compatible (Z.to_nat i) (S (Z.to_nat i)) g1). {
+        destruct Hgcc1 as [Hun1 _].
+        apply graph_unmarked_copied_to_compatible. exact Hun1.
+      }
+      assert (Hrange_to_rh1:
+                0 <= Z.of_nat (S (Z.to_nat i)) < Zlength rh') by
+          (eapply gen_range_remset_heap; eauto).
+      assert (Hremgen_next:
+                remset_generation_compatible (S (Z.to_nat i)) rmst2
+                  (reset_nth_remset_heap (Z.to_nat i) rh2)) by
+          (eapply do_generation_relation_reset_remset_generation_compatible;
+           eauto; try lia).
+      assert (Hnofrom:
+                forall v addr,
+                  In (RemSetVertex v addr) rmst2 ->
+                  vgeneration v <> Z.to_nat i) by
+          (eapply do_generation_relation_no_from_vertices; eauto).
+      assert (Hremc_next:
+                remset_compatible g2 outlier (S (Z.to_nat i)) rmst2
+                  (reset_nth_remset_heap (Z.to_nat i) rh2)
+                  (pt_heap (ti_heap t_info2))) by
+          exact (do_generation_relation_reset_remset_compatible
+                   (Z.to_nat i) roots' roots2 g1
+                   (pt_heap (ti_heap t_info1)) rh' rmst'
+                   g_rem h_rem rh2 rmst2 g2
+                   (pt_heap (ti_heap t_info2)) outlier
+                   Hto1 Hrel_loop Hnofrom Hrgoc_rem Hrrhc_rem
+                   Hrhhc_rem Hremgen_next).
+      assert (Hunrec1':
+                no_unrecorded_backward_edge_from (Z.to_nat i) g1 rh') by
+          (rewrite <- Hrh1_eq; exact Hunrec1).
+      assert (Hremc1':
+                remset_compatible g1 outlier (Z.to_nat i) rmst'
+                  rh' (pt_heap (ti_heap t_info1))) by
+          (rewrite <- Hrmst1_eq, <- Hrh1_eq; exact Hremc1).
+      assert (Hroots1: roots_graph_compatible roots' g1) by
+          (destruct Hsc1 as [_ [_ [[_ Hroots1] _]]]; exact Hroots1).
+      assert (Hgun1: graph_unmarked g1) by
+          (destruct Hgcc1 as [Hgun1 _]; exact Hgun1).
+      assert (Hfirst2': firstn_gen_clear g2 (S (Z.to_nat i))) by
+          (rewrite <- Hi1_nat2; exact Hfirst2).
+      assert (Hndd2': no_dangling_dst g2) by
+          (destruct Hgcc2 as [_ [Hndd2' _]]; exact Hndd2').
+      assert (Hunrec_next:
+                no_unrecorded_backward_edge_from (S (Z.to_nat i)) g2
+                  (reset_nth_remset_heap (Z.to_nat i) rh2)). {
+        exact (do_generation_relation_no_unrecorded_backward_edge_reset
+                 g1 (pt_heap (ti_heap t_info1)) rh' rmst'
+                 g_rem h_rem rh2 rmst2 g2
+                 (pt_heap (ti_heap t_info2)) roots' roots2
+                 (Z.to_nat i) outlier Hto1 Hgun1 Hcc1 Hndd1
+                 Hunrec1' Hfirst1 Hroots1 Hrmnd1' Hremc1'
+                 Hfirst2' Hndd2' Hrange_to_rh1 Hrel_loop).
+      }
+      assert (Hrgc_rem: remset_graph_compatible g_rem rmst2) by
+          (eapply remset_graph_outlier_compatible_weakened; exact Hrgoc_rem).
+      assert (Hremembered_output :
+                remembered_set_ok O g2 (pt_heap (ti_heap t_info2)) outlier
+                  (reset_nth_remset_heap (Z.to_nat i) rh2) rmst2). {
+        destruct Hremc_next as [Hout [_ Hheap]].
+        pose proof Hremgen_next as [Hext [Hord Hempty]].
+        unfold remembered_set_ok. split.
+        - intros e He Hback.
+          destruct (Hunrec_next e He Hback) as [k [[Hlo Hhi] Hrec]].
+          exists k. split; [lia | exact Hrec].
+        - split.
+          + split; [exact Hout |]. split; [|exact Hheap].
+            eapply do_generation_relation_remset_and_remset_heap_compatible_reset_at;
+              [|exact Hrel_loop | exact Hrrhc_rem | exact Hremgen_next].
+            rewrite <- (forward_remset_gh_graph_has_gen (Z.to_nat i) (S (Z.to_nat i))
+                          g1 _ _ _ _ _ _ _ Hto1 Hfrg_rem (S (Z.to_nat i))).
+            exact Hto1.
+          + split; [exact Hext |]. split; [exact Hord |]. intros gen Hgen; lia.
+      }
+
       forward_if.
       * destruct (space_start (Znth i (spaces h2))); try contradiction.
         destruct (space_start (Znth (i + 1) (spaces h2)));
@@ -991,61 +1135,11 @@ Proof.
         assert (graph_gen_clear g2 O) by (apply Hfirst2; rewrite Hi1_nat2; lia).
         forward_call (rsh, sh, gv, ti, g2, t_info2, roots2). forward.
         Exists g2 t_info2 roots2 (reset_nth_remset_heap (Z.to_nat i) rh2) rmst2.
-        unfold full_gc, gc_sep. entailer!!. split3.
+        unfold gc_prop, gc_sep. entailer!!. split3.
         -- eapply safe_to_copy_heap_complete; eauto.
         -- exists (Z.to_nat i). rewrite <- Hi1_nat2 at 1. split; assumption.
         -- rewrite HN. auto.
-        -- pose proof Hsc1 as Hsc1_parts.
-           destruct Hsc1_parts as [Hghc1 _].
-           pose proof H6 as Hdgc1.
-           destruct Hdgc1 as [Hese1 [Hfrom1 [Hto1 [Hcc1 [Hndd1
-                             [Hav_to1 [Hunmk1 Htsc1]]]]]]].
-           pose proof Hremc1 as Hremc1_parts.
-           destruct Hremc1_parts as [Hrgoc1 [Hrrhc1 Hrhhc1]].
-           assert (Hrcw1: remset_graph_compatible g1 rmst') by
-               (eapply remset_graph_outlier_compatible_weakened; eassumption).
-           assert (Hrrsc1:
-                     remset_and_remset_space_compatible g1 (Z.to_nat i) rmst'
-                       (Znth (Z.of_nat (Z.to_nat i)) rh')) by
-               (eapply rrhc_forall_rrsc; exact Hrrhc1).
-           pose proof H11 as Hrel_parts.
-           destruct Hrel_parts as [g_roots [g_scan [Hfrg_rem _]]].
-           assert (Hrgoc_rem:
-                     remset_graph_outlier_compatible g_rem outlier rmst2). {
-             unfold forward_remset_gh in Hfrg_rem.
-             eapply fri_remset_graph_outlier_compatible_fold; eauto; lia.
-           }
-           assert (Hrgc_rem: remset_graph_compatible g_rem rmst2) by
-               (eapply remset_graph_outlier_compatible_weakened; exact Hrgoc_rem).
-           assert (Hrrhc_rem:
-                     remset_and_remset_heap_compatible g_rem (Z.to_nat i)
-                       rmst2 rh2). {
-             unfold forward_remset_gh in Hfrg_rem.
-             eapply (forward_remset_item_fold_rrhc
-                       (Z.to_nat i) (S (Z.to_nat i)) g1
-                       (pt_heap (ti_heap t_info1)) rh' rmst'
-                       g_rem h_rem rh2 rmst2
-                       (Znth (Z.of_nat (Z.to_nat i)) rh')); eauto; try lia.
-             unfold enough_space_enhanced in Hese1.
-             rewrite (compatible_remset_gen_size
-                        g1 (pt_heap (ti_heap t_info1)) rh' (Z.to_nat i)
-                        Hghc1 Hfrom1 Hrhhc1) in Hese1.
-             exact Hese1.
-           }
-           assert (Hrhhc_rem: remset_heap_and_heap_compatible rh2 h_rem). {
-             unfold forward_remset_gh in Hfrg_rem.
-             eapply (forward_remset_item_fold_rhhc
-                       (Z.to_nat i) (S (Z.to_nat i)) g1
-                       (pt_heap (ti_heap t_info1)) rh' rmst'
-                       g_rem h_rem rh2 rmst2
-                       (Znth (Z.of_nat (Z.to_nat i)) rh')); eauto; try lia.
-             unfold enough_space_enhanced in Hese1.
-             rewrite (compatible_remset_gen_size
-                        g1 (pt_heap (ti_heap t_info1)) rh' (Z.to_nat i)
-                        Hghc1 Hfrom1 Hrhhc1) in Hese1.
-             exact Hese1.
-           }
-           assert (Hlen_rem: length rh2 = length (spaces h_rem)) by
+        -- assert (Hlen_rem: length rh2 = length (spaces h_rem)) by
                (apply rhhc_length_eq; exact Hrhhc_rem).
            assert (Hfrom_h2: (Z.to_nat i < length (spaces h2))%nat). {
              rewrite <- ZtoNat_Zlength. apply Z2Nat.inj_lt; lia.
@@ -1099,131 +1193,6 @@ Proof.
            rewrite <- Hexcept_eq. cancel.
       * forward. Intros.
         Exists g2 roots2 t_info2 (reset_nth_remset_heap (Z.to_nat i) rh2) rmst2.
-        pose proof H6 as Hdgc1.
-        destruct Hdgc1 as [Hese1 [Hfrom1 [Hto1 [Hcc1 [Hndd1
-                          [Hav_to1 [Hunmk1 Htsc1]]]]]]].
-        pose proof Hsc1 as Hsc1_parts.
-        destruct Hsc1_parts as [Hghc1 _].
-        pose proof Hremc1 as Hremc1_parts.
-        destruct Hremc1_parts as [Hrgoc1 [Hrrhc1 Hrhhc1]].
-        assert (Hrgoc1':
-                  remset_graph_outlier_compatible g1 outlier rmst') by
-            (rewrite <- Hrmst1_eq; exact Hrgoc1).
-        assert (Hrrhc1':
-                  remset_and_remset_heap_compatible g1 (Z.to_nat i)
-                  rmst' rh') by
-            (rewrite <- Hrmst1_eq, <- Hrh1_eq; exact Hrrhc1).
-        assert (Hrhhc1':
-                  remset_heap_and_heap_compatible rh'
-                  (pt_heap (ti_heap t_info1))) by
-            (rewrite <- Hrh1_eq; exact Hrhhc1).
-        assert (Hremgen1':
-                  remset_generation_compatible (Z.to_nat i) rmst' rh') by
-            (rewrite <- Hrmst1_eq, <- Hrh1_eq; exact Hremgen1).
-        assert (Hrmnd1': remset_nodup rmst') by
-            (rewrite <- Hrmst1_eq; exact Hrmnd1).
-        assert (Hrcw1: remset_graph_compatible g1 rmst') by
-            (eapply remset_graph_outlier_compatible_weakened; exact Hrgoc1').
-        assert (Hrrsc1:
-                  remset_and_remset_space_compatible g1 (Z.to_nat i) rmst'
-                    (Znth (Z.of_nat (Z.to_nat i)) rh')) by
-            (eapply rrhc_forall_rrsc; exact Hrrhc1').
-        pose proof Hrel_loop as Hrel_parts.
-        destruct Hrel_parts as [[g_roots [g_scan [Hfrg_rem _]]] _].
-        assert (Hrgoc_rem:
-                  remset_graph_outlier_compatible g_rem outlier rmst2). {
-          unfold forward_remset_gh in Hfrg_rem.
-          eapply (fri_remset_graph_outlier_compatible_fold
-                    (Z.to_nat i) (S (Z.to_nat i)) g1
-                    (pt_heap (ti_heap t_info1)) rh' rmst'
-                    (Znth (Z.of_nat (Z.to_nat i)) rh')
-                    g_rem h_rem rh2 rmst2 outlier); eauto; lia.
-        }
-        assert (Hrrhc_rem:
-                  remset_and_remset_heap_compatible g_rem (Z.to_nat i)
-                    rmst2 rh2). {
-          unfold forward_remset_gh in Hfrg_rem.
-          eapply (forward_remset_item_fold_rrhc
-                    (Z.to_nat i) (S (Z.to_nat i)) g1
-                    (pt_heap (ti_heap t_info1)) rh' rmst'
-                    g_rem h_rem rh2 rmst2
-                    (Znth (Z.of_nat (Z.to_nat i)) rh')); eauto; try lia.
-          unfold enough_space_enhanced in Hese1.
-          rewrite (compatible_remset_gen_size
-                     g1 (pt_heap (ti_heap t_info1)) rh' (Z.to_nat i)
-                     Hghc1 Hfrom1 Hrhhc1') in Hese1.
-          exact Hese1.
-        }
-        assert (Hrhhc_rem: remset_heap_and_heap_compatible rh2 h_rem). {
-          unfold forward_remset_gh in Hfrg_rem.
-          eapply (forward_remset_item_fold_rhhc
-                    (Z.to_nat i) (S (Z.to_nat i)) g1
-                    (pt_heap (ti_heap t_info1)) rh' rmst'
-                    g_rem h_rem rh2 rmst2
-                    (Znth (Z.of_nat (Z.to_nat i)) rh')); eauto; try lia.
-          unfold enough_space_enhanced in Hese1.
-          rewrite (compatible_remset_gen_size
-                     g1 (pt_heap (ti_heap t_info1)) rh' (Z.to_nat i)
-                     Hghc1 Hfrom1 Hrhhc1') in Hese1.
-          exact Hese1.
-        }
-        assert (Hct1:
-                  copied_to_compatible (Z.to_nat i) (S (Z.to_nat i)) g1). {
-          destruct Hgcc1 as [Hun1 _].
-          apply graph_unmarked_copied_to_compatible. exact Hun1.
-        }
-        assert (Hrange_to_rh1:
-                  0 <= Z.of_nat (S (Z.to_nat i)) < Zlength rh') by
-            (eapply gen_range_remset_heap; eauto).
-        assert (Hremgen_next:
-                  remset_generation_compatible (S (Z.to_nat i)) rmst2
-                    (reset_nth_remset_heap (Z.to_nat i) rh2)) by
-            (eapply do_generation_relation_reset_remset_generation_compatible;
-             eauto; try lia).
-        assert (Hnofrom:
-                  forall v addr,
-                    In (RemSetVertex v addr) rmst2 ->
-                    vgeneration v <> Z.to_nat i) by
-            (eapply do_generation_relation_no_from_vertices; eauto).
-        assert (Hremc_next:
-                  remset_compatible g2 outlier (S (Z.to_nat i)) rmst2
-                    (reset_nth_remset_heap (Z.to_nat i) rh2)
-                    (pt_heap (ti_heap t_info2))) by
-            exact (do_generation_relation_reset_remset_compatible
-                     (Z.to_nat i) roots' roots2 g1
-                     (pt_heap (ti_heap t_info1)) rh' rmst'
-                     g_rem h_rem rh2 rmst2 g2
-                     (pt_heap (ti_heap t_info2)) outlier
-                     Hto1 Hrel_loop Hnofrom Hrgoc_rem Hrrhc_rem
-                     Hrhhc_rem Hremgen_next).
-        assert (Hunrec1':
-                  no_unrecorded_backward_edge_from (Z.to_nat i) g1 rh') by
-            (rewrite <- Hrh1_eq; exact Hunrec1).
-        assert (Hremc1':
-                  remset_compatible g1 outlier (Z.to_nat i) rmst'
-                    rh' (pt_heap (ti_heap t_info1))) by
-            (rewrite <- Hrmst1_eq, <- Hrh1_eq; exact Hremc1).
-        assert (Hroots1: roots_graph_compatible roots' g1) by
-            (destruct Hsc1 as [_ [_ [[_ Hroots1] _]]]; exact Hroots1).
-        assert (Hgun1: graph_unmarked g1) by
-            (destruct Hgcc1 as [Hgun1 _]; exact Hgun1).
-        assert (Hfirst2': firstn_gen_clear g2 (S (Z.to_nat i))) by
-            (rewrite <- Hi1_nat2; exact Hfirst2).
-        assert (Hndd2': no_dangling_dst g2) by
-            (destruct Hgcc2 as [_ [Hndd2' _]]; exact Hndd2').
-        assert (Hunrec_next:
-                  no_unrecorded_backward_edge_from (S (Z.to_nat i)) g2
-                    (reset_nth_remset_heap (Z.to_nat i) rh2)). {
-          exact (do_generation_relation_no_unrecorded_backward_edge_reset
-                   g1 (pt_heap (ti_heap t_info1)) rh' rmst'
-                   g_rem h_rem rh2 rmst2 g2
-                   (pt_heap (ti_heap t_info2)) roots' roots2
-                   (Z.to_nat i) outlier Hto1 Hgun1 Hcc1 Hndd1
-                   Hunrec1' Hfirst1 Hroots1 Hrmnd1' Hremc1'
-                   Hfirst2' Hndd2' Hrange_to_rh1 Hrel_loop).
-        }
-        assert (Hrgc_rem: remset_graph_compatible g_rem rmst2) by
-            (eapply remset_graph_outlier_compatible_weakened; exact Hrgoc_rem).
         rewrite <- Hi1_nat2 in *. entailer!!; try exact Hremc_next;
           try exact Hremgen_next; try exact Hunrec_next.
         assert (Hlen_rem: length rh2 = length (spaces h_rem)) by

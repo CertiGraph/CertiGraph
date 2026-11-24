@@ -11,38 +11,6 @@ Local Open Scope logic.
 Identity Coercion LGraph_LabeledGraph: LGraph >-> LabeledGraph.
 Coercion pg_lg: LabeledGraph >-> PreGraph.
 
-Definition init_data2byte (d: init_data) : byte :=
-  match d with
-  | Init_int8 m => Byte.repr (Int.intval m)
-  | _ => Byte.one
-  end.
-
-Definition is_string_constant (d: ident * globdef Clight.fundef type) : bool :=
-  match d with
-  | (_, Gvar {| gvar_info := Tarray (Tint I8 _ _) _ _;
-             gvar_init := _; gvar_readonly := true; gvar_volatile := _ |})
-     => true
-  | _ => false
-  end.
-
-Definition sep_of_string_constant sh gv (d: ident * globdef Clight.fundef type) : mpred :=
-  match d with
-  | (i, Gvar v) => cstring sh (map init_data2byte (gvar_init v)) (gv i)
-  | _ => emp
-  end.
-
-Definition all_string_constants' (sh: share) (gv: globals) : mpred :=
- fold_left sepcon
-  (map (sep_of_string_constant sh gv) (filter is_string_constant gc_stack.global_definitions))
-  emp.
-
-Definition all_string_constants (sh: share) (gv: globals) : mpred :=
-  ltac:(
-   let x := constr:(all_string_constants' sh gv) in
-   let x := eval hnf in x in
-   let x := eval unfold sep_of_string_constant in x in
-   match x with ?S ?A ?B => exact (sepcon A B) end).
-
 Definition test_int_or_ptr_spec :=
  DECLARE _test_int_or_ptr
  WITH x : val
@@ -64,7 +32,7 @@ Definition int_or_ptr_to_int_spec :=
   DECLARE _int_or_ptr_to_int
   WITH x : val
   PRE [int_or_ptr_type ]
-    PROP (is_int I32 Signed x)
+    PROP (if Archi.ptr64 then is_long x else is_int I32 Signed x)
     PARAMS (x)
     GLOBALS ()
     SEP ()
@@ -459,24 +427,6 @@ Definition make_tinfo_spec :=
          malloc_token Ews (tarray int_or_ptr_type NURSERY_SIZE) p;
          data_at_ Ews (tarray int_or_ptr_type NURSERY_SIZE) p).
 
-Definition headroom (ti : thread_info) : Z :=
-  let nursery := heap_head (pt_heap (ti_heap ti)) in
-  available_space nursery - used_space nursery.
-
-Definition info_recordable (ti : thread_info) : Prop :=
-  1 <= headroom ti.
-
-Lemma info_recordable_iff_used_lt_available:
-  forall ti,
-    info_recordable ti <->
-    used_space (heap_head (pt_heap (ti_heap ti))) <
-    available_space (heap_head (pt_heap (ti_heap ti))).
-Proof.
-  intros ti.
-  unfold info_recordable, headroom.
-  lia.
-Qed.
-
 Definition resume_spec :=
   DECLARE _resume
   WITH rsh: share, sh: share, gv: globals, ti: val,
@@ -497,17 +447,6 @@ Definition resume_spec :=
     SEP (all_string_constants rsh gv;
          graph_rep g;
          before_gc_thread_info_rep sh t_info ti).
-
-Definition decr_info_nursery (ti: thread_info) (x: val): thread_info :=
-  if isptr_dec x then
-    Build_thread_info
-      (ti_heap_p ti)
-      (build_compatible_heap (incr_remset_heap (ti_heap ti).(pt_heap) 0))
-      (ti_args ti) (arg_size ti) (ti_frames ti) (ti_nalloc ti)
-  else ti.
-
-Definition mtb_upd_remset_heap (x: val) (item: remset_space_item) (rh: remset_heap) : remset_heap :=
-  if isptr_dec x then upd_remset_heap item rh O else rh.
 
 Definition ext_mutable_update_spec :=
   DECLARE _mutable_update
@@ -536,34 +475,6 @@ Definition ext_mutable_update_spec :=
          data_at sh int_or_ptr_type (exterior2val g v) p;
          heap_remset_rep g (ti_heap t_info').(pt_heap) rh').
 
-Definition mutable_update_pre (sh : share)
-    (g : LGraph) (t_info : thread_info)
-    (outlier : outlier_t) (rh : remset_heap)
-    (it : interior_t) (new : exterior_t) : Prop :=
-  writable_share sh /\
-  1 <= headroom t_info /\
-  graph_heap_compatible g (pt_heap (ti_heap t_info)) /\
-  remset_heap_and_heap_compatible rh (pt_heap (ti_heap t_info)) /\
-  mutable_location_compatible g it /\
-  exterior_compatible g outlier new.
-
-Definition mutable_update_post
-    (g : LGraph) (t_info : thread_info) (rh : remset_heap)
-    (it : interior_t) (new : exterior_t)
-    (g' : LGraph) (t_info' : thread_info) (rh' : remset_heap) : Prop :=
-  mutable_graph_update g it new g' /\
-  t_info' = decr_info_nursery t_info (exterior2val g new) /\
-  rh' = mtb_upd_remset_heap
-          (exterior2val g new) (RemSetInterior it) rh.
-
-Definition mutator_sep (sh : share) (ti : val)
-    (g : LGraph) (t_info : thread_info)
-    (outlier : outlier_t) (rh : remset_heap) : mpred :=
-  graph_rep g *
-  outlier_rep outlier *
-  before_gc_thread_info_rep sh t_info ti *
-  heap_remset_rep g (pt_heap (ti_heap t_info)) rh.
-
 Definition int_mutable_update_spec :=
   DECLARE _mutable_update
     WITH ti: val, v: exterior_t, t_info: thread_info, sh: share, g: LGraph,
@@ -579,17 +490,6 @@ Definition int_mutable_update_spec :=
     RETURN ()
     SEP (mutator_sep sh ti g' t_info' outlier rh').
 
-Definition gc_sep (rsh sh : share) (gv : globals) (ti : val)
-    (g : LGraph) (t_info : thread_info) (outlier : outlier_t)
-    (rh : remset_heap) (rmst : remset) : mpred :=
-  mem_mgr gv *
-  all_string_constants rsh gv *
-  outlier_rep outlier *
-  graph_rep g *
-  heap_remset_rep g (pt_heap (ti_heap t_info)) rh *
-  remset_rep sh g rmst *
-  before_gc_thread_info_rep sh t_info ti.
-
 Definition garbage_collect_spec :=
   DECLARE _garbage_collect
   WITH rsh: share, sh: share, gv: globals, ti: val,
@@ -598,7 +498,7 @@ Definition garbage_collect_spec :=
        rh: remset_heap, rmst: remset
   PRE [tptr thread_info_type]
     PROP (readable_share rsh; writable_share sh;
-          full_gc g (ti_heap t_info).(pt_heap)
+          gc_prop g (ti_heap t_info).(pt_heap)
             (frames2rootpairs (ti_frames t_info)) roots outlier;
           remembered_set_ok O g (ti_heap t_info).(pt_heap)
             outlier rh rmst)
@@ -608,8 +508,9 @@ Definition garbage_collect_spec :=
   POST [tvoid]
     EX g': LGraph, EX t_info': thread_info, EX roots': roots_t,
     EX rh': remset_heap, EX rmst': remset,
-    PROP (full_gc g' (ti_heap t_info').(pt_heap)
+    PROP (gc_prop g' (ti_heap t_info').(pt_heap)
             (frames2rootpairs (ti_frames t_info')) roots' outlier;
+          remembered_set_ok O g' (ti_heap t_info').(pt_heap) outlier rh' rmst';
           garbage_collect_relation roots roots'
             g (ti_heap t_info).(pt_heap) rh rmst
             g' (ti_heap t_info').(pt_heap) rh' rmst';

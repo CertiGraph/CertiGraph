@@ -102,6 +102,48 @@ Proof.
   rewrite align_compatible_int_or_ptr_tptr. reflexivity.
 Qed.
 
+#[local] Lemma concrete_remset_write_effect g outlier it new rh :
+  exterior_compatible g outlier new ->
+  0 <= Z.of_nat O < Zlength rh ->
+  remset_write_effect it new rh
+    (mtb_upd_remset_heap (exterior2val g new) (RemSetInterior it) rh).
+Proof.
+  intros Hext Hrange. unfold remset_write_effect, mtb_upd_remset_heap.
+  destruct (isptr_dec (exterior2val g new)) as [Hp|Hnp].
+  - split; [intros k i Hi; eapply nth_remset_space_upd_remset_heap_old; eauto|].
+    split.
+    + intros k i Hi. rewrite nth_remset_space_upd_remset_heap in Hi by exact Hrange.
+      destruct (Nat.eq_dec k O) as [->|Hne]; [simpl in Hi; intuition congruence|auto].
+    + destruct it as [src pos], new as [z|p|v]; simpl; auto.
+      intros _. exists O. split; [lia|apply nth_remset_space_upd_remset_heap_new; exact Hrange].
+  - split; [intro; apply incl_refl|]. split; [intros; now left|].
+    destruct it as [src pos], new as [z|p|v]; simpl; auto.
+    exfalso. apply Hnp. apply graph_has_v_addr_isptr. exact Hext.
+Qed.
+
+(* The concrete barrier implements the public relation; clients need not
+   recover either of the concrete witnesses from the postcondition. *)
+#[local] Lemma mutable_update_post_intro g ti rh it new g' outlier :
+  1 <= headroom ti ->
+  graph_heap_compatible g (pt_heap (ti_heap ti)) ->
+  remset_heap_and_heap_compatible rh (pt_heap (ti_heap ti)) ->
+  exterior_compatible g outlier new ->
+  mutable_graph_update g it new g' ->
+  mutable_update_post g ti rh it new g'
+    (decr_info_nursery ti (exterior2val g new))
+    (mtb_upd_remset_heap (exterior2val g new) (RemSetInterior it) rh).
+Proof.
+  intros Hcap Hghc Hrh Hext Hupd. split; [exact Hupd|].
+  split; [eexists; reflexivity|]. split.
+  - unfold mtb_upd_remset_heap, decr_info_nursery.
+    destruct (isptr_dec (exterior2val g new)); [|exact Hrh].
+    simpl pt_heap. eapply upd_incr_remset_heap_rhhc with (g := g) (gen := O);
+      [exact Hghc | apply graph_has_gen_O | | exact Hrh].
+    rewrite <- heap_head_nth_space_O. apply (proj1 (info_recordable_iff_used_lt_available ti)); exact Hcap.
+  - eapply concrete_remset_write_effect; [exact Hext|].
+    eapply gen_range_remset_heap; [exact Hghc|apply graph_has_gen_O|exact Hrh].
+Qed.
+
 Lemma body_mutable_update:
   semax_body Vprog Gprog f_mutable_update int_mutable_update_spec.
 Proof.
@@ -275,16 +317,17 @@ Proof.
           graph_heap_compatible g' (pt_heap (ti_heap t_info))).
         { eapply mutable_graph_update_graph_heap_compatible; eassumption. }
         remember (exterior2val g v) as x eqn:Hx.
+        pose proof (mutable_update_post_intro g t_info rh (InteriorVertexPos src pos) v g' outlier
+                      ((proj2 (info_recordable_iff_used_lt_available _)) Hrecordable)
+                      Hghc Hrhhc Hext Hupd) as Hpost.
+        rewrite <- Hx in Hpost.
+        unfold decr_info_nursery, mtb_upd_remset_heap in Hpost.
         destruct x; simpl in Hvalid; try contradiction.
         { forward_if.
           - contradiction.
           - forward.
-            assert (Hnptr: ~ isptr (exterior2val g v)).
-            { intro Hp. rewrite <- Hx in Hp. contradiction. }
             Exists g' t_info rh.
-            unfold mutable_update_post, mutator_sep,
-              decr_info_nursery, mtb_upd_remset_heap.
-            destruct (isptr_dec (exterior2val g v)); [contradiction|].
+            unfold mutator_sep.
             entailer!.
             unfold before_gc_thread_info_rep, heap_management_rep.
             cancel. }
@@ -355,11 +398,7 @@ Proof.
                  (ti_frames t_info) (ti_nalloc t_info))
               (upd_remset_heap
                  (RemSetInterior (InteriorVertexPos src pos)) rh O).
-            unfold mutable_update_post, mutator_sep,
-              decr_info_nursery, mtb_upd_remset_heap.
-            rewrite <- Hx.
-            destruct (isptr_dec (Vptr b i)) as [Hptr | Hnptr].
-            2: { exfalso. apply Hnptr. exact I. }
+            unfold mutator_sep.
             entailer!.
             unfold before_gc_thread_info_rep, heap_management_rep.
             simpl pt_heap. rewrite heap_head_nth_space_O.

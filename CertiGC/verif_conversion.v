@@ -11,7 +11,7 @@ Lemma body_int_or_ptr_to_int:
   semax_body Vprog Gprog f_int_or_ptr_to_int int_or_ptr_to_int_spec.
 Proof.
   start_function.
-  red in H. destruct x; try easy.
+  destruct x; try contradiction.
   forward.
 Qed.
 
