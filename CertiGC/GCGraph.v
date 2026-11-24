@@ -9632,18 +9632,18 @@ Proof.
   eapply do_generation_relation_graph_has_v_preserve; eauto.
 Qed.
 
-Lemma do_generation_relation_remset_and_remset_heap_compatible_reset:
-  forall from roots roots' g h rh rmst rg rhh rh' rmst' g' h',
+Lemma do_generation_relation_remset_and_remset_heap_compatible_reset_at:
+  forall next from roots roots' g h rh rmst rg rhh rh' rmst' g' h',
     graph_has_gen rg (S from) ->
     do_generation_relation from (S from) roots roots' g h rh rmst
       rg rhh rh' rmst' g' h' ->
     remset_and_remset_heap_compatible rg from rmst' rh' ->
     remset_generation_compatible (S from) rmst'
       (reset_nth_remset_heap from rh') ->
-    remset_and_remset_heap_compatible g' (S from) rmst'
+    remset_and_remset_heap_compatible g' next rmst'
       (reset_nth_remset_heap from rh').
 Proof.
-  intros from roots roots' g h rh rmst rg rhh rh' rmst' g' h'
+  intros next from roots roots' g h rh rmst rg rhh rh' rmst' g' h'
          Hto Hrel Hrrhc Hremgen.
   destruct Hremgen as [_ [Horder Hlower]].
   unfold remset_and_remset_heap_compatible in *.
@@ -9684,11 +9684,23 @@ Proof.
   split; [|split].
   - eapply do_generation_relation_graph_has_v_preserve; eauto.
   - erewrite <- do_generation_relation_raw_fields; eauto.
-  - intros Hnotto. specialize (Hmark Hnotfrom). destruct Hmark as [Hmark Htag].
+  - intros _. specialize (Hmark Hnotfrom). destruct Hmark as [Hmark Htag].
     split.
     + erewrite <- (do_generation_relation_raw_projection bool raw_mark); eauto.
     + erewrite <- (do_generation_relation_raw_projection Z raw_tag); eauto.
 Qed.
+
+Lemma do_generation_relation_remset_and_remset_heap_compatible_reset:
+  forall from roots roots' g h rh rmst rg rhh rh' rmst' g' h',
+    graph_has_gen rg (S from) ->
+    do_generation_relation from (S from) roots roots' g h rh rmst
+      rg rhh rh' rmst' g' h' ->
+    remset_and_remset_heap_compatible rg from rmst' rh' ->
+    remset_generation_compatible (S from) rmst'
+      (reset_nth_remset_heap from rh') ->
+    remset_and_remset_heap_compatible g' (S from) rmst'
+      (reset_nth_remset_heap from rh').
+Proof. intros. eapply do_generation_relation_remset_and_remset_heap_compatible_reset_at; eassumption. Qed.
 
 Lemma do_generation_relation_reset_remset_compatible:
   forall from roots roots' g h rh rmst rg rhh rh' rmst' g' h' outlier,

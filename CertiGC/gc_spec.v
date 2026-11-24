@@ -510,6 +510,7 @@ Definition garbage_collect_spec :=
     EX rh': remset_heap, EX rmst': remset,
     PROP (gc_prop g' (ti_heap t_info').(pt_heap)
             (frames2rootpairs (ti_frames t_info')) roots' outlier;
+          remembered_set_ok O g' (ti_heap t_info').(pt_heap) outlier rh' rmst';
           garbage_collect_relation roots roots'
             g (ti_heap t_info).(pt_heap) rh rmst
             g' (ti_heap t_info').(pt_heap) rh' rmst';
